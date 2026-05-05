@@ -8,14 +8,13 @@ plus a confusion matrix.
 
 | File | Purpose |
 |------|---------|
-| `<skill>.jsonl` | Positives for that skill — every prompt should fire that skill. The file's existence is the label, so `should_trigger` is omitted in the source files and injected by `activation.yaml`. |
+| `<skill>.jsonl` | Positives for that skill — every prompt should fire that skill. `expected_skill` is injected per file by `activation.yaml`. |
 | `negative.jsonl` | Shared negatives — prompts that should fire **no** skill (small talk, unrelated dev tasks, adjacent UiPath products, other workflow tools). |
-| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to load every skill's jsonl + `negative.jsonl` directly, injecting `should_trigger` per file. |
+| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 19 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
 
-When scoring skill X:
-- `<X>.jsonl` rows count as positives (`should_trigger=yes`).
-- `negative.jsonl` rows count as negatives.
-- Every other `<Y>.jsonl` row counts as a negative for X (cross-skill confusion).
+The `expected_skill` field on each row is the row's true label (the skill it should fire, or `""` for negatives). Each criterion compares its own `skill_name` to `expected_skill`: `expected="yes"` iff they match. So for skill X:
+- `<X>.jsonl` rows are positives.
+- All other rows (`<Y>.jsonl` for Y≠X plus `negative.jsonl`) are negatives — exercising cross-skill confusion.
 
 ## Run
 
@@ -35,22 +34,17 @@ uv run --project /Users/bai.li/uipath/coder_eval coder-eval run \
   --backend bedrock --sample 20 -j 4
 ```
 
-Reports land in `tmp/<run-id>/`. The suite gate fails on:
-- `accuracy < 0.75`
-- `recall.yes < 0.70`
-- `recall.no < 0.70`
+Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.yes < 0.70`. Class imbalance (~50 yes / ~900 no per skill) makes accuracy and recall.no trivially high; recall.yes is the only meaningful gate.
 
 ## Adding a new skill
 
 1. Create `<new-skill>.jsonl` with positive prompts (one JSON object per line, fields: `id`, `prompt`).
 2. Optional: add must-not-fire prompts that touch your skill's domain to `negative.jsonl` as adversarial negatives.
-3. Copy `activation.yaml` to `<new-skill>-activation.yaml`, replace `task_id` and the criterion's `skill_name`. Add the new file to every existing `*-activation.yaml`'s `dataset.paths` block as a negative.
+3. Edit `activation.yaml`: add the new file to `dataset.paths` and append a 19→20th `skill_triggered` criterion with `skill_name: uipath-<new-skill>`.
 
 ## Cost
 
-On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The current dataset is
-~950 rows total per skill being scored (50 positives + ~900 negatives), so
-roughly $50–95 per full run. Use `--sample N` for cheaper iteration.
+On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~950 rows total. The agent runs ONCE per row regardless of criteria count, and the 19 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark across all 19 skills costs **~$50–95**. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
 
 ## Provenance
 

@@ -1,75 +1,158 @@
-task_id: uipath-maestro-flow-activation
+task_id: skill-activation
 description: >
-  Skill activation eval: measures whether the uipath-maestro-flow skill is
-  invoked iff a user prompt warrants it. Scored as a binary classifier with
-  precision / recall / F1 over a labeled prompt dataset.
-tags: [uipath-maestro-flow, activation, classification]
+  Skill activation eval: measures whether each of the 19 UiPath skills is
+  invoked iff a user prompt warrants it. ONE agent run per row; per-skill
+  confusion matrices (precision / recall / F1) are computed in parallel
+  from the same traces by stacking 19 skill_triggered criteria.
+tags: [activation, classification]
 
 sandbox:
   driver: tempdir
   python: {}
 
-# Multi-source dataset: each <skill>.jsonl + negative.jsonl is loaded directly.
-# The `fields` block injects per-file labels (should_trigger) into every row,
-# so the framework computes the merged dataset and we don't need a build script.
-# When scoring uipath-maestro-flow, only its own jsonl is positive; every
-# other skill's file plus negative.jsonl is a negative.
+# Each path injects expected_skill (the row's true label) into every row.
+# negative.jsonl rows get expected_skill="" (negative for all 19 skills).
 dataset:
   paths:
-    - path: uipath-maestro-flow.jsonl
-      fields: {should_trigger: "yes"}
-    - path: negative.jsonl
-      fields: {should_trigger: "no"}
     - path: uipath-agents.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-agents}
     - path: uipath-coded-apps.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-coded-apps}
     - path: uipath-data-fabric.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-data-fabric}
     - path: uipath-diagnostics.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-diagnostics}
     - path: uipath-feedback.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-feedback}
     - path: uipath-gov-access-policy.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-gov-access-policy}
     - path: uipath-gov-aops-policy.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-gov-aops-policy}
     - path: uipath-human-in-the-loop.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-human-in-the-loop}
     - path: uipath-interact.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-interact}
     - path: uipath-maestro-case.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-maestro-case}
+    - path: uipath-maestro-flow.jsonl
+      fields: {expected_skill: uipath-maestro-flow}
     - path: uipath-planner.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-planner}
     - path: uipath-platform.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-platform}
     - path: uipath-review.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-review}
     - path: uipath-rpa.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-rpa}
     - path: uipath-rpa-legacy.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-rpa-legacy}
     - path: uipath-solution-design.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-solution-design}
     - path: uipath-tasks.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-tasks}
     - path: uipath-test.jsonl
-      fields: {should_trigger: "no"}
+      fields: {expected_skill: uipath-test}
+    - path: negative.jsonl
+      fields: {expected_skill: ""}
 
 initial_prompt: "${row.prompt}"
 
+# 19 skill_triggered criteria — one per skill. Each derives expected internally
+# from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~900 no
+# per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-flow Skill iff should_trigger=yes for row ${row.id}"
-    expected: "${row.should_trigger}"
-    # Filter to the specific skill we're measuring. Without this, the criterion
-    # counts ANY Skill invocation as a positive, leaking signal across skills.
+    description: "uipath-agents activation"
+    skill_name: uipath-agents
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-coded-apps activation"
+    skill_name: uipath-coded-apps
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-data-fabric activation"
+    skill_name: uipath-data-fabric
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-diagnostics activation"
+    skill_name: uipath-diagnostics
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-feedback activation"
+    skill_name: uipath-feedback
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-gov-access-policy activation"
+    skill_name: uipath-gov-access-policy
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-gov-aops-policy activation"
+    skill_name: uipath-gov-aops-policy
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-human-in-the-loop activation"
+    skill_name: uipath-human-in-the-loop
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-interact activation"
+    skill_name: uipath-interact
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-maestro-case activation"
+    skill_name: uipath-maestro-case
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-maestro-flow activation"
     skill_name: uipath-maestro-flow
-    # Suite-level gates over the full dataset (50 yes, ~896 no across all
-    # skill files). Recall.no will be very high by construction since most
-    # prompts are negatives; recall.yes is the harder metric.
-    suite_thresholds:
-      accuracy: 0.75
-      recall.yes: 0.70
-      recall.no: 0.70
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-planner activation"
+    skill_name: uipath-planner
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-platform activation"
+    skill_name: uipath-platform
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-review activation"
+    skill_name: uipath-review
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-rpa activation"
+    skill_name: uipath-rpa
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-rpa-legacy activation"
+    skill_name: uipath-rpa-legacy
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-solution-design activation"
+    skill_name: uipath-solution-design
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-tasks activation"
+    skill_name: uipath-tasks
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-test activation"
+    skill_name: uipath-test
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
