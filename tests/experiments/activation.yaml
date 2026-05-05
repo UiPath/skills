@@ -1,0 +1,32 @@
+experiment_id: skill-activation-default
+description: >
+  Default experiment for skill activation evals. Each row presents a single
+  user prompt; the agent decides whether to invoke a Skill. We measure the
+  classification (precision / recall / F1) per skill.
+
+defaults:
+  # Activation is a one-shot decision per prompt — short timeouts are fine.
+  max_iterations: 1
+  task_timeout: 120
+  turn_timeout: 120
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+    # 5 turns gives the agent room for a quick `ls`/`grep` discovery step
+    # before deciding. 3 was too tight and showed up as the dominant FN cause
+    # in the May 2026 baseline.
+    max_turns: 5
+    # Skill must be allowed so the agent can invoke a skill when it decides
+    # to. Read/Write/Bash included so the agent isn't starved of basic tools
+    # when it decides NOT to use Skill — removing them would bias the
+    # decision toward "don't invoke".
+    allowed_tools: [Skill, Bash, Read, Write, Edit, Glob, Grep]
+    plugins:
+      - type: local
+        path: $SKILLS_REPO_PATH
+    ignore_patterns: []
+
+variants:
+  - variant_id: default

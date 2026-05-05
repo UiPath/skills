@@ -1,0 +1,142 @@
+{"id": "n001", "source": "synthetic", "prompt": "Chain my RPA process with an AI agent call"}
+{"id": "n002", "source": "synthetic", "prompt": "Add a decision branch to my workflow"}
+{"id": "n003", "source": "synthetic", "prompt": "How do I add variables to my UiPath automation?"}
+{"id": "n004", "source": "synthetic", "prompt": "Embed an autonomous agent inside my project"}
+{"id": "n005", "source": "synthetic", "prompt": "Write Jint JavaScript logic for a script node"}
+{"id": "n006", "source": "synthetic", "prompt": "Add a data transform that filters and group-by"}
+{"id": "n007", "source": "synthetic", "prompt": "Edit my Main.xaml file"}
+{"id": "n008", "source": "synthetic", "prompt": "Build a UiPath Studio Desktop project"}
+{"id": "n009", "source": "synthetic", "prompt": "Help me with a pandas dataframe"}
+{"id": "n010", "source": "synthetic", "prompt": "Explain closures in JavaScript"}
+{"id": "n011", "source": "synthetic", "prompt": "Set up OAuth authentication with the UiPath Orchestrator API"}
+{"id": "n012", "source": "synthetic", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates"}
+{"id": "n013", "source": "synthetic", "prompt": "Refactor my XAML activities library to reduce duplication across Main.xaml, Login.xaml, and Logout.xaml"}
+{"id": "n014", "source": "synthetic", "prompt": "Write a coded workflow in C# that calls a REST API and parses JSON"}
+{"id": "n015", "source": "synthetic", "prompt": "I want to automate a business process", "curation_note": "relabeled yes->no: too generic — could be any UiPath product"}
+{"id": "n016", "source": "synthetic", "prompt": "Publish my automation to Orchestrator"}
+{"id": "n017", "source": "synthetic", "prompt": "How do I trigger my robot on a schedule?"}
+{"id": "n018", "source": "synthetic", "prompt": "Create a flowchart for my architecture doc"}
+{"id": "n019", "source": "synthetic", "prompt": "Show me how to use selectors in UI automation"}
+{"id": "n020", "source": "synthetic", "prompt": "Design a data flow diagram for our ETL pipeline"}
+{"id": "n021", "source": "synthetic", "prompt": "I want to build an orchestration layer for my microservices"}
+{"id": "n022", "source": "synthetic", "prompt": "Help me with a Mermaid diagram"}
+{"id": "n023", "source": "synthetic", "prompt": "Add a node to my graph"}
+{"id": "n024", "source": "synthetic", "prompt": "Validate my JSON schema"}
+{"id": "n025", "source": "synthetic", "prompt": "I want to add conditional logic to my UiPath process"}
+{"id": "n026", "source": "synthetic", "prompt": "Help me wire together multiple UiPath resources"}
+{"id": "n027", "source": "synthetic", "prompt": "My automation needs to run on a schedule"}
+{"id": "n028", "source": "synthetic", "prompt": "Add an HTTP call to my UiPath project"}
+{"id": "n029", "source": "synthetic", "prompt": "Group my automation steps into a reusable block"}
+{"id": "n030", "source": "synthetic", "prompt": "Connect two UiPath workflows so one triggers the other"}
+{"id": "n031", "source": "synthetic", "prompt": "Loop over an array and call an API for each item"}
+{"id": "n032", "source": "synthetic", "prompt": "Create a new VB.NET project"}
+{"id": "n033", "source": "synthetic", "prompt": "Build a Kubernetes deployment manifest"}
+{"id": "n034", "source": "synthetic", "prompt": "Write a Python Flask app"}
+{"id": "n035", "source": "synthetic", "prompt": "Fix my TypeScript compilation error"}
+{"id": "n036", "source": "synthetic", "prompt": "Generate a regex for email validation"}
+{"id": "n037", "source": "synthetic", "prompt": "Set up a GitHub Actions workflow"}
+{"id": "n038", "source": "synthetic", "prompt": "Install .NET 8 on my machine"}
+{"id": "n039", "source": "synthetic", "prompt": "Design a CI/CD pipeline that builds my UiPath project, runs tests, and deploys to three environments"}
+{"id": "n040", "source": "synthetic", "prompt": "Create a queue in Orchestrator, set up transaction items, and configure queue triggers for robots"}
+{"id": "n041", "source": "synthetic", "prompt": "Build a case management solution with custom entities, forms, and approval workflows"}
+{"id": "n042", "source": "synthetic", "prompt": "Migrate my RPA project from Studio Desktop to Studio Web using ReFramework patterns"}
+{"id": "n043", "source": "synthetic", "prompt": "Configure machine templates, robot roles, and tenant-level permissions in Orchestrator"}
+{"id": "n044", "source": "synthetic", "prompt": "Help me write an automation", "curation_note": "relabeled yes->no: too generic — could be any UiPath product"}
+{"id": "n045", "source": "synthetic", "prompt": "I need to execute a process on a schedule", "curation_note": "relabeled yes->no: scheduling alone is Orchestrator, not flow-specific"}
+{"id": "n046", "source": "synthetic", "prompt": "What is the best way to handle errors in UiPath?"}
+{"id": "n047", "source": "synthetic", "prompt": "Show me how to pass arguments between workflows"}
+{"id": "n048", "source": "synthetic", "prompt": "My process needs to wait for a queue item"}
+{"id": "n049", "source": "synthetic", "prompt": "How do I publish my UiPath package?"}
+{"id": "n050", "source": "synthetic", "prompt": "Connect my UiPath project to a database"}
+{"id": "n051", "source": "synthetic", "prompt": "Show me a DAG for my Airflow jobs"}
+{"id": "n052", "source": "synthetic", "prompt": "Orchestrate my Temporal workflows"}
+{"id": "n053", "source": "synthetic", "prompt": "Create a Step Functions state machine in AWS"}
+{"id": "n054", "source": "synthetic", "prompt": "I need to design a BPMN diagram for our process"}
+{"id": "n055", "source": "synthetic", "prompt": "Schedule a cron job on my Linux server"}
+{"id": "n056", "source": "synthetic", "prompt": "Add a webhook trigger to my Zapier flow"}
+{"id": "n057", "source": "synthetic", "prompt": "Create a connector in Power Automate"}
+{"id": "n058", "source": "synthetic", "prompt": "Wire up a Node-RED flow with MQTT nodes"}
+{"id": "n059", "source": "synthetic", "prompt": "Replace my core.logic.mock RPA step with a real uipath.core.rpa.{key} node, update input/output mapping and bindings_v2.json"}
+{"id": "n060", "source": "synthetic", "prompt": "I need to handle different cases based on a value"}
+{"id": "n061", "source": "synthetic", "prompt": "Call a Salesforce API from my UiPath project"}
+{"id": "n062", "source": "synthetic", "prompt": "I want a scheduled task in UiPath", "curation_note": "relabeled yes->no: scheduled task in UiPath = Orchestrator, not flow-specific"}
+{"id": "n063", "source": "synthetic", "prompt": "Fail the run if validation fails"}
+{"id": "n064", "source": "synthetic", "prompt": "Break down my big UiPath automation into smaller pieces", "curation_note": "relabeled yes->no: RPA library refactor is also valid interpretation"}
+{"id": "n065", "source": "synthetic", "prompt": "Stop my UiPath process gracefully at the end"}
+{"id": "n066", "source": "synthetic", "prompt": "Use group-by on my records"}
+{"id": "n067", "source": "synthetic", "prompt": "Filter items in my collection"}
+{"id": "n068", "source": "synthetic", "prompt": "Map fields between my source and target"}
+{"id": "n069", "source": "synthetic", "prompt": "Add a date-based pause until tomorrow at noon"}
+{"id": "n070", "source": "synthetic", "prompt": "Run one branch only if a previous step produced output"}
+{"id": "n071", "source": "synthetic", "prompt": "Group records by a key and count them"}
+{"id": "n072", "source": "synthetic", "prompt": "What's the recipe for chocolate chip cookies?"}
+{"id": "n073", "source": "synthetic", "prompt": "Translate this French text to English"}
+{"id": "n074", "source": "synthetic", "prompt": "Write a haiku about spring"}
+{"id": "n075", "source": "synthetic", "prompt": "Convert 50 miles to kilometers"}
+{"id": "n076", "source": "synthetic", "prompt": "Summarize this PDF"}
+{"id": "n077", "source": "synthetic", "prompt": "What's the capital of Brazil?"}
+{"id": "n078", "source": "synthetic", "prompt": "Help me write a cover letter"}
+{"id": "n079", "source": "synthetic", "prompt": "Fix the indentation in this Python file"}
+{"id": "n080", "source": "synthetic", "prompt": "Rename this Git branch"}
+{"id": "n081", "source": "synthetic", "prompt": "Run npm install"}
+{"id": "n082", "source": "synthetic", "prompt": "Set up ESLint"}
+{"id": "n083", "source": "synthetic", "prompt": "Compile this Rust program"}
+{"id": "n084", "source": "synthetic", "prompt": "Create a new PostgreSQL table"}
+{"id": "n085", "source": "synthetic", "prompt": "Write a Dockerfile for a Node app"}
+{"id": "n086", "source": "synthetic", "prompt": "Start a new Next.js project"}
+{"id": "n087", "source": "synthetic", "prompt": "Add a Terraform module for S3"}
+{"id": "n088", "source": "synthetic", "prompt": "Deploy to Heroku"}
+{"id": "n089", "source": "synthetic", "prompt": "Configure Nginx reverse proxy"}
+{"id": "n090", "source": "synthetic", "prompt": "Set up Redis caching"}
+{"id": "n091", "source": "synthetic", "prompt": "Design a microservices architecture with event sourcing, CQRS, and saga orchestration using Temporal"}
+{"id": "n092", "source": "synthetic", "prompt": "Migrate my MongoDB cluster from replica set to sharded deployment with zero downtime"}
+{"id": "n093", "source": "synthetic", "prompt": "Build a React app with Redux Toolkit, React Router v6, and SSR via Next.js for an e-commerce storefront"}
+{"id": "n094", "source": "synthetic", "prompt": "Refactor my UiPath XAML library that has 200+ activities and duplicate selectors across 30 projects"}
+{"id": "n095", "source": "synthetic", "prompt": "Build a BI dashboard in UiPath Insights with custom metrics and scheduled alerts"}
+{"id": "n096", "source": "synthetic", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process"}
+{"id": "n097", "source": "synthetic", "prompt": "Configure UiPath AI Center to host a custom ML model with versioning and rollback"}
+{"id": "n098", "source": "synthetic", "prompt": "Build a Test Suite in UiPath for automated regression testing of my XAML workflows"}
+{"id": "n099", "source": "synthetic", "prompt": "Plan the rollout of UiPath Automation Cloud across 12 regional tenants with consistent governance"}
+{"id": "n100", "source": "synthetic", "prompt": "Design a solution accelerator in UiPath Studio for insurance claims using ReFramework"}
+{"id": "n101", "source": "synthetic", "prompt": "Build a Kubernetes-based deployment pipeline with Argo CD and GitOps principles"}
+{"id": "n102", "source": "synthetic", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus"}
+{"id": "n103", "source": "synthetic", "prompt": "Implement OAuth 2.0 with PKCE for a mobile app integrating with UiPath APIs"}
+{"id": "n104", "source": "synthetic", "prompt": "Design a data lake architecture using Databricks, Delta Lake, and Unity Catalog"}
+{"id": "n105", "source": "synthetic", "prompt": "Build a CDC pipeline from Postgres to Snowflake using Debezium and Kafka Connect"}
+{"id": "n106", "source": "synthetic", "prompt": "Create an AD federation trust between two Azure AD tenants with conditional access policies"}
+{"id": "n107", "source": "synthetic", "prompt": "Design an incident response runbook for a multi-region UiPath Orchestrator outage"}
+{"id": "n108", "source": "synthetic", "prompt": "Upgrade my Orchestrator from 2022.10 to 2024.10 with minimal downtime and robot compatibility testing"}
+{"id": "n109", "source": "synthetic", "prompt": "Model a commercial licensing audit across five UiPath Orchestrator instances"}
+{"id": "n110", "source": "synthetic", "prompt": "How do I automate my daily tasks?", "curation_note": "relabeled yes->no: too generic — could be any product"}
+{"id": "n111", "source": "synthetic", "prompt": "Build me an agent that answers questions"}
+{"id": "n112", "source": "synthetic", "prompt": "Automate the hiring pipeline", "curation_note": "relabeled yes->no: could be RPA / agents / case mgmt"}
+{"id": "n113", "source": "synthetic", "prompt": "Set up alerts for failures"}
+{"id": "n114", "source": "synthetic", "prompt": "Make my bot talk to Slack", "curation_note": "relabeled yes->no: 'bot' suggests coded agents, not flow"}
+{"id": "n115", "source": "synthetic", "prompt": "Extract data from PDFs", "curation_note": "relabeled yes->no: PDF extraction is IxP / Document Understanding domain"}
+{"id": "n116", "source": "synthetic", "prompt": "Parse invoices automatically", "curation_note": "relabeled yes->no: invoice parsing is IxP / Document Understanding domain"}
+{"id": "n117", "source": "synthetic", "prompt": "Build me a chatbot"}
+{"id": "n118", "source": "synthetic", "prompt": "Run scheduled jobs in the cloud"}
+{"id": "n119", "source": "synthetic", "prompt": "Create reusable code blocks"}
+{"id": "n120", "source": "synthetic", "prompt": "Wire services together"}
+{"id": "n121", "source": "synthetic", "prompt": "Schedule a meeting"}
+{"id": "n122", "source": "synthetic", "prompt": "Trigger an action when a file is uploaded", "curation_note": "relabeled yes->no: could be Integration Service, not flow-specific"}
+{"id": "n123", "source": "synthetic", "prompt": "Put approval in my workflow", "curation_note": "relabeled yes->no: approval can live in HITL / case mgmt, not flow-specific"}
+{"id": "n124", "source": "synthetic", "prompt": "Manage my automation lifecycle", "curation_note": "relabeled yes->no: lifecycle management = Orchestrator + solution"}
+{"id": "n125", "source": "synthetic", "prompt": "Build an Apache NiFi flow with processors"}
+{"id": "n126", "source": "synthetic", "prompt": "Create a Dagster asset graph"}
+{"id": "n127", "source": "synthetic", "prompt": "Wire up Prefect tasks"}
+{"id": "n128", "source": "synthetic", "prompt": "Design a Luigi pipeline"}
+{"id": "n129", "source": "synthetic", "prompt": "Orchestrate containers with Docker Swarm"}
+{"id": "n130", "source": "synthetic", "prompt": "Build a Ray workflow for distributed ML"}
+{"id": "n131", "source": "synthetic", "prompt": "Create a TektonCD pipeline"}
+{"id": "n132", "source": "synthetic", "prompt": "Design a Concourse CI pipeline"}
+{"id": "n133", "source": "synthetic", "prompt": "Model a DBT DAG"}
+{"id": "n134", "source": "synthetic", "prompt": "Write Nextflow workflows for bioinformatics"}
+{"id": "n135", "source": "synthetic", "prompt": "Build a Snakemake pipeline"}
+{"id": "n136", "source": "synthetic", "prompt": "Create a Celery canvas with chords and groups"}
+{"id": "n137", "source": "synthetic", "prompt": "Set up an Argo Workflows DAG"}
+{"id": "n138", "source": "synthetic", "prompt": "Design a Kedro pipeline"}
+{"id": "n139", "source": "synthetic", "prompt": "Build an Apache Beam pipeline"}
+{"id": "n140", "source": "synthetic", "prompt": "Create a Camunda BPMN process"}
+{"id": "n141", "source": "synthetic", "prompt": "Write a Drools decision table"}
+{"id": "n142", "source": "synthetic", "prompt": "Design a Process Maker workflow"}
