@@ -31,7 +31,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | `uipath-rpa-legacy` | Legacy RPA workflows (.NET Framework 4.6.1, XAML only). **Existing legacy projects only** — never for new projects unless user explicitly requests legacy. | No | **No** — defer to `uipath-platform` |
 | `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
-| `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — Studio Web by default; `uipath-platform` for Orchestrator |
+| `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — follows plan `Solution scope` (SW or local); `uipath-platform` for Orchestrator |
 | `uipath-platform` | Auth, Orchestrator resources, solution lifecycle (pack/publish/deploy), Integration Service, Test Manager | Yes (auth hub) | **Yes** — the deploy destination |
 | `uipath-interact` | Inspect and interact with live desktop/browser UI: click, type, screenshot, inspect. For app launching, ad-hoc exploration, post-build verification. Does NOT author workflows or generate selectors — that's `uipath-rpa`. | No auth | **No** |
 
@@ -134,6 +134,22 @@ Record the answer in the plan header as `Test coverage: standard | happy-path`. 
 - The plan contains **no generation skill** (pure `uipath-interact` interaction, pure `uipath-platform` ops, pure read-only diagnostics) → record `Test coverage: N/A`.
 - The request is a small modification to an existing automation and the user has not asked for new tests — default to `standard` for touched paths and note the assumption in Decisions & Trade-offs.
 
+### Question 5: Solution scope
+
+Use `AskUserQuestion`:
+
+- **Question:** `Where should this solution live?`
+- **Options:**
+  - `SW solution` — Build and iterate in Studio Web.
+  - `Local solution` — Build and iterate locally in VSCode.
+  - `Something else` — Free-form input.
+
+Record the answer in the plan header as `Solution scope: SW | local`. Specialist skills read this field at runtime to decide whether to publish at the end.
+
+**Skip this question** when:
+- The user's request already states the intent (e.g., "upload to Studio Web", "keep it local", "just build it").
+- The plan contains no generation skill (pure diagnostics, pure `uipath-platform` ops, pure read-only work).
+
 ### Default: Expression language
 
 Always use **VB.NET** for XAML workflows. Note this in the plan. Do not ask.
@@ -155,18 +171,27 @@ Known patterns:
 
 `uipath-rpa` does not deploy.
 
-### Flow with missing resources
+### Flow with local resources
 
-Flow orchestrates RPA/agents/apps that don't exist yet.
+Flow and components are peer sibling projects under one `.uipx` solution at the cwd. Each is scaffolded in this plan or replaced by a placeholder contract when not built here.
 
 ```
-1. uipath-maestro-flow → design the flow, mock placeholders for missing resources
-2. uipath-rpa          → create the missing RPA process(es)
-3. uipath-platform     → publish the RPA process(es) to Orchestrator
-4. uipath-maestro-flow → replace mocks with published resources, validate, publish
+1. uipath-maestro-flow      → create solution, init flow project
+2. <skill per component>    → fan out: one task per component, routed by type
+                              (rpa → uipath-rpa; agent → uipath-agents; app → uipath-coded-apps)
+3. uipath-maestro-flow      → wire all components, validate, finalize per `Solution scope`
 ```
 
-Replace steps 2–3 with `uipath-agents` if the missing resource is an agent.
+`<component skill>` is `uipath-rpa`, `uipath-agents`, or `uipath-coded-apps` depending on the component type.
+
+### Flow with deployed resources
+
+Flow references components that exist as standalone Orchestrator tenant resources — already published, or to be published this session.
+
+```
+1. <component skill>   → scaffold any unbuilt component; deploy to Orchestrator (use `uipath-platform` for RPA, which doesn't self-deploy)
+2. uipath-maestro-flow → design and wire the flow against the published components, validate, finalize per `Solution scope`
+```
 
 ### Flow deploy to Orchestrator
 
@@ -175,7 +200,7 @@ Replace steps 2–3 with `uipath-agents` if the missing resource is an agent.
 2. uipath-platform     → publish and deploy to Orchestrator
 ```
 
-`uipath-maestro-flow` publishes to Studio Web by default; Orchestrator deploy requires `uipath-platform`.
+`uipath-maestro-flow` follows the plan's `Solution scope` (SW or local); Orchestrator deploy requires `uipath-platform`.
 
 ### Build + verify UI automation on the live app
 
@@ -284,6 +309,7 @@ Record the answers in the plan header. **The handoff is informational** — `uip
 **UI targeting:** <agent-builds-you-review / user-indicates / N/A>
 **UI capture:** <live-capture / indication-only / N/A>
 **Test coverage:** <standard / happy-path / N/A>
+**Solution scope:** <SW | local | N/A>
 
 ## Understanding
 
