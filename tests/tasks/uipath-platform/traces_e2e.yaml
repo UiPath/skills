@@ -18,7 +18,7 @@ sandbox:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  I want to verify that a published agent produces LLM trace spans. Start the agent at process key `$TRACES_SMOKE_PROCESS_KEY`, wait for it to complete, then fetch the trace spans and save them to spans.json.
+  Verify that the published agent at process key `$TRACES_SMOKE_PROCESS_KEY` produces LLM trace spans. Save the raw spans output to spans.json.
 
   Use `--output json` on all uip commands.
 
