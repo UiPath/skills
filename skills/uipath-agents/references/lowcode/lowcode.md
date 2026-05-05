@@ -61,6 +61,8 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add an external Orchestrator process tool (RPA / agent / API / agentic) | [capabilities/process/external.md](capabilities/process/external.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
 | Wire a solution-internal agent tool / multi-agent solution | [capabilities/process/solution-agent.md](capabilities/process/solution-agent.md) | |
 | Add an Integration Service tool | [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md) | |
+| Add a built-in tool (Analyze Files) | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) | [capabilities/built-in-tools/analyze-attachments.md](capabilities/built-in-tools/analyze-attachments.md) |
+| Accept a file as agent input or return a file as output | [agent-definition.md](agent-definition.md) § File Attachments | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) |
 | Add a context (Context Grounding / attachments / DataFabric) | [capabilities/context/context.md](capabilities/context/context.md) | applicable sibling |
 | Add an index-backed context (RAG) | [capabilities/context/index.md](capabilities/context/index.md) | |
 | Add attachments context | [capabilities/context/attachments.md](capabilities/context/attachments.md) | |
