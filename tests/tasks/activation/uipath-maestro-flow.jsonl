@@ -1,118 +1,50 @@
-{"id": "mf001", "source": "synthetic", "prompt": "Create a new UiPath Flow project called OrderProcessing"}
-{"id": "mf002", "source": "synthetic", "prompt": "Validate my .flow file"}
-{"id": "mf003", "source": "synthetic", "prompt": "Add a node to my flow"}
-{"id": "mf004", "source": "synthetic", "prompt": "Debug a UiPath flow in the cloud"}
-{"id": "mf005", "source": "synthetic", "prompt": "Add a subflow to reusable logic"}
-{"id": "mf006", "source": "synthetic", "prompt": "Add a scheduled trigger to my flow"}
-{"id": "mf007", "source": "synthetic", "prompt": "Edit the variables section of my .flow file"}
-{"id": "mf008", "source": "synthetic", "prompt": "Build a UiPath Flow that reads Salesforce opportunities, filters closed-won deals, posts to Slack, and writes to an agent for summarization"}
-{"id": "mf009", "source": "synthetic", "prompt": "Design a .flow project with a scheduled trigger hitting an HTTP endpoint, a decision branch on the response status, and two End nodes with different output variables"}
-{"id": "mf010", "source": "synthetic", "prompt": "I have an existing .flow file with a manual trigger; replace it with a connector trigger bound to a Salesforce connection and re-wire the downstream nodes"}
-{"id": "mf011", "source": "synthetic", "prompt": "Create a Maestro flow that orchestrates an RPA process, an inline agent, and a HITL app in sequence"}
-{"id": "mf012", "source": "synthetic", "prompt": "I want to orchestrate multiple UiPath automations together", "curation_note": "relabeled no->yes: orchestrating multiple automations is the core flow use case"}
-{"id": "mf013", "source": "synthetic", "prompt": "Help me create a subflow"}
-{"id": "mf014", "source": "synthetic", "prompt": "Add a queue item creation step to my flow"}
-{"id": "mf015", "source": "synthetic", "prompt": "Create a mermaid diagram of my flow topology"}
-{"id": "mf016", "source": "synthetic", "prompt": "I need an API workflow as a resource node"}
-{"id": "mf017", "source": "synthetic", "prompt": "Create a new C# coded workflow"}
-{"id": "mf018", "source": "synthetic", "prompt": "Open my ProjectName.flow file and add an HTTP node"}
-{"id": "mf019", "source": "synthetic", "prompt": "Show me how to run uip maestro flow validate"}
-{"id": "mf020", "source": "synthetic", "prompt": "I need to edit the nodes in my flow"}
-{"id": "mf021", "source": "synthetic", "prompt": "Create a Maestro flow project from scratch"}
-{"id": "mf022", "source": "synthetic", "prompt": "What does uip maestro flow registry search do?"}
-{"id": "mf023", "source": "synthetic", "prompt": "Add an end node with output mapping to my flow"}
-{"id": "mf024", "source": "synthetic", "prompt": "Replace a mock node with a real RPA process node in my .flow"}
-{"id": "mf025", "source": "synthetic", "prompt": "Build a .flow that listens to a Gmail connector trigger for new emails, parses with a script node, branches on sender domain, posts matching ones to Teams, and writes a queue record"}
-{"id": "mf026", "source": "synthetic", "prompt": "I have a .flow with a switch node with 5 cases; add error handlers on each branch, a merge node before End, and an inout state variable tracking which branch was taken"}
-{"id": "mf027", "source": "synthetic", "prompt": "Take my orchestration .flow and extract the email-processing nodes into a subflow with its own inputs/outputs, then replace inline nodes with the subflow reference"}
-{"id": "mf028", "source": "synthetic", "prompt": "Convert my Maestro flow from manual trigger to scheduled every 4 hours with Europe/Berlin timezone, and add a decision node that skips on weekends"}
-{"id": "mf029", "source": "synthetic", "prompt": "Create a flow with an inline autonomous agent calling three tools: a Salesforce connector, an HTTP endpoint, and a custom script node"}
-{"id": "mf030", "source": "synthetic", "prompt": "Wire a parallel loop node over customer IDs, call an RPA process for each, merge the results, and output aggregated data to End"}
-{"id": "mf031", "source": "synthetic", "prompt": "Build a .flow that orchestrates a HITL app, an agentic-process, and an api-workflow with a delay between HITL and analysis"}
-{"id": "mf032", "source": "synthetic", "prompt": "I want to call a REST API from my UiPath flow"}
-{"id": "mf033", "source": "synthetic", "prompt": "Pause my flow for 10 minutes before continuing"}
-{"id": "mf034", "source": "synthetic", "prompt": "My flow has two parallel branches — how do I wait for both?"}
-{"id": "mf035", "source": "synthetic", "prompt": "Terminate the flow immediately if an error occurs"}
-{"id": "mf036", "source": "synthetic", "prompt": "Add a switch node with 4 cases"}
-{"id": "mf037", "source": "synthetic", "prompt": "Create a flow input variable of type string and an output variable of type object"}
-{"id": "mf038", "source": "synthetic", "prompt": "Bind my flow to an existing connection I already created"}
-{"id": "mf039", "source": "synthetic", "prompt": "Delete a node from my .flow file"}
-{"id": "mf040", "source": "synthetic", "prompt": "Add an edge between two nodes in my flow"}
-{"id": "mf041", "source": "synthetic", "prompt": "What's the syntax for the .flow JSON format?"}
-{"id": "mf042", "source": "synthetic", "prompt": "Show me how to add an input variable to my flow"}
-{"id": "mf043", "source": "synthetic", "prompt": "Run uip maestro flow debug on my project"}
-{"id": "mf044", "source": "synthetic", "prompt": "How do I use uip maestro flow registry list?"}
-{"id": "mf045", "source": "synthetic", "prompt": "Add a decision node to branch my flow"}
-{"id": "mf046", "source": "synthetic", "prompt": "Rename a node in my .flow file"}
-{"id": "mf047", "source": "synthetic", "prompt": "Configure the ports on a flow node"}
-{"id": "mf048", "source": "synthetic", "prompt": "My .flow file is invalid — can you help me fix it?"}
-{"id": "mf049", "source": "synthetic", "prompt": "What node types does UiPath Flow support?"}
-{"id": "mf050", "source": "synthetic", "prompt": "Add a script node that returns an object"}
-{"id": "mf051", "source": "synthetic", "prompt": "Set up bindings_v2.json for my flow connectors"}
-{"id": "mf052", "source": "synthetic", "prompt": "Help me with the .flow file format"}
-{"id": "mf053", "source": "synthetic", "prompt": "How do I declare an inout variable in a flow?"}
-{"id": "mf054", "source": "synthetic", "prompt": "Add a targetPort to every edge in my flow"}
-{"id": "mf055", "source": "synthetic", "prompt": "What is the difference between uip maestro flow validate and uip maestro flow debug?"}
-{"id": "mf056", "source": "synthetic", "prompt": "I'm new to UiPath Flow — how do I create my first project?"}
-{"id": "mf057", "source": "synthetic", "prompt": "Scaffold a new .flow project in my current directory"}
-{"id": "mf058", "source": "synthetic", "prompt": "Build a .flow that reads rows from a SharePoint list, validates each address via an HTTP node, routes invalid rows to a Google Sheet via decision, valid rows into a Salesforce create-contact connector, and emails a summary via Outlook at End"}
-{"id": "mf059", "source": "synthetic", "prompt": "Refactor my existing .flow to move error-logging nodes into a subflow with a string input for error context and invoke that subflow from each branch"}
-{"id": "mf060", "source": "synthetic", "prompt": "Add retry logic to my HTTP node in the .flow using a loop with exponential backoff script and a max-attempts inout variable"}
-{"id": "mf061", "source": "synthetic", "prompt": "Create a flow that triggers on a new JIRA issue, routes high-priority to ServiceNow, medium to Slack, low to Teams, using a switch node"}
-{"id": "mf062", "source": "synthetic", "prompt": "Build a flow with two parallel branches via loop in parallel mode, each calling a different agentic-process, merge the results, write to an Orchestrator queue item with custom metadata"}
-{"id": "mf063", "source": "synthetic", "prompt": "In my .flow project, add a HITL approval step wired into a decision that routes approved to an RPA process and rejected to a terminate node with an error message"}
-{"id": "mf064", "source": "synthetic", "prompt": "Design a .flow that debounces incoming webhook events via a delay node, deduplicates via a script keyed on event ID, then dispatches to the correct downstream connector based on event type"}
-{"id": "mf065", "source": "synthetic", "prompt": "Create a Maestro flow: receive order via HTTP trigger, validate inventory with a script node, charge via Stripe connector, update Salesforce opportunity, notify via SendGrid, write audit record to queue"}
-{"id": "mf066", "source": "synthetic", "prompt": "Take my .flow with an inline agent and add three tool nodes (HTTP, script, Salesforce create-record) plus a memory variable that persists across agent iterations"}
-{"id": "mf067", "source": "synthetic", "prompt": "Split my monolithic .flow into three subflows (ingestion, transformation, delivery) wired under a main flow with appropriate I/O variables"}
-{"id": "mf068", "source": "synthetic", "prompt": "Build an orchestration flow that waits for three parallel RPA processes via merge, runs a decision checking success of all three, terminates or completes accordingly"}
-{"id": "mf069", "source": "synthetic", "prompt": "Add error handling to every connector node in my .flow — route error ports to a common error-logging subflow that writes to a queue and notifies Teams"}
-{"id": "mf070", "source": "synthetic", "prompt": "Create a .flow that loops over invoices, for each calls an api-workflow, collects results into an array, and at End maps the array as an output variable"}
-{"id": "mf071", "source": "synthetic", "prompt": "Modify my .flow so the scheduled trigger runs every weekday at 9am NY time and skips holidays via a decision node with a script lookup"}
-{"id": "mf072", "source": "synthetic", "prompt": "Design a .flow orchestrating a Copilot-style agent loop: inline agent calls tools per iteration, checks termination condition, writes conversation to Data Service via connector"}
-{"id": "mf073", "source": "synthetic", "prompt": "Build a .flow that ingests a CSV from SharePoint, transforms via group-by, filters with a transform node, writes grouped results to BigQuery via connector"}
-{"id": "mf074", "source": "synthetic", "prompt": "Create a multi-branch flow: after validation, split via switch into 4 region paths (EU/US/APAC/LATAM) with region-specific connectors, merge at End with consolidated output"}
-{"id": "mf075", "source": "synthetic", "prompt": "Implement a saga pattern in my .flow with compensating transactions — on failure of step N, invoke the compensation subflow for steps 1..N-1, wired via decisions and error ports"}
-{"id": "mf076", "source": "synthetic", "prompt": "Make my automation skip steps when a condition is false"}
-{"id": "mf077", "source": "synthetic", "prompt": "My UiPath thing should trigger when a new row is added to Google Sheets"}
-{"id": "mf078", "source": "synthetic", "prompt": "Let my UiPath job wait 5 minutes between steps"}
-{"id": "mf079", "source": "synthetic", "prompt": "I want to combine outputs of two parallel UiPath actions"}
-{"id": "mf080", "source": "synthetic", "prompt": "I need to loop through items and do something for each in UiPath"}
-{"id": "mf081", "source": "synthetic", "prompt": "I want a reusable chunk of UiPath logic I can call from multiple places"}
-{"id": "mf082", "source": "synthetic", "prompt": "Share variables across different UiPath components"}
-{"id": "mf083", "source": "synthetic", "prompt": "Add a webhook that starts my UiPath job"}
-{"id": "mf084", "source": "synthetic", "prompt": "I need something visual in UiPath that shows my automation steps"}
-{"id": "mf085", "source": "synthetic", "prompt": "Which trigger types does UiPath support?"}
-{"id": "mf086", "source": "synthetic", "prompt": "Pass data between UiPath steps"}
-{"id": "mf087", "source": "synthetic", "prompt": "I want to add a waiting period to my UiPath logic"}
-{"id": "mf088", "source": "synthetic", "prompt": "Invoke a child UiPath automation and wait for its result"}
-{"id": "mf089", "source": "synthetic", "prompt": "My flow needs exponential backoff on errors"}
-{"id": "mf090", "source": "synthetic", "prompt": "How do I reference a parent variable inside a nested scope?"}
-{"id": "mf091", "source": "synthetic", "prompt": "Check if a value is null before using it in my flow"}
-{"id": "mf092", "source": "synthetic", "prompt": "Handle empty arrays in my flow"}
-{"id": "mf093", "source": "synthetic", "prompt": "I want to log debug info during flow execution"}
-{"id": "mf094", "source": "synthetic", "prompt": "Throttle my API calls in the flow"}
-{"id": "mf095", "source": "synthetic", "prompt": "How do I expose my flow as an endpoint?"}
-{"id": "mf096", "source": "synthetic", "prompt": "Can I pass secrets into my flow securely?"}
-{"id": "mf097", "source": "synthetic", "prompt": "Read from the flow's execution context at runtime"}
-{"id": "mf098", "source": "synthetic", "prompt": "Iterate in parallel over a large dataset in my flow"}
-{"id": "mf099", "source": "synthetic", "prompt": "Stop the flow if a specific field is missing"}
-{"id": "mf100", "source": "synthetic", "prompt": "Use regex to extract a value in my flow"}
-{"id": "mf101", "source": "synthetic", "prompt": "Add a long-running pause in my flow for 24 hours"}
-{"id": "mf102", "source": "synthetic", "prompt": "Send an email from UiPath"}
-{"id": "mf103", "source": "human-curated", "prompt": "I want an automation that fires whenever I get an Outlook email with an attachment, pulls the attachment, and hands it to a coded agent for extraction."}
-{"id": "mf104", "source": "human-curated", "prompt": "How do I build a workflow where a human has to approve something before the next step runs?"}
-{"id": "mf105", "source": "human-curated", "prompt": "Can you build something that loops through Salesforce opportunities and updates each one based on what a Python agent returns?"}
-{"id": "mf106", "source": "human-curated", "prompt": "My flow stopped running at a decision step. The trace shows a bunch of completed steps and then nothing — can you figure out why?"}
-{"id": "mf107", "source": "human-curated", "prompt": "The tools in my inline agent don't have access to the parent flow's variables. Is that intentional, or did I mis-wire something? Take a look at the flow."}
-{"id": "mf108", "source": "human-curated", "prompt": "Debug keeps failing at the Provisioning Resources stage with a timeout. The flow is pretty simple — what's going wrong?"}
-{"id": "mf109", "source": "human-curated", "prompt": "I opened my flow today and the canvas is broken — branches are gone, the agent is gone, and it says the agent was removed from the solution. Can you recover it?"}
-{"id": "mf110", "source": "human-curated", "prompt": "Coded agent outputs aren't showing up in the debug console, and the next node doesn't seem to receive them. Low-code agents work fine. Check the flow?"}
-{"id": "mf111", "source": "human-curated", "prompt": "I published this to orchestrator and now jobs start, go to Running, and sit there forever. Runs fine locally from studio web. What's different?"}
-{"id": "mf112", "source": "human-curated", "prompt": "How does Human in the Loop work in Flow? I used Action Center forms in Maestro — can I reuse those, or do I need to build something new with HITL?"}
-{"id": "mf113", "source": "human-curated", "prompt": "What's the equivalent of Create Action App Task in Flow?"}
-{"id": "mf114", "source": "human-curated", "prompt": "Is there a native Teams trigger? I want the flow to fire when a Teams message contains a customer name."}
-{"id": "mf115", "source": "human-curated", "prompt": "Build a flow that pulls the last 3 months of Salesforce tickets for a customer when a Teams message arrives with their name."}
-{"id": "mf116", "source": "human-curated", "prompt": "Add a decision node after the risk-check step — if risk > 0.8, route to HITL; otherwise continue to the Slack send."}
-{"id": "mf117", "source": "human-curated", "prompt": "I have a `.flow` file I generated locally. Import it into my existing Studio Web solution."}
-{"id": "mf118", "source": "human-curated", "prompt": "Add a script node after the loop that logs the iteration inputs and outputs as JSON."}
+{"id": "uipath-maestro-flow-001", "prompt": "Create a new UiPath Flow project called OrderProcessing"}
+{"id": "uipath-maestro-flow-002", "prompt": "Validate my .flow file"}
+{"id": "uipath-maestro-flow-003", "prompt": "Add a node to my flow"}
+{"id": "uipath-maestro-flow-004", "prompt": "Add a subflow to reusable logic"}
+{"id": "uipath-maestro-flow-005", "prompt": "Add a scheduled trigger to my flow"}
+{"id": "uipath-maestro-flow-006", "prompt": "Build a UiPath Flow that reads Salesforce opportunities, filters closed-won deals, posts to Slack, and writes to an agent for summarization"}
+{"id": "uipath-maestro-flow-007", "prompt": "I have an existing .flow file with a manual trigger; replace it with a connector trigger bound to a Salesforce connection and re-wire the downstream nodes"}
+{"id": "uipath-maestro-flow-008", "prompt": "I want to orchestrate multiple UiPath automations together"}
+{"id": "uipath-maestro-flow-009", "prompt": "Create a Maestro flow project from scratch"}
+{"id": "uipath-maestro-flow-010", "prompt": "Replace a mock node with a real RPA process node in my .flow"}
+{"id": "uipath-maestro-flow-011", "prompt": "Build a .flow that listens to a Gmail connector trigger for new emails, parses with a script node, branches on sender domain, posts matching ones to Teams, and writes a queue record"}
+{"id": "uipath-maestro-flow-012", "prompt": "Convert my Maestro flow from manual trigger to scheduled every 4 hours with Europe/Berlin timezone, and add a decision node that skips on weekends"}
+{"id": "uipath-maestro-flow-013", "prompt": "Build a .flow that orchestrates a HITL app, an agentic-process, and an api-workflow with a delay between HITL and analysis"}
+{"id": "uipath-maestro-flow-014", "prompt": "Add a switch node with 4 cases"}
+{"id": "uipath-maestro-flow-015", "prompt": "Create a flow input variable of type string and an output variable of type object"}
+{"id": "uipath-maestro-flow-016", "prompt": "Bind my flow to an existing connection I already created"}
+{"id": "uipath-maestro-flow-017", "prompt": "What's the syntax for the .flow JSON format?"}
+{"id": "uipath-maestro-flow-018", "prompt": "Run uip maestro flow debug on my project"}
+{"id": "uipath-maestro-flow-019", "prompt": "Add a decision node to branch my flow"}
+{"id": "uipath-maestro-flow-020", "prompt": "What node types does UiPath Flow support?"}
+{"id": "uipath-maestro-flow-021", "prompt": "How do I declare an inout variable in a flow?"}
+{"id": "uipath-maestro-flow-022", "prompt": "What is the difference between uip maestro flow validate and uip maestro flow debug?"}
+{"id": "uipath-maestro-flow-023", "prompt": "Scaffold a new .flow project in my current directory"}
+{"id": "uipath-maestro-flow-024", "prompt": "Build a .flow that reads rows from a SharePoint list, validates each address via an HTTP node, routes invalid rows to a Google Sheet via decision, valid rows into a Salesforce create-contact connector, and emails a summary via Outlook at End"}
+{"id": "uipath-maestro-flow-025", "prompt": "Create a Maestro flow: receive order via HTTP trigger, validate inventory with a script node, charge via Stripe connector, update Salesforce opportunity, notify via SendGrid, write audit record to queue"}
+{"id": "uipath-maestro-flow-026", "prompt": "Split my monolithic .flow into three subflows (ingestion, transformation, delivery) wired under a main flow with appropriate I/O variables"}
+{"id": "uipath-maestro-flow-027", "prompt": "Implement a saga pattern in my .flow with compensating transactions — on failure of step N, invoke the compensation subflow for steps 1..N-1, wired via decisions and error ports"}
+{"id": "uipath-maestro-flow-028", "prompt": "Make my automation skip steps when a condition is false"}
+{"id": "uipath-maestro-flow-029", "prompt": "My UiPath thing should trigger when a new row is added to Google Sheets"}
+{"id": "uipath-maestro-flow-030", "prompt": "I want a reusable chunk of UiPath logic I can call from multiple places"}
+{"id": "uipath-maestro-flow-031", "prompt": "Add a webhook that starts my UiPath job"}
+{"id": "uipath-maestro-flow-032", "prompt": "I need something visual in UiPath that shows my automation steps"}
+{"id": "uipath-maestro-flow-033", "prompt": "Pass data between UiPath steps"}
+{"id": "uipath-maestro-flow-034", "prompt": "Invoke a child UiPath automation and wait for its result"}
+{"id": "uipath-maestro-flow-035", "prompt": "I want an automation that fires whenever I get an Outlook email with an attachment, pulls the attachment, and hands it to a coded agent for extraction."}
+{"id": "uipath-maestro-flow-036", "prompt": "How do I build a workflow where a human has to approve something before the next step runs?"}
+{"id": "uipath-maestro-flow-037", "prompt": "Can you build something that loops through Salesforce opportunities and updates each one based on what a Python agent returns?"}
+{"id": "uipath-maestro-flow-038", "prompt": "My flow stopped running at a decision step. The trace shows a bunch of completed steps and then nothing — can you figure out why?"}
+{"id": "uipath-maestro-flow-039", "prompt": "The tools in my inline agent don't have access to the parent flow's variables. Is that intentional, or did I mis-wire something? Take a look at the flow."}
+{"id": "uipath-maestro-flow-040", "prompt": "Debug keeps failing at the Provisioning Resources stage with a timeout. The flow is pretty simple — what's going wrong?"}
+{"id": "uipath-maestro-flow-041", "prompt": "I opened my flow today and the canvas is broken — branches are gone, the agent is gone, and it says the agent was removed from the solution. Can you recover it?"}
+{"id": "uipath-maestro-flow-042", "prompt": "Coded agent outputs aren't showing up in the debug console, and the next node doesn't seem to receive them. Low-code agents work fine. Check the flow?"}
+{"id": "uipath-maestro-flow-043", "prompt": "I published this to orchestrator and now jobs start, go to Running, and sit there forever. Runs fine locally from studio web. What's different?"}
+{"id": "uipath-maestro-flow-044", "prompt": "How does Human in the Loop work in Flow? I used Action Center forms in Maestro — can I reuse those, or do I need to build something new with HITL?"}
+{"id": "uipath-maestro-flow-045", "prompt": "What's the equivalent of Create Action App Task in Flow?"}
+{"id": "uipath-maestro-flow-046", "prompt": "Is there a native Teams trigger? I want the flow to fire when a Teams message contains a customer name."}
+{"id": "uipath-maestro-flow-047", "prompt": "Build a flow that pulls the last 3 months of Salesforce tickets for a customer when a Teams message arrives with their name."}
+{"id": "uipath-maestro-flow-048", "prompt": "Add a decision node after the risk-check step — if risk > 0.8, route to HITL; otherwise continue to the Slack send."}
+{"id": "uipath-maestro-flow-049", "prompt": "I have a `.flow` file I generated locally. Import it into my existing Studio Web solution."}
+{"id": "uipath-maestro-flow-050", "prompt": "Add a script node after the loop that logs the iteration inputs and outputs as JSON."}

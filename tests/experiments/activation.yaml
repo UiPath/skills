@@ -14,10 +14,13 @@ defaults:
     type: claude-code
     permission_mode: acceptEdits
     model: claude-sonnet-4-6
-    # 5 turns gives the agent room for a quick `ls`/`grep` discovery step
-    # before deciding. 3 was too tight and showed up as the dominant FN cause
-    # in the May 2026 baseline.
-    max_turns: 5
+    # Activation is a recognition decision, not a work loop — the agent should
+    # decide from the prompt + skill index, not from extensive sandbox
+    # discovery. 3 turns is enough for read-prompt → optional one-shot
+    # discovery → decide. Higher limits would let the agent compensate for a
+    # weak skill description by exploring, masking the signal we want to
+    # measure.
+    max_turns: 3
     # Skill must be allowed so the agent can invoke a skill when it decides
     # to. Read/Write/Bash included so the agent isn't starved of basic tools
     # when it decides NOT to use Skill — removing them would bias the

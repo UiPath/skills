@@ -24,7 +24,7 @@ success_criteria:
     # Filter to the specific skill we're measuring. Without this, the criterion
     # counts ANY Skill invocation as a positive, leaking signal across skills.
     skill_name: uipath-maestro-flow
-    # Suite-level gates. With ~260 rows (118 yes, 142 no), accuracy 0.75 +
+    # Suite-level gates. With 100 rows (50 yes, 50 no), accuracy 0.75 +
     # balanced recall 0.70 is a reasonable starting bar.
     suite_thresholds:
       accuracy: 0.75

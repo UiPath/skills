@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Merge per-skill positives + shared negatives → dataset.jsonl for coder-eval.
 
-Each row in `<skill>.jsonl` is a positive for that skill (should_trigger=yes).
-Each row in `negatives.jsonl` is a shared negative (should_trigger=no for any
-skill). Cross-skill confusion: a row in skill A's file is also a negative when
-scoring skill B (not yet exercised — only one skill so far).
+HACK: This script exists because coder_eval's `dataset.path` only accepts a
+single JSONL file. The proper fix is to extend the framework's Dataset model
+to accept `dataset.paths: [...]` (with optional per-path label injection) so
+the YAML can reference both source files directly. Until then, this script
+materializes a merged file and the activation.yaml points at it. See the
+chat thread that introduced this comment for context.
 
-Output is a single JSONL with `{id, prompt, should_trigger, expected_skill?}`
-that coder-eval consumes via `dataset.path: dataset.jsonl`.
+Each row in `<skill>.jsonl` is a positive for that skill (should_trigger=yes).
+Each row in `negative.jsonl` is a shared negative (should_trigger=no for any
+skill). Cross-skill confusion: a row in skill A's file is also a negative
+when scoring skill B (not yet exercised — only one skill so far).
 
 Usage:
     uv run python build_dataset.py --skill uipath-maestro-flow
@@ -42,13 +46,13 @@ def main() -> None:
         raise SystemExit(f"missing positives file: {skill_path}")
 
     positives = _read_jsonl(skill_path)
-    negatives = _read_jsonl(_DIR / "negatives.jsonl")
+    negatives = _read_jsonl(_DIR / "negative.jsonl")
 
     # Cross-skill negatives: every other <skill>.jsonl file in this directory.
     # Each such row is a negative when scoring `args.skill`.
     cross: list[dict] = []
     for other in sorted(_DIR.glob("*.jsonl")):
-        if other.name in {f"{args.skill}.jsonl", "negatives.jsonl", "dataset.jsonl"}:
+        if other.name in {f"{args.skill}.jsonl", "negative.jsonl", "dataset.jsonl"}:
             continue
         for row in _read_jsonl(other):
             cross.append({**row, "expected_skill": other.stem})
