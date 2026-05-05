@@ -30,11 +30,7 @@ winget install OpenJS.NodeJS.LTS
 ```
 
 **Linux**
-```bash
-curl -fsSL https://fnm.vercel.app/install | bash
-fnm install --lts
-```
-See [Installing Node.js via package manager](https://nodejs.org/en/download/package-manager) for other methods.
+Use your distribution's package manager or another method from [Installing Node.js via package manager](https://nodejs.org/en/download/package-manager).
 
 After installing, verify with `node -v` and then run the quick start command above.
 
