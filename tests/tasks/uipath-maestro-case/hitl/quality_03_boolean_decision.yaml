@@ -1,0 +1,290 @@
+task_id: skill-case-hitl-quality-boolean-decision
+description: >
+  Quality test: agent correctly wires a HITL action task's boolean output
+  field into stage-exit `IF` expressions to drive divergent routing. Tests
+  field-level expression syntax (boolean variable name in `conditionExpression`)
+  and that both true and false branches are wired to distinct downstream
+  stages with consistent entry conditions.
+tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 130
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Case Management project named "VendorApprovalCase" for
+  vendor onboarding with this shape:
+
+    Manual Trigger
+      → Stage "Context"   (process task: set vendor context)
+      → Stage "Compliance" (HITL action task "Compliance Review":
+           outputs: approved (Boolean, required),
+                    risk_notes (Text, optional))
+        → on approve  → Stage "Onboarded" (process task: log "Vendor onboarded")
+        → on reject   → Stage "Rejected"  (process task: log "Vendor rejected")
+
+  The "Compliance" stage's exit conditions MUST use the `approved` boolean
+  field at the EXPRESSION level (not just the rule level):
+    - Approved exit: WHEN selected-tasks-completed("Compliance Review"),
+                     IF `approved == true`,  exit-only, Marks Stage Complete: No
+    - Rejected exit: WHEN selected-tasks-completed("Compliance Review"),
+                     IF `approved == false`, exit-only, Marks Stage Complete: No
+
+  Onboarded enters on `selected-stage-exited("Compliance")` IF `approved == true`.
+  Rejected   enters on `selected-stage-exited("Compliance")` IF `approved == false`.
+
+  Use the same name for solution and project so the case file lives at
+  VendorApprovalCase/VendorApprovalCase/caseplan.json.
+
+  Write this sdd.md to sdd.md first, then build from it:
+
+  ```
+  # SDD — VendorApprovalCase
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |----------|-------|
+  | Case Name | VendorApprovalCase |
+  | Case Description | Compliance officer reviews a new vendor for onboarding. |
+  | Case Identifier | Prefix: VAC, Type: constant |
+  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+
+  ### Case Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |-------------|--------|---------------|-------------------------|
+  | None        | Manual | N/A           | —                        |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |------|-----|------|---------------------|
+  | required-stages-completed | — | Case exited | Yes |
+
+  ### Case Variables
+  | Variable | Type | Default | Description | Produced By | Consumed By |
+  |----------|------|---------|-------------|-------------|-------------|
+  | vendorName  | String  | "Acme Corp" | Vendor name.            | Set Vendor Context | Compliance Review |
+  | creditScore | Number  | 720         | Vendor credit score.    | Set Vendor Context | Compliance Review |
+  | approved    | Boolean | —           | Compliance decision.    | Compliance Review  | Compliance (exit), Onboarded (entry), Rejected (entry) |
+  | risk_notes  | String  | —           | Optional risk notes.    | Compliance Review  | computed |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Context
+  **Type:** Stage
+  **Description:** Sets vendor context.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | case-entered | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Set Vendor Context | process | Yes | No | — | — |
+
+  ##### Task 1.1: Set Vendor Context
+  **Type:** process
+  **Description:** Initializes vendor variables.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  ### Stage 2: Compliance
+  **Type:** Stage
+  **Description:** Compliance officer reviews the vendor.
+  **Required for Case Completion:** No
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-completed("Context") | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | selected-tasks-completed("Compliance Review") | approved == true  | exit-only | No |
+  | selected-tasks-completed("Compliance Review") | approved == false | exit-only | No |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Compliance Review | action | Yes | No | Compliance Officer | — |
+
+  ##### Task 2.1: Compliance Review
+  **Type:** action
+  **Description:** Compliance review of the vendor.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  **HITL Implementation:** Action App: Compliance Review
+
+  **Input Schema:**
+  | Field       | Type   | Binding     | Required |
+  |-------------|--------|-------------|----------|
+  | vendorName  | String | vendorName  | Yes |
+  | creditScore | Number | creditScore | Yes |
+
+  **Output Schema:**
+  | Field      | Type    | Binding |
+  |------------|---------|---------|
+  | approved   | Boolean | -> approved |
+  | risk_notes | String  | -> risk_notes |
+
+  ### Stage 3: Onboarded
+  **Type:** Stage
+  **Description:** Vendor onboarded.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-exited("Compliance") | approved == true | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Log Onboarded | process | Yes | No | — | — |
+
+  ##### Task 3.1: Log Onboarded
+  **Type:** process
+  **Description:** Logs "Vendor onboarded".
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  ### Stage 4: Rejected
+  **Type:** Stage
+  **Description:** Vendor rejected.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-exited("Compliance") | approved == false | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Log Rejected | process | Yes | No | — | — |
+
+  ##### Task 4.1: Log Rejected
+  **Type:** process
+  **Description:** Logs "Vendor rejected".
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+  ```
+
+  Important:
+  - The `uip` CLI is already available.
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step.
+  - If any task resource is unresolved, write a skeleton task; the
+    `approved` boolean field MUST still be referenced verbatim in the
+    `IF` expressions of the four exit/entry conditions listed above.
+  - Do NOT run `uip maestro case debug`.
+
+  **REQUIRED — before finishing, write report.json at the sandbox root**:
+  {
+    "caseplan_path": "<path to caseplan.json>",
+    "action_task_id": "<id of Compliance Review>",
+    "approve_exit_expression": "<IF expression on Compliance approve exit>",
+    "reject_exit_expression":  "<IF expression on Compliance reject exit>",
+    "onboarded_entry_expression": "<IF expression on Onboarded entry>",
+    "rejected_entry_expression":  "<IF expression on Rejected entry>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes"
+    command: "uip maestro case validate VendorApprovalCase/VendorApprovalCase/caseplan.json --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan contains an action task"
+    path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    includes:
+      - '"type": "action"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Both branch expressions reference the approved boolean"
+    path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    includes:
+      - "approved == true"
+      - "approved == false"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan uses selected-tasks-completed (exits) and selected-stage-exited (entries)"
+    path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    includes:
+      - "selected-tasks-completed"
+      - "selected-stage-exited"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures the four expressions and validation result"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "action_task_id"
+        operator: not_equals
+        expected: ""
+      - expression: "approve_exit_expression"
+        operator: contains
+        expected: "approved"
+      - expression: "reject_exit_expression"
+        operator: contains
+        expected: "approved"
+      - expression: "onboarded_entry_expression"
+        operator: contains
+        expected: "approved"
+      - expression: "rejected_entry_expression"
+        operator: contains
+        expected: "approved"
+    weight: 2.5
+    pass_threshold: 0.75
