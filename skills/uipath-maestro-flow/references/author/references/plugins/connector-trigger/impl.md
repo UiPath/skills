@@ -305,6 +305,14 @@ A no-op filter — used when the user wants all events to fire the trigger — i
 6. **Wrap string values in a `value` object** with `value`, `rawString`, `isLiteral: true` — passing a bare string will fail validation.
 7. If `filterFields` is empty or absent, the trigger does not support filtering — omit `filter` entirely.
 
+### Array-shaped fields
+
+When `filterFields[].name` contains a `[*]` segment (e.g. `tags[*]`, `ParentFolders[*].ID`), the CLI emits filter-projection JMESPath instead of scalar comparison: `(tags[?@=='urgent'])`, `(ParentFolders[?ID=='INBOX'])`. Reference the field by its full schema name in the leaf `id` — the projection syntax is generated, not authored.
+
+### Mandatory filters (auto-emitted)
+
+Some triggers carry **mandatory event-parameter filters** the connector requires for subscription (e.g. Gmail Email Received always filters by folder; Slack message triggers filter by channel). These are **not** authored as freeform `filter` leaves. Set the value through `eventParameters` and the CLI runs it through the same mandatory-filter pipeline Studio Web uses, persisting the result on `essentialConfiguration.mandatoryFilterExpression`. The runtime `filterExpression` written to the `.flow` is the AND-join of the user's freeform tree and the mandatory clause; the SW translator's `combinedFilterExpression` getter reads it directly.
+
 ### What NOT to generate
 
 | Invalid input | Why it fails | Valid replacement |
@@ -315,7 +323,7 @@ A no-op filter — used when the user wants all events to fire the trigger — i
 | `{ "id": "subject", "operator": "contains", ... }` | Operator is case-sensitive — use PascalCase. | `"operator": "Contains"` |
 | `{ "value": "urgent" }` on a leaf | Bare string — must be wrapped in the `WorkflowValue` object. | `{ "value": { "value": "urgent", "rawString": "\"urgent\"", "isLiteral": true } }` |
 | `{ "isLiteral": false, "value": "${var}" }` | Expression values are not yet supported by the CLI port. | Resolve the value first, then pass it as a literal. |
-| `{ "id": "tags[*].name", ... }` | Array-field filters are not yet supported. | File a follow-up; use a scheduled poll + in-flow filter for now. |
+| Adding a freeform leaf for a connector-mandated field (e.g. Gmail folder, Slack channelId) | Mandatory filters derived from connector event metadata are emitted automatically by the CLI from `eventParameters` — duplicating them in the freeform tree double-applies the clause. | Set the value through `eventParameters` only; the CLI persists the mandatory JMES clause on `essentialConfiguration.mandatoryFilterExpression`. |
 
 ---
 
