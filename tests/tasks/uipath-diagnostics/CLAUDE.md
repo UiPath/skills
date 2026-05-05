@@ -105,13 +105,27 @@ tests/tasks/uipath-diagnostics/<scenario-name>/
 ├── fixtures/
 │   └── mocks/
 │       └── responses/
-│           ├── manifest.json    # one rule per unique uip arg signature
-│           └── *.json           # canned stdout per rule
-└── process/                     # snapshot of the failing UiPath project
+│           ├── manifest.json    # rules (canned + passthrough) + unmocked_default
+│           └── *.json           # canned stdout per rule with `file:`
+└── process/                     # snapshot of the failing UiPath project (optional)
     └── ...
 ```
 
 `task.yaml` MUST set `sandbox.mock_path_dirs: ["mocks"]` — without it, bare `uip` resolves to the real CLI and the test will try to authenticate.
+
+## Mock dispatch precedence
+
+The shared `mocks/uip` dispatcher walks the manifest's `rules` array (first match wins). Each rule has one of:
+
+- `file: <path>` — return the canned response under `responses/<file>`.
+- `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `responses/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
+
+When no rule matches:
+
+1. `unmocked_default` (if set) — return its `response` + `exit_code`.
+2. Otherwise, error on stderr.
+
+Test runs require valid `uip` auth on the host (set via `.env` or environment) for any rule with `passthrough: true` to succeed.
 
 ## Anti-patterns
 

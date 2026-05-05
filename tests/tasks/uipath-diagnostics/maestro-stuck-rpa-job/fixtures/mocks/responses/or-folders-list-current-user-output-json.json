@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "FolderListCurrentUser",
+  "Data": [
+    {
+      "key": "7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
+      "displayName": "original_email@test.com's workspace",
+      "fullyQualifiedName": "original_email@test.com's workspace",
+      "folderType": "Personal",
+      "id": 1321239
+    },
+    {
+      "key": "36c6d42a-9294-4807-ac48-46781c45fb96",
+      "displayName": "Solution 5",
+      "fullyQualifiedName": "original_email@test.com's workspace/Solution 5",
+      "folderType": "Solution",
+      "parentId": 1321239,
+      "parentKey": "7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
+      "id": 2157426
+    },
+    {
+      "key": "ea201852-4965-4a5a-bf8a-9854d3a77275",
+      "displayName": "Shared",
+      "fullyQualifiedName": "Shared",
+      "folderType": "Standard",
+      "id": 294109
+    },
+    {
+      "key": "37f64013-6d26-4942-865b-cec4df0b700f",
+      "displayName": "Shared2",
+      "fullyQualifiedName": "Shared2",
+      "folderType": "Standard",
+      "id": 951575
+    }
+  ]
+}

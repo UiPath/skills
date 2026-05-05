@@ -1,0 +1,102 @@
+task_id: skill-diagnostics-maestro-stuck-rpa-job
+description: >
+  Faithful replay of a real UiPath diagnostic investigation. The agent
+  runs the uipath-diagnostics skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-diagnostics, e2e, faithful-replay, maestro]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  This job 0fbda085-5c96-4dab-a4b3-012c1914845a from my personal workspace is stuck running. why?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-diagnostics skill"
+    skill_name: "uipath:uipath-diagnostics"
+    expected: "yes"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .investigation/state.json
+      - .investigation/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      DIMENSION A -- Correct playbook
+        The matching playbook should appear in state.json's
+        `matched_playbooks`. Acceptable: the agent also Reads
+        neighboring playbooks during exploration.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The agent's final answer should converge on the same root cause
+        and fix described in RESOLUTION.md. Evidence sources: state.json
+        (`requirements`, `triage_summary`, scope/domain), hypotheses.json
+        (the hypothesis flagged `is_root_cause: true`), and the agent's
+        last text response.
+
+      SCORING RUBRIC (single score):
+        1.0  Both dimensions correct: right playbook AND same root cause.
+        0.8  Both partially correct.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface but neither matched the playbook nor
+             reached the conclusion.
+        0.0  Misdiagnosed or got blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+max_iterations: 1
+task_timeout: 2400
+
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the diagnostic flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
+
+llm_reviewer:
+  enabled: false

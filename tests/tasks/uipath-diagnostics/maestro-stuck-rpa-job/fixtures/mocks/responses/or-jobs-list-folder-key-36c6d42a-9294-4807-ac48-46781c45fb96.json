@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "0fbda085-5c96-4dab-a4b3-012c1914845a",
+      "State": "Running",
+      "ProcessName": "Agentic Process",
+      "Source": "ProcessOrchestration",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "",
+      "StartTime": "2025-09-23T09:45:59.153Z",
+      "EndTime": "",
+      "CreationTime": "2025-09-23T09:45:55.907Z",
+      "Id": 42792329
+    }
+  ]
+}
