@@ -71,7 +71,7 @@ CLI-added evaluators are written as `evaluator-<uuid8>.json` (first 8 hex chars 
 | Solution ID could not be resolved | Agent not pushed to Studio Web | Run `uip agent push --output json`, or pass `--solution-id <id>` explicitly to `uip agent eval run start` |
 | `No evaluators found` | Empty `evals/evaluators/` directory | Run `uip agent eval evaluator add` or re-init with `uip agent init` |
 | `No test cases in eval set` | Eval set has no evaluations | Run `uip agent eval add` to add test cases |
-| `Unknown evaluator type "X"` | Wrong case on `--type` value | Use kebab-case only: `semantic-similarity`, `trajectory`, `context-precision`, `faithfulness` |
+| `Unknown evaluator type "X"` | Wrong case on `--type` value | Use kebab-case only: `semantic-similarity`, `trajectory` |
 | `Evaluator '<id>' is an LLM-based evaluator but 'model' is not set in its evaluatorConfig.` | LLM evaluator JSON has empty/missing `model` and is not `same-as-agent` | Set `"model"` in the evaluator JSON to a valid model (e.g. `claude-haiku-4-5-20251001`), or set it to `"same-as-agent"` and ensure `agent.json` has a model |
 | `'same-as-agent' model option requires agent settings. Ensure agent.json contains valid model settings.` | Evaluator uses `"model": "same-as-agent"` but `agent.json` has no resolvable model | Set a model in `agent.json`, or override the evaluator with an explicit model |
 | `401 Unauthorized` | Auth expired | Run `uip login --output json` |

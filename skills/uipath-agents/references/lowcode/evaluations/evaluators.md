@@ -4,14 +4,14 @@ Evaluators define how agent output is scored. Each evaluator is a JSON file in `
 
 ## Why fewer evaluators than coded?
 
-The coded eval reference ([coded/lifecycle/evaluations/evaluators.md](../../coded/lifecycle/evaluations/evaluators.md)) lists 13 evaluator types. Low-code lists only 4 because the two surfaces use **different engines** in the SDK:
+The coded eval reference ([coded/lifecycle/evaluations/evaluators.md](../../coded/lifecycle/evaluations/evaluators.md)) lists 13 evaluator types. Low-code lists only 2 supported types because the two surfaces use **different engines** in the SDK:
 
 - **Coded** uses the new evaluator hierarchy (`BaseEvaluator`, eval sets carry `version: "1.0"`). 13 distinct `evaluatorTypeId` strings, each with its own implementation class.
-- **Low-code** uses the **legacy** evaluator hierarchy (`BaseLegacyEvaluator`, no `version` field on the eval set). Only 4 implementation classes ship: `LegacyLlmAsAJudgeEvaluator`, `LegacyTrajectoryEvaluator`, `LegacyExactMatchEvaluator`, `LegacyJsonSimilarityEvaluator`.
+- **Low-code** uses the **legacy** evaluator hierarchy (`BaseLegacyEvaluator`, no `version` field on the eval set). Only `LegacyLlmAsAJudgeEvaluator` (semantic-similarity), `LegacyTrajectoryEvaluator`, `LegacyExactMatchEvaluator`, and `LegacyJsonSimilarityEvaluator` are supported for low-code agents.
 
-Most coded evaluator types (`contains`, `binary-classification`, `multiclass-classification`, all four `tool-call-*`, `llm-judge-output-strict-json-similarity`, `llm-judge-trajectory-simulation`) **have no legacy counterpart** and cannot be used on a low-code agent — the cloud eval worker will not load them.
+Most coded evaluator types (`contains`, `binary-classification`, `multiclass-classification`, all four `tool-call-*`, `llm-judge-output-strict-json-similarity`, `llm-judge-trajectory-simulation`) **have no legacy counterpart** and cannot be used on a low-code agent.
 
-The CLI also narrows the runtime surface further: of the 6 legacy `type` values the runtime accepts, the `--type` flag exposes only 4. See § Runtime-supported types not exposed by the CLI below.
+The CLI exposes only `semantic-similarity` and `trajectory` via `--type`. `Equals` and `JsonSimilarity` are accepted by the runtime but require hand-written JSON — see § Runtime-supported types not exposed by the CLI below.
 
 ## Evaluator Types (CLI-exposed)
 
@@ -19,8 +19,6 @@ The CLI also narrows the runtime surface further: of the 6 legacy `type` values 
 |------|----------|----------------|
 | Semantic Similarity | `semantic-similarity` | Whether the agent's output has the same meaning as the expected output |
 | Trajectory | `trajectory` | Whether the agent's reasoning path and tool usage match expected behavior |
-| Context Precision | `context-precision` | Whether retrieved context is relevant to the user's query |
-| Faithfulness | `faithfulness` | Whether the agent's output is grounded in the provided context |
 
 ## Runtime-supported types not exposed by the CLI
 
@@ -84,7 +82,7 @@ uip agent eval evaluator add <name> --type <type> --path <agent_dir> --output js
 
 | Flag | Required | Description | Default |
 |------|----------|-------------|---------|
-| `--type <type>` | Yes | One of: `semantic-similarity`, `trajectory`, `context-precision`, `faithfulness` | — |
+| `--type <type>` | Yes | One of: `semantic-similarity`, `trajectory` | — |
 | `--description <desc>` | No | Human-readable description | Auto-generated from type |
 | `--prompt <prompt>` | No | Custom LLM evaluation prompt | Built-in default per type |
 | `--target-key <key>` | No | Specific output key to evaluate | `*` (all keys) |
@@ -164,8 +162,6 @@ The two `evaluator-default*.json` files are written by `uip agent init`, not by 
 |----------|-------------------|------------|
 | `semantic-similarity` | 5 | 1 (output-based) |
 | `trajectory` | 7 | 3 (trajectory-based) |
-| `context-precision` | 8 | 1 (output-based) |
-| `faithfulness` | 9 | 1 (output-based) |
 
 ## Default Prompts and Template Variables
 
@@ -175,15 +171,11 @@ The prompt and score scale the CLI writes when you run `evaluator add` differs f
 |------|-------------------------|--------------------------|
 | `semantic-similarity` | Asks 0–1; uses `{{ExpectedOutput}}`, `{{ActualOutput}}` | Asks 0–100; same placeholders |
 | `trajectory` | Asks 0–1; uses `{{AgentRunHistory}}`, `{{ExpectedBehavior}}` | Asks 0–100; uses `{{UserOrSyntheticInput}}`, `{{SimulationInstructions}}`, `{{ExpectedAgentBehavior}}`, `{{AgentRunHistory}}` |
-| `context-precision` | Asks 0–1; uses `{{UserQuery}}`, `{{RetrievedContext}}` | Not created by `init` |
-| `faithfulness` | Asks 0–1; uses `{{AgentOutput}}`, `{{Context}}` | Not created by `init` |
 
 Two notable inconsistencies:
 
 1. **Trajectory placeholder names**: `{{ExpectedBehavior}}` (CLI add) vs `{{ExpectedAgentBehavior}}` (init default). When editing a prompt, use the placeholders already present in that file — do not mix.
 2. **Score scales**: `evaluator add` writes 0–1 prompts; `init` writes 0–100 prompts. The runtime normalizes both to 0–100 in the result DTO, but the LLM judge actually returns whatever the prompt asks for. Mixed-scale eval sets are hard to read; pick one and rewrite the prompts you don't want.
-
-For `context-precision` and `faithfulness`, the SDK's legacy evaluator may use its own internal placeholders (`{{Query}}`, `{{Chunks}}`) that differ from what the CLI writes. Inspect the resulting evaluator JSON and run a small test before relying on customized prompts. See [evaluation-sets.md](evaluation-sets.md) § Matching evaluator to test case fields for the data flow.
 
 ## Custom Prompts
 
@@ -207,7 +199,7 @@ Validate runs schema migration, which enforces the following on every file in `e
 | Category | Name | Allowed `type` | Additional requirements |
 |----------|------|----------------|-------------------------|
 | `0` | Deterministic | `1`, `6` | — |
-| `1` | LlmAsAJudge | `5`, `8`, `9` | `prompt` and `model` required |
+| `1` | LlmAsAJudge | `5` | `prompt` and `model` required |
 | `3` | Trajectory | `7` | `prompt` and `model` required |
 
 Category `2` (`AgentScorer`) exists in the SDK enum but is reserved/unused — do not write it manually.
@@ -234,9 +226,9 @@ to find any LLM evaluator without an explicit model. (Switch to `--output-filter
 ## Anti-patterns
 
 - **Don't reference an evaluator by filename.** Eval sets reference evaluators by UUID (`id`).
-- **Don't pass `--type` in PascalCase.** Only `semantic-similarity`, `trajectory`, `context-precision`, `faithfulness` are accepted.
+- **Don't pass `--type` in PascalCase.** Only `semantic-similarity` and `trajectory` are accepted.
 - **Don't assume `evaluator add` mirrors `init`'s prompts.** They differ for trajectory; check the resulting JSON before reusing template variables in your own scoring tooling.
 - **Don't delete an evaluator file by hand.** Use `uip agent eval evaluator remove` so `evaluatorRefs` in eval sets are cleaned up automatically.
 - **Don't copy evaluator JSON across projects without regenerating UUIDs.** `id` collisions silently corrupt cross-project resolution.
 - **Don't try to add a coded-only evaluator type to a low-code agent.** Anything starting with `uipath-tool-call-*`, `uipath-binary-classification`, `uipath-multiclass-classification`, `uipath-contains`, `uipath-llm-judge-output-strict-json-similarity`, or `uipath-llm-judge-trajectory-simulation` has no legacy class and the eval worker will not load it. If you need one of these, the agent must be coded, not low-code.
-- **Don't hand-write a category/type combination outside the validate matrix.** Validate accepts cat 0 → types {1, 6}, cat 1 → types {5, 8, 9}, cat 3 → type {7}. Anything else fails schema migration.
+- **Don't hand-write a category/type combination outside the validate matrix.** Validate accepts cat 0 → types {1, 6}, cat 1 → type {5}, cat 3 → type {7}. Anything else fails schema migration.
