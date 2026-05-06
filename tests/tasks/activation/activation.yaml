@@ -4,8 +4,7 @@ description: >
   invoked iff a user prompt warrants it. ONE agent run per row; per-skill
   confusion matrices (precision / recall / F1) are computed in parallel
   from the same traces by stacking one skill_triggered criterion per skill.
-  Covers 19 of 20 skills; uipath-llm-configuration-byo-connections is
-  excluded while marked Preview (CLI surface in flux). See README.md.
+  See README.md for coverage notes.
 tags: [activation, classification]
 
 sandbox:

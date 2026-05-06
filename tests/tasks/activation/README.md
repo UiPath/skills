@@ -56,7 +56,6 @@ file just stops at the highest count quality could sustain.
 
 ## Coverage
 
-19 of the 20 skills currently in the repo are covered. `uipath-llm-configuration-byo-connections`
-is intentionally excluded for now — it's marked **Preview** ("skill is under active
-development; the underlying CLI surface may change"), so prompt curation would chase
-a moving target. Add coverage once the CLI surface stabilizes.
+Covers most skills in the repo. Brand-new skills (especially Preview-tagged
+ones whose CLI surface is still in flux) may be added on a delay so prompt
+curation doesn't chase a moving target.
