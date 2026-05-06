@@ -51,6 +51,18 @@ The form is defined inline inside the action task's `data.schema`. Action Center
 
 Mirrors the Flow surface QuickForm node — same `fields[]` / `outcomes[]` shape, same `direction` semantics, same Action Center backend (`Actions.HITL`). For the field-design rules and worked schema examples, see [hitl-node-quickform.md](hitl-node-quickform.md).
 
+> **Preview — runtime support is rolling out.** The `data.formType: "quick"` + inline `data.schema` shape on the Case surface is a recent addition. Some tenants / runtimes may not yet accept it. If `uip maestro case validate` rejects the QuickForm shape after writing, **auto-revert and fall back to Path 3 (App-based)** — see [§ Fallback to App-based on QuickForm failure](#fallback-to-app-based-on-quickform-failure) below. Before writing, snapshot `caseplan.json` so the revert is exact.
+
+### Step 0 — Snapshot before writing (required for revert)
+
+Before any QuickForm edit, copy the current `caseplan.json` to `caseplan.json.bak` — used to restore exactly if validate rejects the QuickForm shape:
+
+```bash
+cp caseplan.json caseplan.json.bak
+```
+
+Or, equivalently, hold the parsed JSON in memory before mutating. Either is fine; the goal is a byte-exact pre-write state to revert to.
+
 ### Step 1 — Design the Schema
 
 Use these conceptual roles to plan the fields before writing the task JSON:
@@ -206,6 +218,39 @@ Each output / inOut field is exposed as a case variable via the field's `variabl
 Downstream task input value: `"=vars.decisionVar"`. The selected outcome is exposed under the task's status — wire to `=vars.<taskId>.status` in conditions.
 
 For the full cross-task wiring procedure, see [bindings-and-expressions.md](../../../uipath-maestro-case/references/bindings-and-expressions.md).
+
+### Fallback to App-based on QuickForm failure
+
+QuickForm is a preview shape. When validate rejects it, the agent must **auto-revert and fall back to Path 3 (App-based)** — never leave the user with a half-written, invalid `caseplan.json`.
+
+#### Detection
+
+After running `uip maestro case validate <caseplan.json> --output json`, if **all** of these are true, treat it as a QuickForm-runtime-rejection (not a schema-design error):
+
+1. Validate exited non-zero
+2. The error message references `formType`, `data.schema`, or "unknown field" / "unexpected key" on the action task's `data` block
+3. The user's QuickForm schema itself was structurally well-formed (you already passed Step 4 conversion rules and the schema-level checks in Step 4b of `SKILL.md`)
+
+For schema-design errors (duplicate field IDs, missing primary outcome, type mismatch) — **do not auto-revert.** Fix the schema in place per Step 4b and re-validate. Auto-revert is only for the runtime-doesn't-support-QuickForm case.
+
+#### Procedure
+
+1. **Restore the snapshot.** Copy `caseplan.json.bak` back over `caseplan.json` (or write the in-memory pre-write JSON back). The case is now exactly as it was before the QuickForm attempt.
+2. **Tell the user clearly.** Don't bury the failure. Use this exact pattern:
+   > "QuickForm validation failed on this runtime. The validator reported: `<paste the error message verbatim>`. QuickForm in case management is preview — your tenant may not yet support the inline-schema shape. I've reverted `caseplan.json` to its pre-write state. Do you have a deployed Action Center app, or would you like to scaffold one? I'll proceed with the App-based path using the same form fields and outcomes you already approved."
+3. **AskUserQuestion** with two options: `Continue with App-based` (proceeds to Path 3 — Step 1 onward) and `Halt` (exit; user investigates the runtime).
+4. **If the user picks `Continue with App-based`:**
+   - Carry the same `taskTitle`, `priority`, `recipient`, and the same field/outcome semantics forward.
+   - Map QuickForm `fields[].direction == "input"` → App-based `data.inputs[]` entries.
+   - Map QuickForm `fields[].direction == "output"` (and `"inOut"`) → App-based `data.outputs[]` entries.
+   - Map QuickForm `outcomes[]` → the deployed app's outcome buttons (or skip if the app's outcomes are fixed).
+   - Then proceed via Path 3, Step 1 onward (app discovery → bindings → write task).
+5. **Do NOT** retry QuickForm silently. If the user wants to try again later (e.g. after a runtime upgrade), they can re-run the skill explicitly.
+6. **Clean up the snapshot** after either branch resolves: `rm caseplan.json.bak`.
+
+#### When the user has no deployed app
+
+If the user picks `Continue with App-based` but says they have no deployed app to use, the chain extends to: scaffold a new coded action app inline (Flow surface only — see [hitl-node-coded-action-app.md](hitl-node-coded-action-app.md) in this skill), or instruct the user to deploy an app via Studio Web first. On the Case surface, scaffolding a coded action app inline is not yet supported; halt and tell the user clearly.
 
 ---
 

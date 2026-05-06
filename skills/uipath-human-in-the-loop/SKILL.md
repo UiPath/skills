@@ -185,7 +185,8 @@ Present three options. Do not choose on behalf of the user or pull the registry.
 | Path | Blocker | Response |
 |---|---|---|
 | App-based | App not found in registry or `action-apps-index.json` | "I couldn't find that app. Would you like to try a different name, or fall back to QuickForm while the app is prepared?" |
-| QuickForm | Schema design rejected on validate (e.g. duplicate field IDs, missing primary outcome) | Surface the validator's error, fix the schema, re-show to user, validate again. Apply Step 4b checks. |
+| QuickForm | Schema design rejected on validate (duplicate field IDs, missing primary outcome — fixable schema-level error) | Surface the validator's error, fix the schema, re-show to user, validate again. Apply Step 4b checks. |
+| QuickForm | **Runtime rejects QuickForm shape** (`formType`/`schema` flagged as unknown — preview feature not supported on this runtime) | **Auto-revert** the task write, restore the pre-write `caseplan.json` from the snapshot, then tell the user clearly: "QuickForm validation failed on this runtime — `<paste validator error>`. Falling back to App-based with the same form requirements. Do you have a deployed Action Center app, or should I help scaffold one?" Then proceed via Path 3 (App-based) using the same fields/outcomes the user already confirmed. See [hitl-casetask-action.md — § Fallback to App-based on QuickForm failure](references/hitl-casetask-action.md#fallback-to-app-based-on-quickform-failure). |
 | Any | Auth expired (401 on API call) | "The session looks expired — run `uip login` to refresh your credentials, then retry." |
 
 ---
