@@ -2,6 +2,7 @@
 
 How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
 
+
 ## Configuration Workflow
 
 Follow these steps for every IS trigger node.
@@ -131,7 +132,7 @@ Check every field in `eventParameters.fields` where `required: true`. All requir
 
 1. Collect all required event parameter fields
 2. For each, check if the user's prompt provides a value
-3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`
+3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`. Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
 4. Only proceed after all required event parameters are resolved
 
 ### Step 4b — Map trigger output fields for downstream nodes
@@ -180,29 +181,8 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 | `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
 | `filter` | No | Structured filter tree — see [Filter Trees](#filter-trees) below. Omit to trigger on all events |
 
-The CLI derives the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration (MST-8802). **Do not pass `filterExpression` directly — the validator rejects it.**
-
-**Mandatory filters (ENGCE-57498):** When `eventParameters` includes values for **required** event parameters (identified by `events.<operation>.required: true` in the trigger metadata), the CLI automatically generates a mandatory filter expression. This is combined with any user-defined `filter` using AND logic:
-
-- **Both mandatory and user filter exist:** `detail.filterExpression = "<mandatory> && <user>"`
-- **Only mandatory filter:** `detail.filterExpression = "<mandatory>"` (e.g., Gmail Email Received with folder selection but no additional filters)
-- **Only user filter:** `detail.filterExpression = "<user>"`
-- **Neither:** `detail.filterExpression = ""`
-
-Example (Gmail Email Received):
-```json
-{
-  "eventParameters": {
-    "ParentFolders": "INBOX"  // Required parameter
-  }
-  // No additional filter tree
-}
-```
-Result: `detail.filterExpression = "(ParentFolders[?ID=='INBOX'])"`
-
-The mandatory filter expression is also persisted in `essentialConfiguration.mandatoryFilterExpression` so the StudioWeb translator can reconstruct the combined expression without rehydrating the view model.
-
-The command populates `inputs.detail` (including the internal `configuration` blob with the `filter` tree, `mandatoryFilterExpression`, and combined `filterExpression`) and creates workflow-level connection bindings.
+The CLI computes the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration. **Do not pass `filterExpression` directly — the validator rejects it.**
+The command populates `inputs.detail` (including the internal `configuration` blob with the `filter` tree and combined `filterExpression`) and creates workflow-level connection bindings.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
 
