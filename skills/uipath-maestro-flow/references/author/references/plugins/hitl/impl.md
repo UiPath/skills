@@ -15,18 +15,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **`Edit` / `Write` is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
-
-```bash
-uip maestro flow hitl add <path/to/file.flow> \
-  --label "Invoice Review" \
-  --priority High \
-  --assignee finance-approvers \
-  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.output.invoiceId"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
-  --output json
-```
-
-Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [cli-commands.md — uip maestro flow hitl add](../../../../shared/cli-commands.md#uip-maestro-flow-hitl-add).
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **`Edit` / `Write` is the default.** Do not use the dedicated HITL CLI unless the user explicitly requests CLI; if they do, see [cli-commands.md — uip maestro flow hitl add](../../../../shared/cli-commands.md#uip-maestro-flow-hitl-add). Wire the `completed` port after adding the node.
 
 ### Quick Reference
 
@@ -36,7 +25,7 @@ Handles full lifecycle: writes node, adds definition entry once, regenerates `va
 {
   "id": "hitlReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "quick",
@@ -125,7 +114,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 {
   "id": "reviewExtraction",
   "type": "uipath.core.human-task.abc123",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Review Extraction" },
   "inputs": {},
   "outputs": {

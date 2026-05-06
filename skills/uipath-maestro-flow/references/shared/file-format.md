@@ -42,7 +42,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 {
   "id": "rollDice",
   "type": "core.action.script",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Roll Dice" },
   "inputs": {
     "script": "return { roll: Math.floor(Math.random() * 6) + 1 };"
@@ -65,6 +65,8 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```
 
 **Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that "feel" trivial.
+
+`typeVersion` must match the corresponding `definitions[].version` exactly. The registry often returns versions such as `"1.0"` while older examples or scaffolded files may show `"1.0.0"`. If a node uses `typeVersion: "1.0.0"` but the copied definition is `"version": "1.0"`, validation reports "Node type `<type>:1.0.0` has no matching definition." When direct-authoring a new node from `registry get`, set `typeVersion` to the copied definition's `version`; when preserving an existing node, preserve its existing node/definition pair unless you intentionally update both together.
 
 > **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
 >
@@ -95,7 +97,7 @@ Example — manual start trigger:
 {
   "id": "start",
   "type": "core.trigger.manual",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Manual trigger" },
   "inputs": {
     "entryPointId": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5"
@@ -200,6 +202,8 @@ Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for ever
 ```
 
 > **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges.N.targetPort] expected string, received undefined` at validate time.
+>
+> **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with the vague root-level error `Invalid input: expected string, received undefined`.
 
 ## Definition entry
 
@@ -318,7 +322,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
     {
       "id": "start",
       "type": "core.trigger.manual",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "display": { "label": "Manual trigger" },
       "inputs": {
         "entryPointId": "<uuid>"
@@ -335,7 +339,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
     {
       "id": "rollDice",
       "type": "core.action.script",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "display": { "label": "Roll Dice" },
       "inputs": {
         "script": "return { roll: Math.floor(Math.random() * 6) + 1 };"
@@ -358,7 +362,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
     {
       "id": "end",
       "type": "core.logic.terminate",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "display": { "label": "End" },
       "inputs": {}
     }
@@ -406,7 +410,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 
 ### Step 2 — Populate definitions from the registry
 
-Run one command per node type used in `nodes`. Copy the `Data.Node` object from each response into the `definitions` array.
+Run one command per node type used in `nodes`. Copy the `Data.Node` object from each response into the `definitions` array, and set each matching node instance's `typeVersion` to the copied definition's exact `version`.
 
 ```bash
 uip maestro flow registry get core.trigger.manual --output json
@@ -414,7 +418,7 @@ uip maestro flow registry get core.action.script --output json
 uip maestro flow registry get core.logic.terminate --output json
 ```
 
-The `definitions` array must contain exactly one entry per unique `type` used — not one per node instance. If two nodes share the same type, one definition covers both.
+The `definitions` array must contain exactly one entry per unique `type:typeVersion` used — not one per node instance. If two nodes share the same type and version, one definition covers both.
 
 > **Never write definitions by hand.** The registry is the authoritative source; hand-written definitions will fail validation or cause runtime errors.
 

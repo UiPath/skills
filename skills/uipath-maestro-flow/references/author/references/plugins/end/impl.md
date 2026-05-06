@@ -20,7 +20,7 @@ Confirm: input port `input`, no output ports.
 {
   "id": "doneSuccess",
   "type": "core.control.end",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Done" },
   "inputs": {}
 }
@@ -34,7 +34,7 @@ When the workflow declares `out` variables, every End node must map all of them:
 {
   "id": "doneSuccess",
   "type": "core.control.end",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Done" },
   "inputs": {},
   "outputs": {

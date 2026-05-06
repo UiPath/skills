@@ -1,8 +1,10 @@
-# Flow Editing Operations — CLI Strategy
+# Flow Editing Operations — CLI Opt-In and Carve-Outs
 
-All flow file modifications via `uip maestro flow node` and `uip maestro flow edge` CLI commands. The CLI automatically manages definitions, variables, edge cleanup, and `bindings_v2.json` — eliminating the most common build errors.
+This is **not** the default structural editing guide. Use direct `.flow` authoring via [editing-operations-json.md](editing-operations-json.md) for OOTB node/edge/variable CRUD, trigger swaps, output mapping, subflows, and in-place updates.
 
-> **When to use this strategy:** Use this strategy for connector, connector-trigger, and inline-agent nodes, or when the user explicitly requests CLI. For all other edits, Edit / Write is the default (see [editing-operations-json.md](editing-operations-json.md)). See [editing-operations.md](editing-operations.md) for the strategy selection matrix.
+> **When to use this file:** only for the CLI-managed carve-outs documented by a plugin (connector, connector-trigger, managed HTTP configuration, inline-agent binding/scaffolding), or when the user explicitly requests CLI for a specific structural operation. If you landed here while adding/removing/wiring OOTB nodes and the user did not ask for CLI, go back to the Edit / Write guide.
+
+The CLI can automatically manage definitions, variables, edge cleanup, and `bindings_v2.json`, but that comes with an opaque diff. Treat the primitive structural commands below as opt-in command references, not as recipes to prefer.
 
 ---
 
@@ -149,9 +151,9 @@ Run **once** after all nodes, edges, and configuration are complete. Do not vali
 
 ---
 
-## Composite Operations
+## Composite Operations (Explicit CLI Opt-In Only)
 
-These combine primitives to accomplish common editing tasks. Each recipe assumes you are working with an existing flow.
+These combine primitives to accomplish common editing tasks. Do not use these for default OOTB structural edits; each has a direct-authoring counterpart in [editing-operations-json.md](editing-operations-json.md). Use the CLI versions only when the user explicitly requested CLI or a carve-out plugin points here.
 
 ### Update node inputs (expression, script body, label, etc.)
 

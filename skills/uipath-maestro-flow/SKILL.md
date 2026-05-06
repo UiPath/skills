@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "UiPath Maestro Flow (.flow) — build, edit, run, debug, fix. Create, connect nodes; connector, approval, script, subflow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For agents→uipath-agents."
+description: "TRIGGER: UiPath Maestro Flow (.flow) build, edit, run, debug, fix; create and connect nodes; author edges, variables, subflows, triggers, schedules, validation, publishing, runs, incidents, and traces. DO NOT TRIGGER: C#/XAML RPA workflows -> uipath-rpa; Python or agent.json agents -> uipath-agents; general Orchestrator or solution lifecycle without Flow authoring -> uipath-platform; Test Manager -> uipath-test."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -16,7 +16,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 - Edit a `.flow` file — add nodes, edges, variables, subflows, transforms, triggers
 - Explore available node types via the registry
 - Validate or tidy a Flow file locally
-- Choose between Edit / Write and CLI editing strategies
+- Apply Edit / Write defaults and CLI carve-outs
 - Configure connector, connector-trigger, or inline-agent nodes
 - Plan a complex flow before building
 
@@ -67,7 +67,7 @@ These rules apply across all three capabilities. Each capability index adds capa
 6. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution new <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See [author/greenfield.md](references/author/references/greenfield.md) Step 2.
 7. **Always narrate progress in plain English at each logical step boundary.** One short line per step, in user terms ("checking your tenant login", "adding the Slack node and wiring its inputs", "editing the flow JSON to add the new variable", "running validate") — no flag-level or JSON-structure-level detail. Applies uniformly to `uip` CLI calls, shell builtins (`ls`, `cat`, `cd`, `mkdir`, `find`, `grep`), file edits (Read/Write/Edit), and bulk searches (Glob/Grep). The user should never need to know `bash`, `uip` flags, or `.flow` JSON internals to follow along. See [shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md).
 8. **Use `TodoWrite` for any journey above the trivial threshold; keep granularity per-step, not per-phase.** Standard journeys (greenfield, brownfield with multiple nodes, ship, run, full diagnose) require a granular todo list (~15–25 items). One logical step ≈ one todo. Bash plumbing inside a step (registry lookups, JSON parsing, intermediate file reads) is invisible — do not surface as todos. See [shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md) for granularity rules, threshold table, and pivot rules.
-9. **Default to `Edit` / `Write` for every mutation of a `.flow` file, `bindings_v2.json`, or any other file under a Flow project.** The `uip maestro flow node` / `edge` / `variable` CLI is a **carve-out**, not a co-default — use it only for connector, connector-trigger, and inline-agent nodes (where `node configure` auto-populates `inputs.detail` + `bindings_v2.json`), or when the user explicitly requests CLI. Use `Write` for wholesale rewrites only when ≥70% of nodes change. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, inline shell heredocs) are a last resort and require explicit user approval after the trade-offs (state bypass, opaque diff, no interruption point) have been surfaced. See [author/editing-operations.md — Tool Selection Ladder](references/author/references/editing-operations.md#tool-selection-ladder) for the per-operation tool ladder and the rationale.
+9. **Default to `Edit` / `Write` for every mutation of a `.flow` file, `bindings_v2.json`, or any other file under a Flow project.** The `uip maestro flow node` / `edge` / `variable` CLI is a **carve-out**, not a co-default — use it only for connector, connector-trigger, and inline-agent nodes (where the CLI populates product-managed details such as `inputs.detail`, `bindings_v2.json`, or inline-agent bindings), or when the user explicitly requests CLI. For OOTB node/edge/variable CRUD, do not reach for the CLI guide by default; author the `.flow` JSON directly with `Edit` / `Write`. Use `Write` for wholesale rewrites only when ≥70% of nodes change. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, inline shell heredocs) are a last resort and require explicit user approval after the trade-offs (state bypass, opaque diff, no interruption point) have been surfaced. See [author/editing-operations.md — Tool Selection Ladder](references/author/references/editing-operations.md#tool-selection-ladder) for the per-operation tool ladder and the rationale.
 
 ## Anti-patterns (universal)
 
