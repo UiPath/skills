@@ -19,8 +19,8 @@ The `expected_skill` field on each row is the row's true label (the skill it sho
 ## Run
 
 ```bash
-export SKILLS_REPO_PATH=/Users/bai.li/uipath/skills
-uv run --project /Users/bai.li/uipath/coder_eval coder-eval run \
+export SKILLS_REPO_PATH=/path/to/skills
+uv run --project /path/to/coder_eval coder-eval run \
   skills/tests/tasks/activation/activation.yaml \
   -e skills/tests/experiments/activation.yaml \
   --backend bedrock \
@@ -28,7 +28,7 @@ uv run --project /Users/bai.li/uipath/coder_eval coder-eval run \
   -j 4
 
 # Quick subsample for iteration:
-uv run --project /Users/bai.li/uipath/coder_eval coder-eval run \
+uv run --project /path/to/coder_eval coder-eval run \
   skills/tests/tasks/activation/activation.yaml \
   -e skills/tests/experiments/activation.yaml \
   --backend bedrock --sample 20 -j 4
@@ -53,3 +53,10 @@ Slack channels (read-only) and synthesizing the rest from each `SKILL.md`'s
 canonical task verbs. Some skills have narrower scope than 50 prompts can fill
 without padding (e.g., `uipath-feedback` at 26, `uipath-tasks` at 34) — the
 file just stops at the highest count quality could sustain.
+
+## Coverage
+
+19 of the 20 skills currently in the repo are covered. `uipath-llm-configuration-byo-connections`
+is intentionally excluded for now — it's marked **Preview** ("skill is under active
+development; the underlying CLI surface may change"), so prompt curation would chase
+a moving target. Add coverage once the CLI surface stabilizes.

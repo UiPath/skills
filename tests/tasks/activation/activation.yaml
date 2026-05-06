@@ -1,9 +1,11 @@
 task_id: skill-activation
 description: >
-  Skill activation eval: measures whether each of the 19 UiPath skills is
+  Skill activation eval: measures whether each covered UiPath skill is
   invoked iff a user prompt warrants it. ONE agent run per row; per-skill
   confusion matrices (precision / recall / F1) are computed in parallel
-  from the same traces by stacking 19 skill_triggered criteria.
+  from the same traces by stacking one skill_triggered criterion per skill.
+  Covers 19 of 20 skills; uipath-llm-configuration-byo-connections is
+  excluded while marked Preview (CLI surface in flux). See README.md.
 tags: [activation, classification]
 
 sandbox:
