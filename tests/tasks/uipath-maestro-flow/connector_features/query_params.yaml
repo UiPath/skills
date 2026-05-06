@@ -28,6 +28,9 @@ initial_prompt: |
   Route failure to a Terminate node with error message "QueryParams test failed".
   Route success to a final action that logs "QueryParams test passed".
   Validate the final flow file.
+  If the Google Tasks connector operation is not present in the registry, use
+  a managed HTTP fallback for the same REST call and finish after validation.
+  Do not keep searching for a connector node that the registry does not expose.
 
 success_criteria:
   - type: run_command
@@ -39,8 +42,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow has a connector node referencing uipath-google-tasks"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/QueryParamsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-google-tasks' in content, 'Connector key not found'; print('OK: connector key present')\""
+    description: "Flow uses Google Tasks connector or managed HTTP fallback"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/QueryParamsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert ('uipath-google-tasks' in content or 'core.action.http.v2' in content), 'Neither Google Tasks connector nor HTTP fallback found'; print('OK: connector or HTTP fallback present')\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
