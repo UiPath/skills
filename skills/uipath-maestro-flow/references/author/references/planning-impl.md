@@ -37,7 +37,7 @@ uip maestro flow registry get <nodeType> --output json
 | Node Type                       | Plugin impl.md                                                 |
 | ------------------------------- | -------------------------------------------------------------- |
 | `core.action.script`            | [script/impl.md](plugins/script/impl.md)                       |
-| `core.action.http`              | [http/impl.md](plugins/http/impl.md)                           |
+| `core.action.http.v2`           | [http/impl.md](plugins/http/impl.md)                           |
 | `core.action.transform`         | [transform/impl.md](plugins/transform/impl.md)                 |
 | `core.logic.delay`              | [delay/impl.md](plugins/delay/impl.md)                         |
 | `core.logic.decision`           | [decision/impl.md](plugins/decision/impl.md)                   |

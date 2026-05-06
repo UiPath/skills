@@ -17,7 +17,7 @@ build the case in the Case Designer without guessing.
 - See [references/case-schema.md](../../references/case-schema.md) for the JSON schema reference (types, rules, SLA model)
 
 **Optional enrichment sources:**
-- CLI registry cache at `~/.uipcli/case-resources/` (deployed processes, connectors, action apps from the user's tenant — flat `<type>-index.json` files per resource type, populated by `uip maestro case registry pull`)
+- CLI registry cache at `~/.uip/case-resources/` (deployed processes, connectors, action apps from the user's tenant — flat `<type>-index.json` files per resource type, populated by `uip maestro case registry pull`)
 - IS connector cache at `~/.uipath/cache/integrationservice/<connectorKey>/` (`connections.json`, `activities.json`) for connection + operation metadata
 
 **Output:** `sdd.md`
@@ -258,7 +258,7 @@ The generated SDD must start with:
 > Use this block for connector-based tasks. Connection + Auth are **tenant-authoritative** and come from the Integration Service CLI cache, not from the user spec:
 > - **Connection** ← `~/.uipath/cache/integrationservice/{connectorKey}/connections.json` — the `name` (and optional `id`) of the default or first enabled entry.
 > - **Auth Method** ← `~/.uipath/cache/integrationservice/connectors.json` — the connector's `defaultAuthenticationType`.
-> - **Operation** ← `~/.uipath/cache/integrationservice/{connectorKey}/activities.json` for the display/operation name; `~/.uipcli/case-resources/typecache-activities-index.json` (or `typecache-triggers-index.json` for events) for I/O schemas — each is a flat JSON array of activities, filter by connector + operation name.
+> - **Operation** ← `~/.uipath/cache/integrationservice/{connectorKey}/activities.json` for the display/operation name; `~/.uip/case-resources/typecache-activities-index.json` (or `typecache-triggers-index.json` for events) for I/O schemas — each is a flat JSON array of activities, filter by connector + operation name.
 > - **Account/Endpoint is not stored** in the compact cache. Render `—` unless the user spec supplies it explicitly.
 > If a cache is unavailable or no enabled connection is found, render `—` rather than inventing values.
 

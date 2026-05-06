@@ -8,7 +8,7 @@ Discovery-first approach with iterative error-driven refinement for generating a
 2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
 3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
 4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa get-errors`, fix what breaks, repeat.
-5. **Validate After Every Change** — **MUST** validate with `get-errors` after every change. **NEVER** assume an edit succeeded.
+5. **Validate After Every Change** — **MUST** validate with **both** `get-errors` and `uip rpa build` after every change. **NEVER** assume an edit succeeded. `get-errors` clean alone is not validated — it does not catch unknown member names or invalid enum values; `build` does.
 6. **Fix Errors by Category** — Triage in order: Package → Structure → Type → Activity Properties → Logic.
 
 ---
@@ -45,9 +45,9 @@ Analyze:
 
 ### Step 1.2: Discover Activity Documentation (Primary Source)
 
-**This is the most important discovery step.** Installed activity packages ship structured markdown at `{projectRoot}/.local/docs/packages/{PackageId}/`.
+**This is the most important discovery step. Read `<Activity>.md` BEFORE `get-default-activity-xaml`, every time, even for activities that look simple.** Installed activity packages ship structured markdown at `{projectRoot}/.local/docs/packages/{PackageId}/activities/<Activity>.md`. The doc is the property surface; the CLI starter is not. `get-default-activity-xaml` strips every property at its type default — for `NGetText` that means **all** output properties are absent from the starter, and authoring from the starter produces `NGetText.Value="..."` instead of `NGetText.Text="..."`. `get-errors` does not catch the wrong member name; only `build` does, after a wasted round-trip.
 
-**Availability:** Docs exist only for **installed packages** and typically only for **newer package versions**. When the package is not installed, install it first. When docs are missing, update to the latest version.
+**Availability:** Docs exist only for **installed packages** and typically only for **newer package versions**. When the package is not installed, install it first. When docs are missing, update to the latest version, or fall back to `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/`.
 
 #### Filesystem Structure
 
@@ -195,14 +195,18 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 
 ## Phase 3: Validate & Fix Loop
 
-**MUST** repeat until 0-error state or max 5 fix attempts. After 5 attempts, stop and present remaining errors to the user.
+**MUST** repeat until 0-error state from **both** `get-errors` and `build`, or max 5 fix attempts. After 5 attempts, stop and present remaining errors to the user.
 
 ### Step 3.1: Check for Errors
 
-```bash
-uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json```
+Run both validators per iteration. `get-errors` catches structural / reference / analyzer issues; `build` catches member-name and enum-value mistakes that `get-errors` misses (e.g. `NGetText.Value` when the property is `Text`, `Operator="StartsWith"` when the enum has no such member). See [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop) for the canonical loop.
 
-`--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks.
+```bash
+uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+```
+
+`--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks. Treat `get-errors` clean as half-done — `build` clean is the signal to exit the loop.
 
 ### Step 3.2: Categorize and Fix
 
@@ -236,7 +240,8 @@ For detailed procedures, see [../validation-guide.md](../validation-guide.md).
 
 - **NEVER** generate large, complex workflows in one go
 - **NEVER** manually craft UI selectors outside of `uia-configure-target` skill flow
-- **NEVER** assume a create/edit succeeded without validating
+- **NEVER** assume a create/edit succeeded without validating with **both** `get-errors` and `build`
+- **NEVER** treat "no diagnostics found" from `get-errors` as final — run `build` next; member-name and enum-value errors hide behind a clean `get-errors`
 - **NEVER** stop the iteration loop before correctly rendering all activities
 - **NEVER** guess properties, types, or configurations without checking docs
 - **NEVER** use incorrect keys with `uip rpa get-workflow-example` (always from list results)
