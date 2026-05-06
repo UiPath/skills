@@ -11,7 +11,7 @@ Pre-populate these via `TodoWrite` when entering this journey. The list is edit-
 - [ ] Locate `.flow` file and read current structure
 - [ ] Confirm what the user wants changed
 - [ ] Discover any new node types via registry (if adding nodes)
-- [ ] Apply edit(s) with `Edit` / `Write` per [editing-operations.md](editing-operations.md) (CLI only for carve-outs or explicit user opt-in)
+- [ ] Apply edit(s) with `Edit` / `Write` per [editing-operations.md](editing-operations.md) (Flow CLI only for connector activity, connector-trigger, and managed HTTP carve-outs)
 - [ ] Re-wire edges affected by the change
 - [ ] Update variables / output mappings if scope changed
 - [ ] Run `flow validate` and fix any errors
@@ -21,7 +21,7 @@ Pre-populate these via `TodoWrite` when entering this journey. The list is edit-
 
 ## Read this first
 
-**[editing-operations.md](editing-operations.md)** — `Edit` / `Write` is the default for all edits — the `Edit` tool for in-place changes, `Write` only when ≥70% of nodes change. CLI is used only for connector, connector-trigger, and inline-agent nodes (carve-outs), or when the user explicitly requests it. Read the strategy selection matrix before any modification.
+**[editing-operations.md](editing-operations.md)** — `Edit` / `Write` is required for non-carve-out `.flow` edits — the `Edit` tool for in-place changes, `Write` only when ≥70% of nodes change. Flow CLI is used only for connector activity, connector-trigger, and managed HTTP carve-outs. Read the strategy selection matrix before any modification.
 
 > **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
@@ -42,10 +42,10 @@ For each edit, run `uip maestro flow validate` once after **all** edits are comp
 | **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [Edit/Write: Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) + [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
 | **Add a connector trigger** | Delete manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 | **Add a resource node** | Discover via registry (`--local` for in-solution, or tenant registry for published), add via `Edit`, wire edges. | Relevant plugin's `impl.md` + [editing-operations-json.md](editing-operations-json.md) |
-| **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, CLI, JSON structure, and validation. |
+| **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, direct `.flow` JSON structure, and validation. |
 | **Add a HITL QuickForm node** | Insert a human approval/review/enrichment checkpoint. Wire the `completed` port after adding. | [Edit/Write: Add a node](editing-operations-json.md) + [hitl/impl.md](plugins/hitl/impl.md) |
 
-The table intentionally routes OOTB structural CRUD to Edit/Write only. If the user explicitly asks for CLI, use [editing-operations-cli.md](editing-operations-cli.md) as an opt-in command reference for that specific operation.
+The table intentionally routes OOTB structural CRUD to Edit/Write only. There is no CLI opt-in path for non-carve-out flow graph edits.
 
 ## After edits
 

@@ -15,7 +15,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **`Edit` / `Write` is the default.** Do not use the dedicated HITL CLI unless the user explicitly requests CLI; if they do, see [cli-commands.md — uip maestro flow hitl add](../../../../shared/cli-commands.md#uip-maestro-flow-hitl-add). Wire the `completed` port after adding the node.
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `completed` port after adding the node.
 
 ### Quick Reference
 

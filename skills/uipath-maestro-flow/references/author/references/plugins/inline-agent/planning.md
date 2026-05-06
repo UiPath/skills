@@ -8,7 +8,7 @@ For agent configuration, prompts, resource files, and solution-resource mechanic
 
 `uipath.agent.autonomous`
 
-This is a fixed, OOTB node type (no `{key}` suffix). Inline agents do not appear in `registry search` — the single node type accepts any inline agent via its `inputs.source` field.
+This is a fixed, OOTB node type (no `{key}` suffix). Inline agents do not appear in `registry search` — the single node type accepts any inline agent via its `model.source` field.
 
 ## When to Use
 
@@ -60,7 +60,7 @@ Unlike published agents, inline agents are **not** discovered through the regist
 uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 ```
 
-Record the returned `ProjectId` — the flow node's `inputs.source` must match it exactly.
+Record the returned `ProjectId` — the flow node's `model.source` must match it exactly.
 
 For agent.json configuration (prompts, model, schemas) and resource file authoring (tools, contexts, escalations), see the `uipath-agents` skill (`lowcode/agent-definition.md` and `lowcode/capabilities/`).
 

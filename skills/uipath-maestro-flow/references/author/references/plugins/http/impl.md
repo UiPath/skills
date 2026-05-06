@@ -165,7 +165,7 @@ The managed HTTP node's target port is `input`. Its source ports are:
 - `error` — fires when the HTTP call fails (network error, timeout, non-2xx not caught by a branch); wire this to an error handler to keep the flow from faulting
 - `branch-{id}` — one per entry in `inputs.branches` (Step 4); use the exact `id` you set
 
-Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge add` unless the user explicitly requested CLI. Examples:
+Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge add` for this structural wiring. Examples:
 
 ```json
 {

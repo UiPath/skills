@@ -4,7 +4,7 @@ All flow file modifications via the `Edit` and `Write` tools (read-modify-write 
 
 > **Apply every recipe in this file with the `Edit` tool (default) or the `Write` tool (only when ≥70% of nodes change).** Each recipe shows the JSON payload that goes into the `new_string` parameter of an `Edit` call. `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort for mutations and require explicit user approval after you've surfaced the trade-offs — see SKILL.md rule on scripted mutations and [editing-operations.md — Why not Python / Node / jq / sed?](editing-operations.md#why-not-python--node--jq--sed).
 >
-> **When to use this strategy:** Edit / Write is the default for all `.flow` edits. Use CLI (see [editing-operations-cli.md](editing-operations-cli.md)) only for connector, connector-trigger, and inline-agent nodes, or when the user explicitly requests CLI. See [editing-operations.md](editing-operations.md) for the strategy selection matrix.
+> **When to use this strategy:** Edit / Write is required for all non-carve-out `.flow` edits. Use Flow CLI only for connector activity, connector-trigger, and managed HTTP carve-outs documented by their plugins. Inline-agent project lifecycle uses `uip agent init --inline-in-flow` / `uip agent validate --inline-in-flow`, but the `uipath.agent.autonomous` node and edges are authored with this guide. See [editing-operations.md](editing-operations.md) for the strategy selection matrix.
 
 ---
 
@@ -77,7 +77,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 
 > **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [file-format.md — Node outputs](../../shared/file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
 
-> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `source` for inline agents, `color`/`content` for sticky notes. See [file-format.md — Instance-specific fields that live in `inputs`](../../shared/file-format.md#instance-specific-fields-that-live-in-inputs).
+> **No full `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Most instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers and `color`/`content` for sticky notes. Nodes whose definition declares `model.source: true` are the current exception: use only the minimal instance block `"model": { "source": "<ProjectId-or-resourceId>" }`. See [file-format.md — Instance-specific identity fields](../../shared/file-format.md#instance-specific-identity-fields).
 
 > **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Add a layout entry instead (step 5).
 
