@@ -56,6 +56,15 @@
       "file": "or-jobs-logs-0fbda085-5c96-4dab-a4b3-012c1914845a-limit-20-o.json"
     },
     {
+      "match": "traces spans get --job-key 0fbda085-5c96-4dab-a4b3-012c1914845a",
+      "file": "traces-spans-job-key-0fbda085.json"
+    },
+    {
+      "match": "or jobs healing-data 0fbda085-5c96-4dab-a4b3-012c1914845a",
+      "file": "jobs-healing-data-0fbda085.json",
+      "_doc": "Mocked empty — the original session did not capture HA recovery ZIP for this job."
+    },
+    {
       "match": "docsai ask",
       "passthrough": true,
       "_doc": "Proxy any docsai query to the real uip CLI; cache results in _cache/."
