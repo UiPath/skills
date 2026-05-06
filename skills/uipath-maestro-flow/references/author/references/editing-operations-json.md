@@ -14,7 +14,7 @@ When editing the `.flow` file with `Edit` / `Write`, **you** are responsible for
 
 | Concern | CLI handles | Edit / Write — you must |
 |---------|------------|------------------------|
-| Definitions | Auto-copied from registry cache | Copy `Data.Node` from `uip maestro flow registry get` into `definitions` array |
+| Definitions | Auto-copied from registry cache | Copy the returned node definition object from `uip maestro flow registry get` into `definitions` array |
 | Node variables | Auto-added to `variables.nodes` | Add output variable entries manually (or accept that `variables.nodes` may need regeneration) |
 | Edge cleanup on delete | Auto-removes connected edges | Find and remove all edges referencing the deleted node |
 | Orphan cleanup | Auto-removes unused definitions and orphaned bindings | Remove definitions no longer referenced by any node; remove connector bindings only when no remaining node uses that connector |
@@ -46,7 +46,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 
 **Tool:** `Edit` (insert into `nodes[]` + `definitions[]` + `variables.nodes` + `layout.nodes`)
 
-1. Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the `Data.Node` object
+1. Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
 2. Use `Edit` to add a node entry to the `nodes` array:
 
 ```json
@@ -82,7 +82,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 > **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Add a layout entry instead (step 5).
 
 3. Add the definition to `definitions` (if this type is not already present):
-   - Paste the `Data.Node` object from the registry response
+   - Paste the returned node definition object from the registry response
    - Set the node instance `typeVersion` to the pasted definition's exact `version`
    - One definition per unique `type:typeVersion` — not one per node instance
 

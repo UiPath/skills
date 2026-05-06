@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "TRIGGER: UiPath Maestro Flow (.flow) build, edit, run, debug, fix; create and connect nodes; author edges, variables, subflows, triggers, schedules, validation, publishing, runs, incidents, and traces. DO NOT TRIGGER: C#/XAML RPA workflows -> uipath-rpa; Python or agent.json agents -> uipath-agents; general Orchestrator or solution lifecycle without Flow authoring -> uipath-platform; Test Manager -> uipath-test."
+description: "UiPath Maestro Flow (.flow) — build, edit, run, debug, fix. Create/connect nodes; author edges, variables, subflows, triggers, schedules; validate, publish, manage runs, incidents, traces. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For Python/agent.json→uipath-agents. For Orchestrator/solution lifecycle without Flow→uipath-platform. For Test Manager→uipath-test."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 

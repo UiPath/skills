@@ -213,7 +213,7 @@ Every node type appearing in `nodes` must have a matching entry in `definitions`
 uip maestro flow registry get core.action.script --output json
 ```
 
-Copy the object at `Data.Node` into your `definitions` array. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
+Copy the returned node definition object into your `definitions` array. Depending on CLI/plugin version, that object may appear at `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
 
 ## Common node types
 
@@ -410,7 +410,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 
 ### Step 2 — Populate definitions from the registry
 
-Run one command per node type used in `nodes`. Copy the `Data.Node` object from each response into the `definitions` array, and set each matching node instance's `typeVersion` to the copied definition's exact `version`.
+Run one command per node type used in `nodes`. Copy the returned node definition object from each response into the `definitions` array, and set each matching node instance's `typeVersion` to the copied definition's exact `version`.
 
 ```bash
 uip maestro flow registry get core.trigger.manual --output json
