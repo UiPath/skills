@@ -195,7 +195,7 @@ If you find yourself typing any of those five field names while authoring an IxP
 
 The `definitions[]` entry is copied verbatim from `registry get` (`Data.Node`). Critical Rule #7 applies unchanged.
 
-> **`uip maestro flow validate` enforces the Authoring rules above** via the `ixp-node` validator. If validation fails, the error path/message names the rule (e.g. `Rule #1 ...`) — fix the `.flow` file, not the validator. The registry's `inputDefinition.properties` is the schema of the property catalog, not a license to override the rules: `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, and `mimeType` are NOT returned by `registry get` and must not be set on the instance.
+> **`uip maestro flow validate` enforces the Authoring rules above** via the `ixp-node` validator. Failures surface as `severity: "error"` issues with `path` like `nodes[<nodeId>].inputs.model` and a self-contained `message` describing the violation — fix the `.flow` file, not the validator. The registry's `inputDefinition.properties` is the schema of the property catalog, not a license to override the rules: `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, and `mimeType` are NOT returned by `registry get` and must not be set on the instance.
 
 ### `inputs.fileRef` vs the emitted `model.inputs[]` body
 
