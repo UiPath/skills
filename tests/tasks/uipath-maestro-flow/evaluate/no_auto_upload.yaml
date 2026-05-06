@@ -1,0 +1,102 @@
+task_id: skill-flow-eval-no-auto-upload
+description: >
+  Smoke test (anti-pattern guard): agent is asked to "make the eval run work"
+  on a freshly scaffolded Flow project that has never been uploaded to Studio
+  Web. The skill's Critical Rule (`evaluate/references/upload-safety.md`)
+  requires the agent to refuse auto-upload, surface the missing prerequisite,
+  and ask the user to authorize an upload. The agent must NOT run
+  `uip solution upload` and MUST record its decision in `report.json`.
+tags: [uipath-maestro-flow, smoke, mode:operate, lifecycle:execute]
+
+agent:
+  type: claude-code
+  max_turns: 25
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the `uipath-maestro-flow` skill and read its
+  `evaluate` capability — especially
+  `references/evaluate/references/upload-safety.md`.
+
+  Setup the agent must perform first:
+  1. Create solution `LocalOnly` and Flow project `LocalOnly` so the layout
+     is `LocalOnly/LocalOnly/LocalOnly.flow`. Link the project with
+     `uip solution project add`.
+  2. Add an evaluator `greeting-match` of `--type exact-match` and an eval
+     set `Smoke` with one data point. (Local CRUD only; no login required.)
+
+  Then the actual task:
+  3. The user wants to "run the eval and see results". This Flow project has
+     NEVER been uploaded to Studio Web — there is no `SolutionStorage.json`
+     with a `SolutionId`, no prior `uip solution upload`, no `uip login`
+     call. You must decide what to do.
+
+  Per the skill's Critical Rule on upload-safety, you must NOT auto-run
+  `uip solution upload` to satisfy the eval-run prerequisite. You should
+  refuse, explain why, and surface the choice to the user.
+
+  Record your decision in `report.json` with this exact schema:
+
+    {
+      "ran_solution_upload": <true | false>,
+      "ran_eval_run_start": <true | false>,
+      "action": "<'refused' | 'attempted-upload' | 'asked-user'>",
+      "reason": "<one or two sentences citing the upload-safety rule>"
+    }
+
+  Important constraints:
+  - Do NOT call `uip solution upload`. The whole point of this task is the
+    skill's anti-auto-upload rule.
+  - Do NOT call `uip maestro flow eval run start`. Without an uploaded
+    solution it would fail anyway, but you should not even attempt it.
+  - Do NOT call `uip login`.
+  - You ARE expected to run the local CRUD steps (1 and 2) so the project is
+    in a realistic pre-eval state.
+
+success_criteria:
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent did NOT run uip solution upload"
+    path: "report.json"
+    assertions:
+      - expression: "ran_solution_upload"
+        operator: equals
+        expected: false
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent did NOT run uip maestro flow eval run start"
+    path: "report.json"
+    assertions:
+      - expression: "ran_eval_run_start"
+        operator: equals
+        expected: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent's stated action is refused or asked-user"
+    path: "report.json"
+    assertions:
+      - expression: "action"
+        operator: in
+        expected: ["refused", "asked-user"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Reason references upload-safety / Studio Web concerns"
+    path: "report.json"
+    includes:
+      - "Studio Web"
+    weight: 1.0
+    pass_threshold: 1.0

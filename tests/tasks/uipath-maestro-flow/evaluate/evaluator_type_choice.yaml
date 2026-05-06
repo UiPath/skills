@@ -1,0 +1,101 @@
+task_id: skill-flow-eval-evaluator-type-choice
+description: >
+  Smoke test: agent is given three evaluation goals and must pick the correct
+  `--type` value for each (kebab-case, from the seven types in the
+  uipath-maestro-flow `evaluate` capability). Tests that the skill's evaluator
+  taxonomy is internalized — particularly that natural-language similarity is
+  NOT done with `exact-match`, that JSON shape similarity is NOT done with
+  `llm-judge-output`, and that PascalCase is rejected. No project scaffolding,
+  no CLI execution — pure decision-making against `report.json`.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover]
+
+agent:
+  type: claude-code
+  max_turns: 15
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the `uipath-maestro-flow` skill and read its
+  `evaluate` capability (`references/evaluate/CAPABILITY.md` and
+  `references/evaluate/references/evaluators-guide.md`).
+
+  You are picking the right evaluator `--type` for three goals. For each
+  one, choose ONE value from the closed list below. Use the kebab-case
+  spelling exactly as the CLI accepts it.
+
+  Closed list of valid `--type` values:
+    - exact-match
+    - json-similarity
+    - contains
+    - llm-judge-output
+    - llm-judge-strict-json
+    - llm-judge-trajectory
+    - llm-judge-trajectory-simulation
+
+  Goals:
+    Goal A: Score a chatbot's free-text reply against an expected greeting,
+            allowing for paraphrasing (e.g. "Hi Alice!" should still score
+            high against expected "Hello, Alice!"). The judge does not need
+            to inspect tool calls.
+
+    Goal B: Score a flow that emits a structured JSON envelope of order
+            details. Expected output is a known object; ordering of keys
+            and minor whitespace differences should be tolerated, but the
+            values themselves must match. Deterministic — no LLM.
+
+    Goal C: Pass-fail on whether the flow's response contains the literal
+            substring "deployment succeeded" anywhere in the output.
+
+  Save your choices to `report.json` in the working directory. Schema:
+
+    {
+      "goal_a_type": "<one of the 7 kebab-case values>",
+      "goal_a_reason": "<one short sentence>",
+      "goal_b_type": "<one of the 7 kebab-case values>",
+      "goal_b_reason": "<one short sentence>",
+      "goal_c_type": "<one of the 7 kebab-case values>",
+      "goal_c_reason": "<one short sentence>"
+    }
+
+  Do NOT run any `uip` commands. Do NOT scaffold a project. This is a
+  decision-only task.
+
+success_criteria:
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Goal A — natural-language similarity → llm-judge-output"
+    path: "report.json"
+    assertions:
+      - expression: "goal_a_type"
+        operator: equals
+        expected: "llm-judge-output"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Goal B — deterministic JSON shape similarity → json-similarity"
+    path: "report.json"
+    assertions:
+      - expression: "goal_b_type"
+        operator: equals
+        expected: "json-similarity"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Goal C — substring presence → contains"
+    path: "report.json"
+    assertions:
+      - expression: "goal_c_type"
+        operator: equals
+        expected: "contains"
+    weight: 3.0
+    pass_threshold: 1.0
