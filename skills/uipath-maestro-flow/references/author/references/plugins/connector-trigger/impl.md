@@ -182,7 +182,27 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 
 The CLI derives the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration (MST-8802). **Do not pass `filterExpression` directly — the validator rejects it.**
 
-The command populates `inputs.detail` (including the internal `configuration` blob with the `filter` tree and derived `filterExpression`) and creates workflow-level connection bindings.
+**Mandatory filters (ENGCE-57498):** When `eventParameters` includes values for **required** event parameters (identified by `events.<operation>.required: true` in the trigger metadata), the CLI automatically generates a mandatory filter expression. This is combined with any user-defined `filter` using AND logic:
+
+- **Both mandatory and user filter exist:** `detail.filterExpression = "<mandatory> && <user>"`
+- **Only mandatory filter:** `detail.filterExpression = "<mandatory>"` (e.g., Gmail Email Received with folder selection but no additional filters)
+- **Only user filter:** `detail.filterExpression = "<user>"`
+- **Neither:** `detail.filterExpression = ""`
+
+Example (Gmail Email Received):
+```json
+{
+  "eventParameters": {
+    "ParentFolders": "INBOX"  // Required parameter
+  }
+  // No additional filter tree
+}
+```
+Result: `detail.filterExpression = "(ParentFolders[?ID=='INBOX'])"`
+
+The mandatory filter expression is also persisted in `essentialConfiguration.mandatoryFilterExpression` so the StudioWeb translator can reconstruct the combined expression without rehydrating the view model.
+
+The command populates `inputs.detail` (including the internal `configuration` blob with the `filter` tree, `mandatoryFilterExpression`, and combined `filterExpression`) and creates workflow-level connection bindings.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
 
