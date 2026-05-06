@@ -14,13 +14,12 @@ defaults:
     type: claude-code
     permission_mode: acceptEdits
     model: claude-sonnet-4-6
-    # Activation is a recognition decision, not a work loop — the agent should
-    # decide from the prompt + skill index, not from extensive sandbox
-    # discovery. 3 turns is enough for read-prompt → optional one-shot
-    # discovery → decide. Higher limits would let the agent compensate for a
-    # weak skill description by exploring, masking the signal we want to
-    # measure.
-    max_turns: 3
+    # Activation is a recognition decision, not a work loop — the agent must
+    # decide from the prompt + skill descriptions alone, with zero sandbox
+    # discovery. 1 turn forces invoke-or-don't on the first response. Higher
+    # limits would let the agent compensate for a weak skill description by
+    # exploring, masking the signal we want to measure.
+    max_turns: 1
     # Skill must be allowed so the agent can invoke a skill when it decides
     # to. Read/Write/Bash included so the agent isn't starved of basic tools
     # when it decides NOT to use Skill — removing them would bias the
