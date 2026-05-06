@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "UiPath Maestro Flow (.flow) — build, edit, run, debug, fix. Create/connect nodes; author edges, variables, subflows, triggers, schedules; validate, publish, manage runs, incidents, traces. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For Python/agent.json→uipath-agents. For Orchestrator/solution lifecycle without Flow→uipath-platform. For Test Manager→uipath-test."
+description: "Always invoke for `.flow` files. UiPath Maestro Flow — build, edit, run, debug, fix. Create, connect nodes; connector, approval, script, subflow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For Python/agent.json→uipath-agents. For Orchestrator/solution lifecycle without Flow→uipath-platform. For Test Manager→uipath-test."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
