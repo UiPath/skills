@@ -152,18 +152,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
-  # Structural IxP-node invariants that uip maestro flow validate does NOT
-  # catch (the IxP node manifest only marks fileRef as required, so the
-  # validator accepts instances that crash the Studio Web property panel
-  # or break runtime $vars resolution). Delegated to the canonical
-  # self-check.py shipped with the skill.
-  - type: run_command
-    description: "IxP node passes the invariants flow validate misses (delegated to self-check.py)"
-    command: |
-      f=$(find ../.. -name "*.flow" -print -quit)
-      [ -n "$f" ] || { echo "no .flow file under ../.." >&2; exit 1; }
-      python3 "$SKILLS_REPO_PATH/skills/uipath-maestro-flow/references/author/references/plugins/ixp/self-check.py" "$f"
-    expected_exit_code: 0
-    weight: 4.0
-    pass_threshold: 1.0

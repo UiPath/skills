@@ -195,25 +195,7 @@ If you find yourself typing any of those five field names while authoring an IxP
 
 The `definitions[]` entry is copied verbatim from `registry get` (`Data.Node`). Critical Rule #7 applies unchanged.
 
-### Self-check before `uip maestro flow validate`
-
-`uip maestro flow validate` only checks structural conformance to the node manifest, and the IxP manifest declares `inputDefinition.required: ["fileRef"]` — so a flow with `inputs.model` undefined, missing `outputs.error`, or legacy fields in `inputs` passes `validate` cleanly and then crashes Studio Web's property panel at click time (`Cannot destructure property 'modelName' of 't' as it is undefined`). Run [`self-check.py`](self-check.py) on the `.flow` file you wrote, **before** `flow validate`.
-
-> **DO NOT MODIFY OR REWRITE THIS SCRIPT.** Run it as-is. Do NOT inline its logic into the agent loop, add suppressions, downgrade errors to warnings, or rephrase the failure messages. CI runs the same script against the generated `.flow`. A modified self-check that exits 0 is treated as a failed run, not a pass.
->
-> The Authoring rules above are the source of truth for the instance contract. The registry's `inputDefinition.properties` is **not** a license to override them: it is the schema of the property catalog (current keys only — `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, `mimeType` are NOT returned by `registry get`). If a forbidden field appears in your `inputs`, you put it there from training-data recall, not from the registry response.
-
-```bash
-python3 "<path-to>/skills/uipath-maestro-flow/references/author/references/plugins/ixp/self-check.py" <ProjectName>/<ProjectName>/<ProjectName>.flow
-```
-
-Procedure:
-
-1. **Exit 0** → proceed to `uip maestro flow validate <ProjectName>.flow --output json`.
-2. **Exit 1** → read each error line; the rule number tells you which Authoring rule above to re-read. Fix the **`.flow` file**, not the script. The fix is almost always one of: copy `inputs.model` verbatim from the `registry get` response you already fetched, copy `outputs.{output,error}` verbatim from `outputDefinition`, or delete a legacy field from `inputs`. Re-run the self-check.
-3. **Maximum 2 fix attempts.** If the third self-check still fails, stop and surface the remaining errors to the user — do not declare the flow done, do not run `flow validate` to paper over the failure, and do not edit the script to make it pass.
-
-If you find yourself reading the script and considering a "this rule doesn't apply because the registry says..." rationalization: stop. The registry response is in your transcript; grep it for the field name. If it isn't there (and for the five forbidden fields it never is), the rule applies. Run the script unmodified.
+> **`uip maestro flow validate` enforces the Authoring rules above** via the `ixp-node` validator. If validation fails, the error path/message names the rule (e.g. `Rule #1 ...`) — fix the `.flow` file, not the validator. The registry's `inputDefinition.properties` is the schema of the property catalog, not a license to override the rules: `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, and `mimeType` are NOT returned by `registry get` and must not be set on the instance.
 
 ### `inputs.fileRef` vs the emitted `model.inputs[]` body
 
