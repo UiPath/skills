@@ -67,7 +67,7 @@ A skeleton task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 
 Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. Connector skeletons follow the same shape with `type` set to `connector-activity` or `connector-trigger` and no `data.typeId` / `data.connectionId` keys.
 
-> **`action` skeletons** omit `data.taskTitle`. Without a resolved action-app schema, the title field has no UI to render against. Add it when the user attaches the action-app.
+> **`action` skeletons MUST include `data.taskTitle`** — validator rejects empty per [`plugins/tasks/action/impl-json.md`](plugins/tasks/action/impl-json.md). Source from sdd.md's task-title hint or fall back to `displayName`. Include `data.priority` and `data.recipient` if known from planning; otherwise omit those keys. Other skeleton fields (`data.context`, `data.inputs`, `data.outputs`, `data.actionCatalogName`) stay omitted until the action-app is attached.
 
 ### In-stage timer
 

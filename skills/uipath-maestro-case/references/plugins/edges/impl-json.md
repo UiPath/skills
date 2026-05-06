@@ -12,7 +12,7 @@ Connect two nodes (Trigger → Stage or Stage → Stage) by appending an edge ob
 
 The same recipe covers add / edit / remove — direct JSON writes state declaratively: "make `edges` match the desired set."
 
-> **Schema neutrality.** Edge shape is **identical across v19 and v20** — both use the top-level `edges[]` array, same per-edge fields. Per Rule 18 in v20, do NOT emit `data.waypoints` (lifted to top-level `layout.edges[<edgeId>].waypoints`); skill never authored waypoints anyway, so this is a no-op. `zIndex` is NOT in the layout-strip list; edge-level `zIndex` (when sdd.md requests one) stays at the edge level in both schemas.
+> **Schema neutrality.** Edge shape is **identical across v19 and v20** — both use the top-level `edges[]` array, same per-edge fields. Per Rule 19 in v20, do NOT emit `data.waypoints` (lifted to top-level `layout.edges[<edgeId>].waypoints`); skill never authored waypoints anyway, so this is a no-op. `zIndex` is NOT in the layout-strip list; edge-level `zIndex` (when sdd.md requests one) stays at the edge level in both schemas.
 
 ## Input spec (from `tasks.md`)
 

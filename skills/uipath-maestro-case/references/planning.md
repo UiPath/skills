@@ -48,7 +48,7 @@ uip login status --output json
 uip maestro case registry pull
 ```
 
-If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uipcli/case-resources/` so subsequent searches are local disk lookups.
+If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
 **Capture `Data.UIPATH_URL` from the `login status` JSON for Step 2.1 tenant-override detection.** If `login status` failed or the field is absent, treat tenant override as unavailable and let Step 2.1 fall through to prompt-phrase detection — do not re-run `login status`.
 
@@ -62,7 +62,7 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
 
-### Step 2.1 — Detect schema version (Rule 17)
+### Step 2.1 — Detect schema version (Rule 18)
 
 Resolution order (first match wins):
 
@@ -119,6 +119,19 @@ Place this line above all `T<n>` headings. Re-entry protocol (Phase 2 Step 9.6, 
 If the schema header in tasks.md conflicts with an already-written caseplan.json's `version` field at re-entry, **halt with explicit error** — never silently re-flip.
 
 ## Step 3 — Resolve resources
+
+Before resource resolution, seed TodoWrite with the items below to track Phase 1 progress through registry lookups and §4 T-entry emit. Mark each `in_progress` on entry, `completed` on exit. One item per emit class — never per T-entry.
+
+1. Resolve registry resources (this Step 3)
+2. Write case file T01 (§4.2)
+3. Write trigger entries T02+ (§4.3)
+4. Write variable / argument entries (§4.2.1)
+5. Write stage entries (§4.4)
+6. Write edge entries (§4.5)
+7. Write task entries (§4.6)
+8. Write condition entries (§4.7)
+9. Write SLA entries (§4.8)
+10. User approves tasks.md (Step 5)
 
 For every task, trigger, and condition in the sdd.md:
 
@@ -205,6 +218,24 @@ Before presenting `tasks.md` at Step 5, run a completeness cross-check: for ever
 | SLA | Case-Level SLA + per-stage Stage SLA + per-action Task SLA | §4.8 |
 
 Counts that don't match the sdd.md → fix before Step 5 hard stop.
+
+### 4.0a — Incremental write contract (mandatory)
+
+**One T-entry per file write.** Build `tasks.md` incrementally — never compose the full body in memory and Write once.
+
+Procedure:
+
+1. **Seed.** Write `tasks.md` with header only — `Schema: v19` (or `Schema: v20`), then a `## Inventory` placeholder section. Single Write.
+2. **Per T-entry.** For each T-entry in §4.2 → §4.8 order:
+   - Read `tasks.md` (recover state — context may compact between entries).
+   - Edit-append the new `## T<NN>: …` block to end-of-file.
+   - Move to next T-entry. Do NOT batch.
+3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
+4. **`registry-resolved.json`.** Same incremental discipline — Edit-append one resolution object per resource, not one bulk Write at end.
+
+Why: per-entry round-trips keep tool-call transcript reviewable, preserve rollback granularity, allow mid-run interruption (compaction, user abort), and surface omissions before they propagate. Batching is forbidden — anti-pattern enforced in `SKILL.md`.
+
+This contract mirrors Phase 3's per-T-entry JSON-write contract (see [implementation.md § Per-plugin execution](implementation.md)).
 
 ### 4.1 Task ordering
 

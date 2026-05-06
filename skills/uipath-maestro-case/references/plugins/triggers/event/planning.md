@@ -42,6 +42,8 @@ T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in
 
 ## Unresolved Fallback
 
+> **Rule 17 exception.** Empty `Connections` from `get-connection` (the trigger activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to skeleton.
+
 > **Planning emits the T-entry; execution emits a skeleton trigger node.** "Cannot resolve the connector / connection yet" is not a reason to drop the trigger from `tasks.md` or from `caseplan.json` — the no-omission rule (planning.md §4.0) applies to triggers the same as it does to stages, edges, tasks, and conditions. The pattern mirrors the connector-trigger task skeleton in [skeleton-tasks.md](../../../skeleton-tasks.md): structure preserved, runtime config deferred.
 
 If the connector or connection cannot be resolved:

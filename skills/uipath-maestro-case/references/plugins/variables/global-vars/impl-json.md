@@ -4,7 +4,7 @@ No CLI command exists for variable declaration. Edit `caseplan.json` directly (r
 
 ## Target Paths
 
-Read `Schema:` header from `tasks.md` per Rule 17. Trigger output mappings are identical across schemas (node internals untouched by v20).
+Read `Schema:` header from `tasks.md` per Rule 18. Trigger output mappings are identical across schemas (node internals untouched by v20).
 
 ### v19
 

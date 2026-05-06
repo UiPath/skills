@@ -25,7 +25,7 @@ Record `T<n> → Stage_xxxxxx` in `id-map.json` for downstream cross-reference.
 
 ## Position (stateful, v19 only)
 
-**v19 mode only.** v20 mode skips position math entirely (Rule 18) — see § Recipe (v20) below.
+**v19 mode only.** v20 mode skips position math entirely (Rule 19) — see § Recipe (v20) below.
 
 **Before writing (v19)**, count existing stages:
 
@@ -74,7 +74,7 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
 
 ## Recipe — Regular Stage (v20)
 
-**Strip all node-level layout fields per Rule 18.** No `position`, `style`, `measured`, `width`, `height`, `zIndex`. No position math. FE auto-layouts on canvas load.
+**Strip all node-level layout fields per Rule 19.** No `position`, `style`, `measured`, `width`, `height`, `zIndex`. No position math. FE auto-layouts on canvas load.
 
 ```json
 {
@@ -156,9 +156,9 @@ After writing, confirm:
 - `nodes[].data.label` matches the T-entry's displayName
 - `nodes[].data.isRequired` is present and boolean
 - **v19 only:** all render fields (`position`, `style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`) are present
-- **v20 only:** NO `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18). Only `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` remain
+- **v20 only:** NO `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 19). Only `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` remain
 - For ExceptionStage: `data.entryConditions: []` and `data.exitConditions: []` are present (initialized as empty arrays at creation time)
 - For regular Stage at creation time: `data.entryConditions` / `data.exitConditions` are absent — the conditions plugins will create and populate them later if the sdd.md calls for it
 
-Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added. In v20 mode, validate may reject due to CLI lag (Rule 17) — informational only.
+Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added. In v20 mode, validate may reject due to CLI lag (Rule 18) — informational only.
 

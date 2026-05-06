@@ -21,7 +21,7 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 
 ## Applying SLA at Root vs Stage
 
-- **Root** — the default SLA for the whole case. Target `"root"`; written to the root SLA rules array (v19: `root.data.slaRules[]`; v20: `metadata.slaRules[]` — see Rule 17).
+- **Root** — the default SLA for the whole case. Target `"root"`; written to the root SLA rules array (v19: `root.data.slaRules[]`; v20: `metadata.slaRules[]` — see Rule 18).
 - **Stage** — stage-specific SLA. Target `"<stage-name>"`; written to the stage node's `data.slaRules[]` (unchanged across schemas). Overrides the root default while the stage is active.
 
 Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage > root.

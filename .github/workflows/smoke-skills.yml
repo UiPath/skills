@@ -5,11 +5,13 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  # No `paths:` filter on purpose. This workflow is a required status
+  # check; if `paths:` excluded a PR the workflow wouldn't run, no
+  # check would be reported, and merge would block forever. Instead we
+  # always trigger and let the `detect` job short-circuit via
+  # `skip=true` — the gated job is then reported as skipped, which
+  # GitHub counts as a pass for required checks.
   pull_request:
-    paths:
-      - 'skills/*/SKILL.md'
-      - 'skills/*/references/**'
-      - 'tests/**'
   workflow_dispatch:
 
 jobs:
@@ -210,7 +212,7 @@ jobs:
             -d "grant_type=client_credentials" \
             -d "client_id=$UIPATH_CLIENT_ID" \
             -d "client_secret=$UIPATH_CLIENT_SECRET" \
-            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read" \
+            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments" \
             | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
           echo "::add-mask::$TOKEN"
           {
@@ -220,6 +222,7 @@ jobs:
             echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
             echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
             echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
+            echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
           } >> "$GITHUB_ENV"
           UIPATH_CLI_ENABLE_ENV_AUTH=true \
           UIPATH_CLI_AUTH_TOKEN="$TOKEN" \

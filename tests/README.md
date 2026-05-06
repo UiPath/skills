@@ -88,6 +88,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 |---|---|---|---|
 | **skill** | flat, required | Skill under test | `uipath-<name>` — must match the skill folder (e.g. `uipath-maestro-flow`) |
 | **tier** | flat, required | Test depth / cost | `smoke`, `integration`, `e2e` |
+| **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build`, `operate`, `diagnose` |
 | **lifecycle** | `lifecycle:X`, required | What the agent is asked to do | `generate`, `edit`, `validate`, `discover`, `activate`, `execute`, `deploy` |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
 | **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
@@ -97,8 +98,8 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 
 ### Rules
 
-1. **Required on every task: `skill` + `tier` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
-2. **One value per singular dimension** (`tier`, `lifecycle`, `shape`). A task doesn't have two tiers.
+1. **Required on every task: `skill` + `tier` + `mode:*` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
+2. **One value per singular dimension** (`tier`, `mode`, `lifecycle`, `shape`). A task doesn't have two tiers.
 3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
 4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
 5. **Use only the vocabularies above.** Propose new values in the PR — do not invent tags inline. New values should apply to at least two tasks in practice.
@@ -107,7 +108,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 ### Example
 
 ```yaml
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
 ```
 
 ### Useful slices this enables

@@ -13,7 +13,7 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
-Solution setup (`uip solution new`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule #8); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution new`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
@@ -137,9 +137,9 @@ If any check fails, halt and report.
 ## § Write caseplan.json — Pre-write checks
 
 1. **Scaffold has run.** The 5 files listed in § Scaffold must exist in `<SolutionDir>/<ProjectName>/`. They were written earlier in this same plugin invocation; if missing, halt (bug — re-run the plugin from the start).
-2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule #8, so a collision here means a genuine re-run and overwriting is correct.
+2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule 6, so a collision here means a genuine re-run and overwriting is correct.
 
-## Schema branch — v19 vs v20 (Rule 17)
+## Schema branch — v19 vs v20 (Rule 18)
 
 Read the `Schema:` header from `tasks.md` (first non-comment line, written at planning Step 2.2). One of:
 
@@ -355,5 +355,5 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 
 If any check fails, halt and report — do not proceed to downstream plugins.
 
-**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). In v20 mode, even the post-build validate may reject (Rule 17 softening) — Pre-build validate is informational only.
+**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). In v20 mode, even the post-build validate may reject (Rule 18 softening) — Pre-build validate is informational only.
 

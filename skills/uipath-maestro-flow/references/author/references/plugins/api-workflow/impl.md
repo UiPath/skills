@@ -52,7 +52,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 {
   "id": "callApiFunction",
   "type": "uipath.core.api-workflow.346b8959-c126-48d3-9c46-942abcf944d7",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Call API Function" },
   "inputs": {},
   "outputs": {

@@ -134,8 +134,7 @@ bucket/orchestratorBucket/...        │
 
 | Binding kind | `name` source | `folderPath` source | Notes |
 |---|---|---|---|
-| `process` (external) | `properties.processName` | `properties.folderPath` (literal `Folder`) | One per external process tool |
-| `process` (solution-internal) | `properties.processName` | `"solution_folder"` (placeholder) | Resolved at deploy |
+| `process` (local or external) | `properties.processName` | `properties.folderPath` (literal `Folder` from `uip solution resource list` — typically `"solution_folder"` for local, Orchestrator path for external) | One per process tool |
 | `index` | `indexName` | top-level `folderPath` (literal `Folder`) | StorageBucket-backed only |
 | `app` (escalation) | `channel.properties.appName` | `channel.properties.folderName` (literal `Folder`, translated to binding `folderPath`) | One per Action Center channel |
 | `app` (guardrail escalation) | `action.app.name` | `action.app.folderName` (literal `Folder`, translated to binding `folderPath`) | One per `$actionType: "escalate"` guardrail action |

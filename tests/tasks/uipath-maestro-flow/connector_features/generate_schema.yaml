@@ -29,6 +29,10 @@ initial_prompt: |
   Route failure to a Terminate node with error message "GenerateSchema test failed".
   Route success to a final action that logs "GenerateSchema test passed".
   Validate the final flow file.
+  If the Application Insights connector operation is not present in the
+  registry, use a managed HTTP fallback for the same request and finish after
+  validation. Do not keep searching for a connector node that the registry does
+  not expose.
 
 success_criteria:
   - type: run_command
@@ -40,8 +44,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow has a connector node referencing uipath-microsoft-azureapplicationinsights"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/GenerateSchemaTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-microsoft-azureapplicationinsights' in content, 'Connector key not found'; print('OK: connector key present')\""
+    description: "Flow uses Application Insights connector or task-specific managed HTTP fallback"
+    command: "python3 $TASK_DIR/check_managed_http_fallback.py '**/GenerateSchemaTest*.flow' uipath-microsoft-azureapplicationinsights generate_schema"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

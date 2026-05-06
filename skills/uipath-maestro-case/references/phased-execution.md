@@ -4,7 +4,7 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
-## v20 mode (Rule 17 softening)
+## v20 mode (Rule 18 softening)
 
 When `Schema: v20` is set in `tasks.md`, the following phase modifications apply. v19 mode is unchanged.
 
@@ -15,7 +15,7 @@ When `Schema: v20` is set in `tasks.md`, the following phase modifications apply
 | 5 — Debug | `Run debug session` runs `uip maestro case debug` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip maestro case debug may reject. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` in build-issues.md. |
 | 6 — Publish | `Publish to Studio Web` runs `uip solution upload` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
 
-Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope (Rule 17).
+Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope (Rule 18).
 
 ## Why phased
 
@@ -27,7 +27,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` emitted; informational validate run (expected to report unbound inputs / missing conditions / missing SLA) | `Publish for review` / `Skip publish and continue` / `Abort` |
+| **2 — Prototyping** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` emitted; skeleton-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
@@ -39,7 +39,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 - Solution + project scaffolding (`uip solution new`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
 - Root case — `caseplan.json` with `root` block populated (name, caseIdentifier, empty `nodes[]`, empty `edges[]`, empty `caseExitConditions[]`).
-- Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared. Path is schema-dependent: `root.data.uipath.variables` in v19, top-level `variables` in v20 (Rule 17).
+- Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared. Path is schema-dependent: `root.data.uipath.variables` in v19, top-level `variables` in v20 (Rule 18).
 - Stages — all StageIds generated and captured.
 - Edges — all edges written; sources and targets resolve.
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
@@ -61,17 +61,15 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 ### Phase 2 informational validate
 
-End of Phase 2 mutations, run regular validate:
+End of Phase 2 mutations, run skeleton-profile validate:
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --output json
+uip maestro case validate "<caseplan.json path>" --skeleton --output json
 ```
 
-**Informational only — do NOT halt on errors or warnings.** Phase 2 state is expected invalid: unbound required input values, missing condition rules, missing terminal exit, missing secondary-stage exit conditions, missing SLA. All resolved in Phase 3.
+`--skeleton` runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules — all unbound at this gate, filled in Phase 3.
 
-Capture error and warning counts (and optionally first few messages); include in hard-stop summary. User decides whether skeleton is worth publishing/continuing, or whether something looks off and they want to `Abort` for inspection.
-
-**Do not parse validate output for "expected" vs "unexpected" errors.** Skill does not classify validation errors at this boundary — if user sees something that looks like a true structural bug (dangling edge, missing trigger, duplicate names), they choose `Abort` and fix before re-running. Simpler, no false negatives from misclassification.
+**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Errors that remain are structural (dangling edge, missing trigger, duplicate names) and meaningful — user inspects via the existing `Abort` option before continuing.
 
 ### Phase 2 hard stop
 
@@ -82,7 +80,7 @@ Capture error and warning counts (and optionally first few messages); include in
 Print before prompt:
 
 1. Counts: stages / primary stages / exception stages / edges / triggers / tasks total / skeleton tasks / unresolved resources.
-2. Validate result (informational): `<N> errors, <M> warnings` — call out that Phase 2 state is expected invalid (unbound inputs / missing conditions / missing SLA all filled in Phase 3). Surfacing counts is enough; do not dump full error list unless user asks.
+2. Validate result (skeleton-profile): `<N> errors, <M> warnings` — remaining errors are structural (dangling edge, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
@@ -153,7 +151,7 @@ Phase 3 produces a `caseplan.json` that should pass authoritative validation. No
 
 ## Phase 4 — Validate
 
-End of detail mutations. Run full-mode validate (no `--mode` flag; defaults to full):
+End of detail mutations. Run full-mode validate (omit `--skeleton`; defaults to full):
 
 ```bash
 uip maestro case validate "<caseplan.json path>" --output json
@@ -165,7 +163,7 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-> **v20 mode override.** When `tasks.md` carries `Schema: v20`, Phase 4 runs **informational** — capture errors and warnings to `build-issues.md`, do NOT retry, do NOT hard-stop on counter exhaustion. Proceed to Phase 5 regardless. Reason: CLI may not yet accept v20 top-level shape; failure does not invalidate the caseplan.json that the skill emitted (Rule 17). v19 retry policy below applies only when `Schema: v19`.
+> **v20 mode override.** When `tasks.md` carries `Schema: v20`, Phase 4 runs **informational** — capture errors and warnings to `build-issues.md`, do NOT retry, do NOT hard-stop on counter exhaustion. Proceed to Phase 5 regardless. Reason: CLI may not yet accept v20 top-level shape; failure does not invalidate the caseplan.json that the skill emitted (Rule 18). v19 retry policy below applies only when `Schema: v19`.
 
 **v19 retry policy.** Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
 
@@ -262,4 +260,3 @@ No artifact deletion. No rollback. User owns partial state.
 
 - **Re-ingesting Studio Web edits.** If user edits published skeleton in Studio Web during review, edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; Phase 6 re-publish overwrites Studio Web with completed local build.
 - **Resuming aborted session.** Re-running skill regenerates `tasks.md` from scratch (Rule 6) and re-executes Phase 2 onwards.
-- **Dedicated skeleton validation mode.** Skill does not depend on `--mode skeleton` CLI flag. Regular `uip maestro case validate` runs at end of Phase 2 for informational output only; expected Phase 2 errors are not filtered or classified here.
