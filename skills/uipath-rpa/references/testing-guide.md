@@ -245,17 +245,19 @@ The `UiPath.Testing.Activities` package provides XAML-specific test activities b
 
 ### VerifyExpressionWithOperator
 
-Compares two **string** expressions using a comparison operator. Both `FirstExpression` and `SecondExpression` are `InArgument<string>` — all values are compared as strings.
+Compares two expressions using a comparison operator from the `Comparison` enum. Both `FirstExpression` and `SecondExpression` are `InArgument<Object>` — they accept any type; relational comparisons rely on the runtime types implementing `IComparable`.
 
 **Properties:**
-- `FirstExpression` — left-hand value (string)
-- `SecondExpression` — right-hand value / expected (string)
-- `Operator` — comparison enum. Supported values: `Equality`, `Contains`, `DoesNotContain`, `StartsWith`, `EndsWith`, `Matches` (regex)
-- `OutputMessage` — message shown on failure
-- `TakeScreenshotIfFailed` (Boolean) — capture screenshot on assertion failure
-- `TakeScreenshotIfSucceeded` (Boolean) — capture screenshot on success
+- `FirstExpression` — left-hand value (`InArgument<Object>`, the actual)
+- `SecondExpression` — right-hand value / expected (`InArgument<Object>`)
+- `Operator` — `Comparison` enum. Exact supported values: `Equality`, `Inequality`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `Contains`, `RegexMatch`. Any other identifier (e.g. `StartsWith`, `EndsWith`, `DoesNotContain`, `Matches`) is invalid and rejected at `build` time — `get-errors` does NOT catch invalid enum values.
+- `OutputMessageFormat` — custom format string for the result message; placeholders `{LeftExpression}`, `{LeftExpressionText}`, `{RightExpression}`, `{RightExpressionText}`, `{Result}`, `{Operator}`
+- `TakeScreenshotInCaseOfFailingAssertion` (Boolean) — capture screenshot on assertion failure
+- `TakeScreenshotInCaseOfSucceedingAssertion` (Boolean) — capture screenshot on success
 
-> **Important:** `GreaterThan`, `LessThan`, and other numeric operators are NOT supported — they produce a validation error "Operator X is not supported for the specified expression." For numeric comparisons, use `VerifyExpression` with a boolean expression instead (e.g., `amount > 1000`).
+Authoritative reference: `{projectRoot}/.local/docs/packages/UiPath.Testing.Activities/activities/VerifyExpressionWithOperator.md`. Read the activity doc whenever this skill summary disagrees with it — the activity doc wins.
+
+> **No "starts with" / "ends with" / "does not contain" operators.** For substring containment, use `Contains` (asserts `FirstExpression` contains `SecondExpression`). For prefix/suffix or "does not contain" assertions, use `VerifyExpression` with a boolean C#/VB expression (e.g. `actualValue.StartsWith("foo")`, `Not actualValue.Contains("bar")`). For regex, use `RegexMatch` and pass the pattern in `SecondExpression`.
 
 ### VerifyControlAttribute
 
@@ -267,8 +269,8 @@ Verifies a UI element's attribute (text, enabled state, visibility, etc.) agains
 - `Target` — the UI element to inspect (configured via `uia-configure-target`)
 - `AttributeName` — attribute to verify (e.g., `"text"`, `"enabled"`, `"visible"`)
 - `AttributeValue` — expected value
-- `Operator` — comparison operator (same options as VerifyExpressionWithOperator)
-- `TakeScreenshotIfFailed` / `TakeScreenshotIfSucceeded` — screenshot capture
+- `Operator` — comparison operator from the same `Comparison` enum as `VerifyExpressionWithOperator`: `Equality`, `Inequality`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `Contains`, `RegexMatch`. Verify against the activity's own doc (`{projectRoot}/.local/docs/packages/UiPath.Testing.Activities/activities/VerifyControlAttribute.md`) before authoring.
+- `TakeScreenshotInCaseOfFailingAssertion` / `TakeScreenshotInCaseOfSucceedingAssertion` — screenshot capture
 
 **Constraints:**
 - Cannot be nested inside another `VerifyControlAttribute` — causes validation error
@@ -277,8 +279,8 @@ Verifies a UI element's attribute (text, enabled state, visibility, etc.) agains
 ### Screenshot Capture on Assertions
 
 All verification activities support automatic screenshot capture:
-- `TakeScreenshotIfFailed` — captures the target application window when the assertion fails
-- `TakeScreenshotIfSucceeded` — captures when the assertion passes
+- `TakeScreenshotInCaseOfFailingAssertion` — captures the target application window when the assertion fails
+- `TakeScreenshotInCaseOfSucceedingAssertion` — captures when the assertion passes
 - Both are `[RequiredArgument]` on assert activities — explicitly set them to `True` or `False`
 - Screenshots are attached to test execution results in Test Manager
 
@@ -292,7 +294,7 @@ Place verification activities (VerifyExpression, VerifyExpressionWithOperator, V
 
 - **BookmarkResumptionHelper** — assert activities require this extension. Studio adds it automatically, but manual XAML construction must include `metadata.RequireExtension<BookmarkResumptionHelper>()` in CacheMetadata
 - **VerifyControlAttribute nesting** — cannot nest one inside another
-- **Required screenshot arguments** — `TakeScreenshotIfFailed` and `TakeScreenshotIfSucceeded` are required even though they default to `False`. Omitting them causes validation warnings.
+- **Required screenshot arguments** — `TakeScreenshotInCaseOfFailingAssertion` and `TakeScreenshotInCaseOfSucceedingAssertion` are required even though they default to `False`. Omitting them causes validation warnings.
 - **Platform restrictions** — `VerifyControlAttribute` and some testing activities are Windows-only and may not work in Portable projects
 
 ---
