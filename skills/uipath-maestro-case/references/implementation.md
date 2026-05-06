@@ -51,6 +51,21 @@ issues = []  # shared across all steps
 
 ---
 
+## Seed Phase 2 progress todos — Before Step 6
+
+Before Step 6, seed TodoWrite with the items below to track Phase 2 progress through scaffold + structural emit + skeleton validate. Mark each `in_progress` on entry, `completed` on exit. Replace any Phase 1 todos — do not append.
+
+1. Scaffold solution + project + root case (Step 6)
+2. Add triggers (Step 6.1)
+3. Declare variables + arguments (Step 6.2)
+4. Add stages (Step 7)
+5. Connect edges (Step 8)
+6. Write task shapes (Step 9)
+7. Regenerate bindings_v2.json (Step 9.4)
+8. Skeleton validate + hard stop (Step 9.5)
+
+---
+
 # Phase 2 — Prototyping (Steps 6 – 9.5)
 
 Steps 6 through 9.5 build structural skeleton: solution, project, root case, global variables, stages, edges, triggers, and tasks without value binding. Full contract in [phased-execution.md § Phase 2](phased-execution.md#phase-2--prototyping).
@@ -157,6 +172,11 @@ Before any Phase 3 mutation:
 
 1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`. Recover schema choice from the `Schema:` header (first non-comment line); per Rule 18 it is the source of truth for whether downstream writes target v19 or v20 paths.
 2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index. **Verify schema consistency**: caseplan.json's `version` literal (`"v19"` at `root.version` for v19, `"20.0.0"` at top level for v20) MUST match the tasks.md `Schema:` header. On mismatch, halt with explicit error — never silently re-flip (Rule 18).
+3. **Seed Phase 3 progress todos** — call TodoWrite with the items below. Mark each `in_progress` on entry, `completed` on exit. Surfaces progress through long-running connector schema loops and binding passes. Phase 2 todos (if any) are stale — replace, do not append.
+   1. Wire connector task schemas (Step 9.7)
+   2. Bind task I/O values (Step 9.8)
+   3. Add conditions (Step 10)
+   4. Configure SLA + escalation (Step 11)
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 

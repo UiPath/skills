@@ -120,6 +120,19 @@ If the schema header in tasks.md conflicts with an already-written caseplan.json
 
 ## Step 3 — Resolve resources
 
+Before resource resolution, seed TodoWrite with the items below to track Phase 1 progress through registry lookups and §4 T-entry emit. Mark each `in_progress` on entry, `completed` on exit. One item per emit class — never per T-entry.
+
+1. Resolve registry resources (this Step 3)
+2. Write case file T01 (§4.2)
+3. Write trigger entries T02+ (§4.3)
+4. Write variable / argument entries (§4.2.1)
+5. Write stage entries (§4.4)
+6. Write edge entries (§4.5)
+7. Write task entries (§4.6)
+8. Write condition entries (§4.7)
+9. Write SLA entries (§4.8)
+10. User approves tasks.md (Step 5)
+
 For every task, trigger, and condition in the sdd.md:
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
