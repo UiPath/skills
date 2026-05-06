@@ -57,13 +57,13 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 1. **Coded mode** — `.cs` files with `[Workflow]` or `[TestCase]` attributes exist AND no `.xaml` workflow files (beyond scaffolded `Main.xaml`)
 2. **XAML mode** — `.xaml` workflow files exist AND no coded workflow `.cs` files
 3. **Hybrid** — Both exist → consult [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) to pick the right mode for each new file; default to matching the user's current request
-4. **New project** — Neither exists → consult [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) for decision criteria; ask the user if still ambiguous, or infer from request language ("create a coded workflow" vs "create a workflow")
+4. **New project** — Neither exists → **default to XAML.** Switch to coded only when the user explicitly says "coded", ".cs", "C# workflow", "coded test case", or names a coded-specific trigger (custom data models / DTOs, unit-testable business logic). For all other phrasings ("create a workflow", "automate X", "build an automation"), use XAML. See [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) for the full decision flowchart.
 
 **Routing:** Once mode is determined, use the Task Navigation table below to find the right reference files. For guidance on **choosing** between coded and XAML approaches, see [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md).
 
 ## Authoring Mode Selection
 
-**Default to matching the project's existing mode.** For new projects or ambiguous cases, default to XAML — it is the more common mode and has the widest activity coverage.
+**Default to matching the project's existing mode.** For new projects or ambiguous cases, **default to XAML** — it is the more common mode, has the widest activity coverage, and is the unmarked term in user vocabulary ("create a workflow" means XAML; "create a coded workflow" means coded). Switch to coded only on explicit user phrasing or a coded-specific trigger from the table below.
 
 | Scenario | Mode | Why |
 |----------|------|-----|

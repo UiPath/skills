@@ -2,32 +2,45 @@
 
 Detailed step-by-step procedures for all operations on UiPath coded workflow projects.
 
-## Initialize a New Project
+## Initialize a New Coded Project
 
-Creates a complete UiPath coded automation project from scratch. **ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
+Use this procedure ONLY when the user explicitly asked for a coded project ("coded", ".cs", "C# workflow"). For ambiguous "create a workflow" / "automate X" requests, default to XAML — see [../environment-setup.md § Step 0.3: Creating a New Project](../environment-setup.md#step-03-creating-a-new-project) and [../coded-vs-xaml-guide.md](../coded-vs-xaml-guide.md).
+
+**ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
+
+> **There is no "create a coded project" command.** `create-project` always scaffolds XAML — `BlankTemplate` produces `Main.xaml`, `TestAutomationProjectTemplate` produces `TestCase.xaml`. To work in coded mode you scaffold the project, then add `.cs` files and update `entryPoints` (steps 4-5 below). The project itself is mode-agnostic — `.xaml` and `.cs` workflows can coexist. `--expression-language` controls VB vs C# inside XAML activity expressions; it does NOT make the scaffolding coded.
 
 ### Steps
 
-**1. Create the project with `uip rpa create-project`:**
+**1. Scaffold the project with `uip rpa create-project`** (same command as for an XAML project — the scaffolding is XAML either way):
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
+uip rpa create-project \
+  --name "<NAME>" \
+  --location "<PARENT_DIR>" \
+  --template-id "BlankTemplate" \
+  --expression-language "VisualBasic" \
+  --target-framework "Windows" \
+  --output json
+```
 
 **Template options:**
-- `--template-id BlankTemplate` (default) — standard process project
-- `--template-id TestAutomationProjectTemplate` — test project with testing dependencies
-- `--template-id LibraryProcessTemplate` — reusable library
+- `--template-id BlankTemplate` (default) — standard process project, scaffolds `Main.xaml`
+- `--template-id TestAutomationProjectTemplate` — test project, scaffolds `TestCase.xaml`
+- `--template-id LibraryProcessTemplate` — reusable library, scaffolds XAML library workflows
 
-This scaffolds a valid project with `project.json`, `project.uiproj`, `Main.cs`, and all required metadata directories. The result includes the `projectDirectory` path.
+`--expression-language` does not affect coded `.cs` files. It only controls VB vs C# inside XAML activity expressions. Choose it on the same basis you would for an XAML project (default `VisualBasic`), or omit it.
+
+This scaffolds a valid project with `project.json`, `project.uiproj`, the template's XAML root file (`Main.xaml` / `TestCase.xaml`), and all required metadata directories. The result includes the `projectDirectory` path.
 
 **2. Read the scaffolded files — do NOT overwrite blindly:**
 
 After `create-project` succeeds, read the generated files to understand the defaults:
 ```
 Read: <PROJECT_DIR>/project.json
-Read: <PROJECT_DIR>/Main.cs
+Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 ```
-These contain valid defaults (correct schema version, runtime options, dependencies, etc.) that you should build on rather than replace.
+`project.json` contains valid defaults (correct schema version, runtime options, dependencies) that you should build on rather than replace. Leave the scaffolded XAML in place — `.xaml` and `.cs` workflows coexist freely in the same project.
 
 **3. Analyze the task and plan the file structure:**
 - How many workflow files? (one per logical step or responsibility)
@@ -37,9 +50,9 @@ These contain valid defaults (correct schema version, runtime options, dependenc
 
 **4. Add required dependencies to `project.json`** based on the Service-to-Package mapping. Edit the existing `project.json` — do NOT rewrite the entire file.
 
-**5. Add workflow/test case/source files:**
+**5. Add `.cs` workflow / test case / source files:**
 - Generate `.cs` files (workflows, test cases, source files)
-- Update `project.json` entry points for each workflow/test case file (**Process projects only** — Tests and Library projects do NOT use `entryPoints`)
+- Update `project.json` entry points (**Process projects only** — Tests and Library projects do NOT use `entryPoints`): add an entry for each `.cs` workflow / test case alongside the existing scaffolded XAML entry
 - If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see before-after-hooks-template.md)
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly

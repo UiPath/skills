@@ -1,8 +1,10 @@
 # UiPath Coded Workflow Templates
 
-Ready-to-use templates for all UiPath coded automation project files. Replace placeholders in `{{PLACEHOLDER}}` format.
+Ready-to-use templates for all UiPath **coded** automation project files. Replace placeholders in `{{PLACEHOLDER}}` format.
 
-> **IMPORTANT: Do NOT use these `project.json` / `project.uiproj` templates to create new projects.** Always use `rpa-tool create-project` which generates correct defaults, metadata directories, and version-matched configuration. These templates are **reference-only** — use them to understand the file structure, or to manually add entry points, dependencies, and fileInfoCollection entries to an existing `project.json` that was scaffolded by `create-project`.
+> **Coded-specific.** Every `project.json` template in this file has `"expressionLanguage": "CSharp"` and `"main": "Main.cs"` — they describe coded projects only. For XAML projects, scaffold via `uip rpa create-project --expression-language VisualBasic` and read the generated `project.json` rather than referencing this file.
+
+> **IMPORTANT: Do NOT use these `project.json` / `project.uiproj` templates to create new projects.** Always use `uip rpa create-project` which generates correct defaults, metadata directories, and version-matched configuration. These templates are **reference-only** — use them to understand the file structure, or to manually add entry points, dependencies, and fileInfoCollection entries to an existing `project.json` that was scaffolded by `create-project`.
 
 ---
 
