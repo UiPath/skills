@@ -31,7 +31,11 @@ uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
 | `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow tidy` rewrites positions on save. |
 | `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
 
-**Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file:
+**Shell quoting tip:** There is no `--input-file` flag for `node add` in current
+CLI releases. If `--input` JSON contains special characters (quotes, braces,
+`$vars`), prefer the Direct JSON strategy. If the user explicitly requested CLI,
+write the input to a temp file and pass its contents through command
+substitution:
 
 ```bash
 cat > /tmp/input.json << 'ENDJSON'

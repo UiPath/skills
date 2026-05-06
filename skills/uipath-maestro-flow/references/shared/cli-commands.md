@@ -230,6 +230,16 @@ See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-
 
 See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
 
+### CLI input ergonomics
+
+`uip maestro flow node add` accepts inline JSON through `--input <json>`. Current
+CLI releases do not expose an `--input-file` or stdin form for this command.
+When node inputs include `$vars`, nested quotes, template literals, or multiline
+scripts, prefer the Direct JSON workflow or start from
+[examples/decision-branch.flow](examples/decision-branch.flow) and edit the
+node `inputs` in-place. This keeps agents out of shell-escaping loops and makes
+the final `validate` pass the source of truth.
+
 ## uip maestro flow registry
 
 Manage the local node type cache. No auth required for OOTB nodes; login for tenant-specific connector nodes.
