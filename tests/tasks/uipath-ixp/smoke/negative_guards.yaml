@@ -51,6 +51,22 @@ initial_prompt: |
     and why.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent did not call the IXP REST API with curl (task 1 guard — Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'curl'
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did not run a document-level confirm without --fields (task 3 guard — Critical Rule #8)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm(?!.*--fields)'
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "report.json was created"
     path: "report.json"
@@ -64,7 +80,7 @@ success_criteria:
       - expression: "task_1_action"
         operator: equals
         expected: "refused"
-    weight: 3.0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: json_check
@@ -74,7 +90,7 @@ success_criteria:
       - expression: "task_2_action"
         operator: equals
         expected: "refused"
-    weight: 3.0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: json_check
@@ -84,7 +100,7 @@ success_criteria:
       - expression: "task_3_action"
         operator: equals
         expected: "refused"
-    weight: 3.0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_contains
@@ -94,5 +110,5 @@ success_criteria:
       - "uip ixp"
     excludes:
       - "curl https"
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0

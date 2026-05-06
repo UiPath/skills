@@ -69,6 +69,30 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "--fields flag value includes f-001 (cleanly-correct Invoice Number)"
+    tool_name: "Bash"
+    command_pattern: '--fields\s+[^|;&]*f-001'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "--fields flag value includes f-002 (cleanly-correct Invoice Date)"
+    tool_name: "Bash"
+    command_pattern: '--fields\s+[^|;&]*f-002'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "--fields flag value does NOT include f-004 (wrong-field prediction must be skipped)"
+    tool_name: "Bash"
+    command_pattern: '--fields\s+[^|;&]*f-004'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent passed --corrections with the OCR-mangled field's corrected value"
     tool_name: "Bash"
     command_pattern: '--corrections\s+.*f-003.*\$?12,?000\.00'
