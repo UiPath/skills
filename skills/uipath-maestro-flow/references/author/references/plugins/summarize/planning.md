@@ -54,7 +54,7 @@ No artifact ports. Pattern-style nodes do not wire to resource files — the pro
 
 | Input | Required | Type | Description |
 | --- | --- | --- | --- |
-| `attachment` | Yes | string (Orchestrator Attachment Id) | The Orchestrator Attachment Id of the document to synthesize — a GUID identifying a file already uploaded to Orchestrator's Storage Buckets / Attachments store. Typically a `$vars.*` reference to an upstream node that produced the attachment (e.g., a connector, RPA node, or HTTP step that uploaded a file and returned its id), or a literal attachment id string. **Not** a file URL, byte stream, or local path. |
+| `attachment` | Yes | object (full Flow Attachment) | The full Flow Attachment object for the document — shape `{ FullName, Id, Metadata, MimeType }`. Source it as a flow-level `in` variable of `type: "object"` populated by `uip maestro flow debug --file <name>=<path>`, or from an upstream node that emits a Flow Attachment. Reference the **whole object** with `=js:$vars.<name>` — never `.Id`, a GUID literal, URL, or path. The OOTB schema says `string` and Studio Web shows a file picker, but at runtime the engine deserializes the slot back to the object. |
 | `prompt` | Yes | string | The task instruction — e.g., "Write a 3-paragraph executive summary", "List every SLA penalty clause", "Answer: what is the termination notice period?". |
 | `returnCitations` | No | boolean | When `true`, the `content.citations` array is populated with per-claim page references. Default `false`. |
 

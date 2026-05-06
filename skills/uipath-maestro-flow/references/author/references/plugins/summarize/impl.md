@@ -14,7 +14,7 @@ Confirm:
 - Output ports: `output`, `error`
 - `model.type` — `bpmn:ServiceTask`
 - `model.serviceType` — `ECS.DeepRag`
-- `inputDefinition.properties` — `attachment` (string — Orchestrator Attachment Id), `prompt` (string), `returnCitations` (boolean)
+- `inputDefinition.properties` — `attachment` (object — full Flow Attachment, **not** a bare id), `prompt` (string), `returnCitations` (boolean). The schema declares `string` because Studio Web's file picker serializes the whole Attachment object into that slot at save time; the runtime parses it back as an object — pass the **whole** `{ FullName, Id, Metadata, MimeType }` object, not a GUID, URL, or path.
 - `outputDefinition.output.schema.properties.content` contains `text` (and `citations` when enabled)
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
@@ -31,14 +31,14 @@ uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
   --label "<LABEL>" \
   --position <X>,<Y> \
   --input '{
-    "attachment": "$vars.<upstreamNode>.output.<attachmentIdField>",
+    "attachment": "=js:$vars.<inputAttachmentVar>",
     "prompt": "<INSTRUCTION for the synthesis>",
     "returnCitations": true
   }' \
   --output json
 ```
 
-`--input` accepts a JSON object; the CLI merges it into the node's `inputs`. `attachment` must resolve to an **Orchestrator Attachment Id** string (a GUID) — point it at the field on the upstream node's output that carries the attachment id (not a file URL, file bytes, or a path). Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
+`--input` accepts a JSON object; the CLI merges it into the node's `inputs`. `attachment` must resolve to a **full Flow Attachment object** with shape `{ FullName, Id, Metadata, MimeType }` — point it at an upstream variable holding the whole object (typically a flow `in` variable populated by `uip maestro flow debug --file <name>=<path>`, or an upstream node that emits a Flow Attachment). **Not** a bare id, URL, byte stream, or path; even though Studio Web's form metadata calls this a `file` field and the OOTB schema says `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
 
 **Save the returned node ID** — needed for wiring edges and downstream `$vars.{nodeId}.output` references.
 
@@ -69,7 +69,7 @@ uip maestro flow edge add <FlowName>.flow <drNodeId> <errorHandlerId> \
   "typeVersion": "1.0.0",
   "display": { "label": "Summarize Contract" },
   "inputs": {
-    "attachment": "$vars.uploadContract.output.attachmentId",
+    "attachment": "=js:$vars.contractDoc",
     "prompt": "Write a 5-bullet executive summary covering scope, term, SLAs, penalties, and termination.",
     "returnCitations": true
   },
@@ -140,3 +140,4 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 - **Do not chain Summarize for multi-turn chat.** It is single-turn; each call is independent. Use a published [Agent](../agent/impl.md) for conversational flows.
 - **Do not stuff `prompt` with entire document text.** The attachment is already ingested — the prompt should describe **the task**, not the input.
 - **Do not assume `content.citations` is always present.** When `returnCitations: false`, the field is omitted; downstream code must guard.
+- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. Always pass the whole object via `=js:$vars.<name>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.

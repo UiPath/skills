@@ -22,11 +22,13 @@ sandbox:
 
 initial_prompt: |
   Create a UiPath Flow project named "BatchTransformDemo" that uses a Batch
-  Transform pattern node to enrich rows of a CSV. The flow takes one input
-  variable named `attachmentId` (the Orchestrator Attachment Id of the CSV).
+  Transform pattern node to enrich rows of a CSV. The flow takes one `in`
+  variable of `type: "object"` named `csvAttachment` — the full Flow Attachment
+  object for the source CSV (shape `{ FullName, Id, Metadata, MimeType }`).
   The Batch Transform node must:
 
-    - have its `attachment` input wired to the flow input variable
+    - have its `attachment` input wired to the flow input variable as the
+      WHOLE object (`=js:$vars.csvAttachment`, not `.Id` or any subfield)
     - use this prompt: `Classify each row by category and write a one-line summary.`
     - declare two output columns:
         - `Category`     — One of: Utility, Software, Travel, Other

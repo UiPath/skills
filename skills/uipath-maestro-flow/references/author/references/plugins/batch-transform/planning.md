@@ -48,7 +48,7 @@ No artifact ports. Pattern-style nodes do not wire to resource files — the pro
 
 | Input | Required | Type | Description |
 | --- | --- | --- | --- |
-| `attachment` | Yes | string (Orchestrator Attachment Id) | The Orchestrator Attachment Id of the source CSV — a GUID identifying a file already uploaded to Orchestrator's Storage Buckets / Attachments store. Typically a `$vars.*` reference to an upstream node that produced the attachment (e.g., a connector, RPA node, or HTTP step that uploaded a CSV and returned its id), or a literal attachment id string. **Not** a file URL, byte stream, or local path. |
+| `attachment` | Yes | object (full Flow Attachment) | The full Flow Attachment object for the source CSV — shape `{ FullName, Id, Metadata, MimeType }`. Source it as a flow-level `in` variable of `type: "object"` populated by `uip maestro flow debug --file <name>=<path>`, or from an upstream node that emits a Flow Attachment. Reference the **whole object** with `=js:$vars.<name>` — never `.Id`, a GUID literal, URL, or path. The OOTB schema says `string` and Studio Web shows a file picker, but at runtime the engine deserializes the slot back to the object. |
 | `prompt` | Yes | string | The instruction describing what each output column should contain. Can reference column names from the source via natural language ("summarize the `Description` field"). |
 | `outputColumns` | Yes | array of `{ name, description }` | The columns to produce. Max 10. `name` is the column header; `description` tells the LLM what to put in it. |
 | `enableWebSearchGrounding` | No | boolean | When `true`, the LLM can issue web searches per row to ground its answer. Slower and costlier — use only when rows need external facts. Default `false`. |

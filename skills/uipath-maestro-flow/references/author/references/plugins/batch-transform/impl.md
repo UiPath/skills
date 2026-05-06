@@ -14,7 +14,7 @@ Confirm:
 - Output ports: `output`, `error`
 - `model.type` — `bpmn:ServiceTask`
 - `model.serviceType` — `ECS.BatchTransform`
-- `inputDefinition.properties` — `attachment` (string — Orchestrator Attachment Id), `prompt` (string), `enableWebSearchGrounding` (boolean), `outputColumns` (array of `{ name, description }`)
+- `inputDefinition.properties` — `attachment` (object — full Flow Attachment, **not** a bare id), `prompt` (string), `enableWebSearchGrounding` (boolean), `outputColumns` (array of `{ name, description }`). The schema declares `string` because Studio Web's file picker serializes the whole Attachment object into that slot at save time; the runtime parses it back as an object — pass the **whole** `{ FullName, Id, Metadata, MimeType }` object, not a GUID, URL, or path.
 - `outputDefinition.output.schema.properties` — `id`, `fileName`, `mimeType`
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
@@ -31,7 +31,7 @@ uip maestro flow node add <FlowName>.flow uipath.pattern.batch-transform \
   --label "<LABEL>" \
   --position <X>,<Y> \
   --input '{
-    "attachment": "$vars.<upstreamNode>.output.<attachmentIdField>",
+    "attachment": "=js:$vars.<inputAttachmentVar>",
     "prompt": "<INSTRUCTION describing every output column>",
     "outputColumns": [
       { "name": "<COLUMN_NAME>", "description": "<WHAT TO PUT IN THIS COLUMN>" }
@@ -41,7 +41,7 @@ uip maestro flow node add <FlowName>.flow uipath.pattern.batch-transform \
   --output json
 ```
 
-`--input` accepts a JSON object; the CLI merges it into the node's `inputs`. `attachment` must resolve to an **Orchestrator Attachment Id** string (a GUID) — point it at the field on the upstream node's output that carries the attachment id (not a file URL, file bytes, or a path). The `outputColumns` array can have up to 10 entries. Omit `enableWebSearchGrounding` unless rows genuinely require web-fetched facts.
+`--input` accepts a JSON object; the CLI merges it into the node's `inputs`. `attachment` must resolve to a **full Flow Attachment object** with shape `{ FullName, Id, Metadata, MimeType }` — point it at an upstream variable holding the whole object (typically a flow `in` variable populated by `uip maestro flow debug --file <name>=<path>`, or an upstream node that emits a Flow Attachment). **Not** a bare id, URL, byte stream, or path; even though Studio Web's form metadata calls this a `file` field and the OOTB schema says `type: "string"`, the engine wants the object. The `outputColumns` array can have up to 10 entries. Omit `enableWebSearchGrounding` unless rows genuinely require web-fetched facts.
 
 **Save the returned node ID** — needed for wiring edges and downstream `$vars.{nodeId}.output` references.
 
@@ -72,7 +72,7 @@ uip maestro flow edge add <FlowName>.flow <btNodeId> <errorHandlerId> \
   "typeVersion": "1.0.0",
   "display": { "label": "Categorize Invoices" },
   "inputs": {
-    "attachment": "$vars.fetchRows.output.attachmentId",
+    "attachment": "=js:$vars.invoiceCsv",
     "prompt": "Classify each invoice by category and write a one-line summary.",
     "enableWebSearchGrounding": false,
     "outputColumns": [
@@ -145,3 +145,4 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 - **Do not reshape `outputColumns` to a map** — the array-of-`{name, description}` shape is contractual with the canvas property panel and the BPMN `ECS.BatchTransform` serializer.
 - **Do not reference downstream rows inside the prompt** — each row is processed independently; there is no way to see sibling rows. Pre-aggregate or use [Summarize](../summarize/impl.md) on a synthesized document instead.
 - **Do not chain a Batch Transform's `$vars.{nodeId}.output` directly into a Script expecting rows** — it is a file handle, not a row array.
+- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. Always pass the whole object via `=js:$vars.<name>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.

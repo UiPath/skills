@@ -23,10 +23,12 @@ sandbox:
 initial_prompt: |
   Create a UiPath Flow project named "SummarizeDemo" that uses a Summarize
   pattern node to synthesize a response over an attached document. The flow
-  takes one input variable named `attachmentId` (the Orchestrator Attachment
-  Id of the document). The Summarize node must:
+  takes one `in` variable of `type: "object"` named `documentAttachment` —
+  the full Flow Attachment object for the document (shape
+  `{ FullName, Id, Metadata, MimeType }`). The Summarize node must:
 
-    - have its `attachment` input wired to the flow input variable
+    - have its `attachment` input wired to the flow input variable as the
+      WHOLE object (`=js:$vars.documentAttachment`, not `.Id` or any subfield)
     - use this prompt: `Write a 5-bullet executive summary covering scope, term, SLAs, penalties, and termination.`
     - set `returnCitations` to `true`
 

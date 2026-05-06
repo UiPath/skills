@@ -7,12 +7,15 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
   2. `inputs.prompt` is non-empty.
   3. `inputs.outputColumns` is an array of objects with `name` + `description`
      keys (not flattened to a `{name: description}` map and not a string array).
-  4. `inputs.attachment` is wired (non-empty), and is **not** a literal empty
-     string — typically a `$vars.*` reference.
+  4. `inputs.attachment` is wired to the WHOLE flow input object via
+     `=js:$vars.<name>` — not `.Id`, `.FullName`, or any subfield. The runtime
+     wants the full Flow Attachment `{ FullName, Id, Metadata, MimeType }`.
+  5. The referenced flow input variable is declared `type: "object"`.
 """
 
 import glob
 import json
+import re
 import sys
 
 NODE_TYPE = "uipath.pattern.batch-transform"
@@ -62,6 +65,33 @@ def _check_outputColumns(value) -> None:
                 )
 
 
+_ATTACHMENT_REF = re.compile(r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\s*$")
+
+
+def _check_attachment_is_whole_object(flow: dict, attachment) -> None:
+    if not isinstance(attachment, str) or not attachment.strip():
+        _fail("inputs.attachment missing or empty — wire it to the flow input variable")
+    m = _ATTACHMENT_REF.match(attachment.strip())
+    if not m:
+        _fail(
+            f"inputs.attachment={attachment!r} must be `=js:$vars.<name>` referencing the WHOLE "
+            "Flow Attachment object — not a bare id, GUID, URL, path, or subfield like `.Id`."
+        )
+    var_name = m.group(1)
+    globals_ = (flow.get("variables") or {}).get("globals") or []
+    var = next((v for v in globals_ if v.get("id") == var_name), None)
+    if var is None:
+        _fail(
+            f"inputs.attachment references `$vars.{var_name}` but no flow `globals` variable "
+            f"with id={var_name!r} exists. Declare it as an `in` variable of type `object`."
+        )
+    if var.get("type") != "object":
+        _fail(
+            f"flow input variable `{var_name}` has type={var.get('type')!r}; must be `object` "
+            "to hold the full Flow Attachment `{ FullName, Id, Metadata, MimeType }`."
+        )
+
+
 def main():
     flow = _read_flow()
     node = _find_node(flow)
@@ -71,15 +101,13 @@ def main():
     if not isinstance(prompt, str) or not prompt.strip():
         _fail("inputs.prompt missing or empty")
 
-    attachment = inputs.get("attachment")
-    if not isinstance(attachment, str) or not attachment.strip():
-        _fail("inputs.attachment missing or empty — wire it to the flow input variable")
-
+    _check_attachment_is_whole_object(flow, inputs.get("attachment"))
     _check_outputColumns(inputs.get("outputColumns"))
 
     print(
-        f"OK: {NODE_TYPE} node present; prompt set; attachment wired; "
-        f"outputColumns has {len(inputs['outputColumns'])} {{name,description}} entries"
+        f"OK: {NODE_TYPE} node present; prompt set; attachment is whole-object ref to a "
+        f"`type: object` flow input; outputColumns has {len(inputs['outputColumns'])} "
+        "{name,description} entries"
     )
 
 
