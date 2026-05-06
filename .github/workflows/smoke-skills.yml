@@ -5,11 +5,13 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  # No `paths:` filter on purpose. This workflow is a required status
+  # check; if `paths:` excluded a PR the workflow wouldn't run, no
+  # check would be reported, and merge would block forever. Instead we
+  # always trigger and let the `detect` job short-circuit via
+  # `skip=true` — the gated job is then reported as skipped, which
+  # GitHub counts as a pass for required checks.
   pull_request:
-    paths:
-      - 'skills/*/SKILL.md'
-      - 'skills/*/references/**'
-      - 'tests/**'
   workflow_dispatch:
 
 jobs:
