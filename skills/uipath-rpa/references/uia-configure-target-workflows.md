@@ -49,6 +49,18 @@ Re-inspect (or re-run `uip rpa uia snapshot capture`) only when the UI has actua
 
 **Do NOT use `uip rpa run-file` with partial workflows to advance UI state** — the workflow lifecycle may close the target application when execution ends. The `uip rpa uia interact` CLI is stateless: it performs one action and leaves the app in the resulting state.
 
+### Per-Screen Batching (call-count discipline)
+
+Per screen, use the batched entry points the OR CLI already exposes — one round-trip that handles all elements at once, not N round-trips. This is the largest single source of wasted calls in capture sessions.
+
+- **One snapshot per screen, shared by every consumer.** Capture the screen's DOM snapshot once and pass that same snapshot folder to both the screen-registration call and the element-registration call. Re-capturing per element is wasted work and may pull a stale or shifted DOM if the app moved between captures.
+- **One element-registration call per screen.** The OR CLI's element-registration entry point accepts a list of element-definition file paths in a single invocation; pass every element of the current screen at once. Do not loop one-element-per-call.
+- **One element-XAML retrieval per screen.** When fetching the embedding XAML for elements you just registered, the OR CLI's element-XAML retrieval entry point accepts a list of reference IDs; pass them all at once. Do not loop one-id-per-call.
+- **Screen-XAML retrieval is per-screen.** That entry point is single-target by design — one extra call per screen, not per element.
+- **Cross-screen batching is not currently exposed.** N screens = N rounds of the steps above, gated by `interact`-driven state advances.
+
+Concrete subcommands, flag names, and accepted argument shapes for each batched entry point: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. The package owns the syntax; this skill owns only the per-screen call-count shape above.
+
 ## Indication Fallback
 
 > **Use indication when elements appear only after user interaction** (e.g., a compose form that opens after clicking a button), so `uia-configure-target`'s automated capture cannot see them. Indication requires the user to physically click on the target.
@@ -57,7 +69,14 @@ Workflow steps, response shape, downstream OR regeneration for coded vs XAML, an
 
 ## Attaching Targets to Workflow Activities
 
-Once targets are registered in the OR (via `uia-configure-target` or indication fallback), attach them to XAML activities per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+Once targets are registered in the OR (via `uia-configure-target` or indication fallback), attach them to XAML activities per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`. That doc owns the concrete subcommands, flags, and response shapes for both attachment paths.
+
+**Path-choice policy (this skill's scope — which path to take, not how to invoke it).** The attachment guide describes two paths; they are not interchangeable for agent-authored XAML:
+
+- **Embed path — DEFAULT for agent-authored XAML.** Inline the OR-resolved target XAML as a child of the consuming activity element directly in the file you just wrote. Works on cold files — the project does not need to be loaded in Studio's in-memory designer. This is the only path that reliably works for XAML the agent has just generated or just edited from disk.
+- **Link path — only for files already loaded in Studio Desktop's designer.** Resolves an OR entry against an activity reference inside Studio's loaded workflow model. Requires the workflow to be open and parsed by Studio Desktop (not Studio Helm / headless). Use this only when the user has the file open in the designer or an existing Studio session already loaded the project.
+
+When generating a new XAML file or editing one that has not been opened in Studio Desktop in this session, take the embed path. Do not attempt the link path on cold XAML — it produces resolution failures that look like activity-id / display-name mismatches but are actually "the file isn't in Studio's model yet" (see § CLI Pitfalls).
 
 ### Multi-Screen Workflows
 
@@ -71,3 +90,4 @@ Runtime symptoms that have wasted entire capture sessions. Canonical flag list, 
 - **Selector resolution rejects bare element refs (`Invalid --refs entry`).** Each ref must be paired with the definition file that owns it.
 - **OR element-creation rejects inline JSON.** The OR CLI consumes pre-written per-element definition files only. Generate the definition files first, then invoke create-elements with their paths.
 - **UIA interact actions reject discovery and global flags (`unknown option`).** Interact subcommands accept only interaction-shape flags. Folder, ref, and project-dir style flags belong to other UIA subcommand families.
+- **Link path against a cold XAML file fails with `Could not retrieve the activity from the workflow`.** This means the target file is not loaded in Studio Desktop's in-memory designer model — not that the activity-id, display name, or reference ID are wrong. Stop after the **first** failure; do not iterate through activity-id / display-name / property-name variations. Switch to the embed path (see § Attaching Targets to Workflow Activities). The link path is reserved for files that an active Studio Desktop session has already opened and parsed; XAML the agent has just written from disk does not qualify.

@@ -494,6 +494,13 @@ Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — ne
 - **Assert activities** require `BookmarkResumptionHelper` extension (added via `metadata.RequireExtension<BookmarkResumptionHelper>()` in CacheMetadata)
 - **TakeScreenshotInCaseOfSucceedingAssertion** and **TakeScreenshotInCaseOfFailingAssertion** are `[RequiredArgument]` on assert activities even though they default to `false`
 
+## Enum-Valued Properties Are a `get-errors` Blind Spot
+
+Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) are checked at compile time against the activity's enum, **not** during `get-errors` static analysis. An invalid identifier on an enum-typed attribute returns "no diagnostics found" from `get-errors` and surfaces only at `build` / `CacheMetadata` time. Two consequences:
+
+1. Always read `{projectRoot}/.local/docs/packages/<PackageId>/activities/<Activity>.md` for the exact, package-version-specific enum members before authoring an enum-valued attribute. Do not infer values from naming intuition or from prose in this skill.
+2. Always run `uip rpa build` after `get-errors` clears — it is the only validator that catches invalid enum identifiers (see [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop)).
+
 ## Package Version Changes Break XAML
 
 **The #1 cause of XAML breakage.** When upgrading or downgrading activity packages, XAML serialized with one version may not load with another.
