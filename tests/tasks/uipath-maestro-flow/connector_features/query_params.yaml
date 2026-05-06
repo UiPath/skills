@@ -42,8 +42,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow uses Google Tasks connector or managed HTTP fallback"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/QueryParamsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert ('uipath-google-tasks' in content or 'core.action.http.v2' in content), 'Neither Google Tasks connector nor HTTP fallback found'; print('OK: connector or HTTP fallback present')\""
+    description: "Flow uses Google Tasks connector or task-specific managed HTTP fallback"
+    command: "python3 $TASK_DIR/check_managed_http_fallback.py '**/QueryParamsTest*.flow' uipath-google-tasks query_params"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

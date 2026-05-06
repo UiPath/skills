@@ -44,8 +44,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow uses Application Insights connector or managed HTTP fallback"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/GenerateSchemaTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert ('uipath-microsoft-azureapplicationinsights' in content or 'core.action.http.v2' in content), 'Neither Application Insights connector nor HTTP fallback found'; print('OK: connector or HTTP fallback present')\""
+    description: "Flow uses Application Insights connector or task-specific managed HTTP fallback"
+    command: "python3 $TASK_DIR/check_managed_http_fallback.py '**/GenerateSchemaTest*.flow' uipath-microsoft-azureapplicationinsights generate_schema"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
