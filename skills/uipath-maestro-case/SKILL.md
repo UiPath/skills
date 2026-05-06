@@ -176,7 +176,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 
 - **Do NOT leave stages without an inbound edge.** Orphaned and unreachable. Every stage needs ≥1 inbound edge from Trigger or another stage.
 - **Do NOT validate after each T-entry.** Intermediate states expected invalid. Run `validate` once at end of Phase 2 (informational) and once in Phase 4 (authoritative).
-- **Do NOT batch multiple T-entries into one JSON write.** Each T-entry: own Read → mutate → Write cycle. Composing large in-memory JSON across stages/edges/tasks hides intermediate state, breaks review.
+- **Do NOT batch multiple T-entries into one write — applies to BOTH `tasks.md` (Phase 1) AND `caseplan.json` (Phase 3).** Each T-entry: own Read → mutate → Write/Edit cycle, then re-Read before next. Batching hides intermediate state, breaks reviewability, prevents mid-run interruption, and risks silent omissions. See [planning.md § 4.0a](references/planning.md) and [implementation.md § Per-plugin execution](references/implementation.md).
 - **Do NOT place multiple tasks in same lane.** FE renders same-lane tasks stacked — unreadable. Each task own `lane` index in `stageNode.data.tasks[laneIndex][]`. Lane is layout only, no execution semantics.
 - **Do NOT edit `content/*.bpmn`.** Auto-generated, will be overwritten. Edit `content/*.json` only.
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe condition in natural language; execution phase determines exact form.

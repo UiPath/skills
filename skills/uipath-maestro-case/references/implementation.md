@@ -12,7 +12,19 @@ Execute approved `tasks.md` plan, building `caseplan.json` via direct JSON edits
 
 Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mechanics (ID generation, Pre-flight Checklist, primitive ops) are in [case-editing-operations.md](case-editing-operations.md).
 
-**Incremental write per T-entry.** Process `tasks.md` one T-entry at a time: Read `caseplan.json` → apply that single T-entry's mutation → Write `caseplan.json` → re-Read before the next T-entry. Do NOT accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON. Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, and prevent silent cross-entry interference. See [SKILL.md § Anti-patterns](../SKILL.md) and [case-editing-operations.md § Read → modify → write](case-editing-operations.md#read--modify--write).
+**Incremental write per T-entry — mandatory, no exceptions.** Process `tasks.md` one T-entry at a time:
+
+1. Read `caseplan.json` (recover authoritative state).
+2. Apply that single T-entry's mutation via Edit (or Write for first scaffold only).
+3. Re-Read `caseplan.json` before the next T-entry.
+
+Do NOT:
+
+- Accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON.
+- Compose the full `caseplan.json` in one Write.
+- Skip the re-Read between entries — context can compact mid-phase.
+
+Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, allow mid-run interruption, and prevent silent cross-entry interference. Mirrors the Phase 1 incremental contract in [planning.md § 4.0a](planning.md). See [SKILL.md § Anti-patterns](../SKILL.md) and [case-editing-operations.md § Read → modify → write](case-editing-operations.md#read--modify--write).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-json.md`:
 > - Root case → `plugins/case/impl-json.md`
