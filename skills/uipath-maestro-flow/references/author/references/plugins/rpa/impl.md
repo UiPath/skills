@@ -52,7 +52,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 {
   "id": "processInvoices",
   "type": "uipath.core.rpa-workflow.invoice-process-abc123",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Process Invoices" },
   "inputs": {
     "documentPath": "=js:$vars.fileLocation",
