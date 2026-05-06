@@ -2,33 +2,39 @@
 
 Evaluators define how agent output is scored. Each evaluator is a JSON file in `evals/evaluators/`.
 
-## Why fewer evaluators than coded?
+## Supported Evaluator Types
 
-The coded eval reference ([coded/lifecycle/evaluations/evaluators.md](../../coded/lifecycle/evaluations/evaluators.md)) lists 13 evaluator types. Low-code lists only 2 supported types because the two surfaces use **different engines** in the SDK:
+Low-code agents support exactly four evaluator types. All four are first-class options in the Studio Web "Add evaluator" dialog. Two also have CLI-flag shortcuts; the other two are created via the UI or by hand-writing JSON in `evals/evaluators/`.
+
+| UI label | `type` | `category` | `--type` flag | What it scores | LLM-based |
+|----------|--------|-----------|---------------|----------------|-----------|
+| LLM-as-a-judge: Semantic Similarity | 5 | 1 (LlmAsAJudge) | `semantic-similarity` | Whether the agent's output has the same meaning as the expected output | Yes |
+| Trajectory | 7 | 3 (Trajectory) | `trajectory` | Whether the agent's reasoning path and tool usage match expected behavior | Yes |
+| Exact match | 1 | 0 (Deterministic) | — | Whether the output precisely matches the expected output without variations in wording or formatting | No |
+| JSON similarity | 6 | 0 (Deterministic) | — | Whether two JSON structures or values are "close enough" or share similar structure/contents | No |
+
+How to add each type:
+
+- **Studio Web UI** — Evaluators tab → **Create New** → Add evaluator dialog → pick any of the four. UI is the canonical surface and supports all four with no special steps.
+- **CLI** — `uip agent eval evaluator add <name> --type <flag>` for `semantic-similarity` or `trajectory`. The CLI does not have a `--type` value for Exact match or JSON similarity; create those in the UI or hand-write the JSON.
+- **Hand-write JSON** — drop a file in `evals/evaluators/` matching the schema below; run `uip agent validate --output json`; reference the new `id` from your eval set's `evaluatorRefs`. Useful when you want to pin a specific model and prompt for the LLM-based types, or when you're scaffolding eval files programmatically.
+
+### Why fewer than coded?
+
+The coded eval reference ([coded/lifecycle/evaluations/evaluators.md](../../coded/lifecycle/evaluations/evaluators.md)) lists 13 evaluator types. Low-code supports only these four because the two surfaces use **different engines** in the SDK:
 
 - **Coded** uses the new evaluator hierarchy (`BaseEvaluator`, eval sets carry `version: "1.0"`). 13 distinct `evaluatorTypeId` strings, each with its own implementation class.
-- **Low-code** uses the **legacy** evaluator hierarchy (`BaseLegacyEvaluator`, no `version` field on the eval set). Only `LegacyLlmAsAJudgeEvaluator` (semantic-similarity), `LegacyTrajectoryEvaluator`, `LegacyExactMatchEvaluator`, and `LegacyJsonSimilarityEvaluator` are supported for low-code agents.
+- **Low-code** uses the **legacy** evaluator hierarchy (`BaseLegacyEvaluator`, no `version` field on the eval set). The four legacy classes shipped — `LegacyLlmAsAJudgeEvaluator`, `LegacyTrajectoryEvaluator`, `LegacyExactMatchEvaluator`, `LegacyJsonSimilarityEvaluator` — are exactly what the UI exposes.
 
-Most coded evaluator types (`contains`, `binary-classification`, `multiclass-classification`, all four `tool-call-*`, `llm-judge-output-strict-json-similarity`, `llm-judge-trajectory-simulation`) **have no legacy counterpart** and cannot be used on a low-code agent.
+Most coded evaluator types (`contains`, `binary-classification`, `multiclass-classification`, all four `tool-call-*`, `llm-judge-output-strict-json-similarity`, `llm-judge-trajectory-simulation`) have no legacy counterpart and cannot be used on a low-code agent.
 
-The CLI exposes only `semantic-similarity` and `trajectory` via `--type`. `Equals` and `JsonSimilarity` are accepted by the runtime but require hand-written JSON — see § Runtime-supported types not exposed by the CLI below.
-
-## Evaluator Types (CLI-exposed)
-
-| Type | CLI Flag | What It Scores |
-|------|----------|----------------|
-| Semantic Similarity | `semantic-similarity` | Whether the agent's output has the same meaning as the expected output |
-| Trajectory | `trajectory` | Whether the agent's reasoning path and tool usage match expected behavior |
-
-## Runtime-supported types not exposed by the CLI
-
-The eval worker's discriminator (`uipath/eval/evaluators/evaluator.py` § `legacy_evaluator_discriminator`) accepts two more `type` values that have no `--type` flag. To use them, hand-write the evaluator JSON in `evals/evaluators/<filename>.json`:
+## JSON Shapes
 
 For hand-written files, the filename can be any descriptive name (e.g. `legacy-equality.json`) — the runtime keys off `id` / `evaluatorRefs`, not the filename. The CLI-generated `evaluator-<uuid8>.json` pattern only applies to evaluators created via `uip agent eval evaluator add`.
 
-### `Equals` (type 1, category 0 — Deterministic)
+### Exact match (`type` 1, `category` 0 — Deterministic)
 
-Exact-match comparison; no LLM. Equivalent of coded `uipath-exact-match`.
+No LLM. Equivalent of coded `uipath-exact-match`.
 
 ```json
 {
@@ -46,9 +52,9 @@ Exact-match comparison; no LLM. Equivalent of coded `uipath-exact-match`.
 
 No `prompt`/`model` required (Deterministic category bypasses the LLM checks).
 
-### `JsonSimilarity` (type 6, category 0 — Deterministic)
+### JSON similarity (`type` 6, `category` 0 — Deterministic)
 
-Tree-based JSON comparison; no LLM. Equivalent of coded `uipath-json-similarity`.
+Tree-based JSON comparison. No LLM. Equivalent of coded `uipath-json-similarity`.
 
 ```json
 {
@@ -64,9 +70,9 @@ Tree-based JSON comparison; no LLM. Equivalent of coded `uipath-json-similarity`
 }
 ```
 
-### `LlmAsAJudge` semantic-similarity (type 5, category 1) — explicit shape
+### LLM-as-a-judge: Semantic Similarity (`type` 5, `category` 1 — LlmAsAJudge)
 
-If you want to hand-write a semantic-similarity evaluator instead of using `evaluator add` (e.g. to pin a specific model and prompt), the full shape is:
+The CLI's `evaluator add --type semantic-similarity` writes a shorter prompt; hand-write the file when you want to pin a specific model and the longer 0–100 prompt:
 
 ```json
 {
@@ -84,7 +90,7 @@ If you want to hand-write a semantic-similarity evaluator instead of using `eval
 }
 ```
 
-### `Trajectory` (type 7, category 3) — explicit shape
+### Trajectory (`type` 7, `category` 3 — Trajectory)
 
 ```json
 {

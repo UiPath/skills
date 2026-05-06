@@ -82,10 +82,12 @@ uip agent eval remove <id_or_name> --set "<eval_set_name>" --path <agent_dir> --
 
 The `--inputs` and `--expected` flags populate `inputs` and `expectedOutput` on the test case. Each evaluator type sources its placeholder values from a different combination of test-case fields and agent run trace:
 
-| Evaluator Type | From test case | From agent run trace |
-|----------------|---------------|----------------------|
-| `semantic-similarity` | `expectedOutput` → `{{ExpectedOutput}}` | Agent output → `{{ActualOutput}}` |
-| `trajectory` | `expectedAgentBehavior` → `{{ExpectedAgentBehavior}}`, `inputs` → `{{UserOrSyntheticInput}}`, `simulationInstructions` → `{{SimulationInstructions}}` | Trace → `{{AgentRunHistory}}` |
+| Evaluator Type | From test case | From agent run |
+|----------------|---------------|----------------|
+| Semantic Similarity (type 5) | `expectedOutput` → `{{ExpectedOutput}}` | Agent output → `{{ActualOutput}}` |
+| Trajectory (type 7) | `expectedAgentBehavior` → `{{ExpectedAgentBehavior}}`, `inputs` → `{{UserOrSyntheticInput}}`, `simulationInstructions` → `{{SimulationInstructions}}` | Trace → `{{AgentRunHistory}}` |
+| Exact match (type 1) | `expectedOutput` (compared verbatim, no placeholders) | Agent output (compared verbatim) |
+| JSON similarity (type 6) | `expectedOutput` (tree-compared, no placeholders) | Agent output (tree-compared) |
 
 For trajectory evaluation, write `--expected-agent-behavior` as a natural language description of what the agent should do, not what it should output:
 
