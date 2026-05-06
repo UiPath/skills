@@ -63,29 +63,13 @@ uip rpa create-project \
   --output json
 ```
 
-**Expression language for XAML projects:** Prefer `VisualBasic` for Windows target framework projects. Pass `--expression-language CSharp` only when the user explicitly asks for C# expressions in XAML — this changes the syntax used inside activity expressions, nothing else.
+**Expression language:** Prefer `VisualBasic` for Windows target framework projects. Use `CSharp` only when the user explicitly asks for C# expressions inside XAML activities.
 
 **`--studio-dir`:** Optional. Headless Studio does not need it. Pass it only when you have explicitly forced Studio Desktop (`UIPATH_RPA_TOOL_USE_STUDIO=1`, or invoking `diff`/`focus-activity`) and Studio's auto-detection from the registry fails.
 
 ### For Coded Projects (only when the user explicitly requested coded)
 
-There is no "create a coded project" command. The flow is: scaffold like any other project (XAML files appear), then add `.cs` workflow files and update entry points.
-
-**1. Scaffold the project** — same `create-project` form as XAML. `--expression-language` only affects VB vs C# expressions inside XAML activities; it has no effect on `.cs` workflow files. Pick it on the same basis as for an XAML project (default `VisualBasic`), or omit it.
-
-```bash
-uip rpa create-project \
-  --name "<NAME>" \
-  --location "<PARENT_DIR>" \
-  --template-id "BlankTemplate" \
-  --expression-language "VisualBasic" \
-  --target-framework "Windows" \
-  --output json
-```
-
-Use `--template-id TestAutomationProjectTemplate` for test projects, or `--template-id LibraryProcessTemplate` for libraries.
-
-**2. Switch to coded mode** — add `.cs` workflow files per [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json` to reference them. The scaffolded `Main.xaml` / `TestCase.xaml` can stay — only remove it if the user explicitly asks for a coded-only project.
+Run the **same** `create-project` command as for an XAML project (above) — there is no separate coded form. After it scaffolds, add `.cs` workflow files per [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. The scaffolded `Main.xaml` / `TestCase.xaml` can stay — remove it only if the user explicitly asks for a coded-only project.
 
 #### Parameters
 

@@ -4,34 +4,13 @@ Detailed step-by-step procedures for all operations on UiPath coded workflow pro
 
 ## Initialize a New Coded Project
 
-Use this procedure ONLY when the user explicitly asked for a coded project ("coded", ".cs", "C# workflow"). For ambiguous "create a workflow" / "automate X" requests, default to XAML — see [../environment-setup.md § Step 0.3: Creating a New Project](../environment-setup.md#step-03-creating-a-new-project) and [../coded-vs-xaml-guide.md](../coded-vs-xaml-guide.md).
+Use this procedure ONLY when the user explicitly asked for a coded project ("coded", ".cs", "C# workflow"). For ambiguous "create a workflow" / "automate X" requests, default to XAML — see [../coded-vs-xaml-guide.md](../coded-vs-xaml-guide.md).
 
-**ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
-
-> **There is no "create a coded project" command.** `create-project` always scaffolds XAML — `BlankTemplate` produces `Main.xaml`, `TestAutomationProjectTemplate` produces `TestCase.xaml`. To work in coded mode you scaffold the project, then add `.cs` files and update `entryPoints` (steps 4-5 below). The project itself is mode-agnostic — `.xaml` and `.cs` workflows can coexist. `--expression-language` controls VB vs C# inside XAML activity expressions; it does NOT make the scaffolding coded.
+There is no "create a coded project" command. `create-project` always scaffolds XAML; coded mode is a post-scaffold step (add `.cs` files, update `entryPoints`). For the canonical `create-project` documentation — flag semantics, scaffolding behavior, how `--expression-language` works — see [../environment-setup.md § Step 0.3: Creating a New Project](../environment-setup.md#step-03-creating-a-new-project).
 
 ### Steps
 
-**1. Scaffold the project with `uip rpa create-project`** (same command as for an XAML project — the scaffolding is XAML either way):
-
-```bash
-uip rpa create-project \
-  --name "<NAME>" \
-  --location "<PARENT_DIR>" \
-  --template-id "BlankTemplate" \
-  --expression-language "VisualBasic" \
-  --target-framework "Windows" \
-  --output json
-```
-
-**Template options:**
-- `--template-id BlankTemplate` (default) — standard process project, scaffolds `Main.xaml`
-- `--template-id TestAutomationProjectTemplate` — test project, scaffolds `TestCase.xaml`
-- `--template-id LibraryProcessTemplate` — reusable library, scaffolds XAML library workflows
-
-`--expression-language` does not affect coded `.cs` files. It only controls VB vs C# inside XAML activity expressions. Choose it on the same basis you would for an XAML project (default `VisualBasic`), or omit it.
-
-This scaffolds a valid project with `project.json`, `project.uiproj`, the template's XAML root file (`Main.xaml` / `TestCase.xaml`), and all required metadata directories. The result includes the `projectDirectory` path.
+**1. Scaffold the project** following [../environment-setup.md § Step 0.3](../environment-setup.md#step-03-creating-a-new-project). The command is the same as for an XAML project — the scaffolding is XAML either way. The result is a project with `project.json`, `project.uiproj`, the template's XAML root file (`Main.xaml` / `TestCase.xaml`), and all required metadata directories.
 
 **2. Read the scaffolded files — do NOT overwrite blindly:**
 
