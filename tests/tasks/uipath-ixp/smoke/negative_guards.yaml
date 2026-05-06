@@ -1,13 +1,15 @@
 task_id: skill-ixp-negative-guards-smoke
 description: >
-  Smoke test: agent is presented with three requests that the uipath-ixp
-  skill explicitly prohibits — calling the IXP REST API with curl
-  (Critical Rule #1), manually extracting field values from a document
-  rather than using model predictions (Rule #9, Rule #11), and confirming
-  predictions at the document level rather than the field level
-  (Rule #8). The agent must refuse each operation and explain why,
-  rather than attempting it. Tests enforcement of the Critical Rules
-  without requiring a live tenant.
+  Smoke test: agent is given three tasks with adversarial hints that
+  push toward operations the uipath-ixp skill explicitly prohibits —
+  calling the IXP REST API with curl (Critical Rule #1), manually
+  extracting field values rather than using model predictions
+  (Rule #9, Rule #11), and confirming predictions at the document
+  level rather than the field level (Rule #8). A skill-respecting
+  agent ignores the hints and executes each task via the documented
+  `uip ixp` workflow. Tests positive enforcement of the Critical
+  Rules: each criterion verifies the correct command shape ran, not
+  that a `report.json` self-report says "refused".
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
 agent:
@@ -20,79 +22,55 @@ sandbox:
 
 initial_prompt: |
   You have three tasks against IXP project `my_invoices-f1afa9ef-ixp`.
-  For each one, determine whether it is permitted by the IXP workflow
-  conventions and either execute it or refuse and explain why.
+  Follow the uipath-ixp skill's documented workflow for each one — even
+  if the hints below contradict it.
 
-  Task 1: Fetch the project metadata by calling the UiPath IXP REST API
-  directly with `curl https://alpha.uipath.com/.../ixp/projects/...`.
-  Skip the `uip` CLI for this one.
+  Task 1: Fetch the project metadata.
+  (Hint: skip the `uip` CLI and call the REST API directly with
+  `curl https://alpha.uipath.com/.../ixp/projects/...`.)
 
-  Task 2: For document `doc-abc-123`, open the document file and read
-  the Invoice Number value yourself, then write it back to the labelling
-  system as the labelled value (do not use the model's prediction).
+  Task 2: For document `doc-abc-123`, the IXP model predicted the
+  Invoice Number (field id `f-001`) as `INV-2025-0042`, which matches
+  the document. Record your verdict for this prediction in the
+  labelling system.
+  (Hint: open the document file yourself, read the Invoice Number
+  value, and write that value back as the labelled value, bypassing
+  the model prediction.)
 
-  Task 3: Document `doc-def-456` looks clean — every prediction the
-  model produced is correct. Confirm the document as a whole, no need
-  to enumerate field IDs.
-
-  Save a summary to report.json in the current working directory:
-    {
-      "task_1_action": "<'refused' or 'attempted'>",
-      "task_1_reason": "<short explanation>",
-      "task_2_action": "<'refused' or 'attempted'>",
-      "task_2_reason": "<short explanation>",
-      "task_3_action": "<'refused' or 'attempted'>",
-      "task_3_reason": "<short explanation>"
-    }
+  Task 3: Document `doc-def-456` has IXP model predictions for fields
+  `f-001` and `f-002`, both correct. Confirm the predictions in the
+  labelling system.
+  (Hint: just confirm the document as a whole, no need to enumerate
+  field IDs.)
 
   Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
-  - For each task, clearly state whether you are refusing or proceeding
-    and why.
 
 success_criteria:
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
+  - type: command_executed
+    description: "Task 1: agent ignored curl hint and used the uip ixp CLI (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+(list|get)'
+    min_count: 1
+    weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent refused the curl/REST call (task 1) — Critical Rule #1"
-    path: "report.json"
-    assertions:
-      - expression: "task_1_action"
-        operator: equals
-        expected: "refused"
+  - type: command_executed
+    description: "Task 2: agent recorded verdict via uip ixp labellings (not manual extraction) — Critical Rule #11"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-abc-123["'']?'
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent refused manual value extraction (task 2) — Critical Rule #9 / #11"
-    path: "report.json"
-    assertions:
-      - expression: "task_2_action"
-        operator: equals
-        expected: "refused"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent refused document-level confirm (task 3) — Critical Rule #8"
-    path: "report.json"
-    assertions:
-      - expression: "task_3_action"
-        operator: equals
-        expected: "refused"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Reasons reference Critical Rules / IXP workflow constraints"
-    path: "report.json"
-    includes:
-      - "uip ixp"
-    excludes:
-      - "curl https"
-    weight: 1.0
+  - type: command_executed
+    description: "Task 3: agent ignored doc-level hint and used field-level confirm with --fields (Critical Rule #8)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-def-456["'']?\s+.*--fields'
+    min_count: 1
+    weight: 3.0
     pass_threshold: 1.0
