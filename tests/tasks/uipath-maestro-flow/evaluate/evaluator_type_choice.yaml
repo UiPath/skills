@@ -70,32 +70,10 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Goal A — natural-language similarity → llm-judge-output"
-    path: "report.json"
-    assertions:
-      - expression: "goal_a_type"
-        operator: equals
-        expected: "llm-judge-output"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Goal B — deterministic JSON shape similarity → json-similarity"
-    path: "report.json"
-    assertions:
-      - expression: "goal_b_type"
-        operator: equals
-        expected: "json-similarity"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Goal C — substring presence → contains"
-    path: "report.json"
-    assertions:
-      - expression: "goal_c_type"
-        operator: equals
-        expected: "contains"
-    weight: 3.0
+  - type: run_command
+    description: "Each goal mapped to the correct kebab-case --type"
+    command: "python3 $TASK_DIR/check_type_choice.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 9.0
     pass_threshold: 1.0
