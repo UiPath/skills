@@ -10,14 +10,6 @@ DO NOT MODIFY THIS SCRIPT TO SUPPRESS A FAILURE. The rules encode
 runtime invariants (Studio Web canvas destructure, `$vars` resolution,
 schema drift) that `flow validate` cannot catch. A failure here means
 the `.flow` file is broken — fix the flow, not the check.
-
-The inline heredoc form embedded in impl.md ("Self-check before
-`uip maestro flow validate`") is a flattened, function-free version of
-the same checks. The two forms are NOT byte-equivalent — this file
-wraps the logic in `check_flow()` / `main()`, the heredoc inlines it —
-but they MUST stay logically equivalent: the same FORBIDDEN_INPUT_FIELDS
-set, the same per-node assertions, the same rule numbers, the same exit
-codes. When changing one, change the other.
 """
 from __future__ import annotations
 

@@ -197,46 +197,14 @@ The `definitions[]` entry is copied verbatim from `registry get` (`Data.Node`). 
 
 ### Self-check before `uip maestro flow validate`
 
-`uip maestro flow validate` only checks structural conformance to the node manifest, and the IxP manifest declares `inputDefinition.required: ["fileRef"]` — so a flow with `inputs.model` undefined, missing `outputs.error`, or legacy fields in `inputs` passes `validate` cleanly and then crashes Studio Web's property panel at click time (`Cannot destructure property 'modelName' of 't' as it is undefined`). Run this self-check on the `.flow` file you wrote, **before** `flow validate`.
+`uip maestro flow validate` only checks structural conformance to the node manifest, and the IxP manifest declares `inputDefinition.required: ["fileRef"]` — so a flow with `inputs.model` undefined, missing `outputs.error`, or legacy fields in `inputs` passes `validate` cleanly and then crashes Studio Web's property panel at click time (`Cannot destructure property 'modelName' of 't' as it is undefined`). Run [`self-check.py`](self-check.py) on the `.flow` file you wrote, **before** `flow validate`.
 
-> **DO NOT MODIFY THIS SCRIPT.** Run it as-is. Do NOT add suppressions, downgrade errors to warnings, remove `sys.exit(1)`, or rephrase the failure messages. The heredoc below is a flattened, function-free copy of [`self-check.py`](self-check.py) in this directory — the two forms are not byte-equivalent (the `.py` wraps the logic in `check_flow()` / `main()`, the heredoc inlines it) but they enforce the same rules with the same exit codes. CI runs the same logic against the generated `.flow`. A modified self-check that exits 0 is treated as a failed run, not a pass.
+> **DO NOT MODIFY OR REWRITE THIS SCRIPT.** Run it as-is. Do NOT inline its logic into the agent loop, add suppressions, downgrade errors to warnings, or rephrase the failure messages. CI runs the same script against the generated `.flow`. A modified self-check that exits 0 is treated as a failed run, not a pass.
 >
 > The Authoring rules above are the source of truth for the instance contract. The registry's `inputDefinition.properties` is **not** a license to override them: it is the schema of the property catalog (current keys only — `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, `mimeType` are NOT returned by `registry get`). If a forbidden field appears in your `inputs`, you put it there from training-data recall, not from the registry response.
 
 ```bash
-python3 - "<ProjectName>/<ProjectName>/<ProjectName>.flow" <<'PY'
-import json, sys
-FORBIDDEN_INPUT_FIELDS = {"digitizationMode", "documentTaxonomy", "attachmentId", "fileName", "mimeType"}
-with open(sys.argv[1]) as fh:
-    flow = json.load(fh)
-errors = []
-for node in flow.get("nodes") or []:
-    if not isinstance(node, dict) or not str(node.get("type", "")).startswith("uipath.ixp."):
-        continue
-    nid = node.get("id", "?")
-    inputs = node.get("inputs") or {}
-    outputs = node.get("outputs") or {}
-    model = inputs.get("model")
-    if not isinstance(model, dict) or not model.get("modelName") or not model.get("folderKey"):
-        errors.append(f"{nid}: rule #1 — inputs.model.{{modelName,folderKey}} must be present (canvas crashes with 'Cannot destructure property modelName' otherwise)")
-    fileRef = inputs.get("fileRef", "")
-    if not isinstance(fileRef, str) or not fileRef.startswith("=js:$vars."):
-        errors.append(f"{nid}: rule #3 — inputs.fileRef must be '=js:$vars.<upstream>.output.<field>'")
-    for port in ("output", "error"):
-        if port not in outputs:
-            errors.append(f"{nid}: rule #4 — outputs.{port} required (downstream $vars.{nid}.{port} won't resolve)")
-    legacy = sorted(FORBIDDEN_INPUT_FIELDS & set(inputs.keys()))
-    if legacy:
-        errors.append(f"{nid}: rule #6 — forbidden legacy fields in inputs: {legacy} (removed from current schema; registry-get does NOT return these)")
-    if node.get("model") is not None:
-        errors.append(f"{nid}: rule #5 — top-level 'model' on instance (must live in definitions[])")
-if errors:
-    print("IxP self-check FAILED", file=sys.stderr)
-    for e in errors:
-        print(f"  {e}", file=sys.stderr)
-    sys.exit(1)
-print("IxP self-check passed.")
-PY
+python3 "<path-to>/skills/uipath-maestro-flow/references/author/references/plugins/ixp/self-check.py" <ProjectName>/<ProjectName>/<ProjectName>.flow
 ```
 
 Procedure:

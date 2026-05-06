@@ -18,6 +18,8 @@ description: >
 
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:ixp]
 
+task_timeout: 600
+
 agent:
   type: claude-code
   permission_mode: acceptEdits

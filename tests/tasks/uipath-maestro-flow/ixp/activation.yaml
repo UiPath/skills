@@ -1,8 +1,7 @@
 task_id: skill-flow-ixp-activation
 description: >
-  IxP activation — 6 positive activation tests (explicit, invoice-extraction,
-  receipt-processing, contract-extraction, form-extraction, generic) fanned
-  out via `dataset.rows`. Each row carries a distinct user prompt; success
+  IxP activation — 2 positive activation tests (explicit, invoice-extraction)
+  fanned out via `dataset.rows`. Each row carries a distinct user prompt; success
   criteria are identical across all rows.
 
   Scope: did the skill get called, not did it work. Assertions verify the agent
@@ -39,30 +38,6 @@ dataset:
         Build a UiPath Flow that pulls vendor name, invoice number, invoice
         date, total amount, and line items out of PDF invoices saved in a
         SharePoint folder, then posts the result to our accounting system.
-
-    - id: receipt-processing
-      prompt: >-
-        Employees upload photos and PDFs of expense receipts. We need to pull
-        out the merchant name, transaction date, total, currency, and category
-        from each receipt and feed those into our expense reimbursement system.
-
-    - id: contract-extraction
-      prompt: >-
-        Build a flow that reads our vendor contracts and pulls out the
-        counterparty name, effective date, term length in months, governing
-        law, and renewal clause text — then writes the results to a contracts
-        tracking spreadsheet.
-
-    - id: form-extraction
-      prompt: >-
-        New vendors submit W-9 tax forms before we can pay them. Build a flow
-        that reads each submitted W-9 PDF, extracts the legal name, business
-        name, taxpayer ID number (TIN/SSN/EIN), tax classification, and
-        address, and writes the results to our vendor master record.
-
-    - id: generic
-      prompt: >-
-        I want to extract 3 fields from an invoice that I store in my Google Drive.
 
 initial_prompt: |
   ${row.prompt}

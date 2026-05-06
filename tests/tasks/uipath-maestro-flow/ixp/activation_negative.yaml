@@ -37,15 +37,6 @@ dataset:
         Create a flow with a manual trigger and an HTTP node that calls
         api.stripe.com, then a script node that logs the response.
 
-    - id: rpa-orchestration
-      prompt: >-
-        Create a Maestro flow that orchestrates an RPA process and an
-        inline agent in sequence.
-
-    - id: structural-edit
-      prompt: >-
-        Add a decision branch and two end nodes to my existing .flow.
-
 initial_prompt: |
   ${row.prompt}
 

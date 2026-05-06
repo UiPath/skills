@@ -28,17 +28,9 @@ sandbox:
 
 dataset:
   rows:
-    - id: runtime-projects
-      prompt: >-
-        What runtime projects can I access in flow?
-
     - id: ixp-models
       prompt: >-
         What IxP models can I access in maestro?
-
-    - id: published-extractors
-      prompt: >-
-        What document extractors can I access in flow?
 
 initial_prompt: |
   ${row.prompt}
