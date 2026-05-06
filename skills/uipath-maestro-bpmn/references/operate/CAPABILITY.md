@@ -1,8 +1,18 @@
 # Operate - Package, ship, run, and manage BPMN processes
 
-Capability index for cloud-side lifecycle work. Operate owns packaging, upload, publish/deploy, debug/run, and instance management. These actions may contact UiPath services or external systems.
+Capability index for BPMN Process Orchestration lifecycle work. Operate owns the steps that prepare a BPMN project
+for the cloud and the steps that touch the cloud: package generation, Studio Web upload, Orchestrator publish/deploy,
+debug/run, job inspection, and instance lifecycle.
+These actions may contact UiPath services or external systems.
 
-> Inherits universal rules from [SKILL.md](../../SKILL.md). Authoring and validation live in [author/CAPABILITY.md](../author/CAPABILITY.md); post-run investigation lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+> **Where you came from / where to go next.** Operate is downstream of Author (model-authored BPMN plus CLI
+> validation/enrichment) and upstream of Diagnose (runtime faults and state inspection).
+> BPMN source work lives in [author/CAPABILITY.md](../author/CAPABILITY.md);
+> post-run investigation lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+>
+> **Inherits universal rules from [SKILL.md](../../SKILL.md).** In particular: BPMN XML is source, generated package
+> files and Integration Service enrichment are CLI-owned, parsed CLI output uses `--output json`, and
+> upload/publish/deploy/debug/run/lifecycle actions require explicit user consent.
 
 ## When to use this capability
 
@@ -12,15 +22,27 @@ Capability index for cloud-side lifecycle work. Operate owns packaging, upload, 
 - Debug or run a process instance after explicit consent.
 - Inspect jobs, processes, process versions, instances, variables, incidents, and traces.
 - Pause, resume, cancel, retry, migrate, or move a running instance when explicitly requested.
+- Refresh or regenerate CLI-owned package metadata before a cloud action.
 
 ## Critical rules
 
-1. **Never debug or run without explicit consent** - process execution can call external systems and create real side effects.
-2. **Validate before operate** - do not upload, publish, debug, or run until Author validation is complete or the user accepts known draft warnings.
-3. **Refresh/generate package resources before cloud actions** - stale generated JSON can break bindings even when BPMN source is correct.
-4. **Default publish wording to Studio Web upload unless the user explicitly asks for Orchestrator deployment** - keep deploy semantics explicit.
-5. **Report identifiers plainly** - summarize returned Studio Web URLs, package IDs, process IDs, job IDs, instance IDs, and folder context when available.
-6. **Do not retry before diagnosis** - identify root cause first, then decide whether retry is appropriate.
+1. **Never debug or run without explicit consent** - execution can call connectors, start child processes, create Action
+   Center work, mutate queues, send messages, or update external systems.
+2. **Ask before every cloud-side mutation** - upload, publish, deploy, debug, process run, pause, resume, cancel, retry,
+   migrate, and cursor movement require a clear user decision for that action.
+3. **Validate before operate** - do not upload, publish, debug, or run until Author validation is complete or the user
+   explicitly accepts known draft warnings.
+4. **Refresh or regenerate package metadata before cloud actions** - stale `bindings_v2.json`, `entry-points.json`,
+   `operate.json`, or `package-descriptor.json` can break import or runtime even when the BPMN source is correct.
+5. **Keep source and package ownership clear** - fix process structure, variables, mappings, events, and documented non-IS
+   extensions in `.bpmn`; rerun CLI generation/enrichment for generated package JSON and Integration Service metadata.
+6. **Default publish wording to Studio Web upload unless the user explicitly asks for Orchestrator deployment** - keep deploy semantics explicit.
+7. **Always include folder context on runtime commands that require it** - `process run` takes `<FOLDER_KEY>` and
+   `instance`/`incident get` commands require `--folder-key` or `-f`.
+8. **Report identifiers plainly** - summarize returned Studio Web URLs, package paths, solution IDs, process keys,
+   job keys, instance IDs, run IDs, final status, and folder context when available.
+9. **Do not retry before diagnosis** - identify root cause first, then decide whether retry, cancel, migrate,
+   cursor movement, or source repair is appropriate.
 
 ## Workflow
 
@@ -34,18 +56,23 @@ Capability index for cloud-side lifecycle work. Operate owns packaging, upload, 
 
 | I need to... | Read these |
 | --- | --- |
-| Prepare for Studio Web upload | [references/ship.md](references/ship.md) + [shared/project-layout.md](../shared/project-layout.md) |
+| Prepare for Studio Web upload | [references/ship.md](references/ship.md), [shared/project-layout.md](../shared/project-layout.md) |
 | Deploy to Orchestrator | [references/ship.md](references/ship.md) |
 | Run/debug a BPMN process | [references/run.md](references/run.md) |
 | Inspect job or instance status | [references/run.md](references/run.md) |
 | Pause/resume/cancel/retry | [references/manage.md](references/manage.md) |
+| Migrate or move an instance cursor | [references/manage.md](references/manage.md) |
+| Correlate a running instance to deployed BPMN | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 | Diagnose a failed run | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 
 ## Anti-patterns
 
 - **Never treat package generation as source authoring** - generated files reflect BPMN plus enrichment.
-- **Never upload a draft with unresolved Integration Service enrichment unless the user explicitly wants a non-executable draft review.**
+- **Never upload a draft with unresolved Integration Service enrichment unless the user explicitly wants a non-executable
+  draft review.**
 - **Never run lifecycle commands just to validate XML.**
+- **Never default to Orchestrator deploy when the user says "publish."** Use Studio Web upload unless the target is explicit.
+- **Never use `debug` as a substitute for validation.** Debug executes the process against real services.
 - **Never retry a faulted instance without checking incidents and deployed asset correlation.**
 
 ## References
