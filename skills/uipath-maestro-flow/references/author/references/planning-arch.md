@@ -94,6 +94,8 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.action.script` | [script](plugins/script/planning.md) | Custom logic, data transformation, computation, formatting |
 | `core.action.http.v2` | [http](plugins/http/planning.md) | Call a REST API — connector mode (IS auth) or manual mode (raw URL). Replaces deprecated `core.action.http` |
 | `core.action.transform` | [transform](plugins/transform/planning.md) | Declarative map, filter, or group-by on a collection |
+| `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns (category, summary, extracted entities) to every row of an attached CSV. Gated by tenant flag `canvas.nodes.batch-transform` |
+| `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Comprehensive synthesis / Q&A over one attached document, with optional per-claim citations. Gated by tenant flag `canvas.nodes.summarize` |
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
@@ -176,6 +178,8 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.action.script` | `input` | `success`, `error` |
 | `core.action.http.v2` | `input` | `default`, `error`, `branch-{id}` (dynamic per `inputs.branches` entry) |
 | `core.action.transform` | `input` | `output`, `error` |
+| `uipath.pattern.batch-transform` | `input` | `output`, `error` |
+| `uipath.pattern.deep-rag` | `input` | `output`, `error` |
 | `core.logic.delay` | `input` | `output` |
 | `core.logic.decision` | `input` | `true`, `false` |
 | `core.logic.switch` | `input` | `case-{id}` (dynamic per case), `default` |
@@ -496,6 +500,13 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 - Agent is tightly coupled to this flow, not reused -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
 - Agent is a published tenant resource, reused across flows -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
+
+### "I need an LLM to process rows of a CSV or summarize a document"
+
+- Add LLM-generated columns to every row of a CSV (classify, summarize, extract) -> [batch-transform](plugins/batch-transform/planning.md) (`uipath.pattern.batch-transform`)
+- Synthesize or answer questions over one attached document, with optional citations -> [summarize](plugins/summarize/planning.md) (`uipath.pattern.deep-rag`)
+- Small ad-hoc reshaping (map/filter/groupBy) without an LLM -> [transform](plugins/transform/planning.md)
+- Multi-step reasoning with tool use -> [inline-agent](plugins/inline-agent/planning.md) or [agent](plugins/agent/planning.md)
 
 ### "The flow needs something outside flow capabilities"
 
