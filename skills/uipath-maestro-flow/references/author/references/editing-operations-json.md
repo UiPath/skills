@@ -389,10 +389,24 @@ Use `Edit` to modify the start node in-place (no delete/re-add needed):
    }
    ```
 
+   **Nested subflows stay flat.** If a node inside `<SUBFLOW_NODE_ID>` is another `core.subflow`, add that child definition as another top-level peer in the root `subflows` object:
+
+   ```json
+   {
+     "subflows": {
+       "outerSubflow": { "nodes": [ { "id": "innerSubflow", "type": "core.subflow" } ], "edges": [], "variables": {}, "layout": {} },
+       "innerSubflow": { "nodes": [ ... ], "edges": [ ... ], "variables": { ... }, "layout": { ... } }
+     }
+   }
+   ```
+
+   Do **not** create `subflows.outerSubflow.subflows.innerSubflow`. Real `.flow` files keep every subflow definition at the root `subflows` level, even when the execution nesting is multiple levels deep.
+
 3. Subflow's `in` variables must match the parent node's `inputs` keys
 4. Map all `out` variables on the subflow's End node `outputs`
 5. Parent-scope `$vars` are NOT visible inside the subflow — pass values via inputs
 6. Subflow node positions go in the **subflow's own** `layout.nodes` — not in the top-level `layout.nodes`. Each subflow has an independent layout scope.
+7. Each nested subflow still has its own `nodes`, `edges`, `variables`, and `layout` sections under its top-level `subflows.<nodeId>` entry.
 
 See [subflow/impl.md](plugins/subflow/impl.md) for the full JSON structure and rules.
 

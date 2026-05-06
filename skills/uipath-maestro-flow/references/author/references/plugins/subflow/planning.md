@@ -28,6 +28,7 @@ The `error` port is the implicit error port shared with all action nodes — see
 ## Key Properties
 
 - Subflows have their own `nodes`, `edges`, and `variables` stored in `subflows.{nodeId}`
+- Nested subflows are represented by additional top-level entries in the root `subflows` map; do not nest a `subflows` object inside another subflow definition
 - Parent-scope `$vars` are **not** visible inside the subflow — pass values explicitly via inputs
 - Subflow inputs map to `direction: "in"` variables; outputs map to `direction: "out"` variables
 - Nesting supported up to 3 levels deep
