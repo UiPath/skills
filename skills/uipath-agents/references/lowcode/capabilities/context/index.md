@@ -15,7 +15,7 @@ For other context variants, see [context.md](context.md).
 
 ## Discovery
 
-Two `uip` calls — identity from `resource list`, full configuration from `resource get`. Symmetric with [../process/external.md § Discovery](../process/external.md#discovery).
+Two `uip` calls — identity from `resource list`, full configuration from `resource get`. Symmetric with [../process/process.md § Discovery](../process/process.md#discovery).
 
 ### Step 1 — Verify login and scaffold (if not already done)
 

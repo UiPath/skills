@@ -58,8 +58,8 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Validate, upload, pack, publish, or deploy | [project-lifecycle.md](project-lifecycle.md) | |
 | Discover solution resources (processes/apps/indexes/buckets/connections) | [project-lifecycle.md](project-lifecycle.md) § Resource Discovery | |
 | Add a tool — pick the right kind | [capabilities/process/process.md](capabilities/process/process.md) | applicable sibling |
-| Add an external Orchestrator process tool (RPA / agent / API / agentic) | [capabilities/process/external.md](capabilities/process/external.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
-| Wire a solution-internal agent tool / multi-agent solution | [capabilities/process/solution-agent.md](capabilities/process/solution-agent.md) | |
+| Add a process tool (RPA / agent / API / agentic) — local or external | [capabilities/process/process.md](capabilities/process/process.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
+| Wire a multi-agent solution (parent + tool agents) | [capabilities/process/process.md](capabilities/process/process.md) § Multi-Agent Solution Example | |
 | Add an Integration Service tool | [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md) | |
 | Add a context (Context Grounding / attachments / DataFabric) | [capabilities/context/context.md](capabilities/context/context.md) | applicable sibling |
 | Add an index-backed context (RAG) | [capabilities/context/index.md](capabilities/context/index.md) | |
