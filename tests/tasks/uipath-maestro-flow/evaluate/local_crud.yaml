@@ -106,3 +106,11 @@ success_criteria:
     min_count: 4
     weight: 1.5
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Evaluator + eval-set JSON files exist on disk with correct shape"
+    command: "python3 $TASK_DIR/check_local_crud.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
