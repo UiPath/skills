@@ -32,7 +32,7 @@ These rules are the canonical source for low-code agent authoring. Capability fi
 
 14. **Never manually edit `storageVersion`.** It is managed by `uip agent validate` (which migrates files to the latest version on success) and by Studio Web on import. If validate reports that `storageVersion` is newer than supported, upgrade uipcli rather than editing the field by hand.
 
-15. **Inline agents in flows use `uipath.agent.autonomous` nodes.** The node's `model.source` references the inline agent's `projectId` UUID. The agent definition lives in a subdirectory inside the flow project. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md).
+15. **Inline agents in flows use `uipath.agent.autonomous` nodes.** The node's `inputs.source` references the inline agent's `projectId` UUID. The definition still declares `model.source: true`, but flow-core hoists the source identity onto `inputs.source` for the node instance. The agent definition lives in a subdirectory inside the flow project. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md).
 
 16. **Never invoke other skills automatically.** If the user needs flow operations, tell them to use the `uipath-maestro-flow` skill.
 

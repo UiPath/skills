@@ -27,7 +27,7 @@ An inline agent lives in a subdirectory named after its `projectId` (a UUID). It
 <FlowProject>/
 ├── <FlowName>.flow
 ├── project.uiproj              # Flow's project file
-├── <projectId-uuid>/           # Inline agent subdirectory (UUID as folder name) ← model.source points here
+├── <projectId-uuid>/           # Inline agent subdirectory (UUID as folder name) ← inputs.source points here
 │   ├── agent.json              # Agent definition (same schema as standalone — see ../../agent-definition.md)
 │   ├── flow-layout.json        # Empty: {}
 │   ├── evals/
@@ -145,11 +145,11 @@ uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow \
 
 ## Flow Wiring
 
-After creating the inline agent, the flow needs a `uipath.agent.autonomous` node whose `model.source` is the inline agent's `projectId` UUID, plus edges connecting it to the rest of the flow.
+After creating the inline agent, the flow needs a `uipath.agent.autonomous` node whose `inputs.source` is the inline agent's `projectId` UUID, plus edges connecting it to the rest of the flow.
 
 **Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 16, this skill does not invoke flow operations directly. Tell the user:
 
-> The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `model.source = <uuid>` and connect the input/success edges via direct `.flow` authoring. **After all flow graph edits are complete**, run `uip agent validate --inline-in-flow`; for tool-bearing inline agents, include `--bindings-target <FlowProjectDir>/bindings_v2.json` when the installed CLI supports it.
+> The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `inputs.source = <uuid>` and connect the input/success edges via direct `.flow` authoring. **After all flow graph edits are complete**, run `uip agent validate --inline-in-flow`; for tool-bearing inline agents, include `--bindings-target <FlowProjectDir>/bindings_v2.json` when the installed CLI supports it.
 
 The node JSON shape that the flow skill must produce is documented in § Flow Node Structure below — keep it as a reference, not as a CLI walkthrough.
 
@@ -185,6 +185,7 @@ Additional notes for inline-in-flow:
   "inputs": {
     "systemPrompt": "You are an agentic assistant.",
     "userPrompt": "What is the current date?",
+    "source": "<projectId-uuid>",        // UUID linking to the inline agent directory
     "agentInputVariables": [],
     "agentOutputVariables": [
       { "id": "content", "type": "string" }
@@ -203,17 +204,15 @@ Additional notes for inline-in-flow:
       "source": "=Error",
       "var": "error"
     }
-  },
-  "model": {
-    "source": "<projectId-uuid>"        // UUID linking to the inline agent directory
   }
 }
 ```
 
 **Critical fields:**
-- `model.source` — The inline agent's `projectId` UUID. Must match the subdirectory name and `agent.json.projectId` inside the flow project. This is the only field that belongs in the node instance's `model` block.
+- `inputs.source` — The inline agent's `projectId` UUID. Must match the subdirectory name and `agent.json.projectId` inside the flow project. The definition still declares `model.source: true`, but flow-core hoists that identity field onto `inputs.source` for the `uipath.agent.autonomous` node instance.
 - `inputs.systemPrompt` / `inputs.userPrompt` — Current flow validation requires non-empty placeholders on the node. The canonical prompts still live in `agent.json.messages[]`.
 - `definitions[]` — The `uipath.agent.autonomous` definition copied from the flow registry supplies `model.serviceType: "Orchestrator.StartInlineAgentJob"`, BPMN type, version, and context. Do not copy those fields into the node instance.
+- No node instance `model` block — the inline-agent source lives at `inputs.source`.
 
 Resource nodes use the same minimal `model.source` pattern:
 
@@ -279,7 +278,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 # See § Inline-in-Flow Process Tool resource.json above for the exact format
 
 # 5. Hand off to the uipath-maestro-flow skill to add the
-#    uipath.agent.autonomous node (model.source = <projectId>),
+#    uipath.agent.autonomous node (inputs.source = <projectId>),
 #    tool resource nodes, and wire all edges (input/success/tool).
 #    Do NOT run uip maestro flow commands from this skill —
 #    Critical Rule 16.
@@ -302,7 +301,7 @@ uip solution resource refresh --output json
 
 `flow-workbench` extracts inline agents during `uip solution upload` / `uip solution pack`:
 
-1. Reads the inline agent directory referenced by `model.source` UUID
+1. Reads the inline agent directory referenced by `inputs.source` UUID
 2. Collects connected resource nodes via artifact handles
 3. Packages the `AgentDefinition` from the inline agent's `agent.json`
 4. Writes into package:
@@ -338,7 +337,7 @@ uipath.agent.resource.memory.*                        ← Memory space
 
 ## BPMN Execution Engine Notes
 
-- **Inline agents**: `ServiceTask` with `serviceType: "Orchestrator.StartInlineAgentJob"`. The agent definition is read from the inline agent directory (`model.source` UUID) and executed in-process.
+- **Inline agents**: `ServiceTask` with `serviceType: "Orchestrator.StartInlineAgentJob"`. The agent definition is read from the inline agent directory (`inputs.source` UUID) and executed in-process.
 
 The execution is asynchronous. The flow pauses at the agent node and resumes when the agent job completes.
 

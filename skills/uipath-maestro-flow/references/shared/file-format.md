@@ -76,7 +76,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 >
 > The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else. (Improving the validator's path specificity is tracked in [MST-9368](https://uipath.atlassian.net/browse/MST-9368).)
 
-> **No full `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). Nodes whose definition declares `model.source: true` are the current exception: use the minimal instance block `"model": { "source": "<ProjectId-or-resourceId>" }`; do not copy `serviceType`, `version`, or `context` into the instance.
+> **No full `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). Attached inline-agent resource nodes that still require a source use the minimal instance block `"model": { "source": "<resourceId>" }`; do not copy `serviceType`, `version`, or `context` into the instance. `uipath.agent.autonomous` is the inline-agent exception: flow-core hoists the manifest-declared source identity onto `inputs.source`, so the node instance has no `model` block.
 >
 > **No `ui` block on nodes.** Position and size are stored in the top-level `layout` object, not on individual nodes. See [Layout](#layout) below.
 
@@ -88,7 +88,8 @@ A few per-instance identity fields live on the node instance:
 |-------|---------|---------|
 | `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
 | `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
-| `model.source` | Inline-agent nodes and attached inline-agent resource nodes whose definition declares `model.source: true` | The inline agent's `projectId` or attached resource UUID. This is the only allowed instance `model` field. |
+| `inputs.source` | Inline-agent node (`uipath.agent.autonomous`) | The inline agent's `projectId`. flow-core hoists the manifest-declared source identity here. |
+| `model.source` | Attached inline-agent resource nodes whose definition declares `model.source: true` | The attached resource UUID. This is the only allowed instance `model` field for those resource nodes. |
 | `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
 
 Example — manual start trigger:
