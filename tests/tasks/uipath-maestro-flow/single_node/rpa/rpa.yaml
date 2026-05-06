@@ -2,7 +2,8 @@ task_id: skill-flow-rpa
 description: >
   Create a UiPath Flow that uses the ProjectEuler RPA workflow to retrieve the
   title for problem 123. Exercises RPA resource node discovery, registry get,
-  and node wiring.
+  and node wiring. Validate-only: RPA runtime requires attended browser
+  (SW-28504).
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource]
 max_iterations: 1
 
@@ -39,7 +40,7 @@ success_criteria:
   - type: run_command
     description: "Flow has an RPA node wired to return the problem title"
     command: "python3 $TASK_DIR/check_rpa_flow.py"
-    timeout: 600
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

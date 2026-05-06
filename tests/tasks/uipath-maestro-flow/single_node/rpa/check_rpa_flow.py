@@ -39,7 +39,10 @@ def main():
 
     end_nodes = [node for node in nodes if node.get("type") == "core.control.end"]
     output_sources = json.dumps([node.get("outputs") or {} for node in end_nodes])
-    expected_source = f"$vars.{rpa_node['id']}.output.title"
+    rpa_node_id = rpa_node.get("id")
+    if not rpa_node_id:
+        _fail("RPA node is missing id")
+    expected_source = f"$vars.{rpa_node_id}.output.title"
     if expected_source not in output_sources:
         _fail(f"End node output must map from {expected_source}")
 
