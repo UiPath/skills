@@ -103,7 +103,7 @@ Hybrid projects mix coded and XAML files. The `workflows` property provides stro
 | Coded | Coded Workflow | `workflows.Name()` | Strongly typed |
 | Any | Any (dynamic) | `RunWorkflow("path", dict)` | String-based fallback — use only when path is determined at runtime |
 
-### Pattern 1: XAML Orchestrator + Coded Logic
+### Pattern 1: XAML Root + Coded Logic
 
 XAML handles sequencing and simple activities. Coded workflows handle complex business logic. Coded Source Files define shared data models.
 
@@ -120,7 +120,7 @@ OrderProcessing/
 
 **When to use:** The process has a clear linear flow (orchestrate in XAML) but contains pockets of complex logic (coded workflows) and needs typed data models (coded source files).
 
-### Pattern 2: Coded Orchestrator + XAML for Activities
+### Pattern 2: Coded Root + XAML for Activities
 
 Coded workflow drives the process. XAML workflows wrap activity-heavy steps that are simpler to express visually.
 

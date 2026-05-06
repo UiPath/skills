@@ -18,7 +18,7 @@ When creating a project, **proactively design the right file structure** based o
 ```
 InvoiceProcessor/
 ├── project.json
-├── Main.cs                    # Orchestrator: calls each step via workflows.StepName()
+├── Main.cs                    # Root workflow: calls each step via workflows.StepName()
 ├── ReadInvoices.cs            # Step 1: reads invoices from Excel
 ├── ValidateInvoices.cs        # Step 2: validates data
 ├── PostToERP.cs               # Step 3: posts to external system
@@ -26,7 +26,7 @@ InvoiceProcessor/
 └── ValidationHelpers.cs       # Source file: validation utilities
 ```
 
-### Main.cs Orchestrator Using Strongly-Typed Workflow Invocation
+### Main.cs Root Workflow Using Strongly-Typed Workflow Invocation
 
 ```csharp
 [Workflow]
@@ -59,12 +59,12 @@ InvoiceTests/
 └── PageHelpers.cs              # Source file: UI interaction helpers
 ```
 
-## Example — Hybrid Project (XAML Orchestrator + Coded Logic)
+## Example — Hybrid Project (XAML Root + Coded Logic)
 
 ```
 OrderProcessing/
 ├── project.json
-├── Main.xaml                    # XAML orchestrator: sequences steps, handles retries
+├── Main.xaml                    # XAML root workflow: sequences steps, handles retries
 ├── ScrapeOrderPortal.xaml       # XAML: UI automation with visual selector builder
 ├── SendConfirmationEmail.xaml   # XAML: Mail activities (straightforward)
 ├── ProcessOrder.cs              # Coded workflow: 12 validation rules + LINQ transforms
@@ -97,7 +97,7 @@ For the full decision framework on when to use coded vs XAML, see [../references
 - ✅ Yes → Single root workflow
 
 **Is it a multi-step process?**
-- ✅ Yes → Orchestrator root workflow + separate workflow file for each step
+- ✅ Yes → A root workflow that invokes each step + separate workflow files for each step
 
 **Does it involve repeated data structures?**
 - ✅ Yes → Extract to Coded Source File (e.g. `Models.cs`, `InvoiceData.cs`). Required even in XAML projects — XAML cannot define types
