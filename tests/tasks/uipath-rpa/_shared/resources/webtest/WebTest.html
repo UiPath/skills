@@ -1,0 +1,150 @@
+<!-- Any changes to this file should also be applied to WebTestCSP.html -->
+<!DOCTYPE html>
+<html>
+<title>WebTest</title>
+<head>
+<style>
+html {
+ height: 100%;
+}
+body {
+ min-height: 100%;
+}
+p.small {
+    line-height: 0.7;
+}
+
+</style>
+</head>
+<body>
+<p class="small">*** A function is triggered when the button is double-clicked. The function outputs some text in a p element.</p>
+<button ondblclick="myFunction()">Double-click me</button>
+<p id="demoDoubleClick"></p>
+<script>
+function myFunction() {
+    document.getElementById("demoDoubleClick").innerHTML = "Double click worked.";
+}
+</script>
+<p>--------------------------------------------</p>
+<p class="small">*** A function is triggered when the button is single-clicked. The function outputs some text in a p element.</p>
+<button onclick="oneClick()">Single-click me</button>
+<p id="demoClick"></p>
+<script>
+function oneClick()	{
+	document.getElementById("demoClick").innerHTML = "Single click worked.";
+	}
+</script>
+
+<p>--------------------------------------------</p>
+<p class="small">*** This example demonstrates how to assign an "onmousedown" and "onmouseup" event to a p element.</p>
+
+<button onmousedown="mouseDown()" onmouseup="mouseUp()">Click and hold Left</button>
+<p id="demo" color="red"></p>
+<script>
+function mouseDown() {
+    document.getElementById("demo").innerHTML = "The mouse button is held down.";
+}
+
+function mouseUp() {
+    document.getElementById("demo").innerHTML = "You released the mouse button.";
+}
+</script>
+
+
+<p>--------------------------------------------</p>
+<p class="small">*** This example demonstrates the mouse hover action on a button.</p>
+<button onmouseover="mouseOver()" onmouseout="">Mouse over</button>
+<p id="demoHover"></p>
+<script>
+function mouseOver() {
+	document.getElementById("demoHover").innerHTML = "The mouse is over the button.";
+}	
+
+function mouseOut() {
+	document.getElementById("demoHover").innerHTML = "";
+}	
+</script>
+
+
+<p>--------------------------------------------</p>
+<p class="small">*** This example demonstrates the middle click action on a button.</p>
+<p>
+<button id="middleClick"  >Middle click</button>
+<p id="middle"></p>
+<script>
+	document.getElementById("middleClick").onmousedown = function(event) {
+    if (event.which == 2) {
+       document.getElementById("middle").innerHTML = "Middle button was clicked.";
+    }
+}
+</script>
+</p>
+<p>--------------------------------------------</p>
+<p class="small">*** This example demonstrates the right click action on a button.</p>
+<button id="clickRight"  oncontextmenu="return false;">Right click</button>
+<p id="right"></p>
+<script>
+	document.getElementById("clickRight").onmousedown = function(event) {
+    if (event.which == 3) {
+       document.getElementById("right").innerHTML = "Right click button was clicked.";
+    }
+}
+</script>
+
+
+<p>--------------------------------------------</p>
+<p class="small">*** This example demonstrates the right double click action on a button.</p>
+<button id="clickRightDouble"  oncontextmenu="return false;" >Right double click</button>
+<p id="rightDouble"></p>
+<script>
+	document.getElementById("clickRightDouble").onmousedown = function(event) {
+	
+    if (event.which == 3) {
+       document.getElementById("rightDouble").innerHTML = "";
+    }
+}
+	document.getElementById("clickRightDouble").onmousedown = function(event) {
+	
+    if (event.which == 3) {
+       document.getElementById("rightDouble").innerHTML = "Double right click button was clicked.";
+    }
+}
+</script>
+<p>--------------------------------------------</p>
+<p class="small">*** This example demonstrates the hold down and release actions on right mouse button.</p>
+
+<button id="clickRightDown" oncontextmenu="return false;">Click and hold Right</button>
+<p id="downRight"></p>
+<script>
+document.getElementById("clickRightDown").onmousedown = function(event) {
+    if (event.which == 3) {
+       document.getElementById("downRight").innerHTML = "Right mouse button in hold down.";
+    }
+}
+document.getElementById("clickRightDown").onmouseup = function(event) {
+    if (event.which == 3) {
+       document.getElementById("downRight").innerHTML = "Right mouse button in released.";
+    }
+}	
+</script>
+<p>--------------------------------------------</p>
+
+<p class="small">*** This example demonstrates the hold down and release actions on middle mouse button.</p>
+
+<button id="clickMiddleDown">Click and hold middle</button>
+<p id="downMiddle"></p>
+<script>
+document.getElementById("clickMiddleDown").onmousedown = function(event) {
+    if (event.which == 2) {
+		document.getElementById("downMiddle").innerHTML = "Middle mouse button in hold down.";  
+    }
+}
+document.getElementById("clickMiddleDown").onmouseup = function(event) {
+    if (event.which == 2) {
+		document.getElementById("downMiddle").innerHTML = "Middle mouse button in released.";
+    }
+}	
+</script>
+
+</body>
+</html>

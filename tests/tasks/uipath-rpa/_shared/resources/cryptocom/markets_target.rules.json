@@ -1,0 +1,17 @@
+{
+  "_comment": "Selector-quality rules for the cryptocom 'Markets' header link click test. Consumed by check_xaml_targets.py via --rules.",
+  "target_count": 1,
+  "forbidden_patterns": [],
+  "required_patterns": [
+    {
+      "name": "aaname='Markets' anchor",
+      "regex": "aaname\\s*=\\s*'Markets'",
+      "scope": "FullSelectorArgument"
+    },
+    {
+      "name": "tag='A' element",
+      "regex": "tag\\s*=\\s*'A'",
+      "scope": "FullSelectorArgument"
+    }
+  ]
+}

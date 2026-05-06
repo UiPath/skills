@@ -1,0 +1,87 @@
+task_id: skill-rpa-integration-uia-selector-not-improved-cryptocom
+description: >
+  Skill-guided evaluation: when asked to click a stable header link
+  ("Markets") on the cryptocom page, the agent must follow the
+  configure-target flow but skip improve-selector — the live-probe
+  selector is already reliable (semantic `aaname` / `href` anchor),
+  so TARGET-6 should short-circuit and never spawn improve subagents.
+
+  Outcome-based assertion: the resulting Main.xaml contains a single
+  TargetAnchorable anchored on `aaname='Markets'` + `tag='A'` — the
+  shape produced by a clean live-probe capture — and carries both
+  `NApplicationCard` and `NClick` activities.
+
+tags: [uipath-rpa, integration, lifecycle:generate, uia]
+
+task_timeout: 1200
+agent:
+  type: claude-code
+  model: claude-opus-4-7
+  max_turns: 100
+  turn_timeout: 1000
+  # `Agent` is required — improve-selector spawns parallel subagents.
+  allowed_tools: ["Skill", "Agent", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  # No python venv: agent runs `uip`, not Python.
+  template_sources:
+    - type: template_dir
+      path: ./_shared
+      mount_point: _shared
+
+# Serve the cryptocom fixture locally so the test is hermetic.
+pre_run:
+  - command: "python _shared/serve.py start 18765 cryptocom"
+    timeout: 30
+    fail_on_error: true
+
+post_run:
+  - command: "python _shared/serve.py stop"
+    timeout: 10
+
+initial_prompt: |
+  Build a standard UiPath RPA project named "MarketsClick" (XAML,
+  VisualBasic) under ./MarketsClick that does the following with UI
+  automation:
+
+    * Opens http://127.0.0.1:18765/CryptoComEEE.html in Microsoft Edge
+    * Clicks on the "Markets" header link in the top navigation
+    * Closes the opened Edge window
+
+  Do not add unnecessary activities.
+
+  After the automation is built, close Microsoft Edge.
+
+  Use `--output json` on any uip commands you run.
+
+success_criteria:
+  # Agent consulted the configure-target docs.
+  - type: command_executed
+    description: "Agent read configure-target docs (workflows policy or SKILL.md)"
+    tool_name: "Read"
+    command_pattern: 'configure-target'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Selector-quality gate: outcome-based assertion that the
+  # captured TargetAnchorable carries the expected stable anchors
+  # (`aaname='Markets'` + `tag='A'`). This proves the configure-target
+  # flow produced the right selector without depending on internal
+  # implementation details (e.g. whether improve_* folders existed).
+  - type: run_command
+    description: "TargetAnchorable anchored on aaname='Markets' + tag='A'"
+    command: "python _shared/check_xaml_targets.py MarketsClick/Main.xaml --rules _shared/resources/cryptocom/markets_target.rules.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # Main.xaml contains both required activity types.
+  - type: file_check
+    description: "Main.xaml contains NApplicationCard and NClick"
+    path: "MarketsClick/Main.xaml"
+    includes: ["NApplicationCard", "NClick"]
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,0 +1,86 @@
+task_id: skill-rpa-integration-uia-interact-cli-webtest
+description: >
+  Skill-guided evaluation: when asked to build an automation that
+  interacts with an element that only appears after another click,
+  the agent must use the `uia interact` CLI to advance live app state
+  between configure-target captures (click first, then capture the
+  newly-visible text). Validates that the interact CLI was actually
+  used during the design-time flow, and that the resulting Main.xaml
+  carries the expected `NApplicationCard` + `NClick` + `NHighlight`
+  activities.
+
+tags: [uipath-rpa, integration, lifecycle:generate, uia]
+
+task_timeout: 1500
+agent:
+  type: claude-code
+  model: claude-opus-4-7
+  max_turns: 150
+  turn_timeout: 1000
+  # `Agent` is required — improve-selector spawns parallel subagents.
+  allowed_tools: ["Skill", "Agent", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  # No python venv: agent runs `uip`, not Python.
+  template_sources:
+    - type: template_dir
+      path: ./_shared
+      mount_point: _shared
+
+# Serve the WebTest fixture locally so the test is hermetic.
+pre_run:
+  - command: "python _shared/serve.py start 18766 webtest"
+    timeout: 30
+    fail_on_error: true
+
+post_run:
+  - command: "python _shared/serve.py stop"
+    timeout: 10
+
+initial_prompt: |
+  Build a standard UiPath RPA project named "WebTestInteract" (XAML,
+  VisualBasic) under ./WebTestInteract that does the following with
+  UI automation:
+
+    * Opens http://127.0.0.1:18766/WebTest.html in Microsoft Edge
+    * Clicks the "Single-click me" button
+    * Highlights the "Single click worked." text that appears after
+      the click
+    * Closes the opened Edge window
+
+  Do not add unnecessary activities.
+
+  After the automation is built, close Microsoft Edge.
+
+  Use `--output json` on any uip commands you run.
+
+success_criteria:
+  # Agent consulted the configure-target docs.
+  - type: command_executed
+    description: "Agent read configure-target docs (workflows policy or SKILL.md)"
+    tool_name: "Read"
+    command_pattern: 'configure-target'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Key signal: agent advanced live app state via `uia interact click`
+  # so the post-click text element became capturable. Without this
+  # step the "Single click worked." text never appears in the snapshot
+  # and configure-target can't anchor on it.
+  - type: command_executed
+    description: "Agent used `uia interact click` to advance app state"
+    tool_name: "Bash"
+    command_pattern: 'uia\s+interact\s+click'
+    min_count: 1
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # Main.xaml contains all three required activity types.
+  - type: file_check
+    description: "Main.xaml contains NApplicationCard, NClick, and NHighlight"
+    path: "WebTestInteract/Main.xaml"
+    includes: ["NApplicationCard", "NClick", "NHighlight"]
+    weight: 3.0
+    pass_threshold: 1.0
