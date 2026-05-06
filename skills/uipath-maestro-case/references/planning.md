@@ -206,6 +206,24 @@ Before presenting `tasks.md` at Step 5, run a completeness cross-check: for ever
 
 Counts that don't match the sdd.md → fix before Step 5 hard stop.
 
+### 4.0a — Incremental write contract (mandatory)
+
+**One T-entry per file write.** Build `tasks.md` incrementally — never compose the full body in memory and Write once.
+
+Procedure:
+
+1. **Seed.** Write `tasks.md` with header only — `Schema: v19` (or `Schema: v20`), then a `## Inventory` placeholder section. Single Write.
+2. **Per T-entry.** For each T-entry in §4.2 → §4.8 order:
+   - Read `tasks.md` (recover state — context may compact between entries).
+   - Edit-append the new `## T<NN>: …` block to end-of-file.
+   - Move to next T-entry. Do NOT batch.
+3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
+4. **`registry-resolved.json`.** Same incremental discipline — Edit-append one resolution object per resource, not one bulk Write at end.
+
+Why: per-entry round-trips keep tool-call transcript reviewable, preserve rollback granularity, allow mid-run interruption (compaction, user abort), and surface omissions before they propagate. Batching is forbidden — anti-pattern enforced in `SKILL.md`.
+
+This contract mirrors Phase 3's per-T-entry JSON-write contract (see [implementation.md § Per-plugin execution](implementation.md)).
+
 ### 4.1 Task ordering
 
 Always in this order: stages → edges → tasks → conditions → SLA.
