@@ -22,7 +22,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp documents list <project-name> --output json` | List documents — returns `[{ DocumentId, AttachmentRef }]` |
+| `uip ixp documents list <project-name> [-l <limit>] [--offset <n>] --output json` | List documents — returns `[{ DocumentId, AttachmentRef }]`. Paginated: defaults to 50 items per page (max 10000). Pass `-l` for larger pages or `--offset` to skip ahead. |
 | `uip ixp documents download <project-name> <document-id> -o <path> --output json` | Download the original document file (PDF/PNG/JPG/etc.). The CLI auto-corrects the file extension to match the actual content; use the response `Path` field as the resolved location. |
 
 ## Labellings
@@ -31,3 +31,11 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 |---------|-------------|
 | `uip ixp labellings get-predictions <project-name> [document-id] --output json` | Get IXP model predictions for all documents (or a single document). Returns predicted labels with `FieldId`, `FieldName`, and `FormattedValue`. |
 | `uip ixp labellings confirm <project-name> <document-id> [--fields <ids>] [--corrections <json>] --output json` | Confirm predictions for a document. `--fields "id1,id2,id3"` confirms only those fields. `--corrections '[{"field_id":"...","value":"..."}]'` overrides OCR-mangled values while keeping the prediction's document references. |
+
+## Deployments
+
+For working with runtime (deployed) IXP models — separate from the training workflow above.
+
+| Command | Description |
+|---------|-------------|
+| `uip ixp deployments get-taxonomy <model-name> --folder-key <key> --output json` | Get the taxonomy (field names) of a deployed model. Pairs with `uip maestro flow registry get` — use `inputDefaults.modelName` and `inputDefaults.folderKey` from that output. |
