@@ -54,18 +54,19 @@ These contain valid defaults (correct schema version, runtime options, dependenc
    - Use the project name as namespace
    - Class name = file name (without .cs)
    - Inherit from `CodedWorkflow`
-   - Add `[Workflow]` attribute on `Execute` method
+   - Add `[Workflow]` attribute on the entry-point method. Method name does not have to be `Execute` — any name works. `Execute` is convention; keep it unless the user asks otherwise
    - Add appropriate `using` statements based on which activities are needed
-3. Argument direction is determined by the `Execute` method signature:
+3. Argument direction is determined by the entry-point method signature. Single-return OutArgument is named **`"Output"`**. Tuple returns produce one OutArgument per element, named after the element. A tuple element name matching an input parameter name — or, for single returns, an input parameter literally named `"Output"` — collapses into one **`InOutArgument`**:
 
    | Signature | Example | Argument directions |
    |-----------|---------|---------------------|
-   | Single return | `public string Execute(int a, int b)` | `a` = In, `b` = In, return = Out (named `"Output"`) |
-   | Tuple return | `public (string a, string b) Execute()` | `a` = Out, `b` = Out |
-   | Mixed with InOut | `public (string a, string b) Execute(string b, int c)` | `a` = Out, `b` = InOut (same name in input and tuple), `c` = In |
+   | Single return | `public string Execute(int a, int b)` | `a` = In, `b` = In, return = Out named `"Output"` |
+   | Tuple return | `public (string Test, int A) Execute()` | `Test` = Out, `A` = Out |
+   | Tuple + name collision | `public (string a, string b) Execute(string b, int c)` | `a` = Out, `b` = InOut (same name in input and tuple), `c` = In |
+   | Single return + `Output` input | `public string Execute(string Output, int c)` | `Output` = InOut (input named `"Output"` collides with implicit return name), `c` = In |
    | No return | `public void Execute(string input)` | `input` = In |
 
-   > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
+   > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
 4. Update `project.json` (**Process projects only** — skip `entryPoints` for Tests and Library projects):
    - Add new entry to `entryPoints` array with `filePath`, unique `uniqueId`, `input`, and `output` definitions
    - If the workflow has parameters, define them in `input`/`output` with `name`, `type`, and `required`
@@ -80,7 +81,7 @@ Coded test cases automate and validate application behavior using a structured *
 **Steps:**
 1. Read existing `project.json` to get project name, `outputType`, and current entry points
 2. Create the `.cs` file following the same rules as workflows, but with:
-   - `[TestCase]` attribute instead of `[Workflow]` on the `Execute` method
+   - `[TestCase]` attribute instead of `[Workflow]` on the entry-point method (method name does not have to be `Execute` — any name works; keep `Execute` unless the user asks otherwise)
    - Structured code in three phases: **Arrange**, **Act**, **Assert**
 3. Update `project.json`:
    - Add entry to `entryPoints` array (**Process projects only** — skip `entryPoints` for Tests and Library projects)

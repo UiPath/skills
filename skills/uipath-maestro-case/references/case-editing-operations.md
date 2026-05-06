@@ -24,7 +24,7 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 
 ---
 
-## v20 layout-strip (Rule 18)
+## v20 layout-strip (Rule 19)
 
 In v20 mode, the following Pre-flight Checklist items become **NOOPs** because layout state lives in top-level `layout`, not on each node:
 
@@ -272,7 +272,7 @@ To re-wire an edge's source/target: delete the edge entry from `schema.edges[]` 
 
 Run `uip maestro case validate <file> --output json` after every plugin's batch of mutations — not after every individual write. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); validate is authoritative at the plugin boundary.
 
-On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per plugin; if still failing, halt and AskUserQuestion per the skill's Critical Rule #20.
+On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per plugin; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
 
 ---
 

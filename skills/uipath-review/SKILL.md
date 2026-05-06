@@ -21,7 +21,7 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 ## Critical Rules
 
 1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-coded-apps, uipath-platform).
-2. **ALWAYS run validation and Workflow Analyzer before manual review.** Run `uip rpa get-errors` on every RPA entry point, `uip agent validate` on agents, `uip flow validate` on flows. Report every Error, Warning, and Info result. A review without automated validation is incomplete.
+2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa get-errors` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `get-errors` catches structural / analyzer issues, `build` catches compile-time issues `get-errors` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip flow validate` on flows. Report every Error, Warning, and Info result from every command. A review without both `get-errors` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
 5. **Understand business context first.** Before evaluating optimization, ask or infer what the solution is trying to accomplish. A queue-based architecture is not "better" if the use case processes 5 items/day.
@@ -164,10 +164,18 @@ Report **all** results — Errors, Warnings, and Info — in the final review re
 uip rpa get-errors --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
-3. Collect **all** results — Errors, Warnings, and Info-level messages
-4. If any entry point has validation errors, the project is **not deployable**
+3. **Then run a project-level build** to catch what `get-errors` misses (unknown member names like `NGetText.Value`, invalid enum values like `Operator="StartsWith"`, member resolution / CacheMetadata failures, attribute-form C# expression JIT failures):
+
+```bash
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+```
+
+4. Collect **all** results from both commands — Errors, Warnings, and Info-level messages
+5. If any entry point has `get-errors` errors **or** the project fails to `build`, the project is **not deployable**
 
 > Do NOT validate only Main.xaml — validate every file listed in `entryPoints`. A project can have multiple entry points and errors in any of them block deployment.
+
+> Do NOT report a clean review based on `get-errors` alone. `get-errors` is static analysis; it does not catch unknown member names or invalid enum values. A "0 errors" `get-errors` result with a failing `build` is a real bug that ships if the reviewer skips `build`.
 
 #### 2b. RPA Projects — Run Workflow Analyzer
 

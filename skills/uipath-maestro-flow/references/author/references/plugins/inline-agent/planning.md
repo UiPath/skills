@@ -78,7 +78,7 @@ Filter rows where `NodeType` starts with `uipath.agent.resource.tool.process.` a
 uip maestro flow registry get "<NodeType>" --output json
 ```
 
-For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). Note the inline-in-flow convention: `location: "solution"` (not `"external"`), `properties.folderPath: ""`.
+For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/TestRPA)` → `"Shared/TestRPA"`) or from `uip solution resource get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resource refresh` from resolving the process at runtime.
 
 ### Anti-pattern
 

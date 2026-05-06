@@ -68,8 +68,12 @@
 # AOps Governance skill
 /skills/uipath-gov-aops-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
 
+# LLM Configuration skill (BYO LLM product configurations via uip llm-configuration byo-connections)
+/skills/uipath-llm-configuration-byo-connections/ @denispetre @vstoleru-uipath @dragosvelcea
+
 # Test skill (reports, manual test automation, manual test execution)
 /skills/uipath-test/ @vaishalisharma-uipath @amoluipath
+/tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath
 
 # Data Fabric skill (CLI entity/record management)
 /skills/uipath-data-fabric/ @aditi-goyal-uipath

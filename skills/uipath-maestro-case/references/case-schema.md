@@ -2,7 +2,7 @@
 
 Structural reference for the case definition JSON. Shared across all node types. Per-task-type and per-condition-type field shapes live in each plugin's `impl-json.md`.
 
-> **Bilingual.** Top-level shape differs between v19 (default) and v20 (opt-in per SKILL.md Rule 17). Per-node and per-edge internal shapes are **identical** across schemas — only the wrapper changes. See § Top-level shape (v19) and § Top-level shape (v20) below.
+> **Bilingual.** Top-level shape differs between v19 (default) and v20 (opt-in per SKILL.md Rule 18). Per-node and per-edge internal shapes are **identical** across schemas — only the wrapper changes. See § Top-level shape (v19) and § Top-level shape (v20) below.
 
 ## Top-level shape (v19 — default)
 
@@ -67,7 +67,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 | `edges` | `edges` *(unchanged shape — see § 3 below)* |
 | — | `layout: {}` *(new top-level — see § 7 below)* |
 
-### v20 layout-strip (Rule 18)
+### v20 layout-strip (Rule 19)
 
 In v20, node-level layout fields move to a top-level `layout` block. The frontend transformer `transformCaseInMemoryJsonToDiskJson.ts` does this stripping when round-tripping through canvas; skill emits clean nodes from the start.
 
@@ -499,7 +499,6 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
-| `external-agent` | *(reserved — not covered in current milestone)* |
 
 ---
 
@@ -508,7 +507,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "root": {
-    "id": "Case_aBcDeF",
+    "id": "root",
     "name": "Simple Case",
     "type": "case-management:root",
     "caseIdentifier": "Simple Case",

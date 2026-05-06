@@ -4,7 +4,7 @@ Top-level binding creation. Referenced by **all** task plugins — non-connector
 
 ## Schema-dependent destination
 
-Read `Schema:` header from `tasks.md` per Rule 17.
+Read `Schema:` header from `tasks.md` per Rule 18.
 
 | Schema | Bindings array path |
 |---|---|

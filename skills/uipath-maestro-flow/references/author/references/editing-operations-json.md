@@ -32,11 +32,59 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 3. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
 4. **`sourcePort` and `targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (see "`targetPort` is required on every edge" in [the Author capability index](../CAPABILITY.md)). Use `sourcePort`, never `sourceHandle`; `sourceHandle` is not part of the `.flow` edge schema and produces the vague root error `Invalid input: expected string, received undefined`. Look up ports in the relevant plugin's `planning.md` or in [file-format.md — Standard ports](../../shared/file-format.md).
 5. **Node outputs block.** Every data-producing node needs an `outputs` block on the node instance (not just in `definitions`). Action nodes: `output` + `error`. Trigger nodes: `output`. End/terminate: none. (See "Every node that produces data MUST have `outputs` on the node instance" in [the Author capability index](../CAPABILITY.md).)
-6. **`variables.nodes`.** Add an entry for the new node's outputs. Optional under today's runtime, but expected for completeness and diff clarity.
+6. **`variables.nodes[]`.** Add entries for the new node's outputs. Optional under today's runtime, but expected for completeness and diff clarity.
 7. **On delete — cascade manually.** Remove the node from `nodes`. Then sweep `edges[]` for any with matching `sourceNodeId`/`targetNodeId`. Then prune `definitions[]` if this was the last user of the type. Then check `bindings_v2.json` — but only remove a connector binding if no remaining node uses the same connector (bindings are shared at the connector level).
 
 > **Anti-pattern: editing a `.flow` that is not colocated with `project.uiproj`.**
 > A `.flow` file outside the flow project directory is invisible to `uip maestro flow debug`, to the Studio solution, and to any checker that discovers the project via `**/project.uiproj`. It will still pass `uip maestro flow validate <PATH>.flow` because that command only checks JSON-schema correctness of the file you hand it — it does not verify the file is the project's canonical flow. Always edit the `.flow` that sits next to `project.uiproj`.
+
+---
+
+## Edit Tooling
+
+Direct JSON edits use four mechanics. Pick by operation class — same pattern, different tool. The CLI has no `node update` command (see [editing-operations-cli.md § Update node inputs](editing-operations-cli.md#update-node-inputs-expression-script-body-label-etc)), so structural mutations of node `inputs`, definition swaps, and array splices are done through direct `.flow` authoring.
+
+| Operation class | Mechanic | When to use |
+|----|----|----|
+| Surgical leaf-value change (single string/number/bool) | `Edit` | One unique substring in the file. Whitespace-sensitive — re-`Read` first if the file was just rewritten. |
+| New node, new edge, new definition entry, new variable | `Read` whole file → reconstruct in chat → `Write` whole file | Adding self-contained sub-objects. Preserves field order; risks dropping fields on files >1000 lines. |
+| Replace nested object in array; insert nested fields; idempotent splice | `Edit` / `Write`; `python3` heredoc only after explicit user approval | Surgical structural mutation. Prefer direct authoring first; use a script only when the user has accepted the state-bypass and diff-review trade-off. |
+| One-shot extraction or single-field mutation from CLI JSON output | `jq` | Reading `--output json` results. Faster than spawning Python for read-only paths. |
+
+### Canonical heredoc recipe
+
+When the user explicitly approves a scripted structural rewrite, use this shape. Substitute the node-type guard, the field path, and the new value:
+
+```bash
+python3 - <<'PY'
+import json
+flow = json.load(open("<FILE>.flow"))
+# Mutate flow here — splice arrays, set nested fields, replace objects.
+# Example: insert/overwrite a field on every node of a given type
+for node in flow["nodes"]:
+    if node.get("type") == "<NODE_TYPE>":
+        node.setdefault("inputs", {})["<FIELD>"] = "<VALUE>"
+json.dump(flow, open("<FILE>.flow", "w"), indent=2)
+PY
+uip maestro flow validate <FILE>.flow --output json
+```
+
+`json.dump(..., indent=2)` matches the file's existing 2-space indent — `flow tidy` normalizes layout but does not re-indent unrelated structure, so preserve the canonical 2-space indent on writes.
+
+### `jq` for extracting CLI JSON
+
+Read-only extractions on `--output json` results — no Python needed:
+
+```bash
+uip solution upload --output json | jq -r '.Data.Url'
+uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
+```
+
+### Why scripting is approval-gated
+
+- `Edit` on nested JSON is fragile. Indented sibling fields, trailing commas, and quote styles all break the exact-match constraint. One byte of drift, no edit applied.
+- Whole-file `Write` is safe but lossy — every field has to round-trip through chat, and large `.flow` files (>500 lines once layout, definitions, and bindings settle) blow the read budget. Use `Write` only for new flows or full reshapes.
+- `python3 -c` / heredoc is a fallback for structural rewrites that are too brittle for `Edit` and too large for safe whole-file `Write`. Use it only after surfacing the trade-offs and getting explicit user approval.
 
 ---
 
@@ -95,13 +143,26 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 4. Add node output variables to `variables.nodes` (optional — the CLI regenerates these, but direct builds should include them for completeness):
 
 ```json
-{
-  "nodeId": "<NODE_ID>",
-  "outputs": [
-    { "id": "output", "type": "object" },
-    { "id": "error", "type": "object" }
-  ]
-}
+[
+  {
+    "id": "<NODE_ID>.output",
+    "type": "object",
+    "description": "<Output description>",
+    "binding": {
+      "nodeId": "<NODE_ID>",
+      "outputId": "output"
+    }
+  },
+  {
+    "id": "<NODE_ID>.error",
+    "type": "object",
+    "description": "Error information if the node fails",
+    "binding": {
+      "nodeId": "<NODE_ID>",
+      "outputId": "error"
+    }
+  }
+]
 ```
 
 5. Add a placeholder layout entry for the node in the top-level `layout.nodes` object — `flow tidy` rewrites both `position` and `size` on save:
