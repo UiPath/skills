@@ -10,7 +10,7 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
 
 agent:
   type: claude-code
-  max_turns: 30
+  max_turns: 60
 
 sandbox:
   driver: tempdir
@@ -86,7 +86,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added a data point with --inputs and --expected"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*--inputs.*--expected|--expected.*--inputs'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

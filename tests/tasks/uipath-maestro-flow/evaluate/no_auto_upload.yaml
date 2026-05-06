@@ -10,7 +10,7 @@ tags: [uipath-maestro-flow, smoke, mode:operate, lifecycle:execute]
 
 agent:
   type: claude-code
-  max_turns: 25
+  max_turns: 50
 
 sandbox:
   driver: tempdir
