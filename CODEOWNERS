@@ -28,6 +28,14 @@
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 
+# DeepRAG skills (research/synthesis over attachments) — split per surface, self-contained
+/skills/uipath-deeprag-coded/ @jeremy-reist
+/skills/uipath-deeprag-lowcode/ @jeremy-reist
+
+# BatchTransform skills (per-row LLM-filled columns over CSV/XLSX) — split per surface, self-contained
+/skills/uipath-batch-transform-coded/ @jeremy-reist
+/skills/uipath-batch-transform-lowcode/ @jeremy-reist
+
 # Guardrails capability docs
 /skills/uipath-agents/references/lowcode/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
