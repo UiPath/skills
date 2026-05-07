@@ -22,43 +22,7 @@ If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, t
 
 ## Adding / Editing
 
-For general add, delete, and wiring mechanics, see [editing-operations.md](../../editing-operations.md). The snippets below cover what is **specific** to Summarize.
-
-### Add the node via CLI
-
-```bash
-uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
-  --label "<LABEL>" \
-  --position <X>,<Y> \
-  --input '{
-    "attachment": "=js:$vars.<inputAttachmentVar>",
-    "prompt": "<INSTRUCTION for the synthesis>",
-    "returnCitations": true
-  }' \
-  --output json
-```
-
-`--input` accepts a JSON object; the CLI merges it into the node's `inputs`. `attachment` must resolve to a **full Flow Attachment object** with shape `{ FullName, Id, Metadata, MimeType }` — point it at an upstream variable holding the whole object (typically a flow `in` variable populated by `uip maestro flow debug --file <name>=<path>`, or an upstream node that emits a Flow Attachment). **Not** a bare id, URL, byte stream, or path; even though Studio Web's form metadata calls this a `file` field and the OOTB schema says `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
-
-**Save the returned node ID** — needed for wiring edges and downstream `$vars.{nodeId}.output` references.
-
-### Wire edges
-
-```bash
-uip maestro flow node list <FlowName>.flow --output json
-
-# Upstream file producer (e.g., HTTP download, connector) → Summarize
-uip maestro flow edge add <FlowName>.flow <upstreamNodeId> <drNodeId> \
-  --source-port <upstreamOutputPort> --target-port input --output json
-
-# Summarize success → downstream consumer
-uip maestro flow edge add <FlowName>.flow <drNodeId> <nextNodeId> \
-  --source-port output --target-port input --output json
-
-# Optional: error branch
-uip maestro flow edge add <FlowName>.flow <drNodeId> <errorHandlerId> \
-  --source-port error --target-port input --output json
-```
+Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [author/CAPABILITY.md rule 2](../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the Summarize node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Summarize.
 
 ## JSON Structure
 
@@ -66,7 +30,7 @@ uip maestro flow edge add <FlowName>.flow <drNodeId> <errorHandlerId> \
 {
   "id": "summarizeContract",
   "type": "uipath.pattern.deep-rag",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Summarize Contract" },
   "inputs": {
     "attachment": "=js:$vars.contractDoc",
@@ -86,19 +50,51 @@ uip maestro flow edge add <FlowName>.flow <drNodeId> <errorHandlerId> \
       "source": "=Error",
       "var": "error"
     }
-  },
-  "model": {
-    "type": "bpmn:ServiceTask",
-    "serviceType": "ECS.DeepRag"
   }
 }
 ```
 
 Notes:
 
-- `model.bindings` is **absent** — Summarize is not a process or connector node; there is nothing to bind.
+- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
+- **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
 - `outputs.output.source` is the literal `=deepRagResult` — do not rewrite.
 - Setting `returnCitations: true` populates `content.citations`; setting `false` omits the array entirely (the downstream consumer should tolerate either).
+
+## End-node output mapping
+
+If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [author/CAPABILITY.md rule 12](../../CAPABILITY.md), value-field expressions need the `=js:` prefix:
+
+```json
+{
+  "id": "end",
+  "type": "core.control.end",
+  "typeVersion": "1.0",
+  "outputs": {
+    "summary":   { "source": "=js:$vars.summarizeContract.output.content.text" },
+    "citations": { "source": "=js:$vars.summarizeContract.output.content.citations" }
+  }
+}
+```
+
+Without `=js:`, the runtime stores the literal string (e.g. `"$vars.summarizeContract.output.content.text"`) into the flow output instead of the real value. When `returnCitations: false`, drop the `citations` mapping rather than mapping a missing field.
+
+## Add via CLI (opt-in, not preferred)
+
+The `uip maestro flow node add` / `edge add` CLI is **not** the canonical authoring path for OOTB pattern nodes (see rule 2 above). Reach for it only when scripting in a context where Edit/Write isn't available. The shape:
+
+```bash
+uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
+  --label "<LABEL>" \
+  --input '{
+    "attachment": "=js:$vars.<inputAttachmentVar>",
+    "prompt": "<INSTRUCTION for the synthesis>",
+    "returnCitations": true
+  }' \
+  --output json
+```
+
+`attachment` must resolve to a **full Flow Attachment object** with shape `{ FullName, Id, Metadata, MimeType }` — point it at an upstream variable holding the whole object (typically a flow `in` variable populated by `uip maestro flow debug --file <name>=<path>`, or an upstream node that emits a Flow Attachment). **Not** a bare id, URL, byte stream, or path; even though Studio Web's form metadata calls this a `file` field and the OOTB schema says `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
 
 ## Accessing Output
 

@@ -11,6 +11,10 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      wants the full Flow Attachment `{ FullName, Id, Metadata, MimeType }`.
   4. The referenced flow input variable is declared `type: "object"`.
   5. `inputs.returnCitations` is the boolean `true` (per the prompt's request).
+  6. The flow declares `out` variables `summary` and `citations`, and at least
+     one End node maps each via `outputs.<var>.source` using a
+     `=js:$vars.<dr>.output.content.<field>` reference (rule 12 — value-field
+     expressions need the `=js:` prefix).
 """
 
 import glob
@@ -71,6 +75,47 @@ def _check_attachment_is_whole_object(flow: dict, attachment) -> None:
         )
 
 
+_OUTPUT_MAPPING_REF = re.compile(r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\b")
+
+
+def _check_output_mappings(flow: dict, dr_node_id: str) -> None:
+    """The flow surfaces synthesis text + citations as `out` variables. Verify
+    both variables exist and at least one End node maps each correctly.
+
+    Each End node may carry an `outputs.<varId>.source` for every `out`
+    variable; the source MUST use `=js:$vars.<dr>.output.content.<field>`.
+    """
+    globals_ = (flow.get("variables") or {}).get("globals") or []
+    for var_id in ("summary", "citations"):
+        if not any(v.get("id") == var_id and v.get("direction") == "out" for v in globals_):
+            _fail(
+                f"flow has no `out` variable with id={var_id!r}. The task prompt asks for "
+                f"`{var_id}` to be surfaced as a flow output."
+            )
+
+    end_nodes = [n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"]
+    if not end_nodes:
+        _fail("flow has no End node — required to terminate the path and map outputs")
+
+    for var_id in ("summary", "citations"):
+        mapped = False
+        for end in end_nodes:
+            src = ((end.get("outputs") or {}).get(var_id) or {}).get("source")
+            if not isinstance(src, str) or not src.strip():
+                continue
+            m = _OUTPUT_MAPPING_REF.match(src.strip())
+            if m and m.group(1) == dr_node_id:
+                mapped = True
+                break
+        if not mapped:
+            _fail(
+                f"no End node maps `outputs.{var_id}.source` to "
+                f"`=js:$vars.{dr_node_id}.output.content.<field>` (or similar). Without an "
+                "`=js:` mapping per rule 12, the flow output is the literal string instead "
+                "of the real synthesis result."
+            )
+
+
 def main():
     flow = _read_flow()
     node = _find_node(flow)
@@ -89,9 +134,12 @@ def main():
             f"got {return_citations!r}"
         )
 
+    _check_output_mappings(flow, node["id"])
+
     print(
         f"OK: {NODE_TYPE} node present; prompt set; attachment is whole-object ref to a "
-        "`type: object` flow input; returnCitations=true"
+        "`type: object` flow input; returnCitations=true; End node maps "
+        "`summary` and `citations` via `=js:` references"
     )
 
 

@@ -11,6 +11,10 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      `=js:$vars.<name>` — not `.Id`, `.FullName`, or any subfield. The runtime
      wants the full Flow Attachment `{ FullName, Id, Metadata, MimeType }`.
   5. The referenced flow input variable is declared `type: "object"`.
+  6. The flow declares an `out` variable named `result`, and at least one End
+     node maps it via `outputs.result.source` using a `=js:$vars.<bt>.output`
+     reference (not a bare `$vars.…` literal — rule 12 requires the `=js:`
+     prefix).
 """
 
 import glob
@@ -92,6 +96,47 @@ def _check_attachment_is_whole_object(flow: dict, attachment) -> None:
         )
 
 
+_OUTPUT_MAPPING_REF = re.compile(r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\b")
+
+
+def _check_result_output_mapping(flow: dict, bt_node_id: str) -> None:
+    """The flow surfaces the BT result as an `out` variable `result`. Verify
+    the variable exists and at least one End node maps it correctly.
+
+    Each End node may carry an `outputs.<varId>.source` for every `out`
+    variable; the source MUST use `=js:$vars.<bt>.output` (rule 12).
+    """
+    globals_ = (flow.get("variables") or {}).get("globals") or []
+    result_var = next(
+        (v for v in globals_ if v.get("id") == "result" and v.get("direction") == "out"),
+        None,
+    )
+    if result_var is None:
+        _fail(
+            "flow has no `out` variable with id='result'. The task prompt asks for the "
+            "Batch Transform result file handle to be surfaced as a flow output named `result`."
+        )
+
+    end_nodes = [n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"]
+    if not end_nodes:
+        _fail("flow has no End node — required to terminate the path and map outputs")
+
+    mapped_on = []
+    for end in end_nodes:
+        src = ((end.get("outputs") or {}).get("result") or {}).get("source")
+        if not isinstance(src, str) or not src.strip():
+            continue
+        m = _OUTPUT_MAPPING_REF.match(src.strip())
+        if m and m.group(1) == bt_node_id:
+            mapped_on.append(end.get("id"))
+    if not mapped_on:
+        _fail(
+            "no End node maps `outputs.result.source` to `=js:$vars."
+            f"{bt_node_id}.output` (or similar). Without an `=js:` mapping per rule 12, "
+            "the flow output is the literal string instead of the real BT result handle."
+        )
+
+
 def main():
     flow = _read_flow()
     node = _find_node(flow)
@@ -103,11 +148,12 @@ def main():
 
     _check_attachment_is_whole_object(flow, inputs.get("attachment"))
     _check_outputColumns(inputs.get("outputColumns"))
+    _check_result_output_mapping(flow, node["id"])
 
     print(
         f"OK: {NODE_TYPE} node present; prompt set; attachment is whole-object ref to a "
         f"`type: object` flow input; outputColumns has {len(inputs['outputColumns'])} "
-        "{name,description} entries"
+        "{name,description} entries; End node maps `result` via `=js:` reference"
     )
 
 

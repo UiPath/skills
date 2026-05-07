@@ -22,46 +22,7 @@ If the command errors with **"Node type not found: uipath.pattern.batch-transfor
 
 ## Adding / Editing
 
-For general add, delete, and wiring mechanics, see [editing-operations.md](../../editing-operations.md). The snippets below cover what is **specific** to Batch Transform.
-
-### Add the node via CLI
-
-```bash
-uip maestro flow node add <FlowName>.flow uipath.pattern.batch-transform \
-  --label "<LABEL>" \
-  --position <X>,<Y> \
-  --input '{
-    "attachment": "=js:$vars.<inputAttachmentVar>",
-    "prompt": "<INSTRUCTION describing every output column>",
-    "outputColumns": [
-      { "name": "<COLUMN_NAME>", "description": "<WHAT TO PUT IN THIS COLUMN>" }
-    ],
-    "enableWebSearchGrounding": false
-  }' \
-  --output json
-```
-
-`--input` accepts a JSON object; the CLI merges it into the node's `inputs`. `attachment` must resolve to a **full Flow Attachment object** with shape `{ FullName, Id, Metadata, MimeType }` — point it at an upstream variable holding the whole object (typically a flow `in` variable populated by `uip maestro flow debug --file <name>=<path>`, or an upstream node that emits a Flow Attachment). **Not** a bare id, URL, byte stream, or path; even though Studio Web's form metadata calls this a `file` field and the OOTB schema says `type: "string"`, the engine wants the object. The `outputColumns` array can have up to 10 entries. Omit `enableWebSearchGrounding` unless rows genuinely require web-fetched facts.
-
-**Save the returned node ID** — needed for wiring edges and downstream `$vars.{nodeId}.output` references.
-
-### Wire edges
-
-```bash
-uip maestro flow node list <FlowName>.flow --output json
-
-# Upstream file producer (e.g., HTTP, connector, agent) → Batch Transform
-uip maestro flow edge add <FlowName>.flow <upstreamNodeId> <btNodeId> \
-  --source-port <upstreamOutputPort> --target-port input --output json
-
-# Batch Transform success → downstream consumer
-uip maestro flow edge add <FlowName>.flow <btNodeId> <nextNodeId> \
-  --source-port output --target-port input --output json
-
-# Optional: error branch
-uip maestro flow edge add <FlowName>.flow <btNodeId> <errorHandlerId> \
-  --source-port error --target-port input --output json
-```
+Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [author/CAPABILITY.md rule 2](../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the BT node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Batch Transform.
 
 ## JSON Structure
 
@@ -69,7 +30,7 @@ uip maestro flow edge add <FlowName>.flow <btNodeId> <errorHandlerId> \
 {
   "id": "categorizeRows",
   "type": "uipath.pattern.batch-transform",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Categorize Invoices" },
   "inputs": {
     "attachment": "=js:$vars.invoiceCsv",
@@ -82,7 +43,7 @@ uip maestro flow edge add <FlowName>.flow <btNodeId> <errorHandlerId> \
   },
   "outputs": {
     "output": {
-      "type": "object",
+      "type": "file",
       "description": "Result file handle",
       "source": "=batchTransformResult",
       "var": "output"
@@ -93,19 +54,53 @@ uip maestro flow edge add <FlowName>.flow <btNodeId> <errorHandlerId> \
       "source": "=Error",
       "var": "error"
     }
-  },
-  "model": {
-    "type": "bpmn:ServiceTask",
-    "serviceType": "ECS.BatchTransform"
   }
 }
 ```
 
 Notes:
 
+- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.BatchTransform"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.batch-transform --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
+- **`typeVersion` must match `definitions[<batch-transform>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
 - `inputs.outputColumns` is an **array of objects** with exactly the keys `name` and `description`. Do not flatten to a map (`{ Category: "...", Summary: "..." }`) — the canvas editor and the BPMN serializer expect the array shape.
-- `model.bindings` is **absent** — Batch Transform is not a process or connector node; there is nothing to bind.
 - `outputs.output.source` is the literal `=batchTransformResult` — do not rewrite to `=result.output` or similar.
+
+## End-node output mapping
+
+If the flow surfaces the result file handle as a flow `out` variable (e.g. `result`), the End node must map it. Per [author/CAPABILITY.md rule 12](../../CAPABILITY.md), value-field expressions need the `=js:` prefix:
+
+```json
+{
+  "id": "end",
+  "type": "core.control.end",
+  "typeVersion": "1.0",
+  "outputs": {
+    "result": { "source": "=js:$vars.categorizeRows.output" }
+  }
+}
+```
+
+Without `=js:`, the runtime stores the literal string `"$vars.categorizeRows.output"` into the flow output instead of the real value.
+
+## Add via CLI (opt-in, not preferred)
+
+The `uip maestro flow node add` / `edge add` CLI is **not** the canonical authoring path for OOTB pattern nodes (see rule 2 above). Reach for it only when scripting in a context where Edit/Write isn't available. The shape:
+
+```bash
+uip maestro flow node add <FlowName>.flow uipath.pattern.batch-transform \
+  --label "<LABEL>" \
+  --input '{
+    "attachment": "=js:$vars.<inputAttachmentVar>",
+    "prompt": "<INSTRUCTION describing every output column>",
+    "outputColumns": [
+      { "name": "<COLUMN_NAME>", "description": "<WHAT TO PUT IN THIS COLUMN>" }
+    ],
+    "enableWebSearchGrounding": false
+  }' \
+  --output json
+```
+
+`attachment` must resolve to a **full Flow Attachment object** with shape `{ FullName, Id, Metadata, MimeType }` — point it at an upstream variable holding the whole object (typically a flow `in` variable populated by `uip maestro flow debug --file <name>=<path>`, or an upstream node that emits a Flow Attachment). **Not** a bare id, URL, byte stream, or path; even though Studio Web's form metadata calls this a `file` field and the OOTB schema says `type: "string"`, the engine wants the object.
 
 ## Accessing Output
 
