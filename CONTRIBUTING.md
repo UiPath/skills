@@ -5,6 +5,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ## Table of Contents
 
 - [Repository Structure](#repository-structure)
+- [Canonical SKILL.md Contract](#canonical-skillmd-contract)
 - [Adding a New Skill](#adding-a-new-skill)
 - [Modifying an Existing Skill](#modifying-an-existing-skill)
 - [Developing Experimental Skills](#developing-experimental-skills)
@@ -56,7 +57,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 
 ### Key Principles
 
-- **Skills are self-contained.** Each skill is an independent folder under `skills/`. Skills cannot reference or depend on other skills.
+- **Skills are runtime-independent.** Each skill is an independent folder under `skills/`. A skill MUST NOT import or link to another skill's `references/` or `assets/`. Sibling-disambiguation pointers in the `description` field (`For X→uipath-other-skill`) are required for the matcher, not violations — see [Cross-skill boundaries](#cross-skill-boundaries).
 - **SKILL.md is the entry point.** The AI agent reads `SKILL.md` first. Everything the agent needs to know must be reachable from there.
 - **References are supplementary.** Large reference material goes in `references/` subdirectories, linked from SKILL.md.
 - **No build system.** This is a documentation and skill-definitions repository. There is no compilation, bundling, or package publishing from this repo.
@@ -76,6 +77,56 @@ Tool wiring lives outside `skills/`:
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
 
 When adding a skill, only touch files under `skills/uipath-<name>/` — the root integration files already wire every tool up automatically.
+
+## Canonical SKILL.md Contract
+
+This section is the single source of truth for the SKILL.md frontmatter contract in this repo. Both `CLAUDE.md` and `.claude/rules/skill-structure.md` defer to this section. Validators enforce the **Required** rules; **Optional** fields are recognized and used in real skills today; **Style guidance** is a SHOULD.
+
+### Required fields (enforced)
+
+| Field | Rule |
+|-------|------|
+| `name` | MUST match the parent folder name exactly (kebab-case, `uipath-<domain>`). |
+| `description` | ≤ 1024 characters. Front-load identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`, `BYO LLM`) within the first ~100 chars. Use `→` redirects for sibling disambiguation (`For XAML→uipath-rpa`). MUST NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — those have been replaced by `→` redirects. |
+
+### Optional fields (recognized; in use across real skills)
+
+| Field | Use |
+|-------|-----|
+| `when_to_use` | Standalone trigger sentence ("User says 'X'…"). Useful when the `description` is identity/capability-focused and you want a separate trigger phrasing. Combined `description + when_to_use` is truncated by Claude Code at 1,536 chars in the skill listing — the 1024 cap on `description` leaves ~500 chars of headroom for `when_to_use`. |
+| `allowed-tools` | Comma-separated tool list (e.g., `Bash, Read, Write, Glob, Grep, AskUserQuestion`). Restricts which tools the skill is allowed to call. Bash invocations may be scoped (e.g., `Bash(uip:*)`). |
+| `user-invocable` | Defaults to `true`. Set `false` to make the skill agent-only — not directly invocable as `/uipath:<name>` by users. |
+
+### Style guidance (SHOULD, not enforced)
+
+- **Front-load the brand/domain identity** ("UiPath …") when natural. Most skills do, and it places the strongest matching signal first. Action verbs ("Manage", "Send", "Always invoke for `.flow` files") are acceptable when they make the skill's purpose clearer in the first ~100 chars.
+- **Avoid metadata prefixes** like `[PREVIEW]` / `[BETA]` at the start of `description` — they displace high-value matching tokens. Indicate preview / experimental status in the SKILL.md body instead, with a `> **Preview**` or `> **Experimental**` callout under the H1.
+- **All frontmatter fields MUST be at the top level** — never nested under a `metadata:` key. Claude Code only reads top-level keys.
+- **Frontmatter MUST be valid YAML** — no tabs, proper quoting of strings containing colons.
+
+### Cross-skill boundaries
+
+Skills are **runtime-independent**. A skill MUST NOT import, link to, or rely on content from another skill's `references/` or `assets/`. Each `skills/uipath-*/` folder is fully self-contained when an agent loads it.
+
+However, **disambiguation pointers in `description` are required, not violations.** Every skill SHOULD include `→` redirects for sibling skills it commonly gets confused with — these tell the matcher which skill is correct:
+
+- `For Python agents→uipath-agents`
+- `For .flow files→uipath-maestro-flow`
+- `For Test Manager→uipath-test`
+
+Routing skills (e.g., `uipath-planner`) explicitly delegate to specialist skills by name — that is the routing skill's purpose, not a cross-dependency.
+
+### What the validator enforces today
+
+`hooks/validate-skill-descriptions.sh` (run by the pre-commit hook and the [Validate Skills](.github/workflows/validate-skills.yml) CI job) enforces:
+
+- `name` field is present
+- `name` matches the parent folder name
+- `description` field is present
+- `description` ≤ 1024 chars
+- Combined `description + when_to_use` ≤ 1,500 chars (warning when exceeded)
+
+Style guidance (brand identity, `→` redirects, metadata prefixes) is reviewer-enforced, not validator-enforced. New validators should be proposed via a PR that updates this section, the rules, and the script together.
 
 ## Adding a New Skill
 
@@ -113,7 +164,7 @@ skills/uipath-<your-skill>/
 
 ### 3. Write SKILL.md
 
-SKILL.md is the most important file. It uses YAML frontmatter followed by markdown content.
+SKILL.md is the most important file. It uses YAML frontmatter followed by markdown content. The full schema is documented in the [Canonical SKILL.md Contract](#canonical-skillmd-contract) section below — this section gives the quick view.
 
 #### Frontmatter Format
 
@@ -130,15 +181,18 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 
 | Field | Description |
 |-------|-------------|
-| `name` | Exact skill identifier, must match the folder name |
-| `description` | Under 1024 chars. Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
+| `name` | Exact skill identifier, MUST match the folder name. Enforced by `hooks/validate-skill-descriptions.sh`. |
+| `description` | ≤ 1024 chars (enforced). Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
 
-**Optional frontmatter fields:**
+**Optional frontmatter fields** (all in current use across real skills):
 
 | Field | Description |
 |-------|-------------|
-| `allowed-tools` | Restricts which tools the skill can use (e.g., `Bash, Read, Write, Glob, Grep`) |
-| `user-invocable` | Defaults to `true`. Set to `false` if the skill should only be discoverable by the agent, not directly invocable by users |
+| `when_to_use` | Standalone trigger phrasing ("User says 'X', 'Y'…"). Useful when `description` is identity/capability-focused and you want a separate, scannable trigger sentence. The combined `description + when_to_use` is truncated by Claude Code at 1,536 chars in the skill listing. |
+| `allowed-tools` | Restricts which tools the skill can use (e.g., `Bash, Read, Write, Glob, Grep`). Bash invocations may be scoped (e.g., `Bash(uip:*)`). |
+| `user-invocable` | Defaults to `true`. Set to `false` if the skill should only be discoverable by the agent, not directly invocable by users via `/uipath:<name>`. |
+
+> **No nested `metadata:` key.** All fields above MUST be at the top level of the frontmatter. Claude Code only reads top-level keys; anything nested under `metadata:` is invisible to the matcher.
 
 #### Content Structure
 
