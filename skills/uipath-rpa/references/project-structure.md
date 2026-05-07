@@ -109,35 +109,30 @@ MyProject/
 
 ## Removing a Dependency — Search for Usages First
 
-Adding a package is reversible; removing one cascades to every workflow that consumes its activities. Before deleting any entry from `dependencies`:
+Removing a package cascades to every workflow consuming its activities. Before deleting any `dependencies` entry:
 
-1. **Enumerate the package's activity surface** — its xmlns assembly name, then any activity classes you suspect are in use:
+1. **Enumerate the activity surface:**
    ```bash
-   # Get the package's full public type/activity surface as markdown
    uip rpa inspect-package --package-name <PackageId> --package-version <Version> --output json
    ```
-2. **Grep the project for usages** — both XAML xmlns declarations and any prefixed activity tags:
+2. **Grep for usages** — XAML xmlns + prefixed tags, CS type references:
    ```bash
-   # XAML — namespace references to this package's assembly
    grep -rn 'assembly=<PackageId>' --include='*.xaml' .
-   # CS — type references (coded workflows)
    grep -rn '<PackageId>' --include='*.cs' .
    ```
-3. **If any usage is found, do NOT remove the package.** Either keep it, or remove the consumers first and re-run the grep before touching `dependencies`.
+3. **If any usage exists, do not remove.** Migrate consumers first, then re-grep.
 
-### `-preview` Is Not Always a Stability Smell
+### `-preview` Is Not a Stability Smell On Its Own
 
-Some UiPath activity packages ship **only** as `<version>-preview` and have no stable release. Removing them on the grounds that "preview is risky" silently breaks any workflow consuming their activities (e.g. the `MergePDFs` activity ships in `UiPath.IntelligentOCR.StudioWeb.Activities`, which is preview-only).
-
-Before treating a `-preview` version as a defect, confirm whether a stable release exists:
+Some packages ship only as `<version>-preview` (e.g. `MergePDFs` lives in `UiPath.IntelligentOCR.StudioWeb.Activities`, preview-only). Verify before treating preview as a defect:
 
 ```bash
 uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
 ```
 
-If the response contains only versions with a `-preview` suffix, that is the package's normal ship vehicle — keep it.
+If every version has the `-preview` suffix, that is the package's ship vehicle — keep it.
 
-Known preview-only families at the time of writing: the Document Understanding family (`UiPath.DocumentUnderstanding.*`, `UiPath.IntelligentOCR.StudioWeb.Activities`). Always verify with `get-versions` rather than relying on this list.
+Known preview-only families: Document Understanding (`UiPath.DocumentUnderstanding.*`, `UiPath.IntelligentOCR.StudioWeb.Activities`). Always verify with `get-versions` rather than the list.
 
 ## Common Activity Packages
 

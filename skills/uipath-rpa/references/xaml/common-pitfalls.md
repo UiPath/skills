@@ -433,25 +433,23 @@ Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" 
 
 ## Common Activity Name Confusions
 
-Activity tag names rarely match the Studio display name verbatim. Writing `<ui:DeleteFile />` from intuition fails at `build` with `Cannot create unknown type 'DeleteFile'` — the activity exists, but its class name is `Delete` and it handles both files and folders via the `Path` overload group.
+Activity tag names rarely match Studio display names. `<ui:DeleteFile />` fails at `build` (`Cannot create unknown type 'DeleteFile'`) — the class is `Delete`, with a `Path` overload group covering both files and folders.
 
-Frequent display-name → tag-name mismatches:
-
-| Display Name in Studio | Wrong tag (intuitive guess) | Correct tag | Package |
-|------------------------|-----------------------------|-------------|---------|
-| Delete File or Folder  | `ui:DeleteFile`             | `ui:Delete` (`Path` or `ResourceFile`) | `UiPath.System.Activities` |
-| Path Exists            | `ui:PathExists`             | `ui:PathExistsX`                       | `UiPath.System.Activities` |
-| Wait                   | `ui:Wait`                   | `Delay` (no prefix — MWF primitive)    | built-in |
-| For Each               | `ui:ForEach`                | `ForEach` (no prefix — MWF primitive) when iterating a generic collection; `ui:ForEachX` for the modern data-table variant | built-in / `UiPath.System.Activities` |
+| Display Name in Studio | Wrong tag (guess) | Correct tag | Package |
+|------------------------|-------------------|-------------|---------|
+| Delete File or Folder  | `ui:DeleteFile`   | `ui:Delete` (`Path` or `ResourceFile`) | `UiPath.System.Activities` |
+| Path Exists            | `ui:PathExists`   | `ui:PathExistsX` | `UiPath.System.Activities` |
+| Wait                   | `ui:Wait`         | `Delay` (no prefix — MWF primitive) | built-in |
+| For Each               | `ui:ForEach`      | `ForEach` (no prefix) for generic collections; `ui:ForEachX` for the modern data-table variant | built-in / `UiPath.System.Activities` |
 
 ### Tag Verification Gate
 
-Before writing any `<prefix:Tag>` element you have not already used in the same file, prove the tag exists. Pick exactly one of:
+Before writing any `<prefix:Tag>` not already in the file, pick one:
 
-- **Doc check.** Confirm `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md` exists, OR fall back to `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. If neither exists for the tag name you intend to write, the tag does not exist by that name.
-- **CLI lookup.** Run `uip rpa find-activities --query "<verb-or-noun>" --output json` and use the `ClassName` from the response — never derive a tag name from the Studio display name.
+- **Doc check.** Confirm `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md` exists, or fall back to `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. No file → no such tag.
+- **CLI lookup.** `uip rpa find-activities --query "<verb-or-noun>" --output json` → use the returned `ClassName`. Do not derive tag names from Studio display names.
 
-Either path produces the canonical class name. Skipping both and writing the tag from memory is the failure mode that produces `Cannot create unknown type` errors at `build` time after the file has already been serialized.
+Skipping both produces `Cannot create unknown type` at `build`, after the file is already serialized.
 
 ## Default Values That Matter
 
