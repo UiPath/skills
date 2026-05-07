@@ -66,14 +66,14 @@ uip resource buckets create "cloud-reports" --folder-path "Finance" \
 ### List Buckets
 
 ```bash
-# List buckets in a specific folder
+# List buckets in a specific folder (folder required by default)
 uip resource buckets list --folder-path "Finance" --output json
 
-# List across all accessible folders (with optional name filter)
-uip resource buckets list --name "invoice" --output json
+# List across every accessible folder (with optional name filter)
+uip resource buckets list --all-folders --name "invoice" --output json
 ```
 
-Paginate with `--limit` / `--offset`. Sort with `--order-by`. Use `--exclude-folder-path` to omit a folder from cross-folder listing.
+`buckets list` requires either `--folder-path` / `--folder-key` or `--all-folders`. Paginate with `--limit` / `--offset`. Sort with `--order-by`. With `--all-folders`, use `--exclude-folder-path` / `--exclude-folder-key` to omit a folder.
 
 ### Get, Update, Delete
 

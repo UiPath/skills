@@ -11,7 +11,9 @@
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
 - `--order-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
-- `--all-fields` — (Orchestrator tool + libraries only) return full API response
+- `--all-fields` — (Orchestrator tool only) return raw DTO instead of the
+  curated PascalCase projection. Resource tool returns full DTO by default
+  on every list/get and does not expose this flag.
 
 ---
 
@@ -62,7 +64,7 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks. See [resource
 | **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `set-progress`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](resources/process-queues.md) |
 | **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](resources/work-with-storage.md) |
 | **Bucket Files** | `list`, `list-dirs`, `get`, `read`, `write`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](resources/work-with-storage.md) |
-| **Triggers** | `list`, `get`, `create`, `update`, `delete`, `enable`, `disable`, `history` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
+| **Triggers** | `list`, `get`, `create`, `update [--enabled\|--disabled]`, `delete`, `history` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
 | **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](resources/resources.md) |
 | **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
 

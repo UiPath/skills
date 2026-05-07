@@ -61,14 +61,17 @@ uip resource triggers create --type time \
   --cron "0 0 9 ? * 1-5" \
   --time-zone "Europe/Bucharest" \
   --runtime-type Unattended \
-  --job-priority Normal \
-  --folder-path "Finance" --output json
+  --job-priority Normal --output json
 ```
+
+`triggers create` does not take `--folder-path` / `--folder-key` — the
+folder is derived from the release the trigger is bound to. Same for all
+three trigger types.
 
 `--time-zone` takes an IANA time zone ID (e.g. `UTC`, `Europe/Bucharest`, `America/Los_Angeles`).
 
 Additional options:
-- `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then enable them in bulk via `triggers enable`.
+- `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then flip them on later via `triggers update <key> --enabled`.
 - `--calendar-key` — skip holidays, from `uip or calendars list`.
 - `--stop-strategy` — `SoftStop` or `Kill`.
 - `--input-arguments` — JSON-encoded input arguments map.
@@ -83,8 +86,7 @@ uip resource triggers create --type queue \
   --release-key <process-key> \
   --queue-key <queue-key> \
   --items-threshold 1 --max-jobs 3 \
-  --runtime-type Unattended --job-priority Normal \
-  --folder-path "Finance" --output json
+  --runtime-type Unattended --job-priority Normal --output json
 ```
 
 Additional options: `--items-per-job` (default 1), `--activate-on-complete` (re-trigger on job completion).
@@ -125,11 +127,16 @@ uip resource triggers update <trigger-key> --type time \
 
 ---
 
-## Step 4: Enable, Disable, Delete
+## Step 4: Toggle, Delete
+
+`triggers update` already does a get + patch internally, so the dedicated
+`enable` / `disable` subcommands have been folded into it via mutually
+exclusive `--enabled` / `--disabled` flags. Same applies to all three
+trigger types (time, queue, api).
 
 ```bash
-uip resource triggers disable <trigger-key> --type time --folder-path "Finance" --output json
-uip resource triggers enable <trigger-key> --type time --folder-path "Finance" --output json
+uip resource triggers update <trigger-key> --type time --folder-path "Finance" --disabled --output json
+uip resource triggers update <trigger-key> --type time --folder-path "Finance" --enabled --output json
 uip resource triggers delete <trigger-key> --type time --folder-path "Finance" --output json
 ```
 
@@ -186,6 +193,10 @@ uip resource webhooks get <webhook-key> --output json
 uip resource webhooks update <webhook-key> \
   --url "https://new.example.com/hook" \
   --events "job.faulted,queueItem.failed" --output json
+
+# Toggle without renaming or changing other fields:
+uip resource webhooks update <webhook-key> --disabled --output json
+uip resource webhooks update <webhook-key> --enabled --output json
 
 uip resource webhooks ping <webhook-key> --output json     # test connectivity
 uip resource webhooks delete <webhook-key> --output json
