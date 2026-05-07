@@ -58,9 +58,8 @@ namespace {{PROJECT_NAME}}
         {
             Log($"[BEFORE] Execution started for {context.RelativeFilePath}");
 
-            // Stub is acceptable when no Object Repository targets are configured.
-            // Real call (requires OR targets):
-            //     var app = uiAutomation.Open("myApp");
+            // Example: Open application
+            // var app = uiAutomation.Open("myApp");
 
             // Example: Log in
             // Login("testuser", "password");
@@ -70,9 +69,8 @@ namespace {{PROJECT_NAME}}
         {
             Log($"[AFTER] Execution finished for {context.RelativeFilePath}");
 
-            // Stub is acceptable when no Object Repository targets are configured.
-            // Real call (requires OR targets):
-            //     uiAutomation.Close(app);
+            // Example: Close application
+            // uiAutomation.Close(app);
 
             // Example: Clean up test data
             // DeleteTestData();
