@@ -1,4 +1,4 @@
-# Mining Guides by Source Type
+# Mining Guide by Source Type
 
 Detailed guidance for what to look for and how to search each data source.
 Load this file during Phase 1 for whichever sources are verified.

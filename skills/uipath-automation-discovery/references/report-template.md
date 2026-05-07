@@ -87,7 +87,7 @@ but must reference specific business metrics or strategy documents.
 |---|---|
 | Confluence | Atlassian MCP `createConfluencePage` with markdown contentFormat |
 | Notion | Notion API or MCP to create page |
-| Google Docs | Google Docs API or `gws-docs` CLI |
+| Google Docs | Google Docs MCP or API |
 | SharePoint | SharePoint API or manual upload |
 | Local file | Write markdown to user's filesystem |
 
