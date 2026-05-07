@@ -25,13 +25,14 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 - How many workflow files? (one per logical step or responsibility)
 - Are there shared data models or helpers? (create Coded Source Files)
 - Is this a test project? (create test cases with Given/When/Then structure, optionally add Before/After hooks)
-- See `assets/project-structure-examples.md` for guidelines
+- See [../project-structure-guide.md](../project-structure-guide.md) for guidelines
 
 **4. Add required dependencies to `project.json`** based on the Service-to-Package mapping. Edit the existing `project.json` — do NOT rewrite the entire file.
 
 **5. Add `.cs` workflow / test case / source files:**
 - Generate `.cs` files (workflows, test cases, source files)
-- Update `project.json` entry points (**Process projects only** — Tests and Library projects do NOT use `entryPoints`): add an entry for each `.cs` workflow / test case alongside the existing scaffolded XAML entry
+- For each `.cs` **workflow** file, add an entry to `entryPoints` in `project.json` (**Process projects only** — Tests and Library projects do NOT use `entryPoints`). The existing scaffolded XAML entry can stay alongside.
+- For each `.cs` **test case** file, add an entry to `designOptions.fileInfoCollection` in `project.json` with `editingStatus: "InProgress"`, `testCaseType: "TestCase"`, `publishAsTestCase: true`. Test cases do NOT go in `entryPoints` regardless of project type.
 - If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see before-after-hooks-template.md)
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly

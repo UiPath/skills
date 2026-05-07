@@ -234,9 +234,9 @@ Full reference: [coded/codedworkflow-reference.md](references/coded/codedworkflo
 - [assets/codedworkflow-template.md](assets/codedworkflow-template.md) — Workflow boilerplate
 - [assets/testcase-template.md](assets/testcase-template.md) — Test case boilerplate
 - [assets/helper-utility-template.md](assets/helper-utility-template.md) — Helper class boilerplate
-- [assets/json-template.md](assets/json-template.md) — project.json templates
+- [assets/json-template.md](assets/json-template.md) — `entryPoints` and `fileInfoCollection` snippets
 - [assets/before-after-hooks-template.md](assets/before-after-hooks-template.md) — Before/After hooks
-- [assets/project-structure-examples.md](assets/project-structure-examples.md) — Design guidelines
+- [references/project-structure-guide.md](references/project-structure-guide.md) — Project structure design guidelines (mode-agnostic)
 
 ## XAML Workflows Quick Reference
 
@@ -302,11 +302,16 @@ Follow this flow whenever you need to use an activity package:
 
 Check `project.json` → `dependencies` for the required package.
 
-- **If present** → note the version, proceed to Step 2. Suggest updating but **never force**.
-- **If absent** → install:
+**Always query versions with `--include-prerelease`.** Many UiPath activity packages ship as `-preview` between stable releases, and the latest preview routinely contains new activities, fixed signatures, and updated `.local/docs` content that activity generation depends on. Without the flag, the listing hides these and the agent will pick a stale stable.
+
+- **If present** → note the installed version. Then list available versions with `--include-prerelease` and compare:
+  - If a newer version (stable or preview) exists, **inform the user**: state the installed version, the latest available version, and that newer packages offer the best support for activity generation (latest activity surface, accurate `.local/docs`, fewer signature mismatches). Ask whether to upgrade. **Never force-upgrade** an already-installed package.
+  - If the installed version is already the latest, proceed to Step 2.
+- **If absent** → install the latest version returned by `get-versions --include-prerelease` (preview is acceptable):
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output jsonuip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json
+uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>","version":"<LATEST_VERSION>"}]' --project-dir "<PROJECT_DIR>" --output json
 ```
 
 ### Step 2 — Find activity docs (priority order)

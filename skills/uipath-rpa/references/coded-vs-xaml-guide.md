@@ -18,7 +18,7 @@ Follow top-down. Stop at the first match.
    - **New project** → **default to XAML.** "Create a workflow", "automate X", "build an automation" all mean XAML. Continue to step 2 ONLY if the user used a coded-specific phrase ("coded workflow", ".cs", "C# workflow") or named a coded-specific trigger (data models, unit tests on business logic, complex algorithmic logic). Otherwise stop here and use XAML.
 2. **Can existing activities handle the task directly?** (read Excel, send email, move file, UI click/type, queue processing, connector calls) → **XAML.** This covers the bulk of RPA work. No coded mode needed.
 3. **Does it define data models, DTOs, enums, or custom classes?** → **Coded Source File** (plain `.cs`, no `CodedWorkflow` base). XAML cannot define types — this is the one case where going hybrid is always justified.
-4. **Does it involve complex algorithmic logic?** (5+ nested branches, LINQ aggregation, regex extraction, REST API pagination/retry, sorting/dedup/fuzzy matching) → **Coded Workflow** for that step. Standard if/else, simple loops, and connector calls are fine in XAML — only escalate when XAML genuinely becomes unreadable.
+4. **Does it involve complex algorithmic logic?** (5+ nested branches, LINQ aggregation, regex extraction, REST API pagination/retry, sorting/dedup/fuzzy matching) → **Coded Workflow** for that step. Standard if/else, simple loops, and connector calls are fine in XAML — only escalate when a single XAML workflow grows past ~50 activities.
 5. **Does it need unit tests or assertions on business logic?** → **Coded Workflow** + **Coded Test Case** for the logic under test. UI/integration tests can stay XAML.
 6. **Is it reusable utility code?** (helpers, formatters, validators, extension methods) → **Coded Source File**.
 7. **Default** → XAML.
@@ -184,4 +184,4 @@ Both XAML workflows (via typed arguments) and coded workflows (via direct refere
 - [coded/coding-guidelines.md](coded/coding-guidelines.md) — C# coding rules and common issues
 - [xaml/workflow-guide.md](xaml/workflow-guide.md) — XAML workflow creation and editing
 - [xaml/common-pitfalls.md](xaml/common-pitfalls.md) — InvokeCode language property gotcha
-- [../assets/project-structure-examples.md](../assets/project-structure-examples.md) — Project layout examples including hybrid
+- [project-structure-guide.md](project-structure-guide.md) — Project layout examples including hybrid
