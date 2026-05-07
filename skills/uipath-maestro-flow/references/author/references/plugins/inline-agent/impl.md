@@ -67,7 +67,7 @@ Flow node (excerpt):
   "type": "uipath.agent.autonomous",
   "inputs": {
     "systemPrompt": "Triage the inbound email.",
-    "userPrompt": "From {{input.emailFrom}}\nSubject: {{input.emailSubject}}\n\n{{input.emailBody}}",
+    "userPrompt": "Process the inbound email payload.",
     "source": "<projectId-uuid>",
     "agentInputVariables": [
       { "id": "emailSubject", "type": "string", "binding": "=js:$vars.emailReceived1.output.subject" },
@@ -113,7 +113,7 @@ Matching `agent.json` (excerpt):
 }
 ```
 
-The flow-node `inputs.systemPrompt` / `inputs.userPrompt` remain validator placeholders; the canonical prompts live in `agent.json.messages[]`. Keep the placeholder text in sync with the agent prompt only when convenient — what matters is that every `{{input.<id>}}` token in `agent.json` has a matching `inputSchema.properties.<id>` slot and a matching `agentInputVariables[]` binding on the flow node.
+The flow-node `inputs.systemPrompt` / `inputs.userPrompt` stay as short, generic validator placeholders — **do not copy the templated agent.json prompt with `{{input.<id>}}` tokens here**. Those runtime tokens only resolve inside `agent.json messages[].content`; in the flow-node they are inert text that just duplicates content and obscures which prompt is canonical. The contract that matters is: every `{{input.<id>}}` token in `agent.json` has a matching `inputSchema.properties.<id>` slot and a matching `agentInputVariables[]` binding on the flow node.
 
 ### When the source field name is unknown at authoring time
 
@@ -128,6 +128,7 @@ Some upstream nodes (notably connector triggers like email-received) only expose
 
 - **Never write `{{plainName}}` (no `input.` prefix) in `agent.json` prompts.** It is treated as literal text by the agent runtime.
 - **Never write `{{$vars.X}}` or `{{ $vars.X }}` directly in `agent.json` prompts.** That mustache form is canvas-input syntax, not the runtime token; without the workbench rewrite step, it ships verbatim and resolves to nothing. The runtime form is `{{input.<id>}}`, paired with an `agentInputVariables[]` binding.
+- **Never copy `{{input.<id>}}` tokens into the flow-node `inputs.systemPrompt` / `inputs.userPrompt`.** Those fields are validator placeholders — keep them as short, generic strings. Runtime tokens belong in `agent.json messages[].content` only.
 - **Never leave `agentInputVariables: []` while the prompt references flow data.** Empty bindings means no values reach the agent.
 - **Never declare an `inputSchema.properties.<id>` slot without a matching `agentInputVariables[]` binding** (the slot stays empty at runtime), and never the reverse (the binding has nowhere to land).
 
