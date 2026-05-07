@@ -150,6 +150,12 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
       ]
     }
   },
+  "outputs": {
+    "output":   { "type": "object", "source": "=result",        "var": "output" },
+    "status":   { "type": "string", "source": "=result.Action", "var": "status" },
+    "notes":    { "type": "string", "source": "=result.notes",    "var": "notes",    "custom": true },
+    "decision": { "type": "string", "source": "=result.decision", "var": "decision", "custom": true }
+  },
   "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
 }
 ```
@@ -248,12 +254,24 @@ The HITL node exposes two outputs (`output`, `status`). After adding it, **compl
       "id": "invoiceReview1.status",
       "type": "string",
       "binding": { "nodeId": "invoiceReview1", "outputId": "status" }
+    },
+    {
+      "id": "invoiceReview1.notes",
+      "type": "string",
+      "binding": { "nodeId": "invoiceReview1", "outputId": "notes" }
+    },
+    {
+      "id": "invoiceReview1.decision",
+      "type": "string",
+      "binding": { "nodeId": "invoiceReview1", "outputId": "decision" }
     }
   ]
 }
 ```
 
 Include entries for **all** nodes in the flow, not just the HITL node. Replace the entire array — do not append.
+
+**Per-field outputs:** When the schema has `output` or `inOut` direction fields, add one entry per field using the output key name from `node.outputs` (the `variable` property value, or the camelCase-derived name when `variable` is omitted). These are also materialized as flow-level globals in `variables.globals` with `direction: "out"`.
 
 ---
 
@@ -350,6 +368,8 @@ After the HITL node, downstream nodes can reference:
 | `$vars.<nodeId>.output` | object | All `output` and `inOut` fields the human filled in, keyed by **field `id`** |
 | `$vars.<nodeId>.output.<fieldId>` | varies | Individual field value using the field's `id` property (e.g. `$vars.invoiceReview1.output.decision`) |
 | `$vars.<nodeId>.status` | string | Selected outcome id (e.g. `"approve"`, `"reject"`) |
+| `$vars.<nodeId>.<variable>` | varies | Per-field output also exposed as a named node variable (key matches `field.variable` or the derived camelCase name) |
+| `$vars.<variable>` | varies | Workflow-global variable (`custom: true` in `outputs`). Accessible without the node prefix in downstream expressions |
 
 > **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property creates a separate workflow-global variable (`$vars.{variable}`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "approvalResult"`, access it as `$vars.nodeId.output.dec1`, not `.approvalResult`.
 
