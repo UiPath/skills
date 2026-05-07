@@ -99,7 +99,7 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Activate / uninstall deployments** | [references/solution/activate-and-manage.md](references/solution/activate-and-manage.md) |
 | **Set up CI/CD pipeline** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
 | **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
-| **Review trace feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
+| **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
 | **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
