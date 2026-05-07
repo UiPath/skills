@@ -127,7 +127,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — Studio Web by default; `uipath-platform` for Orchestrator |
 | `uipath-platform` | Auth, Orchestrator resources, solution lifecycle (pack/publish/deploy), Integration Service, Test Manager | Yes (auth hub) | **Yes** — the deploy destination |
-| `uipath-interact` | Inspect and interact with live desktop/browser UI: click, type, screenshot, inspect. For app launching, ad-hoc exploration, post-build verification. Does NOT author workflows or generate selectors — that's `uipath-rpa`. | No auth | **No** |
+| `uipath-interact` | Ad-hoc interactive driving of a live desktop/browser app: click, type, read values, screenshot, inspect UI state. For app launching and ad-hoc exploration only. Does NOT participate in RPA build/test pipelines — `uipath-rpa` owns UIA authoring, debugging, and testing end-to-end. | No auth | **No** |
 | `uipath-solution-design` | PDD→SDD architecture only. Always runs BEFORE this skill in PDD-driven flows. | N/A | **No** |
 
 ## Reference Navigation
@@ -136,7 +136,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 |------|---------|
 | [PDD-driven Lane Guide](references/pdd-driven-lane-guide.md) | Lane A end-to-end — read SDD header, parse project list, derive tasks, write tasks.md, emit live tasks |
 | [Non-PDD Lane Guide](references/non-pdd-lane-guide.md) | Lane B end-to-end — elicitation, project-type inference, filesystem detection, UI batch, write plan.md |
-| [Multi-skill Patterns Guide](references/multi-skill-patterns-guide.md) | The 6 named multi-skill patterns (RPA build+deploy, Flow with missing resources, Build+verify UI, Agent with RPA tools, etc.). Used by both lanes. |
+| [Multi-skill Patterns Guide](references/multi-skill-patterns-guide.md) | The named multi-skill patterns (RPA build+deploy, Flow with missing resources, fix existing automation against running app, Agent with RPA tools, etc.). Used by both lanes. |
 | [Plan and Tasks Format](references/plan-and-tasks-format.md) | Header schema, task row schema, identity tuple, status states, regenerate-with-preservation algorithm, TaskCreate mapping, anti-hallucination rule, quality rules |
 
 ## Anti-patterns
@@ -146,7 +146,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 3. **Exceeding 5 `AskUserQuestion` calls.** If the elicitation can't fit, plan with best available info and note the assumption.
 4. **Recommending a skill that contradicts filesystem signals.** `.flow` files → `uipath-maestro-flow`, not `uipath-rpa`.
 5. **Asking the UI-targeting batch when the plan has no UI automation.** Pure data processing, API calls, agent-only, flow-only plans skip Step 4 entirely.
-6. **Routing UI automation through `uipath-interact` for element discovery or selector work.** `uipath-rpa` is the sole workflow authoring skill. `uipath-interact` is only for live-app interaction and post-build verification.
+6. **Routing UI automation through `uipath-interact` for element discovery, selector work, or post-build verification.** `uipath-rpa` is the sole skill for UI automation authoring, debugging, and testing — it has built-in UIA handling, UI Explorer, and selector validation. `uipath-interact` is only for ad-hoc interactive driving of a live app.
 7. **Describing specialist-internal flows in the plan.** Target-configuration procedures, OR registration, scaffolding pipelines, auth steps, pack/publish details, testing procedures — all owned by the specialist's own docs. Inlining creates drift.
 8. **Saving a plan with placeholders** (TBD, TODO, as needed, similar to Task N).
 9. **Asking the user to choose between XAML and C#.** Project type is inferred from the request; RPA workflows are XAML by default. Coded mode is set only when the user independently says "coded workflow", "C# workflow", or ".cs file".
