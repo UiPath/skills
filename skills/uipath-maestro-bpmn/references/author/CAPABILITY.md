@@ -58,6 +58,7 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 | Add or revise BPMN structure | [references/brownfield.md](references/brownfield.md) + [references/editing-operations.md](references/editing-operations.md) + [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md) |
 | Add variables, mappings, bindings, or expressions | [references/planning-impl.md](references/planning-impl.md) + [shared/variables-bindings-expressions.md](../shared/variables-bindings-expressions.md) |
 | Add an Integration Service activity or trigger | [references/plugins/integration-service/](references/plugins/integration-service/) |
+| Add a specific BPMN or UiPath extension element | [Plugin references](#plugin-references) |
 | Prepare for upload or run | [references/validation.md](references/validation.md) then [operate/CAPABILITY.md](../operate/CAPABILITY.md) |
 | Keep authored content public-safe | [shared/public-safety.md](../shared/public-safety.md) |
 
@@ -82,6 +83,27 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 - [editing-operations.md](references/editing-operations.md) - safe edit operations for BPMN XML
 - [validation.md](references/validation.md) - local validation checklist
 - [plugins/integration-service/](references/plugins/integration-service/) - Integration Service planning and CLI enrichment boundary
+
+### Plugin references
+
+Each plugin reference has a `planning.md` for pass 1 shape/resource decisions and an `impl.md` for pass 2 XML ownership and validation boundaries.
+
+- [plugins/start-end-events/](references/plugins/start-end-events/) - start events, end events, intermediate events, and boundary events
+- [plugins/gateways/](references/plugins/gateways/) - exclusive, inclusive, parallel, event-based, and complex gateways
+- [plugins/sequence-flows/](references/plugins/sequence-flows/) - control-flow edges, conditions, defaults, and diagram waypoints
+- [plugins/service-tasks/](references/plugins/service-tasks/) - service task wrappers and common service metadata boundaries
+- [plugins/connectors/](references/plugins/connectors/) - connector-backed activities, triggers, waits, and dynamic schemas
+- [plugins/waits-triggers/](references/plugins/waits-triggers/) - timers, waits, triggers, receives, and timeout behavior
+- [plugins/script/](references/plugins/script/) - script tasks, script metadata, inputs, outputs, and error paths
+- [plugins/hitl/](references/plugins/hitl/) - human-in-the-loop tasks, outcomes, timeouts, and Action Center bindings
+- [plugins/queues/](references/plugins/queues/) - Orchestrator queue item creation and queue result handling
+- [plugins/call-activity-subprocess/](references/plugins/call-activity-subprocess/) - call activities, subprocesses, event subprocesses, and scoped mappings
+- [plugins/multi-instance/](references/plugins/multi-instance/) - sequential or parallel collection processing
+- [plugins/agents/](references/plugins/agents/) - agent job and A2A agent execution shells
+- [plugins/rpa-jobs/](references/plugins/rpa-jobs/) - Orchestrator RPA process job execution
+- [plugins/api-workflows/](references/plugins/api-workflows/) - API workflow invocation and response handling
+- [plugins/signals/](references/plugins/signals/) - signal definitions, throws, catches, waits, and broadcast semantics
+- [plugins/business-rules/](references/plugins/business-rules/) - business rule task invocation and result routing
 
 ### Cross-capability
 
