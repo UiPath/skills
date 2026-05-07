@@ -43,11 +43,11 @@ llm_reviewer:
     - GoogleSearch/Main.xaml opens chrome.exe at google.com, types
       "UiPath automation" into the search box, and clicks the search
       button, using the three known selectors (chrome.exe URL,
-      textarea name='q', input name='btnK'). Either modern
-      (NApplicationCard + NTypeInto + NClick) or classic
-      (OpenBrowser + TypeInto + Click) is acceptable in CI — the
-      modern Object Repository / configure-target pipeline can't run
-      without an interactive Studio session.
+      textarea name='q', input name='btnK'). Use the modern Nx
+      activities (NApplicationCard + NTypeInto + NClick); the classic
+      OpenBrowser + TypeInto + Click triple is not a clean fit.
+      The Object Repository / configure-target
+      pipeline can't run without an interactive Studio session.
     - The harness runs `uip rpa build` programmatically; the build's
       exit code is the compile gate.
 
@@ -70,14 +70,19 @@ initial_prompt: |
     Input:  webctrl tag='textarea' name='q'
     Button: webctrl tag='input' name='btnK' type='submit'
 
-  Use whichever `UiPath.UIAutomation.Activities` activities you need
-  to open the browser, type the query, and click search — both modern
-  (`NApplicationCard` + `NTypeInto` + `NClick`) and classic
-  (`OpenBrowser` + `TypeInto` + `Click`) shapes are acceptable as long
-  as the project compiles. Author the XAML directly with the selectors
-  above; do NOT engage the multi-phase `uia-configure-target` /
-  Object Repository pipeline — Studio is not running interactively in
-  CI, so its OR registration steps can't complete and will time out.
+  Use the modern `UiPath.UIAutomation.Activities` Nx activities
+  (`NApplicationCard` + `NTypeInto` + `NClick`) to open the browser,
+  type the query, and click search. The classic
+  `OpenBrowser` / inline-selector `TypeInto` / `Click` triple is
+  not a clean fit — do NOT pivot to it if the
+  modern Nx activities look unavailable in the installed package
+  version; instead, update `UiPath.UIAutomation.Activities` to a
+  version that surfaces the Nx classes (`find-activities` reports
+  the version they ship in). Author the XAML directly with the
+  selectors above; do NOT engage the multi-phase
+  `uia-configure-target` / Object Repository pipeline — Studio is
+  not running interactively in CI, so its OR registration steps
+  can't complete and will time out.
 
   Follow the uipath-rpa skill's normal flow for everything else
   (project scaffolding, validation). The `uip` CLI is authenticated
