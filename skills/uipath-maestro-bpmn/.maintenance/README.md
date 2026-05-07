@@ -162,6 +162,16 @@ bash .maintenance/check-plugin-pairs.sh
 
 Returns `plugins_checked=N missing_files=M`. Exits non-zero if any plugin folder is missing a required file. Catches half-deleted plugins or new plugin folders that haven't been completed.
 
+## Verifying BPMN validation fixtures
+
+Run the validation-fixtures checker to verify the public-safe synthetic BPMN corpus and generated package metadata:
+
+```bash
+bash .maintenance/check-validation-fixtures.sh
+```
+
+Returns `validation_fixture_projects=N bpmn_files=N errors=0` on success. The checker validates standard BPMN parseability, UiPath moddle/extension elements, resource binding references, Integration Service enrichment fields, generated `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json`, plus public-safety guardrails for fixture content.
+
 ## Verifying `uip` command references
 
 Run the uip-command checker to verify every `uip ...` invocation resolves to a real command in the installed CLI:
@@ -202,7 +212,7 @@ For table rows, place the marker **inside a cell** so it doesn't break table str
 
 ## Running the full suite
 
-Run all eight checkers in one invocation:
+Run all nine checkers in one invocation:
 
 ```bash
 bash .maintenance/check-all.sh
