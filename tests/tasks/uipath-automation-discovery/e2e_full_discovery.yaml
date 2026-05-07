@@ -127,6 +127,15 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: file_contains
+    description: "Report includes Phase 5 UiPath skill handoff"
+    path: "discovery-report.md"
+    includes:
+      - "uipath-rpa"
+      - "uipath-maestro-flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: json_check
     description: "Summary has correct structure and reasonable counts"
     path: "report.json"

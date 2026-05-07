@@ -80,7 +80,8 @@ Work with whatever access is verified. Even messaging channels alone can yield
 
 **Checkpoint:** After Phase 1, share a raw signal summary with the user:
 "I found X help channels, Y existing automation projects, Z departments.
-Want me to go deeper on anything before I analyze?"
+Want me to go deeper on anything before I analyze?" If the user requests
+deeper mining, run at most 1 additional targeted pass, then proceed.
 
 ## Phase 2: ANALYZE
 
@@ -154,7 +155,9 @@ For each of the company's documented strategic priorities, ask: "Is there an
 internal automation that accelerates this?" Only include Tier 4 opportunities
 that map to both a documented strategic priority and an observed Phase 1-2 gap.
 
-Use this table as a prompt — do not include rows where no gap was observed:
+Use this table as a starting prompt (covers common enterprise priorities) —
+adapt to the company's actual strategy and do not include rows where no gap
+was observed:
 
 | Priority | Potential Automation |
 |---|---|
