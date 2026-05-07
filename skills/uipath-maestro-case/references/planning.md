@@ -255,8 +255,6 @@ Title format: `Declare <category> "<name>"` where category is `In argument`, `Ou
 
 One T-entry per variable or argument from the sdd.md "Case Variables" table. Place these after the case file (T01) and **all** trigger T-entries (T02+) — i.e., after the last trigger row, before stages. In multi-trigger cases the variables block starts at `T0<last-trigger>+1`, not at `T03`. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and entry format.
 
-Task-output variables (produced by tasks during execution) do NOT get T-entries here — they are wired automatically during task creation (§4.6).
-
 ### 4.3 Configure trigger(s) (T02+)
 
 Title format: `Configure <trigger-type> trigger "<name>"`
