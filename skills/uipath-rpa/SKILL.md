@@ -72,7 +72,7 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 | Integration Service connectors (XAML) | **XAML** | IS connector activities use XAML-specific dynamic activity config |
 | No matching activity for a subtask | **Coded fallback** | Small .cs invoked from XAML via `Invoke Workflow File` |
 | Complex data transforms, HTTP, parsing | **Coded** | C# is more natural than nested XAML activities |
-| Tempted to call a PowerShell script | **Coded** | When thinking PowerShell, prefer a coded workflow — same logic in-process, no quote escaping, no PS 5.1 vs 7+ gap. PS interop only for legacy scripts or Windows-admin cmdlets. See [powershell-interop-guide.md](references/powershell-interop-guide.md) |
+| Tempted to call a PowerShell script | **Coded** | Prefer a coded workflow. If PS is genuinely needed (admin cmdlets, existing `.ps1`), use the `InvokePowerShell<T>` activity — never `Invoke Process` + `powershell.exe`. See [powershell-interop-guide.md](references/powershell-interop-guide.md) |
 | Custom data models / DTOs | **Coded Source File** | XAML cannot define types — plain `.cs`, no `CodedWorkflow` base |
 | Unit tests with assertions | **Coded Test Case** | `[TestCase]` with Arrange/Act/Assert |
 | User explicitly requests coded/XAML | **User's choice** | Never second-guess explicit preference |

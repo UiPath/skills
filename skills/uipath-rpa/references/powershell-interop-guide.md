@@ -2,142 +2,67 @@
 
 ## Default: Use a Coded Workflow Instead
 
-When the impulse is "drop into PowerShell," reach for a coded workflow (`[Workflow]` in a `.cs` file) first. A coded workflow:
+When the impulse is "drop into PowerShell," reach for a coded workflow (`[Workflow]` in a `.cs` file) first. A coded workflow runs in-process, surfaces real exceptions, and lives in one file with the rest of the project.
 
-- Runs in-process — no quote escaping, no exit code translation, no status-file dance.
-- Targets a fixed .NET runtime — no PS 5.1 vs 7+ feature gap.
-- Surfaces real exceptions with stack traces, debuggable in Studio.
-- Lives in one file with the rest of the project.
+Reach for PowerShell only when:
 
-Reach for PowerShell **only** when:
-
-1. The project already has `.ps1` scripts you must edit (don't rewrite for its own sake).
-2. The script needs Windows-admin cmdlets (`Get-ADUser`, `Mount-*`, etc.) awkward to call from .NET.
-3. The robot machine blocks adding NuGet packages.
+1. The script needs Windows-admin cmdlets (`Get-ADUser`, `Mount-*`, etc.) awkward to call from .NET.
+2. The project already has `.ps1` scripts you must edit (don't rewrite for its own sake).
+3. Logic is genuinely PS-shaped (modules, pipeline-style data flow).
 
 For SharePoint REST, HTTP uploads, JSON parsing, file mangling — write a coded workflow. See [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md).
 
-The rest of this guide covers the failure modes when PowerShell is unavoidable.
+## When You Need PowerShell — Use the `InvokePowerShell` Activity
 
-## Failure Modes Specific to `Invoke Process` + PowerShell
+`UiPath.Core.Activities.InvokePowerShell<T>` (`UiPath.System.Activities`) is the supported path. **Do not shell out via `Invoke Process` + `powershell.exe`** — that path requires manual quote escaping, exit-code parsing, and a status-file dance. `InvokePowerShell` handles parameter binding and output collection directly, and exceptions propagate as activity faults.
 
-Two issues account for most incidents. Both fail at runtime, not `build`:
+### Properties
 
-1. **Wrong PowerShell version.** `powershell.exe` = Windows PowerShell 5.1. `pwsh.exe` = PowerShell 7+ (only if installed separately).
-2. **Argument string corruption.** Quotes in any value silently shift positional args.
+| Property | Type | Notes |
+|----------|------|-------|
+| `CommandText` | `InArgument<string>` | Required. Script body or single command. |
+| `IsScript` | `InArgument<bool>` | `true` → multi-line script. `false` → single cmdlet invocation. |
+| `Parameters` | typed collection | Named bindings passed in. Verify the element type via `uip rpa get-default-activity-xaml --activity-class-name "UiPath.Core.Activities.InvokePowerShell\`1"`. |
+| `Input` | `InArgument<IEnumerable>` | Pipeline input (`$input` inside the script). |
+| `Output` | `OutArgument<IEnumerable<T>>` | Collected results. `T` is the activity's generic type argument (e.g. `PSObject`, `string`). |
+| `PowerShellProcess` | enum | `WindowsPowerShell32` / `WindowsPowerShell64` / `PowerShellCore`. Pin the runtime explicitly. |
+| `ContinueOnError` | `InArgument<bool>` | Default `false`. PS exceptions propagate as activity faults. |
 
-### Which PowerShell Runs
-
-| Executable | Version | Default install state |
-|-----------|---------|------------------------|
-| `powershell.exe` | Windows PowerShell **5.1** | Always present |
-| `pwsh.exe`       | PowerShell **7+** | Only if installed |
-
-If `Invoke Process` uses `FileName="powershell.exe"`, assume 5.1.
-
-### PS 5.1 vs 7+ Feature Gap
-
-These features need PS 6.0+. Using them under `powershell.exe` (5.1) fails at runtime:
-
-| Feature | 5.1 | 7+ | Symptom in 5.1 |
-|---------|-----|----|----------------|
-| `Invoke-WebRequest -InFile` | no | yes | `A parameter cannot be found that matches parameter name 'InFile'` |
-| `ConvertFrom-Json -AsHashtable` | no | yes | parameter not recognized |
-| Ternary `cond ? a : b` | no | yes | `Unexpected token '?'` |
-| Null-conditional `?.`, `?[]` | no | yes | parse error |
-| `ForEach-Object -Parallel` | no | yes | parameter not recognized |
-| Pipeline chain `&&` / `\|\|` | no | yes | parse error |
-
-#### 5.1-Compatible Migrations
-
-| 7+ | 5.1 |
-|----|-----|
-| `Invoke-WebRequest -InFile $p -Method Put -Uri $u` | `Invoke-RestMethod -Method Put -Uri $u -Body ([System.IO.File]::ReadAllBytes($p)) -ContentType 'application/octet-stream'` |
-| `ConvertFrom-Json -AsHashtable` | `$obj = $json \| ConvertFrom-Json; $h = @{}; $obj.PSObject.Properties \| ForEach-Object { $h[$_.Name] = $_.Value }` |
-| `$x ?? $default` | `if ($null -ne $x) { $x } else { $default }` |
-| `cond ? a : b` | `if (cond) { a } else { b }` |
-| `$obj?.Prop` | `if ($null -ne $obj) { $obj.Prop }` |
-
-If you cannot control the target machine, refuse early:
-
-```powershell
-if ($PSVersionTable.PSVersion.Major -lt 7) {
-    # fall back, or fail loudly
-}
-```
-
-### Building `PSArguments` From a XAML Expression
-
-Quotes inside any value close the surrounding `""…""` and shift every later positional arg. `build` does not catch this. Escape every value.
-
-#### VB
+### Minimal Pattern
 
 ```xml
-<ui:InvokeProcess
-    FileName="powershell.exe"
-    Arguments='[String.Format(
-        "-NoProfile -ExecutionPolicy Bypass -File ""{0}"" -SiteUrl ""{1}"" -RootFolder ""{2}"" -FilePath ""{3}""",
-        ScriptPath.Replace("""", """"""),
-        in_SPSiteUrl.Replace("""", """"""),
-        in_RootFolder.Replace("""", """"""),
-        in_FilePath.Replace("""", """"""))]' />
+<ui:InvokePowerShell x:TypeArguments="x:String"
+    CommandText="[scriptBody]"
+    IsScript="True"
+    PowerShellProcess="WindowsPowerShell64"
+    Output="[psOutput]" />
 ```
 
-`""""` in VB inside `[…]` = one literal `"`; `""""""` = `""` (PS reads as one literal `"` inside double quotes).
+For typed parameter bindings, use the `Parameters` collection instead of building a command line — no string concatenation, no quote escaping. Look up the element type with `get-default-activity-xaml` before authoring.
 
-#### C#
+### Choosing `PowerShellProcess`
 
-```xml
-<InArgument x:TypeArguments="x:String">
-  <CSharpValue x:TypeArguments="x:String">
-    string.Format(
-      "-NoProfile -ExecutionPolicy Bypass -File \"{0}\" -SiteUrl \"{1}\" -RootFolder \"{2}\" -FilePath \"{3}\"",
-      ScriptPath.Replace("\"", "\"\""),
-      in_SPSiteUrl.Replace("\"", "\"\""),
-      in_RootFolder.Replace("\"", "\"\""),
-      in_FilePath.Replace("\"", "\"\""))
-  </CSharpValue>
-</InArgument>
-```
+| Value | Runtime | When to use |
+|-------|---------|-------------|
+| `WindowsPowerShell64` | Windows PowerShell 5.1, 64-bit | Default for Windows robots; broadest cmdlet compatibility. |
+| `WindowsPowerShell32` | Windows PowerShell 5.1, 32-bit | Legacy 32-bit modules only. |
+| `PowerShellCore` | PowerShell 7+ | Cross-platform. Requires `pwsh` installed on the robot. Needed for 7+-only features (`Invoke-WebRequest -InFile`, `ConvertFrom-Json -AsHashtable`, ternary, null-conditional, `&&`/`\|\|`). |
 
-Default to escaping even when the value looks safe — cost is negligible, regression cost is high.
+Always set `PowerShellProcess` explicitly so a robot upgrade does not silently change the runtime.
 
-### Returning Status
+## Last-Resort `Invoke Process`
 
-`Invoke Process` returns the exit code, not stdout. Two patterns:
+Some scenarios force a direct shellout — a vendor script with exact-CLI requirements, or an interactive session. In that case:
 
-#### Status File (recommended)
-
-The script writes one text file with `OK` or a one-line error. Workflow reads it after `Invoke Process`.
-
-Two correctness rules:
-
-1. **Always write the file, even on crash.** Wrap the body in `try { … } catch { Out-File -FilePath $statusFile -InputObject ("ERROR: " + $_.Exception.Message) -Encoding UTF8; exit 1 }`. Otherwise the workflow reads stale content from a previous run, or hits a generic "file not found" that hides the real failure.
-2. **Delete after read, not before write.** Cleanup tied to "after read" makes status files self-cleaning. "Before write" leaves a window where a crashed prior run's file gets read by the next.
-
-XAML layout after `Invoke Process`:
-
-```text
-Invoke Process (powershell.exe -File <script> …)
-└── If (Not File.Exists(StatusFilePath))
-    ├── Then: Throw BusinessRuleException("Script produced no status file at " + StatusFilePath)
-    └── Else: Read Text File → status
-              If (status starts with "ERROR")
-              ├── Then: Throw BusinessRuleException(status)
-              └── Else: continue
-              Delete (Path = StatusFilePath)
-```
-
-`Throw` uses `s:Exception`-derived types — see [xaml/common-pitfalls.md § Invalid Use of `x:` Prefix](xaml/common-pitfalls.md#invalid-use-of-x-prefix-for-non-builtin-clr-types).
-
-#### Exit Code Only
-
-Use when the outcome is binary. `exit 0` on success, non-zero on failure; check `Invoke Process`'s `Result` output. If you mix both, document which is authoritative — usually the status file.
+1. **Pin the executable.** `FileName="powershell.exe"` for 5.1, `FileName="pwsh.exe"` for 7+. Do not rely on PATH.
+2. **Escape quotes in every value** embedded in `Arguments`. A single `"` or `'` in a path silently shifts every later positional arg.
+   - VB: `value.Replace("""", """""")`
+   - C#: `value.Replace("\"", "\"\"")`
+3. **Status by file, not stdout.** `Invoke Process` returns the exit code only. Wrap the script body in `try { … } catch { Out-File -FilePath $statusFile -InputObject ("ERROR: " + $_.Exception.Message); exit 1 }` so failures are never silent. Read the file after, then delete it.
 
 ## Anti-Patterns
 
-1. **Defaulting to PowerShell when a coded workflow would do.** See § Default above.
-2. **Assuming `pwsh.exe` is available.** Default to `powershell.exe`; gate any 7+ feature behind a version check.
-3. **Concatenating paths into `PSArguments` without escaping.** A single `"` or `'` shifts every positional arg.
-4. **Driving UI from PowerShell.** Use UiPath UIAutomation activities — see [ui-automation-guide.md](ui-automation-guide.md#mandatory-generate-targets-before-writing-any-ui-code).
-5. **Capturing status via stdout.** Fragile across PS versions and locales. Use a status file or exit code.
+1. **Defaulting to PowerShell when a coded workflow would do.** See § Default.
+2. **Using `Invoke Process` when `InvokePowerShell` works.** Skipping the typed activity for no reason triples the gotcha surface.
+3. **Driving UI from PowerShell.** Use UiPath UIAutomation activities — see [ui-automation-guide.md](ui-automation-guide.md#mandatory-generate-targets-before-writing-any-ui-code).
+4. **Omitting `PowerShellProcess`.** A robot upgrade can silently land your script on a different runtime.
