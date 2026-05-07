@@ -5,7 +5,7 @@ description: >
   knows to call `uip traces feedback create --trace-id ... --positive --folder-key ...`
   and `uip traces feedback list --trace-id ... --folder-key ...` with --output json.
   Auth/404 errors are acceptable outcomes — the goal is correct command shape.
-tags: [uipath-platform, smoke, lifecycle:discover]
+tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover]
 
 sandbox:
   driver: tempdir
