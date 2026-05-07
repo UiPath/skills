@@ -1,0 +1,74 @@
+task_id: skill-bpmn-validation-fixtures
+description: >
+  Skill-guided smoke test: agent uses the uipath-maestro-bpmn skill to inspect
+  the synthetic validation fixture corpus and run the local fixture checker.
+  This verifies the skill's validation guidance, generated package metadata
+  expectations, Integration Service enrichment boundary, and public-safety
+  requirements without cloud-side effects.
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:validate, connector, feature:connections]
+
+agent:
+  type: claude-code
+  max_turns: 20
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+      target: skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Inspect the validation fixtures under:
+  skills/uipath-maestro-bpmn/fixtures/validation
+
+  Run the local fixture validation command:
+  bash skills/uipath-maestro-bpmn/.maintenance/check-validation-fixtures.sh
+
+  Report whether the fixtures pass. Do not upload, publish, deploy, debug,
+  run a process, ask for approval, or call cloud-side UiPath commands.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-bpmn skill"
+    skill_name: "uipath:uipath-maestro-bpmn"
+    expected: "yes"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent ran the Maestro BPMN validation fixture checker"
+    tool_name: "Bash"
+    command_pattern: 'bash\s+skills/uipath-maestro-bpmn/\.maintenance/check-validation-fixtures\.sh'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run cloud-side UiPath lifecycle commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run)|uip\s+maestro\s+(upload|publish|deploy|debug|run)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Linear BPMN fixture is available"
+    path: "skills/uipath-maestro-bpmn/fixtures/validation/linear-process/linear-process.bpmn"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Integration Service package bindings fixture is available"
+    path: "skills/uipath-maestro-bpmn/fixtures/validation/integration-service-enriched/bindings_v2.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Fixture checker passes in the scored workspace"
+    command: "bash skills/uipath-maestro-bpmn/.maintenance/check-validation-fixtures.sh"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
