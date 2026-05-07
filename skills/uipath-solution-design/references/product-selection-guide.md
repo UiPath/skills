@@ -345,7 +345,7 @@ The solution overview SDD includes:
 3. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
 4. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
 5. Per-Project SDD Index — filename + one-line scope per project
-6. Consolidated Implementation Plan — task ordering across projects (integrated components built before their consumers)
+6. Planner Handoff — solution-level handoff header plus cross-project ordering notes (integrated components built before their consumers) for `uipath-planner` to consume. Do not include a task list here — the planner owns task generation.
 
 ## Gap Handling for Agent / Coded App
 
