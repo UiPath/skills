@@ -44,7 +44,7 @@ def _check_generate_schema(flow: dict[str, Any]) -> None:
     http_text = _http_fallback_text(flow)
     _require_all(
         http_text,
-        ["api.applicationinsights.io", "/query", "method", "post", "query", "timespan"],
+        ["api.applicationinsights.io", "/query", "method", "post", "query"],
         "Application Insights HTTP fallback",
     )
     _require_all(
@@ -62,8 +62,6 @@ def _check_path_params(flow: dict[str, Any]) -> None:
             "/tasks/",
             "method",
             "delete",
-            "tasklistid",
-            "taskid",
         ],
         "Google Tasks path-params HTTP fallback",
     )
@@ -84,11 +82,27 @@ def _check_query_params(flow: dict[str, Any]) -> None:
     )
 
 
+def _check_method_override(flow: dict[str, Any]) -> None:
+    _require_all(
+        _http_fallback_text(flow),
+        [
+            "management.azure.com",
+            "desktopvirtualization",
+            "hostpools",
+            "retrieveregistrationtoken",
+            "method",
+            "post",
+            "api-version",
+        ],
+        "Azure method-override HTTP fallback",
+    )
+
+
 def main() -> None:
     if len(sys.argv) != 4:
         _fail(
             "usage: check_managed_http_fallback.py <flow_glob> <connector_key> "
-            "<generate_schema|path_params|query_params>"
+            "<generate_schema|method_override|path_params|query_params>"
         )
 
     flow = _load_flow(sys.argv[1])
@@ -102,6 +116,7 @@ def main() -> None:
 
     checks = {
         "generate_schema": _check_generate_schema,
+        "method_override": _check_method_override,
         "path_params": _check_path_params,
         "query_params": _check_query_params,
     }

@@ -29,6 +29,10 @@ initial_prompt: |
   Route failure to a Terminate node with error message "MethodOverride test failed".
   Route success to a final action that logs "MethodOverride test passed".
   Validate the final flow file.
+  If the Azure connector operation is not present in the registry, use a
+  managed HTTP fallback for the same Azure AVD retrieveRegistrationToken REST
+  call and finish after validation. Do not keep searching for a connector node
+  that the registry does not expose.
 
 success_criteria:
   - type: run_command
@@ -40,8 +44,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow has a connector node referencing uipath-microsoft-azure"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/MethodOverrideTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-microsoft-azure' in content, 'Connector key not found'; print('OK: connector key present')\""
+    description: "Flow uses Azure connector or task-specific managed HTTP fallback"
+    command: "python3 $TASK_DIR/check_managed_http_fallback.py '**/MethodOverrideTest*.flow' uipath-microsoft-azure method_override"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
