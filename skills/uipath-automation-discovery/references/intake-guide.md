@@ -41,9 +41,9 @@ Example access tests (adapt to your environment):
 - Slack: MCP `slack_read_channel` or `slack_search_public`
 - Confluence: MCP `searchConfluenceUsingCql` with simple CQL
 - Jira: MCP `searchJiraIssuesUsingJql` with simple JQL
-- Salesforce: `sf data query` (Salesforce CLI)
+- Salesforce: `sf data query --result-format json` (Salesforce CLI)
 - Gmail/Outlook: whichever mail MCP or CLI the user has configured
-- GitHub: `gh api user` (GitHub CLI)
+- GitHub: `gh api user --jq .login` (GitHub CLI)
 - If a named tool is unavailable, ask the user which installed tool or connector to use. Do not invent CLI flags.
 
 ## 0D. Org Structure & Scope

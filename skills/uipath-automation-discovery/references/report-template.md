@@ -23,7 +23,7 @@ Title: Internal Automation Discovery Report — {Month} {Year}
        | Role/Pseudonym | System/Channel | Function | Risk |
    3c. Top 15 Behavioral Opportunities (ranked by evidence)
        | # | Automation | Source & Evidence | Impact |
-       Each row: specific system, quantitative metric, person names
+       Each row: specific system, quantitative metric, role/pseudonym (use real names only if authorized)
 
 4. Part 2: Department Coverage
    4a. Departments with ZERO automation coverage (table)

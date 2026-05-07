@@ -38,6 +38,8 @@ initial_prompt: |
     my expense report?" (210 times). Single responder: Sarah Chen (Finance).
   - #help-hr: 600 msgs/month. Top questions: "how do I update my
     address?" and "when is open enrollment?" Bot handles 30% of queries.
+    The HR onboarding checklist bot's playbook has been documented and
+    could be reused for IT and Finance help channels.
   - #sales-ops: Team manually updates Salesforce opportunity stages from
     Gong call recordings every Monday. Takes 4 hours for 3 people.
   - #customer-success: CSMs manually compile weekly health scores in
@@ -88,7 +90,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Report contains all 4 tiers"
+    description: "Report contains all 4 tier sections"
     path: "discovery-report.md"
     includes:
       - "Tier 1"
@@ -99,7 +101,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Report identifies SPOFs by name"
+    description: "Report identifies SPOFs by name (naming authorized)"
     path: "discovery-report.md"
     includes:
       - "Jake Martinez"
@@ -108,11 +110,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Report identifies replicable models"
+    description: "Report identifies the seeded replicable model"
     path: "discovery-report.md"
     includes:
-      - "bot"
-      - "replicate"
+      - "onboarding checklist bot"
+      - "#help-hr"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report contains Tier 1 replication section"
+    path: "discovery-report.md"
+    includes:
+      - "Replicate"
+      - "Proven Model"
     weight: 1.5
     pass_threshold: 1.0
 
@@ -137,6 +148,6 @@ success_criteria:
         expected: 8
       - expression: "length(zero_coverage_departments)"
         operator: gte
-        expected: 3
+        expected: 7
     weight: 3.0
     pass_threshold: 0.75

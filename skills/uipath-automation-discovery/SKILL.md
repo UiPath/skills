@@ -19,11 +19,11 @@ UiPath-ready backlog with recommended implementation paths.
 
 ## Critical Rules
 
-1. **Authorization and privacy first.** Confirm the requester is authorized to analyze the selected systems and employee data. Avoid private channels, DMs, and special-category HR data (payroll, performance reviews) unless explicitly approved. Pseudonymize SPOFs by default (e.g., "Sales Ops Lead A"); use real names only when explicitly authorized. Maintain a `name-mapping.json` workspace file (e.g., `{"Jake Martinez": "IT Lead A"}`) and apply it consistently before any write operation. Ask about jurisdiction constraints (GDPR, works council, internal policy); apply the stricter rule when uncertain.
+1. **Authorization and privacy first.** Confirm the requester is authorized to analyze the selected systems and employee data. Avoid private channels, DMs, and special-category HR data (payroll, performance reviews) unless explicitly approved. Pseudonymize SPOFs by default (e.g., "Sales Ops Lead A"); use real names only when explicitly authorized. Maintain consistent pseudonyms across the entire report — assign each individual a stable label on first mention and reuse it throughout. Ask about jurisdiction constraints (GDPR, works council, internal policy); apply the stricter rule when uncertain.
 2. **Never assume — always ask first.** Complete the full intake (Phase 0) before mining. You need company context, tool access, org structure, privacy scope, and scope agreement.
 3. **Verify access before mining.** Test each data source with a minimal read-only operation. If access fails, note it and move on — don't block discovery.
-4. **Evidence over opinion.** Every opportunity (Tiers 1-3) must cite a specific source, quantitative metric, and affected role or team. No unsupported claims. If a source yields fewer than 5 signals, mark all findings from that source as low-confidence. Do not promote low-confidence findings above Tier 3.
-5. **Replication is always Tier 1.** A proven model working in one area that could replicate elsewhere is the highest-value finding. Always lead with these. Never skip the replicable-model search (Phase 2C). Exception: if the replicable model's source has fewer than 5 signals, classify as Tier 1 with a low-confidence flag until corroborated by a second source.
+4. **Evidence over opinion.** Every opportunity (Tiers 1-3) must cite a specific source, quantitative metric, and affected role or team. No unsupported claims. If a source yields fewer than 5 signals, mark all findings from that source as low-confidence. Do not promote low-confidence findings above Tier 3, except per Rule 5.
+5. **Replication is always Tier 1.** A proven model backed by a working automation that could replicate elsewhere is the highest-value finding — this overrides Rule 4's Tier 3 cap. If the replicable model's source has fewer than 5 signals, classify as Tier 1 with a low-confidence flag until corroborated by a second source. Always lead with replicable models. Never skip the replicable-model search (Phase 2C).
 
 ## Workflow Overview
 
@@ -136,7 +136,8 @@ Apply low-confidence handling per Critical Rule 4.
 
 **Checkpoint:** Share analysis summary with user before reflecting:
 "Here are the top patterns, SPOFs, and replicable models. Anything surprise you?
-Anything I should investigate further?"
+Anything I should investigate further?" If the user requests deeper analysis,
+run at most 1 additional targeted pass, then proceed to Phase 3.
 
 ## Phase 3: REFLECT
 
@@ -149,7 +150,11 @@ revenue, growth, strategic priorities, competitive challenges, key metrics.
 
 ### 3B. Strategic Gaps
 
-For each strategic priority: "Is there an internal automation that accelerates this?"
+For each of the company's documented strategic priorities, ask: "Is there an
+internal automation that accelerates this?" Only include Tier 4 opportunities
+that map to both a documented strategic priority and an observed Phase 1-2 gap.
+
+Use this table as a prompt — do not include rows where no gap was observed:
 
 | Priority | Potential Automation |
 |---|---|
@@ -157,16 +162,13 @@ For each strategic priority: "Is there an internal automation that accelerates t
 | Cost reduction | Self-service portals, report automation, process standardization |
 | Customer retention | Health scoring, churn prediction, proactive outreach |
 | Market expansion | Localization, compliance automation, partner enablement |
-| M&A integration | Migration tracking, data reconciliation, org mapping |
 | Compliance | Audit trails, policy enforcement, automated reporting |
 | Talent retention | Onboarding, engagement monitoring, career pathing |
-| Product-led growth | Usage monitoring, community management, certification automation |
 
-### 3C. Dogfooding Check
+### 3C. Dogfooding Check (skip unless the company sells automation/AI/productivity tools)
 
-If the company sells automation/productivity/AI/workflow tools:
-does it use its own product? Is there a coverage metric? What's the narrative
-gap between what they sell and what they do internally?
+Does the company use its own product internally? Is there a coverage metric?
+What's the narrative gap between what they sell and what they do internally?
 
 ## Phase 4: REPORT
 
@@ -203,9 +205,10 @@ for full solution design.
 
 ## Execution Strategy
 
-Parallelize aggressively using the Agent tool with `subagent_type: general-purpose`:
-- 3 agents simultaneously for Phase 1: messaging, wiki/tracker, systems of record
-- Department-specific behavioral agents in Phase 2
+Parallelize Phases 1-3 (Phase 0 is interactive — do not parallelize intake).
+Max 3 concurrent agents using the Agent tool with `subagent_type: general-purpose`:
+- Phase 1: 3 agents — messaging, wiki/tracker, systems of record
+- Phase 2: department-specific behavioral agents (max 3 concurrent)
 - Multiple process doc reads in parallel
 - Web research concurrent with internal mining
 
@@ -221,7 +224,7 @@ each phase with a brief summary and ask if the user wants to adjust scope.
 ## Anti-patterns
 
 - **Mining before intake.** Never start searching systems before completing Phase 0. Without context you'll waste time on irrelevant signals.
-- **Naming individuals without consent.** Always pseudonymize SPOFs unless the requester explicitly authorizes naming. Apply the `name-mapping.json` before every write.
+- **Naming individuals without consent.** Always pseudonymize SPOFs unless the requester explicitly authorizes naming.
 - **Fabricating metrics.** If a source returns sparse data, mark findings as low-confidence. Never invent volume numbers.
 - **Promising ROI without source citations.** Every ROI estimate must reference an existing project benchmark or explicit data point.
 - **Skipping the replicable-model search.** The highest-value findings are always proven models that can replicate. Never skip Phase 2C.
