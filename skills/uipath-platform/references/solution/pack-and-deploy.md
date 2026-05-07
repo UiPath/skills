@@ -321,4 +321,5 @@ Folder filtering with `--folder-path` happens **after** fetching `--take` result
 ## Related
 
 - [develop-solution.md](develop-solution.md) -- Create and structure a solution from scratch
+- [scenarios.md](scenarios.md) -- Recipes for same-name resources, cross-refs, shared cloud entities, virtual assets at deploy
 - [activate-and-manage.md](activate-and-manage.md) -- Activate deployments, uninstall, manage packages

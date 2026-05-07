@@ -110,6 +110,7 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 | Develop a Solution | [develop-solution.md](develop-solution.md) | Create, add projects, manage resources, upload |
 | Pack & Deploy | [pack-and-deploy.md](pack-and-deploy.md) | Pack, publish, deploy run, deploy config |
 | Activate & Manage | [activate-and-manage.md](activate-and-manage.md) | Activate, uninstall, packages list/delete |
+| Scenarios | [scenarios.md](scenarios.md) | Multi-project recipes — same-name across folders, intra-solution cross-refs, shared cloud resources, virtual assets at deploy |
 
 ---
 
