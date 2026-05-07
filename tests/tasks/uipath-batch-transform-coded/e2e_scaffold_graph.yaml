@@ -8,7 +8,7 @@ description: >
   EphemeralIndexUsage from uipath.platform.context_grounding, and
   durable_interrupt — and does NOT instantiate UiPath() at module top
   level.
-tags: [uipath-batch-transform-coded, e2e, coded]
+tags: [uipath-batch-transform-coded, e2e, lifecycle:generate]
 max_iterations: 1
 
 agent:
@@ -58,7 +58,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Graph imports CreateBatchTransform / CreateEphemeralIndex / BatchTransformOutputColumn / durable_interrupt; no module-level UiPath()"
+    description: "Graph imports CreateBatchTransform / CreateEphemeralIndex / BatchTransformOutputColumn / durable_interrupt; passes is_ephemeral_index=True; no module-level UiPath()"
     command: "python3 $TASK_DIR/check_batch_transform_graph.py"
     timeout: 30
     expected_exit_code: 0

@@ -12,7 +12,11 @@ Asserts that the agent scaffolded a Python coded agent that:
      `uipath_langchain._utils.durable_interrupt`.
   5. References `CreateBatchTransform(...)` somewhere (the durable
      interrupt body).
-  6. Does NOT instantiate `UiPath()` at module top level.
+  6. Passes `is_ephemeral_index=True` on `CreateBatchTransform`
+     (required so the runtime routes the call as ephemeral when
+     `index_id` came from `CreateEphemeralIndex`; missing it fails
+     server-side).
+  7. Does NOT instantiate `UiPath()` at module top level.
 
 The project root is whichever of `<cwd>/pyproject.toml` or
 `<cwd>/batch-transform-agent/pyproject.toml` exists.
@@ -75,6 +79,8 @@ def main() -> None:
         sys.exit("FAIL: graph module never calls CreateBatchTransform(...)")
     if not re.search(r"\bCreateEphemeralIndex\s*\(", text):
         sys.exit("FAIL: graph module never calls CreateEphemeralIndex(...)")
+    if not re.search(r"is_ephemeral_index\s*=\s*True", text):
+        sys.exit("FAIL: CreateBatchTransform must pass is_ephemeral_index=True when index_id came from CreateEphemeralIndex (runtime routes as ephemeral on this flag)")
 
     assert_no_module_level_uipath(text)
     print("PASS")

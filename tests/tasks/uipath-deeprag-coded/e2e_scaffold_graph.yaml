@@ -8,7 +8,7 @@ description: >
   uipath.platform.context_grounding, and durable_interrupt — passes
   is_ephemeral_index=True on CreateDeepRag, and does NOT instantiate
   UiPath() at module top level.
-tags: [uipath-deeprag-coded, e2e, coded]
+tags: [uipath-deeprag-coded, e2e, lifecycle:generate]
 max_iterations: 1
 
 agent:

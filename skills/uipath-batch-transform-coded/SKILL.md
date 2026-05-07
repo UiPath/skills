@@ -60,7 +60,7 @@ For `.pdf` / `.txt` input → `uipath-deeprag-coded`. For Studio Web Agent Build
 - ❌ **Polling `retrieve_*_async` in a `while` loop.** Burns the 15-min serverless timeout. Use `@durable_interrupt`.
 - ❌ **Calling `start_batch_transform_async` directly.** Forces hand-rolled folder headers, ingestion polling, resume logic. Yield `CreateBatchTransform` instead.
 - ❌ **Using BatchTransform for one-document summarization.** That is DeepRAG. BatchTransform produces one row per input row.
-- ❌ **Using BatchTransform for stable knowledge-base lookups.** Use `sdk.context_grounding.search_async` — see `uipath-agents`.
+- ❌ **Using BatchTransform for stable knowledge-base lookups.** Use `sdk.context_grounding.unified_search_async` — see `uipath-agents`.
 - ❌ **Enabling web search "just in case".** Enable only when the prompt depends on fresh external data.
 - ❌ **Reusing `destination_path` across runs.** Overwrites prior output; concurrent reads see partial results.
 - ❌ **Module-level `UiPath()`.** Breaks `uip codedagent init`.

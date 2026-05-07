@@ -5,7 +5,7 @@ description: >
   flow (uip solution new, uip agent init, uip solution project add, uip
   agent validate) and that resource.json uses the exact built-in shape
   (type=internal, referenceKey=null, properties.toolType=batch-transform).
-tags: [uipath-batch-transform-lowcode, e2e, low-code]
+tags: [uipath-batch-transform-lowcode, e2e, lifecycle:generate]
 max_iterations: 1
 
 agent:

@@ -27,7 +27,7 @@ Route by file type first, signal second:
 |---|---|---|---|
 | `.csv` | "add columns" / "classify every row" / "enrich vendor addresses" / "MCC categorization" / "1000 rows of structured output" | **BatchTransform** | Out of scope here — see `uipath-batch-transform-lowcode` (or `uipath-batch-transform-coded`). |
 | `.pdf` / `.txt` | "summarize" / "research across these docs" / "one narrative answer" | **DeepRAG** | **This skill** (low-code surface) — continue with [planning.md](planning.md). For Python coded agents, use `uipath-deeprag-coded`. |
-| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | Use `sdk.context_grounding.search_async` or low-code Context tool — see `uipath-agents`. |
+| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | Use `sdk.context_grounding.unified_search_async` or low-code Context tool — see `uipath-agents`. |
 
 ## Surface Selection
 

@@ -50,6 +50,7 @@ For `.csv` input → `uipath-batch-transform-lowcode`. For coded agents (Python,
 | Pick the right context-grounding mode | [references/context-grounding-patterns.md](references/context-grounding-patterns.md) |
 | Plan the low-code agent / pick the right built-in tool | [references/planning.md](references/planning.md) |
 | Author the `resource.json` (standalone + inline-in-flow shapes) | [references/impl-json.md](references/impl-json.md) |
+| Hit the API directly (debug only) | [references/api-reference.md](references/api-reference.md) |
 
 ## Anti-Patterns
 

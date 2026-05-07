@@ -4,7 +4,7 @@ description: >
   skill when the user asks to add LLM-filled columns to a CSV from a
   Studio Web Agent Builder / `agent.json` (lowCode) project. Verifies
   the skill fires for the low-code + CSV signal pair.
-tags: [uipath-batch-transform-lowcode, smoke]
+tags: [uipath-batch-transform-lowcode, smoke, lifecycle:discover]
 
 sandbox:
   driver: tempdir

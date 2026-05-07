@@ -4,7 +4,7 @@ description: >
   the user asks to summarize / synthesize across PDF or TXT documents
   from a Python coded agent (LangGraph). Verifies the skill fires for
   the Python-coded-agent + PDF/TXT signal pair.
-tags: [uipath-deeprag-coded, smoke]
+tags: [uipath-deeprag-coded, smoke, lifecycle:discover]
 
 sandbox:
   driver: tempdir
