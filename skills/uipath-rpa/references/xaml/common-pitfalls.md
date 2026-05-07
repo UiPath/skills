@@ -433,23 +433,21 @@ Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" 
 
 ## Common Activity Name Confusions
 
-Activity tag names rarely match Studio display names. `<ui:DeleteFile />` fails at `build` (`Cannot create unknown type 'DeleteFile'`) — the class is `Delete`, with a `Path` overload group covering both files and folders.
+Activity tag names rarely match Studio display names. `<ui:DeleteFile />` fails at `build` (`Cannot create unknown type 'DeleteFile'`) — the class is `Delete`. Two examples:
 
-| Display Name in Studio | Wrong tag (guess) | Correct tag | Package |
-|------------------------|-------------------|-------------|---------|
-| Delete File or Folder  | `ui:DeleteFile`   | `ui:Delete` (`Path` or `ResourceFile`) | `UiPath.System.Activities` |
-| Path Exists            | `ui:PathExists`   | `ui:PathExistsX` | `UiPath.System.Activities` |
-| Wait                   | `ui:Wait`         | `Delay` (no prefix — MWF primitive) | built-in |
-| For Each               | `ui:ForEach`      | `ForEach` (no prefix) for generic collections; `ui:ForEachX` for the modern data-table variant | built-in / `UiPath.System.Activities` |
+| Display Name | Wrong guess | Correct tag |
+|--------------|-------------|-------------|
+| Delete File or Folder | `ui:DeleteFile` | `ui:Delete` |
+| Wait | `ui:Wait` | `Delay` (MWF primitive — no prefix) |
 
 ### Tag Verification Gate
 
-Before writing any `<prefix:Tag>` not already in the file, pick one:
+Before writing any `<prefix:Tag>` not already in the file:
 
-- **Doc check.** Confirm `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md` exists, or fall back to `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. No file → no such tag.
-- **CLI lookup.** `uip rpa find-activities --query "<verb-or-noun>" --output json` → use the returned `ClassName`. Do not derive tag names from Studio display names.
+- **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. No file → no such tag.
+- **CLI lookup.** `uip rpa find-activities --query "<verb>" --output json` → use the returned `ClassName`.
 
-Skipping both produces `Cannot create unknown type` at `build`, after the file is already serialized.
+Skipping both produces `Cannot create unknown type` at `build`.
 
 ## Default Values That Matter
 

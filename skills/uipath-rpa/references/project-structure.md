@@ -107,30 +107,6 @@ MyProject/
 4. **`--project-dir` awareness**: All `uip rpa` commands default to the current working directory. If the CWD is not the project root, pass `--project-dir "{projectRoot}"` explicitly.
 5. **Creating new projects**: Use `uip rpa create-project`. See [environment-setup.md](environment-setup.md).
 
-## Removing a Dependency — Search for Usages First
-
-Removing a package cascades to every workflow consuming its activities. Before deleting any `dependencies` entry:
-
-1. **Enumerate the activity surface:**
-   ```bash
-   uip rpa inspect-package --package-name <PackageId> --package-version <Version> --output json
-   ```
-2. **Grep for usages** — XAML xmlns + prefixed tags, CS type references:
-   ```bash
-   grep -rn 'assembly=<PackageId>' --include='*.xaml' .
-   grep -rn '<PackageId>' --include='*.cs' .
-   ```
-3. **If any usage exists, do not remove.** Migrate consumers first, then re-grep.
-
-### Preview vs Stable
-
-Prefer stable over `-preview`. Two sanctioned exceptions:
-
-- **UIA** — current minimum is `26.4.1-preview` (see SKILL.md rule 7a).
-- **Document Understanding family** — `UiPath.DocumentUnderstanding.*` and `UiPath.IntelligentOCR.StudioWeb.Activities` ship preview-only (`MergePDFs` lives there).
-
-Outside those, treat `-preview` as a smell — switch to stable.
-
 ## Common Activity Packages
 
 | Package ID | Description | Key Activities |
