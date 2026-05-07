@@ -12,10 +12,16 @@ Scaffold a new Flow project directory. **Always create a solution first** (see t
 # 1. Create solution first
 uip solution new "<SolutionName>" --output json
 
-# 2. Init the flow project inside the solution folder
-cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
+# 2. Init the flow project inside the solution folder.
+#    When run from inside a solution directory, `flow init` auto-registers
+#    the project with the parent `.uipx` — no manual `solution project add`
+#    is required. Confirm via `Data.SolutionRegistration.Status` in the
+#    response (`Registered` or `AlreadyRegistered`).
+cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
-# 3. Register the project with the solution
+# 3. (Fallback only) Wire the project manually if auto-registration was
+#    `Skipped` or `Failed` — typically because init was run outside the
+#    solution dir and produced a single-nested layout.
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx

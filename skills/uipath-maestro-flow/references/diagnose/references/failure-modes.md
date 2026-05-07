@@ -12,7 +12,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow tidy` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
-| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `uip solution project add` wiring breaks | `uip maestro flow init` was run outside a solution directory |
+| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — see entry for triage path |
 
@@ -137,7 +137,7 @@ uip is resources execute list <connector-key> <objectName> --connection-id <CURR
 
 ### Symptom
 
-`uip solution upload` rejects the project. `uip solution project add` cannot wire the project to the solution. Studio Web upload fails with structural errors. Packaging fails.
+`uip solution upload` rejects the project. `flow init` returned without a `Data.SolutionRegistration` block (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none and skips silently). Studio Web upload fails with structural errors. Packaging fails.
 
 The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested).
 
@@ -147,13 +147,15 @@ The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of 
 
 ### Fix
 
-Delete the partial scaffold. Restart in the correct order:
+Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution project add` step is no longer needed.
 
 ```bash
 uip solution new "<SolutionName>" --output json
 cd <SolutionName>
-uip maestro flow init <ProjectName>
-uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
+uip maestro flow init <ProjectName> --output json
+# Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
+# Only if Status is "Skipped" / "Failed" do you need:
+#   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 
 After running, verify the file exists at the double-nested path:

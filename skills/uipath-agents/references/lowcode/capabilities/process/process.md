@@ -154,7 +154,7 @@ Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` cont
    - `resources/solution_folder/package/<PackageName>.json` (package declaration)
    - an entry in `userProfile/<userId>/debug_overwrites.json` with real `folderKey`, `folderFullyQualifiedName`, and `folderPath` so Studio Web can resolve the process at runtime. An entry missing `folderFullyQualifiedName` or `folderPath` will cause "Could not find process for tool '<name>'" — refresh from current uipcli populates both correctly.
 
-For in-solution agents already registered with `uip solution project add`, the package + process declarations are pre-existing; refresh resolves the binding against them.
+For in-solution agents already registered with the parent solution — auto-registered by `uip agent init` (when run from inside a solution directory; verify via `Data.SolutionRegistration.Status` = `Registered` / `AlreadyRegistered`) or via the `uip solution project add` fallback — the package + process declarations are pre-existing; refresh resolves the binding against them.
 
 **Type-to-directory mapping for process declarations:**
 
@@ -215,10 +215,14 @@ When two agent projects in the same solution call each other (parent-tool topolo
 
 ```bash
 # 1. Scaffold the solution per project-lifecycle.md.
-# 2. Add a second agent and register it as a solution project:
+# 2. Add a second agent. When run from inside the solution directory,
+#    `uip agent init` auto-registers the project with the parent `.uipx`
+#    (confirm via `Data.SolutionRegistration.Status` in the response).
+#    `uip solution project add` is the fallback only when registration
+#    was `Skipped` or `Failed`.
 uip agent init "ToolAgent" --output json
-uip solution project add "ToolAgent" --output json
-# This creates resources/solution_folder/package/ToolAgent.json and
+# (fallback) uip solution project add "ToolAgent" --output json
+# Either path creates resources/solution_folder/package/ToolAgent.json and
 # resources/solution_folder/process/agent/ToolAgent.json automatically.
 
 # 3. From ParentAgent, add ToolAgent as a tool — discovery via the unified flow.
@@ -233,7 +237,7 @@ uip agent validate ParentAgent --output json
 uip agent validate ToolAgent --output json
 ```
 
-UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<ToolAgent>.json.projectKey`, and `process/agent/<ToolAgent>.json.projectKey` are auto-managed by `uip solution project add` and `uip agent validate` — do not hand-edit. See [../../solution-resources.md](../../solution-resources.md) § UUID Cross-References.
+UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<ToolAgent>.json.projectKey`, and `process/agent/<ToolAgent>.json.projectKey` are auto-managed by project registration (`uip agent init` auto-registration, or the `uip solution project add` fallback) and `uip agent validate` — do not hand-edit. See [../../solution-resources.md](../../solution-resources.md) § UUID Cross-References.
 
 ## Gotchas
 

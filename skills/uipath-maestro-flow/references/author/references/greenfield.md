@@ -11,8 +11,8 @@ Pre-populate these via `TodoWrite` when entering this journey. Adapt to the user
 - [ ] Resolve `uip` binary and login state
 - [ ] Choose or create solution
 - [ ] Scaffold solution directory
-- [ ] Initialize Flow project inside solution
-- [ ] Register project with solution
+- [ ] Initialize Flow project inside solution (auto-registers in the parent `.uipx`)
+- [ ] Verify auto-registration succeeded (fall back to `uip solution project add` only if it didn't)
 - [ ] Verify double-nested layout
 - [ ] Discover trigger node type via registry
 - [ ] Add trigger node and wire definition
@@ -98,13 +98,38 @@ cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
 
 The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
 
-### 2c. Add the project to the solution
+### 2c. Verify the project is registered in the solution
+
+When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. The success envelope reports this in `Data.SolutionRegistration`:
+
+```json
+{
+  "Result": "Success",
+  "Code": "FlowInit",
+  "Data": {
+    "Status": "Created successfully",
+    "Path": ".../<SolutionName>/<ProjectName>",
+    "SolutionRegistration": {
+      "Status": "Registered",                     // or "AlreadyRegistered"
+      "Solution": ".../<SolutionName>.uipx",
+      "Project": "<ProjectName>/project.uiproj",
+      "ProjectId": "<uuid>"
+    }
+  }
+}
+```
+
+If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check.
+
+**Fallback** — only if `Status` is `Skipped` or `Failed` (e.g., `init` was run outside the solution directory and produced a single-nested layout, or the `.uipx` write failed): wire the project manually.
 
 ```bash
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
+
+If the registration was skipped because of single-nesting, **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
 
 ### Expected layout after Steps 2a–2c
 

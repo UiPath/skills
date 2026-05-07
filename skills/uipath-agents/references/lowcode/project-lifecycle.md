@@ -107,7 +107,10 @@ uip solution new "<SOLUTION_NAME>" --output json
 
 ### Register Project with Solution
 
+`uip agent init` **auto-registers** the project with the parent `.uipx` when run from inside a solution directory. Verify via `Data.SolutionRegistration.Status` in the `agent init` response — `Registered` or `AlreadyRegistered` means you are done. Use `uip solution project add` only as a fallback when `Status` is `Skipped` or `Failed` (e.g., `init` was run outside the solution dir, or the `.uipx` write failed).
+
 ```bash
+# Fallback only — when agent init's Data.SolutionRegistration.Status is Skipped / Failed.
 uip solution project add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 ```
 
@@ -248,11 +251,16 @@ All commands run from the same working directory — no `cd` needed. Pass paths 
 
 ```bash
 uip solution new "<SOLUTION_NAME>" --output json
+# `agent init` auto-registers the project in the parent `.uipx` because
+# the agent path lives inside the solution directory. Confirm via
+# `Data.SolutionRegistration.Status` in the response (`Registered` or
+# `AlreadyRegistered`).
 uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
-uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+# (fallback only — run if Data.SolutionRegistration.Status is Skipped / Failed)
+# uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 ```
 
-`uip solution project add` automatically finds the nearest `.uipx` by searching up from the agent path.
+When the fallback is needed, `uip solution project add` automatically finds the nearest `.uipx` by searching up from the agent path.
 
 ### Step 3 — Configure agent.json
 
@@ -336,7 +344,8 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Create solution | `uip solution new "<NAME>" --output json` | Any directory | — |
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
-| Register project | `uip solution project add "<PATH>" --output json` | Solution directory | — |
+| Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done) | Solution directory | — |
+| Register project (fallback) | `uip solution project add "<PATH>" --output json` — only when `agent init` returned `Skipped` / `Failed` | Solution directory | — |
 | Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
 | Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
