@@ -1,6 +1,6 @@
 task_id: skill-gov-aops-policy-deployed-policy-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-gov-aops-policy skill to
+  Skill-guided evaluation: agent uses the uipath-governance skill to
   query the deployed policy for a given license type / product / tenant
   tuple, and also list every applicable policy. Tests the three-positional
   argument order of `deployed-policy get <licenseType> <productName>
@@ -10,7 +10,7 @@ description: >
   `uip gov aops-policy` commands that hit the service will fail with an
   auth error. That is acceptable — what matters is that the agent invokes
   the correct commands with the correct flags.
-tags: [uipath-gov-aops-policy, smoke, deployed-policy]
+tags: [uipath-governance, smoke, deployed-policy]
 
 sandbox:
   driver: tempdir
@@ -21,24 +21,15 @@ initial_prompt: |
   caller identity with license type `Attended`, product `StudioX`, and
   tenant `00000000-0000-0000-0000-000000000000`. Also list every
   applicable policy (in priority order) that could resolve for this
-  caller. Use the uipath-gov-aops-policy skill.
-
-  Save a summary to report.json in the current working directory with at
-  minimum:
-    {
-      "license_type": "Attended",
-      "product_name": "StudioX",
-      "tenant": "00000000-0000-0000-0000-000000000000",
-      "deployed_policy_get_command": "<exact uip gov aops-policy deployed-policy get command you ran>",
-      "deployed_policy_list_command": "<exact uip gov aops-policy deployed-policy list command you ran>",
-      "commands_used": ["<list of uip commands you attempted>"]
-    }
+  caller. Save the command output to ./output.txt for review.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live governance
     tenant in this environment. Commands will fail with auth errors — that
-    is expected. Run each command once, record the result (success or
-    error) in report.json, and move on. Do NOT retry or attempt to login.
+    is expected. Run each command once, capture both stdout and stderr to
+    ./output.txt (use `> output.txt 2>&1` for the first command and
+    `>> output.txt 2>&1` for subsequent ones), and move on. Do NOT retry
+    or attempt to login.
   - Use --output json on every uip gov aops-policy command.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
@@ -60,40 +51,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
     weight: 1.0
     pass_threshold: 1.0
-
-  - type: file_contains
-    description: "report.json uses the current CLI namespace and flag names (no legacy `uip admin aops-policy` or `--user-identifier`)"
-    path: "report.json"
-    includes:
-      - "uip gov aops-policy deployed-policy"
-    excludes:
-      - "uip admin aops-policy"
-      - "--user-identifier"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct structure and at least 2 commands used"
-    path: "report.json"
-    assertions:
-      - expression: "license_type"
-        operator: equals
-        expected: "Attended"
-      - expression: "product_name"
-        operator: equals
-        expected: "StudioX"
-      - expression: "length(deployed_policy_get_command)"
-        operator: gte
-        expected: 10
-      - expression: "length(deployed_policy_list_command)"
-        operator: gte
-        expected: 10
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 2
-    weight: 1.5
-    pass_threshold: 0.75

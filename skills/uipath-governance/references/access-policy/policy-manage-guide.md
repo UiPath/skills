@@ -87,7 +87,7 @@ Spec rows 1 (`name`), 2 (`description`), 3 (`status`), and 4 (`enforcement`) cov
 
 - **Name** (row 1): required.
 - **Description** (row 2): required, one sentence summarizing the Spec narrative.
-- **Status** (row 3): defaults to **`Simulated`** (Critical Rule #13 — see [SKILL.md § Enforcement and status](../SKILL.md#enforcement-and-status) for the meaning). Only emit `Active` when the Spec explicitly says so. After creation, if the policy is still Simulated, the post-create numbered next-steps list offers an explicit **Activate** step.
+- **Status** (row 3): defaults to **`Simulated`** (Critical Rule #13 — see [SKILL.md § Enforcement and status](./access-policy-overview-guide.md#enforcement-and-status) for the meaning). Only emit `Active` when the Spec explicitly says so. After creation, if the policy is still Simulated, the post-create numbered next-steps list offers an explicit **Activate** step.
 - **Enforcement** (row 4): always `Allow` (Critical Rule #2 — `Deny` is not authorable).
 
 If any required row was unfilled when Phase 2 ran, return to Phase 1's iteration loop. Otherwise proceed to Step 4 without prompting.
@@ -186,11 +186,11 @@ If creation fails, show the error to the user and return to Step 4 (keep editing
 uip gov access-policy get "$POLICY_ID" --output json
 ```
 
-Display the raw JSON from `get` plus the user-friendly summary in the format defined by [SKILL.md — Completion Output](../SKILL.md#completion-output) (Operation & result line, Simulated banner, working file paths, technical details). If `Status == Simulated`, the Simulated banner is mandatory.
+Display the raw JSON from `get` plus the user-friendly summary in the format defined by [SKILL.md — Completion Output](./access-policy-overview-guide.md#completion-output) (Operation & result line, Simulated banner, working file paths, technical details). If `Status == Simulated`, the Simulated banner is mandatory.
 
 ### Step 7 — Next steps
 
-Render next steps as a **numbered Markdown list** under a `### What would you like to do next?` heading so the user can reply with the number. Do NOT use `AskUserQuestion`, do NOT render as a table. The option set depends on the policy's current `status`. See [SKILL.md — Completion Output](../SKILL.md#completion-output) for the exact lists for `status: "Simulated"` and `status: "Active"`. **Do NOT offer `evaluate`** (Critical Rule #12).
+Render next steps as a **numbered Markdown list** under a `### What would you like to do next?` heading so the user can reply with the number. Do NOT use `AskUserQuestion`, do NOT render as a table. The option set depends on the policy's current `status`. See [SKILL.md — Completion Output](./access-policy-overview-guide.md#completion-output) for the exact lists for `status: "Simulated"` and `status: "Active"`. **Do NOT offer `evaluate`** (Critical Rule #12).
 
 ---
 
@@ -334,7 +334,7 @@ For multi-delete, render each policy as a numbered row and a count header (`Abou
 
 ### Step 3 — Confirm
 
-Ask verbatim — single or multi (Critical Rule #9, [SKILL.md — Confirmation-gate wording](../SKILL.md#confirmation-gate-wording)):
+Ask verbatim — single or multi (Critical Rule #9, [SKILL.md — Confirmation-gate wording](./access-policy-overview-guide.md#confirmation-gate-wording)):
 
 ```
 Delete access policy "<POLICY_NAME>"? This cannot be undone. (yes / no)
@@ -376,7 +376,7 @@ For multi-delete:
 Deleted <N> access policies: <NAME_1>, <NAME_2>, ...
 ```
 
-Then render the post-delete numbered next-steps menu mandated by [SKILL.md — Completion Output](../SKILL.md#completion-output) (`### What would you like to do next?` → `1. List policies to verify` / `2. Something else`). Do NOT use `AskUserQuestion`.
+Then render the post-delete numbered next-steps menu mandated by [SKILL.md — Completion Output](./access-policy-overview-guide.md#completion-output) (`### What would you like to do next?` → `1. List policies to verify` / `2. Something else`). Do NOT use `AskUserQuestion`.
 
 ---
 

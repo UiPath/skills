@@ -1,41 +1,29 @@
----
-name: uipath-gov-aops-policy
-description: "UiPath AOps governance — enforce rules (\"block/restrict/require X\") by mapping intent to a Product policy via `uip gov aops-policy`. Create/update/delete/list/deploy policies to users, groups, tenants. For platform ops→uipath-platform."
-allowed-tools: Bash, Read, Write, Grep, Glob
----
+# AOps Product Policy Authoring (Mechanic)
 
-# UiPath AOps Governance
+> **Branch A of `uipath-governance`.** The top-level [SKILL.md](../../SKILL.md) owns disambiguation between AOps product policy and Access ToolUsePolicy — by the time you are reading this file, the branch is already chosen. This file owns the AOps-specific authoring flow.
 
-> **Preview** — skill is under active development; surface and behavior may change.
+Skill mechanic for managing AOps governance policies and deploying them to users, groups, or tenants via the `uip gov aops-policy` CLI.
 
-Skill for managing AOps governance policies and deploying them to users, groups, or tenants via the `uip gov aops-policy` CLI.
+> **Terminology.** "AOps" = **Automation Ops** (a.k.a. AutomationOps), UiPath's governance console. An "AOps policy" — managed via `uip gov aops-policy` and this mechanic — is an **Automation Ops Governance Policy** covering product runtime / design-time behavior (Studio, StudioX, Assistant, Robot, AI Trust Layer, …). This is **distinct from a Governance Access Policy** (resource-vs-executable tool-use control), which is the sibling [access-policy mechanic](../access-policy/access-policy-overview-guide.md).
 
-> **Terminology.** "AOps" = **Automation Ops** (a.k.a. AutomationOps), UiPath's governance console. An "AOps policy" — managed via `uip gov aops-policy` and this skill — is an **Automation Ops Governance Policy** covering product runtime / design-time behavior (Studio, StudioX, Assistant, Robot, AI Trust Layer, …). This is **distinct from a Governance Access Policy** (identity / role / access control), which this skill does NOT cover.
+## Scope of this mechanic
 
-## When to Use This Skill
-
-Activate on both **explicit policy requests** and **natural-language governance intent** — users rarely say "AOps policy" by name.
+Activate after the top-level disambiguation routes the user here. Inside this mechanic:
 
 **Explicit requests:**
-- User asks to create, update, delete, list, or get a governance policy
-- User asks to deploy a policy to a user, group, or tenant
-- User asks to check the effective (deployed) policy for a user, group, or tenant
-- User asks about `uip gov aops-policy` commands
-- User asks to configure policy field values for a product
+- Create, update, delete, list, or get a governance policy
+- Deploy a policy to a user, group, or tenant
+- Check the effective (deployed) policy for a user, group, or tenant
+- Questions about `uip gov aops-policy` commands
+- Configure policy field values for a product
 
-**Governance intent (rule/policy patterns without naming the product):**
-- "I want to **block / restrict / disable / disallow** X for my users / team / tenant"
-- "I want to **require / enforce / mandate** X"
-- "I want to **allow only** X / **limit** users to X"
-- "How do I **govern / control / gate** who can do X"
-- "Set up a **rule / guardrail / policy** that does X"
-- "Users / agents / robots should / should not be able to X"
-- "Stop Assistant popping up", "auto-launch Assistant", "disable Marketplace widget" → Assistant policy (see [aops-governance-recipes-guide.md](./references/aops-governance-recipes-guide.md) A-recipes)
+**Recipe shortcuts:**
+- "Stop Assistant popping up", "auto-launch Assistant", "disable Marketplace widget" → Assistant policy (see [aops-governance-recipes-guide.md](./aops-governance-recipes-guide.md) A-recipes)
 - "Only allow automating outlook.exe / excel.exe", "block regedit / cmd.exe", "whitelist internal URLs", "block emails to gmail" → Robot runtime rules RT-UIA-001 / RT-OUT-001 (R-recipes)
 - "Enforce analyzer before publish", "require release notes", "whitelist our GitHub repos", "force everyone to include our custom analyzer package (ST-USG-027)" → Studio policy (S-recipes)
 - "Hide developer panel in StudioX", "stop citizen devs saving projects locally" → StudioX policy (X-recipes)
 
-These are AOps governance requests — treat them as a `create policy` flow starting at [aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md) Step 1, Case B (intent-based product selection). See the intent-mapping examples below to prime product selection, and [aops-governance-recipes-guide.md](./references/aops-governance-recipes-guide.md) for the field mappings behind each recipe.
+These are AOps governance requests — treat them as a `create policy` flow starting at [aops-policy-manage-guide.md](./aops-policy-manage-guide.md) Step 1, Case B (intent-based product selection). Use the intent-mapping examples below to prime product selection, and [aops-governance-recipes-guide.md](./aops-governance-recipes-guide.md) for the field mappings behind each recipe.
 
 ## Recognize Governance Intent → Pick a Product Policy
 
@@ -48,7 +36,7 @@ When the user expresses a governance rule without naming a product, your job is 
 | "control StudioX citizen-dev features", "restrict business-user automations" | `Business` (StudioX) | "StudioX", "citizen", "template" |
 | "govern what Robot can run", "restrict attended / unattended runtime" | Robot product (check bootstrap) | "runtime", "process", "attended" |
 | "control Agents / Agent Builder features", "restrict agent tool access" | Agents product (check bootstrap) | "agent", "tool", "builder" |
-| "enforce a tenant-wide default", "apply to everyone in the tenant" | *Any product* — this is a **deployment** signal, not product selection. Route to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) after create. | — |
+| "enforce a tenant-wide default", "apply to everyone in the tenant" | *Any product* — this is a **deployment** signal, not product selection. Route to [aops-policy-deploy-guide.md](./aops-policy-deploy-guide.md) after create. | — |
 
 **Workflow for intent-based requests:**
 1. Run the bootstrap (aops-policy-manage-guide Step 1) to materialize every product's schema.
@@ -70,11 +58,11 @@ When the user expresses a governance rule without naming a product, your job is 
 9. For `update`: always `get` the existing policy first and show its current values before asking what to change. **Use the existing policy's `Data.data` as the update blueprint** (`jq '.Data.data' > "$SESSION_DIR/existing-policy-data.json"`) — NOT the product's default `form-data.json`. Using the product defaults as the update blueprint would silently wipe every non-default setting the user previously configured.
 10. For `delete`: always `get` the policy and show a summary, then ask for explicit confirmation before running the delete command.
 11. **Prompt only for missing information.** If the user's original request already supplied a value (product, policy name, description, priority, or field intent), use it silently. Do not re-confirm values the user already provided. Confirm unchanged defaults is never required — silence means "keep defaults".
-12. **Single confirmation gate per mutation.** Exactly one yes/no review precedes each `create`, `update`, or `delete` call. Do not add intermediate yes/no gates (no per-page confirmation, no "save this configuration?" after configure). The caller in [aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md) owns the final review.
+12. **Single confirmation gate per mutation.** Exactly one yes/no review precedes each `create`, `update`, or `delete` call. Do not add intermediate yes/no gates (no per-page confirmation, no "save this configuration?" after configure). The caller in [aops-policy-manage-guide.md](./aops-policy-manage-guide.md) owns the final review.
 13. **Never ask the user to edit this skill.** Do not suggest that the user add their request as an example to `SKILL.md`, a reference file, or any other part of the skill. The user's job is to describe what they want governed; your job is to execute the existing flow (bootstrap → Case A/B → configure → review → create). If the user's intent does not map to any product after the bootstrap + locale grep, ask them to clarify the rule or pick a product from the list — do NOT propose skill edits as a workaround.
-14. **Deployment precedence is User > Group > Tenant.** Pick the narrowest scope that matches the user's ask. "Apply to one person" → user-level deployment. "Exception for team X" → group-level (the tenant rule still covers everyone else). "Everyone in the tenant" → tenant-level. See [aops-policy-deploy-guide.md — Deployment precedence](./references/aops-policy-deploy-guide.md#deployment-precedence).
-15. **Every create/update review MUST show Priority + the current #1 holder.** Before the single review gate, run `uip gov aops-policy list --product-name "$PRODUCT_NAME" --order-by priority --order-direction asc --output json` — even when the user already supplied a priority — and cite the policy at priority 1 (name + GUID) next to the proposed priority in the review block, along with a one-line rank-impact note ("placed last — does not reorder existing winners" vs. "outranks <name> at the group level"). Omitting this row silently lets the user approve a priority whose group-level consequences they never saw. Exact format: [aops-policy-manage-guide.md — Step 4](./references/aops-policy-manage-guide.md#step-4--final-review-before-create-single-confirmation-gate).
-16. **Every create/update review MUST include a clickable `Policy data` link with the full absolute path to `$SESSION_DIR/aops-policy-data.json`.** Render it as a markdown link (`[aops-policy-data.json](/absolute/path/to/.../aops-policy-data.json)`) using the **resolved absolute path** — never a relative path, a literal `<SESSION_DIR>` placeholder, or a `~/` path. Run `realpath` (or equivalent) to resolve. This is the user's only chance to inspect every composed field (including defaults not surfaced in the changed-settings diff) before the mutation runs. Reviews without this link are incomplete — do not call `create` / `update` after an incomplete review. Exact format: [aops-policy-manage-guide.md — Step 4](./references/aops-policy-manage-guide.md#step-4--final-review-before-create-single-confirmation-gate) and [Step 5](./references/aops-policy-manage-guide.md#step-5--final-review-before-update-single-confirmation-gate).
+14. **Deployment precedence is User > Group > Tenant.** Pick the narrowest scope that matches the user's ask. "Apply to one person" → user-level deployment. "Exception for team X" → group-level (the tenant rule still covers everyone else). "Everyone in the tenant" → tenant-level. See [aops-policy-deploy-guide.md — Deployment precedence](./aops-policy-deploy-guide.md#deployment-precedence).
+15. **Every create/update review MUST show Priority + the current #1 holder.** Before the single review gate, run `uip gov aops-policy list --product-name "$PRODUCT_NAME" --order-by priority --order-direction asc --output json` — even when the user already supplied a priority — and cite the policy at priority 1 (name + GUID) next to the proposed priority in the review block, along with a one-line rank-impact note ("placed last — does not reorder existing winners" vs. "outranks <name> at the group level"). Omitting this row silently lets the user approve a priority whose group-level consequences they never saw. Exact format: [aops-policy-manage-guide.md — Step 4](./aops-policy-manage-guide.md#step-4--final-review-before-create-single-confirmation-gate).
+16. **Every create/update review MUST include a clickable `Policy data` link with the full absolute path to `$SESSION_DIR/aops-policy-data.json`.** Render it as a markdown link (`[aops-policy-data.json](/absolute/path/to/.../aops-policy-data.json)`) using the **resolved absolute path** — never a relative path, a literal `<SESSION_DIR>` placeholder, or a `~/` path. Run `realpath` (or equivalent) to resolve. This is the user's only chance to inspect every composed field (including defaults not surfaced in the changed-settings diff) before the mutation runs. Reviews without this link are incomplete — do not call `create` / `update` after an incomplete review. Exact format: [aops-policy-manage-guide.md — Step 4](./aops-policy-manage-guide.md#step-4--final-review-before-create-single-confirmation-gate) and [Step 5](./aops-policy-manage-guide.md#step-5--final-review-before-update-single-confirmation-gate).
 17. **Do NOT show an `Availability:` row in the create/update review unless the user explicitly supplied a value.** Availability is the offline grace period (in days) during which a client (Studio, Assistant, etc.) keeps applying the cached copy of this policy when it cannot reach Automation Ops. It is almost always left at the server default, and surfacing it as `(none)` adds noise to the review. When the user did supply it, show it inline alongside Priority (e.g. `Priority: 4, Availability: 30`) rather than as a standalone row. Semantics: must be an integer > 0; sending `0` causes the server to normalize to `30`; when multiple products contribute to a merged policy response, the smallest `availability` across contributors wins.
 
 ## Quick Start
@@ -118,11 +106,11 @@ uip gov aops-policy template list --output-dir "$SESSION_DIR/products" --output 
 
 This writes `form-template.json`, `form-data.json`, and `form-template-locale-resource.json` into `$SESSION_DIR/products/<ProductName>/` for every product. The product catalog is implicit — enumerate products with `Glob` on `$SESSION_DIR/products/*/form-template.json` and read `.product.{name, label}`.
 
-See [configure-aops-policy-data-guide.md — Step 1](./references/configure-aops-policy-data-guide.md) for the full bootstrap procedure.
+See [configure-aops-policy-data-guide.md — Step 1](./configure-aops-policy-data-guide.md) for the full bootstrap procedure.
 
 ### Step 3 — Select the product
 
-Two cases, per [aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md):
+Two cases, per [aops-policy-manage-guide.md](./aops-policy-manage-guide.md):
 
 - **Case A — user named the product.** Use it silently (Critical Rule #11). Validate that the user's stated intent maps to fields in that product's schema; if not, suggest the better-fitting product.
 - **Case B — infer from intent.** Extract intent keywords and use `Grep` against every product's `form-template-locale-resource.json` to rank matches. Present the top 3 and let the user confirm. See the intent-mapping table above for priors.
@@ -136,7 +124,7 @@ Prefer **Mode A (intent-based auto-fill)** over **Mode B (field-by-field prompti
 - Look up labels from `form-template-locale-resource.json` when surfacing choices to the user.
 - Write the resulting raw object to `$SESSION_DIR/aops-policy-data.json` — do NOT wrap it in `{ "data": {...} }` (Critical Rule #6).
 
-See [configure-aops-policy-data-guide.md](./references/configure-aops-policy-data-guide.md) for the full component-tree traversal.
+See [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md) for the full component-tree traversal.
 
 ### Step 5 — Single review gate
 
@@ -146,7 +134,7 @@ The review block MUST include:
 - A `Priority` row with (a) the proposed priority number, (b) the current #1 holder's policy name and GUID, and (c) a one-line rank-impact note (Critical Rule #15).
 - A `Policy data` row with a clickable markdown link to the composed `$SESSION_DIR/aops-policy-data.json` — using the resolved path, not a `<SESSION_DIR>` placeholder (Critical Rule #16).
 
-See [aops-policy-manage-guide.md — Step 4 review template](./references/aops-policy-manage-guide.md#step-4--final-review-before-create-single-confirmation-gate) for the exact format. If you skipped the priority-landscape `list` call in Step 3, run it before showing the review — the user cannot consent to the rank impact without seeing whose position the new policy is landing behind.
+See [aops-policy-manage-guide.md — Step 4 review template](./aops-policy-manage-guide.md#step-4--final-review-before-create-single-confirmation-gate) for the exact format. If you skipped the priority-landscape `list` call in Step 3, run it before showing the review — the user cannot consent to the rank impact without seeing whose position the new policy is landing behind.
 
 ### Step 6 — Create
 
@@ -162,7 +150,7 @@ Omit `--description`, `--priority`, `--availability` if the user did not supply 
 
 ### Step 7 — Post-create choice
 
-Use `AskUserQuestion` to offer next steps. See **Completion Output** below for the exact dropdown.
+Render next steps as a numbered Markdown list under a `### What would you like to do next?` heading (per the [completion output](#completion-output) below) so the user can reply with the number.
 
 ## Anti-patterns
 
@@ -171,27 +159,27 @@ Use `AskUserQuestion` to offer next steps. See **Completion Output** below for t
 - Do NOT shortcut the bootstrap by running `template get` for a single product in the create flow — you need every product's schema in `$SESSION_DIR/products/` to rank intent matches against live locale files (Rule #3).
 - Do NOT pick a product from the intent-mapping table above without also grepping the live locale files — product names and fields drift per release. The table is a prior, not the answer.
 - Do NOT dismiss a "block / restrict / require / enforce" request as out of scope because the user didn't say the word "policy" — these are governance intents that belong to this skill.
-- Do NOT write runtime-rule policies (RT-UIA-001 application/URL lists, RT-OUT-001 email blocklist) with empty parameter arrays. The rules are enabled by default but enforce nothing until their `AllowedApplications` / `BlockedURLs` / `BlockedEmails` lists are populated. If the user's intent didn't supply values, surface the no-op to them before creating. See [aops-governance-recipes-guide.md — R1/R2/R3](./references/aops-governance-recipes-guide.md#robot-runtime-analyzer-recipes).
-- Do NOT deploy a product policy to a license type that doesn't include that product (e.g. an Assistant policy to the `Unattended` license type — it only covers Robot). Check the license-type → product coverage in [aops-policy-commands.md — license-type list](./references/aops-policy-commands.md#uip-gov-aops-policy-license-type-list) before building the tenant assignment file.
-- Do NOT assume enforcing a Studio policy activates the default Workflow Analyzer rule set. Once governance is enforced, every built-in rule becomes DISABLED unless explicitly listed in `Analyzer.EmbeddedRulesConfig.Rules` with `IsEnabled: true`. If the user asks to "enforce Workflow Analyzer" without naming rules, ask which rules matter or apply a CoE baseline and confirm — do not save an empty `Rules` array. See [aops-governance-recipes-guide.md — S3](./references/aops-governance-recipes-guide.md#s3--enable-and-configure-workflow-analyzer-rules).
+- Do NOT write runtime-rule policies (RT-UIA-001 application/URL lists, RT-OUT-001 email blocklist) with empty parameter arrays. The rules are enabled by default but enforce nothing until their `AllowedApplications` / `BlockedURLs` / `BlockedEmails` lists are populated. If the user's intent didn't supply values, surface the no-op to them before creating. See [aops-governance-recipes-guide.md — R1/R2/R3](./aops-governance-recipes-guide.md#robot-runtime-analyzer-recipes).
+- Do NOT deploy a product policy to a license type that doesn't include that product (e.g. an Assistant policy to the `Unattended` license type — it only covers Robot). Check the license-type → product coverage in [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list) before building the tenant assignment file.
+- Do NOT assume enforcing a Studio policy activates the default Workflow Analyzer rule set. Once governance is enforced, every built-in rule becomes DISABLED unless explicitly listed in `Analyzer.EmbeddedRulesConfig.Rules` with `IsEnabled: true`. If the user asks to "enforce Workflow Analyzer" without naming rules, ask which rules matter or apply a CoE baseline and confirm — do not save an empty `Rules` array. See [aops-governance-recipes-guide.md — S3](./aops-governance-recipes-guide.md#s3--enable-and-configure-workflow-analyzer-rules).
 - Do NOT promise a cloud policy will apply to clients that aren't Interactively Signed-In to Orchestrator. Studio / StudioX / Assistant connected via unattended or service-account sign-in ignore cloud-deployed policies. If a user reports "my policy isn't taking effect", check the client's sign-in mode before debugging the policy contents.
 
 ## Task Navigation
 
 | I need to... | Read these |
 | --- | --- |
-| **Create a new policy from intent** | Quick Start + [aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md) (Case B) + [configure-aops-policy-data-guide.md](./references/configure-aops-policy-data-guide.md) |
-| **Create a policy when the user named the product** | [aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md) (Case A) + [configure-aops-policy-data-guide.md](./references/configure-aops-policy-data-guide.md) |
-| **Update an existing policy** | [aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md) — blueprint from `Data.data`, NOT `form-data.json` (Rule #9) |
-| **Delete a policy** | [aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md) — show summary + explicit `yes` (Rule #10) |
-| **List policies** | [aops-policy-manage-guide.md — List](./references/aops-policy-manage-guide.md) |
-| **Get a single policy by GUID** | [aops-policy-manage-guide.md — Get](./references/aops-policy-manage-guide.md) |
-| **Deploy a policy to a user / group / tenant** | [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) |
-| **Query what policy is deployed to a tenant** | [aops-policy-deployed-guide.md](./references/aops-policy-deployed-guide.md) — use `get` |
-| **Query what rules effectively apply to me** | [aops-policy-deployed-guide.md](./references/aops-policy-deployed-guide.md) — use `list` |
-| **Find a canonical recipe for a common governance intent** | [aops-governance-recipes-guide.md](./references/aops-governance-recipes-guide.md) — check here first; apply the recipe's product + field mapping before field-by-field prompting |
-| **Configure individual field values (form.io traversal)** | [configure-aops-policy-data-guide.md](./references/configure-aops-policy-data-guide.md) |
-| **Recognize a governance intent** | Intent-mapping table at the top of this SKILL.md |
+| **Create a new policy from intent** | Quick Start + [aops-policy-manage-guide.md](./aops-policy-manage-guide.md) (Case B) + [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md) |
+| **Create a policy when the user named the product** | [aops-policy-manage-guide.md](./aops-policy-manage-guide.md) (Case A) + [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md) |
+| **Update an existing policy** | [aops-policy-manage-guide.md](./aops-policy-manage-guide.md) — blueprint from `Data.data`, NOT `form-data.json` (Rule #9) |
+| **Delete a policy** | [aops-policy-manage-guide.md](./aops-policy-manage-guide.md) — show summary + explicit `yes` (Rule #10) |
+| **List policies** | [aops-policy-manage-guide.md — List](./aops-policy-manage-guide.md) |
+| **Get a single policy by GUID** | [aops-policy-manage-guide.md — Get](./aops-policy-manage-guide.md) |
+| **Deploy a policy to a user / group / tenant** | [aops-policy-deploy-guide.md](./aops-policy-deploy-guide.md) |
+| **Query what policy is deployed to a tenant** | [aops-policy-deployed-guide.md](./aops-policy-deployed-guide.md) — use `get` |
+| **Query what rules effectively apply to me** | [aops-policy-deployed-guide.md](./aops-policy-deployed-guide.md) — use `list` |
+| **Find a canonical recipe for a common governance intent** | [aops-governance-recipes-guide.md](./aops-governance-recipes-guide.md) — check here first; apply the recipe's product + field mapping before field-by-field prompting |
+| **Configure individual field values (form.io traversal)** | [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md) |
+| **Recognize a governance intent** | Intent-mapping table at the top of this file |
 | **Pick the right product for an intent** | Bootstrap (Step 2) + `Grep` on locale files (Rule #3) + intent-mapping table |
 
 ## Key Concepts
@@ -212,7 +200,7 @@ Use `AskUserQuestion` to offer next steps. See **Completion Output** below for t
 | `deployed-policy get` | Tenant-level deployed policy assignment for a `(licenseType, product, tenant)` | "What policy is deployed to this tenant?" |
 | `deployed-policy list` | Effective rule values for the calling user after the user → group → tenant chain | "What rules actually apply to me?" |
 
-See [aops-policy-deployed-guide.md](./references/aops-policy-deployed-guide.md).
+See [aops-policy-deployed-guide.md](./aops-policy-deployed-guide.md).
 
 ### Product name vs product label
 
@@ -256,7 +244,7 @@ Every mutation runs through a single yes/no review (Critical Rule #12). Use thes
 - **Mode A (auto-fill)** — prefer whenever the user supplied any intent. Walk the form.io tree and apply the intent to matching components automatically.
 - **Mode B (field-by-field)** — fall back only when the user has no stated intent or explicitly asks to see every field.
 
-See [configure-aops-policy-data-guide.md](./references/configure-aops-policy-data-guide.md).
+See [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md).
 
 ## Completion Output
 
@@ -265,28 +253,28 @@ When you finish a mutating operation, report:
 1. **Operation & result** — e.g., `Created policy <name> (GUID: <guid>) for product <productName>`.
 2. **Session directory** — print `$SESSION_DIR` so the user can inspect bootstrapped schemas and the `aops-policy-data.json` that was submitted.
 3. **Non-default fields set** — summary of fields the user configured vs. ones that stayed at defaults. (Omit this line after `delete`.)
-4. **Next step** — use `AskUserQuestion` to present a dropdown with these options (single post-mutation gate, per Critical Rule #12):
+4. **Next step** — render a numbered Markdown list under a `### What would you like to do next?` heading (single post-mutation gate, per Critical Rule #12). Do NOT use `AskUserQuestion`. The user replies with a digit.
 
 | Option | Action |
 |--------|--------|
-| **Deploy to a user** | Hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = user. |
-| **Deploy to a group** | Hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = group. |
-| **Deploy to the tenant** | Hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = tenant. |
+| **Deploy to a user** | Hand off to [aops-policy-deploy-guide.md](./aops-policy-deploy-guide.md) with subject = user. |
+| **Deploy to a group** | Hand off to [aops-policy-deploy-guide.md](./aops-policy-deploy-guide.md) with subject = group. |
+| **Deploy to the tenant** | Hand off to [aops-policy-deploy-guide.md](./aops-policy-deploy-guide.md) with subject = tenant. |
 | **List policies to verify** | Run `uip gov aops-policy list --output json` and show the new/updated entry. |
-| **Query effective rules** | Run `deployed-policy list` (or `get`) per [aops-policy-deployed-guide.md](./references/aops-policy-deployed-guide.md). |
+| **Query effective rules** | Run `deployed-policy list` (or `get`) per [aops-policy-deployed-guide.md](./aops-policy-deployed-guide.md). |
 | **Something else** (last option) | Accept free-form string input and act on it (e.g., "just leave it", "export the policy data", "create another one"). |
 
 Do not run any of these actions automatically. Wait for the user's selection.
 
-**Per-operation adjustments to the dropdown:**
+**Per-operation adjustments to the menu:**
 - After `create` or `update`: offer all options above.
 - After `deploy`: replace the three Deploy options with a single **Verify deployment** option that runs `deployed-policy get <licenseType> <productName> <tenantIdentifier>` to confirm the assignment took effect. Keep **Query effective rules** (via `deployed-policy list`) as the follow-up check for chain-resolved values.
 - After `delete`: offer only **List policies to verify** and **Something else**.
 
 ## References
 
-- **[aops-policy-commands.md](./references/aops-policy-commands.md)** — Single source of truth for every `uip gov aops-policy` subcommand, its flags, input/output shapes, and authentication modes (including S2S token acquisition). Every other guide links here for command details rather than inlining them.
-- **[aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md)** — Full CRUD lifecycle: list, get, create, update, delete. Owns the single final-review gate before every mutation. Documents Case A (user-named product) vs Case B (intent-based selection).
-- **[configure-aops-policy-data-guide.md](./references/configure-aops-policy-data-guide.md)** — Form.io component-tree traversal, locale lookups for human-readable labels, Mode A (intent-based auto-fill) vs Mode B (field-by-field), and the bootstrap of every product's schema into `$SESSION_DIR/products/`.
-- **[aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md)** — Assign policies to user / group / tenant via `deployment <subject> configure --input`. Non-interactive: the agent builds the assignment JSON, calls `configure --input`, and verifies with `deployment <subject> get`.
-- **[aops-policy-deployed-guide.md](./references/aops-policy-deployed-guide.md)** — Query the single effective policy (`get`) vs every applicable rule for the calling user (`list`). Positional argument reference (`<LICENSE_TYPE> <PRODUCT_NAME> <TENANT_ID>`) and S2S flag semantics (`--s2s-token`, `--user-id`, `--tenant-only`).
+- **[aops-policy-commands.md](./aops-policy-commands.md)** — Single source of truth for every `uip gov aops-policy` subcommand, its flags, input/output shapes, and authentication modes (including S2S token acquisition). Every other guide links here for command details rather than inlining them.
+- **[aops-policy-manage-guide.md](./aops-policy-manage-guide.md)** — Full CRUD lifecycle: list, get, create, update, delete. Owns the single final-review gate before every mutation. Documents Case A (user-named product) vs Case B (intent-based selection).
+- **[configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md)** — Form.io component-tree traversal, locale lookups for human-readable labels, Mode A (intent-based auto-fill) vs Mode B (field-by-field), and the bootstrap of every product's schema into `$SESSION_DIR/products/`.
+- **[aops-policy-deploy-guide.md](./aops-policy-deploy-guide.md)** — Assign policies to user / group / tenant via `deployment <subject> configure --input`. Non-interactive: the agent builds the assignment JSON, calls `configure --input`, and verifies with `deployment <subject> get`.
+- **[aops-policy-deployed-guide.md](./aops-policy-deployed-guide.md)** — Query the single effective policy (`get`) vs every applicable rule for the calling user (`list`). Positional argument reference (`<LICENSE_TYPE> <PRODUCT_NAME> <TENANT_ID>`) and S2S flag semantics (`--s2s-token`, `--user-id`, `--tenant-only`).

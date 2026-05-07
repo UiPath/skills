@@ -121,7 +121,7 @@ uip gov access-policy create --file <PATH> --output json
 
 ## uip gov access-policy update
 
-Update an existing access policy from a JSON file. Sent as HTTP PATCH — the server applies the supplied `PolicyDefinition` fields to the existing record. **Treat it as a full replacement**: every field you omit from the file is cleared on the server (Critical Rule #8 in [SKILL.md](../SKILL.md#critical-rules)).
+Update an existing access policy from a JSON file. Sent as HTTP PATCH — the server applies the supplied `PolicyDefinition` fields to the existing record. **Treat it as a full replacement**: every field you omit from the file is cleared on the server (Critical Rule #8 in [SKILL.md](./access-policy-overview-guide.md#critical-rules)).
 
 ```bash
 uip gov access-policy update --file <PATH> --output json
@@ -155,7 +155,7 @@ uip gov access-policy delete <POLICY_ID_1> <POLICY_ID_2> --output json    # mult
 
 **Output:** `Data.policyIds[]` listing the deleted UUIDs.
 
-Always `get` the policy first and show a summary to the user. Require an explicit `yes` before running delete — see [SKILL.md — Confirmation-gate wording](../SKILL.md#confirmation-gate-wording).
+Always `get` the policy first and show a summary to the user. Require an explicit `yes` before running delete — see [SKILL.md — Confirmation-gate wording](./access-policy-overview-guide.md#confirmation-gate-wording).
 
 ---
 
