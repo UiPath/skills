@@ -125,6 +125,10 @@ uip resource triggers update <trigger-key> --type time \
   --cron "0 30 8 ? * 1-5" --folder-path "Finance" --output json
 ```
 
+> **`--type` matters on get/update/delete.** Default is `time`. If you pass an api or queue trigger key without `--type api` / `--type queue`, the command hits ProcessSchedules and returns `HTTP 404: ProcessSchedule does not exist.` The error instructions surface a hint pointing at the right `--type` — re-run with the correct one. (`triggers list` shows the type per entry.)
+
+> **Enum flag values are case-insensitive.** `--method POST`, `--runtime-type SERVERLESS`, `--job-priority HIGH` all work and are normalized to canonical PascalCase before the API call. Same on `queue-items` (`--priority high` ≡ `High`) and `processes edit` (`--retention-action delete`, `--robot-size standard`).
+
 ---
 
 ## Step 4: Toggle, Delete
@@ -168,17 +172,17 @@ Returns names like `job.completed`, `job.faulted`, `queueItem.failed`. Use these
 
 ### Create a Webhook
 
+The webhook name is a **positional argument**, aligned with `calendars create <name>` and `queues create <name>`:
+
 ```bash
 # Subscribe to specific events
-uip resource webhooks create \
-  --name "JobFailureAlert" \
+uip resource webhooks create "JobFailureAlert" \
   --url "https://hooks.example.com/uipath" \
   --events "job.faulted,job.stopped" \
   --secret "my-signing-secret" --output json
 
 # Subscribe to ALL events (omit --events)
-uip resource webhooks create \
-  --name "AuditHook" \
+uip resource webhooks create "AuditHook" \
   --url "https://hooks.example.com/audit" --output json
 ```
 
@@ -234,8 +238,7 @@ uip resource triggers create --type queue \
   --folder-path "Finance" --output json
 
 # 4. Webhook: notify on job failures
-uip resource webhooks create \
-  --name "InvoiceFailureAlert" \
+uip resource webhooks create "InvoiceFailureAlert" \
   --url "https://hooks.slack.com/services/T00/B00/xxx" \
   --events "job.faulted,job.stopped" \
   --secret "webhook-signing-key" --output json
