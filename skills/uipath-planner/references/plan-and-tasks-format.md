@@ -77,7 +77,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
 | `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-agents`, `uipath-coded-apps`, `uipath-maestro-flow`, `uipath-maestro-case`, `uipath-human-in-the-loop`, `uipath-test`, `uipath-rpa-legacy`, `uipath-interact`. The planner emits this skill in the live `TaskCreate` call. |
-| `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml`, `platform:VendorInvoice:queue:VendorQueue`, `agents:InvoiceClassifier:tools/extract_amount.py`. |
+| `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its TaskUpdate flips the checkbox; `human` only when the user manually edits the file. |
 | `Blocked by` | yes | Comma-separated task IDs, or `none`. Drives the live `addBlockedBy` calls. |

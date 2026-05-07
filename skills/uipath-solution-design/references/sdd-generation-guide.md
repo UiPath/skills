@@ -337,9 +337,11 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 > **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Write SDD to disk" as `in_progress`.
 
 1. Assemble all sections in template order.
-2. **Fill the `## Planner Handoff` header** that appears in every template after `## Document History`. This is the load-bearing handoff to `uipath-planner` — the planner detects SDDs by this exact heading. Fields:
+2. **Fill the `## Planner Handoff` header** that appears in every template after `## Document History`. This is the load-bearing handoff to `uipath-planner`. The planner accepts **either** the heading OR the adjacent `<!-- planner-handoff:v1 -->` HTML marker as a detection signal — both ship in every template and both should survive into the generated file:
 
    ```markdown
+   <!-- DO NOT RENAME: uipath-planner detects SDDs via this exact heading or the marker below. -->
+   <!-- planner-handoff:v1 -->
    ## Planner Handoff
 
    | Field | Value |
@@ -352,7 +354,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    | **Generation date** | <YYYY-MM-DD>
    ```
 
-   Do NOT rename the `## Planner Handoff` heading — the planner pattern-matches on it.
+   Do NOT rename the heading or strip the marker. They are redundant on purpose — keeping both means a hand-edit of one signal does not silently break Lane A detection.
 
 3. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header and before the Table of Contents:
 

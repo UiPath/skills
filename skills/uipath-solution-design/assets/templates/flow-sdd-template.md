@@ -14,7 +14,8 @@
 
 ---
 
-<!-- DO NOT RENAME: uipath-planner detects SDDs via this exact heading. -->
+<!-- DO NOT RENAME: uipath-planner detects SDDs via this exact heading or the marker below. -->
+<!-- planner-handoff:v1 -->
 ## Planner Handoff
 
 | Field | Value |

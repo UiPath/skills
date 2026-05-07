@@ -4,9 +4,19 @@ When the planner is invoked without an SDD (the entry guard found no `## Planner
 
 > Lane B is appropriate for non-trivial UiPath requests without a PDD: ambiguous tasks, multi-skill orchestration, project-type detection from the filesystem. For trivial single-skill tasks, the main agent should load the specialist directly without the planner.
 
-## Step 1 — Upfront elicitation
+## Step 1 — Upfront elicitation (batched)
 
-Ask only the questions the user's request does not already answer. **One at a time** — wait for each response before asking the next.
+Bundle every unresolved question from the table below into **one** `AskUserQuestion` call. Do not ask one at a time; do not split across turns. If a question is already resolved from the user's request, omit it from the batch. If **all** are resolved, do not call `AskUserQuestion` at all and record the inferred values in the plan header with a one-line note in Decisions & Trade-offs.
+
+### Skip-rules table (apply before building the batch)
+
+| Question | Skip when | Default if skipped |
+|---|---|---|
+| Q1 Generation approach | Request is simple and well-defined; the user is modifying an existing automation; or the task is single-skill single-step. | `simultaneous` |
+| Q2 Execution autonomy | Explore-first mode (the approval gate at plan time already scopes autonomy). | `autonomous` |
+| Q3 Project type fallback | Project type resolves via explicit naming, keyword signals, or filesystem (Step 3) — see "Project type" below. | `RPA workflow (XAML)` |
+
+The batch contains only the questions that survive the skip rules. Build the `AskUserQuestion` call as one tool invocation with one `questions` array entry per surviving item.
 
 ### Question 1 — Generation approach
 
@@ -14,8 +24,6 @@ Ask only the questions the user's request does not already answer. **One at a ti
 >
 > 1. **Explore first, then plan** — analyze the project and requirements, run non-mutating discovery, then present a plan for approval before any project changes *(recommended for non-trivial requests)*
 > 2. **Explore, plan, and execute simultaneously** — emit the plan as text and the main agent starts executing right away
-
-**Skip this question** when the request is simple and well-defined, the user is modifying an existing automation, or the task is single-skill single-step.
 
 **If "explore first, then plan":**
 - You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`.
@@ -35,8 +43,6 @@ Ask only the questions the user's request does not already answer. **One at a ti
 
 Record the answer in the plan header as `Execution autonomy: autonomous | interactive`. Specialist skills read this field at runtime — in autonomous mode they do NOT re-ask decisions the plan already makes.
 
-**Skip this question** only in explore-first mode — the approval gate at plan time already scopes autonomy. Default to `autonomous` for simultaneous mode when the user does not specify.
-
 ### Project type — infer first, ask only if vague
 
 Resolve project type without asking when possible. Stop at the first match:
@@ -49,9 +55,9 @@ Resolve project type without asking when possible. Stop at the first match:
 3. **Filesystem signals** (Step 3) → route per the Step 3 table.
 4. **Default** → **RPA workflow (XAML)**. Covers ~95% of UiPath work — UI automation, form-fill, Excel / email / file ops.
 
-Only ask if the request is genuinely vague ("I want to build something with UiPath") AND no keyword or filesystem signals apply:
+If the request is genuinely vague ("I want to build something with UiPath") AND no keyword or filesystem signals apply, **add Q3 to the Step 1 batch** — do not fire it as a separate `AskUserQuestion` call:
 
-> What kind of project should I scaffold?
+> Q3 — What kind of project should I scaffold?
 >
 > 1. **RPA workflow** — UI automation, Excel / email / file work *(recommended — covers ~95% of UiPath work)*
 > 2. **AI Agent** — autonomous agent that reasons with an LLM and calls tools
@@ -146,13 +152,16 @@ Option 2: parse the request fresh, run identity-matching against the old file (p
 
 ## Lane B budget
 
+Step 1 is **always one batched call** (Q1 + Q2 + optional Q3 in a single `AskUserQuestion`); Step 4 is one batched call when the plan has UI automation; resume adds one. The realistic floor is 0 calls and the realistic ceiling is 3.
+
 | Scenario | `AskUserQuestion` calls |
 |---|---|
-| Simple single-skill, simultaneous, all signals clear | **1** (autonomy only) |
-| Non-trivial, explore-first, all project-type signals clear | **2** (approach + autonomy) |
-| Non-trivial, with UI automation | **3** (approach + autonomy + UI batch) |
-| Vague request, with UI automation | **4** (approach + autonomy + project-type fallback + UI batch) |
+| Simple single-skill, simultaneous, all signals clear, no UI | **0** (Step 1 fully resolved from context, no UI batch) |
+| Non-trivial, no UI automation | **1** (Step 1 batched) |
+| Non-trivial, with UI automation | **2** (Step 1 batched + Step 4 UI batch) |
+| Vague request, with UI automation | **2** (Step 1 batched — Q3 is part of the same batch — + Step 4 UI batch) |
 | Resume scenario | **+1** (continue/regenerate) |
-| Maximum | **5** |
+| Realistic maximum | **3** |
+| Hard cap (Critical Rule 3) | **5** |
 
-This is the hard cap defined in the planner's Critical Rules. If you cannot fit the elicitation in 5 calls, plan with best available info and note the assumption in Decisions & Trade-offs.
+The 5-call hard cap is defined in the planner's Critical Rules. If batching collapses the elicitation correctly, you should never approach it.

@@ -12,7 +12,7 @@ Your job is to **derive task lists, route to specialists, and emit live tasks** 
 The planner has two lanes:
 
 - **Lane A — PDD-driven.** Triggered when the input is an SDD with a `## Planner Handoff` header. Reads the SDD, derives tasks per the project list, writes `<process>-tasks.md`, emits live `TaskCreate` calls. Zero or one user prompt. See [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
-- **Lane B — Non-PDD.** Triggered when there's no SDD. Elicits preferences, detects project type, multi-skill patterns or filesystem signals, writes `<feature>.md`, emits live tasks. 1-5 user prompts. See [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
+- **Lane B — Non-PDD.** Triggered when there's no SDD. Elicits preferences via a batched `AskUserQuestion`, detects project type, multi-skill patterns or filesystem signals, writes `<feature>.md`, emits live tasks. Typically 0–3 user prompts (5-call hard cap). See [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
 The lane is decided by the **Entry Guard** below.
 
@@ -42,7 +42,7 @@ When the planner is invoked, run this guard before anything else.
    - No → Lane B (non-PDD elicitation)
 
 2. The path resolves to a file. Read its first ~50 lines.
-   - File contains the exact heading "## Planner Handoff" → Lane A (read SDD, derive tasks)
+   - File contains the heading `## Planner Handoff` OR the HTML-comment marker `<!-- planner-handoff:v1 -->` → Lane A (read SDD, derive tasks). Either signal is sufficient — they are redundant on purpose so a renamed heading does not silently break detection.
 
 3. Otherwise (no marker, or unparseable / binary file like .pdf / .docx):
    ask via AskUserQuestion:
@@ -69,7 +69,7 @@ When the planner is invoked, run this guard before anything else.
    - Other context → Lane B, with the document path noted in plan header.
 ```
 
-The `## Planner Handoff` heading is the load-bearing detection contract — `uipath-solution-design` writes it deterministically, this skill detects it. Do not pattern-match on filename or extension; those are unreliable.
+The `## Planner Handoff` heading **and** the `<!-- planner-handoff:v1 -->` marker are the load-bearing detection contract — `uipath-solution-design` writes both deterministically, this skill detects either. Templates ship with both; either alone is enough to take Lane A. Do not pattern-match on filename or extension; those are unreliable.
 
 ## Lane A — PDD-driven (summary)
 
@@ -89,14 +89,12 @@ Full procedure: [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
 
 When triggered: no SDD; user described a task or asked for help planning one.
 
-1. Q1 — Generation approach (explore-first vs simultaneous). Skip for simple/single-skill.
-2. Q2 — Execution autonomy (autonomous vs interactive). Skip in explore-first mode.
-3. Project type — infer from explicit mode, keyword signals, or filesystem; ask only if vague (max 1 prompt).
-4. Step 2 — detect multi-skill patterns; emit multi-skill plan if applicable. See [multi-skill-patterns-guide.md](references/multi-skill-patterns-guide.md).
-5. Step 3 — filesystem detection for single-skill plans.
-6. Step 4 UI batch — only when plan includes UI automation in `uipath-rpa`.
-7. Write `YYYY-MM-DD-<feature>.md` to `docs/plans/` (project) or `~/Documents/UiPath/Plans/` (no project).
-8. If explore-first → `EnterPlanMode`. If simultaneous → emit plan as text + live tasks.
+1. Step 1 — batched elicitation: bundle Q1 (generation approach) + Q2 (execution autonomy) + Q3 (project-type fallback, only when project type is vague) into **one** `AskUserQuestion` call. Drop any question already resolved from context; if all three resolve, skip the call entirely.
+2. Step 2 — detect multi-skill patterns; emit multi-skill plan if applicable. See [multi-skill-patterns-guide.md](references/multi-skill-patterns-guide.md).
+3. Step 3 — filesystem detection for single-skill plans.
+4. Step 4 UI batch — only when plan includes UI automation in `uipath-rpa` (one batched `AskUserQuestion` for App type / Targeting approach / App state).
+5. Write `YYYY-MM-DD-<feature>.md` to `docs/plans/` (project) or `~/Documents/UiPath/Plans/` (no project).
+6. If explore-first → `EnterPlanMode`. If simultaneous → emit plan as text + live tasks.
 
 Full procedure: [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
@@ -160,3 +158,4 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 15. **Omitting the mandatory Testing task per generation skill.** Every generation skill in the plan gets a `Testing (MANDATORY)` task that routes to that skill's testing references. Never replace it with a `Validate:` sub-step. Never describe test-case authoring / data-driven testing / mock testing in the plan.
 16. **Asking about test coverage depth.** Testing is always thorough. The implementation specialist can scope down at execution time if the user wants a quick MVP; the planner does not offer the option.
 17. **Generating an SDD or copying SDD content into the plan.** SDD is owned by `uipath-solution-design`. The plan references SDD section paths in skill prompts but does not duplicate architecture content.
+18. **Asking the user what the planner / library / filesystem can already answer.** Project type is resolved by explicit naming, keyword signals, and filesystem detection before any prompt fires. Skill capability is fixed in the capability map — never ask "which skill should I use". Existence of a `project.json`, `.flow`, `.uipath/`, or `pyproject.toml` is observable. Default first; ask only when no safe default applies. A user prompt is the most expensive resource the planner has — spend it on decisions only the user can make.
