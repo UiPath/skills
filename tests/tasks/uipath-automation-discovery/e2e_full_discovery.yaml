@@ -1,0 +1,140 @@
+task_id: skill-automation-discovery-full-report
+description: >
+  Authoring E2E: agent uses the uipath-automation-discovery skill to run
+  the full discovery workflow (intake through report) for a fictional company
+  with pre-seeded data. Tests the complete Phases 0-4 loop and validates
+  the output report structure, tier classification, and evidence quality.
+tags: [uipath-automation-discovery, e2e, lifecycle:generate]
+
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I want to discover automation opportunities at Acme Corp using the
+  uipath-automation-discovery skill. Since no live systems are accessible
+  in this sandbox, I will provide the raw data directly. Your job is to
+  analyze it and produce the full report.
+
+  **Company**: Acme Corp, 2,000-person B2B SaaS fintech company.
+  $200M ARR, 25% YoY growth. Strategic priorities: reduce operational
+  costs, improve customer retention, expand to EU market.
+  **Departments**: Engineering, Sales, Marketing, Finance, HR, Legal, IT,
+  Customer Success, Product, Data Science, Security, Procurement.
+
+  **Raw data from mining (Phase 1):**
+
+  Slack signals:
+  - #help-it: 1,200 msgs/month. Top question: "how do I reset my VPN?"
+    (340 times). Single responder: Jake Martinez (IT). No bot.
+  - #help-finance: 800 msgs/month. Top question: "what's the status of
+    my expense report?" (210 times). Single responder: Sarah Chen (Finance).
+  - #help-hr: 600 msgs/month. Top questions: "how do I update my
+    address?" and "when is open enrollment?" Bot handles 30% of queries.
+  - #sales-ops: Team manually updates Salesforce opportunity stages from
+    Gong call recordings every Monday. Takes 4 hours for 3 people.
+  - #customer-success: CSMs manually compile weekly health scores in
+    Google Sheets from 5 different data sources. Takes 6 hours/week.
+
+  Existing automations:
+  - Engineering has a CI/CD bot that auto-deploys to staging.
+  - HR has an onboarding checklist bot in #help-hr (handles 30% of queries).
+  - No other departments have any automation.
+
+  CRM data:
+  - Sales reps spend avg 2 hours/day on manual data entry in Salesforce.
+  - Lead assignment is manual — round-robin spreadsheet updated weekly.
+  - Quote approval takes avg 3 days (manual email chain).
+
+  Now run Phases 2-4:
+  1. Analyze the data (Phase 2): identify behavioral patterns, SPOFs,
+     replicable models, and build the department coverage map.
+  2. Reflect on strategy (Phase 3): identify strategic gaps based on
+     Acme's priorities (cost reduction, retention, EU expansion).
+  3. Produce the report (Phase 4): write a prioritized markdown report
+     to `discovery-report.md` with all 4 tiers.
+
+  Also save a structured summary to report.json:
+  {
+    "total_opportunities": <number>,
+    "tier_1_count": <number of replicate-proven-model opportunities>,
+    "tier_2_count": <number of behavioral automation opportunities>,
+    "tier_3_count": <number of operational gap opportunities>,
+    "tier_4_count": <number of strategic opportunities>,
+    "spofs_identified": ["<list of SPOF names>"],
+    "replicable_models": ["<list of models that can be replicated>"],
+    "zero_coverage_departments": ["<departments with no automation>"],
+    "departments_mapped": <total departments in coverage map>
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Markdown report was produced"
+    path: "discovery-report.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Structured summary was produced"
+    path: "report.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report contains all 4 tiers"
+    path: "discovery-report.md"
+    includes:
+      - "Tier 1"
+      - "Tier 2"
+      - "Tier 3"
+      - "Tier 4"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report identifies SPOFs by name"
+    path: "discovery-report.md"
+    includes:
+      - "Jake Martinez"
+      - "Sarah Chen"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report identifies replicable models"
+    path: "discovery-report.md"
+    includes:
+      - "bot"
+      - "replicate"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Summary has correct structure and reasonable counts"
+    path: "report.json"
+    assertions:
+      - expression: "total_opportunities"
+        operator: gte
+        expected: 8
+      - expression: "tier_1_count"
+        operator: gte
+        expected: 1
+      - expression: "length(spofs_identified)"
+        operator: gte
+        expected: 2
+      - expression: "length(replicable_models)"
+        operator: gte
+        expected: 1
+      - expression: "departments_mapped"
+        operator: gte
+        expected: 8
+      - expression: "length(zero_coverage_departments)"
+        operator: gte
+        expected: 3
+    weight: 3.0
+    pass_threshold: 0.75
