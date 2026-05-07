@@ -35,8 +35,9 @@ initial_prompt: |
   **Scope**: Quick scan.
 
   Since no tools are accessible in this sandbox, skip access verification
-  (Phase 0C) and skip mining (Phase 1). Instead, complete the intake
-  (Phase 0) and produce a report.json summary of what you gathered:
+  (Phase 0C — no live systems in test sandbox) and skip mining (Phase 1).
+  Instead, complete the intake (Phase 0) and produce a report.json summary
+  of what you gathered:
 
   {
     "company_name": "Acme Corp",

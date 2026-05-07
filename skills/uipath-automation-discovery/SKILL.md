@@ -1,6 +1,6 @@
 ---
 name: uipath-automation-discovery
-description: "UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/ERP for repetitive work, SPOFs, and replicable models; produces 4-tier prioritized opportunity report with UiPath implementation paths. Hand off to →uipath-planner for authoring. For workflow code→uipath-rpa, Flows→uipath-maestro-flow."
+description: "[PREVIEW] UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/ERP for repetitive work, SPOFs, and replicable models; produces 4-tier prioritized opportunity report with UiPath implementation paths. TRIGGER when: user asks to discover automations, find automation opportunities, run an internal automation audit, or asks what to automate in a UiPath project context. DO NOT TRIGGER when: user is building a specific automation (→uipath-rpa), authoring a Flow (→uipath-maestro-flow), or working with agents (→uipath-agents)."
 ---
 
 # Automation Discovery
@@ -11,29 +11,19 @@ UiPath-ready backlog with recommended implementation paths.
 
 ## When to Use This Skill
 
-- User asks to **discover automation opportunities** in their company
-- User wants to **find manual work to automate** across departments
-- User asks "what should we automate?" or "where are the automation opportunities?"
-- User wants an **internal automation audit** or process improvement analysis
-- User wants to **reduce operational costs** by finding repetitive work
-- User asks about **improving internal productivity** with automation
+- User asks to **discover automation opportunities** in a UiPath project context
+- User wants to **find manual work to automate** and build a UiPath implementation backlog
+- User asks "what should we automate?" while working with UiPath tools
+- User wants an **internal automation audit** to feed into UiPath Automation Hub or a UiPath pipeline
+- User explicitly invokes `/uipath-automation-discovery`
 
 ## Critical Rules
 
-1. **Authorization and privacy first.** Confirm the requester is authorized to analyze the selected systems and employee data. Avoid private channels, DMs, and special-category HR data (payroll, performance reviews) unless explicitly approved. Pseudonymize SPOFs by default (e.g., "Sales Ops Lead A"); use real names only when explicitly authorized. Ask about jurisdiction constraints (GDPR, works council, internal policy); apply the stricter rule when uncertain.
+1. **Authorization and privacy first.** Confirm the requester is authorized to analyze the selected systems and employee data. Avoid private channels, DMs, and special-category HR data (payroll, performance reviews) unless explicitly approved. Pseudonymize SPOFs by default (e.g., "Sales Ops Lead A"); use real names only when explicitly authorized. Maintain a `name-mapping.json` workspace file (e.g., `{"Jake Martinez": "IT Lead A"}`) and apply it consistently before any write operation. Ask about jurisdiction constraints (GDPR, works council, internal policy); apply the stricter rule when uncertain.
 2. **Never assume — always ask first.** Complete the full intake (Phase 0) before mining. You need company context, tool access, org structure, privacy scope, and scope agreement.
 3. **Verify access before mining.** Test each data source with a minimal read-only operation. If access fails, note it and move on — don't block discovery.
 4. **Evidence over opinion.** Every opportunity (Tiers 1-3) must cite a specific source, quantitative metric, and affected role or team. No unsupported claims. If a source yields fewer than 5 signals, mark all findings from that source as low-confidence. Do not promote low-confidence findings above Tier 3.
-5. **Replication is always Tier 1.** A proven model working in one area that could replicate elsewhere is the highest-value finding. Always lead with these. Never skip the replicable-model search (Phase 2C).
-
-## Anti-patterns
-
-- **Mining before intake.** Never start searching systems before completing Phase 0. Without context you'll waste time on irrelevant signals.
-- **Naming individuals without consent.** Always pseudonymize SPOFs unless the requester explicitly authorizes naming.
-- **Fabricating metrics.** If a source returns sparse data, mark findings as low-confidence. Never invent volume numbers.
-- **Promising ROI without source citations.** Every ROI estimate must reference an existing project benchmark or explicit data point.
-- **Skipping the replicable-model search.** The highest-value findings are always proven models that can replicate. Never skip Phase 2C.
-- **Speculating from insufficient evidence.** Below signal threshold → mark low confidence. Insufficient evidence → don't promote to Tier 1-3.
+5. **Replication is always Tier 1.** A proven model working in one area that could replicate elsewhere is the highest-value finding. Always lead with these. Never skip the replicable-model search (Phase 2C). Exception: if the replicable model's source has fewer than 5 signals, classify as Tier 1 with a low-confidence flag until corroborated by a second source.
 
 ## Workflow Overview
 
@@ -45,6 +35,10 @@ Phase 3: REFLECT   → Layer on business strategy for strategic gaps
 Phase 4: REPORT    → Produce prioritized report with 4 tiers
 Phase 5: HANDOFF   → Map opportunities to UiPath implementation skills
 ```
+
+**Stop conditions:** Quick scan caps at 10 findings, Standard at 25, Deep dive
+at 35. Max 2 retries per failed source. Phase 1 timeboxed at 3 hours for deep
+dives. See [references/intake-guide.md](references/intake-guide.md) §0G for details.
 
 ## Phase 0: INTAKE (interactive)
 
@@ -76,6 +70,10 @@ per-source guidance on what to look for and how to search.
 5. Issue tracker — reveals service desk patterns
 6. HRIS — reveals people-process friction
 7. Web research — reveals strategic gaps
+
+Note: Web research (priority 7) feeds Phase 3 strategic analysis. Even under
+time pressure, do a brief web search for the company's public financials and
+strategy — this takes minutes and enables Tier 4 findings.
 
 Work with whatever access is verified. Even messaging channels alone can yield
 15+ opportunities. Each additional source adds depth, not changes the methodology.
@@ -117,7 +115,9 @@ that could replicate to others:
 | Working Model | Where It's Missing | Addressable Volume |
 ```
 
-This is always Tier 1.
+**Greenfield case:** If no existing automations are found (nothing to replicate),
+Tier 1 will be empty. Promote the highest-volume Tier 2 finding to the headline
+slot and note that the company has no proven models to replicate yet.
 
 ### 2D. Department Coverage Map
 
@@ -132,8 +132,7 @@ Flag ZERO-coverage departments as biggest blind spots.
 For promising existing projects, extract: pain point, manual process today,
 volume/frequency, ROI if documented, systems involved, dev status.
 
-**Low-confidence handling:** If a source yields fewer than 5 signals, mark all
-findings from that source as low-confidence. Do not promote above Tier 3.
+Apply low-confidence handling per Critical Rule 4.
 
 **Checkpoint:** Share analysis summary with user before reflecting:
 "Here are the top patterns, SPOFs, and replicable models. Anything surprise you?
@@ -218,3 +217,12 @@ each phase with a brief summary and ask if the user wants to adjust scope.
 - [references/intake-guide.md](references/intake-guide.md) — Phase 0 detailed steps (company context, tool inventory, access verification, privacy)
 - [references/mining-guide.md](references/mining-guide.md) — Per-source search guidance (load during Phase 1)
 - [references/report-template.md](references/report-template.md) — Output structure, tier definitions, and evidence standards (load during Phase 4)
+
+## Anti-patterns
+
+- **Mining before intake.** Never start searching systems before completing Phase 0. Without context you'll waste time on irrelevant signals.
+- **Naming individuals without consent.** Always pseudonymize SPOFs unless the requester explicitly authorizes naming. Apply the `name-mapping.json` before every write.
+- **Fabricating metrics.** If a source returns sparse data, mark findings as low-confidence. Never invent volume numbers.
+- **Promising ROI without source citations.** Every ROI estimate must reference an existing project benchmark or explicit data point.
+- **Skipping the replicable-model search.** The highest-value findings are always proven models that can replicate. Never skip Phase 2C.
+- **Speculating from insufficient evidence.** Below signal threshold → mark low confidence. Insufficient evidence → don't promote to Tier 1-3.
