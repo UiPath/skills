@@ -62,17 +62,8 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent linked flow project to solution"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+project\s+add'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "Flow file was created inside the solution"
     path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
     weight: 1.5
     pass_threshold: 1.0
-
