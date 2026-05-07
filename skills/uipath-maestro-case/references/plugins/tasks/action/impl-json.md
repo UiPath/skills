@@ -39,7 +39,7 @@
 | `data.actionCatalogName` | `deploymentTitle` from tasks.md |
 | `data.labels` | Label set from tasks.md |
 
-`recipient.Type` values: `0` = user ID, `1` = group ID, `2` = email address, `3` = `"=vars.<varId>"` for runtime resolution. Email recipients always use Type `2`.
+`recipient.Type` values: `0` = user ID, `1` = group ID, `2` = email address, `3` = `"=vars.<varId>"` for runtime resolution. Email recipients always use Type `2`. **Fallback when sdd.md value is not a resolved UUID** (e.g., `UserGroup: closing-officer-group`, `User: maya@accrual.com`, `Role: Underwriter`): pick the closest `Type` from the rationale of the sdd.md label (`User:` → 0, `UserGroup:` / `Role:` → 1, plain email → 2, `=vars.X` → 3) and write `{ "Type": <picked>, "Value": "<sdd-name-or-string>" }` — schema-conformant skeleton, user resolves the Value to a real UUID later. Drop `data.recipient` only when no reasonable Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes on unknown shapes and CLI validate misses it.
 
 ## Procedure
 
