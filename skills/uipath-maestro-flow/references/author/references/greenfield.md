@@ -93,10 +93,12 @@ Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution
 ### 2b. Create the Flow project inside the solution folder
 
 ```bash
-cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
+cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
 
 The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
+
+`--output json` is required so Step 2c can inspect `Data.SolutionRegistration.Status` to confirm the project was auto-registered with the parent solution.
 
 ### 2c. Verify the project is registered in the solution
 

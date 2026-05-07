@@ -16,11 +16,8 @@ initial_prompt: |
   Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
   inside a solution:
   1. Create the solution first.
-  2. Create the Flow project inside that solution. When `flow init` is run from
-     inside the solution directory, the project is automatically registered in
-     the parent `.uipx`; no manual `uip solution project add` is required.
-     Verify auto-registration via the `Data.SolutionRegistration.Status` field
-     in the `flow init` JSON response.
+  2. Create the Flow project inside that solution.
+  3. Confirm the flow project is registered in the parent solution.
 
   The correct flow-file path is:
     WeatherAlert/WeatherAlert/WeatherAlert.flow
