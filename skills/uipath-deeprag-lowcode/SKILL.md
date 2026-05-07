@@ -29,7 +29,7 @@ For `.csv` input → `uipath-batch-transform-lowcode`. For coded agents (Python,
 1. **Built-in tool shape is fixed.** `resource.json` MUST set `$resourceType: "tool"`, `type: "internal"`, `referenceKey: null`, `isEnabled: true`, `properties.toolType: "deep-rag"`. Validator rejects anything else. See [references/impl-json.md](references/impl-json.md).
 2. **Resource directory name is free-form**, file MUST be exactly `resource.json` under `<agent>/resources/<any-name>/`. Validators scan recursively.
 3. **`properties.toolType` is one of four values.** `analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`. Use `deep-rag` for iterative cross-document synthesis. See [references/planning.md](references/planning.md) tiebreaker for the others.
-4. **Inline-in-flow requires explicit edge wiring.** Flow must contain `uipath.agent.autonomous` and `uipath.agent.resource.tool.deep-rag` nodes, with an edge from the agent's `tool` source port to the tool node's `input` target port.
+4. **Inline-in-flow requires explicit edge wiring.** Flow must contain a `uipath.agent.autonomous` node and a built-in tool node under the `uipath.agent.resource.tool.*` prefix (canonical: `uipath.agent.resource.tool.builtin`; verify with `uip maestro flow registry search "uipath.agent.resource.tool" --output json`), with an edge from the agent's `tool` source port to the tool node's `input` target port.
 5. **System prompt matters.** Effectiveness depends on instructions telling the agent when to invoke the tool, what to pass as the prompt, how to combine the result with conversation context. Vague prompt → underuse.
 6. **Permissions live on the folder.** Runtime executes DeepRAG in the agent's runtime folder. Lacking the index permission → `403`.
 7. **Attachment ingress is automatic in chat surfaces.** Studio Web forwards conversation attachments to the tool. For other channels (flow input, Action Center task), confirm the runtime forwards them or the tool runs against an empty set.
@@ -38,9 +38,10 @@ For `.csv` input → `uipath-batch-transform-lowcode`. For coded agents (Python,
 
 1. Confirm DeepRAG is the right mode → [references/context-grounding-patterns.md](references/context-grounding-patterns.md)
 2. Plan the agent (standalone vs inline-in-flow, tool selection) → [references/planning.md](references/planning.md)
-3. Author `resource.json` with the exact built-in shape → [references/impl-json.md](references/impl-json.md)
-4. Validate via `uip solution project validate` (and the built-in tool checker if running tests)
-5. Pack and publish via `uip solution upload`
+3. Scaffold the solution + agent project: `uip solution new "<SOLUTION>" --output json`, `uip agent init "<AGENT>" --output json` (add `--inline-in-flow` for inline), `uip solution project add "<AGENT>" --output json`
+4. Author `resource.json` with the exact built-in shape → [references/impl-json.md](references/impl-json.md)
+5. Validate via `uip agent validate --output json`
+6. Pack and publish via `uip solution upload . --output json`
 
 ## Reference Navigation
 
@@ -61,5 +62,5 @@ For `.csv` input → `uipath-batch-transform-lowcode`. For coded agents (Python,
 
 ## Resources
 
-- Built-in tool registry / validator: `tests/tasks/uipath-agents/builtin_tool/`
+- Agent project validator: `uip agent validate --output json`
 - UiPath Python SDK (for the underlying API): <https://uipath.github.io/uipath-python/>

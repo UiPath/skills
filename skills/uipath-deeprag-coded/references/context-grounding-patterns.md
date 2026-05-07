@@ -46,7 +46,7 @@ These hold regardless of mode or surface:
 
 1. **The hosted file is a datasource for iteration (BT) or grounding (DR), not the other way around.** BatchTransform iterates rows from a CSV-backed context-grounding index; DeepRAG synthesizes across a PDF/TXT-backed index. Per-row external grounding for BT comes from `enable_web_search_grounding`, not the index.
 2. **`prompt` is required.** Empty → `400 "The Prompt field is required."` BatchTransform additionally requires `output_columns` (each with `name` + `description`).
-3. **Output destination differs by mode.** BatchTransform writes a bucket attachment (`destination_path` coded / target file name low-code). DeepRAG returns content (`text` + optional `citations`) inline on the resume value.
+3. **Output destination differs by mode.** BatchTransform produces an augmented CSV server-side. Coded resume: the runtime downloads it to the local `destination_path` you supplied. Low-code: it is delivered as an Orchestrator bucket attachment for downstream consumers. DeepRAG returns content (`text` + optional `citations`) inline on the resume value.
 4. **Folder context is required.** Explicit folder key/path or env var. Missing → `400 "A folder is required for this action."`
-5. **Permissions live on the folder.** User's role must grant the index permission. `403 "User is missing required index permissions."` → switch folders (personal workspace is the safe default for self-serve).
+5. **Permissions live on the folder.** Coded: the invoking user's role must grant the index permission. Low-code: the agent's runtime identity must have it in the folder where the agent is published. `403 "User is missing required index permissions."` → switch folders (personal workspace is the safe default for self-serve).
 6. **Async / event-driven.** Both modes are long-running. Coded agents must use `@durable_interrupt` with the matching `Create*` resume-trigger model; low-code agents get this for free via the runtime.

@@ -1,0 +1,26 @@
+task_id: skill-batch-transform-lowcode-smoke-trigger
+description: >
+  Smoke test: agent should trigger the uipath-batch-transform-lowcode
+  skill when the user asks to add LLM-filled columns to a CSV from a
+  Studio Web Agent Builder / `agent.json` (lowCode) project. Verifies
+  the skill fires for the low-code + CSV signal pair.
+tags: [uipath-batch-transform-lowcode, smoke]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I'm building a low-code agent in Studio Web Agent Builder (`agent.json`
+  with `"type": "lowCode"`). I want it to take a CSV upload and add two
+  new LLM-filled columns: a category and a confidence label. Tell me
+  which skill applies and which built-in tool I need to enable. Do NOT
+  scaffold any files.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-batch-transform-lowcode skill"
+    skill_name: "uipath-batch-transform-lowcode"
+    expected: "yes"
+    weight: 3.0
+    pass_threshold: 1.0

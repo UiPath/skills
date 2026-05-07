@@ -40,7 +40,7 @@ async def _run_deep_rag():
 content = await _run_deep_rag()  # → DeepRagContent (or dict) — has .text, .citations
 ```
 
-`is_ephemeral_index=True` is required when `index_id` came from `CreateEphemeralIndex`. Pydantic validator rejects the model otherwise.
+`is_ephemeral_index=True` is required when `index_id` came from `CreateEphemeralIndex` — runtime needs the flag to route as ephemeral; missing it surfaces server-side at execution. The Pydantic validator only catches the inverse case (`is_ephemeral_index=True` with `index_id=None`).
 
 ## Procedure
 
@@ -61,7 +61,7 @@ Instantiate `UiPath()` inside nodes only — never at module level. Resolve work
 | `CreateDeepRagRaw` | `DeepRagResponse` raw | full response, no status validation |
 | `CreateEphemeralIndexRaw` | raw dict | full payload, no ingestion-status validation |
 
-Runtime raises `UiPathFaultedTriggerError` on terminal `Failed`. Use `*Raw` variants only to inspect a failed status without raising.
+Runtime raises `UiPathFaultedTriggerError` (imported as `from uipath.core.errors import UiPathFaultedTriggerError`) on terminal `Failed`. Use `*Raw` variants only to inspect a failed status without raising.
 
 ## Defensive Resume-Value Access
 

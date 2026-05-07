@@ -1,6 +1,6 @@
 # BatchTransform — API Reference (Debug Only)
 
-> **Stop.** In an agent, use the resume-trigger models (`Create*` from `uipath.platform.common`) yielded from `@durable_interrupt` — see [impl-json.md](impl-json.md) (this skill is the low-code surface; the coded surface lives in ). The runtime calls these endpoints for you with the correct headers, body shape, and folder context.
+> **Stop.** In a low-code agent, the runtime calls these endpoints when the built-in `batch-transform` tool is enabled — see [impl-json.md](impl-json.md). Direct API calls are debug-only. The coded surface (Python `@durable_interrupt` + `Create*` resume-trigger models from `uipath.platform.common`) lives in `uipath-batch-transform-coded`.
 
 This file lists endpoints for direct invocation from outside an agent (custom tooling, scripts, debugging). Request body shapes evolve with the SDK — **trust the SDK source, not this file**:
 

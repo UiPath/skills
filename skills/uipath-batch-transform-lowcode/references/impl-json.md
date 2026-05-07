@@ -56,10 +56,10 @@ The exact JSON field names the runtime sends to the platform (e.g., `useWebSearc
 
 Agent owns its tools directly. Runtime exposes `batch-transform` to the agent's tool-calling loop.
 
-**Inline-in-flow:** flow has `uipath.agent.autonomous` and `uipath.agent.resource.tool.batch-transform` nodes, plus an edge from agent `tool` → tool node `input`.
+**Inline-in-flow:** flow has a `uipath.agent.autonomous` node and a built-in tool node under the `uipath.agent.resource.tool.*` prefix (canonical: `uipath.agent.resource.tool.builtin`), plus an edge from agent `tool` → tool node `input`. The shared inline-builtin-tool checker (`tests/tasks/uipath-agents/inline_builtin_tool/`) validates by prefix; verify the exact node type at your CLI version with `uip maestro flow registry search "uipath.agent.resource.tool" --output json`.
 
 ```text
-[uipath.agent.autonomous] --tool--> [uipath.agent.resource.tool.batch-transform]
+[uipath.agent.autonomous] --tool--> [uipath.agent.resource.tool.builtin]
 ```
 
 ## Output Column Descriptions
@@ -80,9 +80,10 @@ Studio Web forwards the user's CSV upload to the tool — no schema wiring. Othe
 
 | Check | How |
 |---|---|
-| Resource shape | `python tests/tasks/uipath-agents/builtin_tool/check_builtin_tool.py` (or inline equivalent) |
-| Solution validation | `uip solution project validate` |
-| Smoke run | `uip solution upload`, invoke from Studio Web with a 10–20 row CSV before the full workload |
+| Agent project shape (agent.json, resources, bindings) | `uip agent validate --output json` (canonical; auto-runs migrations + writes `.agent-builder/`) |
+| Smoke run | `uip solution upload . --output json`, invoke from Studio Web with a 10–20 row CSV before the full workload |
+
+The repo's coder-eval suite uses a shared static checker at `tests/tasks/uipath-agents/builtin_tool/check_builtin_tool.py` covering all four `toolType` values (`analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`). It is shared test tooling, not a runtime requirement for this skill.
 
 ## Pack and Publish
 
@@ -92,5 +93,5 @@ uip solution upload . --output json
 
 ## Resources
 
-- Built-in tool registry / validator: `tests/tasks/uipath-agents/builtin_tool/`
+- Agent project validator: `uip agent validate --output json`
 - API endpoints (debug): [api-reference.md](api-reference.md)

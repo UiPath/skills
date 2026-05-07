@@ -28,7 +28,11 @@ If the user is building a coded agent (Python, LangGraph, etc.), use the `uipath
 
 Built-in tools are declared in `resources/<name>/resource.json` with `$resourceType: "tool"`, `type: "internal"`, `referenceKey: null`, and `properties.toolType: "batch-transform"`. See [impl-json.md](impl-json.md) for the exact JSON.
 
-The validator at `tests/tasks/uipath-agents/builtin_tool/check_builtin_tool.py` accepts these `toolType` values: `analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`. Anything else fails low-code agent validation.
+Built-in tools accept these `toolType` values: `analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`. Anything else fails `uip agent validate`.
+
+### Tool resource vs context-index resource
+
+There are two valid shapes for enabling BatchTransform on a low-code agent. This skill documents the **built-in tool** shape (the agent invokes BatchTransform through its tool-calling loop). The alternative is a **context-index resource** that wires BatchTransform as a retrieval mode on a pre-built ECS index — `$resourceType: "context"`, `contextType: "index"`, `retrievalMode: "batchtransform"` (lowercase, no hyphen — `uip agent validate` accepts camelCase but Studio Web silently drops the resource on import), with `webSearchGrounding` and `outputColumns` set on the resource. Use the context-index form when the CSV lives in a stable, pre-built index reused across runs and the agent should query it transparently as context; use the tool form (this skill) when the CSV is a runtime attachment and the agent must decide row-by-row when to invoke it.
 
 ## Critical Decisions
 

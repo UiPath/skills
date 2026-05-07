@@ -42,7 +42,7 @@ Steps 3 and 4 use the resume-trigger pattern so the agent suspends and resumes o
 | Sync vs durable | Always durable for create-index and run-deep-rag. Never poll. |
 | Folder for index | Personal workspace key by default. Only override when the user has confirmed role permissions in another folder. |
 | Citation mode | Default `SKIP` for summarization. Use `INLINE` when the user asks for inline source references. Verify available values via the SDK's `CitationMode` enum. |
-| `is_ephemeral_index` | Always `True` on `CreateDeepRag` when `index_id` came from `CreateEphemeralIndex`. The validator rejects the model otherwise. |
+| `is_ephemeral_index` | Always `True` on `CreateDeepRag` when `index_id` came from `CreateEphemeralIndex`. Runtime requires the flag to route as ephemeral; missing it fails server-side. The Pydantic validator only catches the inverse case (`is_ephemeral_index=True` with `index_id=None`). |
 | Mock-friendly outputs | Return shapes that work whether the resume value is the typed model or a dict — see the defensive accessor in [impl-python.md](impl-python.md). |
 
 ## Bindings

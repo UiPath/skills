@@ -31,7 +31,7 @@ For `.pdf` / `.txt` input → `uipath-deeprag-lowcode`. For coded agents (Python
 1. **Built-in tool shape is fixed.** `resource.json` MUST set `$resourceType: "tool"`, `type: "internal"`, `referenceKey: null`, `isEnabled: true`, `properties.toolType: "batch-transform"`. Validator rejects anything else. See [references/impl-json.md](references/impl-json.md).
 2. **Resource directory name is free-form**, file MUST be exactly `resource.json` under `<agent>/resources/<any-name>/`. Validators scan recursively.
 3. **`properties.toolType` is one of four values.** `analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`. Use `batch-transform` for per-row LLM-filled columns. See [references/planning.md](references/planning.md) tiebreaker for the others.
-4. **Inline-in-flow requires explicit edge wiring.** Flow must contain `uipath.agent.autonomous` and `uipath.agent.resource.tool.batch-transform` nodes, with an edge from the agent's `tool` source port to the tool node's `input` target port.
+4. **Inline-in-flow requires explicit edge wiring.** Flow must contain a `uipath.agent.autonomous` node and a built-in tool node under the `uipath.agent.resource.tool.*` prefix (canonical: `uipath.agent.resource.tool.builtin`; verify with `uip maestro flow registry search "uipath.agent.resource.tool" --output json`), with an edge from the agent's `tool` source port to the tool node's `input` target port.
 5. **System prompt + per-column descriptions matter.** Agent instructions must say when to invoke the tool, what top-level prompt to send, and how to describe each output column. Vague instructions → inconsistent columns.
 6. **Web search grounding is opt-in.** `enable_web_search_grounding` defaults off. Enable only when the per-row task needs info NOT already in the row.
 7. **Permissions live on the folder.** Runtime executes BatchTransform in the agent's runtime folder. Confirm the agent's identity has the index permission and write access to the destination bucket. Failures: `403` (read) or `400` (folder/permission).
@@ -41,9 +41,10 @@ For `.pdf` / `.txt` input → `uipath-deeprag-lowcode`. For coded agents (Python
 
 1. Confirm BatchTransform is the right mode → [references/context-grounding-patterns.md](references/context-grounding-patterns.md)
 2. Plan the agent (standalone vs inline-in-flow, output columns, web grounding default) → [references/planning.md](references/planning.md)
-3. Author `resource.json` with the exact built-in shape and configure `output_columns` + prompt → [references/impl-json.md](references/impl-json.md)
-4. Validate via `uip solution project validate`
-5. Pack and publish via `uip solution upload`
+3. Scaffold the solution + agent project: `uip solution new "<SOLUTION>" --output json`, `uip agent init "<AGENT>" --output json` (add `--inline-in-flow` for inline), `uip solution project add "<AGENT>" --output json`
+4. Author `resource.json` with the exact built-in shape and configure `output_columns` + prompt → [references/impl-json.md](references/impl-json.md)
+5. Validate via `uip agent validate --output json`
+6. Pack and publish via `uip solution upload . --output json`
 
 ## Reference Navigation
 
@@ -66,5 +67,5 @@ For `.pdf` / `.txt` input → `uipath-deeprag-lowcode`. For coded agents (Python
 
 ## Resources
 
-- Built-in tool registry / validator: `tests/tasks/uipath-agents/builtin_tool/`
+- Agent project validator: `uip agent validate --output json`
 - UiPath Python SDK (for the underlying API): <https://uipath.github.io/uipath-python/>

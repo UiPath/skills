@@ -70,20 +70,21 @@ Instantiate `UiPath()` inside nodes only — never at module level.
 |---|---|---|
 | `CreateEphemeralIndex` | `ContextGroundingIndex` | `id` (already ingested) |
 | `CreateBatchTransform` | `str` confirmation message | Format: `"Batch transform completed. Modified file available at <abs_path>"`. Augmented CSV written to the local `destination_path` you supplied — read it from disk if needed. Runtime raises `UiPathFaultedTriggerError` (wrapping `BatchTransformFailedException`) on terminal failure. |
+| `CreateEphemeralIndexRaw` | raw dict | full payload, no ingestion-status validation |
 
-Runtime raises `UiPathFaultedTriggerError` on terminal `Failed`. Use `*Raw` variants only to inspect a failed status without raising.
+Runtime raises `UiPathFaultedTriggerError` (imported as `from uipath.core.errors import UiPathFaultedTriggerError`) on terminal `Failed`. There is no `CreateBatchTransformRaw` — to inspect a failed ingestion without raising, yield `CreateEphemeralIndexRaw` instead.
 
 ## Bindings
 
-Add the destination bucket (and source bucket if used) to `bindings.json`. Attachments and ephemeral indexes are NOT bindable — they are runtime-created.
+Bind the **source bucket** (where the input CSV lives) in `bindings.json`. The augmented CSV is written to a local `destination_path` on resume — that is NOT bindable. Attachments and ephemeral indexes are NOT bindable either. Add a destination bucket binding only if the agent re-uploads the augmented CSV after resume.
 
 ```json
 {
   "resource": "bucket",
-  "key": "<RESULT_BUCKET>.<RESULT_FOLDER>",
+  "key": "<SOURCE_BUCKET>.<SOURCE_FOLDER>",
   "value": {
-    "name": {"defaultValue": "<RESULT_BUCKET>", "isExpression": false, "displayName": "Name"},
-    "folderPath": {"defaultValue": "<RESULT_FOLDER>", "isExpression": false, "displayName": "Folder Path"}
+    "name": {"defaultValue": "<SOURCE_BUCKET>", "isExpression": false, "displayName": "Name"},
+    "folderPath": {"defaultValue": "<SOURCE_FOLDER>", "isExpression": false, "displayName": "Folder Path"}
   },
   "metadata": {"ActivityName": "download_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName"}
 }

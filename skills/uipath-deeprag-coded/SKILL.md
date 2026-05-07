@@ -28,7 +28,7 @@ For `.csv` input → `uipath-batch-transform-coded`. For Studio Web Agent Builde
 
 1. **Use `@durable_interrupt` — never poll.** DeepRAG and ephemeral-index ingestion are long-running. Polling in a graph node burns the serverless 15-min job timeout. Yield `CreateEphemeralIndex` / `CreateDeepRag` from a `@durable_interrupt` inner function; runtime creates the resource, suspends, subscribes to the completion event, resumes on event.
 2. **DeepRAG operates on an index, not raw files.** Upload file as attachment first (`sdk.attachments.upload_async`), then yield `CreateEphemeralIndex(usage=EphemeralIndexUsage.DEEP_RAG, attachments=[...])`, then yield `CreateDeepRag(..., is_ephemeral_index=True, index_id=...)`.
-3. **`is_ephemeral_index=True` is required** when `index_id` came from a `CreateEphemeralIndex` resume value. Pydantic validator rejects the model otherwise.
+3. **`is_ephemeral_index=True` is required** when `index_id` came from a `CreateEphemeralIndex` resume value. Runtime needs the flag to route the call as ephemeral; failure is server-side at execution. The Pydantic validator only catches the inverse mistake (`is_ephemeral_index=True` with `index_id=None`).
 4. **`prompt` is required, non-empty.** Empty → `400 "The Prompt field is required."`
 5. **`index_folder_key` (or `index_folder_path`) is required for permission checks.** Resolve at runtime: `(await sdk.folders.get_personal_workspace_async()).key`. Runtime injects the folder header.
 6. **Permissions live on the folder.** Lacking the index permission → `403 "User is missing required index permissions."` Default to personal workspace key for self-serve.
