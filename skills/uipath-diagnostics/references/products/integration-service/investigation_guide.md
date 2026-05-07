@@ -11,13 +11,22 @@ Before using any fetched data, verify it matches the user's reported problem:
 
 If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
-## First Step: Identify the Connection
+## First Step: Identify the Connection AND its Ownership
 
-Always identify the specific connection before doing anything else:
+Always identify the specific connection AND determine where it lives before doing anything else. From the project's connection resource file (see "Connection Resource File" in [overview.md](./overview.md) for path pattern and field reference), you must answer four questions:
 
-1. **Read the project's connection resource file first** — if a source code path is available, find the connection JSON (see "Connection Resource File" in [overview.md](./overview.md) for path pattern and field reference). Use `spec.connectorName` as the display name, `spec.connectorKey` for CLI queries. This file is the single source of truth for which connector the process uses.
-2. **If no source code is available** — the error message usually names the connection. Use `uip is connections list` to find it by name, then `uip is connections ping <connection-id>` to check its status.
-3. **Do NOT infer the connector from the activity package name** — activity packages and connectors have different naming conventions (e.g., `UiPath.MicrosoftOffice365.Activities` uses connector "Microsoft OneDrive & SharePoint"). Always resolve from connection resource files or the connections API.
+- **Which connector?**
+- **Who owns the connection?**
+- **Where is the connection bound?**
+- **What is the connection ID?**
+
+Together these answers determine whether the connection is in the runner's workspace, in a different user's workspace, or in a folder the runner cannot reach. **Always extract and compare them — do not stop after just the connector name.**
+
+For the field-by-field extraction checklist for a specific error pattern, see the matched playbook's Investigation section — the playbook is authoritative for which fields and which comparisons matter for that error.
+
+If no source code is available, the error message usually names the connection. Use `uip is connections list` to find it by name, then `uip is connections ping <connection-id>` to check its status. Without the resource file, ownership cannot be confirmed without asking the user.
+
+**Do NOT infer the connector from the activity package name** — activity packages and connectors have different naming conventions (e.g., `UiPath.MicrosoftOffice365.Activities` uses connector "Microsoft OneDrive & SharePoint"). Always resolve from connection resource files or the connections API.
 
 If the connection identity is still unclear, ask the user which connection or connector is involved.
 
