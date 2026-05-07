@@ -17,6 +17,6 @@ success_criteria:
   - type: skill_triggered
     description: "Agent did NOT invoke the uipath-human-in-the-loop skill (HITL not appropriate here)"
     skill_name: "uipath-human-in-the-loop"
-    expected: "no"
+    expected_skill: "none"
     weight: 3.0
     pass_threshold: 1.0
