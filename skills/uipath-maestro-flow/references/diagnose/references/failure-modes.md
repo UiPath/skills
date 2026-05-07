@@ -206,14 +206,21 @@ Local `uip maestro flow validate` returns `Result: Success`. The same flow fails
 
 ### Cause
 
-Multiple. `flow validate` is a JSON schema + cross-reference check; it does not catch:
+Multiple. `flow validate` is a JSON schema + cross-reference check plus a small set of structural rules; it does not catch:
 
 - Missing `=js:` prefix → see [MST-9107](#mst-9107--js-prefix-missing)
 - Reused reference IDs → see [Reused reference ID](#reused-reference-id--cross-connection-id-leakage)
 - Missing top-level `bindings[]` entries on resource nodes → see [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node)
-- Connector input fields with hand-written `inputs.detail` (missing `essentialConfiguration` block) — re-run `uip maestro flow node configure` to populate properly
 - HITL `completed` port unwired → see [HITL `completed` port unwired](#hitl-completed-port-unwired)
 - Stale `layout` data → see [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) (cosmetic, not faulting)
+
+The structural rules **do** catch (validate exits non-zero, with a shape hint pointing at `uip maestro flow node configure` as the canonical authoring path):
+
+- Connector `inputs.detail.configuration` missing or empty
+- Connector `inputs.detail.configuration` decoded but lacking the `essentialConfiguration` envelope
+- Connector `inputs.detail.configuration` containing invalid JSON inside the `=jsonString:` prefix
+
+If you see one of those error titles, re-run `uip maestro flow node configure` rather than hand-editing.
 
 ### Fix
 
