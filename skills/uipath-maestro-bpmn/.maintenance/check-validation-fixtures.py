@@ -173,6 +173,8 @@ class Validator:
         self.validate_entry_points(path, process)
         self.validate_gateway_conditions(path, root)
         self.validate_error_events(path, root, elements_by_id)
+        self.validate_message_events(path, root, elements_by_id)
+        self.validate_multi_instance(path, root, variables)
         self.validate_uipath_extensions(path, root, bindings, variables)
 
     def collect_root_bindings(self, process: ET.Element) -> dict[str, ET.Element]:
@@ -321,6 +323,68 @@ class Validator:
                     f"boundaryEvent {boundary.attrib.get('id')} references missing activity {attached}",
                 )
 
+    def validate_message_events(
+        self, path: Path, root: ET.Element, elements_by_id: dict[str, ET.Element]
+    ) -> None:
+        for event_def in root.findall(f".//{{{BPMN_NS}}}messageEventDefinition"):
+            ref = event_def.attrib.get("messageRef")
+            if ref and ref not in elements_by_id:
+                self.error(path, f"messageEventDefinition references missing message {ref}")
+
+    def validate_multi_instance(
+        self, path: Path, root: ET.Element, variables: dict[str, set[str]]
+    ) -> None:
+        for loop in root.findall(f".//{{{BPMN_NS}}}multiInstanceLoopCharacteristics"):
+            marker = loop.attrib.get("isSequential")
+            if marker not in {"true", "false"}:
+                self.error(
+                    path,
+                    f"multiInstanceLoopCharacteristics {loop.attrib.get('id')} "
+                    "must set isSequential to true or false",
+                )
+
+            metadata = loop.find(
+                f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}loopCharacteristics"
+            )
+            if metadata is None:
+                self.error(
+                    path,
+                    f"multiInstanceLoopCharacteristics {loop.attrib.get('id')} "
+                    "missing uipath:loopCharacteristics",
+                )
+                continue
+
+            input_collection = metadata.attrib.get("inputCollection", "")
+            collection_var = self.expression_variable(input_collection)
+            if not collection_var or collection_var not in variables["all"]:
+                self.error(
+                    path,
+                    f"multi-instance inputCollection references undeclared variable "
+                    f"{input_collection}",
+                )
+
+            input_element = metadata.attrib.get("inputElement")
+            if not input_element or input_element not in variables["all"]:
+                self.error(
+                    path,
+                    f"multi-instance inputElement references undeclared variable {input_element}",
+                )
+
+            completion = loop.find(f"{{{BPMN_NS}}}completionCondition")
+            if completion is not None and self.contains_assignment(completion.text or ""):
+                self.error(
+                    path,
+                    f"multiInstanceLoopCharacteristics {loop.attrib.get('id')} "
+                    "completionCondition may contain assignment",
+                )
+
+    def expression_variable(self, value: str) -> str | None:
+        match = re.fullmatch(r"=([A-Za-z_][A-Za-z0-9_]*)", value.strip())
+        return match.group(1) if match else None
+
+    def contains_assignment(self, value: str) -> bool:
+        return "=" in value and re.search(r"(?<![=!<>])=(?!=)", value[1:]) is not None
+
     def validate_uipath_extensions(
         self,
         path: Path,
@@ -343,7 +407,7 @@ class Validator:
                     self.error(
                         path, f"binding expression references undeclared binding {binding_ref}"
                     )
-            if "=" in value and re.search(r"(?<![=!<>])=(?!=)", value[1:]):
+            if self.contains_assignment(value):
                 self.error(path, f"expression may contain assignment: {value}")
 
     def validate_activity_or_event(

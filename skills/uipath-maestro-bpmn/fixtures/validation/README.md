@@ -11,6 +11,30 @@ Public-safe fixture corpus for the `uipath-maestro-bpmn` skill maintenance check
 | `integration-service-enriched/` | Integration Service trigger and activity extensions, root connection/property bindings, generated `bindings_v2.json` resources, entry point schema, and package metadata. |
 | `subprocess-multi-instance/` | Subprocess scoped variables, multi-instance loop metadata, script task metadata, mappings, message event, and diagram/waypoint coverage. |
 
+## Pilot Scenarios
+
+The corpus was piloted against these public-safe authoring and debugging requests:
+
+| Request | Fixtures used | Result |
+| --- | --- | --- |
+| Create a service-desk intake process with a connector trigger, ticket creation, and generated package metadata. | `integration-service-enriched/` | Kept the model/CLI boundary explicit: connector metadata, connection bindings, and generated resources must come from enrichment before Operate. |
+| Debug an approval workflow where the run takes the wrong branch and then faults on error handling. | `gateway-boundary-error/` | Tightened checks around gateway conditions/defaults, boundary error references, and package metadata drift. |
+| Author a batch item processor with a scoped subprocess, sequential multi-instance loop, script normalization, and a message wait. | `subprocess-multi-instance/` | Added checks for message references and multi-instance collection/item metadata so stuck-loop and stuck-wait issues are caught locally. |
+
+## Validation Output
+
+Latest local fixture validation from this pilot:
+
+```text
+validation_fixture_projects=4 bpmn_files=4 errors=0
+```
+
+## Open Questions for Maestro Owners
+
+- Should `uipath:loopCharacteristics` remain the stable public contract for multi-instance collection and item binding, or should fixture validation prefer registry/CLI-generated loop metadata when available?
+- Which `Intsvc.*` context fields are mandatory across all connector families versus connector-specific fields that should stay outside this static checker?
+- Should `entry-points.json` validation compare full input schemas against root variables, or only verify entry point IDs and file paths until the CLI generator owns schema normalization?
+
 ## Maintenance Commands
 
 Contributor check from the repository root:

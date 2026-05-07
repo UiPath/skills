@@ -70,6 +70,30 @@ Diagnose with variables at the gateway, element executions, and cursors before c
 A boundary error event references a missing or duplicate error definition, or is attached to an invalid activity.
 Reconcile the error definition within the correct scope.
 
+## Multi-instance variable mismatch
+
+A multi-instance activity references an input collection or item variable that is not declared in the expected scope.
+The process may parse, then fail or stall when the loop starts because the runtime cannot bind per-item state.
+
+Signs:
+
+- `uipath:loopCharacteristics` uses an `inputCollection` expression that does not match a declared variable.
+- `inputElement` points at an undeclared item variable or a variable that is reused for unrelated state.
+- A completion condition mutates state instead of evaluating state.
+- Per-item output mappings target variables that are not declared in the subprocess or root scope.
+
+Fix ownership: declare collection and item variables in `.bpmn`, keep item and aggregate outputs distinct,
+and model retry/error behavior as visible BPMN paths rather than hidden loop metadata.
+
+## Message reference mismatch
+
+A catch, throw, or receive event references a message ID that is missing, renamed, or no longer matches the runtime
+message contract.
+
+Runtime symptom: the instance waits indefinitely at a message event or faults during event subscription.
+Diagnose with cursors and element executions, then reconcile the `bpmn:message`, `messageRef`, and any
+`uipath:event` message context in BPMN source.
+
 ## Expression treated as literal
 
 An expression field is authored as a plain literal string.

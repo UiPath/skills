@@ -18,10 +18,12 @@ Validate these before Operate:
 - Required context/input fields are present for documented service types.
 - Sequence flows connect legal source and target types.
 - Message flows do not connect elements inside the same pool.
+- Message event definitions reference declared `bpmn:message` elements.
 - Gateway splits have valid conditions/defaults.
 - Each scope has at most one blank start event.
 - Event subprocesses have exactly one start event.
 - Boundary error events and error event subprocesses reference valid error definitions.
+- Multi-instance collection and item bindings reference declared variables and use explicit sequential/parallel metadata.
 - Expressions avoid assignment operators where frontend validation forbids assignment.
 - Output mappings target declared variables.
 - CLI-owned Integration Service fields have been enriched or are clearly marked as blockers.
