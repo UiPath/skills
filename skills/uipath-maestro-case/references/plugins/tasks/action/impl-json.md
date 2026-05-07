@@ -35,11 +35,11 @@
 |---|---|
 | `data.taskTitle` | Required, even on skeletons. Validator rejects empty. |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
-| `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. Omit for group/role assignment. |
+| `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
 | `data.actionCatalogName` | `deploymentTitle` from tasks.md |
 | `data.labels` | Label set from tasks.md |
 
-`recipient.Type` values: `0` = user ID, `1` = group ID, `2` = email address, `3` = `"=vars.<varId>"` for runtime resolution. Email recipients always use Type `2`. **Fallback when sdd.md value is not a resolved UUID** (e.g., `UserGroup: closing-officer-group`, `User: maya@accrual.com`, `Role: Underwriter`): pick the closest `Type` from the rationale of the sdd.md label (`User:` → 0, `UserGroup:` / `Role:` → 1, plain email → 2, `=vars.X` → 3) and write `{ "Type": <picked>, "Value": "<sdd-name-or-string>" }` — schema-conformant skeleton, user resolves the Value to a real UUID later. Drop `data.recipient` only when no reasonable Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes on unknown shapes and CLI validate misses it.
+`recipient.Type` values: `0` = user ID (sdd `User:`), `1` = group ID (sdd `UserGroup:` / `Role:`), `2` = email address, `3` = `"=vars.<varId>"`. **Fallback when sdd.md value is not a resolved UUID:** write `{ "Type": <picked>, "Value": "<sdd-string-as-is>" }` — schema-conformant skeleton, user resolves Value later. Drop `data.recipient` only when no Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes silently; CLI validate misses it.
 
 ## Procedure
 
