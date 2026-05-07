@@ -32,7 +32,9 @@ Returns the current row and column position of the terminal cursor.
 ## XAML Example
 
 ```xml
-<t:TerminalGetCursorPosition DisplayName="Get Cursor Position"
+<uit:TerminalGetCursorPosition DisplayName="Get Cursor Position"
                               Row="[cursorRow]"
-                              Column="[cursorCol]" />
+                              Column="[cursorCol]"
+                              WaitType="READY"
+                              DelayMS="300" />
 ```

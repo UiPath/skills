@@ -66,37 +66,41 @@ This activity supports two mutually exclusive connection modes. `ConnectionStrin
 **Mode A — New connection:**
 
 ```xml
-<t:TerminalSession DisplayName="Terminal Session"
+<uit:TerminalSession DisplayName="Terminal Session"
                    ConnectionString="[connStr]"
-                   TimeoutMS="50000">
-  <t:TerminalSession.Body>
-    <ActivityAction x:TypeArguments="t:TerminalConnection">
+                   TimeoutMS="50000"
+                   CloseConnection="True"
+                   DelayMS="1000">
+  <uit:TerminalSession.Body>
+    <ActivityAction x:TypeArguments="uit:TerminalConnection">
       <ActivityAction.Argument>
-        <DelegateInArgument x:TypeArguments="t:TerminalConnection" Name="terminalSession" />
+        <DelegateInArgument x:TypeArguments="uit:TerminalConnection" Name="terminalSession" />
       </ActivityAction.Argument>
       <Sequence DisplayName="Do">
         <!-- child terminal activities here -->
       </Sequence>
     </ActivityAction>
-  </t:TerminalSession.Body>
-</t:TerminalSession>
+  </uit:TerminalSession.Body>
+</uit:TerminalSession>
 ```
 
 **Mode B — Existing connection:**
 
 ```xml
-<t:TerminalSession DisplayName="Terminal Session (Reuse)"
+<uit:TerminalSession DisplayName="Terminal Session (Reuse)"
                    ExistingConnection="[existingConn]"
-                   CloseConnection="False">
-  <t:TerminalSession.Body>
-    <ActivityAction x:TypeArguments="t:TerminalConnection">
+                   CloseConnection="False"
+                   TimeoutMS="50000"
+                   DelayMS="1000">
+  <uit:TerminalSession.Body>
+    <ActivityAction x:TypeArguments="uit:TerminalConnection">
       <ActivityAction.Argument>
-        <DelegateInArgument x:TypeArguments="t:TerminalConnection" Name="terminalSession" />
+        <DelegateInArgument x:TypeArguments="uit:TerminalConnection" Name="terminalSession" />
       </ActivityAction.Argument>
       <Sequence DisplayName="Do">
         <!-- child terminal activities here -->
       </Sequence>
     </ActivityAction>
-  </t:TerminalSession.Body>
-</t:TerminalSession>
+  </uit:TerminalSession.Body>
+</uit:TerminalSession>
 ```

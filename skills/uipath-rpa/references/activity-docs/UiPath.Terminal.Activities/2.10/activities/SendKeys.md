@@ -35,6 +35,8 @@ To send sensitive data such as passwords, use **Send Keys Secure** instead to av
 ## XAML Example
 
 ```xml
-<ta:TerminalSendKeys DisplayName="Send Keys"
-                      Keys="[username]" />
+<uit:TerminalSendKeys DisplayName="Send Keys"
+                      Keys="[username]"
+                      WaitType="READY"
+                      DelayMS="300" />
 ```
