@@ -272,12 +272,15 @@ Omit `version` to automatically resolve the latest compatible version (preferred
 Get available versions for a NuGet package.
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --output jsonuip rpa get-versions --package-id <PackageId> --include-prerelease --output json```
+uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--package-id` | Yes | NuGet package ID to query |
 | `--include-prerelease` | No | Include prerelease versions (default false) |
+
+> **Default to `--include-prerelease`.** UiPath activity packages frequently ship as `-preview` between stable releases, and previews carry the freshest activity surface and `.local/docs` content. Omitting the flag hides them and the agent picks a stale stable. When the user already has a stable version installed and a newer (stable or preview) is available, inform them and offer the upgrade — never force.
 
 ---
 

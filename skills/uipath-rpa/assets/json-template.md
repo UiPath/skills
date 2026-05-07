@@ -1,215 +1,30 @@
-# UiPath Coded Workflow Templates
+# project.json Snippets
 
-Ready-to-use templates for all UiPath coded automation project files. Replace placeholders in `{{PLACEHOLDER}}` format.
+Hand-editable snippets for the sections of `project.json` the agent legitimately modifies after `uip rpa create-project` has scaffolded the project.
 
-> **IMPORTANT: Do NOT use these `project.json` / `project.uiproj` templates to create new projects.** Always use `rpa-tool create-project` which generates correct defaults, metadata directories, and version-matched configuration. These templates are **reference-only** — use them to understand the file structure, or to manually add entry points, dependencies, and fileInfoCollection entries to an existing `project.json` that was scaffolded by `create-project`.
+> **DO NOT use these snippets to write `project.json` from scratch.** Always run `uip rpa create-project` first — it generates correct schema versions, metadata directories, default dependencies, and version-matched configuration. Use these snippets only to add entries to an existing scaffolded `project.json`.
+
+> **Sections NOT shown here** (`runtimeOptions`, `designOptions.processOptions`, `schemaVersion`, `studioVersion`, `expressionLanguage`, `targetFramework`, etc.) are written by `create-project` and should not be hand-edited unless the user explicitly asks.
 
 ---
 
-## project.json — Process Project (Reference Only)
+## `entryPoints` entry (Process projects only)
+
+For each `.cs` workflow file added to a Process project, append one entry to the `entryPoints` array. Tests and Library projects do NOT use `entryPoints`.
 
 ```json
 {
-  "name": "{{PROJECT_NAME}}",
-  "projectId": "{{UUID_V4}}",
-  "description": "{{DESCRIPTION}}",
-  "main": "Main.cs",
-  "dependencies": {
-    "UiPath.System.Activities": "[25.12.2]",
-    "UiPath.Testing.Activities": "[25.10.2]",
-    "UiPath.UIAutomation.Activities": "[25.10.21]"
-  },
-  "webServices": [],
-  "entitiesStores": [],
-  "schemaVersion": "4.0",
-  "studioVersion": "{{STUDIO_VERSION}}",
-  "projectVersion": "1.0.0",
-  "runtimeOptions": {
-    "autoDispose": false,
-    "netFrameworkLazyLoading": false,
-    "isPausable": true,
-    "isAttended": false,
-    "requiresUserInteraction": false,
-    "supportsPersistence": false,
-    "workflowSerialization": "NewtonsoftJson",
-    "excludedLoggedData": [
-      "Private:*",
-      "*password*"
-    ],
-    "executionType": "Workflow",
-    "readyForPiP": false,
-    "startsInPiP": false,
-    "mustRestoreAllDependencies": true,
-    "pipType": "ChildSession"
-  },
-  "designOptions": {
-    "projectProfile": "Developement",
-    "outputType": "Process",
-    "libraryOptions": {
-      "privateWorkflows": []
-    },
-    "processOptions": {
-      "ignoredFiles": []
-    },
-    "fileInfoCollection": [],
-    "saveToCloud": false
-  },
-  "expressionLanguage": "CSharp",
-  "entryPoints": [
-    {
-      "filePath": "Main.cs",
-      "uniqueId": "{{UUID_V4}}",
-      "input": [],
-      "output": []
-    }
-  ],
-  "isTemplate": false,
-  "templateProjectData": {},
-  "publishData": {},
-  "targetFramework": "Windows"
+  "filePath": "{{FILE_NAME}}.cs",
+  "uniqueId": "{{UUID_V4}}",
+  "input": [],
+  "output": []
 }
 ```
 
-### Variant: Tests Project (Reference Only)
+### Entry point with parameters
 
-Replace the `designOptions` block and `targetFramework` as shown. Key differences from the Process template:
-- `outputType` → `"Tests"`
-- `fileInfoCollection` → one entry per test case file (add more entries as you add test cases)
-- No `processOptions` block
-- **No `main`** — Tests projects do not have a main entry point file
-- **No `entryPoints`** — Tests projects do not use entry points
+When the workflow's `Execute` method has parameters or a return value, populate `input` / `output`:
 
-```json
-{
-  "name": "{{PROJECT_NAME}}",
-  "projectId": "{{UUID_V4}}",
-  "description": "{{DESCRIPTION}}",
-  "dependencies": {
-    "UiPath.System.Activities": "[25.12.2]",
-    "UiPath.Testing.Activities": "[25.10.2]",
-    "UiPath.UIAutomation.Activities": "[25.10.21]"
-  },
-  "webServices": [],
-  "entitiesStores": [],
-  "schemaVersion": "4.0",
-  "studioVersion": "{{STUDIO_VERSION}}",
-  "projectVersion": "1.0.0",
-  "runtimeOptions": {
-    "autoDispose": false,
-    "netFrameworkLazyLoading": false,
-    "isPausable": true,
-    "isAttended": false,
-    "requiresUserInteraction": false,
-    "supportsPersistence": false,
-    "workflowSerialization": "NewtonsoftJson",
-    "excludedLoggedData": [
-      "Private:*",
-      "*password*"
-    ],
-    "executionType": "Workflow",
-    "readyForPiP": false,
-    "startsInPiP": false,
-    "mustRestoreAllDependencies": true,
-    "pipType": "ChildSession"
-  },
-  "designOptions": {
-    "projectProfile": "Developement",
-    "outputType": "Tests",
-    "libraryOptions": {
-      "privateWorkflows": []
-    },
-    "fileInfoCollection": [
-      {
-        "editingStatus": "InProgress",
-        "testCaseId": "{{UUID_V4}}",
-        "testCaseType": "TestCase",
-        "fileName": "{{TestCase}}.cs",
-        "publishAsTestCase": true
-      }
-    ],
-    "saveToCloud": false
-  },
-  "expressionLanguage": "CSharp",
-  "entryPoints": [],
-  "isTemplate": false,
-  "templateProjectData": {},
-  "publishData": {},
-  "targetFramework": "Windows"
-}
-```
-
-> **`editingStatus` lifecycle:** Set `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
-
-### Variant: Library Project (Reference Only)
-
-Replace the `designOptions` block. Key differences from the Process template:
-- `outputType` → `"Library"`
-- `libraryOptions.privateWorkflows` lists any workflows that should NOT be exposed as activities
-- **No `entryPoints`** — Library projects do not use entry points
-
-```json
-{
-  "name": "{{PROJECT_NAME}}",
-  "projectId": "{{UUID_V4}}",
-  "description": "{{DESCRIPTION}}",
-  "main": "Main.cs",
-  "dependencies": {
-    "UiPath.System.Activities": "[25.12.2]"
-  },
-  "webServices": [],
-  "entitiesStores": [],
-  "schemaVersion": "4.0",
-  "studioVersion": "{{STUDIO_VERSION}}",
-  "projectVersion": "1.0.0",
-  "runtimeOptions": {
-    "autoDispose": false,
-    "netFrameworkLazyLoading": false,
-    "isPausable": true,
-    "isAttended": false,
-    "requiresUserInteraction": false,
-    "supportsPersistence": false,
-    "workflowSerialization": "NewtonsoftJson",
-    "excludedLoggedData": [
-      "Private:*",
-      "*password*"
-    ],
-    "executionType": "Workflow",
-    "readyForPiP": false,
-    "startsInPiP": false,
-    "mustRestoreAllDependencies": true,
-    "pipType": "ChildSession"
-  },
-  "designOptions": {
-    "projectProfile": "Developement",
-    "outputType": "Library",
-    "libraryOptions": {
-      "privateWorkflows": []
-    },
-    "processOptions": {
-      "ignoredFiles": []
-    },
-    "fileInfoCollection": [],
-    "saveToCloud": false
-  },
-  "expressionLanguage": "CSharp",
-  "entryPoints": [],
-  "isTemplate": false,
-  "templateProjectData": {},
-  "publishData": {},
-  "targetFramework": "Windows"
-}
-```
-
-### Variant: Cross-Platform (Portable)
-
-Set `targetFramework` to `"Portable"` in any of the above templates:
-```json
-{
-  "targetFramework": "Portable"
-}
-```
-
-### Entry Point with Parameters
 ```json
 {
   "filePath": "{{FILE_NAME}}.cs",
@@ -230,40 +45,30 @@ Set `targetFramework` to `"Portable"` in any of the above templates:
 }
 ```
 
-Common `type` values: `System.String`, `System.Int32`, `System.Boolean`, `System.Double`, `System.DateTime`, `System.Data.DataTable`, `System.Collections.Generic.Dictionary\u003cSystem.String,System.Object\u003e`
+Common `type` values: `System.String`, `System.Int32`, `System.Boolean`, `System.Double`, `System.DateTime`, `System.Data.DataTable`, `System.Collections.Generic.Dictionary<System.String,System.Object>`
 
 ---
 
-## project.uiproj
+## `fileInfoCollection` entry (test cases)
+
+For each `.cs` test case file (in any project type — Process, Tests, or Library), append one entry to `designOptions.fileInfoCollection`. Test cases do NOT go in `entryPoints`.
 
 ```json
 {
-  "Name": "{{PROJECT_NAME}}",
-  "ProjectType": "{{Process|Tests|Library}}",
-  "Description": "{{DESCRIPTION}}",
-  "MainFile": "Main.cs"
+  "editingStatus": "InProgress",
+  "testCaseId": "{{UUID_V4}}",
+  "testCaseType": "TestCase",
+  "fileName": "{{TestCase}}.cs",
+  "publishAsTestCase": true
 }
 ```
 
-## Data-Driven Test Variations File
+> **`editingStatus` lifecycle:** Set `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
 
-**Path:** `.variations/{{variationName}}_Sheet1.json`
+### Data-driven test case (with variations file)
 
-```json
-[
-  {
-    "{{paramName}}": "value1"
-  },
-  {
-    "{{paramName}}": "value2"
-  },
-  {
-    "{{paramName}}": "value3"
-  }
-]
-```
+When a test case uses parameter variations, add `dataVariationFilePath` to its `fileInfoCollection` entry:
 
-When using variations, also add to project.json fileInfoCollection:
 ```json
 {
   "editingStatus": "InProgress",
@@ -273,4 +78,14 @@ When using variations, also add to project.json fileInfoCollection:
   "publishAsTestCase": true,
   "dataVariationFilePath": ".variations\\{{variationName}}_Sheet1.json"
 }
+```
+
+The variations file lives at `.variations/{{variationName}}_Sheet1.json` with shape:
+
+```json
+[
+  { "{{paramName}}": "value1" },
+  { "{{paramName}}": "value2" },
+  { "{{paramName}}": "value3" }
+]
 ```
