@@ -20,7 +20,7 @@ Confirm: input ports `input` and `loopBack`, output ports `success` and `output`
 {
   "id": "loop1",
   "type": "core.logic.loop",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Loop over items" },
   "inputs": {
     "collection": "=js:$vars.fetchData.output.body.items",
@@ -39,7 +39,7 @@ Every node inside the loop body **must** have `"parentId"` set to the loop node'
 {
   "id": "processItem",
   "type": "core.action.script",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Process item" },
   "inputs": {
     "script": "return $vars.product * $vars.loop1.currentItem"
@@ -162,21 +162,21 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
     {
       "id": "start",
       "type": "core.trigger.manual",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "display": { "label": "Manual trigger" },
       "inputs": { "entryPointId": "..." }
     },
     {
       "id": "loop1",
       "type": "core.logic.loop",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "display": { "label": "Loop" },
       "inputs": { "collection": "=js:$vars.inputItems", "parallel": false }
     },
     {
       "id": "bodyScript",
       "type": "core.action.script",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "display": { "label": "Process item" },
       "inputs": {
         "script": "return $vars.accumulator + $vars.loop1.currentItem;"
@@ -186,7 +186,7 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
     {
       "id": "end1",
       "type": "core.control.end",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "display": { "label": "End" },
       "inputs": {},
       "outputs": {

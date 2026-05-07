@@ -152,7 +152,7 @@ Run from inside the flow project directory. Returns the same manifest format as 
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-> **Default tool: `Edit` / `Write`.** Use `Edit` for in-place changes, `Write` only when ≥70% of nodes change. The `uip maestro flow node` / `edge` / `variable` CLI is a **carve-out** — use it only for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`), or when the user explicitly requests CLI.
+> **Required tool outside carve-outs: `Edit` / `Write`.** Use `Edit` for in-place changes, `Write` only when ≥70% of nodes change. The `uip maestro flow node` / `edge` / `variable` CLI is a **carve-out** — use it only for connector activity, connector-trigger, and managed HTTP workflows documented by their plugin `impl.md`. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON.
 
 Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
 

@@ -1,7 +1,7 @@
 ---
 name: uipath-maestro-case
 description: "UiPath Case Management authoring (caseplan.json) from sdd.md, or via lightweight interview if sdd.md absent. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow. For PDD→SDD or complex/multi-product→uipath-solution-design."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 ---
 
 # UiPath Case Management Authoring Assistant

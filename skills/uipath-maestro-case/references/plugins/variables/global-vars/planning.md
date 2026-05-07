@@ -49,8 +49,6 @@ One T-entry per variable/argument. Place after the case file (T01) and **all** t
 - verify: Confirm entry exists in the variables block (per schema)
 ```
 
-Task-output variables are wired automatically during task creation (§4.6) — no T-entry needed here.
-
 ## Types
 
 `"string"` | `"number"` | `"boolean"` | `"date"` | `"object"` | `"array"` | `"jsonSchema"`

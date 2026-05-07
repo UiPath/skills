@@ -431,6 +431,24 @@ Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" 
 | `ReplayUserEvent` | `ReplayUserEventV2` | Old version still loads but shouldn't be used |
 | `UiPath.<Vendor>.IntegrationService.Activities` packages | Generic `ConnectorActivity` via IS | Vendor-specific IS packages are deprecated |
 
+## Common Activity Name Confusions
+
+Activity tag names rarely match Studio display names. Guessing the tag from the display name fails at `build` (`Cannot create unknown type '...'`). Two examples:
+
+| Display Name | Wrong guess | Correct tag |
+|--------------|-------------|-------------|
+| Delete File | `ui:DeleteFile` | `ui:DeleteFileX` |
+| Wait | `ui:Wait` | `Delay` (MWF primitive — no prefix) |
+
+### Tag Verification Gate
+
+Before writing any `<prefix:Tag>` not already in the file:
+
+- **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. No file → no such tag.
+- **CLI lookup.** `uip rpa find-activities --query "<verb>" --output json` → use the returned `ClassName`.
+
+Skipping both produces `Cannot create unknown type` at `build`.
+
 ## Default Values That Matter
 
 | Activity | Property | Default | Impact |
@@ -609,6 +627,7 @@ The error occurs because the XAML language schema does not register `DateTime`, 
 | `x:DateTimeOffset` | `s:DateTimeOffset` | Often required by calendar/scheduling activities |
 | `x:Guid` | `s:Guid` | — |
 | `x:Uri` | `s:Uri` | — |
+| `x:Exception` | `s:Exception` | `<Catch x:TypeArguments="s:Exception">`, `Throw` argument types |
 
 For types outside of `System`, add the matching CLR namespace alias. Examples:
 ```xml

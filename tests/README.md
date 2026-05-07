@@ -154,6 +154,9 @@ Experiment files define shared agent defaults per test type. Tasks inherit these
 | `default.yaml` | Smoke | 1 | 20 | 600s | 300s |
 | `integration.yaml` | Integration | 2 | 30 | 900s | 300s |
 | `e2e.yaml` | E2E | 2 | 40 | 1200s | 300s |
+| `activation.yaml` | Skill activation classifier | 1 | 1 | 120s | 120s |
+
+`activation.yaml` is a different shape from the tiered configs above — it runs the agent for exactly one turn against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 

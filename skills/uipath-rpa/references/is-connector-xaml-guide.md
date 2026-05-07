@@ -150,8 +150,11 @@ Schema field names from `describe` / the cached JSON (`message.toRecipients`, `s
 | `.` (dot) | `_sub_` | `message.body.content` → `message_sub_body_sub_content` |
 | `-` (hyphen) | `minus_sign` | `send-mail` (in `Jit_send-mail`) → `Jit_sendminus_signmail` |
 | `_` (underscore) | unchanged | `send_as` → `send_as` |
+| `[*]` (array suffix) | `_array` | `tags[*]` → `tags_array`, `fields[*].id` → `fields_array_sub_id` |
 
-The default XAML from `get-default-activity-xaml --activity-type-id` always reflects the correct encoded names — **copy the FieldObject list verbatim from there** rather than constructing names from the schema. Check the encoding only when you have to choose whether a specific field is the right one.
+Apply rules in order; translate every segment for nested paths (`collaborator_ids[*]` → `collaborator_ids_array`).
+
+Default XAML reflects correct encoded names for fields it returns — **copy verbatim**. Default is **not exhaustive**: Secondary fields (arrays especially) are often absent — see [Hidden Secondary Fields](#hidden-secondary-fields).
 
 #### Matching `x:TypeArguments` to the Field's Data Type
 
@@ -179,6 +182,18 @@ Example — boolean field:
   </isactr:FieldObject.Value>
 </isactr:FieldObject>
 ```
+
+#### Hidden Secondary Fields
+
+Default `FieldObjects` is **not exhaustive**. Schema-defined Secondary fields — arrays especially (`tags[*]`, `collaborator_ids[*]`, `fields[*].id`) — appear in `requestFields` / `optionalFields` / `parameters` but not in the default. Validators all report clean while the connector silently drops the unbound field. Detect via live API result or Studio designer comparison.
+
+When a requested field is absent from default `FieldObjects`:
+
+1. Read schema from `~/.uipath/cache/integrationservice/<connector>/_static/<operation>.Create.json` (or re-run `uip is resources describe`). Confirm field exists in `requestFields` / `optionalFields` / `parameters`.
+2. Read its `type` / `dataType` (includes `[*]` suffix for arrays).
+3. Translate schema name through every encoding rule in order: `.` → `_sub_`, `-` → `minus_sign`, `[*]` → `_array`. Example: `tags[*]` → `tags_array`, `fields[*].id` → `fields_array_sub_id`.
+4. Emit `<isactr:FieldObject Name="<encoded>" Type="FieldArgument">` with `x:TypeArguments` matching the schema `type`.
+5. Insert into `<isactr:ConnectorActivity.FieldObjects>` alongside default entries. Do not reorder or remove existing entries.
 
 ### Step 7 — Validate and run
 

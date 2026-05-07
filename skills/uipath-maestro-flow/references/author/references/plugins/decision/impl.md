@@ -18,7 +18,7 @@ Confirm: input port `input`, output ports `true` and `false`, required input `ex
 {
   "id": "checkStatus",
   "type": "core.logic.decision",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Check Status" },
   "inputs": {
     "expression": "$vars.fetchData.output.statusCode === 200"

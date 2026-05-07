@@ -1,0 +1,41 @@
+{"id": "uipath-planner-001", "prompt": "Help me automate this \u2014 not sure where to start", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-002", "prompt": "What's the right approach for automating our invoice approval pipeline in UiPath?", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-003", "prompt": "I want to build something with UiPath but I'm not sure what kind of project to use", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-004", "prompt": "Set up a UiPath process from scratch for onboarding new employees", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-005", "prompt": "Build a UiPath solution for monthly bank reconciliation end to end", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-006", "prompt": "I have a PDD at docs/orders-pdd.pdf \u2014 plan the full UiPath implementation for me", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-007", "prompt": "Plan an automation that scrapes a vendor portal, uploads results to Orchestrator, and triggers an agent to summarize", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-008", "prompt": "What can I build with UiPath? Walk me through the options", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-009", "prompt": "Help me put together an automation that pulls Salesforce opportunities and routes them through approval \u2014 not sure if it's a flow, an agent, or RPA", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-010", "prompt": "Build and deploy a UiPath workflow that processes claims and pushes results to Orchestrator", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-011", "prompt": "Create an agent that uses our existing RPA processes as tools and deploy the whole thing", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-012", "prompt": "I need to automate Workday onboarding \u2014 figure out the right project type and plan the work", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-013", "prompt": "Plan a Maestro flow that calls an RPA process we still need to build", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-014", "prompt": "Walk me through automating our quarterly close \u2014 multiple systems involved", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-015", "prompt": "I want UiPath to handle expense reports end-to-end. Where do I start?", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-016", "prompt": "Build a UiPath automation that reads invoices, calls an LLM to classify them, then files them in SAP \u2014 and deploy it", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-017", "prompt": "Help me set up a full UiPath solution that handles new-hire provisioning across HR, IT, and finance systems", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-018", "prompt": "I have an SDD here, generate the implementation plan and start building", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-019", "prompt": "I'm not sure if I need an agent, a flow, or just a workflow \u2014 help me decide", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-020", "prompt": "Plan and execute a full automation for processing purchase orders from email", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-021", "prompt": "Set up everything for automating our customer onboarding \u2014 auth, project, deploy, the works", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-022", "prompt": "Help me design and build an automation that integrates ServiceNow tickets with our internal portal", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-023", "prompt": "Build an end-to-end UiPath solution that processes loan applications across three systems", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-024", "prompt": "What's the best UiPath approach for automating monthly financial reporting?", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-025", "prompt": "Create a process that downloads reports from a portal, transforms them, and emails results \u2014 deploy when done", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-026", "prompt": "I want to build a UiPath solution but I have no idea what kind of project I need", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-027", "prompt": "Plan a multi-skill UiPath project for our procurement team", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-028", "prompt": "Build a Maestro flow plus the RPA processes it needs and publish everything", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-029", "prompt": "Help me automate document processing for legal contracts \u2014 design the whole pipeline", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-030", "prompt": "I want an AI agent that can call our existing UiPath RPA processes \u2014 set the whole thing up", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-031", "prompt": "Plan the implementation for this PDD: docs/process-design.docx", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-032", "prompt": "I want to automate IT helpdesk ticket triage in UiPath \u2014 not sure if I need an LLM-powered agent or just an RPA workflow, help me decide and plan it out", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-033", "prompt": "Help me figure out the right architecture for automating our accounts payable process in UiPath", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-034", "prompt": "Build a Citrix-based automation against our legacy ERP and deploy to Orchestrator", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-035", "prompt": "I want to automate something across SAP, Excel, and email \u2014 what's the best way to structure this in UiPath?", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-036", "prompt": "Plan an automation that integrates a coded app with a flow that calls an agent", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-037", "prompt": "Plan an automation that orchestrates an existing RPA process and a new agent through a Maestro flow, then deploys it", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-038", "prompt": "Need to automate KYC verification \u2014 help me plan and build this in UiPath", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-039", "prompt": "Set up a complete UiPath process for handling vendor onboarding requests", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-040", "prompt": "I want to migrate this manual process to UiPath \u2014 guide me through the whole thing", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-041", "prompt": "Help me write an automation", "expected_skill": "uipath-planner"}

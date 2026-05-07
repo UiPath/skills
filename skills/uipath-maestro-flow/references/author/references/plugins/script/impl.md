@@ -18,7 +18,7 @@ Confirm: input port `input`, output port `success`, required input `script` (str
 {
   "id": "processData",
   "type": "core.action.script",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Process Data" },
   "inputs": {
     "script": "const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) => sum + i.amount, 0);\nreturn { total, count: items.length };"

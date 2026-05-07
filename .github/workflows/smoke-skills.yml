@@ -38,15 +38,34 @@ jobs:
           # what's being exercised — so we skip those tasks here.
           WINDOWS_SKILLS="uipath-rpa uipath-rpa-legacy"
 
+          # Opt-in benchmarks live alongside skill tests but are NOT smoke
+          # tests — they're large/expensive and run via the dashboard
+          # (`dashboard run --suite <name>`). Skip here so smoke stays cheap.
+          BENCHMARK_DIRS="activation"
+
+          # Single source of truth for "skill dirs not smoke-eligible".
+          # Used by both the test-infra fan-out and the per-skill loop below.
+          is_excluded_path() {
+            local dir="$1"
+            for skill in $WINDOWS_SKILLS $BENCHMARK_DIRS; do
+              [[ "$dir" == "tests/tasks/$skill/"* ]] && return 0
+            done
+            return 1
+          }
+
           # If test infrastructure changed, run all smoke tests except
-          # the Windows-only ones.
-          if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$'; then
+          # the Windows-only ones and opt-in benchmarks.
+          #
+          # We only fan out for the smoke config (default.yaml) — other
+          # experiment files (integration.yaml, e2e.yaml, activation.yaml,
+          # ...) drive their own jobs/dashboards and don't change smoke
+          # behavior, so editing them shouldn't trigger a 30-min full-suite
+          # run on every PR.
+          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
-              case "$f" in
-                tests/tasks/uipath-rpa/*|tests/tasks/uipath-rpa-legacy/*) continue ;;
-              esac
+              is_excluded_path "$f" && continue
               GLOBS="$GLOBS ${f#tests/}"
             done
             GLOBS=$(echo "$GLOBS" | xargs)
@@ -80,6 +99,10 @@ jobs:
           for skill in $SKILLS; do
             if echo "$WINDOWS_SKILLS" | grep -qw "$skill"; then
               echo "Skipping $skill (runs on Windows — see smoke-rpa-skills.yml)"
+              continue
+            fi
+            if echo "$BENCHMARK_DIRS" | grep -qw "$skill"; then
+              echo "Skipping $skill (opt-in benchmark — runs via dashboard --suite $skill)"
               continue
             fi
             if [ -d "tests/tasks/$skill" ]; then

@@ -36,6 +36,8 @@ Sends a `SecureString` value (such as a password) to the terminal without exposi
 ## XAML Example
 
 ```xml
-<ta:TerminalSendKeysSecure DisplayName="Send Keys Secure"
-                             SecureText="[passwordSecureString]" />
+<uit:TerminalSendKeysSecure DisplayName="Send Keys Secure"
+                             SecureText="[passwordSecureString]"
+                             WaitType="READY"
+                             DelayMS="300" />
 ```
