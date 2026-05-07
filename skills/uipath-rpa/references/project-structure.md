@@ -122,17 +122,14 @@ Removing a package cascades to every workflow consuming its activities. Before d
    ```
 3. **If any usage exists, do not remove.** Migrate consumers first, then re-grep.
 
-### `-preview` Is Not a Stability Smell On Its Own
+### Preview vs Stable
 
-Some packages ship only as `<version>-preview` (e.g. `MergePDFs` lives in `UiPath.IntelligentOCR.StudioWeb.Activities`, preview-only). Verify before treating preview as a defect:
+Prefer stable over `-preview`. Two sanctioned exceptions:
 
-```bash
-uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
-```
+- **UIA** — current minimum is `26.4.1-preview` (see SKILL.md rule 7a).
+- **Document Understanding family** — `UiPath.DocumentUnderstanding.*` and `UiPath.IntelligentOCR.StudioWeb.Activities` ship preview-only (`MergePDFs` lives there).
 
-If every version has the `-preview` suffix, that is the package's ship vehicle — keep it.
-
-Known preview-only families: Document Understanding (`UiPath.DocumentUnderstanding.*`, `UiPath.IntelligentOCR.StudioWeb.Activities`). Always verify with `get-versions` rather than the list.
+Outside those, treat `-preview` as a smell — switch to stable.
 
 ## Common Activity Packages
 
