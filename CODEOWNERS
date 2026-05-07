@@ -95,5 +95,8 @@
 
 # IXP skill
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+<<<<<<< HEAD
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+=======
+>>>>>>> 1f0000f9 (add andrei-uipath to codeowners)
 /tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
