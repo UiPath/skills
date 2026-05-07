@@ -43,6 +43,16 @@ jobs:
           # (`dashboard run --suite <name>`). Skip here so smoke stays cheap.
           BENCHMARK_DIRS="activation"
 
+          # Single source of truth for "skill dirs not smoke-eligible".
+          # Used by both the test-infra fan-out and the per-skill loop below.
+          is_excluded_path() {
+            local dir="$1"
+            for skill in $WINDOWS_SKILLS $BENCHMARK_DIRS; do
+              [[ "$dir" == "tests/tasks/$skill/"* ]] && return 0
+            done
+            return 1
+          }
+
           # If test infrastructure changed, run all smoke tests except
           # the Windows-only ones and opt-in benchmarks.
           #
@@ -55,10 +65,7 @@ jobs:
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
-              case "$f" in
-                tests/tasks/uipath-rpa/*|tests/tasks/uipath-rpa-legacy/*) continue ;;
-                tests/tasks/activation/*) continue ;;
-              esac
+              is_excluded_path "$f" && continue
               GLOBS="$GLOBS ${f#tests/}"
             done
             GLOBS=$(echo "$GLOBS" | xargs)
