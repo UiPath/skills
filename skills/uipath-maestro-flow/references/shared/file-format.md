@@ -202,9 +202,9 @@ Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for ever
 }
 ```
 
-> **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges[N].targetPort] expected string, received undefined` at validate time.
+> **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges[N].targetPort] Invalid input: expected string, received undefined` at validate time.
 >
-> **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] expected string, received undefined` — the path identifies the offending edge entry exactly.
+> **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
 
 ## Definition entry
 
