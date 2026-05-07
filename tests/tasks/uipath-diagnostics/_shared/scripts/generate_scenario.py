@@ -222,6 +222,14 @@ PROJECT_SNAPSHOT_IGNORE_DIRS = {
     ".venv",
     ".vs",
     ".idea",
+    # UiPath Studio caches / runtime artifacts — not source.
+    ".local",
+    ".tmh",
+    ".settings",
+    ".entities",
+    ".project",
+    ".templates",
+    ".claude",
 }
 PROJECT_SNAPSHOT_IGNORE_SUFFIXES = {".pyc", ".pdb"}
 
