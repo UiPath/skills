@@ -86,7 +86,7 @@ Create, pack, publish, and deploy solutions. See [solution/](solution/solution.m
 
 ## Traces (`uip traces`)
 
-LLM execution trace observability. See [traces/traces.md](traces/traces.md) and [traces/feedback.md](traces/feedback.md).
+LLM execution trace observability and feedback annotation. See [traces/traces.md](traces/traces.md) (spans) and [traces/feedback.md](traces/feedback.md) (feedback).
 
 | Command | Description |
 |---|---|
