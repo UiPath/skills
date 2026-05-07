@@ -21,6 +21,8 @@ initial_prompt: |
   in this sandbox, I will provide the raw data directly. Your job is to
   analyze it and produce the full report.
 
+  **Privacy**: You are authorized to use real names in the report for this engagement.
+
   **Company**: Acme Corp, 2,000-person B2B SaaS fintech company.
   $200M ARR, 25% YoY growth. Strategic priorities: reduce operational
   costs, improve customer retention, expand to EU market.

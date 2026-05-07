@@ -20,7 +20,7 @@ Title: Internal Automation Discovery Report — {Month} {Year}
    3a. Replicable Model Opportunity Table
        | Working Model | Where It's Missing | Addressable Volume |
    3b. Single Points of Failure Table
-       | Person | System/Channel | Role | Risk |
+       | Role/Pseudonym | System/Channel | Function | Risk |
    3c. Top 15 Behavioral Opportunities (ranked by evidence)
        | # | Automation | Source & Evidence | Impact |
        Each row: specific system, quantitative metric, person names
@@ -75,7 +75,7 @@ Use checkboxes so items can be tracked:
 Every opportunity MUST include at minimum:
 - **Source**: Where the evidence came from (channel name, system, email pattern)
 - **Quantitative metric**: Message count, hours spent, frequency, ticket volume
-- **Who is affected**: Person name (for SPOFs) or team/department
+- **Who is affected**: Role/pseudonym (for SPOFs) or team/department; use real names only if authorized
 - **Estimated impact**: Deflection %, hours saved, cycle time reduction, or qualitative
 
 Tier 4 (strategic) is the only tier allowed to lack direct behavioral evidence,
