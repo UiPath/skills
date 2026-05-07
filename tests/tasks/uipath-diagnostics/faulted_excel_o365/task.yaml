@@ -56,7 +56,7 @@ success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-diagnostics skill"
     skill_name: "uipath:uipath-diagnostics"
-    expected: "yes"
+    expected_skill: "uipath:uipath-diagnostics"
     weight: 1.0
 
   # Single comprehensive agentic check: the diagnostic must (a) load the

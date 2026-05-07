@@ -100,7 +100,7 @@ success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-diagnostics skill"
     skill_name: "uipath:uipath-diagnostics"
-    expected: "yes"
+    expected_skill: "uipath:uipath-diagnostics"
     weight: 1.0
 
   - type: llm_judge
