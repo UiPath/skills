@@ -433,11 +433,11 @@ Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" 
 
 ## Common Activity Name Confusions
 
-Activity tag names rarely match Studio display names. `<ui:DeleteFile />` fails at `build` (`Cannot create unknown type 'DeleteFile'`) — the class is `Delete`. Two examples:
+Activity tag names rarely match Studio display names. `<ui:DeleteFile />` fails at `build` (`Cannot create unknown type 'DeleteFile'`) — the modern class is `DeleteFileX`. Two examples:
 
 | Display Name | Wrong guess | Correct tag |
 |--------------|-------------|-------------|
-| Delete File or Folder | `ui:DeleteFile` | `ui:Delete` |
+| Delete File | `ui:DeleteFile` | `ui:DeleteFileX` |
 | Wait | `ui:Wait` | `Delay` (MWF primitive — no prefix) |
 
 ### Tag Verification Gate
