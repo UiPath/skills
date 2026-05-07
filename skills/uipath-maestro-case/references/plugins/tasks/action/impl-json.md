@@ -35,7 +35,7 @@
 |---|---|
 | `data.taskTitle` | Required, even on skeletons. Validator rejects empty. |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
-| `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
+| `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below when sdd.md `Value` is not a resolved UUID. |
 | `data.actionCatalogName` | `deploymentTitle` from tasks.md |
 | `data.labels` | Label set from tasks.md |
 
