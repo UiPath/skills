@@ -49,7 +49,7 @@ When the same product has assignments at multiple scopes, the narrowest wins:
 
 **Decision hint:** pick the narrowest scope that matches the user's ask.
 
-> **Precedence is NOT Priority.** The User > Group > Tenant chain above is pure scope resolution — AOps walks it and picks the first level that has an assignment for the product. The policy's `--priority` value is a separate concept and plays no role here. Priority only breaks ties **within the group level**, when a single user belongs to multiple groups that each have their own policy for the same product. See [SKILL.md — Priority rules](../SKILL.md#priority-rules).
+> **Precedence is NOT Priority.** The User > Group > Tenant chain above is pure scope resolution — AOps walks it and picks the first level that has an assignment for the product. The policy's `--priority` value is a separate concept and plays no role here. Priority only breaks ties **within the group level**, when a single user belongs to multiple groups that each have their own policy for the same product. See [SKILL.md — Priority rules](./aops-policy-overview-guide.md#priority-rules).
 
 | User's ask | Correct scope |
 |-----------|---------------|

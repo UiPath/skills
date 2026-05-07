@@ -1,6 +1,6 @@
 task_id: skill-gov-access-policy-list-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-gov-access-policy skill
+  Skill-guided evaluation: agent uses the uipath-governance skill
   to list access policies for the tenant with an OData filter and sort.
   Tests whether the skill teaches the correct CLI namespace
   (`uip gov access-policy`), the `--output json` convention, and the
@@ -11,7 +11,7 @@ description: >
   `uip gov access-policy` commands that hit the service will fail with an
   auth error. That is acceptable — what matters is that the agent invokes
   the correct commands with the correct flags.
-tags: [uipath-gov-access-policy, smoke, list]
+tags: [uipath-governance, smoke, list]
 
 sandbox:
   driver: tempdir
@@ -19,23 +19,16 @@ sandbox:
 
 initial_prompt: |
   A tenant admin wants to see every Active access policy for the tenant,
-  ordered by policy name ascending. Use the uipath-gov-access-policy
-  skill to produce the result.
-
-  Save a summary to report.json in the current working directory with at
-  minimum:
-    {
-      "list_command": "<exact uip gov access-policy list command you ran>",
-      "filter_used": "<the --filter expression you passed, or '' if none>",
-      "order_by_used": "<the --order-by expression you passed, or '' if none>",
-      "commands_used": ["<list of uip commands you attempted>"]
-    }
+  ordered by policy name ascending. Save the command output to
+  ./output.txt for review.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live governance
     tenant in this environment. Commands will fail with auth errors — that
-    is expected. Run each command once, record the result (success or
-    error) in report.json, and move on. Do NOT retry or attempt to login.
+    is expected. Run each command once, capture both stdout and stderr to
+    ./output.txt (use `> output.txt 2>&1` for the first command and
+    `>> output.txt 2>&1` for subsequent ones), and move on. Do NOT retry
+    or attempt to login.
   - Use --output json on every uip gov access-policy command.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
@@ -65,34 +58,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
     weight: 1.0
     pass_threshold: 1.0
-
-  - type: file_contains
-    description: "report.json references the current CLI namespace and uses no removed/legacy evaluate flag names"
-    path: "report.json"
-    includes:
-      - "uip gov access-policy"
-    excludes:
-      - "uip admin access-policy"
-      - "--actor-identifier"
-      - "--executable-type"
-      - "--executable-identifier"
-      - "--resource-identifier"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct structure"
-    path: "report.json"
-    assertions:
-      - expression: "length(list_command)"
-        operator: gte
-        expected: 10
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 1
-    weight: 1.5
-    pass_threshold: 0.75

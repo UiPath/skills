@@ -5,7 +5,7 @@ Full CRUD lifecycle for AOps governance policies: list, get, create, update, and
 ## Prerequisites
 
 - User must be logged in — see [aops-policy-commands.md — Authentication](./aops-policy-commands.md#authentication).
-- Session directory convention: `./aops-sessions/<YYYYMMDD-HHMMSS>-<short-uuid>/` (see [SKILL.md — Session directory](../SKILL.md#session-directory)).
+- Session directory convention: `./aops-sessions/<YYYYMMDD-HHMMSS>-<short-uuid>/` (see [SKILL.md — Session directory](./aops-policy-overview-guide.md#session-directory)).
 - For CLI flag details on every subcommand mentioned below, see [aops-policy-commands.md](./aops-policy-commands.md).
 
 **Related guides:** [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md) (policy data authoring) · [aops-policy-deploy-guide.md](./aops-policy-deploy-guide.md) (assignment to subjects).
@@ -109,7 +109,7 @@ On completion: `$SESSION_DIR/aops-policy-data.json` is set and ready, and the co
 
 **Always fetch the priority landscape, even when the user supplied a priority.** The review gate in Step 4 must cite the current #1 holder (the group-level tie-breaker winner today) next to the proposed priority — the user can only consent to the impact if they see whose position the new policy is landing behind or ahead of. Store the result as `$PRIORITY_LANDSCAPE` for reuse in Step 4.
 
-When suggesting a priority (only when the user did not supply one), link [SKILL.md — Priority rules](../SKILL.md#priority-rules) when prompting so the user knows what Priority actually does — in particular, that it is **NOT** what picks between user / group / tenant assignments (that's the resolution chain), and only acts as a tie-breaker at the **group level** when a user belongs to multiple groups with competing policies for the same product.
+When suggesting a priority (only when the user did not supply one), link [SKILL.md — Priority rules](./aops-policy-overview-guide.md#priority-rules) when prompting so the user knows what Priority actually does — in particular, that it is **NOT** what picks between user / group / tenant assignments (that's the resolution chain), and only acts as a tie-breaker at the **group level** when a user belongs to multiple groups with competing policies for the same product.
 
 Fetch the current priority landscape:
 
@@ -407,7 +407,7 @@ Policy "<POLICY_NAME>" deleted successfully.
 |-------|-------|-----|
 | `401 Unauthorized` | User token expired or missing | `uip login` and retry — see [aops-policy-commands.md — Authentication](./aops-policy-commands.md#authentication) |
 | `Policy not found` / `unknown policyIdentifier` | Stale or wrong GUID | Re-run `list` and copy the `identifier` from the result |
-| `Priority conflict` / duplicate priority | Another policy for the same product already holds that priority | Pick a different number; see [SKILL.md — Priority rules](../SKILL.md#priority-rules) |
+| `Priority conflict` / duplicate priority | Another policy for the same product already holds that priority | Pick a different number; see [SKILL.md — Priority rules](./aops-policy-overview-guide.md#priority-rules) |
 | `template get returned no template` | Product schema fetch failed (auth, transient network) | Retry; if persistent, verify `uip login status --output json` and the product name |
 | `list returned empty` | No policies match the filter | Drop the filter or offer to create a new policy |
 | `--name is required` on `update` | `update` is full-replacement; name was omitted | Pass `--name "$POLICY_NAME"` with the existing value to preserve it |

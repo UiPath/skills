@@ -11,7 +11,7 @@ The `actorRule` block is the policy's **Actor Identity Rule** — it identifies 
 > - **Actor Process Rule** → `executableRule` — which executable workflow is calling the Resource.
 > - **Actor Identity Rule** → `actorRule` — which user or group is triggering the Actor Process.
 >
-> All three must pass for the evaluation result to be Allow. See [../../../SKILL.md](../../../SKILL.md) for the full evaluation flow.
+> All three must pass for the evaluation result to be Allow. See [../../access-policy-overview-guide.md](../../access-policy-overview-guide.md) for the full evaluation flow.
 
 ## When to Use
 
