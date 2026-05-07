@@ -1,6 +1,6 @@
 ---
 name: uipath-diagnostics
-description: Use when diagnosing UiPath platform & process issues - failed jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
+description: Use when diagnosing, investigating, or troubleshooting UiPath platform & process issues - failed or stuck jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
 ---
 
 # UiPath Diagnostic Agent
@@ -87,6 +87,8 @@ Before classifying as **explains-WHY**, apply the upstream-cause gate. The mecha
 - **Confirmed — describes WHAT only** → symptom. Re-invoke generator with `trigger: "deepening"` and `parent_hypothesis`.
 - **All high-confidence eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from medium/low + docsai.
 
+**Co-equal-roots guard.** Before applying any "skip remaining" exit after a confirmed+verified root cause, check `state.json.matched_playbooks`. If two or more playbooks are present at the same highest confidence level AND they correspond to **distinct, independent** error signatures (different activities, different error codes, neither upstream of the other), every pending hypothesis sourced from those playbooks MUST be tested before stopping. Do not exit on the first confirmed root cause when triage found multiple co-equal roots — you will under-report and miss fixes the user has to make. Only after each co-equal hypothesis is tested (confirmed, eliminated, or inconclusive) and depth-checked when confirmed do you proceed to Resolution.
+
 ### DEPTH CHECK (after a hypothesis is confirmed as root cause)
 
 Spawn the depth-verifier sub-agent (`agents/depth-verifier.md`). Pass it the
@@ -129,7 +131,7 @@ If the user provides new data at any point (error messages, job IDs, logs, scree
 **Root cause vs. symptom:** A finding that explains WHY the failure occurs is a root cause. A finding that describes WHAT happened (but not why) is a symptom — deepen it.
 
 **When to stop testing:**
-- High-confidence root cause confirmed → DEPTH CHECK; if verified, skip remaining hypotheses and go to Resolution
+- High-confidence root cause confirmed → DEPTH CHECK; if verified AND no other co-equal-confidence playbook is still pending (see Co-equal-roots guard above), skip remaining hypotheses and go to Resolution. If co-equal playbooks remain pending, continue testing them first.
 - Medium/low root cause confirmed → DEPTH CHECK; if verified, ask user if they want to continue
 - All hypotheses exhausted (eliminated or inconclusive) → go to Resolution with "no root cause" outcome (no depth check needed when there is nothing to gate)
 
