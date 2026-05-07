@@ -17,5 +17,5 @@ Repeats while condition is true. No namespace prefix.
 
 **Key rules:**
 - Condition is `InArgument x:TypeArguments="x:Boolean"` — same as If
-- Body accepts **one** child activity — wrap in `<Sequence>` for multiple
+- Body wraps in `<Sequence>` — even for a single activity. Studio's designer expects the wrap as a drop zone.
 - Remember XML escaping: `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;`

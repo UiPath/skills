@@ -255,6 +255,31 @@ Never construct activity XAML from memory. Two sources, in this order:
 
 Use `uip rpa list-workflow-examples` and `uip rpa get-workflow-example` for usage examples, in addition to searching existing local `.xaml` files.
 
+### Container Activity Bodies — Wrap in Sequence
+
+Container activities have body or branch slots typed `Activity` or `ActivityAction<T>`. Studio's designer expects each slot to hold a `<Sequence>` drop zone; Studio's serializer emits the wrapped form. **Wrap even single-activity bodies.**
+
+| Activity | Slot(s) | Wrapper |
+|----------|---------|---------|
+| `If` | `If.Then`, `If.Else` | `<Sequence DisplayName="Then">` / `<Sequence DisplayName="Else">` |
+| `While`, `DoWhile` | direct child of the activity | `<Sequence DisplayName="Body">` |
+| `ForEach<T>` | `ForEach.Body` → `ActivityAction<T>` body | `<Sequence DisplayName="Body">` |
+| `TryCatch` | `TryCatch.Try` | `<Sequence DisplayName="Try">` |
+| `TryCatch` | each `Catch` → `ActivityAction<T>` body | `<Sequence DisplayName="Catch">` |
+| `TryCatch` | `TryCatch.Finally` | `<Sequence DisplayName="Finally">` |
+| `Switch<T>` | `Switch.Default`, each `<x:String x:Key="...">` case | `<Sequence>` per case |
+| `Pick` | each `PickBranch.Trigger`, `PickBranch.Action` | `<Sequence>` per slot |
+| `NApplicationCard` | `Body` → `ActivityAction<...>` body | `<Sequence DisplayName="Do">` |
+| Any activity with `Body` typed `Activity` | the body slot | `<Sequence>` |
+
+**Validators do not catch this.** `get-errors` and `build` both accept any single `Activity` in a body slot — `<If.Then><Throw /></If.Then>` is structurally legal. The wrap is a Studio-idiomatic convention (drop-zone ergonomics + canonical emission), not a static-analysis requirement.
+
+**Cheapest enforcement.** Run `uip rpa get-default-activity-xaml --activity-class-name "<FullClassName>"` for every container activity emitted, including `System.Activities.Statements.*` (`If`, `While`, `DoWhile`, `TryCatch`, `Switch`, `ForEach<T>`, `Pick`). Starter comes back wrapped — copy the shape. See SKILL.md Rules 21, 21a, 24.
+
+**Worked example.** [§ Example 1: Basic Activities (LogMessage, If/Else, Assign)](#example-1-basic-activities-logmessage-ifelse-assign) below — `If.Then` and `If.Else` each carry a `<Sequence>`.
+
+**Editing existing files.** When inserting an activity into an empty or bare `If.Then` / `Catch` / `Body` slot, add the `<Sequence>` wrapper in the same edit.
+
 ### Preserve Existing Structure
 When editing XAML:
 - Do not reformat or re-indent the entire file
@@ -476,7 +501,7 @@ VB project with core workflow activities. Shows If/Then/Else branching and Assig
 **Key patterns:**
 - `ui:LogMessage` uses `xmlns:ui="http://schemas.uipath.com/workflow/activities"`
 - VB expressions: `OrElse` instead of `||`, no brackets on simple values
-- `If.Then` and `If.Else` each wrap content in a `Sequence`
+- `If.Then` and `If.Else` each wrap content in a `Sequence` — required, not optional. See [§ Container Activity Bodies — Wrap in Sequence](#container-activity-bodies--wrap-in-sequence) for the full slot list
 - `Assign` uses `Assign.To` (OutArgument) and `Assign.Value` (InArgument) with explicit `x:TypeArguments`
 
 ### Example 2: Package Connector Activity (Office 365 Get Newest Email)
