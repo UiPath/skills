@@ -71,7 +71,8 @@ Three failure modes observed in agent-generated `.flow` files:
 | **Loop nodes** (`core.logic.loop`) | `inputs.collection` | **YES** |
 | **Subflow nodes** (`core.subflow`) | `inputs.<inputId>.source` | **YES** |
 | **Script nodes** (`core.action.script`) | `inputs.script` body — `$vars.*` is read inside JS, no `=js:` wrapping | **NO** — the body is already JS |
-| **Native flow text fields** (agent prompt, sticky note) | Any string with `{$vars.X}` template interpolation | **NO** — uses `{ }` template, not `=js:` |
+| **Inline-agent prompt** (`uipath.agent.autonomous` `agent.json` `messages[].content`) | Tokens reference an `agentInputVariables[]` binding via `{{input.<id>}}` — never raw `{{ $vars.X }}` and never bare `{{name}}` | **NO** — runtime tokens, not `=js:`. See [author/references/plugins/inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts) for the four-place contract |
+| **Sticky-note text** | Any string with `{{ $vars.X }}` mustache interpolation | **NO** — uses `{{ }}` template, not `=js:` |
 
 **Rule of thumb:** If the field is *value-typed* (anything other than a hardcoded condition), `=js:` is required for `$vars`/`$metadata`/`$self` references. The two condition fields (Decision, Switch) and the script body are the only exceptions — they are always parsed as JS regardless.
 
