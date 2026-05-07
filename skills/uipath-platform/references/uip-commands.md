@@ -86,11 +86,17 @@ Create, pack, publish, and deploy solutions. See [solution/](solution/solution.m
 
 ## Traces (`uip traces`)
 
-LLM execution trace observability. See [traces.md](traces.md).
+LLM execution trace observability. See [traces/traces.md](traces/traces.md) and [traces/feedback.md](traces/feedback.md).
 
 | Command | Description |
 |---|---|
 | `uip traces spans get [trace-id]` | Get spans by trace ID or `--job-key` |
+| `uip traces feedback create` | Add positive/negative feedback to a trace |
+| `uip traces feedback get <id>` | Fetch one feedback record |
+| `uip traces feedback list` | List feedback for a trace |
+| `uip traces feedback list detailed` | Cross-trace feedback with span context |
+| `uip traces feedback update <id>` | Change sentiment, comment, or categories |
+| `uip traces feedback delete <id>` | Remove feedback |
 
 ---
 
