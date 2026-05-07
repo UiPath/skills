@@ -431,6 +431,28 @@ Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" 
 | `ReplayUserEvent` | `ReplayUserEventV2` | Old version still loads but shouldn't be used |
 | `UiPath.<Vendor>.IntegrationService.Activities` packages | Generic `ConnectorActivity` via IS | Vendor-specific IS packages are deprecated |
 
+## Common Activity Name Confusions
+
+Activity tag names rarely match the Studio display name verbatim. Writing `<ui:DeleteFile />` from intuition fails at `build` with `Cannot create unknown type 'DeleteFile'` — the activity exists, but its class name is `Delete` and it handles both files and folders via the `Path` overload group.
+
+Frequent display-name → tag-name mismatches:
+
+| Display Name in Studio | Wrong tag (intuitive guess) | Correct tag | Package |
+|------------------------|-----------------------------|-------------|---------|
+| Delete File or Folder  | `ui:DeleteFile`             | `ui:Delete` (`Path` or `ResourceFile`) | `UiPath.System.Activities` |
+| Path Exists            | `ui:PathExists`             | `ui:PathExistsX`                       | `UiPath.System.Activities` |
+| Wait                   | `ui:Wait`                   | `Delay` (no prefix — MWF primitive)    | built-in |
+| For Each               | `ui:ForEach`                | `ForEach` (no prefix — MWF primitive) when iterating a generic collection; `ui:ForEachX` for the modern data-table variant | built-in / `UiPath.System.Activities` |
+
+### Tag Verification Gate
+
+Before writing any `<prefix:Tag>` element you have not already used in the same file, prove the tag exists. Pick exactly one of:
+
+- **Doc check.** Confirm `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md` exists, OR fall back to `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. If neither exists for the tag name you intend to write, the tag does not exist by that name.
+- **CLI lookup.** Run `uip rpa find-activities --query "<verb-or-noun>" --output json` and use the `ClassName` from the response — never derive a tag name from the Studio display name.
+
+Either path produces the canonical class name. Skipping both and writing the tag from memory is the failure mode that produces `Cannot create unknown type` errors at `build` time after the file has already been serialized.
+
 ## Default Values That Matter
 
 | Activity | Property | Default | Impact |
@@ -609,6 +631,7 @@ The error occurs because the XAML language schema does not register `DateTime`, 
 | `x:DateTimeOffset` | `s:DateTimeOffset` | Often required by calendar/scheduling activities |
 | `x:Guid` | `s:Guid` | — |
 | `x:Uri` | `s:Uri` | — |
+| `x:Exception` | `s:Exception` | `<Catch x:TypeArguments="s:Exception">`, `Throw` argument types |
 
 For types outside of `System`, add the matching CLR namespace alias. Examples:
 ```xml
