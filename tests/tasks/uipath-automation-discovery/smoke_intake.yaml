@@ -76,18 +76,15 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.75
 
-  - type: file_contains
-    description: "report.json includes scope selection"
+  - type: json_check
+    description: "report.json has correct scope and output format"
     path: "report.json"
-    includes:
-      - "quick scan"
+    assertions:
+      - expression: "scope"
+        operator: contains
+        expected: "quick"
+      - expression: "output_format"
+        operator: contains
+        expected: "markdown"
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "report.json includes output format"
-    path: "report.json"
-    includes:
-      - "markdown"
-    weight: 1.0
     pass_threshold: 1.0

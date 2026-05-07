@@ -72,8 +72,8 @@ Structured workflow data revealing process bottlenecks.
 
 **Salesforce-specific queries:**
 ```
-sf data query "SELECT Id, Subject, Status FROM Case WHERE Status = 'Escalated'"
-sf data query "SELECT Id, StageName, LastModifiedDate FROM Opportunity WHERE StageName = 'Closed Won' AND LastModifiedDate = LAST_N_DAYS:30"
+sf data query --result-format json "SELECT Id, Subject, Status FROM Case WHERE Status = 'Escalated'"
+sf data query --result-format json "SELECT Id, StageName, LastModifiedDate FROM Opportunity WHERE StageName = 'Closed Won' AND LastModifiedDate = LAST_N_DAYS:30"
 ```
 
 ## Wiki / Knowledge Base (Confluence, Notion, SharePoint)
