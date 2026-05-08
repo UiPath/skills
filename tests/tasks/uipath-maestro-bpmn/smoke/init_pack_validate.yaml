@@ -27,6 +27,8 @@ initial_prompt: |
   Requirements:
   - Use the installed `uip` CLI when a supported Maestro BPMN init, validate,
     or pack command exists.
+  - If the installed CLI does not expose a Maestro BPMN validate command, run
+    a local XML validation command against ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn.
   - Use `--output json` on every `uip` command whose output you inspect.
   - Do not upload, publish, deploy, debug, or run the process.
   - Keep generated package artifacts in a local output directory, not under
@@ -42,9 +44,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent validated the BPMN project"
+    description: "Agent validated the BPMN project with CLI validation or a local XML check"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+validate'
+    command_pattern: '((uip|\$UIP)\s+(maestro\s+)?bpmn\s+validate|python3?\s+-\s+<<[\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
