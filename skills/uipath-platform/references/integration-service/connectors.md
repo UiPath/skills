@@ -59,3 +59,76 @@ Body fields:
 | `headers` | Optional request headers (object) |
 | `query` | Optional query parameters (object) |
 | `body` | Optional request body (for POST/PUT/PATCH) |
+
+---
+
+## Connector Disambiguation
+
+When a connector/registry search returns multiple results for the same user intent, **never silently pick the first match**. Apply this short ladder before binding:
+
+1. **Classify each result by connector key prefix.**
+   - `uipath-<vendor>-<service>` = **catalog** — UiPath-shipped IS catalog connector. Default choice.
+   - `custom-entity-*` = **custom** — tenant-built via Connector Builder. Use only when no catalog match exists, or the user explicitly names one.
+   - `uipath-mock-*` = **mock** — internal dev artifact. Filter from results, treat as if absent.
+
+   Connector keys typically appear inside richer activity / node-type strings such as `uipath.connector.<key>.<op>`, `uipath.connector.trigger.<key>.<op>`, or `uipath.agent.resource.tool.connector.<key>.<op>` — extract the `<key>` segment for classification.
+
+2. **Intent-match by reading each result's `Description`.** Drop catalog candidates whose described operation does not match the user's intent. Example: a "pull user data from Databricks" prompt drops `uipath-databricks-databricks.query-a-serving-endpoint` (AI inference) and keeps `uipath-uipath-jdbc.execute-query-synchronously` (SQL).
+
+3. **Count what's left after steps 1–2.**
+   - 1 catalog candidate → take it silently.
+   - >1 catalog candidates with different keys → AskUser. Use option label `<DisplayName> · <connector-key>` and put each candidate's `Description` in the option description — that text is the user's primary signal.
+   - 0 catalog, only custom → STOP. Surface in the consumer skill's Open Questions. Never silently bind to a custom-entity connector.
+
+4. **Lock the choice** in the consumer skill's planning notes. Never re-derive per node within the same flow / agent / run.
+
+For the database-SQL special case (a single intent satisfied by either a per-vendor catalog connector or the JDBC gateway), see [JDBC Gateway — Database SQL Intent](#jdbc-gateway--database-sql-intent) below.
+
+---
+
+## JDBC Gateway — Database SQL Intent
+
+When the user names a database (Snowflake, Databricks, Postgres, Oracle, SQL Server, Redshift, MySQL, BigQuery, etc.) for a SQL operation, two paths can satisfy the same intent:
+
+1. **Native database connector** — e.g. `uipath-snowflake-snowflake`. Vendor-specific. May not expose SQL at all (e.g. `uipath-databricks-databricks` only exposes AI serving endpoints — its SQL search hit is the JDBC gateway, not the native key).
+2. **JDBC gateway** — `uipath-uipath-jdbc` (Database Hub) with `Execute Query Synchronously` plus `*-record` CRUD activities, fronting any JDBC-compatible DB via tenant-registered connections.
+
+> **Lifecycle**: read each candidate's lifecycle from the consumer skill's registry / discovery response (`Tags` / status field) and surface it to the user when binding. The JDBC gateway has historically been PREVIEW — do not assume GA. Hard-coded lifecycle labels in this doc would rot; always defer to the registry.
+
+### Discovery
+
+A keyword search by DB name (run via the consumer skill's discovery API) returns BOTH paths because the gateway's `Description` text names every supported DB. **Do not dismiss `uipath-uipath-jdbc.*` results** because the key looks unrelated — the cross-reference is registry-surfaced.
+
+For the JDBC connection-side probe (platform-native, same regardless of consumer):
+
+```bash
+uip is connections list "uipath-uipath-jdbc" --output json
+```
+
+### Connection identity
+
+`connections list` does not expose `jdbcUrl` or `driverClass`. The only signal for "what DB does this JDBC connection point to?" is the connection **`name`**. Match case-insensitively (weak signal — surface as "likely &lt;DB&gt;", never "is &lt;DB&gt;"):
+
+| DB | Substrings in `connection.name` |
+|---|---|
+| Snowflake | `snowflake`, `sf` |
+| Databricks | `databricks`, `dbx` |
+| Postgres | `postgres`, `postgresql`, `pg` |
+| MySQL | `mysql` |
+| SQL Server | `sqlserver`, `mssql` |
+| Oracle | `oracle` |
+| Redshift | `redshift` |
+| BigQuery | `bigquery`, `bq` |
+
+If the user explicitly named a connection in their prompt (e.g. "use the `pat_databricks` connection"), that overrides name-matching — bind it directly.
+
+### Decision
+
+After dropping intent-mismatched candidates per [Connector Disambiguation](#connector-disambiguation) above:
+
+| Confident paths remaining | Action |
+|---|---|
+| Exactly one (native SQL connector, OR a single name-matched JDBC connection) | Take it silently. Disclose lifecycle from the discovery response. |
+| Native SQL connector AND a name-matched JDBC connection | **AskUser**. Option labels: `Native <DB> · <key>` / `JDBC gateway · <name> — likely <DB>`. Append the registry lifecycle (e.g. ` · PREVIEW`) per option. |
+| No native, only ambiguously-named JDBC connections (e.g. `DH-Conn-001`) | **AskUser**, flag each option as "purpose unknown, please confirm". |
+| No native and no JDBC connection | Fall back via the consumer skill's HTTP-fallback or placeholder patterns, or instruct the user to create a JDBC connection (`uip is connections create "uipath-uipath-jdbc"`). Do not silently STOP. |
