@@ -29,6 +29,7 @@ initial_prompt: |
     or pack command exists.
   - If the installed CLI does not expose a Maestro BPMN validate command, run
     a local XML validation command against ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn.
+  - Use `--output json` on every `uip` command whose output you inspect.
   - Do not upload, publish, deploy, debug, or run the process.
   - Keep generated package artifacts in a local output directory, not under
     the skill repository.
