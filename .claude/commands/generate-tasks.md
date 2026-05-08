@@ -1,155 +1,118 @@
-# Generate Test Tasks
+# Generate Test Task
 
-Generate coder_eval task YAML files (and optional check scripts) to increase test coverage for a skill.
+Generate **one** coder-eval task YAML (and an optional check script) for the scenario described in `$ARGUMENTS`.
 
-**Input:** `$ARGUMENTS`
-- `<skill-name>` — generate tasks for highest-priority coverage gaps (e.g., `uipath-platform`)
-- `<skill-name> <focus>` — target specific areas (e.g., `uipath-platform authentication and folder listing`)
-- `<skill-name> <test-type>` — generate only that tier (e.g., `uipath-maestro-flow smoke`)
+**Input:** `$ARGUMENTS` — a free-form description of the scenario the task should cover. The target skill is **always inferred** from the description (Phase 1a). Do not require or accept a skill name as a separate argument.
 
-**Argument precedence.** After the skill name, if everything remaining is exactly one of `smoke`, `integration`, or `e2e`, treat it as `<test-type>`. Otherwise, treat the entire remainder (one or more whitespace-separated words) as a free-form `<focus>` description. To combine a focus area with a test-type filter, include the tier word inside the focus string (e.g., `uipath-platform smoke tests for authentication`) — this will be parsed as a focus since it contains more than just the tier keyword.
+**Optional tier filter.** If the description contains a bare `smoke` / `integration` / `e2e` token (whitespace-separated), use it as the tier hint. Otherwise pick the tier from the scenario itself per the Phase 2a table.
 
-**Output:** Task YAML files (+ optional `check_*.py` scripts) in `tests/tasks/<skill-name>/`.
+**Output:** ONE task YAML at `tests/tasks/<skill-name>/...` plus an optional `check_*.py` for e2e tasks. Always one task per invocation — re-run the command for additional scenarios.
+
+> ## ⚠ Generated tasks are unverified scaffolds
+>
+> The author **MUST** before merging:
+> 1. Run the task end-to-end with `coder-eval` (command in the Phase 4 summary).
+> 2. Confirm it passes.
+> 3. State that explicitly in the PR description (e.g. `Ran <task-id> locally and it passed.`).
+>
+> The lint workflow at `.github/workflows/lint-tasks.yml` raises a **High** issue when the PR description doesn't claim a passing run. Pushing the YAML alone is not enough.
 
 ---
 
 ## Phase 1 — Context Gathering
 
-1. Parse `$ARGUMENTS`: extract skill name, optional focus area or test-type filter (`smoke`, `integration`, `e2e`).
-2. Verify `skills/<skill-name>/SKILL.md` exists. If not, list available skills under `skills/uipath-*/` and fail with an error.
-3. Read the skill's SKILL.md and every file in `references/` and `assets/`. This is required to write prompts and criteria that use correct CLI commands, flags, and project structures.
-4. Check for an existing coverage report at `tests/reports/<skill-name>.md`.
-   - If it exists: read and extract the "Coverage Gaps — Priority Ranked" and "Recommendations" sections. These drive task selection.
-   - If not: do a lightweight gap analysis inline — inventory the skill's components, workflow steps, and critical rules, then identify what has no test coverage.
-5. Read all existing `*.yaml` task files in `tests/tasks/` across all skills. This serves three purposes:
-   - Collect all `task_id` values repo-wide to prevent collisions.
-   - Learn conventions from the target skill's existing tests (agent config, prompt style, criteria types, weight scales).
-   - If the target skill has no existing tests, learn conventions from other skills' tests.
-6. Read the experiment configs to know inherited agent config per test type. Generated tasks should only override fields that differ from these defaults:
-   - Smoke → `tests/experiments/default.yaml`
-   - Integration → `tests/experiments/integration.yaml`
-   - E2E → `tests/experiments/e2e.yaml`
+### 1a. Infer the target skill from the description
 
-For multi-file reads, use parallel tool calls or Explore agents to speed up context gathering.
+1. List candidates via `ls skills/uipath-*/SKILL.md`.
+2. Read every `SKILL.md` frontmatter (name + description) — that is what the runtime uses to decide which skill activates on a given prompt.
+3. Match the input description to the skill whose frontmatter best covers it. Tiebreak by inspecting the candidates' `references/` and `assets/` filenames.
+4. If two or more skills are plausible, ask the user to disambiguate before proceeding. Do not guess.
+
+Once resolved, `<skill-name>` is fixed for the rest of the run.
+
+### 1b. Read context (parallel Explore agents or parallel tool calls)
+
+1. `skills/<skill-name>/SKILL.md` plus everything under `skills/<skill-name>/references/` and `skills/<skill-name>/assets/`.
+2. `tests/README.md` — authoritative source for the **Tag Taxonomy**, **Weight scale**, and **experiment defaults** (`default.yaml` for smoke, `integration.yaml`, `e2e.yaml`). Do not duplicate that material here; reference it.
+3. `.claude/commands/lint-task.md` — the quality rubric (six axes, four severities). Generated tasks must not trip a Medium-or-above issue on any axis.
+4. `tests/reports/<skill-name>.md` if it exists — use it to detect that the scenario in the description is already a known gap with prior recommendations.
+5. Every existing `*.yaml` task under `tests/tasks/` — collect all `task_id` values (collision check), study conventions for the target skill (or a peer skill if the target has none yet), and confirm the described scenario is not already covered.
 
 ## Phase 2 — Task Design
 
-Select coverage gaps to address. If the user provided a focus area, filter to that area. Otherwise, prioritize by the coverage report's "High Priority" gaps. Generate 2–5 tasks per invocation by default, focusing on highest coverage impact. Always generate at least 1 smoke + 1 e2e if the skill has zero tests (minimum bar per CONTRIBUTING.md).
+The described scenario IS the task. If an existing task already covers it, stop and tell the user — do not generate a duplicate. Suggest the existing task; if the existing task is weak (Medium-or-above issues against `lint-task.md`), suggest amending it instead of adding a new one.
 
-For each gap, design a task:
+### 2a. Tier
 
-### 2a. Choose test type
+Per the tier table in `tests/README.md`:
 
-| Signal | Test type |
-|--------|-----------|
-| CLI command produces correct output, report generation | smoke |
+| Signal | Tier |
+|---|---|
+| CLI produces correct output, report generation | smoke |
 | Multi-step workflow with error handling, cross-component integration | integration |
-| Full build -> validate -> run lifecycle, artifact correctness | e2e |
+| Full build → validate → run cycle, artifact correctness | e2e |
 
-### 2b. Choose tags
+### 2b. Tags
 
-Every generated task must carry tags from the **Tag Taxonomy** documented in [`tests/README.md`](../../tests/README.md#tag-taxonomy). The tags aren't decoration — they drive `make tags`, `/skill-compare`, and coverage slicing. Assemble the `tags:` list by picking one value per applicable dimension:
+Required, in this order: `<skill-name>` first, then `<tier>`, then `mode:<X>`. Optional dimensions (`shape:*`, `node:*`, `resource`, `connector`, `feature:*`) follow per `tests/README.md#tag-taxonomy`.
 
-| Dimension | Pick | Notes |
-|---|---|---|
-| **skill** (required, flat) | `uipath-<name>` | Must match the target skill folder. Always first. |
-| **tier** (required, flat) | `smoke`, `integration`, `e2e` | Always second. From Phase 2a. |
-| **lifecycle** (required, `lifecycle:X`) | `generate`, `edit`, `validate`, `discover`, `activate`, `execute`, `deploy` | What the agent is asked to do. Most smoke tests are `lifecycle:validate` or `lifecycle:discover`; most e2e are `lifecycle:generate` or `lifecycle:edit`; `lifecycle:execute` applies when the task actually runs the built artifact. |
-| **shape** (`shape:X`, on flow-building tests) | `single-node`, `multi-node` | Omit for smoke tests that don't build a flow. Use intent (test focus) not node count when borderline. |
-| **node** (`node:X`, repeatable) | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` | Node type(s) under test. Omit `script`/`http` — too ubiquitous. Do not tag incidental/plumbing nodes. |
-| **resource** (flat, present iff applicable) | `resource` | Boolean marker for tasks that exercise any resource-node type (coded-agent / lowcode-agent / api-workflow / rpa). The specific resource is identifiable from the file path / `task_id`. |
-| **connector** (flat, present iff applicable) | `connector` | Boolean marker for tasks that use any IS connector. The specific connector is in the YAML body / file path. |
-| **feature** (`feature:X`, repeatable) | `http`, `trigger`, `registry`, `transform`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks` | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary — do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature`. If none fit, flag in Phase 4 summary for taxonomy extension. |
+- **`<skill-name>`** — always the first tag. Must match the `skills/<name>/` folder exactly (e.g. `uipath-maestro-flow`, `uipath-agents`). Never abbreviate or drop the `uipath-` prefix.
+- **`<tier>`** — `smoke`, `integration`, or `e2e`.
+- **`mode:<X>`** — required per the Coding Agents Scorecard tagging system (introduced in skills PR #614 by Tomasz Religa). Pick exactly one:
+  - `mode:build` — creating, designing, editing, or deploying flows, nodes, or skills.
+  - `mode:operate` — running, triggering, managing live instances, connectors, or integrations in production.
+  - `mode:diagnose` — investigating faults, inspecting execution traces/variables, evaluating, or debugging.
 
-**Selection rules:**
-1. **Always include `skill` + `tier` + `lifecycle:*`.** These drive `make` targets, coverage reports, and evalboard drilldown.
-2. **Pick the most specific `lifecycle` that fits.** If the task both generates and validates (common), use `lifecycle:generate` — validation is implicit in success criteria.
-3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
-4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path / `task_id`.
-5. **Do not tag incidental / plumbing nodes.** If every test in a category adds a Decision node purely to gate success/failure, do not tag `node:decision` — it pollutes drilldowns. Only tag when the node type is the point.
-6. **Do not repeat the skill name as a feature tag.** Don't tag `uipath-agents` tasks with `feature:agent`.
-7. **Order tags consistently:** `[skill, tier, lifecycle:X, shape:X, node:..., resource, connector, feature:...]`. Makes grep/review easier.
+**Use only the closed-vocabulary values listed in `tests/README.md`.** If no value fits an optional dimension, omit it and surface it in the Phase 4 summary so the taxonomy can be extended deliberately. Never invent tag values inline.
 
-**Worked examples:**
+Final tag order: `[<skill-name>, <tier>, mode:X, shape:X, node:..., resource, connector, feature:...]`.
+
+Example:
 
 ```yaml
-# Green-field flow authoring that hits HITL + approval-gate + write-back
-tags: [uipath-human-in-the-loop, e2e, lifecycle:generate, shape:multi-node, node:hitl, feature:approval-gate, feature:write-back]
-
-# Smoke test that lists IS connector activities
-tags: [uipath-platform, smoke, lifecycle:discover, feature:activities]
-
-# E2E Data Fabric CRUD cycle on a live tenant
-tags: [uipath-data-fabric, e2e, lifecycle:execute, feature:entities, feature:records]
-
-# Brown-field RPA test case authored on an existing project
-tags: [uipath-rpa, integration, lifecycle:edit, feature:test-case]
-
-# Smoke test that exercises the Flow node registry
-tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
-
-# Flow using a connector + HTTP, decision-node under test
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
+tags: [uipath-maestro-flow, e2e, mode:build, shape:multi-node, node:decision, connector, feature:http]
 ```
 
-Before writing the YAML, verify the assembled tag list against `grep -r "^tags:" tests/tasks/` output to confirm the combination isn't obviously wrong (e.g. `lifecycle:generate` on a smoke test that doesn't create a project).
+### 2c. task_id
 
-### 2c. Choose task_id
+Convention: `skill-<domain>-<capability>` (lowercase kebab-case, see `tests/README.md` for the domain mapping). Verify uniqueness against the IDs collected in Phase 1.
 
-Convention: `skill-<domain>-<capability>`
+### 2d. initial_prompt
 
-Domain mapping:
+State the **goal and expected output**. The skill teaches the procedure — that is what the test is verifying. Mirror the prompt style of existing tasks for the target skill.
 
-| Skill | Domain |
-|-------|--------|
-| uipath-maestro-flow | flow |
-| uipath-platform | platform |
-| uipath-agents | agent |
-| uipath-rpa | rpa |
-| uipath-interact | interact |
-| uipath-coded-apps | codedapp |
-| uipath-diagnostics | diagnostics |
-| uipath-feedback | feedback |
-| uipath-planner | planner |
-| uipath-human-in-the-loop | hitl |
-| uipath-maestro-case | case |
+Two anti-patterns from `lint-task.md` to actively avoid:
 
-If a skill is not listed, derive `<domain>` by stripping the `uipath-` prefix and using the shortest unambiguous segment (e.g., `uipath-new-thing` → `newthing`). Check existing `task_id` values for the skill's domain prefix and follow suit.
+- **Self-report anti-pattern (Critical).** Never instruct the agent to write a summary/status/report file that the success criteria then read for evidence. Criteria must check what the agent *did* (commands, real artifacts), not what it *claims* it did.
+- **Prompt over-specification (High/Medium/Low).** No step-by-step procedure, no prescribing flags or exact output formats unless they are ground-truth anchors that the criteria assert. Naming a node type that matches a `node:X` tag is fine — that is deliberate scoping.
 
-Verify the chosen `task_id` does not appear in any existing task YAML (collected in Phase 1 step 5).
+Keep prompts concise (typically under 3 lines).
 
-### 2d. Write initial_prompt
+### 2e. success_criteria
 
-General principles:
-1. Describe the GOAL, not the steps — the skill teaches the steps, and that is what we are testing.
-2. Keep prompts concise (under 3 lines), just like a human developer would write it.
-3. Include specific inputs/outputs when the test needs to verify correctness (e.g., "takes two numbers as input and calculates their product").
+Pick from the criteria types documented in `tests/README.md` and the coder-eval docs:
 
-**Learn the prompt style from existing tests.** Read all existing task YAMLs for the skill (and for other skills if this skill has none yet) to pick up the conventions currently in use — what instructions are included, how skill loading is handled, what constraints are specified. Mirror those conventions in the generated prompts rather than inventing new patterns.
+| Type | Use for |
+|---|---|
+| `command_executed` | Agent ran a specific CLI command (regex on tool calls) |
+| `command_not_executed` | Agent did NOT run a prohibited command (negative-guard tests) |
+| `skill_triggered` | Agent invoked a Claude Code Skill — un-fakeable |
+| `file_exists` / `file_contains` / `file_check` | Artifact existence + content |
+| `json_check` | JSON structure + JMESPath assertions (operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`) |
+| `run_command` | Execute a shell command, check exit code (and optionally stdout) |
+| `pytest`, `pylint_score`, `file_matches_regex` | Less common; see coder-eval docs |
 
-### 2e. Design success criteria
+**Quality bar (from `lint-task.md`):**
 
-**Learn from existing tests.** Read the criteria patterns used in existing task YAMLs (collected in Phase 1 step 5–6) and use the same criterion types, weight scales, and threshold values for the same tier of test.
+- **Meaningful coverage.** At least one criterion must validate output *content*, not just existence. `file_exists` alone or `command_executed` with a loose regex is not enough — pair them with `json_check` / `run_command` stdout / substantive `file_contains`.
+- **Could-pass-for-wrong-reason.** Ask: would a dummy implementation that skips the skill entirely satisfy these criteria? If yes, tighten them.
+- **Validate-only flow tests.** For e2e tasks tagged `uipath-maestro-flow`, include `command_executed` matching `flow\s+debug` (or document the rationale in `description`). `flow validate` alone checks shape, not correctness.
 
-Available criterion types (from coder_eval):
+**Weight scale** (per `tests/README.md`): `1.0` supporting / `1.5` core behavior / `2.0` artifact content / `3.0` primary artifact validity / `5.0–6.0` end-to-end execution. **`pass_threshold`** is usually `1.0` (all-or-nothing).
 
-| Type | What it checks | Typical use |
-|------|---------------|-------------|
-| `command_executed` | Agent ran a specific CLI command (regex match on tool calls) | Smoke: verify CLI workflow steps |
-| `file_exists` | A file was created at a path | Smoke/e2e: verify artifact creation |
-| `file_contains` | A file contains expected strings | Smoke: verify report content |
-| `json_check` | JSON structure and values via JMESPath assertions | Smoke: verify structured output |
-| `run_command` | Execute a shell command, check exit code (and optionally stdout) | E2E: run validation tools, run check scripts |
+### 2f. agent / sandbox
 
-Operators for `json_check` assertions: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
-
-**Criteria must be verifiable.** Only assert on things that can actually be checked in the sandbox. Do not assert on cloud-dependent state if the test is local-only. Do not use `command_executed` for commands the agent might not need to run.
-
-### 2f. Configure agent and sandbox
-
-**Learn from existing tests.** Read the experiment configs and existing task YAMLs to determine what needs to be specified vs. what can be inherited. Only include `agent:` and `max_iterations` fields when they differ from the experiment defaults for the chosen test type.
-
-The `sandbox` block is always required:
+`sandbox` is always required:
 
 ```yaml
 sandbox:
@@ -157,128 +120,116 @@ sandbox:
   python: {}
 ```
 
-The `agent:` block and `max_iterations` should only appear when overriding experiment defaults — check what existing tests for the same tier do and follow suit.
+Only include `agent:` or `max_iterations` when overriding the experiment defaults for the chosen tier (see `tests/README.md`).
 
-## Phase 3 — Generation
+## Phase 3 — File Layout and YAML
 
-### 3a. File organization
+### 3a. Directory and filename
 
-Task filenames use `snake_case` (e.g., `init_validate.yaml`, `login_status.yaml`), not kebab-case. This differs from reference files which use kebab-case.
+Mirror the existing layout for the target skill (groupings under each skill are advisory per `tests/README.md`). Common patterns: `smoke/`, `single_node/`, `multi_node/`, `edit/`, `hitl/`, `connector_features/`, plus per-capability subdirs for e2e tests with sidecar check scripts.
 
-| Test type | File location | Example |
-|-----------|---------------|---------|
-| Smoke | `tests/tasks/<skill>/capability.yaml` (top-level) | `tests/tasks/uipath-platform/login_status.yaml` |
-| E2E | `tests/tasks/<skill>/capability/capability.yaml` (subdirectory) | `tests/tasks/uipath-platform/folders_list/folders_list.yaml` |
+Filenames are `snake_case` (not kebab). E2E tasks with check scripts go in their own capability subdir.
 
-Create the `tests/tasks/<skill-name>/` directory if it does not exist.
-
-### 3b. Generate task YAML files
-
-Write YAML files following the field ordering observed in existing tests. A typical structure:
+### 3b. YAML structure
 
 ```yaml
 task_id: <id>
 description: >
-  <multi-line description of what the task tests>
-tags: [<skill-name>, <test-type>, ...]
+  <one or two sentences on what the task tests>
+tags: [<skill>, <tier>, mode:<X>, ...]
 
-# Only include fields below when overriding experiment defaults:
+# Top-level overrides — only present when differing from experiment defaults.
+# Inheritable fields per tests/README.md: max_iterations, task_timeout,
+# max_turns, turn_timeout. As of coder_eval #225, max_turns and turn_timeout
+# live at the top level (not inside agent:).
 # max_iterations: <N>
+# task_timeout: <seconds>
+# max_turns: <N>
+# turn_timeout: <seconds>
 # agent:
 #   type: claude-code
-#   ...
+#   permission_mode: acceptEdits
+#   allowed_tools: ["Skill", "Bash", "Read", ...]
 
 sandbox:
   driver: tempdir
   python: {}
+  # Optional — pin Node packages for tasks that drive the uip CLI:
+  # node:
+  #   env_packages:
+  #     - "@uipath/cli@<pinned-version>"
 
 initial_prompt: |
-  <prompt text>
+  <goal-stated prompt>
 
 success_criteria:
   - type: <criterion_type>
-    description: "<what this criterion checks>"
+    description: "<what this checks>"
     ...
     weight: <float>
     pass_threshold: <float>
 ```
 
-Field ordering must match existing tests: `task_id`, `description`, `tags`, `max_iterations` (if present), `agent` (if present), `sandbox`, `initial_prompt`, `success_criteria`.
+Field order: `task_id`, `description`, `tags`, top-level overrides (`max_iterations`, `task_timeout`, `max_turns`, `turn_timeout`) if any, `agent` (if any), `sandbox`, `initial_prompt`, `success_criteria` — matches existing tests.
 
-### 3c. Generate check scripts (e2e only)
+### 3c. Check script (e2e only, when needed)
 
-When an e2e test needs a check script (to verify artifact execution or complex output):
+For e2e tasks that need to verify execution output beyond what the built-in criteria cover:
 
-1. Create `tests/tasks/<skill-name>/<capability>/check_<name>.py` in the same subdirectory as the task YAML.
-2. Follow the pattern from existing check scripts (e.g., `check_calculator_flow.py`):
-   - Shebang: `#!/usr/bin/env python3`
-   - Module docstring explaining what it checks
-   - Use `sys.exit("FAIL: ...")` on failure
-   - Use `print("OK: ...")` on success
-   - If importing from `tests/tasks/<skill-name>/_shared/`, first add the skill task directory (the parent of the check script's directory) to `sys.path`, because the script is run as `python3 $TASK_DIR/check_<name>.py`. Use the bootstrap pattern already used by existing scripts such as `check_calculator_flow.py`:
-     ```python
-     import os
-     import sys
-
-     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-     from _shared.<module> import <name>  # noqa: E402
-     ```
-   - If the skill has no `_shared` helpers, write standalone checks instead.
-3. Reference the script in the task YAML using `$TASK_DIR`:
+1. Create `tests/tasks/<skill>/<capability>/check_<name>.py` next to the YAML.
+2. Follow the pattern from existing check scripts (e.g. `check_calculator_flow.py`):
+   - `#!/usr/bin/env python3` + module docstring
+   - `sys.exit("FAIL: ...")` on failure, `print("OK: ...")` on success
+   - If importing from `tests/tasks/<skill>/_shared/`, use the `sys.path.insert(...)` bootstrap that existing scripts use (the script is invoked as `python3 $TASK_DIR/check_<name>.py`).
+3. Wire it into the YAML via `run_command`:
    ```yaml
    - type: run_command
      command: "python3 $TASK_DIR/check_<name>.py"
    ```
 
-### 3d. Generate `_shared/` helpers (only if needed)
-
-Only create `tests/tasks/<skill-name>/_shared/` if:
-- Multiple e2e tests will share validation logic for this skill
-- The skill has a common artifact format that needs parsing
-
-For skills without a common artifact format, keep check scripts self-contained. If the skill already has a `_shared/` directory, import from it.
+Only create a `_shared/` helper if the skill already has one or a second e2e test will reuse the logic. Otherwise keep the check script self-contained.
 
 ## Phase 4 — Validation and Summary
 
-### 4a. Validate generated files
+### 4a. Validate
 
-For each generated YAML file:
-1. Read the file back and verify the YAML structure is correct (proper indentation, no unescaped colons in values, matching quotes). If `pyyaml` is available, run `python3 -c "import yaml; yaml.safe_load(open('<path>'))"` as an additional check.
-2. Verify `task_id` is unique across all existing task YAMLs in the repo.
-3. Verify `tags` array conforms to the Tag Taxonomy: skill name first, tier (`smoke`/`integration`/`e2e`) second, followed by optional `lifecycle`, `scenario`, and `feature` values drawn from the closed vocabularies in Phase 2b. Any tag outside those sets must be flagged in the summary, not silently emitted.
-4. Verify `sandbox.driver` is set to `tempdir`.
-5. Verify file paths in `success_criteria` are consistent with what `initial_prompt` asks the agent to create.
-6. For check scripts: verify they are syntactically valid Python (`python3 -c "import py_compile; py_compile.compile('<path>', doraise=True)"`).
+1. Re-read the YAML and verify it parses (`python3 -c "import yaml; yaml.safe_load(open('<path>'))"`).
+2. Confirm `task_id` is unique against the IDs collected in Phase 1.
+3. Confirm tags conform to `tests/README.md#tag-taxonomy`. Note any dimension you omitted because no closed-vocabulary value fit.
+4. Self-lint against the six axes in `.claude/commands/lint-task.md` (Self-report, Over-specification, Meaningful coverage, Could pass for wrong reason, Near-duplicate, Validate-only flow). If any axis would raise Medium or above, revise before finishing.
+5. For check scripts: `python3 -c "import py_compile; py_compile.compile('<path>', doraise=True)"`.
 
-### 4b. Print summary
+### 4b. Summary
 
-After generating all files, print a summary:
+Tell the user, in your own words, what was generated and what they need to do next. No rigid template — write it to be skimmed. Cover at minimum:
+
+- Which file was written (path), the task_id, the tier, and which skill the description resolved to.
+- A one-line description of what the task exercises.
+- Anything the author needs to manually verify before trusting the YAML — assumed CLI commands or flags, omitted tag dimensions you couldn't fit into the closed vocabulary, file paths or expected outputs that were guessed, etc. If nothing needs review, say so.
+
+Then — **always, never omit** — a clearly-flagged reminder that the YAML is an unverified scaffold and the author must run it end-to-end with `coder-eval` before merging. Include the exact invocation:
 
 ```
-## Generated Tasks
-
-| File | Task ID | Type | Gaps Covered |
-|------|---------|------|--------------|
-| tests/tasks/<skill>/foo.yaml | skill-x-foo | smoke | Component A, Component B |
-| tests/tasks/<skill>/bar/bar.yaml | skill-x-bar | e2e | Full lifecycle |
-
-Infrastructure notes:
-- All generated tests require: <requirements from coverage report>
-- To run: make test-<skill-name>
+cd tests
+SKILLS_REPO_PATH=$(cd .. && pwd) \
+  .venv/bin/coder-eval run tasks/<skill>/<path>.yaml \
+  -e experiments/<tier>.yaml
 ```
+
+And remind them that the PR description must include an explicit passing-run claim (e.g. `Ran <task-id> locally and it passed.`), because `.github/workflows/lint-tasks.yml` raises a High issue if no such claim is present.
 
 ---
 
 ## Rules
 
-1. **Read the skill thoroughly.** Every SKILL.md, every reference file. Generated prompts must use correct CLI commands, flags, project structures, and naming conventions from the skill.
-2. **Follow existing test patterns.** Read existing task YAMLs (both for the target skill and other skills) to learn current conventions for agent config, prompt style, and criteria patterns. Mirror those conventions rather than hardcoding assumptions that may become stale.
-3. **Honor the Tag Taxonomy.** Emitted `tags:` must draw from the closed vocabularies in [`tests/README.md`](../../tests/README.md#tag-taxonomy). Never invent new feature tags inline — if no existing value fits, omit the feature dimension and raise it in the Phase 4b summary so the taxonomy can be extended deliberately.
-3. **Minimal prompts.** Describe goals, not steps. The skill teaches the steps — that is what we are testing.
-4. **Realistic criteria.** Only assert on things that can actually be checked in the sandbox. Do not assert on cloud state if the test runs locally. Do not use `command_executed` for commands the agent might not need to run.
-5. **No duplicate task_ids.** Check all existing YAMLs across all skills before generating.
-6. **Respect infrastructure limits.** Note what each generated test requires (cloud auth, Windows, etc.). Prefer local-only tests when possible — they are cheaper and can run in CI.
-7. **Generate 2–5 tasks per invocation by default.** Focus on highest coverage impact from the gap analysis. The user can run the command again for more. Always generate at least 1 smoke + 1 e2e if the skill has zero tests (minimum bar from CONTRIBUTING.md).
-8. **Lean on coverage reports.** If `tests/reports/<skill>.md` exists, use its prioritized gap list directly rather than re-analyzing the skill from scratch.
-9. **Do not invent CLI commands.** Every `command_pattern` regex and `command` string must come from the skill's documentation. If unsure whether a command exists, read the skill's references to verify.
-10. **Do not modify existing files.** This command only creates new files. It does not edit existing task YAMLs, skill files, or experiment configs.
+1. **One task per invocation.** Re-run the command for more. Multiple-task batches bloat review and let unvalidated tasks slip through.
+2. **Read the skill thoroughly.** Every SKILL.md, every reference. Prompts and criteria must use real CLI commands and flags from the skill.
+3. **Follow existing test patterns.** Read the target skill's existing YAMLs (or a peer skill's if the target has none) to learn agent config, prompt style, criteria patterns, and tier conventions.
+4. **Honor the Tag Taxonomy.** Use only values from `tests/README.md#tag-taxonomy`. If no value fits, omit the dimension and flag it under Manual review — never invent tags inline.
+5. **Avoid the lint axes.** Self-check against `.claude/commands/lint-task.md` before finalizing. Any Medium-or-above issue means revise.
+6. **Minimal prompts.** Describe the goal, not the steps.
+7. **Realistic criteria.** Only assert on things that can actually be checked in the sandbox. Don't `command_executed` a command the agent might legitimately not need.
+8. **No duplicate task_ids.** Verify against every existing YAML in `tests/tasks/`.
+9. **Do not invent CLI commands.** Every `command_pattern` regex and `command` string must come from the skill's documentation.
+10. **Do not modify existing files.** This command only creates new files.
+11. **Always print the run-with-coder-eval reminder.** The author cannot merge a generated task on push alone — it must be run locally and that fact recorded in the PR description.
