@@ -55,8 +55,8 @@ success_criteria:
   # Binary tool-invocation check: confirms the right skill ran at all.
   - type: skill_triggered
     description: "Agent invoked the uipath-diagnostics skill"
-    skill_name: "uipath-diagnostics"
-    expected_skill: "uipath-diagnostics"
+    skill_name: "uipath:uipath-diagnostics"
+    expected: "yes"
     weight: 1.0
 
   # Single comprehensive agentic check: the diagnostic must (a) load the

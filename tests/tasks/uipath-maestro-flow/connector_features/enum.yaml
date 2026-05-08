@@ -1,8 +1,7 @@
-task_id: skill-flow-connector-discovery-azure
+task_id: skill-flow-ipe-enum
 description: >
-  Connector-key discovery on the Azure connector: agent finds the registered
-  connector key from the registry and uses it in a multi-node flow that
-  configures a storage-account-kind enum field.
+  Tests the enum IS feature — configures a connector node with an enum field
+  on the Azure connector for storage account kind.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
 
 task_timeout: 1500
