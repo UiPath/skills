@@ -23,18 +23,32 @@ sandbox:
 initial_prompt: |
   Create a UiPath Flow project named "SummarizeDemo" that uses a Summarize
   pattern node to synthesize a response over an attached document. The flow
-  takes one `in` variable of `type: "object"` named `documentAttachment` —
-  the full Flow Attachment object for the document (shape
-  `{ FullName, Id, Metadata, MimeType }`). The Summarize node must:
+  takes one `in` variable of `type: "file"` named `documentFile`, bound to
+  the trigger via `triggerNodeId: "<triggerId>"`. The variable's runtime
+  payload is a full Flow Attachment object (`{ FullName, Id, Metadata, MimeType }`).
+  The Summarize node must:
 
-    - have its `attachment` input wired to the flow input variable as the
-      WHOLE object (`=js:$vars.documentAttachment`, not `.Id` or any subfield)
+    - have its `attachment` input wired to the trigger output, NOT the bare
+      variable: `=js:$vars.<triggerId>.output.documentFile`. Do not use
+      `=js:$vars.documentFile`, `.Id`, `.FullName`, or any other subfield —
+      the runtime engine wants the WHOLE Attachment object resolved through
+      the trigger output binding.
     - use this prompt: `Write a 5-bullet executive summary covering scope, term, SLAs, penalties, and termination.`
     - set `returnCitations` to `true`
 
+  The node's instance JSON must NOT contain a `model` block, and `typeVersion`
+  must be exactly `"1.0"`. The instance `outputs.output` must use
+  `source: "=response"` (NOT `=deepRagResult`). The output schema's nested
+  fields are PascalCase: `content.Text` and `content.Citations[]` (each with
+  `Ordinal`, `PageNumber`, `Source`, `Reference`).
+
   Wire the Summarize node's `output` port through to an End node and surface
   the synthesized text + citations as flow output variables `summary` and
-  `citations`.
+  `citations`, mapped via:
+    - `outputs.summary.source:   "=js:$vars.<dr-node-id>.output.content.Text"`
+    - `outputs.citations.source: "=js:$vars.<dr-node-id>.output.content.Citations"`
+  Note the PascalCase nested field names — lowercase `text`/`citations` would
+  resolve to `undefined` at runtime.
 
   Do NOT run flow debug — just validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between

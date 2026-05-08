@@ -23,20 +23,30 @@ sandbox:
 initial_prompt: |
   Create a UiPath Flow project named "BatchTransformDemo" that uses a Batch
   Transform pattern node to enrich rows of a CSV. The flow takes one `in`
-  variable of `type: "object"` named `csvAttachment` — the full Flow Attachment
-  object for the source CSV (shape `{ FullName, Id, Metadata, MimeType }`).
-  The Batch Transform node must:
+  variable of `type: "file"` named `csvFile`, bound to the trigger via
+  `triggerNodeId: "<triggerId>"`. The variable's runtime payload is a full
+  Flow Attachment object (`{ FullName, Id, Metadata, MimeType }`). The Batch
+  Transform node must:
 
-    - have its `attachment` input wired to the flow input variable as the
-      WHOLE object (`=js:$vars.csvAttachment`, not `.Id` or any subfield)
+    - have its `attachment` input wired to the trigger output, NOT the bare
+      variable: `=js:$vars.<triggerId>.output.csvFile`. Do not use
+      `=js:$vars.csvFile`, `.Id`, `.FullName`, or any other subfield — the
+      runtime engine wants the WHOLE Attachment object resolved through the
+      trigger output binding.
     - use this prompt: `Classify each row by category and write a one-line summary.`
     - declare two output columns:
         - `Category`     — One of: Utility, Software, Travel, Other
         - `Summary`      — Plain-English one-line summary of the row
     - leave `enableWebSearchGrounding` at its default
 
+  The node's instance JSON must NOT contain a `model` block (BPMN type /
+  serviceType belongs only in `definitions[]`), and `typeVersion` must be
+  exactly `"1.0"` matching `definitions[<bt>].version`. The instance
+  `outputs.output` must use `source: "=response"` (NOT `=batchTransformResult`).
+
   Wire the Batch Transform's `output` port through to an End node and surface
-  the result file handle as a flow output variable named `result`.
+  the result file handle as a flow output variable named `result` mapped via
+  `outputs.result.source: "=js:$vars.<bt-node-id>.output"`.
 
   Do NOT run flow debug — just validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between

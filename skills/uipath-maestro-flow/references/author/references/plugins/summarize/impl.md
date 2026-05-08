@@ -14,8 +14,11 @@ Confirm:
 - Output ports: `output`, `error`
 - `model.type` — `bpmn:ServiceTask`
 - `model.serviceType` — `ECS.DeepRag`
-- `inputDefinition.properties` — `attachment` (object — full Flow Attachment, **not** a bare id), `prompt` (string), `returnCitations` (boolean). The schema declares `string` because Studio Web's file picker serializes the whole Attachment object into that slot at save time; the runtime parses it back as an object — pass the **whole** `{ FullName, Id, Metadata, MimeType }` object, not a GUID, URL, or path.
-- `outputDefinition.output.schema.properties.content` contains `text` (and `citations` when enabled)
+- `inputDefinition.properties` — `attachment` (declared `string`; runtime wants the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }` — Studio Web's file-picker form serializes the whole object into that slot, the engine deserializes it back), `prompt` (string), `returnCitations` (boolean)
+- `outputDefinition.output.type` — `"object"`; `outputDefinition.output.source` — `"=response"` (the BPMN engine wraps the result under that key — same convention as every other ServiceTask)
+- `outputDefinition.output.schema` — top-level fields `id` (string) and `content` (object|null) with PascalCase nested fields:
+  - `content.Text` — string
+  - `content.Citations` — array|null of `{ Ordinal: integer, PageNumber: integer, Source: string, Reference: string }`
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
 If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, the CLI build predates Summarize support or the tenant's `canvas.nodes.summarize` server flag is off. Run `uip cli update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that `canvas.nodes.summarize` is enabled on the tenant.
@@ -23,6 +26,34 @@ If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, t
 ## Adding / Editing
 
 Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [author/CAPABILITY.md rule 2](../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the Summarize node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Summarize.
+
+## Wiring `attachment` — file variable bound to the trigger
+
+The canonical canvas-produced shape is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, with the Summarize node's `attachment` referencing it through the trigger's output:
+
+```json
+"variables": {
+  "globals": [
+    {
+      "id": "documentFile",
+      "direction": "in",
+      "type": "file",
+      "triggerNodeId": "start"
+    }
+  ]
+}
+```
+
+Then on the Summarize node:
+
+```json
+"inputs": {
+  "attachment": "=js:$vars.start.output.documentFile",
+  ...
+}
+```
+
+`uip maestro flow debug --file documentFile=./path/to/doc.pdf` populates that variable as a `{ FullName, Id, Metadata, MimeType }` Attachment object at runtime. Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.documentFile` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
 
 ## JSON Structure
 
@@ -33,20 +64,44 @@ Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow`
   "typeVersion": "1.0",
   "display": { "label": "Summarize Contract" },
   "inputs": {
-    "attachment": "=js:$vars.contractDoc",
+    "attachment": "=js:$vars.start.output.documentFile",
     "prompt": "Write a 5-bullet executive summary covering scope, term, SLAs, penalties, and termination.",
     "returnCitations": true
   },
   "outputs": {
     "output": {
       "type": "object",
-      "description": "Synthesis result",
-      "source": "=deepRagResult",
-      "var": "output"
+      "source": "=response",
+      "var": "output",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "content": {
+            "type": ["object", "null"],
+            "properties": {
+              "Text": { "type": "string" },
+              "Citations": {
+                "type": ["array", "null"],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "Ordinal":    { "type": "integer" },
+                    "PageNumber": { "type": "integer" },
+                    "Source":     { "type": "string" },
+                    "Reference":  { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "error": {
       "type": "object",
-      "description": "Error information if the synthesis fails",
+      "description": "Error information if the node fails",
       "source": "=Error",
       "var": "error"
     }
@@ -58,12 +113,13 @@ Notes:
 
 - **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
 - **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
-- `outputs.output.source` is the literal `=deepRagResult` — do not rewrite.
-- Setting `returnCitations: true` populates `content.citations`; setting `false` omits the array entirely (the downstream consumer should tolerate either).
+- `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows). Do not rewrite to `=deepRagResult` or similar — that's a stale pre-#1380 shape.
+- `outputs.output.type` is **`"object"`**, with the nested PascalCase schema above.
+- Setting `returnCitations: true` populates `content.Citations`; setting `false` omits the array entirely (the downstream consumer should tolerate either).
 
 ## End-node output mapping
 
-If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [author/CAPABILITY.md rule 12](../../CAPABILITY.md), value-field expressions need the `=js:` prefix:
+If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [author/CAPABILITY.md rule 12](../../CAPABILITY.md), value-field expressions need the `=js:` prefix. Note the **PascalCase** field names:
 
 ```json
 {
@@ -71,13 +127,13 @@ If the flow surfaces the synthesized text or citations as flow `out` variables, 
   "type": "core.control.end",
   "typeVersion": "1.0",
   "outputs": {
-    "summary":   { "source": "=js:$vars.summarizeContract.output.content.text" },
-    "citations": { "source": "=js:$vars.summarizeContract.output.content.citations" }
+    "summary":   { "source": "=js:$vars.summarizeContract.output.content.Text" },
+    "citations": { "source": "=js:$vars.summarizeContract.output.content.Citations" }
   }
 }
 ```
 
-Without `=js:`, the runtime stores the literal string (e.g. `"$vars.summarizeContract.output.content.text"`) into the flow output instead of the real value. When `returnCitations: false`, drop the `citations` mapping rather than mapping a missing field.
+Without `=js:`, the runtime stores the literal string (e.g. `"$vars.summarizeContract.output.content.Text"`) into the flow output instead of the real value. When `returnCitations: false`, drop the `citations` mapping rather than mapping a missing field. Lowercase variants (`.text`, `.citations`) do not exist in the response shape — they would resolve to `undefined`.
 
 ## Add via CLI (opt-in, not preferred)
 
@@ -87,29 +143,29 @@ The `uip maestro flow node add` / `edge add` CLI is **not** the canonical author
 uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
   --label "<LABEL>" \
   --input '{
-    "attachment": "=js:$vars.<inputAttachmentVar>",
+    "attachment": "=js:$vars.<triggerId>.output.<fileVarId>",
     "prompt": "<INSTRUCTION for the synthesis>",
     "returnCitations": true
   }' \
   --output json
 ```
 
-`attachment` must resolve to a **full Flow Attachment object** with shape `{ FullName, Id, Metadata, MimeType }` — point it at an upstream variable holding the whole object (typically a flow `in` variable populated by `uip maestro flow debug --file <name>=<path>`, or an upstream node that emits a Flow Attachment). **Not** a bare id, URL, byte stream, or path; even though Studio Web's form metadata calls this a `file` field and the OOTB schema says `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
+`attachment` must resolve to a **full Flow Attachment object** (`{ FullName, Id, Metadata, MimeType }`). Reference it through the trigger's output (`$vars.<triggerId>.output.<fileVarId>`) — that's how the canvas wires file-typed flow `in` variables. Do **not** pass a bare GUID, URL, byte stream, or path; even though the OOTB `inputDefinition` declares `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
 
 ## Accessing Output
 
 ```javascript
 // Downstream Script node
 const result = $vars.summarizeContract.output;
-const text = result.content.text;                   // the synthesized prose
-const citations = result.content.citations ?? [];    // [{ ordinal, page, source }, ...]
+const text = result.content.Text;                   // the synthesized prose
+const citations = result.content.Citations ?? [];   // [{ Ordinal, PageNumber, Source, Reference }, ...]
 return {
   summary: text,
   citationCount: citations.length,
 };
 ```
 
-If `returnCitations: false`, the `citations` array is not present. Guard with `?? []` or check `result.content.citations != null` before iterating.
+Field names are **PascalCase** (`Text`, `Citations`, `Ordinal`, `PageNumber`, `Source`, `Reference`). If `returnCitations: false`, the `Citations` array is not present. Guard with `?? []` or check `result.content.Citations != null` before iterating.
 
 ## Validate
 
@@ -124,10 +180,11 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 | Error | Cause | Fix |
 | --- | --- | --- |
 | `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | `uip cli update`, `uip maestro flow registry pull --force`; check with admin that `canvas.nodes.summarize` is enabled if still missing |
-| Runtime: synthesis returns empty `content.text` | Prompt too vague, or attachment unreadable (image-only PDF with no OCR, corrupted file) | Tighten the prompt; confirm the attachment type is supported and has selectable text |
-| `content.citations` missing even though set `returnCitations: true` | Downstream consumer read the node's `inputDefaults` before the runtime produced the output | Reference `$vars.{nodeId}.output.content.citations` only in nodes downstream of Summarize; do not precompute |
+| Runtime: synthesis returns empty `content.Text` | Prompt too vague, or attachment unreadable (image-only PDF with no OCR, corrupted file) | Tighten the prompt; confirm the attachment type is supported and has selectable text |
+| `content.Citations` missing even though set `returnCitations: true` | Downstream consumer read the node's `inputDefaults` before the runtime produced the output | Reference `$vars.{nodeId}.output.content.Citations` only in nodes downstream of Summarize; do not precompute |
+| Downstream `result.content.text` / `result.content.citations` is `undefined` | Used lowercase field names — the response shape is PascalCase | Switch to `result.content.Text` / `result.content.Citations` |
 | Large documents time out | Synthesis cost scales with doc size; single call is bounded | Split the document upstream (per-section Summarize calls + a final merge step) or move to a published [Agent](../agent/impl.md) with a context-grounding resource |
-| Wrong citations (pages off by one, wrong source) | The attached document's page numbering doesn't match the displayed page ordinal | Treat `ordinal` and `page` as advisory — present the source identifier alongside and let the reader verify |
+| Wrong citations (pages off by one, wrong source) | The attached document's page numbering doesn't match the displayed page ordinal | Treat `Ordinal` and `PageNumber` as advisory — present `Source`/`Reference` alongside and let the reader verify |
 
 ## What NOT to Do
 
@@ -135,5 +192,7 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 - **Do not pass `--source` on `uip maestro flow node add`** — `--source` is only for inline agent nodes. Summarize has no agent project behind it.
 - **Do not chain Summarize for multi-turn chat.** It is single-turn; each call is independent. Use a published [Agent](../agent/impl.md) for conversational flows.
 - **Do not stuff `prompt` with entire document text.** The attachment is already ingested — the prompt should describe **the task**, not the input.
-- **Do not assume `content.citations` is always present.** When `returnCitations: false`, the field is omitted; downstream code must guard.
-- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. Always pass the whole object via `=js:$vars.<name>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
+- **Do not assume `content.Citations` is always present.** When `returnCitations: false`, the field is omitted; downstream code must guard.
+- **Do not use lowercase field names** (`content.text`, `content.citations`, `.ordinal`, `.page`). The runtime emits PascalCase: `content.Text`, `content.Citations`, `Ordinal`, `PageNumber`, `Source`, `Reference`.
+- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
+- **Do not write `outputs.output.source: "=deepRagResult"`.** That string is a stale pre-#1380 shape; the canonical value is `"=response"` (the convention every BPMN ServiceTask follows).
