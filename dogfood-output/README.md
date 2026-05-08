@@ -8,6 +8,8 @@ Task: Dogfood Maestro BPMN skill and CLI end to end.
 - BPMN source: `dogfood-output/customer-onboarding-approval/customer-onboarding-approval.bpmn`
 - Package output: `dogfood-output/dist/customer-onboarding-approval.processOrchestration.ProcessOrchestration.0.1.0.nupkg` (ignored by git)
 
+This directory is intentionally committed as the dogfood investigation artifact for PR review, not as a reusable skill fixture.
+
 The BPMN models a customer-onboarding approval workflow with:
 
 - Manual start and complete/rejected end states.
@@ -44,7 +46,7 @@ python3 -m zipfile -l dogfood-output/dist/customer-onboarding-approval.processOr
 - Global `uip` is installed at `/usr/local/bin/uip`, version `0.9.1`.
 - Global `maestro-tool` is `0.9.1` and exposes `init`, `pack`, `debug`, lifecycle commands, and `registry`.
 - Global `uip maestro bpmn validate --help` fails with `unknown command 'validate'`.
-- Local `/Users/gongzhang/code/uipcli` source includes `registerValidateCommand`, but `bun run start -- maestro bpmn --help` fails before command registration: `Cannot find module '@uipath/flow-migrations' from '/Users/gongzhang/code/uipcli/packages/flow-tool/src/services/flow-migrate-service.ts'`.
+- Local `<LOCAL_UIPCLI_CHECKOUT>` source includes `registerValidateCommand`, but `bun run start -- maestro bpmn --help` fails before command registration: `Cannot find module '@uipath/flow-migrations' from '<LOCAL_UIPCLI_CHECKOUT>/packages/flow-tool/src/services/flow-migrate-service.ts'`.
 - Registry discovery worked from cache: `ExtensionTypeCount=29`, `ConnectorCount=0`, `ProcessCount=26`.
 - `Intsvc.ActivityExecution` is discoverable and maps to `bpmn:SendTask`, but no local enrichment command was found and no connector connections were available.
 - `Actions.HITL` and `Orchestrator.StartJob` registry specs were discoverable and agreed with the skill wrappers.
@@ -62,7 +64,7 @@ Generated package JSON also remained scaffold-derived after editing the BPMN. Pa
 
 ## Follow-ups
 
-- owner=CLI; action=schedule_task; Make `/Users/gongzhang/code/uipcli` runnable from main or document the required dependency/bootstrap step that provides `@uipath/flow-migrations`.
+- owner=CLI; action=schedule_task; Make `<LOCAL_UIPCLI_CHECKOUT>` runnable from main or document the required dependency/bootstrap step that provides `@uipath/flow-migrations`.
 - owner=CLI; action=schedule_task; Ensure the installed/local command surface exposes `uip maestro bpmn validate` after PR #1875, or document the supported local invocation while global tools lag.
 - owner=CLI; action=schedule_task; Add or document a local BPMN package-metadata regeneration/enrichment command for `entry-points.json`, `bindings_v2.json`, and Integration Service activity payloads.
 - owner=skills; action=no_action_needed; No narrow high-confidence skill doc/fixture defect was found in this dogfood pass.
