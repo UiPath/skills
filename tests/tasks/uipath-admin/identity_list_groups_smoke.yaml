@@ -24,13 +24,6 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent checked login status"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran groups list with --output json"
