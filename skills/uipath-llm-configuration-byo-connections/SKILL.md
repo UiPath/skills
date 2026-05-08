@@ -1,6 +1,6 @@
 ---
 name: uipath-llm-configuration-byo-connections
-description: "Manage Bring-Your-Own (BYO) LLM product configurations in the UiPath LLM Gateway via `uip llm-configuration byo-connections`. Use when the user mentions BYO LLM, custom AI provider, bringing their own OpenAI / Azure OpenAI / Bedrock / Anthropic / Google Vertex key, registering an external LLM, or wiring a tenant-owned API key into UiPath products. The CLI wraps the product-level llm-configurations endpoints on the LLM Gateway. For tenant-wide AI governance (allowed providers, blocked models) → uipath-gov-aops-policy."
+description: "UiPath BYO LLM product configurations in the LLM Gateway via `uip llm-configuration byo-connections` — list, get, create, update, delete, list-product-configs. Register tenant-owned OpenAI / Azure OpenAI / AWS Bedrock / Anthropic / Google Vertex / Mistral keys against UiPath products (agents, agenthub, jarvis, IXP, agent builder). Wraps product-level llm-configurations endpoints. For tenant-wide AI governance (allowed providers, blocked models)→uipath-governance."
 allowed-tools: Bash, Read
 ---
 

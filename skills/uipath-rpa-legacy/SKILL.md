@@ -1,6 +1,6 @@
 ---
 name: uipath-rpa-legacy
-description: "Legacy UiPath RPA (.NET Framework 4.6.1, XAML) via `uip rpa-legacy`. Activates when project.json targetFramework='Legacy' or missing, or user mentions legacy. For Windows/cross-platform→uipath-rpa."
+description: "Always invoke when `project.json` has `targetFramework: Legacy` or the user mentions legacy XAML / .NET 4.6.1. UiPath legacy RPA (.NET Framework 4.6.1, XAML) via `uip rpa-legacy`. For Windows/cross-platform→uipath-rpa."
 ---
 
 # Legacy RPA Workflow Architect

@@ -1,6 +1,6 @@
 ---
 name: uipath-feedback
-description: "Send UiPath bug reports or improvement suggestions via `uip feedback send`. Use for 'report issue', 'feedback', 'something is wrong', or the /uipath-feedback command."
+description: "UiPath bug reports and improvement suggestions via `uip feedback send`. Use for 'report issue', 'send feedback', 'file a bug', or the /uipath-feedback command. For investigating an error rather than reporting one→uipath-diagnostics."
 when_to_use: "User says 'this is broken', 'this isn't working', 'report a bug', 'send feedback', 'something is wrong', 'file an issue', 'this crashed', 'wrong result' about a UiPath product, CLI, or skill. Also fires on the /uipath-feedback slash command."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
