@@ -18,7 +18,7 @@ Confirm: input port `input`, output ports `output` and `error`.
 {
   "id": "subflow1",
   "type": "core.subflow",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Add Numbers", "icon": "layers" },
   "inputs": {
     "a": 2,
@@ -53,7 +53,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
         {
           "id": "subflow1Start",
           "type": "core.trigger.manual",
-          "typeVersion": "1.0.0",
+          "typeVersion": "1.0",
           "display": { "label": "Start" },
           "inputs": {
             "entryPointId": "unique-uuid-here",
@@ -71,7 +71,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
         {
           "id": "script1",
           "type": "core.action.script",
-          "typeVersion": "1.0.0",
+          "typeVersion": "1.0",
           "display": { "label": "Add Numbers" },
           "inputs": {
             "script": "return { result: $vars.subflow1Start.output.a + $vars.subflow1Start.output.b };"
@@ -121,7 +121,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
         {
           "id": "subflow1End",
           "type": "core.control.end",
-          "typeVersion": "1.0.0",
+          "typeVersion": "1.0",
           "display": { "label": "End" },
           "inputs": {},
           "outputs": {
@@ -196,7 +196,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 
 ## Creating a Subflow
 
-For the step-by-step procedure, see [JSON: Create a subflow](../../editing-operations-json.md#create-a-subflow). Use the parent node JSON and subflow definition structures above for the node-specific fields.
+For the step-by-step procedure, see [Edit/Write: Create a subflow](../../editing-operations-json.md#create-a-subflow). Use the parent node JSON and subflow definition structures above for the node-specific fields.
 
 ## Debug
 

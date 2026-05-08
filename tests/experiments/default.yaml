@@ -18,6 +18,8 @@ defaults:
     # cutting before/after-hooks and coded-test-case off mid-task.
     max_turns: 40
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
     plugins:
       - type: "local"
         path: "$SKILLS_REPO_PATH"

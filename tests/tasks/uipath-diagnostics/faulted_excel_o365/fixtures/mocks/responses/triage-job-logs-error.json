@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-04-01T11:05:24.529Z",
+      "Message": "ReadRow: The workbook does not exist\r\nin Main.xaml\r\n    at ReadRow \"ReadRow\"\r\n    at Sequence \"Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

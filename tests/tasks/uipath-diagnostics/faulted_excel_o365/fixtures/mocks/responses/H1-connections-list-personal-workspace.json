@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "86ec2bec-fcde-44e3-a793-9bd3ea0cd0ab",
+      "Name": "replacement_email@test.com",
+      "ConnectorKey": "uipath-microsoft-onedrive",
+      "ConnectorName": "Microsoft OneDrive & SharePoint",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
+      "Created": "2026-03-31T15:00:00.900Z",
+      "Updated": "2026-03-31T18:33:16.356Z"
+    }
+  ]
+}

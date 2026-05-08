@@ -1,7 +1,9 @@
 task_id: skill-flow-ipe-path-params
 description: >
   Tests the path parameters IS feature — configures a connector node with a
-  path parameter on the Google Tasks connector.
+  path parameter on the Jira "Get Issue" activity. Project + issue type are
+  freely chosen by the agent; the issue key is deterministic so the test can
+  verify the path-parameter wiring.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
 
 task_timeout: 1500
@@ -18,16 +20,22 @@ sandbox:
   node:
     # Pin shared across all connector_features tasks — bump in lockstep.
     env_packages:
-      - "@uipath/cli@0.1.21"
+      - "@uipath/cli"
 initial_prompt: |
   Create a new Flow project called "PathParamsTest" with a manual trigger.
-  You need a flow that deletes a single task from a specific Google Tasks list.
-  Discover the right delete operation and provide both the task list ID (path
-  parameter) and the task ID.
+  Build a flow that retrieves a single Jira issue using the Jira "Get Issue"
+  connector activity. Pick any Jira project and any issue type from what is
+  available on the connection — those values are your choice. The issue key
+  (the path parameter on the Get Issue endpoint) MUST be "ENGCE-00000".
   Add a Decision node to check whether the call succeeded.
   Route failure to a Terminate node with error message "PathParams test failed".
   Route success to a final action that logs "PathParams test passed".
   Validate the final flow file.
+  If the Jira "Get Issue" connector operation is not present in the registry,
+  use a managed HTTP fallback for the equivalent REST call (the URL must still
+  carry "ENGCE-00000" as the issue identifier in the path) and finish after
+  validation. Do not keep searching for a connector node that the registry
+  does not expose.
 
 success_criteria:
   - type: run_command
@@ -39,11 +47,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow has a connector node referencing uipath-google-tasks"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/PathParamsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-google-tasks' in content, 'Connector key not found'; print('OK: connector key present')\""
+    description: "Flow uses Jira connector or task-specific managed HTTP fallback"
+    command: "python3 $TASK_DIR/check_managed_http_fallback.py '**/PathParamsTest*.flow' uipath-atlassian-jira path_params"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow path parameters carry the issue key ENGCE-00000"
+    command: "python3 $TASK_DIR/check_path_param_value.py '**/PathParamsTest*.flow' ENGCE-00000"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

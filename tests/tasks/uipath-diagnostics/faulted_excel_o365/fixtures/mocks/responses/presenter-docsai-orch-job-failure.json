@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "9ab85416-e2c2-4422-b877-649e6f3c0531",
+    "text": "UiPath Orchestrator does not provide an automatic “retry policy” concept for jobs themselves. Handling child job failures and retries must be implemented in your process design and by manually restarting faulted jobs.\n\nKey points from the docs:\n\n- A job is **Faulted** if:\n  - It failed to start, or  \n  - The process threw an unhandled error during execution.  \n  Faulted jobs **must be restarted manually**.  \n  ([Job States – multiple versions](https://docs-staging.uipath.com/orchestrator/standalone/2025.10/user-guide/job-states))\n\n- You can **restart** any job that reached a final state (**Stopped**, **Faulted**, or **Successful**) from the Jobs list:\n  - Click **More Actions** → **Restart**.\n  - Adjust settings in **Start Job** window if needed.\n  - Click **Start**.  \n  ([Managing Jobs – Restarting a Job](https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs))\n\n- For analysis before retrying:\n  - Use **View Details** to see why a job faulted.\n  - If **Enable Recording** was on for unattended jobs, you can [download execution media](https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/managing-jobs#downloading-execution-media) to inspect the failure.\n  - Use **View Logs** from **More Actions** to see job logs.  \n  ([Managing Jobs](https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs))\n\nTo implement “retry policies” for child jobs, you’d typically:\n- Catch errors in the parent workflow.\n- Decide when to restart the child job (e.g., based on exception type or retry counter).\n- Use Orchestrator APIs or activities to start the child job again.\n",
+    "sources": [
+      "https://docs-staging.uipath.com/orchestrator/standalone/2025.10/user-guide/job-states",
+      "https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/job-states",
+      "https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs"
+    ],
+    "disclaimers": [],
+    "followups": [
+      "How can I design a parent workflow in Studio to automatically retry a failed child job a limited number of times?",
+      "How do I use Orchestrator APIs or activities to programmatically start or restart jobs from a workflow?",
+      "What is the best way to log and track child job failures and retries in Orchestrator for reporting?"
+    ]
+  }
+}

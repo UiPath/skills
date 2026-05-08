@@ -12,6 +12,8 @@ defaults:
     model: claude-sonnet-4-6
     max_turns: 30
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
     plugins:
       - type: "local"
         path: "$SKILLS_REPO_PATH"

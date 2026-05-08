@@ -52,6 +52,17 @@ uip is connectors list --output json
 
 Keys are often prefixed — e.g., `uipath-salesforce-slack` not `slack`.
 
+### Disambiguation — when search returns multiple connectors for the same intent
+
+`uip maestro flow registry search <keyword>` routinely returns multiple connectors for the same user intent (e.g. searching `databricks` returns both the native AI-serving connector and the JDBC gateway). **Never silently pick the first match.**
+
+Apply the canonical disambiguation ladder owned by Integration Service:
+
+- [/uipath:uipath-platform — Integration Service — connectors.md — Connector Disambiguation](../../../../../../uipath-platform/references/integration-service/connectors.md#connector-disambiguation) — classify catalog/custom/mock, intent-match by `Description`, count remaining candidates (1 → silent, >1 → AskUser, 0 catalog → STOP).
+- [/uipath:uipath-platform — Integration Service — connectors.md — JDBC Gateway — Database SQL Intent](../../../../../../uipath-platform/references/integration-service/connectors.md#jdbc-gateway--database-sql-intent) — special handling when the user's intent is a database SQL operation (native connector vs JDBC gateway, connection-name keyword matching, decision matrix, lifecycle disclosure).
+
+Lock the chosen connector key in the planning notes — never re-derive per node within the same flow.
+
 ### Check Connector Connections
 
 For each connector found in registry search, verify a healthy connection exists. Extract the connector key from the node type name (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` -> key is `uipath-microsoft-outlook365`).

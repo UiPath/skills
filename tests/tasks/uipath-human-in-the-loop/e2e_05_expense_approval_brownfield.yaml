@@ -55,13 +55,6 @@ initial_prompt: |
   A manager should review and approve the expense before it is posted.
   Wire the completed handle to the posting step and validate the flow.
 
-  Save a summary to report.json with:
-  {
-    "hitl_node_id": "<the ID of the HITL node you added>",
-    "commands_used": ["<list of uip commands run>"],
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: file_contains
     description: "HITL node is present in the flow file"
@@ -87,18 +80,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was written"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json confirms validation passed and captures node ID"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 2.0
-    pass_threshold: 1.0

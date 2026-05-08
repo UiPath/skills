@@ -431,6 +431,24 @@ Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" 
 | `ReplayUserEvent` | `ReplayUserEventV2` | Old version still loads but shouldn't be used |
 | `UiPath.<Vendor>.IntegrationService.Activities` packages | Generic `ConnectorActivity` via IS | Vendor-specific IS packages are deprecated |
 
+## Common Activity Name Confusions
+
+Activity tag names rarely match Studio display names. Guessing the tag from the display name fails at `build` (`Cannot create unknown type '...'`). Two examples:
+
+| Display Name | Wrong guess | Correct tag |
+|--------------|-------------|-------------|
+| Delete File | `ui:DeleteFile` | `ui:DeleteFileX` |
+| Wait | `ui:Wait` | `Delay` (MWF primitive — no prefix) |
+
+### Tag Verification Gate
+
+Before writing any `<prefix:Tag>` not already in the file:
+
+- **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. No file → no such tag.
+- **CLI lookup.** `uip rpa find-activities --query "<verb>" --output json` → use the returned `ClassName`.
+
+Skipping both produces `Cannot create unknown type` at `build`.
+
 ## Default Values That Matter
 
 | Activity | Property | Default | Impact |
@@ -493,6 +511,13 @@ Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — ne
 - **VerifyControlAttribute**: Cannot be nested inside another `VerifyControlAttribute` — validation error
 - **Assert activities** require `BookmarkResumptionHelper` extension (added via `metadata.RequireExtension<BookmarkResumptionHelper>()` in CacheMetadata)
 - **TakeScreenshotInCaseOfSucceedingAssertion** and **TakeScreenshotInCaseOfFailingAssertion** are `[RequiredArgument]` on assert activities even though they default to `false`
+
+## Enum-Valued Properties Are a `get-errors` Blind Spot
+
+Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) are checked at compile time against the activity's enum, **not** during `get-errors` static analysis. An invalid identifier on an enum-typed attribute returns "no diagnostics found" from `get-errors` and surfaces only at `build` / `CacheMetadata` time. Two consequences:
+
+1. Always read `{projectRoot}/.local/docs/packages/<PackageId>/activities/<Activity>.md` for the exact, package-version-specific enum members before authoring an enum-valued attribute. Do not infer values from naming intuition or from prose in this skill.
+2. Always run `uip rpa build` after `get-errors` clears — it is the only validator that catches invalid enum identifiers (see [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop)).
 
 ## Package Version Changes Break XAML
 
@@ -559,6 +584,35 @@ Common validation error: `"The type 'Dictionary<,>' is defined in an assembly th
 
 **Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages`.
 
+## Workflow Argument Declarations Use `<x:Members>`, Not `<Activity.Properties>`
+
+**Error pattern (Studio refuses to open the file):**
+```
+Cannot create unknown type '{http://schemas.microsoft.com/netfx/2009/xaml/activities}Property'
+```
+
+**Root cause:** Workflow arguments (In/Out/InOut) must be declared in `<x:Members>` with `<x:Property>` children — both prefixed with `x:` (the XAML language schema, `http://schemas.microsoft.com/winfx/2006/xaml`). Writing `<Activity.Properties>` with bare `<Property>` elements resolves `Property` against the **default** xmlns (the activities namespace), where no such type exists — so the file fails to load entirely.
+
+**Wrong** — Studio cannot open the workflow:
+```xml
+<Activity.Properties>
+  <Property Name="in_Username" Type="InArgument(x:String)" />
+  <Property Name="out_LoginSuccess" Type="OutArgument(x:Boolean)" />
+</Activity.Properties>
+```
+
+**Correct:**
+```xml
+<x:Members>
+  <x:Property Name="in_Username" Type="InArgument(x:String)" />
+  <x:Property Name="out_LoginSuccess" Type="OutArgument(x:Boolean)" />
+</x:Members>
+```
+
+This is a hard-load error, not a validation warning — the file cannot even be opened in the designer. If a hand-written or generated workflow shows this symptom, search-and-replace `<Activity.Properties>` → `<x:Members>` and `<Property ` → `<x:Property ` (and the matching closing tags). The `<x:Members>` form appears in every starter from `uip rpa get-default-activity-xaml` and in the canonical anatomy at [xaml-basics-and-rules.md § XAML File Anatomy](xaml-basics-and-rules.md#xaml-file-anatomy).
+
+---
+
 ## Invalid Use of `x:` Prefix for Non-Builtin CLR Types
 
 **Error pattern:**
@@ -602,11 +656,27 @@ The error occurs because the XAML language schema does not register `DateTime`, 
 | `x:DateTimeOffset` | `s:DateTimeOffset` | Often required by calendar/scheduling activities |
 | `x:Guid` | `s:Guid` | — |
 | `x:Uri` | `s:Uri` | — |
+| `x:Exception` | `s:Exception` | `<Catch x:TypeArguments="s:Exception">`, `Throw` argument types |
 
 For types outside of `System`, add the matching CLR namespace alias. Examples:
 ```xml
 xmlns:sio="clr-namespace:System.IO;assembly=System.Private.CoreLib"
 <Variable x:TypeArguments="sio:FileInfo" Name="file" />
+```
+
+**Do NOT use dotted full CLR names in `x:TypeArguments`** — `x:TypeArguments` accepts only XML-prefix-qualified names, never dotted full names. The XAML parser does not resolve dotted CLR identifiers; each subnamespace requires its own `xmlns` alias.
+
+Wrong — fails with `Cannot create unknown type` at load time:
+```xml
+<Variable x:TypeArguments="System.Security.SecureString" Name="var_SecurePass" />
+<OutArgument x:TypeArguments="System.Security.SecureString">[var_SecurePass]</OutArgument>
+```
+
+Correct — declare the alias once on the root `<Activity>`, then use it everywhere the type appears:
+```xml
+xmlns:ss="clr-namespace:System.Security;assembly=System.Private.CoreLib"
+<Variable x:TypeArguments="ss:SecureString" Name="var_SecurePass" />
+<OutArgument x:TypeArguments="ss:SecureString">[var_SecurePass]</OutArgument>
 ```
 
 **Fix example:**

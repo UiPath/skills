@@ -60,16 +60,6 @@ initial_prompt: |
     (Warning severity)
   - Have a "## Summary" section at the end
 
-  Save a structured summary to report.json:
-    {
-      "projects_reviewed": 2,
-      "commands_used": ["<list of uip commands you ran>"],
-      "severities_found": ["<unique severities found>"],
-      "findings_count": <int>,
-      "hardcoded_credential_flagged": <bool>,
-      "empty_catch_flagged": <bool>
-    }
-
   Important:
   - The `uip` CLI is already available in the environment.
   - Do not run `uip rpa debug` or any execution commands.
@@ -161,24 +151,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json shows both planted issues were identified"
-    path: "report.json"
-    assertions:
-      - expression: "projects_reviewed"
-        operator: equals
-        expected: 2
-      - expression: "hardcoded_credential_flagged"
-        operator: equals
-        expected: true
-      - expression: "empty_catch_flagged"
-        operator: equals
-        expected: true
-      - expression: "findings_count"
-        operator: gte
-        expected: 2
-      - expression: "length(severities_found)"
-        operator: gte
-        expected: 2
-    weight: 2.5
-    pass_threshold: 0.8

@@ -31,7 +31,7 @@ UiPath Testmanager is a web application that manages the testing lifecycle of pr
 - **Testcaselogs** — Logs of a tescase in a execution.
 - **Testcaselog assertions** — Assertion steps of a testcaselog in a execution.
 
-CLI tool for UiPath Test Manager (`uip tm`). Use `uip tm --help` and `uip tm <command> <option> --help` to discover all commands and options. **Always use `--output json`** when calling commands programmatically.
+CLI tool for UiPath Test Manager (`uip tm`). Use `uip tm --help` and `uip tm <command> <option> --help` to discover all commands and options. **Always pass `--output json`** on every `uip` command (see Critical Rule #2).
 Common `uip tm` (Test Manager) commands organized by resource type:
 
 ### Project Commands
@@ -59,7 +59,11 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 | `uip tm testcase unlink-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | Unlink the automation from a test case. |
 | `uip tm testcase list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | List test entry points available in an Orchestrator folder (optional: `--package-name <PACKAGE_NAME>` to filter). |
 | `uip tm testcase list-testsets --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | List test sets that contain a given test case. |
+| `uip tm testcase list-steps --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** |
 | `uip tm testcase list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List testcase log result history for a specific test case. |
+| `uip tm testcase execute --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID> --execution-type <TYPE>` | Start an execution for one or more test cases. **Uses `--test-case-id <UUID>` (space-separated for multiple), not `--test-case-key`.** |
+
+> Get a test case UUID with `uip tm testcase list --project-key <PROJECT_KEY> --output json` and read the `Id` field. The `--test-case-id` flag requires a UUID; the `--test-case-key` flag (used by `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`) requires the `PROJECT_KEY:NUMBER` form (e.g., `DEMO:1`). Do not interchange them.
 
 ### TestSet Commands
 
@@ -117,7 +121,7 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 ## Critical Rules
 
 1. **Always check login first** — run `uip login status --output json` before any Test Manager operation. Use `uip login`.
-2. **Always use `--output json`** on every `uip` command whose output is parsed programmatically.
+2. **Always pass `--output json`** to every `uip` command — no exceptions. Structured JSON output is what you need to reason about results reliably, even when you only plan to summarize them back to the user.
 3. **Cap retries at 3** for any failing API call. After 3 failures, stop and report the error to the user.
 4. **Handle empty results** — if a list command returns an empty array, stop and inform the user rather than proceeding with a null key.
 5. **Confirm before delete** — always confirm the target resource key with the user before running any `delete` command.
@@ -150,7 +154,7 @@ Common `uip tm` (Test Manager) commands organized by resource type:
   uip tm testset list-testcases --test-set-key <TEST_SET_KEY> --output json
 
   # Get testexecution
-  uip tm execution list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> -top 100 --output json
+  uip tm execution list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> --top 100 --output json
 
   # Get testcaselogs in a testexecution
   uip tm execution list-testcaselogs --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json
@@ -174,8 +178,13 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 | I want to... | Start here |
 |---|---|
 | **Generate a shareable test report** (tester or release manager view) | [references/test-result-report-guide.md](references/test-result-report-guide.md) |
+| **Publish a project and link it to a Test Manager test case** | [references/publish-and-link-guide.md](references/publish-and-link-guide.md) |
 
 
 ## Anti-patterns
 
 - **Do NOT proceed if authentication fails** — all Test Manager API calls require a valid bearer token. Fail fast rather than surfacing confusing 401 errors later.
+- **Do NOT guess command names — verb-noun composites are required.** The CLI uses explicit verb-noun forms; bare verbs do not exist. Always run `uip tm <resource> --help` to confirm. Common landmines:
+  - `uip tm testcase link` ❌ → `uip tm testcase link-automation` ✓
+  - `uip tm testcase unlink` ❌ → `uip tm testcase unlink-automation` ✓
+  - `uip tm execution wait` ❌ → `uip tm wait` ✓ (top-level under `tm`, not `execution`)

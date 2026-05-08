@@ -54,7 +54,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 {
   "id": "classifyIntent",
   "type": "uipath.core.agent.ffa33d88-8a85-4570-933c-9a69aa2dfbb5",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Classify Intent" },
   "inputs": {},
   "outputs": {

@@ -29,6 +29,11 @@ initial_prompt: |
   Route failure to a Terminate node with error message "EnhancedEnum test failed".
   Route success to a final action that logs "EnhancedEnum test passed".
   Validate the final flow file.
+  If the WooCommerce operation exists in the registry but the tenant has no
+  live connection, use planned connector-node mode: keep the real connector
+  node type, leave its inputs empty, validate that shape, and stop. Do not
+  keep hand-authoring connection detail after the empty-input connector node
+  validates.
 
 success_criteria:
   - type: run_command

@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T12:09:57.870Z",
+      "Message": "Throw Preflight Failure: See Error logs (connection and/or asset read failed)\r\nin Main.xaml\r\n    at Throw \"Throw Preflight Failure\"\r\n    at If \"Check Preflight\"\r\n    at Sequence \"PurchaseOrderProcessing\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T12:09:57.853Z",
+      "Message": "[ReadPricingAsset] Status code: 404 (Not Found). Orchestrator response: \r\nCould not find the asset 'PO_PricingTable'. Error code: 1002"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T12:09:57.266Z",
+      "Message": "[ReadPOEmail] Connection [7d15b17a-da96-4759-85ba-f24aacbfb04b] is invalid or you do not have access to it"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+task_id: skill-agent-coded-eval-llm-judges
+description: >
+  Coded-agent eval lifecycle, LLM-judge path. Verifies the agent
+  authors two LLM-judge evaluator configs in one eval set —
+  `LLMJudgeOutputEvaluator`
+  (`uipath-llm-judge-output-semantic-similarity`) and
+  `LLMJudgeTrajectoryEvaluator`
+  (`uipath-llm-judge-trajectory-similarity`) — and runs them against
+  a LangGraph classifier with `--no-report` and `--mocker-cache` so
+  the judges are reproducible.
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a LangGraph UiPath coded agent named `intent-classifier` that
+  classifies a free-text user request into one of: `weather`,
+  `news`, `joke`.
+
+  Input: `text` (str). Output: `category` (str), `text` (str).
+
+  For deterministic test runs, pin the LLM to a low-cost gateway
+  model (e.g. `gpt-4o-mini-2024-07-18`) with `temperature=0`.
+
+  Take the agent through scaffold → init → run, then add an
+  evaluation harness with **two LLM judges in one eval set**:
+
+  - The semantic-output LLM judge (id `LLMJudgeOutputEvaluator`).
+    Each test case's criteria block carries an `expectedOutput`.
+  - The trajectory LLM judge (id `LLMJudgeTrajectoryEvaluator`).
+    Each test case's criteria block carries an
+    `expectedAgentBehavior` string — e.g. "Agent classifies the
+    input into exactly one of weather/news/joke and returns that
+    label."
+
+  Three test cases. Run the eval set locally (no Studio Web
+  reporting) and cache LLM responses for reproducibility. Save the
+  results to `eval-results.json` in the project root.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran the eval suite with --no-report"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--no-report'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both LLM-judge evaluator configs + eval-set + results shape"
+    command: "python3 $TASK_DIR/check_eval_llm_judges.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

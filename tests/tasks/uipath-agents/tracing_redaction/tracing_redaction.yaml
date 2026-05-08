@@ -1,0 +1,55 @@
+task_id: skill-agent-coded-tracing-redaction
+description: >
+  Coded-agent tracing with redaction. Verifies the agent applies
+  `@traced(name=..., input_processor=..., output_processor=...)` to
+  a function that handles sensitive data so both the input and the
+  output are redacted before they reach the trace store.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:trace]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a Simple Function UiPath coded agent named
+  `credential-validator` whose `main(input)` validates a username +
+  password pair and returns an auth token. The redaction wiring is
+  the point of the test — implement a stub that treats any non-empty
+  password as valid and returns
+  `{"token": f"tok-{username}", "username": username}`.
+
+  Input: `username` (string), `password` (string). Output: `token`
+  (string), `username` (string).
+
+  Add tracing to `main` so the trace store NEVER receives the raw
+  password (input) or the raw token (output) — partial visibility
+  into the other fields is fine. Give the span a stable label so it
+  shows up cleanly in trace search.
+
+  Take the agent through scaffold → init. Do NOT run, publish,
+  upload, or deploy. Do NOT pause between planning and
+  implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "@traced wired with name + input_processor + output_processor"
+    command: "python3 $TASK_DIR/check_tracing_redaction.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

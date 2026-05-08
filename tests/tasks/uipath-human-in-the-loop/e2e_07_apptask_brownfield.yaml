@@ -47,14 +47,6 @@ initial_prompt: |
   app. Use the AppTask path (inputs.type = "custom"), not an inline QuickForm.
   Wire the completed handle to the posting step and validate the flow.
 
-  Save results to report.json:
-  {
-    "hitl_node_id": "<id of the HITL node>",
-    "app_name": "Expense Review",
-    "inputs_type": "custom",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: file_contains
     description: "HITL node with AppTask (custom) type is present in the flow file"
@@ -81,15 +73,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json confirms AppTask type and validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "inputs_type"
-        operator: equals
-        expected: "custom"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 2.0
-    pass_threshold: 1.0

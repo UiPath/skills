@@ -1,6 +1,6 @@
 # agent task — Implementation (Direct JSON Write)
 
-> **Phase split.** Phase 2a writes shape with empty input values. Phase 2b binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
+> **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
 
 ## Task JSON Shape
 
@@ -38,7 +38,7 @@ Fallback: planning-captured schema from tasks.md. If unavailable, skeleton per [
 
 **Step 1 — Root-level bindings:**
 
-Create 2 entries in `root.data.uipath.bindings[]` per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
+Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
 
 | `propertyAttribute` | `resource` | `resourceSubType` | `default` |
 |---|---|---|---|
@@ -54,12 +54,12 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 4. Append to target stage's `tasks[laneIndex][]`
 
-> Entry conditions added in Step 10. Input value bindings in Phase 2b per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
+> Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 
 ## Post-Write Verification
 
 - `type: "agent"`
 - `data.name` and `data.folderPath` start with `=bindings.`
-- `root.data.uipath.bindings[]` has 2 entries: `resource: "process"`, `resourceSubType: "Agent"`, `propertyAttribute` = `name` / `folderPath`
+- the bindings array has 2 entries: `resource: "process"`, `resourceSubType: "Agent"`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless skeleton)
 - `id` captured in `id-map.json`

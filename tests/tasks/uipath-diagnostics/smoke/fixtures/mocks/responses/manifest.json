@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "rules": [
+    { "match": "is connections list",   "file": "connections_list.json" },
+    { "match": "is connections ping",   "file": "connections_ping.json" },
+    { "match": "is connections create", "file": "connections_create.json" },
+    { "match": "is connections edit",   "file": "connections_edit.json" },
+    { "match": "orchestrator buckets list", "file": "buckets_list.json" },
+    { "match": "login status",          "file": "login_status.json" }
+  ]
+}

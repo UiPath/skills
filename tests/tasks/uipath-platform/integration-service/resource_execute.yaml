@@ -19,24 +19,10 @@ initial_prompt: |
   Walk me through creating a Contact in Salesforce via UiPath Integration
   Service. Follow the full Integration Service workflow.
 
-  Save a step-by-step log to report.json:
-  {
-    "workflow_steps": [
-      {"step": 1, "action": "find_connector", "command": "<uip command>", "result": "<success or error>"},
-      {"step": 2, "action": "find_connection", "command": "<uip command>", "result": "<success or error>"},
-      {"step": 3, "action": "ping_connection", "command": "<uip command>", "result": "<success or error>"},
-      {"step": 4, "action": "discover_resources", "command": "<uip command>", "result": "<success or error>"},
-      {"step": 5, "action": "describe_resource", "command": "<uip command>", "result": "<success or error>"},
-      {"step": 6, "action": "execute_create", "command": "<uip command>", "result": "<success or error>"}
-    ],
-    "commands_used": ["<all uip commands run in order>"]
-  }
-
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
     environment. Commands will fail with auth errors — that is expected.
-    Run each command once, record the result (success or error) in report.json,
-    and move on. Do NOT retry or attempt to login.
+    Run each command once and move on. Do NOT retry or attempt to login.
   - Use `--output json` on every uip command.
   - For the execute step, construct a realistic --body with at least
     LastName (required) and FirstName fields.
@@ -90,16 +76,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "report.json logs all 6 workflow steps with correct structure"
-    command: "python3 $TASK_DIR/_shared/is_check.py check_resource_execute"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0

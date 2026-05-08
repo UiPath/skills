@@ -12,10 +12,16 @@ Scaffold a new Flow project directory. **Always create a solution first** (see t
 # 1. Create solution first
 uip solution new "<SolutionName>" --output json
 
-# 2. Init the flow project inside the solution folder
-cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
+# 2. Init the flow project inside the solution folder.
+#    When run from inside a solution directory, `flow init` auto-registers
+#    the project with the parent `.uipx` — no manual `solution project add`
+#    is required. Confirm via `Data.SolutionRegistration.Status` in the
+#    response (`Registered` or `AlreadyRegistered`).
+cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
-# 3. Register the project with the solution
+# 3. (Fallback only) Wire the project manually if auto-registration was
+#    `Skipped` or `Failed` — typically because init was run outside the
+#    solution dir and produced a single-nested layout.
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
@@ -183,7 +189,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --label "Invoice Review" \
   --priority High \
   --assignee finance-approvers \
-  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.result.invoiceId"},{"name":"amount","type":"number","binding":"fetchInvoice.result.amount"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
+  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.output.invoiceId"},{"name":"amount","type":"number","binding":"fetchInvoice.output.amount"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
   --position 474,144 \
   --output json
 ```
@@ -200,8 +206,8 @@ uip maestro flow hitl add <path/to/file.flow> \
 
 ```json
 {
-  "inputs":  [{ "name": "invoiceId", "binding": "fetchInvoice.result.invoiceId" },
-              { "name": "amount", "type": "number", "binding": "fetchInvoice.result.amount" }],
+  "inputs":  [{ "name": "invoiceId", "binding": "fetchInvoice.output.invoiceId" },
+              { "name": "amount", "type": "number", "binding": "fetchInvoice.output.amount" }],
   "outputs": [{ "name": "decision", "required": true },
               { "name": "notes" }],
   "inOuts":  [{ "name": "emailBody" }],
@@ -209,7 +215,7 @@ uip maestro flow hitl add <path/to/file.flow> \
 }
 ```
 
-- `inputs` — read-only context fields shown to the reviewer; `binding` is the full `$vars` path (e.g. `fetchInvoice.result.invoiceId`)
+- `inputs` — read-only context fields shown to the reviewer; `binding` is the full `$vars` path (e.g. `fetchInvoice.output.invoiceId`)
 - `outputs` — fields the human fills in; `variable` defaults to the field name
 - `inOuts` — pre-filled editable fields (human can modify before submitting)
 - `outcomes` — button labels; first is primary (Approve path); subsequent ones end the flow unless you re-wire them

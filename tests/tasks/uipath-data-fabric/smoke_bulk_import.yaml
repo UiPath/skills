@@ -35,14 +35,6 @@ initial_prompt: |
   2. Create the CSV file at products.csv with correct headers and 3 data rows.
   3. Run the bulk import command.
 
-  Save a summary to report.json with the commands and CSV you CONSTRUCTED
-  (fill these in regardless of whether the commands returned auth errors):
-  {
-    "commands_used": ["<list of uip df commands you ran>"],
-    "csv_headers": ["<headers used in the CSV, in order>"],
-    "csv_includes_system_fields": false
-  }
-
   Additional constraints:
   - Use --output json on every uip df command.
   - Do NOT include system fields (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime)
@@ -89,18 +81,13 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "CSV does not include system fields"
-    path: "report.json"
-    assertions:
-      - expression: "csv_includes_system_fields"
-        operator: equals
-        expected: false
+  - type: file_check
+    description: "CSV does not include system fields (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime)"
+    path: "products.csv"
+    excludes:
+      - "CreatedBy"
+      - "CreateTime"
+      - "UpdatedBy"
+      - "UpdateTime"
     weight: 2.0
     pass_threshold: 1.0

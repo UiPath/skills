@@ -42,7 +42,7 @@ uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
 { "Result": "Success", "Code": "LowCodeAgentInitInline", "Data": { "Status": "Inline agent created inside flow project", "Path": "/path/to/FlowProject/<uuid>", "ProjectId": "<uuid>", "Model": "gpt-4o-2024-11-20" } }
 ```
 
-After scaffolding, add a `uipath.agent.autonomous` node to the flow with `model.source = <ProjectId>`. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure.
+After scaffolding, add a `uipath.agent.autonomous` node to the flow with `inputs.source = <ProjectId>` and no node instance `model` block. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure.
 
 ### `uip agent guardrails list`
 
@@ -81,7 +81,7 @@ uip agent validate [path] --output json
 4. Applies all pending migrations **in memory** — stops and returns errors on failure without touching disk.
 5. Post-migration: validates `agent.json` against the latest schema (v50), validates eval-sets and evaluators (category/type constraints), counts resources.
 6. Writes migrated files back to disk only if all checks pass (atomic — either all files update or none).
-7. Generates `.agent-builder/` files (agent.json with inlined resources, entry-points.json, bindings.json). Resolves `referenceKey` for solution-internal tool resources by matching against `resources/solution_folder/process/agent/` definitions.
+7. Generates `.agent-builder/` files (agent.json with inlined resources, entry-points.json, bindings.json) from each `resources/{ResourceName}/resource.json` — including the `referenceKey` GUID set by the author from `uip solution resource list`.
 
 **With `--inline-in-flow`:** Steps 2, 3, and 7 are skipped. Inline agents have no `entry-points.json`, `project.uiproj`, or `.agent-builder/` directory.
 
@@ -107,7 +107,10 @@ uip solution new "<SOLUTION_NAME>" --output json
 
 ### Register Project with Solution
 
+`uip agent init` **auto-registers** the project with the parent `.uipx` when run from inside a solution directory. Verify via `Data.SolutionRegistration.Status` in the `agent init` response — `Registered` or `AlreadyRegistered` means you are done. Use `uip solution project add` only as a fallback when `Status` is `Skipped` or `Failed` (e.g., `init` was run outside the solution dir, or the `.uipx` write failed).
+
 ```bash
+# Fallback only — when agent init's Data.SolutionRegistration.Status is Skipped / Failed.
 uip solution project add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 ```
 
@@ -149,9 +152,11 @@ uip solution deploy run \
   --output json
 ```
 
-Creates folder, provisions resources, and activates. Polls until `DeploymentSucceeded`.
+Creates the folder, provisions resources, and activates the deployment in one call. A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`. Pass `--skip-activate` to opt out of auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`).
 
 ### Activate Existing Deployment
+
+Run only when `--skip-activate` was passed during deploy, or to retry a failed auto-activation after fixing the underlying cause (e.g. missing config).
 
 ```bash
 uip solution deploy activate "<DEPLOYMENT_NAME>" --output json
@@ -173,18 +178,22 @@ uip solution bundle . -d ./dist --output json
 
 `uip solution resource list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
 
+Two supported invocations:
+
 ```bash
-uip solution resource list [solutionPath] \
-  --kind <kind> \
-  --source <all|local|remote> \
-  --search <term> \
-  --output json
+# Local (in-solution): --kind and --search not allowed.
+uip solution resource list [solutionPath] --source local --output json
+
+# Remote (Orchestrator / RCS): --kind and --search supported.
+uip solution resource list [solutionPath] --source remote [--kind <kind>] [--search <term>] --output json
 ```
 
 **Flags:**
-- `--kind <kind>` — filter by resource kind. Supported: `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`.
-- `--source <all|local|remote>` — default `all`. Use `remote` to query only Orchestrator / RCS (what you typically need for discovery).
-- `--search <term>` — substring match on the resource name (case-insensitive).
+- `--source <all|local|remote>` — default `all`. `local` lists resources already in the solution; `remote` queries Orchestrator / RCS.
+- `--kind <kind>` — filter by resource kind. Supported: `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`. **Only valid with `--source remote`.**
+- `--search <term>` — substring match on the resource name (case-insensitive). **Only valid with `--source remote`.**
+
+> **`--kind` and `--search` only work with `--source remote`.** With `--source local` or `--source all` (default), both flags must be omitted — list everything and filter `.Data[]` client-side by `Kind` and `Name`.
 
 **Output row:**
 
@@ -196,7 +205,7 @@ uip solution resource list [solutionPath] \
   "Kind": "Process",               // matches --kind
   "Type": "agent",                 // subtype: process/agent/api/processOrchestration/webApp for Process; Workflow Action/Coded/CodedAction for App; connector key for Connection; orchestratorBucket for Bucket
   "Folder": "Shared/MyFolder",     // fully-qualified folder path
-  "FolderKey": "<folder-guid>"     // folder GUID — use as X-UIPATH-FolderKey header and in debug_overwrites.json
+  "FolderKey": "<folder-guid>"     // folder GUID — refresh writes it into debug_overwrites.json
 }
 ```
 
@@ -214,7 +223,7 @@ uip solution resource list [solutionPath] \
 | `Connection` | `uipath-<connector-key>` | Integration Service connection — the `Type` IS the connector key |
 | `Bucket` | `orchestratorBucket` | Orchestrator storage bucket |
 
-**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For those, you still hit the kind-specific API (see capability files). `resource list` is the identification step — it tells you *that* a resource exists and *where*.
+**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` and `Index` resources, follow up with `uip solution resource get <KEY> --output json` and read `Data.spec` for the full configuration. For other kinds (`App`, `Connection`, `Bucket`), see the kind-specific capability files. `resource list` is the identification step — it tells you *that* a resource exists and *where*.
 
 ## End-to-End Example — New Standalone Agent
 
@@ -242,11 +251,16 @@ All commands run from the same working directory — no `cd` needed. Pass paths 
 
 ```bash
 uip solution new "<SOLUTION_NAME>" --output json
+# `agent init` auto-registers the project in the parent `.uipx` because
+# the agent path lives inside the solution directory. Confirm via
+# `Data.SolutionRegistration.Status` in the response (`Registered` or
+# `AlreadyRegistered`).
 uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
-uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+# (fallback only — run if Data.SolutionRegistration.Status is Skipped / Failed)
+# uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 ```
 
-`uip solution project add` automatically finds the nearest `.uipx` by searching up from the agent path.
+When the fallback is needed, `uip solution project add` automatically finds the nearest `.uipx` by searching up from the agent path.
 
 ### Step 3 — Configure agent.json
 
@@ -330,7 +344,8 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Create solution | `uip solution new "<NAME>" --output json` | Any directory | — |
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
-| Register project | `uip solution project add "<PATH>" --output json` | Solution directory | — |
+| Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done) | Solution directory | — |
+| Register project (fallback) | `uip solution project add "<PATH>" --output json` — only when `agent init` returned `Skipped` / `Failed` | Solution directory | — |
 | Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
 | Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |

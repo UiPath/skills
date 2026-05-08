@@ -1,6 +1,6 @@
 # action task — Implementation (Direct JSON Write)
 
-> **Phase split.** Phase 2a writes shape with empty input values. Phase 2b binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
+> **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
 
 ## Task JSON Shape
 
@@ -35,11 +35,11 @@
 |---|---|
 | `data.taskTitle` | Required, even on skeletons. Validator rejects empty. |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
-| `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. Omit for group/role assignment. |
+| `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
 | `data.actionCatalogName` | `deploymentTitle` from tasks.md |
 | `data.labels` | Label set from tasks.md |
 
-`recipient.Type` values: `0` = user ID, `1` = group ID, `2` = email address, `3` = `"=vars.<varId>"` for runtime resolution. Email recipients always use Type `2`.
+`recipient.Type` values: `0` = user ID (sdd `User:`), `1` = group ID (sdd `UserGroup:` / `Role:`), `2` = email address, `3` = `"=vars.<varId>"`. **Fallback when sdd.md value is not a resolved UUID:** write `{ "Type": <picked>, "Value": "<sdd-string-as-is>" }` — schema-conformant skeleton, user resolves Value later. Drop `data.recipient` only when no Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes silently; CLI validate misses it.
 
 ## Procedure
 
@@ -53,7 +53,7 @@ Fallback: planning-captured schema from tasks.md. If unavailable, skeleton per [
 
 **Step 1 — Root-level bindings:**
 
-Create 2 entries in `root.data.uipath.bindings[]` per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
+Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
 
 | `propertyAttribute` | `resource` | `resourceSubType` | `default` |
 |---|---|---|---|
@@ -70,13 +70,13 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 5. Append to target stage's `tasks[laneIndex][]`
 
-> Entry conditions added in Step 10. Input value bindings in Phase 2b per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
+> Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 
 ## Post-Write Verification
 
 - `type: "action"`
 - `data.taskTitle` non-empty
 - `data.name` and `data.folderPath` start with `=bindings.`
-- `root.data.uipath.bindings[]` has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
+- the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless skeleton)
 - `id` captured in `id-map.json`

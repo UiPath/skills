@@ -2,6 +2,7 @@
 
 How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
 
+
 ## Configuration Workflow
 
 Follow these steps for every IS trigger node.
@@ -131,7 +132,7 @@ Check every field in `eventParameters.fields` where `required: true`. All requir
 
 1. Collect all required event parameter fields
 2. For each, check if the user's prompt provides a value
-3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`
+3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`. Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
 4. Only proceed after all required event parameters are resolved
 
 ### Step 4b — Map trigger output fields for downstream nodes
@@ -180,9 +181,8 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 | `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
 | `filter` | No | Structured filter tree — see [Filter Trees](#filter-trees) below. Omit to trigger on all events |
 
-The CLI derives the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration (MST-8802). **Do not pass `filterExpression` directly — the validator rejects it.**
-
-The command populates `inputs.detail` (including the internal `configuration` blob with the `filter` tree and derived `filterExpression`) and creates workflow-level connection bindings.
+The CLI computes the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration. **Do not pass `filterExpression` directly — the validator rejects it.**
+The command populates `inputs.detail` (including the internal `configuration` blob with the `filter` tree and combined `filterExpression`) and creates workflow-level connection bindings.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
 
@@ -297,13 +297,9 @@ A no-op filter — used when the user wants all events to fire the trigger — i
 
 ### How to build a filter tree from `filterFields`
 
-1. Run `registry get` with `--connection-id` (Step 2) and read the `filterFields.fields` array.
-2. For each user-intent condition, pick a matching field `name` from that array — using an unknown field name will be rejected by the CLI at configure time.
-3. Choose an operator based on the user's intent and the field type (see operator table).
-4. Build one leaf per condition; place multiple conditions under the same `groupOperator` (0 for AND, 1 for OR).
-5. If you need mixed AND/OR logic, use nested `groups`.
-6. **Wrap string values in a `value` object** with `value`, `rawString`, `isLiteral: true` — passing a bare string will fail validation.
-7. If `filterFields` is empty or absent, the trigger does not support filtering — omit `filter` entirely.
+1. Run `flow registry get` with `--connection-id` (Step 2) and read the `filterFields.fields` array. Each entry has a `name` (use as the leaf `id`), a `type` (drives operator selection), and an optional `description`.
+
+Then follow [/uipath:uipath-platform — triggers.md > Building Filter Trees from filterFields](../../../../../../uipath-platform/references/integration-service/triggers.md#building-filter-trees-from-filterfields) for the rest of the procedure (operator selection, leaf composition, value wrapping), the mandatory-filter contract (connector-mandated values like Gmail folder go on `eventParameters`, never the freeform `filter` tree), and array-shaped field handling.
 
 ### What NOT to generate
 
@@ -315,7 +311,7 @@ A no-op filter — used when the user wants all events to fire the trigger — i
 | `{ "id": "subject", "operator": "contains", ... }` | Operator is case-sensitive — use PascalCase. | `"operator": "Contains"` |
 | `{ "value": "urgent" }` on a leaf | Bare string — must be wrapped in the `WorkflowValue` object. | `{ "value": { "value": "urgent", "rawString": "\"urgent\"", "isLiteral": true } }` |
 | `{ "isLiteral": false, "value": "${var}" }` | Expression values are not yet supported by the CLI port. | Resolve the value first, then pass it as a literal. |
-| `{ "id": "tags[*].name", ... }` | Array-field filters are not yet supported. | File a follow-up; use a scheduled poll + in-flow filter for now. |
+| Adding a freeform leaf for a connector-mandated field (e.g. Gmail folder, Slack channelId) | Mandatory filters derived from connector event metadata are emitted automatically by the CLI from `eventParameters` — duplicating them in the freeform tree double-applies the clause. | Set the value through `eventParameters` only; the CLI AND-joins the mandatory JMES clause into the top-level `inputs.detail.filterExpression` (matching SW's `combinedFilterExpression`). It is *not* persisted on `essentialConfiguration` — SW classifies it optional and rebuilds it from input field values on restore. |
 
 ---
 
@@ -435,6 +431,6 @@ uip maestro flow debug . --output json
 3. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields
 4. **Filters are optional** — omit `filter` from `--detail` if the user wants all events to trigger the flow. Do not invent an "empty" expression.
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
-6. **Use `uip maestro flow node delete` to remove the manual trigger** — do NOT manually edit the JSON to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Direct JSON editing skips these cleanup steps and can leave orphaned references.
+6. **Use `uip maestro flow node delete` to remove the manual trigger** — do NOT use `Edit` to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Hand-editing skips these cleanup steps and can leave orphaned references.
 7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
 8. **Validate filter field names against `filterFields`** — only field names returned in `filterFields.fields[].name` are valid leaf `id`s in the filter tree. The CLI rejects trees that reference unknown fields at configure time, so guessing will surface as an `InvalidDetailError` rather than a silent runtime no-match.

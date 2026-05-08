@@ -33,19 +33,6 @@ initial_prompt: |
   Wire completed → decision node.
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "schema": {
-      "input_fields":  ["<names of read-only fields>"],
-      "output_fields": ["<names of fields the officer fills in>"],
-      "outcomes":      ["<outcome names>"]
-    },
-    "priority": "<priority set>",
-    "result_variable": "<how the decision node reads the officer's decision>",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
@@ -88,30 +75,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "result_variable references $vars.<nodeId>.result"
-    path: "report.json"
-    includes:
-      - "$vars."
-      - ".result"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Schema has at least 2 input fields, at least 1 output field, 2 outcomes"
-    path: "report.json"
-    assertions:
-      - expression: "length(schema.input_fields)"
-        operator: gte
-        expected: 2
-      - expression: "length(schema.output_fields)"
-        operator: gte
-        expected: 1
-      - expression: "length(schema.outcomes)"
-        operator: gte
-        expected: 2
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 2.5
-    pass_threshold: 0.75

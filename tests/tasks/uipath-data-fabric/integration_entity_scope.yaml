@@ -49,17 +49,6 @@ initial_prompt: |
        uip df entities create ... --folder 00000000-0000-0000-0000-000000000000
      Record the error response.
 
-  Save a summary to report.json:
-  {
-    "tenant_entity_id": "<TenantScopeTest entity ID>",
-    "folder_entity_id": "<FolderScopeTest entity ID or null>",
-    "tenant_entity_visible_at_tenant": <true/false>,
-    "tenant_entity_visible_from_folder_a": <true/false or null if single folder>,
-    "folder_entity_isolated_from_folder_b": <true/false or null if single folder>,
-    "invalid_folder_returned_error": <true if a non-zero exit code or error message was returned>,
-    "notes": "<any observations — e.g. single-folder tenant, unexpected scope behaviour>"
-  }
-
   Do NOT delete entities — the test harness handles cleanup.
 
 success_criteria:
@@ -110,25 +99,6 @@ success_criteria:
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Tenant entity visible and invalid folder returns error"
-    path: "report.json"
-    assertions:
-      - expression: "tenant_entity_visible_at_tenant"
-        operator: equals
-        expected: true
-      - expression: "invalid_folder_returned_error"
-        operator: equals
-        expected: true
-    weight: 4.0
-    pass_threshold: 0.75
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

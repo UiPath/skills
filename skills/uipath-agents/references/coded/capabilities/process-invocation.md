@@ -2,7 +2,7 @@
 
 How to invoke external processes and monitor job execution in LangGraph agents using UiPath automation capabilities.
 
-> **First time here?** Read [Interrupt and Resume Patterns](interrupt-resume.md) for a conceptual overview of how agent pausing and resumption works.
+> **First time here?** Read [Human-in-the-Loop & Interrupt/Resume](human-in-the-loop.md) for a conceptual overview of how agent pausing and resumption works.
 
 ## Overview
 
@@ -17,7 +17,7 @@ How to invoke external processes and monitor job execution in LangGraph agents u
 
 ```python
 from langgraph.graph import START, END, StateGraph, MessagesState
-from langgraph.types import Command
+from langgraph.types import Command, interrupt
 from uipath.platform.common import InvokeProcess
 
 class GraphState(MessagesState):
@@ -60,13 +60,13 @@ InvokeProcess(
 
 ## WaitJob
 
-Wait for a previously-created job to complete:
+Wait for a previously-created `Job` model to complete:
 
 ```python
 from uipath.platform.common import WaitJob
 
 async def wait_for_job(state: GraphState) -> Command:
-    job_output = interrupt(WaitJob(job_id=state.get("external_job_id")))
+    job_output = interrupt(WaitJob(job=state["external_job"], process_folder_path="MyFolderPath"))
     return Command(update={"job_result": job_output})
 ```
 

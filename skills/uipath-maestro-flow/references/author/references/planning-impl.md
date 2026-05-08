@@ -37,7 +37,7 @@ uip maestro flow registry get <nodeType> --output json
 | Node Type                       | Plugin impl.md                                                 |
 | ------------------------------- | -------------------------------------------------------------- |
 | `core.action.script`            | [script/impl.md](plugins/script/impl.md)                       |
-| `core.action.http`              | [http/impl.md](plugins/http/impl.md)                           |
+| `core.action.http.v2`           | [http/impl.md](plugins/http/impl.md)                           |
 | `core.action.transform`         | [transform/impl.md](plugins/transform/impl.md)                 |
 | `core.logic.delay`              | [delay/impl.md](plugins/delay/impl.md)                         |
 | `core.logic.decision`           | [decision/impl.md](plugins/decision/impl.md)                   |
@@ -56,6 +56,7 @@ uip maestro flow registry get <nodeType> --output json
 | `uipath.core.flow.*`            | [flow/impl.md](plugins/flow/impl.md)                           |
 | `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
+| `uipath.connector.uipath-uipath-dataservice.*` | [connector/data-fabric/impl.md](plugins/connector/data-fabric/impl.md) |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
 | `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 

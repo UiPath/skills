@@ -26,6 +26,8 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
 | **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
 
+> **Coded apps are not registered in `.uipx` solutions.** They have no `project.uiproj` / `project.json`, so `uip solution project add` does not apply. A coded app can live alongside a solution directory but deploys independently via `uip codedapp publish` (and `uip codedapp deploy`), not via `uip solution pack` / `publish` / `deploy`.
+
 ## Critical Rules
 
 1. **Identify the app type before doing anything else.** Ask: *"Are you building a **Coded Web App** (custom frontend deployed to UiPath Cloud) or a **Coded Action App** (form for Action Center human task reviews)?"* The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.

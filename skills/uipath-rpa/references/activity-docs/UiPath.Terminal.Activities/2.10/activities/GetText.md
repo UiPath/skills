@@ -35,6 +35,8 @@ Reads the entire visible text content of the terminal screen and returns it as a
 ## XAML Example
 
 ```xml
-<t:TerminalGetText DisplayName="Get Text"
-                   Text="[screenText]" />
+<uit:TerminalGetText DisplayName="Get Text"
+                   Text="[screenText]"
+                   WaitType="READY"
+                   DelayMS="300" />
 ```

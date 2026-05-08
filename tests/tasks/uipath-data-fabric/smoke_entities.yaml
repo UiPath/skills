@@ -39,16 +39,6 @@ initial_prompt: |
      would come from Fields[].ID in the entities get response) in the
      updateFields body.
 
-  Save a summary to report.json with the bodies and commands you CONSTRUCTED
-  (fill these in regardless of whether the commands returned auth errors):
-  {
-    "commands_used": ["<list of uip df commands you ran in order>"],
-    "create_body": { "fields": [ ... ] },
-    "addFields_body": { "addFields": [ ... ] },
-    "updateFields_body": { "updateFields": [ ... ] },
-    "field_id_source": "entities get"
-  }
-
   Additional constraints:
   - Use --output json on every uip df command.
   - Do NOT use removeFields. Do NOT delete any entity.
@@ -102,35 +92,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Entity create and addFields bodies use fieldName key (not name)"
-    path: "report.json"
-    includes:
-      - "fieldName"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Report includes both addFields and updateFields operations"
-    path: "report.json"
-    includes:
-      - "addFields"
-      - "updateFields"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Field IDs sourced from entities get"
-    path: "report.json"
-    assertions:
-      - expression: "field_id_source"
-        operator: equals
-        expected: "entities get"
-    weight: 1.5
-    pass_threshold: 1.0

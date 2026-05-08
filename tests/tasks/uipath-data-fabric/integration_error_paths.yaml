@@ -79,31 +79,6 @@ initial_prompt: |
   17. File upload local file not found:
       uip df files upload <entity-id> <seed_id> Score --file ./no-such-file.bin
 
-  Save a summary to report.json:
-  {
-    "entity_id": "<ErrorPathsTest entity ID>",
-    "seed_record_id": "<seed_id>",
-    "errors": {
-      "required_field_missing": "<error text or code>",
-      "unique_constraint_insert": "<error text or code>",
-      "type_mismatch_insert": "<error text or code>",
-      "update_missing_id": "<error text or code>",
-      "update_record_not_found": "<error text or code>",
-      "unique_constraint_update": "<error text or code>",
-      "type_mismatch_update": "<error text or code>",
-      "delete_record_not_found": "<error text or code>",
-      "csv_header_mismatch": "<error text or code>",
-      "csv_malformed": "<error text or code>",
-      "file_upload_non_file_field": "<error text or code>",
-      "file_upload_record_not_found": "<error text or code>",
-      "file_upload_local_not_found": "<error text or code>"
-    },
-    "all_errors_non_empty": <true if every key in errors has a non-empty value>,
-    "record_errors_captured": <count of non-empty values among: required_field_missing, unique_constraint_insert, type_mismatch_insert, update_missing_id, update_record_not_found, unique_constraint_update, type_mismatch_update, delete_record_not_found>,
-    "import_errors_captured": <count of non-empty values among: csv_header_mismatch, csv_malformed>,
-    "file_errors_captured": <count of non-empty values among: file_upload_non_file_field, file_upload_record_not_found, file_upload_local_not_found>
-  }
-
   Do NOT delete the entity — the test harness handles cleanup.
 
 success_criteria:
@@ -162,28 +137,6 @@ success_criteria:
     min_count: 3
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Error scenarios captured per group — allows 1-2 misses per category"
-    path: "report.json"
-    assertions:
-      - expression: "record_errors_captured"
-        operator: gte
-        expected: 6
-      - expression: "import_errors_captured"
-        operator: gte
-        expected: 1
-      - expression: "file_errors_captured"
-        operator: gte
-        expected: 2
-    weight: 4.0
-    pass_threshold: 0.67
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

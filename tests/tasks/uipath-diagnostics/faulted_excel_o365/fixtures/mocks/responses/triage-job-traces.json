@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "Id": "b80122b16cf05adb",
+      "TraceId": "dbf1d1b90a4f4a4ab8679091f42fd5e1",
+      "ParentId": null,
+      "Name": "Robot Job dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
+      "StartTime": "2026-04-01T11:05:22.3476295Z",
+      "EndTime": "2026-04-01T11:05:24.566616Z",
+      "Attributes": "{\"Exception\":\"System.ArgumentException: The workbook does not exist\\r\\n   at UiPath.Excel.Activities.WorkbookActivityBase`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"}",
+      "Status": 2,
+      "OrganizationId": "27c4be1d-a3fd-4be3-b063-682b88ebee86",
+      "TenantId": "6a0f9306-c553-4c37-9d86-7ab06a158774",
+      "ExpiryTimeUtc": null,
+      "FolderKey": "7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
+      "Source": 4,
+      "SpanType": "RobotJob",
+      "ProcessKey": "dcd6f89a-f608-46f5-801d-5681cf5db147",
+      "JobKey": "dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
+      "ReferenceId": null,
+      "VerbosityLevel": 2,
+      "ExecutionType": null,
+      "UpdatedAt": "2026-04-01T11:05:24.9303922Z",
+      "Attachments": null,
+      "PermissionStatus": 0,
+      "AgentVersion": null
+    }
+  ]
+}

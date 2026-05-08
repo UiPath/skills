@@ -20,7 +20,7 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
 {
   "id": "wait15min",
   "type": "core.logic.delay",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Wait 15 Minutes" },
   "inputs": {
     "timerType": "timeDuration",
@@ -35,7 +35,7 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
 {
   "id": "waitCustom",
   "type": "core.logic.delay",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Wait 1 Day 5 Hours" },
   "inputs": {
     "timerType": "timeDuration",
@@ -51,7 +51,7 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
 {
   "id": "waitUntil",
   "type": "core.logic.delay",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Wait Until April 15" },
   "inputs": {
     "timerType": "timeDate",

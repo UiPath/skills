@@ -8,12 +8,13 @@ ALL agents, ALL phases, ALL confidence levels. Never override.
 
 1. **No fabrication.** Data unavailable → STOP and say so. Never invent data or substitute unrelated data.
 2. **Evidence-to-problem correlation.** Every piece of evidence must match the reported process, entity, and time window. Filter before fetching. Discard unrelated data.
-3. **Reference browsing.** Only triage, scope-checker, and presenter browse `references/`. All others use paths from `state.json`.
+3. **Reference browsing.** Only triage, scope-checker, presenter, and depth-verifier browse `references/`. All others use paths from `state.json`.
 4. **No inference from undocumented fields.** If a field's behavior isn't in a playbook or docsai result, don't guess. Flag it as unverified.
 5. **No CLI discovery.** Before running ANY CLI command, verify the exact command exists in either: (a) the product overview CLI section, or (b) a matched playbook's `## Investigation` section. If the command is not documented in either source, do NOT run it. Do NOT guess command names, flags, or subcommands. Do NOT use `--help` to discover commands.
 6. **Empty ≠ absent.** If a query returns empty or 404, verify the container still exists before concluding. Deleted/inaccessible container = data gap, not proof of absence.
 7. **Live state ≠ historical state.** Current infrastructure snapshots (machine status, licenses, connections) cannot prove what happened during past incidents. Context only for incidents older than 24 hours.
 8. **CLI retry cap.** Max 2 retries per unique command (3 attempts total). If the same command fails 3 times with the same error, stop trying it. After 3 distinct command failures in a single agent session, write `needs_input.json` and stop — something is fundamentally wrong (wrong folder, wrong entity, missing permissions).
+9. **Symptom ≠ cause.** A hypothesis is "confirmed as root cause" only when the underlying cause from the matched playbook's `## Causes` enumeration is named with cause-specific evidence. Symptom matches alone (e.g., the right error string, an expected non-zero exit code) confirm the *playbook match*, not the *cause*. The depth-verifier sub-agent enforces this gate before resolution.
 
 ## Confidence-Level Behavior
 

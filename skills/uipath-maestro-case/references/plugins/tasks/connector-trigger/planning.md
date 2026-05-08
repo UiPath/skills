@@ -43,6 +43,8 @@ Follow the 7-step pipeline in [connector-trigger-common.md](../../../connector-t
 
 ## Unresolved Fallback
 
+> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector trigger exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to skeleton.
+
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
 - Omit `input-values:` and `filter:`

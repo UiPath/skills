@@ -2,44 +2,37 @@
 
 Detailed step-by-step procedures for all operations on UiPath coded workflow projects.
 
-## Initialize a New Project
+## Initialize a New Coded Project
 
-Creates a complete UiPath coded automation project from scratch. **ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
+Use this procedure ONLY when the user explicitly asked for a coded project ("coded", ".cs", "C# workflow"). For ambiguous "create a workflow" / "automate X" requests, default to XAML — see [../coded-vs-xaml-guide.md](../coded-vs-xaml-guide.md).
+
+There is no "create a coded project" command. `create-project` always scaffolds XAML; coded mode is a post-scaffold step (add `.cs` files, update `entryPoints`). For the canonical `create-project` documentation — flag semantics, scaffolding behavior, how `--expression-language` works — see [../environment-setup.md § Step 0.3: Creating a New Project](../environment-setup.md#step-03-creating-a-new-project).
 
 ### Steps
 
-**1. Create the project with `uip rpa create-project`:**
-
-```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
-
-**Template options:**
-- `--template-id BlankTemplate` (default) — standard process project
-- `--template-id TestAutomationProjectTemplate` — test project with testing dependencies
-- `--template-id LibraryProcessTemplate` — reusable library
-
-This scaffolds a valid project with `project.json`, `project.uiproj`, `Main.cs`, and all required metadata directories. The result includes the `projectDirectory` path.
+**1. Scaffold the project** following [../environment-setup.md § Step 0.3](../environment-setup.md#step-03-creating-a-new-project). The command is the same as for an XAML project — the scaffolding is XAML either way. The result is a project with `project.json`, `project.uiproj`, the template's XAML root file (`Main.xaml` / `TestCase.xaml`), and all required metadata directories.
 
 **2. Read the scaffolded files — do NOT overwrite blindly:**
 
 After `create-project` succeeds, read the generated files to understand the defaults:
 ```
 Read: <PROJECT_DIR>/project.json
-Read: <PROJECT_DIR>/Main.cs
+Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 ```
-These contain valid defaults (correct schema version, runtime options, dependencies, etc.) that you should build on rather than replace.
+`project.json` contains valid defaults (correct schema version, runtime options, dependencies) that you should build on rather than replace. Leave the scaffolded XAML in place — `.xaml` and `.cs` workflows coexist freely in the same project.
 
 **3. Analyze the task and plan the file structure:**
 - How many workflow files? (one per logical step or responsibility)
 - Are there shared data models or helpers? (create Coded Source Files)
 - Is this a test project? (create test cases with Given/When/Then structure, optionally add Before/After hooks)
-- See `assets/project-structure-examples.md` for guidelines
+- See [../project-structure-guide.md](../project-structure-guide.md) for guidelines
 
 **4. Add required dependencies to `project.json`** based on the Service-to-Package mapping. Edit the existing `project.json` — do NOT rewrite the entire file.
 
-**5. Add workflow/test case/source files:**
+**5. Add `.cs` workflow / test case / source files:**
 - Generate `.cs` files (workflows, test cases, source files)
-- Update `project.json` entry points for each workflow/test case file (**Process projects only** — Tests and Library projects do NOT use `entryPoints`)
+- For each `.cs` **workflow** file, add an entry to `entryPoints` in `project.json` (**Process projects only** — Tests and Library projects do NOT use `entryPoints`). The existing scaffolded XAML entry can stay alongside.
+- For each `.cs` **test case** file, add an entry to `designOptions.fileInfoCollection` in `project.json` with `editingStatus: "InProgress"`, `testCaseType: "TestCase"`, `publishAsTestCase: true`. Test cases do NOT go in `entryPoints` regardless of project type.
 - If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see before-after-hooks-template.md)
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly
@@ -54,18 +47,19 @@ These contain valid defaults (correct schema version, runtime options, dependenc
    - Use the project name as namespace
    - Class name = file name (without .cs)
    - Inherit from `CodedWorkflow`
-   - Add `[Workflow]` attribute on `Execute` method
+   - Add `[Workflow]` attribute on the entry-point method. Method name does not have to be `Execute` — any name works. `Execute` is convention; keep it unless the user asks otherwise
    - Add appropriate `using` statements based on which activities are needed
-3. Argument direction is determined by the `Execute` method signature:
+3. Argument direction is determined by the entry-point method signature. Single-return OutArgument is named **`"Output"`**. Tuple returns produce one OutArgument per element, named after the element. A tuple element name matching an input parameter name — or, for single returns, an input parameter literally named `"Output"` — collapses into one **`InOutArgument`**:
 
    | Signature | Example | Argument directions |
    |-----------|---------|---------------------|
-   | Single return | `public string Execute(int a, int b)` | `a` = In, `b` = In, return = Out (named `"Output"`) |
-   | Tuple return | `public (string a, string b) Execute()` | `a` = Out, `b` = Out |
-   | Mixed with InOut | `public (string a, string b) Execute(string b, int c)` | `a` = Out, `b` = InOut (same name in input and tuple), `c` = In |
+   | Single return | `public string Execute(int a, int b)` | `a` = In, `b` = In, return = Out named `"Output"` |
+   | Tuple return | `public (string Test, int A) Execute()` | `Test` = Out, `A` = Out |
+   | Tuple + name collision | `public (string a, string b) Execute(string b, int c)` | `a` = Out, `b` = InOut (same name in input and tuple), `c` = In |
+   | Single return + `Output` input | `public string Execute(string Output, int c)` | `Output` = InOut (input named `"Output"` collides with implicit return name), `c` = In |
    | No return | `public void Execute(string input)` | `input` = In |
 
-   > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
+   > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
 4. Update `project.json` (**Process projects only** — skip `entryPoints` for Tests and Library projects):
    - Add new entry to `entryPoints` array with `filePath`, unique `uniqueId`, `input`, and `output` definitions
    - If the workflow has parameters, define them in `input`/`output` with `name`, `type`, and `required`
@@ -80,7 +74,7 @@ Coded test cases automate and validate application behavior using a structured *
 **Steps:**
 1. Read existing `project.json` to get project name, `outputType`, and current entry points
 2. Create the `.cs` file following the same rules as workflows, but with:
-   - `[TestCase]` attribute instead of `[Workflow]` on the `Execute` method
+   - `[TestCase]` attribute instead of `[Workflow]` on the entry-point method (method name does not have to be `Execute` — any name works; keep `Execute` unless the user asks otherwise)
    - Structured code in three phases: **Arrange**, **Act**, **Assert**
 3. Update `project.json`:
    - Add entry to `entryPoints` array (**Process projects only** — skip `entryPoints` for Tests and Library projects)
@@ -399,17 +393,26 @@ namespace MyProjectName
 
 ## Add a Dependency
 
+Canonical CLI: `uip rpa install-or-update-packages`. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command** — agents that try it get `Unknown command: add-dependency`. See [cli-reference.md § install-or-update-packages](../cli-reference.md).
+
 **Steps:**
-1. Read `project.json` to check existing dependencies
-2. Add the package to `dependencies` with version in bracket notation: `"PackageName": "[version]"`
-3. Only add packages the project actually needs. Available UiPath packages and their latest v25.x versions:
-   - `"UiPath.System.Activities": "[25.12.2]"` — system activities (assets, queues, credentials)
-   - `"UiPath.Testing.Activities": "[25.10.2]"` — testing and assertions. Pin this exact patch — `[25.10.0]` and `[25.10.1]` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
-   - `"UiPath.UIAutomation.Activities": "[25.10.21]"` — UI automation
-   - `"UiPath.Excel.Activities": "[3.3.1]"` — Excel automation
-   - `"UiPath.Word.Activities": "[2.3.1]"` — Word automation
-   - `"UiPath.Presentations.Activities": "[2.3.1]"` — PowerPoint automation
-   - `"UiPath.Mail.Activities": "[2.5.10]"` — Mail automation
-   - `"UiPath.MicrosoftOffice365.Activities": "[3.6.10]"` — Microsoft 365 (Graph API: mail, calendar, Excel cloud, OneDrive, SharePoint)
-   - `"UiPath.GSuite.Activities": "[3.6.10]"` — Google Workspace (Gmail, Calendar, Drive, Sheets, Docs)
-4. Third-party NuGet packages can also be added — same bracket notation (see [third-party-packages-guide.md](third-party-packages-guide.md))
+1. Read `project.json` to check existing dependencies — skip packages already at the desired version.
+2. Run:
+   ```bash
+   uip rpa install-or-update-packages --project-dir "<PROJECT_DIR>" --packages '[{"id":"<PACKAGE_ID>","version":"<VERSION>"}]' --output json
+   ```
+   Omit `version` to resolve the latest compatible. Pin a version only when there is a known compatibility constraint (see pinned versions below). The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
+3. Only install packages the project actually needs.
+
+**Pinned versions for UiPath activity packages (current v25.x):**
+- `UiPath.System.Activities` → `25.12.2` — system activities (assets, queues, credentials)
+- `UiPath.Testing.Activities` → `25.10.2` — testing and assertions. Pin this exact patch — `25.10.0` and `25.10.1` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
+- `UiPath.UIAutomation.Activities` → `25.10.21` — UI automation
+- `UiPath.Excel.Activities` → `3.3.1` — Excel automation
+- `UiPath.Word.Activities` → `2.3.1` — Word automation
+- `UiPath.Presentations.Activities` → `2.3.1` — PowerPoint automation
+- `UiPath.Mail.Activities` → `2.5.10` — Mail automation
+- `UiPath.MicrosoftOffice365.Activities` → `3.6.10` — Microsoft 365 (Graph API: mail, calendar, Excel cloud, OneDrive, SharePoint)
+- `UiPath.GSuite.Activities` → `3.6.10` — Google Workspace (Gmail, Calendar, Drive, Sheets, Docs)
+
+**Third-party NuGet packages:** same CLI — pass the public NuGet package ID as `id`. See [third-party-packages-guide.md](third-party-packages-guide.md).

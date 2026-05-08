@@ -15,18 +15,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Direct JSON is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
-
-```bash
-uip maestro flow hitl add <path/to/file.flow> \
-  --label "Invoice Review" \
-  --priority High \
-  --assignee finance-approvers \
-  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.result.invoiceId"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
-  --output json
-```
-
-Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [cli-commands.md — uip maestro flow hitl add](../../../../shared/cli-commands.md#uip-maestro-flow-hitl-add).
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `completed` port after adding the node.
 
 ### Quick Reference
 
@@ -36,38 +25,44 @@ Handles full lifecycle: writes node, adds definition entry once, regenerates `va
 {
   "id": "hitlReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "quick",
     "schema": {
       "fields": [
-        { "id": "invoiceId", "label": "Invoice ID", "type": "text",   "direction": "input" },
-        { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input" }
+        { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "=js:$vars.fetchInvoice.output.invoiceId", "variable": "=js:$vars.fetchInvoice.output.invoiceId" },
+        { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "=js:$vars.fetchInvoice.output.amount",    "variable": "=js:$vars.fetchInvoice.output.amount" }
       ],
       "outcomes": [
-        { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "outcomeType": "Positive", "action": "Continue" },
-        { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "outcomeType": "Negative", "action": "End" }
+        { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "outcomeType": "Positive" },
+        { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "outcomeType": "Negative" }
       ]
     },
     "recipient": { "channels": ["Email", "ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
     "priority": "Low"
   },
   "outputs": {
-    "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
-    "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
+    "output": { "type": "object", "source": "=result",        "var": "output" },
+    "status": { "type": "string", "source": "=result.Action", "var": "status" },
+    "<variable>": { "type": "string", "source": "=result.<fieldId>", "var": "<variable>", "custom": true }
   }
 }
 ```
+
+`custom: true` on per-field outputs marks them as workflow-global variables (accessible as `$vars.<variable>`, not prefixed by nodeId). Add one entry per `output` / `inOut` direction field. Omit the `<variable>` entry when the schema has no `output` or `inOut` fields.
+
+**Input fields require both `binding` and `variable`** — `binding` stores the expression for the workbench display; `variable` is what the BPMN engine evaluates to pre-populate the form at task-creation time (`HitlTaskArguments`). Without `variable`, input fields appear blank in Action Center and inline debug. Both must point to the same `=js:$vars.…` expression.
 
 BPMN type (`bpmn:UserTask`) and serviceType (`Actions.HITL`) come from the `uipath.human-in-the-loop` entry in `definitions[]` — the instance carries no `model` block.
 
 **Ports:** `input` (target) → `completed` (source)
 
 **Output variables:**
-- `$vars.{nodeId}.result` — object with all `output` / `inOut` fields the human filled in
-- `$vars.{nodeId}.result.{fieldName}` — individual field value
-- `$vars.{nodeId}.status` — `"completed"`
+- `$vars.{nodeId}.output` — object with all `output` / `inOut` fields the human filled in
+- `$vars.{nodeId}.output.{fieldName}` — individual field value
+- `$vars.{nodeId}.status` — selected outcome id (e.g. `"approve"`, `"reject"`)
+- `$vars.{variable}` — per-field workflow-global variable (`custom: true`); one per `output` / `inOut` field
 
 ---
 
@@ -80,15 +75,15 @@ Use when there is an existing deployed Action Center app that should serve as th
 **Published (tenant registry):**
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.human-task" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.human-task" --output json
 ```
 
 **In-solution (local, no login required):**
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.
@@ -97,10 +92,10 @@ Run from inside the flow project directory. Discovers sibling projects in the sa
 
 ```bash
 # Published (tenant registry)
-uip flow registry get "uipath.core.human-task.{key}" --output json
+uip maestro flow registry get "uipath.core.human-task.{key}" --output json
 
 # In-solution (local, no login required)
-uip flow registry get "uipath.core.human-task.{key}" --local --output json
+uip maestro flow registry get "uipath.core.human-task.{key}" --local --output json
 ```
 
 Confirm:
@@ -125,19 +120,17 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 {
   "id": "reviewExtraction",
   "type": "uipath.core.human-task.abc123",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Review Extraction" },
   "inputs": {},
   "outputs": {
     "output": {
       "type": "object",
-      "description": "Form data submitted by the user",
       "source": "=result.response",
       "var": "output"
     },
     "error": {
       "type": "object",
-      "description": "Error information if the human task fails",
       "source": "=result.Error",
       "var": "error"
     }
@@ -145,7 +138,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-> `resourceKey` takes the form `<FolderPath>.<AppName>` and `resourceSubType` is the app type — confirm both from `uip flow registry get` output. Both values come from the definition's `model.bindings`, never from the node instance.
+> `resourceKey` takes the form `<FolderPath>.<AppName>` and `resourceSubType` is the app type — confirm both from `uip maestro flow registry get` output. Both values come from the definition's `model.bindings`, never from the node instance.
 
 **Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`):**
 
@@ -196,7 +189,7 @@ Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?)
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip flow registry list --local`. Otherwise: `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip maestro flow registry list --local`. Otherwise: `uip login` then `uip maestro flow registry pull --force` |
 | Task never completes | Human hasn't submitted the form | Check task assignment in Orchestrator |
 | Output missing expected fields | App form doesn't match expected schema | Verify app form fields match what the flow expects |
 | `completed` port unwired (Option 1) | Missing edge on output handle | Wire the `completed` output handle — an unwired `completed` blocks the flow indefinitely |

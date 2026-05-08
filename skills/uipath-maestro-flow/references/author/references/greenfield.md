@@ -4,6 +4,29 @@ End-to-end journey for creating a Flow project from scratch. Author terminates a
 
 > **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
 
+## Suggested initial todos
+
+Pre-populate these via `TodoWrite` when entering this journey. Adapt to the user's actual flow shape (more nodes → more "Add node" rows; no triggers → drop). See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
+
+- [ ] Resolve `uip` binary and login state
+- [ ] Choose or create solution
+- [ ] Scaffold solution directory
+- [ ] Initialize Flow project inside solution (auto-registers in the parent `.uipx`)
+- [ ] Verify auto-registration succeeded (fall back to `uip solution project add` only if it didn't)
+- [ ] Verify double-nested layout
+- [ ] Discover trigger node type via registry
+- [ ] Add trigger node and wire definition
+- [ ] Discover action node type(s) via registry
+- [ ] Add action node #1 and wire inputs
+- [ ] Add action node #2 and wire inputs
+- [ ] Wire edges across all nodes
+- [ ] Add End node and map output variables
+- [ ] Resolve connection bindings (`solution resource refresh`)
+- [ ] Run `flow validate` and fix any errors
+- [ ] Run `flow tidy` to normalize layout
+- [ ] Report file path + change summary
+- [ ] Ask "what's next" (publish / debug / deploy)
+
 ## Should you plan first?
 
 For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
@@ -31,11 +54,11 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 
 ## Step 0 — Resolve the `uip` binary and detect command prefix
 
-See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary resolution, version detection, and the `uip maestro flow` vs `uip flow` command prefix rule. All commands below are written in the `uip maestro flow` form.
+See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary resolution, version detection, and the `uip maestro flow` vs `uip flow` command prefix rule. All commands below are written in the `uip maestro flow` form. <!-- uip-check-skip -->
 
 ## Step 1 — Check login status
 
-Greenfield steps 2–6 work without login (`flow init`, `validate`, `tidy`, registry OOTB nodes, Direct JSON edits). Login is required only when the registry needs tenant-specific connector/resource nodes, or before handing off to Operate.
+Greenfield steps 2–6 work without login (`flow init`, `validate`, `tidy`, registry OOTB nodes, `Edit` / `Write` edits). Login is required only when the registry needs tenant-specific connector/resource nodes, or before handing off to Operate.
 
 ```bash
 uip login status --output json
@@ -70,18 +93,45 @@ Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution
 ### 2b. Create the Flow project inside the solution folder
 
 ```bash
-cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
+cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
 
 The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
 
-### 2c. Add the project to the solution
+`--output json` is required so Step 2c can inspect `Data.SolutionRegistration.Status` to confirm the project was auto-registered with the parent solution.
+
+### 2c. Verify the project is registered in the solution
+
+When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. The success envelope reports this in `Data.SolutionRegistration`:
+
+```json
+{
+  "Result": "Success",
+  "Code": "FlowInit",
+  "Data": {
+    "Status": "Created successfully",
+    "Path": ".../<SolutionName>/<ProjectName>",
+    "SolutionRegistration": {
+      "Status": "Registered",                     // or "AlreadyRegistered"
+      "Solution": ".../<SolutionName>.uipx",
+      "Project": "<ProjectName>/project.uiproj",
+      "ProjectId": "<uuid>"
+    }
+  }
+}
+```
+
+If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check.
+
+**Fallback** — only if `Status` is `Skipped` or `Failed` (e.g., `init` was run outside the solution directory and produced a single-nested layout, or the `.uipx` write failed): wire the project manually.
 
 ```bash
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
+
+If the registration was skipped because of single-nesting, **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
 
 ### Expected layout after Steps 2a–2c
 
@@ -129,7 +179,11 @@ Run from inside the flow project directory. Returns the same manifest format as 
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-**Read [editing-operations.md](editing-operations.md).** Direct JSON is the default for all edits. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
+> **Required tool outside carve-outs: `Edit` / `Write`.** Use `Edit` for in-place changes, `Write` only when ≥70% of nodes change. The `uip maestro flow node` / `edge` / `variable` CLI is a **carve-out** — use it only for connector activity, connector-trigger, and managed HTTP workflows documented by their plugin `impl.md`. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON.
+
+Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
+
+> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 

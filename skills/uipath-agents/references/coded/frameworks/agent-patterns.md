@@ -1,6 +1,6 @@
 # Agent Patterns
 
-Common implementation patterns for building UiPath coded agents, from simple functions to multi-agent orchestrations.
+Common implementation patterns for building UiPath coded agents, from coded functions to multi-agent orchestrations.
 
 > **Note:** These patterns are general architectural concepts. The code examples use **LangGraph** and the **UiPath Python SDK**. The same patterns apply to LlamaIndex and OpenAI Agents — see their respective integration references.
 
@@ -66,7 +66,7 @@ async def main(input: Input) -> Output:
 **Key points:**
 - `@traced()` on `main` is required for Orchestrator visibility
 - Use `@traced(name=..., span_type="tool")` on helper functions for granular traces
-- Use `@mockable()` on functions calling external services to enable evaluation mocking
+- Use `@mockable` from `uipath.eval.mocks` on functions calling external services so evaluations can substitute example calls
 
 ---
 
@@ -117,7 +117,7 @@ async def main(input: Input) -> Output:
 
 Multi-step agent using LangGraph's `StateGraph` with nodes, edges, and conditional routing. Supports LLM-powered decisions.
 
-> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than simple agents. See the LangGraph integration reference for project setup, `langgraph.json` configuration, and troubleshooting.
+> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than coded function agents. See the LangGraph integration reference for project setup, `langgraph.json` configuration, and troubleshooting.
 
 **When to use:** Classification workflows, multi-step reasoning, conditional branching based on LLM output.
 
@@ -150,7 +150,7 @@ def route(state: GraphState) -> str:
         return END
     return "review"
 
-builder = StateGraph(GraphState, input=GraphInput, output=GraphOutput)
+builder = StateGraph(GraphState, input_schema=GraphInput, output_schema=GraphOutput)
 builder.add_node("classify", classify)
 builder.add_edge(START, "classify")
 builder.add_conditional_edges("classify", route)
@@ -186,6 +186,7 @@ async def wait_for_human(state: GraphState) -> Command:
     action_data = interrupt(
         CreateTask(
             app_name="review_app",
+            app_folder_path="MyFolderPath",
             title="Review classification result",
             data={"label": state["label"]},
             assignee="reviewer@company.com",
@@ -210,7 +211,8 @@ graph = builder.compile(checkpointer=MemorySaver())
 **Key points:**
 - `interrupt()` pauses the graph and creates an Action Center task via `CreateTask`
 - A `checkpointer` (e.g., `MemorySaver()`) is required for interrupt/resume to work
-- `CreateTask` fields: `app_name`, `title`, `data` (dict shown to reviewer), `assignee` (optional)
+- `CreateTask` fields: `app_name`, `app_folder_path`, `title`, `data` (dict shown to reviewer), `assignee` (optional)
+- Dynamic app folder paths require manual binding.
 - The graph resumes when the human completes the action — return value comes from `interrupt()`
 
 ---
@@ -296,9 +298,10 @@ class GraphOutput(BaseModel):
 system_prompt = """You are a helpful assistant that answers questions.
 Use the search tool to find current information when needed."""
 
-llm = UiPathAzureChatOpenAI()
-tools = [TavilySearch(max_results=3)]
-graph = create_react_agent(llm, tools=tools, prompt=system_prompt)
+def build_graph():
+    llm = UiPathAzureChatOpenAI()
+    tools = [TavilySearch(max_results=3)]
+    return create_react_agent(llm, tools=tools, prompt=system_prompt)
 ```
 
 **Key points:**
@@ -347,17 +350,33 @@ def make_supervisor(llm):
         return {"next": response["next"]}
     return supervisor
 
-llm = UiPathAzureChatOpenAI()
-research_agent = create_react_agent(llm, tools=[search_tool], prompt="You research.")
-code_agent = create_react_agent(llm, tools=[repl_tool], prompt="You write code.")
+_agents = None
+
+def get_agents():
+    global _agents
+    if _agents is not None:
+        return _agents
+    llm = UiPathAzureChatOpenAI()
+    _agents = (
+        create_react_agent(llm, tools=[search_tool], prompt="You research."),
+        create_react_agent(llm, tools=[repl_tool], prompt="You write code."),
+        llm,
+    )
+    return _agents
 
 async def research_node(state: State):
+    research_agent, _, _ = get_agents()
     result = await research_agent.ainvoke(state)
     return {"messages": [HumanMessage(content=result["messages"][-1].content, name="researcher")]}
 
 async def code_node(state: State):
+    _, code_agent, _ = get_agents()
     result = await code_agent.ainvoke(state)
     return {"messages": [HumanMessage(content=result["messages"][-1].content, name="coder")]}
+
+async def supervisor_node(state: State):
+    _, _, supervisor_llm = get_agents()
+    return await make_supervisor(supervisor_llm)(state)
 
 def route_supervisor(state: State) -> str:
     match state.get("next", "FINISH"):
@@ -365,8 +384,8 @@ def route_supervisor(state: State) -> str:
         case "coder": return "coder"
         case _: return END
 
-builder = StateGraph(State, input=GraphInput, output=GraphOutput)
-builder.add_node("supervisor", make_supervisor(UiPathAzureChatOpenAI()))
+builder = StateGraph(State, input_schema=GraphInput, output_schema=GraphOutput)
+builder.add_node("supervisor", supervisor_node)
 builder.add_node("researcher", research_node)
 builder.add_node("coder", code_node)
 builder.add_edge(START, "supervisor")
@@ -388,5 +407,5 @@ graph = builder.compile()
 
 - **Pydantic models** — Every agent defines `Input`/`Output` (or `GraphInput`/`GraphOutput`) as `BaseModel` subclasses. Run `uip codedagent init` after changing them.
 - **`@traced()`** — Apply to `main` and key helpers. LangGraph agents get tracing automatically.
-- **`@mockable()`** — Wrap functions calling external services to enable evaluation mocking.
+- **`@mockable`** — From `uipath.eval.mocks`. Wrap functions calling external services so evaluations can return `ExampleCall` outputs without hitting the network.
 - **Async** — All patterns support `async def main(...)`. SDK methods have `_async` variants.

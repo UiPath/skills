@@ -1,0 +1,9 @@
+[
+  {
+    "Id": "conn-mock-1",
+    "Name": "MockZohoDesk",
+    "FolderKey": "folder-mock-key-123",
+    "Enabled": true,
+    "Connector": "uipath-zoho-desk"
+  }
+]

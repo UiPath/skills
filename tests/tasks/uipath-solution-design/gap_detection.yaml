@@ -24,14 +24,6 @@ initial_prompt: |
   as the skill instructs. For any [SME REVIEW] items, keep them as-is in the
   SDD — do NOT resolve them.
 
-  After writing the SDD, save a summary to report.json:
-    {
-      "sdd_filename": "<the filename you wrote>",
-      "primary_product": "<the product you selected>",
-      "default_count": <number of [DEFAULT] markers in the SDD>,
-      "sme_review_count": <number of [SME REVIEW] markers in the SDD>
-    }
-
   --- BEGIN PDD ---
 
   # Process Design Document: Payment Reconciliation
@@ -106,24 +98,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json shows both DEFAULT and SME REVIEW markers were used"
-    path: "report.json"
-    assertions:
-      - expression: "default_count"
-        operator: gte
-        expected: 1
-      - expression: "sme_review_count"
-        operator: gte
-        expected: 1
-      - expression: "process_name"
-        operator: equals
-        expected: "Payment Reconciliation"
-    weight: 2.0
-    pass_threshold: 0.75

@@ -1,0 +1,50 @@
+{"id": "uipath-coded-apps-001", "prompt": "Scaffold a new UiPath Coded Web App in React", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-002", "prompt": "Create a Coded Action App for an Action Center approval form", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-003", "prompt": "Run uip codedapp pack dist on my project", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-004", "prompt": "Build and deploy my coded app end-to-end", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-005", "prompt": "Bump the version and republish my coded app \u2014 current one says 'version already exists'", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-006", "prompt": "Help me publish a coded action app \u2014 uip codedapp publish keeps failing without -t Action", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-007", "prompt": "I get 'coded action apps feature is not enabled' when publishing \u2014 what do I need to enable in the org?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-008", "prompt": "My coded app deploy succeeds but the live URL returns 404 \u2014 can you debug it?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-009", "prompt": "uip codedapp pack says 'Invalid dist directory' \u2014 what am I doing wrong?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-010", "prompt": "Set up the @uipath/uipath-typescript SDK in my React app to call Orchestrator", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-011", "prompt": "How do I use the TypeScript SDK to query Maestro process incidents from a coded app?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-012", "prompt": "I'm getting CORS errors calling processes.start() from my coded app \u2014 base URL is set to cloud.uipath.com. Fix it.", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-013", "prompt": "Configure the OAuth external app and redirect URI for my coded web app", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-014", "prompt": "Sign in with UiPath button does nothing locally \u2014 debug the OAuth flow", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-015", "prompt": "Add OR.Tasks scope to my external app so the coded app can list and complete action tasks", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-016", "prompt": "Wire my coded action app's Approve/Reject buttons to task.complete() so the task closes correctly in Action Center", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-017", "prompt": "Define the action-schema.json for a referral review form \u2014 inputs, outputs, outcomes", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-018", "prompt": "Push my local coded app source to Studio Web with uip codedapp push", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-019", "prompt": "Pull the latest coded app source from Studio Web to my local project", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-020", "prompt": "I want to build a custom React frontend hosted by UiPath that shows queue items and lets users start a process", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-021", "prompt": "Run the full pipeline: build, pack, publish, deploy this coded app to staging", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-022", "prompt": "Deploy my coded app to a specific Orchestrator folder \u2014 set UIPATH_FOLDER_KEY", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-023", "prompt": "Publish failing with 'Access denied' even though I'm org admin in staging \u2014 figure it out", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-024", "prompt": "Set up a coded app that uploads files to a Storage Bucket using the TypeScript SDK", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-025", "prompt": "Use buckets.getAll() in my coded app \u2014 pass folderId so the value comes back", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-026", "prompt": "Build a coded app that queries Data Fabric entities and displays them in a table", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-027", "prompt": "How do I list and complete Action Center tasks from a coded app using the TS SDK?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-028", "prompt": "What's the right base URL? I'm seeing 401s \u2014 should I use api.uipath.com or cloud.uipath.com?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-029", "prompt": "vite.config.ts \u2014 what should base be set to for a coded app?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-030", "prompt": "Use getAppBase() for the React Router basename in my coded app", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-031", "prompt": "Set up env vars VITE_UIPATH_CLIENT_ID, VITE_UIPATH_SCOPE, VITE_UIPATH_ORG_NAME, VITE_UIPATH_TENANT_NAME for the SDK", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-032", "prompt": "After uip codedapp deploy, where do I find the live appUrl? It's not in my terminal output", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-033", "prompt": "I'm getting 'Folder key required' on uip codedapp deploy \u2014 what do I pass?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-034", "prompt": "Switch my coded app from cloud to staging \u2014 uip login --authority https://staging.uipath.com and rebuild", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-035", "prompt": "Install the UiPath CLI and the codedapp tool from scratch on this machine", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-036", "prompt": "Iframe a coded action app inside a coded process app for Action Center rendering", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-037", "prompt": "Write a deploy.js script that handles versioning, build, asset path fixes, pack, and publish", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-038", "prompt": "Publish a coded action app to alpha \u2014 running uip codedapp publish -t Action -n osu-referral-review-action", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-039", "prompt": "Set up non-interactive deployment of a coded app for CI/CD with --orgId, --tenantId, --accessToken", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-040", "prompt": "What's the difference between a Coded Web App and a Coded Action App?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-041", "prompt": "Add Jobs.getById to my coded app to look up a specific Orchestrator job", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-042", "prompt": "Migrate my coded app from sdk.entities.getAll() dot-chain to constructor DI new Entities(sdk)", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-043", "prompt": "Fix imports \u2014 switch from package-root imports to subpath like @uipath/uipath-typescript/assets", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-044", "prompt": "What routing name should I pick for my coded action app so it gets matched by Maestro human task reviews?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-045", "prompt": "401 from ProcessInstances.getAll() \u2014 my PAT has PIMS scope. What's missing?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-046", "prompt": "Coded app deploy hangs on the spinner forever in Orchestrator UI \u2014 any idea why?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-047", "prompt": "Build a coded web app with a multi-step wizard, OAuth login, charts, and a print/PDF report", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-048", "prompt": "How do I pass folderId vs folderKey in SDK calls? Maestro vs Orchestrator services use different params", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-049", "prompt": "Add the redirect URI to my external app \u2014 invalid_redirect_uri error after deploy", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-050", "prompt": "Render a coded action app inside Action Center \u2014 what URL/routing setup do I need?", "expected_skill": "uipath-coded-apps"}

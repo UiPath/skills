@@ -41,9 +41,9 @@ Available: always — no `uip login` or registry pull required.
 
 ### Output Variables
 
-- `$vars.{nodeId}.result` — object containing all output and inOut fields the human filled in
-- `$vars.{nodeId}.result.{fieldName}` — individual field value
-- `$vars.{nodeId}.status` — `"completed"`
+- `$vars.{nodeId}.output` — object containing all output and inOut fields the human filled in
+- `$vars.{nodeId}.output.{fieldName}` — individual field value
+- `$vars.{nodeId}.status` — selected outcome's action value (`"Continue"` or `"End"`)
 
 ### Schema Design
 
@@ -103,7 +103,7 @@ In the node table:
 ## Option 2 — `uipath.core.human-task.{key}` (App-Based)
 
 Node type: `uipath.core.human-task.{key}`
-Available: tenant-specific resource — requires `uip login` + `uip flow registry pull`.
+Available: tenant-specific resource — requires `uip login` + `uip maestro flow registry pull`.
 
 ### When to Select
 
@@ -125,15 +125,15 @@ Use when there is an existing coded app or Action Center app that should be the 
 **Published (tenant registry):**
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.human-task" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.human-task" --output json
 ```
 
 **In-solution (local, no login required):**
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.

@@ -1,0 +1,63 @@
+task_id: skill-flow-summarize
+description: >
+  Create a UiPath Flow that runs a Summarize pattern node (`uipath.pattern.deep-rag`)
+  over a single document attachment to produce a synthesized text response with
+  per-claim citations enabled. Exercises Summarize node discovery, the
+  `returnCitations` boolean input, and wiring of the `attachment` input from a
+  flow-level input variable. A `flow debug` step is intentionally omitted —
+  Summarize requires a pre-uploaded Orchestrator attachment and the ECS.DeepRag
+  service backend, neither of which the test sandbox can provision deterministically.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, node:summarize]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "SummarizeDemo" that uses a Summarize
+  pattern node to synthesize a response over an attached document. The flow
+  takes one `in` variable of `type: "object"` named `documentAttachment` —
+  the full Flow Attachment object for the document (shape
+  `{ FullName, Id, Metadata, MimeType }`). The Summarize node must:
+
+    - have its `attachment` input wired to the flow input variable as the
+      WHOLE object (`=js:$vars.documentAttachment`, not `.Id` or any subfield)
+    - use this prompt: `Write a 5-bullet executive summary covering scope, term, SLAs, penalties, and termination.`
+    - set `returnCitations` to `true`
+
+  Wire the Summarize node's `output` port through to an End node and surface
+  the synthesized text + citations as flow output variables `summary` and
+  `citations`.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its
+  workflow steps exactly — in particular, note that the wire-level node type is
+  `uipath.pattern.deep-rag` even though the canvas display name is "Summarize".
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate SummarizeDemo/SummarizeDemo/SummarizeDemo.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Structural checks (node type, inputs, returnCitations boolean) ─────
+  - type: run_command
+    description: "Flow has a Summarize (deep-rag) node with prompt, attachment wired, and returnCitations=true"
+    command: "python3 $TASK_DIR/check_summarize_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

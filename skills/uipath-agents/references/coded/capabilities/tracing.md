@@ -75,6 +75,12 @@ def process_csv_file(file_path: str) -> list:
     return processed_data
 ```
 
+### Span Type
+
+`span_type` is a free-form string; most callers leave it unset and let the decorator choose. The one value with special handling is `"tool"` — it marks the function as an OpenInference tool call (`openinference.span.kind = "TOOL"`, `tool.name = <function name>`). Use it on helper functions that act as tools the agent invokes.
+
+When `span_type` is not set, the decorator assigns one of `function_call_sync`, `function_call_async`, `function_call_generator_sync`, or `function_call_generator_async` based on the wrapped function's type.
+
 ## Data Protection & Privacy
 
 ### Redacting Sensitive Data
@@ -213,19 +219,21 @@ def verify_credentials(username: str, password: str) -> bool:
 - Combine with logging for comprehensive observability
 
 ❌ **Don't:**
-- Forget `wait_for_tracers()` in plain Python agents
 - Log raw passwords or API keys
 - Use `hide_*` for all sensitive data if you need partial visibility
 - Assume tracing adds no performance overhead (it's minimal but measurable)
+
+## Trace Flushing
+
+Traces are flushed automatically when the agent runs through `uip codedagent run` or `invoke`. No manual flush is required.
 
 ## Troubleshooting
 
 ### Traces Not Appearing
 
-1. Verify agent ran to completion
-2. Check that `@traced()` decorator is applied
-3. Ensure `wait_for_tracers()` is called (plain Python only)
-4. Confirm Orchestrator has the job data
+1. Verify the agent ran to completion
+2. Check that `@traced()` is applied to the function you expect to see
+3. Confirm Orchestrator has the job data (check the Jobs page)
 
 ### Performance Concerns
 

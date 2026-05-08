@@ -1,5 +1,5 @@
 # Default owners for the entire repo
-- @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2
+* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2
 
 # CI workflows and review config
 /.github/ @uipreliga
@@ -40,6 +40,10 @@
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
+# Maestro BPMN skill
+/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
@@ -63,12 +67,18 @@
 
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+/tests/tasks/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
-# AOps Governance skill
-/skills/uipath-gov-aops-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+# Governance skill
+/skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
+/tests/tasks/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
+
+# LLM Configuration skill (BYO LLM product configurations via uip llm-configuration byo-connections)
+/skills/uipath-llm-configuration-byo-connections/ @denispetre @vstoleru-uipath @dragosvelcea
 
 # Test skill (reports, manual test automation, manual test execution)
 /skills/uipath-test/ @vaishalisharma-uipath @amoluipath
+/tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath
 
 # Data Fabric skill (CLI entity/record management)
 /skills/uipath-data-fabric/ @aditi-goyal-uipath

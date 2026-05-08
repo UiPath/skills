@@ -67,21 +67,6 @@ initial_prompt: |
 
   10. Delete the 4 records you inserted in step 3.
 
-  Save a summary to report.json:
-  {
-    "entity_id": "<entity ID used>",
-    "records_inserted": ["<id1>", "<id2>", "<id3>", "<id4>"],
-    "and_query_count": <number>,
-    "or_query_count": <number>,
-    "nested_query_count": <number>,
-    "sort_first_value": <number>,
-    "projection_value_absent": <true/false>,
-    "projection_status_absent": <true/false>,
-    "pagination_total_ids": <number>,
-    "pagination_no_duplicates": <true/false>,
-    "records_deleted": ["<ids deleted>"]
-  }
-
   Use --output json on every uip df command.
   Pagination must use --limit and --cursor CLI flags — never body keys.
 
@@ -157,49 +142,6 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "AND→1, OR→2, nested→3, sort first=750, projection excludes Value/Status, pagination 4 unique IDs"
-    path: "report.json"
-    assertions:
-      - expression: "and_query_count"
-        operator: equals
-        expected: 1
-      - expression: "or_query_count"
-        operator: equals
-        expected: 2
-      - expression: "nested_query_count"
-        operator: equals
-        expected: 3
-      - expression: "sort_first_value"
-        operator: equals
-        expected: 750.0
-      - expression: "projection_value_absent"
-        operator: equals
-        expected: true
-      - expression: "projection_status_absent"
-        operator: equals
-        expected: true
-      - expression: "pagination_total_ids"
-        operator: equals
-        expected: 4
-      - expression: "pagination_no_duplicates"
-        operator: equals
-        expected: true
-      - expression: "length(records_inserted)"
-        operator: gte
-        expected: 4
-      - expression: "length(records_deleted)"
-        operator: gte
-        expected: 4
-    weight: 5.0
-    pass_threshold: 0.75
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

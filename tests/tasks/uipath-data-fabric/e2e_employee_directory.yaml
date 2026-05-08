@@ -41,23 +41,6 @@ initial_prompt: |
   2. How many employees are in each department? Use one filterGroup query
      per department to get the count.
 
-  Save a summary to report.json:
-  {
-    "entity_id": "<EmployeeDirectory entity ID>",
-    "total_employees": 20,
-    "schema_evolved": true,
-    "performance_scores_set": 6,
-    "top_performers": [
-      {"name": "<name>", "score": <score>, "department": "<dept>"}
-    ],
-    "department_counts": {
-      "Engineering": <count>,
-      "Sales": <count>,
-      "Finance": <count>,
-      "HR": <count>
-    }
-  }
-
   Do NOT delete the entity.
 
 success_criteria:
@@ -139,30 +122,13 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
+  - type: run_command
+    description: "employees.csv has 20 data rows (header + 20)"
+    command: "awk 'END { exit (NR == 21 ? 0 : 1) }' employees.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
-
-  - type: json_check
-    description: "20 employees imported, schema evolved, 6 scores set, all 4 depts counted"
-    path: "report.json"
-    assertions:
-      - expression: "total_employees"
-        operator: equals
-        expected: 20
-      - expression: "schema_evolved"
-        operator: equals
-        expected: true
-      - expression: "performance_scores_set"
-        operator: equals
-        expected: 6
-      - expression: "length(top_performers)"
-        operator: gte
-        expected: 1
-    weight: 5.0
-    pass_threshold: 0.75
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

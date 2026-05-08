@@ -1,0 +1,83 @@
+task_id: uip-mock-smoke
+description: >
+  Smoke test for the manifest-driven uip mock. Confirms the shared dispatcher
+  in _shared/mock_template/ + a per-scenario fixtures/ folder produce canned
+  uip output without touching a real UiPath tenant or the network.
+tags: [uipath-diagnostics, smoke, uip-mock]
+
+# Inherits from experiments/default.yaml: model, permission_mode, plugins,
+# ignore_patterns. Only the fields below are overrides. `type` is required
+# by the TaskDefinition schema even though it could be inherited.
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write"]
+  max_turns: 5
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    # Shared dispatcher (mocks/uip + mocks/uip.cmd) — never edited per-scenario.
+    - type: template_dir
+      path: ../_shared/mock_template
+    # Scenario-specific fixtures (mocks/responses/manifest.json + per-rule files).
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock
+  # dispatcher instead of the real CLI.
+  mock_path_dirs: ["mocks"]
+
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI. The framework has
+  already arranged for `uip` to resolve correctly on PATH for this task.
+
+  Important:
+  - Invoke the CLI as `uip ...` directly (do not prefix with `bash` or `./`).
+  - Save outputs as files; do not echo to stdout only.
+  - Do not use any TodoWrite or task-tracking tools.
+
+  Steps:
+  1. Run `uip login status --output json` and redirect stdout to `login.json`.
+  2. Run `uip is connections list uipath-zoho-desk --output json` and
+     redirect stdout to `connections.json`.
+  3. Read `connections.json`, count the entries, and write `summary.json`
+     with the form `{"mocked": true, "connections_found": <int>}`.
+
+success_criteria:
+  - type: file_exists
+    description: "login.json was produced by the mock"
+    path: login.json
+
+  - type: file_contains
+    description: "login.json contains the canned mock session"
+    path: login.json
+    includes: ["loggedIn", "mock-tenant"]
+
+  - type: file_exists
+    description: "connections.json was produced by the mock"
+    path: connections.json
+
+  - type: file_contains
+    description: "connections.json contains the canned mock connection"
+    path: connections.json
+    includes: ["conn-mock-1", "MockZohoDesk"]
+
+  - type: file_exists
+    description: "summary.json was produced by the agent"
+    path: summary.json
+
+  - type: file_contains
+    description: "summary.json reports the agent saw exactly one mock connection"
+    path: summary.json
+    includes: ["mocked", "connections_found"]
+
+  - type: command_executed
+    description: "Agent invoked uip directly via the Bash tool"
+    tool_name: "Bash"
+    command_pattern: '(?<![\./\w])uip\s+is\s+connections\s+list'
+    min_count: 1
+
+max_iterations: 1
+
+llm_reviewer:
+  enabled: false

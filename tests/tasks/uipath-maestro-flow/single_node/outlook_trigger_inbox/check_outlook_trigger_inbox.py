@@ -24,7 +24,7 @@ import sys
 
 CONNECTOR_KEY = "uipath-microsoft-outlook365"
 TRIGGER_TYPE_MARKER = "uipath.connector.trigger.uipath-microsoft-outlook365.email-received"
-SHARED_FOLDER_PATH = "Shared"
+TEST_FOLDER_PATH = "Shared/uipath-maestro-flow"
 
 
 def _uip_json(args: list[str]) -> dict:
@@ -55,18 +55,18 @@ def _read_flow() -> tuple[dict, str]:
         return json.load(f), flows[0]
 
 
-def _find_shared_folder_key() -> str:
-    folders = _uip_json(["uip", "or", "folders", "list", "--output", "json"]).get("Data", [])
-    for f in folders:
-        if f.get("Path") == SHARED_FOLDER_PATH:
-            return f["Key"]
-    sys.exit(f"FAIL: no '{SHARED_FOLDER_PATH}' folder in Orchestrator")
+def _find_test_folder_key() -> str:
+    resp = _uip_json(["uip", "or", "folders", "get", TEST_FOLDER_PATH, "--output", "json"])
+    key = resp.get("Data", {}).get("Key")
+    if not key:
+        sys.exit(f"FAIL: no '{TEST_FOLDER_PATH}' folder in Orchestrator")
+    return key
 
 
 def _find_default_outlook_connection() -> tuple[str, str, str]:
     """Return (connection_id, folder_key, connection_name) for the default
-    enabled Outlook connection in Shared."""
-    folder_key = _find_shared_folder_key()
+    enabled Outlook connection in the test folder."""
+    folder_key = _find_test_folder_key()
     conns_raw = _uip_json(
         [
             "uip", "is", "connections", "list", CONNECTOR_KEY,
@@ -75,7 +75,7 @@ def _find_default_outlook_connection() -> tuple[str, str, str]:
     ).get("Data", [])
     if not isinstance(conns_raw, list) or not conns_raw:
         sys.exit(
-            f"FAIL: no {CONNECTOR_KEY} connection in folder {SHARED_FOLDER_PATH}. "
+            f"FAIL: no {CONNECTOR_KEY} connection in folder {TEST_FOLDER_PATH}. "
             f"Provision an Outlook connection in the test tenant first."
         )
     defaults = [c for c in conns_raw if c.get("IsDefault") == "Yes" and c.get("State") == "Enabled"]

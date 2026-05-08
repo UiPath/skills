@@ -25,7 +25,7 @@ Create folders, assign users with roles, provision machines, and configure licen
 graph LR
     A[folders create] --> B[roles create-role]
     B --> C[roles edit-role<br/>add permissions]
-    C --> D[users create]
+    C --> D[users import]
     D --> E[users assign<br/>to folder + role]
     E --> F[machines create]
     F --> G[machines assign<br/>to folder]
@@ -102,21 +102,21 @@ Role types:
 - **Tenant** -- Applies across the entire tenant. Assigned via `uip or users assign-roles`.
 - **Folder** -- Applies only within specific folders. Assigned via `uip or users assign` or `uip or roles assign`.
 
-### Step 4: Create Users
+### Step 4: Import Users from Identity Service
 
-Create users at the tenant level. They exist tenant-wide but have no folder access until explicitly assigned.
+Users are managed in Identity Service (IS), not in Orchestrator. `users import` references an existing IS principal so the tenant can grant it folder access. (The legacy `users create` / `users delete` commands are gone — they called endpoints reserved for `ProvisionType=Manual`, which is not how cloud or IS-backed users are managed.)
 
 ```bash
-uip or users create --username "jane.doe@example.com" --output json
+uip or users import --username "jane.doe@example.com" --output json
 ```
 
 Key options:
-- `--role-keys <keys>` -- Comma-separated role GUIDs for tenant-level role assignment at creation time.
-- `--allow-unattended` -- Enable unattended job execution capability.
-- `--unattended-username <user>` / `--unattended-password <pass>` -- Windows credentials for unattended execution.
-- `--name <first>` / `--surname <last>` / `--email <email>` -- Profile fields.
+- `--directory-id <id>` -- Use the IS directory identifier (OIDC subject) instead of `--username`. Pass exactly one of the two.
+- `--domain <domain>` -- IS directory domain. Defaults to `default`. List configured domains via `GET /api/DirectoryService/GetDomains` if your tenant uses on-prem AD or a non-default IS realm.
+- `--type <type>` -- `DirectoryUser` (default) or `DirectoryGroup`.
+- `--folder-path <path>` / `--folder-key <key>` + `--role-keys <guids>` -- Optional. Imports the user **and** assigns folder roles in a single call. Both must be present together; pass neither for an import-only call. The next step covers folder assignment as a separate flow.
 
-Save the `Key` from the response for the next step.
+Save the `UserName` from the response and look up the `Key` via `users list` for the next step.
 
 ### Step 5: Assign Users to Folders
 
@@ -203,11 +203,9 @@ uip or roles edit-role r1r2r3r4-... \
   --add-permissions "Assets.View,Assets.Edit,Queues.View,Jobs.Create,Jobs.View,Processes.View" \
   --output json
 
-# 4. Create a user
-uip or users create --username "jane.doe@example.com" \
-  --name "Jane" --surname "Doe" --email "jane.doe@example.com" \
-  --allow-unattended --output json
-# Response: { "Data": { "Key": "u1u2u3u4-..." } }
+# 4. Import a user from Identity Service
+uip or users import --username "jane.doe@example.com" --output json
+# (Look up the assigned Key with: uip or users list --search "jane.doe")
 
 # 5. Assign user to folder with role
 uip or users assign \

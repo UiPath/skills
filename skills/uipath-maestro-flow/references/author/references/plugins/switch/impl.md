@@ -18,7 +18,7 @@ Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, requi
 {
   "id": "routeByPriority",
   "type": "core.logic.switch",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Route by Priority" },
   "inputs": {
     "cases": [

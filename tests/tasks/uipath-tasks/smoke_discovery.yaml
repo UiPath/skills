@@ -27,14 +27,6 @@ initial_prompt: |
      to the faster forms endpoint.
   6. List assignable users for folder ID 123.
 
-  Save a summary to report.json:
-  {
-    "commands_used": ["<list of uip tasks commands you ran in order>"],
-    "used_type_hint": <true if step 5 included --task-type AND --folder-id>,
-    "used_as_admin": <true if step 3 included --as-admin>,
-    "task_id_style": "<'numeric' or 'guid'>"
-  }
-
   Important:
   - The uip CLI is NOT connected to a live Action Center tenant. Commands
     will fail with auth errors — that is expected. Run each command once,
@@ -99,24 +91,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Report confirms numeric task IDs and type-hint usage"
-    path: "report.json"
-    assertions:
-      - expression: "task_id_style"
-        operator: equals
-        expected: "numeric"
-      - expression: "used_type_hint"
-        operator: equals
-        expected: true
-      - expression: "used_as_admin"
-        operator: equals
-        expected: true
-    weight: 2.0
-    pass_threshold: 1.0

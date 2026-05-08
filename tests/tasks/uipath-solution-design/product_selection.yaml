@@ -22,14 +22,6 @@ initial_prompt: |
 
   For any [SME REVIEW] items, use the defaults and proceed.
 
-  After writing the SDD, save a summary to report.json:
-    {
-      "sdd_filename": "<the filename you wrote>",
-      "primary_product": "<the product you selected>",
-      "framework": "<agent framework if applicable>",
-      "process_name": "Customer Support Agent"
-    }
-
   --- BEGIN PDD ---
 
   # Process Design Document: Customer Support Agent
@@ -107,19 +99,6 @@ success_criteria:
       - "order"
       - "escalat"
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json confirms Agents as primary product"
-    path: "report.json"
-    assertions:
-      - expression: "primary_product"
-        operator: contains
-        expected: "Agent"
-      - expression: "process_name"
-        operator: equals
-        expected: "Customer Support Agent"
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_contains

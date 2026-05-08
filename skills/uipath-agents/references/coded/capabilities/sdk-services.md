@@ -26,7 +26,6 @@ sdk = UiPath(client_id="id", client_secret="secret", scope="scope", base_url="ur
 | Attachments | `sdk.attachments` | Upload, download, delete attachments |
 | Buckets | `sdk.buckets` | Cloud storage file operations |
 | Queues | `sdk.queues` | Queue item and transaction management |
-| Actions | `sdk.actions` | Create and retrieve human-in-the-loop actions |
 | Context Grounding | `sdk.context_grounding` | RAG index management and search |
 | Documents | `sdk.documents` | Document extraction and validation |
 | Entities | `sdk.entities` | Data Service entity and record management |
@@ -36,7 +35,7 @@ sdk = UiPath(client_id="id", client_secret="secret", scope="scope", base_url="ur
 | Guardrails | `sdk.guardrails` | Evaluate guardrails on data |
 | Folders | `sdk.folders` | Folder key resolution |
 | Tasks | `sdk.tasks` | Action Center task management |
-| AgentHub | `sdk.agenthub` | LLM model listing and system agent invocation |
+| AgentHub | `sdk.agenthub` | LLM model discovery and system agent invocation |
 | MCP | `sdk.mcp` | List and retrieve MCP servers |
 | Resource Catalog | `sdk.resource_catalog` | Search and list tenant/folder resources |
 
@@ -99,11 +98,11 @@ sdk.queues.update_progress_of_transaction_item(transaction_key="txn-123", progre
 items = sdk.queues.list_items()
 ```
 
-## Actions
+## Tasks
 
 ```python
-action = sdk.actions.create(title="Review Invoice", data={"invoice_id": "1234"}, app_name="InvoiceReview", assignee="user@example.com")
-action = sdk.actions.retrieve(action_key="action-key-123")
+task = sdk.tasks.create(title="Review Invoice", data={"invoice_id": "1234"}, app_name="InvoiceReview", assignee="user@example.com")
+task = sdk.tasks.retrieve(action_key="task-key-123")
 ```
 
 ## Context Grounding
@@ -182,21 +181,30 @@ result = sdk.guardrails.evaluate(guardrail_name="ContentSafety", data={"prompt":
 
 ```python
 task = sdk.tasks.create(title="Review document", data={"document_id": "doc-123"}, app_name="DocumentReview", assignee="reviewer@company.com")
-task = sdk.tasks.retrieve(task_key="task-key-123")
+task = sdk.tasks.retrieve(action_key="task-key-123")
 ```
 
 ## AgentHub
 
 ```python
-models = sdk.agenthub.list_models()
-result = sdk.agenthub.invoke(agent_name="system-agent", input_data={"query": "Help me"})
+models = sdk.agenthub.get_available_llm_models()
+# Each item exposes `.model_name` and `.vendor`
+
+# Pick a model by vendor (example: first OpenAI model available in the tenant)
+openai_model = next(m.model_name for m in models if m.vendor == "OpenAI")
+
+job_key = sdk.agenthub.invoke_system_agent(
+    agent_name="system-agent",
+    entrypoint="main",
+    input_arguments={"query": "Help me"},
+)
 ```
 
 ## MCP
 
 ```python
 servers = sdk.mcp.list()
-server = sdk.mcp.retrieve(name="my-mcp-server")
+server = sdk.mcp.retrieve(slug="my-mcp-server", folder_path="MyFolder")
 ```
 
 ## Resource Catalog

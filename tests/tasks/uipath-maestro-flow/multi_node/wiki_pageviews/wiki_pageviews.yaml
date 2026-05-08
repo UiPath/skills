@@ -48,7 +48,7 @@ success_criteria:
 
   # ── Execution checks — success path (transform filter + sum) + error path (http error port) ─────
   - type: run_command
-    description: "UiPath 2024-01-01..15: debug returns 4130 (sum of views on days above 500)"
+    description: "UiPath 2024-01-01..15: debug returns numeric sum of pageviews on days above 500 (range-tolerant of Wikimedia recomputes)"
     command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success"
     timeout: 600
     expected_exit_code: 0

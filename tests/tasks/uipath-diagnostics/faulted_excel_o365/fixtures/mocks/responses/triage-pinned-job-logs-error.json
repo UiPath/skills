@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-03-31T10:15:57.609Z",
+      "Message": "For Each Sheet in Workbook: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\r\nin Main.xaml\r\n    at ForEachSheetConnections \"For Each Sheet in Workbook\"\r\n    at Sequence \"Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

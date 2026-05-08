@@ -70,6 +70,8 @@ Tree-based JSON comparison. Continuous scoring (0.0-1.0). Strings use Levenshtei
 
 **Use for:** Structured JSON output, API responses. **Avoid for:** Exact string matching.
 
+LLM-based evaluators (all `uipath-llm-judge-*`) require `model` in `evaluatorConfig` — set it to a model available in your tenant. An empty or missing `model` fails at request time against the LLM Gateway.
+
 ### LLMJudgeOutputEvaluator (`uipath-llm-judge-output-semantic-similarity`)
 
 LLM-powered semantic similarity. Continuous scoring (0.0-1.0). Accept 0.7+ as good match.
@@ -226,6 +228,8 @@ JSON files use **camelCase**, Python uses **snake_case**. Key mappings: `expecte
 
 ## Built-in evaluatorTypeId Values
 
+The SDK exposes 13 public built-in `evaluatorTypeId` values in the enum below.[^templates]
+
 | evaluatorTypeId | Evaluator | Scoring |
 |----------------|-----------|---------|
 | `uipath-exact-match` | ExactMatchEvaluator | Binary (0/1) |
@@ -241,3 +245,5 @@ JSON files use **camelCase**, Python uses **snake_case**. Key mappings: `expecte
 | `uipath-tool-call-args` | ToolCallArgsEvaluator | Binary/Fractional |
 | `uipath-tool-call-count` | ToolCallCountEvaluator | Binary/Fractional |
 | `uipath-tool-call-output` | ToolCallOutputEvaluator | Binary/Fractional |
+
+[^templates]: The package currently ships 11 bundled evaluator config templates under `uipath/eval/evaluators_types/`; classification evaluators are valid built-in type IDs but do not have bundled template JSON files.

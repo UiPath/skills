@@ -1,0 +1,58 @@
+task_id: skill-agent-coded-process-invoke
+description: >
+  Coded-agent process invocation via `interrupt(InvokeProcess(...))`.
+  Verifies the agent imports `InvokeProcess` from
+  `uipath.platform.common`, calls it from a LangGraph node with both
+  `name` and `process_folder_path` set, and emits the `process`
+  binding for the invoked process.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:process-invocation]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a LangGraph UiPath coded agent named `data-orchestrator`
+  that delegates data scraping to an existing RPA process named
+  `DataScraper` in folder `Workflows`. The agent forwards a target
+  URL to the process and waits for the rows it produces, then
+  returns them.
+
+  DataScraper can run for several minutes per URL, and the agent
+  runtime may be redeployed or restarted while it is running. The
+  graph must survive that — when DataScraper finishes, the graph
+  picks up exactly where it left off, even if the process that
+  dispatched the invocation is no longer alive.
+
+  Input: `target_url` (string).
+  Output: `row_count` (int), `rows` (list of dict).
+
+  Sync `bindings.json` so the process resource is declared.
+
+  Take the agent through scaffold → init. Do NOT run, publish,
+  upload, or deploy. Do NOT pause between planning and
+  implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "InvokeProcess shape, lazy-LLM-init, process binding"
+    command: "python3 $TASK_DIR/check_process_invoke.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

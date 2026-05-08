@@ -1,6 +1,6 @@
 ---
 name: uipath-diagnostics
-description: Use when diagnosing UiPath platform & process issues - failed jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
+description: Use when diagnosing, investigating, or troubleshooting UiPath platform & process issues - failed or stuck jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
 ---
 
 # UiPath Diagnostic Agent
@@ -29,6 +29,7 @@ All state lives in `.investigation/` (relative to working directory). Schemas in
 | `evidence/*.json` | Interpreted summaries | triage, tester |
 | `raw/*.json` | Full raw CLI/API responses | triage, tester |
 | `scope-check.json` | Domain expansion verdict | scope-checker |
+| `depth-check.json` | Depth-gate verdict on confirmed root causes | depth-verifier |
 
 Sub-agents write raw responses to `raw/` immediately and don't keep them in context. You read evidence summaries, not raw files.
 
@@ -41,9 +42,10 @@ Update `state.json.phase` at each transition:
 | `triage` | User describes problem (or new data arrives) | `hypotheses` |
 | `hypotheses` | Triage complete, playbooks matched | `test` |
 | `test` | Hypotheses ready, testing next in confidence order | `evaluate` |
-| `evaluate` | Tester returns verdict | `deepen`, `test`, or `resolution` |
+| `evaluate` | Tester returns verdict | `deepen`, `test`, or `depth_check` |
 | `deepen` | Confirmed symptom needs sub-hypotheses | `hypotheses` (re-invoke generator) |
-| `resolution` | Root cause found or all hypotheses exhausted | `complete` |
+| `depth_check` | Hypothesis confirmed as root cause | `resolution` (verified), `test` (one re-round), or `needs_input` |
+| `resolution` | Depth check verified, or all hypotheses exhausted | `complete` |
 | `complete` | Findings presented to user | — |
 
 ## 4. Investigation Flow
@@ -75,10 +77,50 @@ Test every hypothesis sequentially (highest confidence first). For each, spawn h
 **Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker. Otherwise skip.
 
 **Classify and act:**
+
+Before classifying as **explains-WHY**, apply the upstream-cause gate. The mechanism (explicit-event check + implicit-presupposition check) is owned by the depth-verifier — see [`agents/depth-verifier.md` § Causal precedence](agents/depth-verifier.md). Orchestrator decision rule: if the gate identifies any upstream condition that has a `pending` or `supported` sibling hypothesis answering it, classify the current hypothesis as **describes-WHAT** regardless of evidence strength.
+
+**Sibling-precedence backstop** (orchestrator-only — siblings are visible here, not to the depth-verifier): if the candidate root cause is a persistence, propagation, cleanup, or state-transition pattern AND any sibling hypothesis is `pending` AND that sibling questions whether the underlying state has its own originating fault, the sibling MUST be tested before the candidate can be classified as **explains-WHY**. Stopping at the first confirmed hypothesis is incorrect when that hypothesis is downstream.
+
 - **Eliminated / Inconclusive** → record, test next hypothesis
-- **Confirmed — explains WHY** → root cause. High-confidence: skip remaining, go to Resolution. Medium/low: ask user. Multiple high-confidence: test all before skipping.
+- **Confirmed — explains WHY** (and passes upstream-cause gate) → root cause. Go to DEPTH CHECK (do **not** jump straight to Resolution). Multiple confirmed root causes: depth-check each before skipping the rest.
 - **Confirmed — describes WHAT only** → symptom. Re-invoke generator with `trigger: "deepening"` and `parent_hypothesis`.
 - **All high-confidence eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from medium/low + docsai.
+
+**Co-equal-roots guard.** Before applying any "skip remaining" exit after a confirmed+verified root cause, check `state.json.matched_playbooks`. If two or more playbooks are present at the same highest confidence level AND they correspond to **distinct, independent** error signatures (different activities, different error codes, neither upstream of the other), every pending hypothesis sourced from those playbooks MUST be tested before stopping. Do not exit on the first confirmed root cause when triage found multiple co-equal roots — you will under-report and miss fixes the user has to make. Only after each co-equal hypothesis is tested (confirmed, eliminated, or inconclusive) and depth-checked when confirmed do you proceed to Resolution.
+
+### DEPTH CHECK (after a hypothesis is confirmed as root cause)
+
+Spawn the depth-verifier sub-agent (`agents/depth-verifier.md`). Pass it the
+confirmed hypothesis ID(s), `state.json` path, and the matched playbook path.
+The verifier reads `hypotheses.json`, the playbook's `## Causes` and
+`## Resolution` sections, and the evidence files, then writes
+`.investigation/depth-check.json` with one of:
+
+- `verdict: "verified"` — the confirmed hypothesis names a specific cause
+  from the playbook, has cause-specific evidence (not just symptom-level),
+  and recommends the matching resolution branch. Proceed to **Resolution**.
+- `verdict: "shallow"` — one or more depth dimensions are missing.
+  Inspect `gaps`. Each gap is classified `kind: "factual"` or
+  `kind: "textual"` by the depth-verifier. Routing rule:
+  - **If ANY gap has `kind: "factual"`** — spawn ONE additional
+    hypothesis-tester round on the same hypothesis to gather the
+    missing evidence, then re-spawn the depth-verifier. Stop after one
+    re-round. After that, either declare medium-confidence and proceed
+    to Resolution with the gaps surfaced to the user, or — if the gap
+    is a genuine data limitation — write `needs_input.json` and stop.
+  - **If ALL gaps are `kind: "textual"`** — do NOT spawn the tester.
+    Re-running the tester cannot fix narrative-level issues (paraphrase
+    looseness, wrong resolution branch picked) since those are the
+    *generator's* output, not the tester's. Accept the confirmed
+    hypothesis at `confidence: medium` and proceed to Resolution.
+    Surface the textual gaps in the presenter's output so the user
+    sees them.
+
+**Symptom ≠ cause** (shared.md invariant #9). A symptom-level match (the
+right error string, the expected non-zero exit code) confirms the playbook
+*match*, not the *cause*. The depth-verifier enforces this gate — do not
+skip it.
 
 ### NEW DATA FROM USER
 
@@ -89,9 +131,9 @@ If the user provides new data at any point (error messages, job IDs, logs, scree
 **Root cause vs. symptom:** A finding that explains WHY the failure occurs is a root cause. A finding that describes WHAT happened (but not why) is a symptom — deepen it.
 
 **When to stop testing:**
-- High-confidence root cause confirmed → skip remaining hypotheses, go to Resolution
-- Medium/low root cause confirmed → ask user if they want to continue
-- All hypotheses exhausted (eliminated or inconclusive) → go to Resolution with "no root cause" outcome
+- High-confidence root cause confirmed → DEPTH CHECK; if verified AND no other co-equal-confidence playbook is still pending (see Co-equal-roots guard above), skip remaining hypotheses and go to Resolution. If co-equal playbooks remain pending, continue testing them first.
+- Medium/low root cause confirmed → DEPTH CHECK; if verified, ask user if they want to continue
+- All hypotheses exhausted (eliminated or inconclusive) → go to Resolution with "no root cause" outcome (no depth check needed when there is nothing to gate)
 
 ## 6. Resolution
 

@@ -20,6 +20,7 @@ IS tools differ structurally from Orchestrator-based tools:
 - Additional top-level fields: `iconUrl`, `isPreview`
 - No `referenceKey` or `argumentProperties`
 - Solution-level resources use `connection/` (not `package/` + `process/`)
+- **Connection bindings are exempt from `folderPath` propagation** — they are bound by `connection.id`.
 
 ## Agent-Level Resource Shape
 

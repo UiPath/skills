@@ -9,6 +9,7 @@ Resources represent the data objects available through a connector (e.g., Salesf
 - Response Fields
 - Describe Response
 - Describe Failures
+- Parent-Field-Driven Custom Fields (api-type ObjectActions)
 - Execute Operations
 - Pagination
 - Execute Error Handling
@@ -77,6 +78,38 @@ Some resources return an error on describe. This is a **server-side metadata gap
 2. **Infer fields from user context** — use the field names and values the user provided in their request.
 3. **Infer reference fields from naming** — see [reference-resolution.md — Inferring References Without Describe](reference-resolution.md#inferring-references-without-describe).
 4. **Attempt execute directly** — let the server validate. If a field is rejected, read the error and adjust.
+
+---
+
+## Parent-Field-Driven Custom Fields (api-type ObjectActions)
+
+For connectors whose required fields depend on parent-field selections (Jira `GenerateSchema` keyed off project + issue type, Salesforce SOQL `GenerateQuerySchema` keyed off the query string, Dataservice V3 `FetchObjectMetadataTenant` keyed off `tenantEntityName`), the base `describe` returns only base fields. To preview the full required-field set the runtime will see, pass parent values via `-f, --field`:
+
+```bash
+# Jira: project + issue type → custom fields (GET, query-param tokens)
+uip is resources describe uipath-atlassian-jira curated_create_issue \
+  --connection-id "<id>" --operation Create \
+  -f fields.project.key=ENGCE \
+  -f fields.issuetype.id=3 \
+  --output json
+
+# Salesforce SOQL: query string → response columns (POST, body token)
+uip is resources describe uipath-salesforce-sfdc query_records \
+  --connection-id "<id>" --operation Create \
+  -f query="SELECT Id, Name FROM Account WHERE Status = 'Active'" \
+  --output json
+```
+
+What it does — runs the matching api-type ObjectAction against the IS Element Service (same path Studio Web's dispatcher uses), then merges the response into `requestFields` per the action's `onSuccess.remapConfiguration`. Use it before validating required fields to catch project- or operation-specific mandatory fields the base describe can't see.
+
+| Flag | Notes |
+|------|-------|
+| `-f, --field <name=value>` | Repeatable. Token names match `apiConfiguration.url` and `apiConfiguration.body` placeholders verbatim — no `_sub_` encoding (encoding only applies when caching parent values for runtime replay; see [activities.md — Custom Fields](activities.md#custom-fields-objectactionsactiontypeapi)). |
+| `--action <name>` | Optional. Disambiguates when more than one api-type action could match the field set. |
+
+Requires `--connection-id` and `--operation`. Cache is bypassed when `--field` is supplied — the action response varies per parent-field combination. The merge mode (`replace` / `append` / `prepend` / `noop`) comes from the action's `remapConfiguration.input`; for Jira `GenerateSchema` it is `replace`.
+
+When no api-type action's `rules[]` are satisfied by the supplied fields, the CLI errors with `No api-type ObjectAction matched for fields [...]`. List the operation's actions from the describe output's `connectorMethodInfo.design.actions[]` (or top-level `objectActions[]` for older shapes) to see which fields each action requires.
 
 ---
 

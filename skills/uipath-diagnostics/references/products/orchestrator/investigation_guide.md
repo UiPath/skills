@@ -18,6 +18,7 @@ Only after identity is resolved, fetch data and verify every result against it:
 If data doesn't match: **discard it**. Do NOT fetch details for jobs or items from other processes. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
 4. **Job selection** — if multiple jobs exist for the identified process, present the list to the user (showing state, timestamp, error summary) and ask which one to investigate. If the user said "latest" or didn't specify, default to the most recent faulted job and state this assumption explicitly. Do NOT fetch details for multiple jobs — investigate one at a time.
+5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip resource queues list --folder-key <key> --name <name>` to find the queue definition key. If the user provided a queue item key, use `uip resource queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list-current-user`.
 
 ## Job Data Bundle
 
@@ -29,6 +30,20 @@ For every job under investigation, gather these in order. Write each to `raw/` i
 4. **Job traces** — `uip or jobs traces <key>` — job execution traces (activity states, variable snapshots, execution path). Available for all job types.
 
 This is the baseline. Domain-specific data gathering builds on it — see the investigation guide for each matched domain (UI Automation, Integration Service, Maestro) for additional steps after the baseline.
+
+## Queue Item Data Bundle
+
+For every queue item under investigation, gather these in order. Write each to `raw/` immediately.
+
+1. **Resolve queue** — `uip resource queues list --folder-key <key> --name <name>` — find the queue definition and its key
+2. **Queue item details** — `uip resource queue-items get <item-key> --folder-key <key>` — status, SpecificContent, processingException, retry count
+3. **Queue item history** — `uip resource queue-items get-history <item-key> --folder-key <key>` — state transitions with timestamps (New → InProgress → Failed/Retried)
+4. **Last retry** — `uip resource queue-items get-last-retry <item-key> --folder-key <key>` — details of the most recent retry attempt
+
+For comparison investigations (e.g., queue-items-failing playbook), also gather successful items:
+
+5. **List failed items** — `uip resource queue-items list --queue-key <queue-key> --folder-key <key> --status Failed` — all failed items for comparison
+6. **List successful items** — `uip resource queue-items list --queue-key <queue-key> --folder-key <key> --status Successful --top 3` — sample of successful items to compare SpecificContent
 
 ## Finding Related Jobs
 
