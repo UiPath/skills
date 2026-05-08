@@ -112,7 +112,7 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 - verify: Confirm Result: Success, capture EscalationRuleId
 ```
 
-**Recipient format:** `<target> / <value>` where `<target>` is the UUID (or `<UNRESOLVED: …>` sentinel when sdd only has an email / group name) and `<value>` is the display string. Skeleton recipients stay in `tasks.md` through execution; the user patches the UUID externally after the build and the completion report lists every unresolved recipient.
+**Recipient format:** `<target> / <value>` where `<target>` is the UUID (or `<UNRESOLVED: …>` sentinel when sdd only has an email / group name) and `<value>` is the display string. Placeholder recipients stay in `tasks.md` through execution; the user patches the UUID externally after the build and the completion report lists every unresolved recipient.
 
 **`attach-to: default`** is the default. Use `T<m>` when sdd.md attaches an escalation to a specific conditional SLA rule.
 

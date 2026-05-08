@@ -18,7 +18,7 @@ Run these steps during planning. Each step feeds into the `tasks.md` entry.
 
 ### 1. Find the connector in TypeCache
 
-If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 17 gate does not apply). If still missing after pull, the tenant has no connector activities — emit skeleton per § Unresolved Fallback below.
+If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 17 gate does not apply). If still missing after pull, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
 
 Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 
@@ -34,7 +34,7 @@ Returns `Entry`, `Config`, and `Connections`.
 
 - **Single connection** → use it.
 - **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:`. Execution creates a skeleton task — see [skeleton-tasks.md](../../../skeleton-tasks.md).
+- **Empty `Connections`** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:`. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 Record `connection-id`, `connector-key`, `object-name` from the response.
 
@@ -118,9 +118,9 @@ Using the mapped fields from Step 6, build the `input-values` JSON with dot-path
 
 ## Unresolved Fallback
 
-> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to skeleton.
+> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
 
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
 - Omit `input-values:` entirely — no schema to wire against
-- Execution creates a skeleton task (display-name + type only) per [skeleton-tasks.md](../../../skeleton-tasks.md)
+- Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)

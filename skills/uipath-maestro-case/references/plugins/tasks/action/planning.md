@@ -21,7 +21,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 
 ## Task Title Fallback
 
-`task-title` is what the user sees in the Actions app. Always emit it — the validator requires it even on skeletons. Derive in this order:
+`task-title` is what the user sees in the Actions app. Always emit it — the validator requires it even on placeholders. Derive in this order:
 
 1. SDD has an explicit title or question field → use it
 2. SDD has a Description → summarize into a short, concise title
@@ -40,7 +40,7 @@ See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for 
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). **Keep `task-title:`** — the validator requires it even on skeleton action tasks. Derive via the fallback above. See [skeleton-tasks.md](../../../skeleton-tasks.md).
+Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). **Keep `task-title:`** — the validator requires it even on placeholder action tasks. Derive via the fallback above. See [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Recipient Handling
 

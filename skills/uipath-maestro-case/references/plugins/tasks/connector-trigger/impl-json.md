@@ -20,7 +20,7 @@ Follow [connector-trigger-common.md § Implementation — Shared CLI Calls](../.
 
 Generate task ID (`t` + 8 alphanumeric chars) and elementId (`<stageId>-<taskId>`).
 
-### Task skeleton
+### Task placeholder
 
 ```json
 {

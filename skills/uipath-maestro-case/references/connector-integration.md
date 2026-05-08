@@ -58,7 +58,7 @@ Output: `{ Entry, Config, Connections }` where `Connections` is an array of `{ i
 1. If the sdd.md names a specific connection, match by `name`. Use that `id`.
 2. If the sdd.md is silent and exactly one connection exists, use it.
 3. If multiple connections exist and sdd.md is silent, use **AskUserQuestion** with a bounded list of connection names + "Something else".
-4. If `Connections` is empty, mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `inputValues:`. Execution writes a skeleton connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Tell the user in the completion report to create the connection in the IS portal before the task can run. See [skeleton-tasks.md](skeleton-tasks.md).
+4. If `Connections` is empty, mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `inputValues:`. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Tell the user in the completion report to create the connection in the IS portal before the task can run. See [placeholder-tasks.md](placeholder-tasks.md).
 
 ### Step 4 — (Optional) Describe inputs/outputs
 

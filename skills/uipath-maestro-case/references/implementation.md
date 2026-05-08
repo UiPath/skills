@@ -87,7 +87,7 @@ The case file must live inside a solution + project. The case plugin owns projec
 For each trigger T-entry in `tasks.md §4.3`, open the matching plugin's `impl-json.md`:
 
 - Manual / Timer / Event (resolved) → `plugins/triggers/<type>/impl-json.md` §3
-- Event (UNRESOLVED) → [`plugins/triggers/event/impl-json.md` § Skeleton fallback](plugins/triggers/event/impl-json.md) — node still written; case stays reachable
+- Event (UNRESOLVED) → [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) — node still written; case stays reachable
 
 Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to `entry-points.json.entryPoints[]` atomically. Capture every `TriggerId` for Step 6.2 (In-arg `elementId`) and Step 8 (edges).
 
@@ -117,34 +117,34 @@ For each task entry in `tasks.md §4.6`, open matching plugin's `impl-json.md`. 
 |---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from `uip maestro case tasks describe --type <type> --id <entityKey>`. Each input's `value` is `""`. Outputs populated per plugin. |
 | Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `is resources describe` / `is triggers describe` in Phase 2** — schema discovery happens in Phase 3. |
-| Unresolved (any class) | Skeleton task per Step 9.1 — empty `data: {}` plus action-only extras. |
+| Unresolved (any class) | Placeholder task per Step 9.1 — empty `data: {}` plus action-only extras. |
 
 **Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
 
 **Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field), incrementing per task within a stage (starting at 0). Lane is a FE layout coordinate; it does not affect execution.
 
-### Step 9.1 — Skeleton tasks for unresolved resources
+### Step 9.1 — Placeholder tasks for unresolved resources
 
-When a task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **skeleton task** instead of halting. See [skeleton-tasks.md](skeleton-tasks.md) for the canonical reference.
+When a task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **placeholder task** instead of halting. See [placeholder-tasks.md](placeholder-tasks.md) for the canonical reference.
 
-For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`. For `action` skeletons, **`data.taskTitle` is required** (validator rejects empty — source from sdd.md task-title hint or fall back to `displayName`); include `data.priority` and `data.recipient` if known. Omit `data.context`, `data.inputs`, `data.outputs`.
+For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`. For `action` placeholders, **`data.taskTitle` is required** (validator rejects empty — source from sdd.md task-title hint or fall back to `displayName`); include `data.priority` and `data.recipient` if known. Omit `data.context`, `data.inputs`, `data.outputs`.
 
-**Skip all input binding for skeleton tasks** — they have no input schema. Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+**Skip all input binding for placeholder tasks** — they have no input schema. Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
 
-Skeleton tasks integrate with the rest of the graph:
-- **Task-entry conditions** use the captured skeleton `TaskId` normally.
-- **Stage-exit `selected-tasks-completed`** rules reference skeleton `TaskId`s normally.
+Placeholder tasks integrate with the rest of the graph:
+- **Task-entry conditions** use the captured placeholder `TaskId` normally.
+- **Stage-exit `selected-tasks-completed`** rules reference placeholder `TaskId`s normally.
 - **Cross-task variable bindings** are deferred — the user binds them after attaching the real resource.
 
 ## Step 9.4 — Regenerate bindings_v2.json (batch)
 
 After all non-connector tasks are written (Step 9), regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md). This single pass converts all root bindings accumulated during Step 9 — no per-task regeneration needed.
 
-## Step 9.5 — Skeleton-mode validate + HARD STOP
+## Step 9.5 — Placeholder-mode validate + HARD STOP
 
 End of Phase 2. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Phase 2 hard stop](phased-execution.md#phase-2-hard-stop). This section is a bridge — do NOT duplicate contract here.
 
-1. Run skeleton-profile validate:
+1. Run placeholder-profile validate:
 
    ```bash
    uip maestro case validate "<caseplan.json path>" --skeleton --output json
@@ -188,7 +188,7 @@ For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md
 2. Write root bindings, `data.context[]`, `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
 3. Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md).
 
-Skip connector tasks that are skeletons (unresolved `typeId` / `connectionId`) — they stay bare.
+Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`) — they stay bare.
 
 After all connector tasks are done, **regenerate `bindings_v2.json`** once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md). This single pass includes both the non-connector bindings from Step 9 and the Connection bindings from this step.
 
@@ -201,7 +201,7 @@ For each task's inputs in `tasks.md` order, write values into the existing `data
 
 If a cross-task reference points to a task that does not exist in `caseplan.json`, halt — `tasks.md` ordering is wrong; report to the user.
 
-Skip skeleton tasks entirely — they have no inputs.
+Skip placeholder tasks entirely — they have no inputs.
 
 ## Step 10 — Add conditions
 

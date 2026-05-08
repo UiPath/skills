@@ -139,7 +139,7 @@ Emission rules:
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 
-## Unresolved recipients (skeleton-style)
+## Unresolved recipients (placeholder-style)
 
 When sdd gives an email but no UUID, emit the recipient with a sentinel `target`:
 
