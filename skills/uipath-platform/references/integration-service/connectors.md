@@ -107,20 +107,7 @@ uip is connections list "uipath-uipath-jdbc" --output json
 
 ### Connection identity
 
-`connections list` does not expose `jdbcUrl` or `driverClass`. The only signal for "what DB does this JDBC connection point to?" is the connection **`name`**. Match case-insensitively (weak signal — surface as "likely &lt;DB&gt;", never "is &lt;DB&gt;"):
-
-| DB | Substrings in `connection.name` |
-|---|---|
-| Snowflake | `snowflake`, `sf` |
-| Databricks | `databricks`, `dbx` |
-| Postgres | `postgres`, `postgresql`, `pg` |
-| MySQL | `mysql` |
-| SQL Server | `sqlserver`, `mssql` |
-| Oracle | `oracle` |
-| Redshift | `redshift` |
-| BigQuery | `bigquery`, `bq` |
-
-If the user explicitly named a connection in their prompt (e.g. "use the `pat_databricks` connection"), that overrides name-matching — bind it directly.
+For the rules on inferring a JDBC connection's target DB from its `name` (since `jdbcUrl` / `driverClass` are not exposed by `connections list`), and the explicit-user-named-connection override, see [connections.md — Identifying a JDBC Connection's Target DB](connections.md#identifying-a-jdbc-connections-target-db). The Decision matrix below assumes each JDBC connection has been classified as "name-matched" or "ambiguously named" using that guide.
 
 ### Decision
 
