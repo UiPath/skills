@@ -1,0 +1,87 @@
+task_id: skill-bpmn-init-pack-validate
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to create
+  a repo-shaped Maestro BPMN Process Orchestration project, validate it
+  locally, and package it without cloud-side effects.
+tags: [uipath-maestro-bpmn, smoke, lifecycle:generate, lifecycle:validate, lifecycle:package]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 60
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Maestro BPMN Process Orchestration project named
+  "ExpenseReviewBpmn".
+
+  Load and follow the uipath-maestro-bpmn skill. Keep this local only:
+  create the project, author a minimal manual-start BPMN process with one
+  task and one end event, validate it, and package it to a local output
+  directory.
+
+  Requirements:
+  - Use the installed `uip` CLI when a supported Maestro BPMN init, validate,
+    or pack command exists.
+  - Use `--output json` on every `uip` command whose output you inspect.
+  - Do not upload, publish, deploy, debug, or run the process.
+  - Keep generated package artifacts in a local output directory, not under
+    the skill repository.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent used a Maestro BPMN init or scaffold command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+(init|new|create)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the BPMN project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent packaged the BPMN project locally"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+pack'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json for parsed uip CLI calls"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Project metadata was created"
+    path: "ExpenseReviewBpmn/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file contains a BPMN diagram for Studio Web import"
+    path: "ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "bpmndi:BPMNPlane"
+    weight: 1.0
+    pass_threshold: 1.0

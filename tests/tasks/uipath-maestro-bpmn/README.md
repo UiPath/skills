@@ -2,6 +2,14 @@
 
 These tasks exercise the `uipath-maestro-bpmn` skill and its public-safe validation fixture corpus.
 
+The layout mirrors the Flow eval suite:
+
+- `smoke/` covers lifecycle and fixture smoke checks.
+- `author/` covers BPMN skeleton structure, gateways, sequence flows, and diagrams.
+- `nodes/` covers task wrapper and script-task authoring behavior.
+- `connector/` covers Integration Service boundary behavior without cloud-side mutations.
+- `_shared/` contains small Python helpers for durable XML shape assertions.
+
 ## Contributor Commands
 
 From the repository root:

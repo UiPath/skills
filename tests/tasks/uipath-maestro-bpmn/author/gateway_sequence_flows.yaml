@@ -1,0 +1,48 @@
+task_id: skill-bpmn-gateway-sequence-flows
+description: >
+  Authoring eval: agent creates a BPMN skeleton with gateway branching,
+  joining, default routing, sequence-flow conditions, and BPMN DI.
+tags: [uipath-maestro-bpmn, smoke, lifecycle:generate, shape:multi-node, node:gateway]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 80
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "InvoiceTriageBpmn" for this process:
+  - Manual start with input variables `invoiceId` and `amount`
+  - Record invoice intake
+  - Exclusive gateway routes high-value invoices (`amount >= 1000`) to manager
+    review and all other invoices to auto approval
+  - Parallel gateway then starts two follow-up tasks: notify requester and
+    archive decision
+  - Parallel join flows to a single end event
+
+  Build the BPMN skeleton first and include readable sequence-flow IDs,
+  conditions, a default route on the exclusive gateway, and BPMN DI shapes and
+  waypoints for every visible node and edge.
+
+  Do not upload, publish, deploy, debug, or run the process.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Gateway and sequence-flow structure is valid"
+    command: "python3 $TASK_DIR/check_gateway_sequence_flows.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
