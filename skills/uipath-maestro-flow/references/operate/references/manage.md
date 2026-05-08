@@ -11,7 +11,7 @@ Pre-populate these via `TodoWrite` when entering this journey. See [shared/ux-na
 - [ ] Confirm logged in (`uip login status`)
 - [ ] Resolve folder key (`uip or folders list`)
 - [ ] Resolve instance ID (from prior debug run, `flow job status`, or `instance list`)
-- [ ] Confirm desired action (pause / resume / cancel / retry)
+- [ ] Confirm desired action via `AskUserQuestion` — **Pause** / **Resume** / **Cancel** / **Retry** / **Something else** (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))
 - [ ] **For retry:** confirm root cause was diagnosed first (see [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md))
 - [ ] Execute the lifecycle command
 - [ ] Verify new instance state

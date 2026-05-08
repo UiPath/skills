@@ -102,6 +102,52 @@ Primary configuration file. Edit directly.
 | `"boolean"` | True/false flags |
 | `"object"` | Nested structures |
 | `"array"` | Lists |
+| `$ref: "#/definitions/job-attachment"` | File attachments (input or output). See § File Attachments. |
+
+### File Attachments (`job-attachment`)
+
+To accept or return a file, declare the field as `$ref: "#/definitions/job-attachment"` and add the canonical `job-attachment` block to `inputSchema.definitions` (or `outputSchema.definitions`). Schema is fixed — copy verbatim. `x-uipath-resource-kind: "JobAttachment"` is required.
+
+```jsonc
+{
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "fileIn": { "$ref": "#/definitions/job-attachment" }
+    },
+    "definitions": {
+      "job-attachment": {
+        "type": "object",
+        "properties": {
+          "ID":       { "type": "string", "description": "Orchestrator attachment key" },
+          "FullName": { "type": "string", "description": "File name" },
+          "MimeType": { "type": "string", "description": "MIME type, e.g. \"application/pdf\", \"image/png\"" },
+          "Metadata": {
+            "type": "object",
+            "description": "Dictionary<string, string> of metadata",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "required": ["ID"],
+        "x-uipath-resource-kind": "JobAttachment"
+      }
+    }
+  }
+}
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `ID` | Yes | Orchestrator attachment key. Runtime injects this. |
+| `FullName` | No | File name with extension. |
+| `MimeType` | No | Drives multimodal handling in built-in tools. |
+| `Metadata` | No | `Dictionary<string, string>`. |
+
+`{{input.<file-field>}}` in a message template renders **metadata only** (ID, FullName, MimeType, Metadata). The agent does not see file contents from this token. To read contents, configure a file-handling built-in tool (e.g. `analyze-attachments`) — see [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md).
+
+Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced.
+
+Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web or via Orchestrator job invocation.
 
 ### Top-level fields (do not modify)
 
@@ -138,7 +184,7 @@ Sets the agent's role and behavior. Typically plain text with no variables:
 
 ### User Message
 
-Templates input fields into the prompt using `{{input.fieldName}}`:
+Templates input fields into the prompt using `{{input.fieldName}}`. For `job-attachment` fields the token renders metadata only (see § File Attachments).
 
 ```json
 {
@@ -243,20 +289,20 @@ Agent/
 
 The `validate` command reads these files, resolves `referenceKey` for solution tools, and generates `.agent-builder/agent.json` which inlines all resources. The root `agent.json` should not contain a `resources` field.
 
-### `folderPath` semantics by `location`
+### `folderPath` semantics
 
-`folderPath` (or `channel.properties.folderName` for escalations / `action.app.folderName` for guardrail escalations) carries a different value depending on whether the resource is solution-internal or external:
+`folderPath` (or `channel.properties.folderName` for escalations / `action.app.folderName` for guardrail escalations) carries the literal `Folder` field returned by `uip solution resource list` — the same rule for both local (`Source: "Local"`) and external (`Source: "Remote"`) resources:
 
 | `location` | `folderPath` value | Source |
 |---|---|---|
-| `"solution"` | `"solution_folder"` | Placeholder; resolved at deploy time |
+| `"solution"` | Typically `"solution_folder"` (the in-solution declared folder) | `Folder` field from `uip solution resource list` |
 | `"external"` | Literal Orchestrator folder, slash-separated (e.g., `"Shared/Sales"`) | `Folder` field from `uip solution resource list` |
 
-The author writes the value into `resource.json` (or into the guardrail action under `agent.json`); `uip agent validate` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules.md](critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
+The author writes the value verbatim into `resource.json` (or into the guardrail action under `agent.json`); `uip agent validate` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules.md](critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
 
 For each resource type's full schema, see the relevant capability file:
 
-- Tool resources (`$resourceType: "tool"`) — [capabilities/process/external.md](capabilities/process/external.md), [capabilities/process/solution-agent.md](capabilities/process/solution-agent.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
+- Tool resources (`$resourceType: "tool"`) — [capabilities/process/process.md](capabilities/process/process.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
 - Context resources (`$resourceType: "context"`) — [capabilities/context/context.md](capabilities/context/context.md)
 - Escalation resources (`$resourceType: "escalation"`) — [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md)
 
@@ -281,11 +327,27 @@ For each resource type's full schema, see the relevant capability file:
 3. Update `messages[1].content` and `contentTokens` if the field should appear in the user message
 4. Validate
 
+### Add a File Input Field (`job-attachment`)
+
+1. Add the field as `{ "$ref": "#/definitions/job-attachment" }` in `agent.json` → `inputSchema.properties`
+2. Add the canonical `job-attachment` block to `inputSchema.definitions` (copy from § File Attachments — do not edit)
+3. Mirror both in `entry-points.json` → `entryPoints[0].input.properties` and `.definitions`
+4. Reference in the user message with `{{input.<fieldName>}}` if the agent should see file metadata
+5. To let the agent **read contents**, add a file-handling built-in tool — see [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md)
+6. Validate
+
 ### Add an Output Field
 
 1. Add to `agent.json` → `outputSchema.properties`
 2. Mirror in `entry-points.json` → `entryPoints[0].output.properties`
 3. Validate
+
+### Add a File Output Field (`job-attachment`)
+
+1. Add the field as `{ "$ref": "#/definitions/job-attachment" }` in `agent.json` → `outputSchema.properties`
+2. Add the canonical `job-attachment` block to `outputSchema.definitions`
+3. Mirror both in `entry-points.json` → `entryPoints[0].output.properties` and `.definitions`
+4. Validate
 
 ### Change Model Settings
 

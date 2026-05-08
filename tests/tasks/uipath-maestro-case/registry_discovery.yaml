@@ -3,7 +3,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-case skill to
   explore available case task resources via the registry. Tests whether the
   skill teaches the correct discovery workflow (pull + direct cache-file
-  inspection at ~/.uipcli/case-resources/, not relying on registry search).
+  inspection at ~/.uip/case-resources/, not relying on registry search).
 tags: [uipath-maestro-case, smoke, registry]
 
 agent:
@@ -37,7 +37,7 @@ initial_prompt: |
     "Not logged in. Run 'uip login' first." entries when the environment is
     unauthenticated — that is expected. Record the auth state and continue.
   - Use `--output json` on uip read commands.
-  - If the cache directory at `~/.uipcli/case-resources/` is missing or the
+  - If the cache directory at `~/.uip/case-resources/` is missing or the
     expected `<type>-index.json` files were not populated by the pull, list
     the directory and still report the expected filenames per the skill
     reference (do not fabricate sample data).

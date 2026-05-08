@@ -70,6 +70,9 @@ site
 # Hook scripts that may contain personal paths
 **/.claude/hooks/*.local.*
 
+# Transient session lockfiles
+**/.claude/*.lock
+
 # coder_eval test run artifacts
 tests/reports/
 tests/runs/
@@ -82,3 +85,6 @@ tests/tasks/uipath-maestro-flow/canary/Canary/Canary.uipx
 
 # macOS Finder metadata
 **/.DS_Store
+
+# Git worktrees
+.worktrees/

@@ -1,6 +1,6 @@
 # Phase 1 — Planning: sdd.md → tasks.md
 
-Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
+Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Debug → Phase 6 Publish) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file.
 >
@@ -48,7 +48,9 @@ uip login status --output json
 uip maestro case registry pull
 ```
 
-If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uipcli/case-resources/` so subsequent searches are local disk lookups.
+If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
+
+**Capture `Data.UIPATH_URL` from the `login status` JSON for Step 2.1 tenant-override detection.** If `login status` failed or the field is absent, treat tenant override as unavailable and let Step 2.1 fall through to prompt-phrase detection — do not re-run `login status`.
 
 ## Step 2 — Locate and parse the design document
 
@@ -60,7 +62,76 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
 
+### Step 2.1 — Detect schema version (Rule 18)
+
+Resolution order (first match wins):
+
+#### 2.1.a — Tenant override (alpha environment)
+
+Read the `Data.UIPATH_URL` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
+
+```
+> Schema: v20 (alpha tenant override — UIPATH_URL=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
+```
+
+Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
+
+If `Data.UIPATH_URL` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
+
+#### 2.1.b — User-prompt phrase
+
+Scan **only the user message that activated the skill** (the prompt that matched the skill description). Match case-insensitive substrings:
+
+| Phrase (any one matches) |
+|---|
+| `v20 schema` |
+| `schema v20` |
+| `use v20` |
+| `emit v20` |
+| `generate v20` |
+| `unified schema` |
+| `schema 20.0.0` |
+
+- **Match** → schema is `v20`. Print plain-text confirmation BEFORE Step 3 begins:
+  ```
+  > Schema: v20 (skill-emit-only mode — Phase 4 informational; CLI validate / upload / debug may reject downstream)
+  ```
+- **No match** → schema is `v19` (default). No confirmation line.
+
+**Never** scan sdd.md content, file paths, registry-resolved.json, Phase 0 transcripts, or any subsequent user message. Detection happens once, at Phase 1 entry. If the user wants to switch schema mid-build, they must re-run the skill from Phase 1 (Rule 6). The tenant override (2.1.a) is also fixed at Phase 1 entry — switching tenants mid-build does not change `tasks.md`'s `Schema:` header.
+
+### Step 2.2 — Persist schema choice in tasks.md header
+
+When `tasks.md` is written at Step 4, the **first non-comment line** is the schema header:
+
+```markdown
+Schema: v19
+```
+
+or
+
+```markdown
+Schema: v20
+```
+
+Place this line above all `T<n>` headings. Re-entry protocol (Phase 2 Step 9.6, Phase 3 Step 9.6, Phase 4) re-reads tasks.md per Rule 7 and recovers the schema choice from this header. caseplan.json self-identifies via its top-level `version` literal as a secondary check.
+
+If the schema header in tasks.md conflicts with an already-written caseplan.json's `version` field at re-entry, **halt with explicit error** — never silently re-flip.
+
 ## Step 3 — Resolve resources
+
+Before resource resolution, seed TodoWrite with the items below to track Phase 1 progress through registry lookups and §4 T-entry emit. Mark each `in_progress` on entry, `completed` on exit. One item per emit class — never per T-entry.
+
+1. Resolve registry resources (this Step 3)
+2. Write case file T01 (§4.2)
+3. Write trigger entries T02+ (§4.3)
+4. Write variable / argument entries (§4.2.1)
+5. Write stage entries (§4.4)
+6. Write edge entries (§4.5)
+7. Write task entries (§4.6)
+8. Write condition entries (§4.7)
+9. Write SLA entries (§4.8)
+10. User approves tasks.md (Step 5)
 
 For every task, trigger, and condition in the sdd.md:
 
@@ -115,7 +186,7 @@ At execution time, unresolved tasks become **skeleton tasks** in `caseplan.json`
 
 ## Step 4 — Generate tasks.md and registry-resolved.json
 
-Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. Each section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
+Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. The **first non-comment line is the schema header** (`Schema: v19` or `Schema: v20` per Step 2.1–2.2). Each subsequent section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 
@@ -148,6 +219,24 @@ Before presenting `tasks.md` at Step 5, run a completeness cross-check: for ever
 
 Counts that don't match the sdd.md → fix before Step 5 hard stop.
 
+### 4.0a — Incremental write contract (mandatory)
+
+**One T-entry per file write.** Build `tasks.md` incrementally — never compose the full body in memory and Write once.
+
+Procedure:
+
+1. **Seed.** Write `tasks.md` with header only — `Schema: v19` (or `Schema: v20`), then a `## Inventory` placeholder section. Single Write.
+2. **Per T-entry.** For each T-entry in §4.2 → §4.8 order:
+   - Read `tasks.md` (recover state — context may compact between entries).
+   - Edit-append the new `## T<NN>: …` block to end-of-file.
+   - Move to next T-entry. Do NOT batch.
+3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
+4. **`registry-resolved.json`.** Same incremental discipline — Edit-append one resolution object per resource, not one bulk Write at end.
+
+Why: per-entry round-trips keep tool-call transcript reviewable, preserve rollback granularity, allow mid-run interruption (compaction, user abort), and surface omissions before they propagate. Batching is forbidden — anti-pattern enforced in `SKILL.md`.
+
+This contract mirrors Phase 3's per-T-entry JSON-write contract (see [implementation.md § Per-plugin execution](implementation.md)).
+
 ### 4.1 Task ordering
 
 Always in this order: stages → edges → tasks → conditions → SLA.
@@ -165,8 +254,6 @@ Consult [`plugins/case/planning.md`](plugins/case/planning.md) for required fiel
 Title format: `Declare <category> "<name>"` where category is `In argument`, `Out argument`, or `variable`.
 
 One T-entry per variable or argument from the sdd.md "Case Variables" table. Place these after the case file (T01) and **all** trigger T-entries (T02+) — i.e., after the last trigger row, before stages. In multi-trigger cases the variables block starts at `T0<last-trigger>+1`, not at `T03`. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and entry format.
-
-Task-output variables (produced by tasks during execution) do NOT get T-entries here — they are wired automatically during task creation (§4.6).
 
 ### 4.3 Configure trigger(s) (T02+)
 

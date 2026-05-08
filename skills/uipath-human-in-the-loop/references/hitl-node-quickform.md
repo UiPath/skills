@@ -28,7 +28,11 @@ Before designing the schema, ask these focused questions if the business descrip
 
 ## Step 1b — Discover Upstream Variables
 
-Before designing input field bindings, read `workflow.variables.nodes` from the `.flow` file. Each entry exposes exactly what `$vars` paths are available:
+Before designing input field bindings, read **both** `workflow.variables.nodes` and `workflow.variables.globals` from the `.flow` file.
+
+### Node outputs (`variables.nodes`)
+
+Each entry exposes exactly what `$vars` paths are available:
 
 ```json
 { "id": "fetchInvoice.output", "type": "object", "binding": { "nodeId": "fetchInvoice", "outputId": "output" } }
@@ -45,6 +49,23 @@ The `id` field is the `$vars` path — `fetchInvoice.output` → `$vars.fetchInv
 | Prior HITL node | `output`, `status` | `$vars.{nodeId}.output.{field}` |
 | Agent node | `output` | `$vars.{nodeId}.output.content` |
 | Trigger (manual) | `output` | `$vars.start.output.{field}` |
+
+### Flow-level globals (`variables.globals`)
+
+Also read `workflow.variables.globals`. Each entry has an `id` that maps directly to a `$vars` reference — no node prefix, no `.output` segment:
+
+```json
+{ "id": "customerName", "direction": "in", "type": "string" }
+```
+
+→ binding: `"=js:$vars.customerName"`
+
+**When to use globals instead of node outputs:** When data was declared as a flow-level input variable (e.g. the trigger passes it as a named parameter via `triggerNodeId`), it lives in `globals` with `direction: "in"`. Bind directly to `=js:$vars.<globalId>` — do not add `.output` or a node prefix.
+
+| Source | Access pattern |
+|---|---|
+| Node output | `=js:$vars.<nodeId>.output.<field>` |
+| Flow global (`direction: "in"`) | `=js:$vars.<globalId>` |
 
 For the full variable system, see → [uipath-maestro-flow — variables-and-expressions.md](../../../../uipath-maestro-flow/references/shared/variables-and-expressions.md)
 
@@ -78,7 +99,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 {
   "id": "invoiceReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "quick",
@@ -97,14 +118,16 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Invoice ID",
           "type": "text",
           "direction": "input",
-          "binding": "=js:$vars.fetchInvoice.output.invoiceId"
+          "binding": "=js:$vars.fetchInvoice.output.invoiceId",
+          "variable": "=js:$vars.fetchInvoice.output.invoiceId"
         },
         {
           "id": "amount",
           "label": "Amount",
           "type": "number",
           "direction": "input",
-          "binding": "=js:$vars.fetchInvoice.output.amount"
+          "binding": "=js:$vars.fetchInvoice.output.amount",
+          "variable": "=js:$vars.fetchInvoice.output.amount"
         },
         {
           "id": "notes",
@@ -124,12 +147,17 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
         }
       ],
       "outcomes": [
-        { "id": "approve", "name": "Approve", "isPrimary": true,  "outcomeType": "Positive", "action": "Continue" },
-        { "id": "reject",  "name": "Reject",  "isPrimary": false, "outcomeType": "Negative", "action": "End" }
+        { "id": "approve", "name": "Approve", "isPrimary": true,  "outcomeType": "Positive" },
+        { "id": "reject",  "name": "Reject",  "isPrimary": false, "outcomeType": "Negative" }
       ]
     }
   },
-  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
+  "outputs": {
+    "output":   { "type": "object", "source": "=result",        "var": "output" },
+    "status":   { "type": "string", "source": "=result.Action", "var": "status" },
+    "notes":    { "type": "string", "source": "=result.notes",    "var": "notes",    "custom": true },
+    "decision": { "type": "string", "source": "=result.decision", "var": "decision", "custom": true }
+  }
 }
 ```
 
@@ -180,7 +208,7 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
     "type": "quick",
     "schema": {
       "fields": [],
-      "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
+      "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "outcomeType": "Positive" }]
     },
     "recipient": {
       "channels": ["Email", "ActionCenter"],
@@ -227,12 +255,24 @@ The HITL node exposes two outputs (`output`, `status`). After adding it, **compl
       "id": "invoiceReview1.status",
       "type": "string",
       "binding": { "nodeId": "invoiceReview1", "outputId": "status" }
+    },
+    {
+      "id": "invoiceReview1.notes",
+      "type": "string",
+      "binding": { "nodeId": "invoiceReview1", "outputId": "notes" }
+    },
+    {
+      "id": "invoiceReview1.decision",
+      "type": "string",
+      "binding": { "nodeId": "invoiceReview1", "outputId": "decision" }
     }
   ]
 }
 ```
 
 Include entries for **all** nodes in the flow, not just the HITL node. Replace the entire array — do not append.
+
+**Per-field outputs:** When the schema has `output` or `inOut` direction fields, add one entry per field using the output key name from `node.outputs` (the `variable` property value, or the camelCase-derived name when `variable` is omitted). These are also materialized as flow-level globals in `variables.globals` with `direction: "out"`.
 
 ---
 
@@ -247,11 +287,12 @@ The agent translates the user's business description into the `fields[]` and `ou
 | field `id` | lowercase label, spaces→`-`, strip non-alphanumeric. `"Invoice ID"` → `"invoiceid"`, `"Due Date"` → `"due-date"` |
 | `direction` | `inputs[]` items → `"input"`, `outputs[]` → `"output"`, `inOuts[]` → `"inOut"` |
 | field `type` | `"string"` → `"text"`, `"number"` → `"number"`, `"boolean"` → `"boolean"`, `"date"` → `"date"` |
-| `binding` | Read `variables.nodes` to find `{nodeId}.{outputId}` for the upstream node, then construct `"=js:$vars.<nodeId>.<outputId>.<varName>"`. The outputId is `output` for HTTP/script/agent/trigger nodes and for a prior HITL node (v1.0) — always read `variables.nodes` to confirm, never assume |
-| `variable` | output/inOut variable name — defaults to `id` if not specified |
+| `binding` | Read `variables.nodes` for node outputs → `"=js:$vars.<nodeId>.<outputId>.<field>"`. Read `variables.globals` for flow-level inputs → `"=js:$vars.<globalId>"`. Always read both before constructing bindings — never assume source |
+| `variable` (input/inOut direction) | Set to the **same expression as `binding`**. The BPMN engine reads `variable` to build `HitlTaskArguments` and pre-populate the form at task-creation time. `binding` alone is only stored for workbench display — the runtime does not read it. Without `variable`, input fields appear blank in Action Center and inline debug. |
+| `variable` (output direction) | Short camelCase name for the output variable — defaults to `id` if not specified |
 | `required` | omit if false; set `true` for mandatory outputs |
-| `outcomes[0]` | `isPrimary: true`, `outcomeType: "Positive"`, `action: "Continue"` |
-| `outcomes[1+]` | `isPrimary: false`, `outcomeType: "Negative"`, `action: "End"` |
+| `outcomes[0]` | `isPrimary: true`, `outcomeType: "Positive"` |
+| `outcomes[1+]` | `isPrimary: false`, `outcomeType: "Negative"` (use `"Neutral"` for middle outcomes like Skip/Defer) |
 | `schema.id` | Generate a fresh UUID (e.g. `crypto.randomUUID()` or any UUID v4) |
 
 ### Example 1 — Simple approval (inputs only + outcomes)
@@ -260,12 +301,12 @@ Business description: *"Reviewer sees invoice ID and amount, clicks Approve or R
 
 ```json
 "fields": [
-  { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "=js:$vars.fetchData1.output.invoiceId" },
-  { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "=js:$vars.fetchData1.output.amount" }
+  { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "=js:$vars.fetchData1.output.invoiceId", "variable": "=js:$vars.fetchData1.output.invoiceId" },
+  { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "=js:$vars.fetchData1.output.amount",    "variable": "=js:$vars.fetchData1.output.amount" }
 ],
 "outcomes": [
-  { "id": "approve", "name": "Approve", "isPrimary": true,  "outcomeType": "Positive", "action": "Continue" },
-  { "id": "reject",  "name": "Reject",  "isPrimary": false, "outcomeType": "Negative", "action": "End" }
+  { "id": "approve", "name": "Approve", "isPrimary": true,  "outcomeType": "Positive" },
+  { "id": "reject",  "name": "Reject",  "isPrimary": false, "outcomeType": "Negative" }
 ]
 ```
 
@@ -275,12 +316,12 @@ Business description: *"Human sees the AI-drafted email, can edit it, then click
 
 ```json
 "fields": [
-  { "id": "recipient",  "label": "Recipient",  "type": "text", "direction": "input", "binding": "=js:$vars.draft1.output.recipient" },
+  { "id": "recipient",  "label": "Recipient",  "type": "text", "direction": "input", "binding": "=js:$vars.draft1.output.recipient", "variable": "=js:$vars.draft1.output.recipient" },
   { "id": "emailbody",  "label": "Email Body", "type": "text", "direction": "inOut", "binding": "=js:$vars.draft1.output.body", "variable": "emailBody" }
 ],
 "outcomes": [
-  { "id": "send",    "name": "Send",    "isPrimary": true,  "outcomeType": "Positive", "action": "Continue" },
-  { "id": "discard", "name": "Discard", "isPrimary": false, "outcomeType": "Negative", "action": "End" }
+  { "id": "send",    "name": "Send",    "isPrimary": true,  "outcomeType": "Positive" },
+  { "id": "discard", "name": "Discard", "isPrimary": false, "outcomeType": "Negative" }
 ]
 ```
 
@@ -290,12 +331,12 @@ Business description: *"Agent couldn't extract vendor name or cost center. Human
 
 ```json
 "fields": [
-  { "id": "rawextract",  "label": "Raw Extract",  "type": "text", "direction": "input",  "binding": "=js:$vars.extract1.output.rawText" },
+  { "id": "rawextract",  "label": "Raw Extract",  "type": "text", "direction": "input",  "binding": "=js:$vars.extract1.output.rawText", "variable": "=js:$vars.extract1.output.rawText" },
   { "id": "vendorname",  "label": "Vendor Name",  "type": "text", "direction": "output", "variable": "vendorName",  "required": true },
   { "id": "costcenter",  "label": "Cost Center",  "type": "text", "direction": "output", "variable": "costCenter", "required": true }
 ],
 "outcomes": [
-  { "id": "submit", "name": "Submit", "isPrimary": true, "outcomeType": "Positive", "action": "Continue" }
+  { "id": "submit", "name": "Submit", "isPrimary": true, "outcomeType": "Positive" }
 ]
 ```
 
@@ -305,14 +346,14 @@ Business description: *"If agent confidence is low, escalate. Human sees reasoni
 
 ```json
 "fields": [
-  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "text",   "direction": "input",  "binding": "=js:$vars.classify1.output.reasoning" },
-  { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "=js:$vars.classify1.output.score" },
+  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "text",   "direction": "input",  "binding": "=js:$vars.classify1.output.reasoning", "variable": "=js:$vars.classify1.output.reasoning" },
+  { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "=js:$vars.classify1.output.score",     "variable": "=js:$vars.classify1.output.score" },
   { "id": "notes",           "label": "Notes",            "type": "text",   "direction": "output", "variable": "notes" }
 ],
 "outcomes": [
-  { "id": "retry",    "name": "Retry",    "isPrimary": true,  "outcomeType": "Positive", "action": "Continue" },
-  { "id": "skip",     "name": "Skip",     "isPrimary": false, "outcomeType": "Neutral",  "action": "Continue" },
-  { "id": "escalate", "name": "Escalate", "isPrimary": false, "outcomeType": "Negative", "action": "End" }
+  { "id": "retry",    "name": "Retry",    "isPrimary": true,  "outcomeType": "Positive" },
+  { "id": "skip",     "name": "Skip",     "isPrimary": false, "outcomeType": "Neutral"  },
+  { "id": "escalate", "name": "Escalate", "isPrimary": false, "outcomeType": "Negative" }
 ]
 ```
 
@@ -328,7 +369,9 @@ After the HITL node, downstream nodes can reference:
 |---|---|---|
 | `$vars.<nodeId>.output` | object | All `output` and `inOut` fields the human filled in, keyed by **field `id`** |
 | `$vars.<nodeId>.output.<fieldId>` | varies | Individual field value using the field's `id` property (e.g. `$vars.invoiceReview1.output.decision`) |
-| `$vars.<nodeId>.status` | string | Selected outcome's action value (`"Continue"` for primary, `"End"` for secondary) |
+| `$vars.<nodeId>.status` | string | Selected outcome id (e.g. `"approve"`, `"reject"`) |
+| `$vars.<nodeId>.<variable>` | varies | Per-field output also exposed as a named node variable (key matches `field.variable` or the derived camelCase name) |
+| `$vars.<variable>` | varies | Workflow-global variable (`custom: true` in `outputs`). Accessible without the node prefix in downstream expressions |
 
 > **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property creates a separate workflow-global variable (`$vars.{variable}`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "approvalResult"`, access it as `$vars.nodeId.output.dec1`, not `.approvalResult`.
 
@@ -336,7 +379,7 @@ After the HITL node, downstream nodes can reference:
 ```javascript
 const output = $vars.invoiceReview1.output;
 // Access by field ID, not variable name
-if ($vars.invoiceReview1.status === "Continue") {
+if ($vars.invoiceReview1.status === "approve") {
   await updateSystem(output.vendorName, output.costCenter);
 }
 ```

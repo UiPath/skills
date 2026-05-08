@@ -1,8 +1,10 @@
 task_id: skill-flow-ipe-generate-schema
 description: >
-  Tests the GenerateSchema IS feature — configures a connector node with
-  schema generation on the Azure Application Insights connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
+  Tests the GenerateSchema IS feature — configures the Atlassian Jira
+  "Create Issue" connector node so that customFieldsRequestDetails captures
+  the parent values (project key + issue type id) that drive the schema
+  fetch, and bodyParameters carries the required fields.summary value.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira]
 
 task_timeout: 1500
 agent:
@@ -18,41 +20,43 @@ sandbox:
   node:
     # Pin shared across all connector_features tasks — bump in lockstep.
     env_packages:
-      - "@uipath/cli@0.1.21"
+      - "@uipath/cli"
 initial_prompt: |
-  Create a new Flow project called "GenerateSchemaTest" with a manual trigger.
-  You need a flow that runs a KQL query against an Azure Application Insights
-  workspace and returns the result with a generated output schema. Discover the
-  Application Insights execute-query operation and rely on the generate-schema
-  action to shape the response.
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "GenerateSchema test failed".
-  Route success to a final action that logs "GenerateSchema test passed".
+  Create a new Flow project called "GenerateSchemaTest" with a manual trigger
+  that runs the Atlassian Jira "Create Issue" connector activity
+  Pick any Jira project + issue type combination and set a static summary
+  string.
+  Configure the node so:
+    - bodyParameters carries fields.project.key, fields.issuetype.id, and
+      fields.summary (all three are required by GenerateSchema).
+    - customFieldsRequestDetails records BOTH parent-field tuples
+      (encoded as fields_sub_project_sub_key and fields_sub_issuetype_sub_id)
+      under the GenerateSchema objectActionName so the schema fetch can be
+      replayed at design time.
+  End the flow with a core.control.end node.
   Validate the final flow file.
+  If the Atlassian Jira connector is not present in the registry, stop —
+  this test exercises GenerateSchema, which has no managed-HTTP fallback.
+
+  Test connections for this task live in Orchestrator folder "Shared/uipath-maestro-flow".
+  Resolve its key with `uip or folders get "Shared/uipath-maestro-flow" -o json`
+  and pass `--folder-key <key>` on every `uip is connections list` call.
 
 success_criteria:
   - type: run_command
-    description: "Flow file exists and is valid JSON"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/GenerateSchemaTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))\""
-    timeout: 10
+    description: "Flow is valid JSON with Jira Create Issue node, customFieldsRequestDetails has both parent-field tuples under GenerateSchema, and bodyParameters carries a non-empty fields.summary"
+    command: "python3 $TASK_DIR/check_generate_schema.py"
+    timeout: 30
     expected_exit_code: 0
-    weight: 3.0
+    weight: 10.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Flow has a connector node referencing uipath-microsoft-azureapplicationinsights"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/GenerateSchemaTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-microsoft-azureapplicationinsights' in content, 'Connector key not found'; print('OK: connector key present')\""
-    timeout: 10
-    expected_exit_code: 0
+  - type: command_executed
+    description: "Parent-field-driven describe (Step 3a) was called to fetch GenerateSchema custom fields"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+is\\s+resources\\s+describe.+(-f|--field)[=\\s]+[\"']?fields\\.project\\.key"
+    min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/GenerateSchemaTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

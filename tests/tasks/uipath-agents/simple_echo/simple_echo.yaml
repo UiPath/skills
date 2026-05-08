@@ -1,0 +1,77 @@
+task_id: skill-agent-coded-simple-echo
+description: >
+  Simple Function coded agent zero-to-running. Verifies the agent
+  scaffolds via `uip codedagent new`, registers the function
+  entrypoint in `uipath.json`, runs `uip codedagent init` to emit
+  `entry-points.json` with Pydantic-derived schemas, then runs
+  `uip codedagent run main` to execute deterministically (no LLM,
+  no cloud auth needed).
+tags: [uipath-agents, smoke, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+  # Default smoke max_turns is 20, but the full scaffold -> init -> run
+  # loop (uv venv, uv sync, uip codedagent setup, uip codedagent new,
+  # rewrite main.py, init, run, write marker) lands at ~25 turns even
+  # without an LLM call. Bumping headroom to 40.
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a Simple Function UiPath coded agent named `echo-agent` whose
+  `main(input)` echoes `input.message` repeated `input.repeat` times
+  and reports the resulting length. No LLM calls — purely
+  deterministic Python.
+
+  Input fields: `message: str`, `repeat: int` (default 1).
+  Output fields: `echoed: str`, `length: int`.
+
+  Take the agent end-to-end through scaffold → init → run. After
+  `uip codedagent run main '{"message": "hi ", "repeat": 3}'`
+  succeeds, write `RAN_OK` to a file `run_marker.txt` in the project
+  root so the test harness can verify the run completed cleanly.
+
+  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
+  ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in
+  a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the agent locally with uip codedagent run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run\s+main'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project shape, lazy-init, schema sync, and pyproject hygiene"
+    command: "python3 $TASK_DIR/check_simple_echo.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

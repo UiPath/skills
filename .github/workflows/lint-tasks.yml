@@ -1,0 +1,197 @@
+name: Lint coder-eval Tasks
+
+# Runs only on PRs that are out of draft state. Drafts are skipped via the
+# job-level `if` check below; the workflow re-fires on the `ready_for_review`
+# event when the author flips a draft to ready.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'tests/tasks/**/*.yaml'
+
+# Cancel outdated runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lint-tasks:
+    name: Lint changed task YAMLs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Skip drafts (only run when the PR is ready for review) and skip forks
+    # (Anthropic API key is required and not available to forked PRs).
+    if: |
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code Action
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          track_progress: true
+          claude_args: "--model claude-opus-4-6"
+          prompt: |
+            You are running an **advisory** lint on coder-eval task YAMLs added or
+            modified by this PR. Never fail the check. Post exactly ONE comment on
+            the PR with the results. The lint catches a small set of high-impact
+            anti-patterns; it does not block merge.
+
+            ## Step 1 — Read the rubric
+
+            Read `.claude/commands/lint-task.md` end-to-end. That file is the
+            source of truth for the six scoring axes (Self-report anti-pattern,
+            Prompt over-specification, Meaningful coverage, Could pass for the
+            wrong reason, Near-duplicate, Validate-only flow tests) and the four
+            severity levels (Critical / High / Medium / Low). Apply the same
+            rubric here. Refer to axes by their human-readable titles, never by
+            letter labels. Do NOT restate the rubric in the PR comment — link to it.
+
+            ## Step 2 — Identify changed task YAMLs
+
+            Run:
+              git diff --name-only --diff-filter=AM \
+                origin/${{ github.base_ref }}...HEAD -- 'tests/tasks/**/*.yaml'
+
+            That gives you the list of added (A) and modified (M) task files.
+            Exclude anything under `_shared/`. If the list is empty, post a short
+            comment saying "No coder-eval task YAMLs changed in this PR." and stop.
+
+            For each changed file, read the FULL file (not just the diff) — the
+            rubric scores the whole task, not just the change.
+
+            ## Step 3 — Read PR body for evidence of passing run
+
+            Run:
+              gh pr view ${{ github.event.pull_request.number }} --json body --jq .body
+
+            Search the body for any phrase that asserts the changed/added tasks
+            have been run and passed at least once. Acceptable forms (use semantic
+            judgment, not strict regex):
+              - "ran <task-name> locally and it passed"
+              - "passed locally"
+              - "verified passing run on <date/tenant>"
+              - A `coder-eval run` output snippet showing pass status
+              - A run_id or dashboard URL paired with a "passing" claim
+              - "smoke passed", "e2e passed", "all changed tasks passing"
+
+            **Trust verbal claims** — do not try to verify the run actually
+            happened. The convention is honor-system; the lint just enforces that
+            the author claimed it.
+
+            **If no such claim is present, raise a High-severity issue** —
+            flag it prominently in the comment under "Evidence of passing run".
+            Suggest the author edit the PR description to add a line like:
+              "Ran `<task-id>` locally and it passed."
+
+            If the PR only **modifies** existing tasks (no new task_ids), still
+            require the author to claim the modified task still passes. If the
+            PR only deletes tasks (no A or M), skip this check.
+
+            ## Step 4 — Apply rubric to each changed file
+
+            For each file, follow the rubric in `.claude/commands/lint-task.md`:
+              - Read up to 5 nearest sibling tasks (same folder, then same skill
+                if folder is sparse) for the "Near-duplicate" axis.
+              - Evaluate all six axes and produce a list of severity-tagged issues.
+              - Compose a short, concrete list of suggested fixes per issue.
+
+            ## Step 5 — Within-PR duplicate check
+
+            If this PR adds 2+ new task YAMLs, evaluate them as a set:
+              - Are any of the newly-added tasks substantially similar to each
+                other (same skill features, same CLI commands, same shape, only
+                surface-level naming differences)?
+              - If yes, flag a "Within-PR duplicates" cluster in the comment with
+                the cluster members and a one-line justification.
+              - This is in addition to the per-file Near-duplicate check (which
+                compares to existing siblings on main).
+              - If multiple files are interchangeable, raise the cluster as
+                **High** severity. If they overlap substantially but each adds
+                some marginal coverage, raise as **Medium**.
+
+            ## Step 6 — Compose ONE PR comment
+
+            Post a single comment with this exact structure. Do NOT post inline
+            review comments.
+
+            ```markdown
+            ## Coder-eval task lint (advisory)
+
+            <One sentence: N task YAMLs changed; verdict counts: <C> Critical, <H> High, <M> Medium, <L> Low, <O> OK.>
+
+            Rubric: [.claude/commands/lint-task.md](.claude/commands/lint-task.md). This check is advisory and never blocks merge.
+
+            ### Evidence of passing run
+
+            <One of:>
+            - ✅ Author confirms passing run: "<quote the relevant phrase from PR body>"
+            - ❌ **High** — PR body does not claim the changed tasks have been run and passed. Please edit the PR description to add a line like: `Ran <task-id> locally and it passed.`
+
+            ### Per-task lint
+
+            <For each changed file, a compact block:>
+
+            #### `tests/tasks/<skill>/<file>.yaml` — verdict: <OK | Low | Medium | High | Critical>
+
+            **Issues:**
+            - [Critical] Self-report anti-pattern: <one-line description with line refs>
+            - [High] Prompt over-specification: <one-line description with line refs>
+            - [Medium] Near-duplicate: <description, neighbor: foo.yaml>
+            - [Low] Meaningful coverage: <description>
+
+            **Suggested fixes:**
+            - <concrete change>
+            - ...
+
+            <If a task has no issues, just write "verdict: OK" and omit Issues / Suggested fixes.>
+
+            ### Within-PR duplicates
+
+            <Either:>
+            - No duplicate clusters detected.
+            <Or, if 2+ added files cluster:>
+            - **[High] Cluster 1:** `<file_a.yaml>`, `<file_b.yaml>` — <one-line justification, e.g. "both create+validate a flow with a single script node, only entity name differs">. Consider combining into one parametrized task or dropping one.
+
+            ### Themes
+
+            <If 2+ tasks share the same root cause, call it out once here. Otherwise omit this section.>
+            - <e.g. "3 tasks share the same self-report anti-pattern.">
+
+            ### Conclusion
+
+            <One of:>
+            - ✅ All changed tasks pass the rubric. Evidence of passing run confirmed.
+            - ⚠ <N> task(s) have issues, max severity <Critical | High | Medium | Low>. Advisory only — not blocking merge.
+            ```
+
+            ## Rules
+
+            - **Single comment.** If you've already posted a lint comment on this PR
+              (check via `gh pr view --comments` for a comment starting with
+              "## Coder-eval task lint"), edit it instead of posting a new one. Use
+              `gh pr comment --edit-last` if available, otherwise post a new one
+              and prefix it with "(updated)".
+            - **Advisory tone.** This never blocks merge. Use language like
+              "consider", "suggested", "please". Even Critical / High issues are
+              advisory in this workflow.
+            - **Be concrete.** Cite line numbers from the YAML. "Improve the test"
+              is not a fix; "replace `file_exists: report.json` with
+              `command_executed` matching `uip df entity get` + `json_check` on its
+              output" is.
+            - **Be terse.** One line per issue. Authors can read the YAML; the
+              comment is for triage.
+            - **Honor-system on passing-run claims.** Do not try to verify; trust
+              the verbal statement in the PR body. Only flag if no claim exists.

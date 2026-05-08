@@ -4,7 +4,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 > **Where you came from / where to go next.** Diagnose is downstream of Operate (run faulted → diagnose) and points back to Author for the underlying fix (diagnose → re-author → re-ship). Re-running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md); building/editing the `.flow` file lives in [author/CAPABILITY.md](../author/CAPABILITY.md).
 >
-> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, never invoke other skills automatically, **plain-English narration per logical step**, **granular `TodoWrite` list above the trivial threshold**. The rules below are diagnose-scoped and apply on top.
+> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, never invoke other skills automatically, AskUserQuestion dropdown pattern, **plain-English narration per logical step**, **granular `TodoWrite` list above the trivial threshold**. The rules below are diagnose-scoped and apply on top.
 
 ## When to use this capability
 

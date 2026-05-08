@@ -1,0 +1,82 @@
+task_id: skill-agent-coded-antipattern-build-system
+description: >
+  Negative test for Coded Critical Rule C1 — `pyproject.toml` MUST
+  NOT carry a `[build-system]` section. The prompt seeds a violating
+  pyproject (with `hatchling` declared as the build backend), and
+  the skill must drive the agent to detect the violation and remove
+  the section before any further work.
+tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have an existing UiPath coded agent project under `legacy-port`
+  that I'm getting ready for deployment. Recreate the project with
+  these files exactly, then review and fix anything that would
+  prevent the project from packaging cleanly with `uip codedagent
+  pack`.
+
+  **legacy-port/pyproject.toml**:
+  ```toml
+  [project]
+  name = "legacy-port"
+  version = "0.0.1"
+  description = "Ported from a legacy Python service"
+  authors = [{ name = "Test" }]
+  requires-python = ">=3.11"
+  dependencies = ["uipath"]
+
+  [dependency-groups]
+  dev = ["uipath-dev"]
+
+  [build-system]
+  requires = ["hatchling>=1.0"]
+  build-backend = "hatchling.build"
+  ```
+
+  **legacy-port/main.py**:
+  ```python
+  from pydantic import BaseModel
+  from uipath.tracing import traced
+
+  class Input(BaseModel):
+      message: str
+
+  class Output(BaseModel):
+      echoed: str
+
+  @traced()
+  async def main(input: Input) -> Output:
+      return Output(echoed=input.message)
+  ```
+
+  After recreating those files, review them for any UiPath coded-
+  agent anti-patterns and fix them in place. Do NOT keep the
+  pyproject as written if it violates a rule.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "pyproject.toml exists under legacy-port/"
+    path: "legacy-port/pyproject.toml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "pyproject.toml has no [build-system] section after the fix"
+    command: "python3 $TASK_DIR/check_antipattern_build_system.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

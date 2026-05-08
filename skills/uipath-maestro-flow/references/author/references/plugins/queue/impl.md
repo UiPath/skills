@@ -22,7 +22,7 @@ Confirm: input port `input`, output port `success`.
 {
   "id": "enqueueItem",
   "type": "core.action.queue.create",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Enqueue Invoice" },
   "inputs": {
     "queue": "InvoiceProcessingQueue",
@@ -61,7 +61,7 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
 {
   "id": "processAndWait",
   "type": "core.action.queue.create-and-wait",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Process and Wait" },
   "inputs": {
     "queue": "InvoiceProcessingQueue",

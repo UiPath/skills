@@ -357,7 +357,7 @@ Fix issues before saving.
 Save as `YYYY-MM-DD-<feature-name>.md`:
 
 - **Project directory exists** (`project.json`, `flow_files/`, `.uipath/`, or `pyproject.toml`) → save to `docs/plans/` within the project. Create the directory if needed.
-- **No project directory** → save to `~/Documents/UiPath/Plans/`. Create the directory if needed.
+- **No project directory** → save to `./plans/` (relative to the current working directory). Create the directory if needed.
 
 ### 5e. Present the plan
 

@@ -89,7 +89,7 @@ Then populate each section:
 
 ### 3a. Root-level bindings
 
-Create 2 entries in `root.data.uipath.bindings[]` per [bindings/impl-json.md](../../variables/bindings/impl-json.md). Connector tasks use `resource: "Connection"`:
+Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md). Connector tasks use `resource: "Connection"`:
 
 | Binding | `propertyAttribute` | `default` |
 |---|---|---|
@@ -266,7 +266,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 8. `data.bindings[]` is empty `[]`
 9. `data.outputs[]` copied verbatim with `elementId` set
 10. `data.inputs[]` includes `pathParameters` (always), `queryParameters` (when applicable), `file` (when multipart has file), `body`
-11. `bindings_v2.json` `resources` array matches `root.data.uipath.bindings` (unless get-connection failed)
+11. `bindings_v2.json` `resources` array matches the bindings array (unless get-connection failed)
 
 ## What NOT to Do
 

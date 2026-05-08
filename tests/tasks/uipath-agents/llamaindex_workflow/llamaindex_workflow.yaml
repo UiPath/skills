@@ -1,0 +1,72 @@
+task_id: skill-agent-coded-llamaindex-workflow
+description: >
+  LlamaIndex coded agent zero-to-running. Verifies the agent
+  scaffolds a LlamaIndex Workflow project (`uip codedagent new` →
+  `llama_index.json` + `main.py` exporting a `Workflow` instance),
+  uses custom `StartEvent`/`StopEvent` subclasses for input/output
+  schemas, instantiates `UiPathOpenAI` lazily inside a step
+  (Critical Rule C4), and runs the workflow end-to-end via
+  `uip codedagent run`.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-llamaindex]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a LlamaIndex UiPath coded agent named `qna-workflow` that
+  takes a user question, generates a brief answer using the platform
+  LLM gateway, and reports both the answer and its word count.
+
+  Input: `question` (str). Output: `answer` (str), `word_count`
+  (int).
+
+  Take the agent end-to-end through scaffold → init → run. Run
+  against `'{"question": "What is Python in one sentence?"}'`.
+
+  After the run succeeds, write `RAN_OK` to `run_marker.txt` in the
+  project root so the test harness can verify the run completed
+  cleanly.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the workflow locally with uip codedagent run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run\s+agent'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "LlamaIndex project shape, lazy-LLM-init invariant, schema sync"
+    command: "python3 $TASK_DIR/check_llamaindex_workflow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

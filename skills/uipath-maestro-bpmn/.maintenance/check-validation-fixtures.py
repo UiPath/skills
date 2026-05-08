@@ -1,0 +1,509 @@
+#!/usr/bin/env python3
+"""Validate the synthetic Maestro BPMN fixture corpus.
+
+The checker intentionally stays dependency-free so contributors and CI can run
+it without access to PO.FrontEnd or private exported BPMN. It validates the
+public contract shape these fixtures are meant to preserve.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURES = ROOT / "fixtures" / "validation"
+BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
+BPMNDI_NS = "http://www.omg.org/spec/BPMN/20100524/DI"
+DI_NS = "http://www.omg.org/spec/DD/20100524/DI"
+UIPATH_NS = "http://uipath.org/schema/bpmn"
+
+NODE_TYPES = {
+    "startEvent",
+    "endEvent",
+    "intermediateCatchEvent",
+    "intermediateThrowEvent",
+    "boundaryEvent",
+    "task",
+    "serviceTask",
+    "sendTask",
+    "receiveTask",
+    "userTask",
+    "manualTask",
+    "businessRuleTask",
+    "scriptTask",
+    "callActivity",
+    "subProcess",
+    "adHocSubProcess",
+    "exclusiveGateway",
+    "inclusiveGateway",
+    "parallelGateway",
+    "eventBasedGateway",
+    "complexGateway",
+}
+
+ALLOWED_URLS = (
+    "http://www.omg.org/spec/BPMN/20100524/MODEL",
+    "http://www.omg.org/spec/BPMN/20100524/DI",
+    "http://www.omg.org/spec/DD/20100524/DC",
+    "http://www.omg.org/spec/DD/20100524/DI",
+    "http://www.w3.org/2001/XMLSchema-instance",
+    "http://uipath.org/schema/bpmn",
+    "http://uipath.com/synthetic/maestro-bpmn/",
+)
+
+
+def local(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def ns(tag: str) -> str:
+    if tag.startswith("{"):
+        return tag[1:].split("}", 1)[0]
+    return ""
+
+
+class Validator:
+    def __init__(self) -> None:
+        self.errors: list[str] = []
+        self.projects = 0
+        self.bpmn_files = 0
+
+    def error(self, path: Path, message: str) -> None:
+        self.errors.append(f"{path.relative_to(ROOT)}: {message}")
+
+    def validate(self) -> int:
+        if not FIXTURES.is_dir():
+            print(f"ERROR: fixtures directory not found: {FIXTURES}", file=sys.stderr)
+            return 2
+
+        for project in sorted(p for p in FIXTURES.iterdir() if p.is_dir()):
+            self.projects += 1
+            self.validate_project(project)
+
+        for err in self.errors:
+            print(f"ERROR: {err}")
+        print(
+            f"validation_fixture_projects={self.projects} "
+            f"bpmn_files={self.bpmn_files} errors={len(self.errors)}"
+        )
+        return 1 if self.errors else 0
+
+    def validate_project(self, project: Path) -> None:
+        expected = [
+            "project.uiproj",
+            "bindings_v2.json",
+            "entry-points.json",
+            "operate.json",
+            "package-descriptor.json",
+        ]
+        for name in expected:
+            if not (project / name).is_file():
+                self.error(project, f"missing {name}")
+
+        bpmn_files = sorted(project.glob("*.bpmn"))
+        if len(bpmn_files) != 1:
+            self.error(project, f"expected exactly one .bpmn file, found {len(bpmn_files)}")
+            return
+
+        bpmn = bpmn_files[0]
+        self.bpmn_files += 1
+        text = bpmn.read_text(encoding="utf-8")
+        self.validate_public_safety(bpmn, text)
+
+        try:
+            tree = ET.parse(bpmn)
+        except ET.ParseError as exc:
+            self.error(bpmn, f"XML parse failed: {exc}")
+            return
+
+        root = tree.getroot()
+        self.validate_bpmn_document(bpmn, root)
+        self.validate_package_files(project, bpmn.name, root)
+
+    def validate_public_safety(self, path: Path, text: str) -> None:
+        patterns = {
+            "email address": r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
+            "local absolute path": r"(/Users/|/home/|C:\\\\Users\\\\)",
+            "guid-like identifier": r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b",
+        }
+        for label, pattern in patterns.items():
+            if re.search(pattern, text):
+                self.error(path, f"contains {label}")
+
+        for match in re.finditer(r"https?://[^\s\"'>]+", text):
+            url = match.group(0)
+            if not any(url.startswith(allowed) for allowed in ALLOWED_URLS):
+                self.error(path, f"contains non-allowlisted URL {url}")
+
+    def validate_bpmn_document(self, path: Path, root: ET.Element) -> None:
+        if local(root.tag) != "definitions" or ns(root.tag) != BPMN_NS:
+            self.error(path, "root element is not bpmn:definitions")
+
+        if (
+            root.attrib.get("targetNamespace", "").startswith("http://uipath.com/synthetic/")
+            is False
+        ):
+            self.error(path, "targetNamespace must be synthetic")
+
+        elements_by_id = {
+            elem.attrib["id"]: elem
+            for elem in root.iter()
+            if "id" in elem.attrib
+            and ns(elem.tag) in {BPMN_NS, BPMNDI_NS}
+            and local(elem.tag) != "BPMNShape"
+            and local(elem.tag) != "BPMNEdge"
+        }
+
+        processes = root.findall(f"{{{BPMN_NS}}}process")
+        executable = [p for p in processes if p.attrib.get("isExecutable") == "true"]
+        if len(executable) != 1:
+            self.error(path, f"expected one executable process, found {len(executable)}")
+            return
+        process = executable[0]
+
+        bindings = self.collect_root_bindings(process)
+        variables = self.collect_variables(process)
+        self.validate_diagram(path, root, elements_by_id)
+        self.validate_sequence_flows(path, root, elements_by_id)
+        self.validate_start_events(path, process)
+        self.validate_entry_points(path, process)
+        self.validate_gateway_conditions(path, root)
+        self.validate_error_events(path, root, elements_by_id)
+        self.validate_message_events(path, root, elements_by_id)
+        self.validate_multi_instance(path, root, variables)
+        self.validate_uipath_extensions(path, root, bindings, variables)
+
+    def collect_root_bindings(self, process: ET.Element) -> dict[str, ET.Element]:
+        result: dict[str, ET.Element] = {}
+        for binding in process.findall(
+            f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}bindings/{{{UIPATH_NS}}}binding"
+        ):
+            if binding.attrib.get("propertyAttribute") in {"folderKey", "folderPath"}:
+                continue
+            result[binding.attrib["id"]] = binding
+        return result
+
+    def collect_variables(self, root: ET.Element) -> dict[str, set[str]]:
+        variables: dict[str, set[str]] = {"root": set(), "all": set()}
+        for vars_elem in root.findall(f".//{{{UIPATH_NS}}}variables"):
+            for child in list(vars_elem):
+                if child.attrib.get("name"):
+                    variables["all"].add(child.attrib["name"])
+                    if vars_elem in root.findall(
+                        f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}variables"
+                    ):
+                        variables["root"].add(child.attrib["name"])
+        return variables
+
+    def validate_diagram(
+        self, path: Path, root: ET.Element, elements_by_id: dict[str, ET.Element]
+    ) -> None:
+        planes = root.findall(f".//{{{BPMNDI_NS}}}BPMNPlane")
+        if not planes:
+            self.error(path, "missing BPMNPlane")
+            return
+        for plane in planes:
+            ref = plane.attrib.get("bpmnElement")
+            if ref not in elements_by_id:
+                self.error(path, f"BPMNPlane references missing element {ref}")
+
+        shape_refs = {
+            shape.attrib.get("bpmnElement")
+            for shape in root.findall(f".//{{{BPMNDI_NS}}}BPMNShape")
+        }
+        edge_refs = {
+            edge.attrib.get("bpmnElement") for edge in root.findall(f".//{{{BPMNDI_NS}}}BPMNEdge")
+        }
+
+        for elem_id, elem in elements_by_id.items():
+            kind = local(elem.tag)
+            if kind in NODE_TYPES and elem_id not in shape_refs:
+                self.error(path, f"missing BPMNShape for {elem_id}")
+            if kind == "sequenceFlow" and elem_id not in edge_refs:
+                self.error(path, f"missing BPMNEdge for {elem_id}")
+
+        for edge in root.findall(f".//{{{BPMNDI_NS}}}BPMNEdge"):
+            if len(edge.findall(f"{{{DI_NS}}}waypoint")) < 2:
+                self.error(path, f"BPMNEdge {edge.attrib.get('id')} has fewer than two waypoints")
+
+    def validate_sequence_flows(
+        self, path: Path, root: ET.Element, elements_by_id: dict[str, ET.Element]
+    ) -> None:
+        for flow in root.findall(f".//{{{BPMN_NS}}}sequenceFlow"):
+            source = elements_by_id.get(flow.attrib.get("sourceRef", ""))
+            target = elements_by_id.get(flow.attrib.get("targetRef", ""))
+            if source is None or target is None:
+                self.error(
+                    path, f"sequenceFlow {flow.attrib.get('id')} has missing source or target"
+                )
+                continue
+            if local(source.tag) == "endEvent":
+                self.error(path, f"sequenceFlow {flow.attrib.get('id')} starts at an end event")
+            if local(target.tag) == "startEvent":
+                self.error(path, f"sequenceFlow {flow.attrib.get('id')} targets a start event")
+
+    def validate_start_events(self, path: Path, process: ET.Element) -> None:
+        scopes = [process] + process.findall(f".//{{{BPMN_NS}}}subProcess")
+        for scope in scopes:
+            starts = [c for c in list(scope) if local(c.tag) == "startEvent"]
+            blank = [
+                s
+                for s in starts
+                if not any(local(c.tag).endswith("EventDefinition") for c in list(s))
+            ]
+            if len(blank) > 1:
+                self.error(path, f"scope {scope.attrib.get('id')} has multiple blank start events")
+            if scope.attrib.get("triggeredByEvent") == "true" and len(starts) != 1:
+                self.error(
+                    path,
+                    f"event subprocess {scope.attrib.get('id')} must have exactly one start event",
+                )
+
+    def validate_entry_points(self, path: Path, process: ET.Element) -> None:
+        entry_ids: dict[str, str] = {}
+        root_starts = [c for c in list(process) if local(c.tag) == "startEvent"]
+        for start in root_starts:
+            ep = start.find(f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}entryPointId")
+            if ep is None:
+                continue
+            value = ep.attrib.get("value")
+            if not value:
+                self.error(path, f"start event {start.attrib.get('id')} has empty entryPointId")
+            elif value in entry_ids:
+                self.error(path, f"duplicate entryPointId {value}")
+            else:
+                entry_ids[value] = start.attrib["id"]
+
+        for var in process.findall(
+            f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}variables/{{{UIPATH_NS}}}input"
+        ):
+            element_id = var.attrib.get("elementId")
+            if element_id and element_id not in {s.attrib["id"] for s in root_starts}:
+                self.error(
+                    path,
+                    f"entry input variable {var.attrib.get('name')} references non-root start {element_id}",
+                )
+
+    def validate_gateway_conditions(self, path: Path, root: ET.Element) -> None:
+        for gateway in root.findall(f".//{{{BPMN_NS}}}exclusiveGateway"):
+            outgoing = [
+                child.text for child in gateway.findall(f"{{{BPMN_NS}}}outgoing") if child.text
+            ]
+            if len(outgoing) < 2:
+                continue
+            default = gateway.attrib.get("default")
+            if default and default not in outgoing:
+                self.error(
+                    path, f"exclusiveGateway {gateway.attrib.get('id')} default is not outgoing"
+                )
+            for flow_id in outgoing:
+                if flow_id == default:
+                    continue
+                flow = root.find(f".//{{{BPMN_NS}}}sequenceFlow[@id='{flow_id}']")
+                if flow is not None and flow.find(f"{{{BPMN_NS}}}conditionExpression") is None:
+                    self.error(path, f"gateway flow {flow_id} is missing conditionExpression")
+
+    def validate_error_events(
+        self, path: Path, root: ET.Element, elements_by_id: dict[str, ET.Element]
+    ) -> None:
+        for event_def in root.findall(f".//{{{BPMN_NS}}}errorEventDefinition"):
+            ref = event_def.attrib.get("errorRef")
+            if ref and ref not in elements_by_id:
+                self.error(path, f"errorEventDefinition references missing error {ref}")
+
+        for boundary in root.findall(f".//{{{BPMN_NS}}}boundaryEvent"):
+            attached = boundary.attrib.get("attachedToRef")
+            if attached not in elements_by_id:
+                self.error(
+                    path,
+                    f"boundaryEvent {boundary.attrib.get('id')} references missing activity {attached}",
+                )
+
+    def validate_message_events(
+        self, path: Path, root: ET.Element, elements_by_id: dict[str, ET.Element]
+    ) -> None:
+        for event_def in root.findall(f".//{{{BPMN_NS}}}messageEventDefinition"):
+            ref = event_def.attrib.get("messageRef")
+            if ref and ref not in elements_by_id:
+                self.error(path, f"messageEventDefinition references missing message {ref}")
+
+    def validate_multi_instance(
+        self, path: Path, root: ET.Element, variables: dict[str, set[str]]
+    ) -> None:
+        for loop in root.findall(f".//{{{BPMN_NS}}}multiInstanceLoopCharacteristics"):
+            marker = loop.attrib.get("isSequential")
+            if marker not in {"true", "false"}:
+                self.error(
+                    path,
+                    f"multiInstanceLoopCharacteristics {loop.attrib.get('id')} "
+                    "must set isSequential to true or false",
+                )
+
+            metadata = loop.find(
+                f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}loopCharacteristics"
+            )
+            if metadata is None:
+                self.error(
+                    path,
+                    f"multiInstanceLoopCharacteristics {loop.attrib.get('id')} "
+                    "missing uipath:loopCharacteristics",
+                )
+                continue
+
+            input_collection = metadata.attrib.get("inputCollection", "")
+            collection_var = self.expression_variable(input_collection)
+            if not collection_var or collection_var not in variables["all"]:
+                self.error(
+                    path,
+                    f"multi-instance inputCollection references undeclared variable "
+                    f"{input_collection}",
+                )
+
+            input_element = metadata.attrib.get("inputElement")
+            if not input_element or input_element not in variables["all"]:
+                self.error(
+                    path,
+                    f"multi-instance inputElement references undeclared variable {input_element}",
+                )
+
+            completion = loop.find(f"{{{BPMN_NS}}}completionCondition")
+            if completion is not None and self.contains_assignment(completion.text or ""):
+                self.error(
+                    path,
+                    f"multiInstanceLoopCharacteristics {loop.attrib.get('id')} "
+                    "completionCondition may contain assignment",
+                )
+
+    def expression_variable(self, value: str) -> str | None:
+        match = re.fullmatch(r"=([A-Za-z_][A-Za-z0-9_]*)", value.strip())
+        return match.group(1) if match else None
+
+    def contains_assignment(self, value: str) -> bool:
+        return "=" in value and re.search(r"(?<![=!<>])=(?!=)", value[1:]) is not None
+
+    def validate_uipath_extensions(
+        self,
+        path: Path,
+        root: ET.Element,
+        bindings: dict[str, ET.Element],
+        variables: dict[str, set[str]],
+    ) -> None:
+        for elem in root.iter():
+            if ns(elem.tag) != UIPATH_NS:
+                continue
+            if local(elem.tag) in {"activity", "event"}:
+                self.validate_activity_or_event(path, elem, bindings)
+            if local(elem.tag) == "output":
+                target = elem.attrib.get("var") or elem.attrib.get("target")
+                if target and target not in variables["all"]:
+                    self.error(path, f"uipath:output targets undeclared variable {target}")
+            value = elem.attrib.get("value", "")
+            for binding_ref in re.findall(r"=bindings\.([A-Za-z0-9_]+)", value):
+                if binding_ref not in bindings:
+                    self.error(
+                        path, f"binding expression references undeclared binding {binding_ref}"
+                    )
+            if self.contains_assignment(value):
+                self.error(path, f"expression may contain assignment: {value}")
+
+    def validate_activity_or_event(
+        self, path: Path, elem: ET.Element, bindings: dict[str, ET.Element]
+    ) -> None:
+        type_elem = elem.find(f"{{{UIPATH_NS}}}type")
+        service_type = type_elem.attrib.get("value") if type_elem is not None else None
+        if not service_type:
+            self.error(path, "uipath activity/event missing type")
+            return
+
+        context = elem.find(f"{{{UIPATH_NS}}}context")
+        context_inputs = {
+            child.attrib.get("name"): child.attrib.get("value", "")
+            for child in list(context)
+            if context is not None and local(child.tag) == "input"
+        }
+
+        if service_type.startswith("Intsvc."):
+            connection = context_inputs.get("connection", "")
+            match = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", connection)
+            if not match or match.group(1) not in bindings:
+                self.error(path, f"{service_type} missing generated connection binding")
+            if "connectorKey" not in context_inputs:
+                self.error(path, f"{service_type} missing connectorKey")
+            if service_type in {"Intsvc.ActivityExecution", "Intsvc.AsyncExecution"}:
+                for required in ("activity", "operation"):
+                    if required not in context_inputs:
+                        self.error(path, f"{service_type} missing {required}")
+            if service_type == "Intsvc.EventTrigger":
+                for required in ("trigger", "eventName"):
+                    if required not in context_inputs:
+                        self.error(path, f"{service_type} missing {required}")
+
+    def validate_package_files(self, project: Path, bpmn_name: str, root: ET.Element) -> None:
+        data: dict[str, object] = {}
+        for name in (
+            "project.uiproj",
+            "bindings_v2.json",
+            "entry-points.json",
+            "operate.json",
+            "package-descriptor.json",
+        ):
+            path = project / name
+            if not path.is_file():
+                return
+            try:
+                data[name] = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                self.error(path, f"JSON parse failed: {exc}")
+                return
+
+        if data["project.uiproj"].get("main") != bpmn_name:  # type: ignore[union-attr]
+            self.error(project / "project.uiproj", "main does not match BPMN file")
+        if data["operate.json"].get("main") != bpmn_name:  # type: ignore[union-attr]
+            self.error(project / "operate.json", "main does not match BPMN file")
+        if data["operate.json"].get("contentType") != "ProcessOrchestration":  # type: ignore[union-attr]
+            self.error(project / "operate.json", "contentType must be ProcessOrchestration")
+
+        descriptor_content = set(data["package-descriptor.json"].get("content", []))  # type: ignore[union-attr]
+        for required in (
+            f"content/{bpmn_name}",
+            "content/bindings_v2.json",
+            "content/entry-points.json",
+            "content/operate.json",
+        ):
+            if required not in descriptor_content:
+                self.error(project / "package-descriptor.json", f"missing content entry {required}")
+
+        process = root.find(f"{{{BPMN_NS}}}process")
+        if process is None:
+            return
+        root_bindings = self.collect_root_bindings(process)
+        package_bindings = {
+            resource.get("id")
+            for resource in data["bindings_v2.json"].get("resources", [])  # type: ignore[union-attr]
+        }
+        for binding_id in root_bindings:
+            if binding_id not in package_bindings:
+                self.error(
+                    project / "bindings_v2.json", f"missing resource for binding {binding_id}"
+                )
+
+        entry_points = data["entry-points.json"].get("entryPoints", [])  # type: ignore[union-attr]
+        package_eps = {ep.get("id"): ep for ep in entry_points}
+        for start in [c for c in list(process) if local(c.tag) == "startEvent"]:
+            ep = start.find(f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}entryPointId")
+            if ep is None:
+                continue
+            ep_id = ep.attrib.get("value")
+            file_path = f"/content/{bpmn_name}#{start.attrib.get('id')}"
+            if ep_id not in package_eps:
+                self.error(project / "entry-points.json", f"missing entry point {ep_id}")
+            elif package_eps[ep_id].get("filePath") != file_path:
+                self.error(project / "entry-points.json", f"entry point {ep_id} has wrong filePath")
+
+
+if __name__ == "__main__":
+    sys.exit(Validator().validate())

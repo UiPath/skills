@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-query-params
 description: >
   Tests the query parameters IS feature — configures a connector node with a
   query parameter on the Google Tasks connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-google-tasks]
 
 task_timeout: 1500
 agent:
@@ -28,6 +28,9 @@ initial_prompt: |
   Route failure to a Terminate node with error message "QueryParams test failed".
   Route success to a final action that logs "QueryParams test passed".
   Validate the final flow file.
+  If the Google Tasks connector operation is not present in the registry, use
+  a managed HTTP fallback for the same REST call and finish after validation.
+  Do not keep searching for a connector node that the registry does not expose.
 
 success_criteria:
   - type: run_command
@@ -39,8 +42,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow has a connector node referencing uipath-google-tasks"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/QueryParamsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-google-tasks' in content, 'Connector key not found'; print('OK: connector key present')\""
+    description: "Flow uses Google Tasks connector or task-specific managed HTTP fallback"
+    command: "python3 $TASK_DIR/check_managed_http_fallback.py '**/QueryParamsTest*.flow' uipath-google-tasks query_params"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

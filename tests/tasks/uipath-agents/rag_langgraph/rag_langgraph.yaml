@@ -1,0 +1,52 @@
+task_id: skill-agent-coded-rag-langgraph
+description: >
+  Coded-agent RAG via Context Grounding. Verifies the agent imports
+  `ContextGroundingRetriever` from `uipath_langchain.retrievers`,
+  instantiates it inside a node body with `index_name` and
+  `folder_path` set, and emits the `index` binding for the targeted
+  Context Grounding index.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:rag-coded]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a LangGraph UiPath coded agent named `policy-rag` that
+  answers natural-language questions by retrieving relevant snippets
+  from a Context Grounding index named `company_docs` in folder
+  `Shared`, then composing the answer with the platform LLM gateway
+  at `temperature=0` for reproducibility.
+
+  Input: `question` (string). Output: `answer` (string), `snippets`
+  (list of string).
+
+  Sync `bindings.json` so the index resource is declared.
+
+  Take the agent through scaffold → init. Do NOT run, publish,
+  upload, or deploy. Do NOT pause between planning and
+  implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "ContextGroundingRetriever shape, lazy-LLM-init, index binding"
+    command: "python3 $TASK_DIR/check_rag_langgraph.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

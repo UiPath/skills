@@ -32,7 +32,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 {
   "id": "transformChain",
   "type": "core.action.transform",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Process Employees" },
   "inputs": {
     "collection": "$vars.fetchData.output.body.employees",
@@ -85,7 +85,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 {
   "id": "filterActive",
   "type": "core.action.transform.filter",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Filter Active Orders" },
   "inputs": {
     "collection": "$vars.orders.output.items",
@@ -136,7 +136,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 {
   "id": "mapFields",
   "type": "core.action.transform.map",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Normalize Names" },
   "inputs": {
     "collection": "$vars.rawData.output.items",
@@ -186,7 +186,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 {
   "id": "groupByDept",
   "type": "core.action.transform.group-by",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Group by Department" },
   "inputs": {
     "collection": "$vars.employees.output.items",

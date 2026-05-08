@@ -1,0 +1,102 @@
+task_id: skill-agents-bindings-asset-subtypes
+description: >
+  Asset SubType inference from Python type annotations. The agent
+  scans a project where three different `sdk.assets.retrieve_async`
+  call sites are annotated as `str`, `int`, and `bool` respectively.
+  The bindings sync should produce three `asset` entries — and where
+  the inference is high-confidence, emit `metadata.SubType` matching
+  the type annotation (`stringAsset` / `integerAsset` /
+  `booleanAsset`).
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Hand-author a UiPath coded agent project — do NOT scaffold via
+  the CLI. Inside the working directory create:
+
+  **pyproject.toml**:
+  ```toml
+  [project]
+  name = "asset-subtypes"
+  version = "0.0.1"
+  description = "Three asset retrieves with different annotations"
+  authors = [{ name = "Test" }]
+  requires-python = ">=3.11"
+  dependencies = ["uipath"]
+
+  [dependency-groups]
+  dev = ["uipath-dev"]
+  ```
+
+  **uipath.json**:
+  ```json
+  {"projectType": "CodedAgent", "functions": {"main": "main.py:main"}}
+  ```
+
+  **entry-points.json**:
+  ```json
+  {
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+      {
+        "filePath": "main",
+        "uniqueId": "cc111111-2222-3333-4444-555566667777",
+        "type": "agent",
+        "input": {"type": "object", "properties": {}, "required": []},
+        "output": {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]}
+      }
+    ]
+  }
+  ```
+
+  **main.py**:
+  ```python
+  from uipath.platform import UiPath
+
+  async def main(input):
+      sdk = UiPath()
+      api_key: str = await sdk.assets.retrieve_async("api_key", folder_path="Shared")
+      max_retries: int = await sdk.assets.retrieve_async("max_retries", folder_path="Shared")
+      feature_enabled: bool = await sdk.assets.retrieve_async("feature_enabled", folder_path="Shared")
+      return {"ok": True, "api_key": api_key, "max_retries": max_retries, "feature_enabled": feature_enabled}
+  ```
+
+  **bindings.json** (start empty):
+  ```json
+  {"version": "2.0", "resources": []}
+  ```
+
+  Then sync `bindings.json` so it reflects all three asset retrieves.
+  Each one must produce a separate binding entry. Where the type
+  annotation lets you infer the SubType with high confidence, emit
+  `metadata.SubType` accordingly. If a SubType cannot be inferred
+  cleanly, omitting it is acceptable per the bindings reference.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "bindings.json exists"
+    path: "bindings.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Three asset bindings, correct keys, SubType either matches the annotation or is omitted"
+    command: "python3 $TASK_DIR/check_bindings_asset_subtypes.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

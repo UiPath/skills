@@ -4,7 +4,7 @@ description: >
   all Python files in a project (including helper modules), resolve module-level
   constants, and produce a correct bindings.json. Tests that the skill teaches
   scanning beyond main.py and constant resolution.
-tags: [uipath-agents, smoke, bindings]
+tags: [uipath-agents, smoke, coded, bindings]
 
 sandbox:
   driver: tempdir

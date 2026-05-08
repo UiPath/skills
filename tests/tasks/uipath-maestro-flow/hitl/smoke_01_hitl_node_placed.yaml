@@ -9,7 +9,7 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   max_turns: 80
-  turn_timeout: 600
+  turn_timeout: 900
 
 sandbox:
   driver: tempdir

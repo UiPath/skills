@@ -278,7 +278,8 @@ Workflow output variables (`direction: "out"`) must be mapped on End nodes. The 
 {
   "id": "end1",
   "type": "core.control.end",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
+  "display": { "label": "End" },
   "inputs": {},
   "outputs": {
     "totalAmount": {
@@ -604,7 +605,8 @@ A flow with input, state, and output variables:
     {
       "id": "start",
       "type": "core.trigger.manual",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
+      "display": { "label": "Manual trigger" },
       "inputs": {
         "entryPointId": "<uuid>"
       },
@@ -620,7 +622,7 @@ A flow with input, state, and output variables:
     {
       "id": "transform1",
       "type": "core.action.script",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "inputs": {
         "script": "const items = $vars.inputItems.filter(i => i.active);\nreturn { count: items.length, items: items };"
       },
@@ -642,7 +644,8 @@ A flow with input, state, and output variables:
     {
       "id": "end1",
       "type": "core.control.end",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
+      "display": { "label": "End" },
       "inputs": {},
       "outputs": {
         "result": {

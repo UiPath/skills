@@ -1,6 +1,6 @@
 ---
 name: uipath-diagnostics
-description: Use when diagnosing UiPath platform & process issues - failed jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
+description: Use when diagnosing, investigating, or troubleshooting UiPath platform & process issues - failed or stuck jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
 ---
 
 # UiPath Diagnostic Agent
@@ -77,10 +77,17 @@ Test every hypothesis sequentially (highest confidence first). For each, spawn h
 **Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker. Otherwise skip.
 
 **Classify and act:**
+
+Before classifying as **explains-WHY**, apply the upstream-cause gate. The mechanism (explicit-event check + implicit-presupposition check) is owned by the depth-verifier — see [`agents/depth-verifier.md` § Causal precedence](agents/depth-verifier.md). Orchestrator decision rule: if the gate identifies any upstream condition that has a `pending` or `supported` sibling hypothesis answering it, classify the current hypothesis as **describes-WHAT** regardless of evidence strength.
+
+**Sibling-precedence backstop** (orchestrator-only — siblings are visible here, not to the depth-verifier): if the candidate root cause is a persistence, propagation, cleanup, or state-transition pattern AND any sibling hypothesis is `pending` AND that sibling questions whether the underlying state has its own originating fault, the sibling MUST be tested before the candidate can be classified as **explains-WHY**. Stopping at the first confirmed hypothesis is incorrect when that hypothesis is downstream.
+
 - **Eliminated / Inconclusive** → record, test next hypothesis
-- **Confirmed — explains WHY** → root cause. Go to DEPTH CHECK (do **not** jump straight to Resolution). Multiple confirmed root causes: depth-check each before skipping the rest.
+- **Confirmed — explains WHY** (and passes upstream-cause gate) → root cause. Go to DEPTH CHECK (do **not** jump straight to Resolution). Multiple confirmed root causes: depth-check each before skipping the rest.
 - **Confirmed — describes WHAT only** → symptom. Re-invoke generator with `trigger: "deepening"` and `parent_hypothesis`.
 - **All high-confidence eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from medium/low + docsai.
+
+**Co-equal-roots guard.** Before applying any "skip remaining" exit after a confirmed+verified root cause, check `state.json.matched_playbooks`. If two or more playbooks are present at the same highest confidence level AND they correspond to **distinct, independent** error signatures (different activities, different error codes, neither upstream of the other), every pending hypothesis sourced from those playbooks MUST be tested before stopping. Do not exit on the first confirmed root cause when triage found multiple co-equal roots — you will under-report and miss fixes the user has to make. Only after each co-equal hypothesis is tested (confirmed, eliminated, or inconclusive) and depth-checked when confirmed do you proceed to Resolution.
 
 ### DEPTH CHECK (after a hypothesis is confirmed as root cause)
 
@@ -124,7 +131,7 @@ If the user provides new data at any point (error messages, job IDs, logs, scree
 **Root cause vs. symptom:** A finding that explains WHY the failure occurs is a root cause. A finding that describes WHAT happened (but not why) is a symptom — deepen it.
 
 **When to stop testing:**
-- High-confidence root cause confirmed → DEPTH CHECK; if verified, skip remaining hypotheses and go to Resolution
+- High-confidence root cause confirmed → DEPTH CHECK; if verified AND no other co-equal-confidence playbook is still pending (see Co-equal-roots guard above), skip remaining hypotheses and go to Resolution. If co-equal playbooks remain pending, continue testing them first.
 - Medium/low root cause confirmed → DEPTH CHECK; if verified, ask user if they want to continue
 - All hypotheses exhausted (eliminated or inconclusive) → go to Resolution with "no root cause" outcome (no depth check needed when there is nothing to gate)
 

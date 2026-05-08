@@ -7,7 +7,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 Pre-populate these via `TodoWrite` when entering this journey. Adapt to the mode (debug vs process run vs job inspection). See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
 
 - [ ] Confirm logged in (`uip login status`)
-- [ ] Identify run mode (debug / process run / job inspection)
+- [ ] Identify run mode — when ambiguous, ask via `AskUserQuestion`: **Debug (controlled re-run with side effects)** / **Process run (trigger deployed process)** / **Job inspection (status + traces only)** / **Something else** (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))
 - [ ] **For debug:** confirm explicit user consent — flow has real side effects
 - [ ] **For debug:** refresh solution resources (`solution resource refresh`)
 - [ ] Build `--inputs` JSON if the flow has input parameters
