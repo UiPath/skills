@@ -4,7 +4,7 @@ Connector activity nodes call external services (Jira, Slack, Salesforce, Outloo
 
 ## When to Use
 
-Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, pagination, and error formatting automatically.
+Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, and error formatting automatically at runtime. Note: design-time reference resolution (looking up records by name during authoring) still requires the agent to paginate — see [impl.md](impl.md).
 
 ### Decision Order
 
