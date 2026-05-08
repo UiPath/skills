@@ -33,9 +33,11 @@ initial_prompt: |
   Do not upload, publish, deploy, debug, or run the process.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was created"
-    path: "InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn"
+    command: "find InvoiceTriageBpmn -maxdepth 1 -type f -name '*.bpmn' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
