@@ -3,6 +3,8 @@ description: >
   End-to-end test: agent performs a robot account onboarding flow.
   Creates a robot account, assigns it to a group for role-based access.
   Validates the agent follows the onboarding workflow from the skill.
+  Command-construction only — no live tenant available for
+  side-effect verification.
 
   Platform note: runs without an authenticated tenant — commands will
   fail with auth errors. That is acceptable.

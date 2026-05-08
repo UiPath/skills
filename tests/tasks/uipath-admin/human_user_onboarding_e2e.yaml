@@ -3,6 +3,8 @@ description: >
   End-to-end test: agent performs a human user onboarding flow.
   Invites a user by email, then assigns them to a group. Validates
   the agent follows the onboarding workflow from the skill.
+  Command-construction only — no live tenant available for
+  side-effect verification.
 tags: [uipath-admin, e2e, onboarding]
 max_iterations: 2
 

@@ -4,6 +4,8 @@ description: >
   group, discovers users, adds members, verifies membership, then
   removes a member. Tests full group lifecycle and the critical rule
   about using user IDs (not usernames) for membership operations.
+  Command-construction only — no live tenant available for
+  side-effect verification.
 tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
 max_iterations: 2
 
