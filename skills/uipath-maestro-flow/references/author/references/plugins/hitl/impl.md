@@ -31,8 +31,8 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
     "type": "quick",
     "schema": {
       "fields": [
-        { "id": "invoiceId", "label": "Invoice ID", "type": "text",   "direction": "input" },
-        { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input" }
+        { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "=js:$vars.fetchInvoice.output.invoiceId", "variable": "=js:$vars.fetchInvoice.output.invoiceId" },
+        { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "=js:$vars.fetchInvoice.output.amount",    "variable": "=js:$vars.fetchInvoice.output.amount" }
       ],
       "outcomes": [
         { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "outcomeType": "Positive" },
@@ -51,6 +51,8 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 ```
 
 `custom: true` on per-field outputs marks them as workflow-global variables (accessible as `$vars.<variable>`, not prefixed by nodeId). Add one entry per `output` / `inOut` direction field. Omit the `<variable>` entry when the schema has no `output` or `inOut` fields.
+
+**Input fields require both `binding` and `variable`** — `binding` stores the expression for the workbench display; `variable` is what the BPMN engine evaluates to pre-populate the form at task-creation time (`HitlTaskArguments`). Without `variable`, input fields appear blank in Action Center and inline debug. Both must point to the same `=js:$vars.…` expression.
 
 BPMN type (`bpmn:UserTask`) and serviceType (`Actions.HITL`) come from the `uipath.human-in-the-loop` entry in `definitions[]` — the instance carries no `model` block.
 
