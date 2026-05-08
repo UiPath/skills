@@ -6,7 +6,10 @@ description: >
   no upload, no run. Tests whether the skill teaches the correct local-CRUD
   workflow and `--output json` discipline on every `uip maestro flow eval`
   command.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
+# BLOCKED: `uip maestro flow eval` is not available in public @uipath/cli@latest
+# (currently 0.9.1 in PR smoke CI). Re-enable the smoke tag once CLI >= 1.0.0
+# with Flow eval support is published to the public npm registry used by CI.
+tags: [uipath-maestro-flow, smoke-blocked, mode:build, lifecycle:generate]
 
 agent:
   type: claude-code
@@ -26,16 +29,21 @@ initial_prompt: |
      `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested layout) and be linked
      via `uip solution project add`.
 
-  2. Add an evaluator named `greeting-match` of type `exact-match`, scoped to
+  2. Declare a string input variable named `name` on
+     `SmokeEval/SmokeEval/SmokeEval.flow` before adding data points. The
+     eval data point below uses `{"name":"Alice"}`, and `eval add` rejects
+     input keys that are not declared in the flow.
+
+  3. Add an evaluator named `greeting-match` of type `exact-match`, scoped to
      the Flow project at `SmokeEval/SmokeEval`. Use kebab-case for `--type`.
 
-  3. Create an eval set named `Smoke Set` in the same project. (No
+  4. Create an eval set named `Smoke Set` in the same project. (No
      `--entry-point`, no `--evaluators` — defaults are fine.)
 
-  4. Add one data point named `hello` to that eval set with inputs
+  5. Add one data point named `hello` to that eval set with inputs
      `{"name":"Alice"}` and expected `{"greeting":"Hello, Alice!"}`.
 
-  5. List evaluators and eval sets to confirm both were created.
+  6. List evaluators and eval sets to confirm both were created.
 
   Important:
   - Use `--output json` on every `uip maestro flow eval ...` command.

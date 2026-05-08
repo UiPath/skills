@@ -72,7 +72,9 @@ def _row_scores(row: dict) -> list[float]:
     if isinstance(es, list):
         for e in es:
             if isinstance(e, dict):
-                v = e.get("Score") or e.get("score")
+                v = e.get("Score")
+                if v is None:
+                    v = e.get("score")
                 if isinstance(v, (int, float)):
                     scores.append(float(v))
     elif isinstance(es, dict):
@@ -80,7 +82,9 @@ def _row_scores(row: dict) -> list[float]:
             if isinstance(v, (int, float)):
                 scores.append(float(v))
             elif isinstance(v, dict):
-                inner = v.get("Score") or v.get("score")
+                inner = v.get("Score")
+                if inner is None:
+                    inner = v.get("score")
                 if isinstance(inner, (int, float)):
                     scores.append(float(inner))
     return scores
@@ -100,7 +104,7 @@ def main() -> None:
         name = row.get("DataPoint") or row.get("Name") or "?"
         status = row.get("Status")
         err = row.get("Error")
-        if status != "Completed":
+        if str(status).lower() != "completed":
             failures.append(f"{name!r}: Status={status!r} (expected Completed)")
             continue
         if err:

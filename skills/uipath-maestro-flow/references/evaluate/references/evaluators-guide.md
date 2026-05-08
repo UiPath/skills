@@ -55,7 +55,7 @@ Defaults to `*` (the entire output object). Set a specific key when only one fie
 
 ## Evaluator JSON Shape
 
-The CLI writes evaluator JSON files into the project's evaluator directory. Filenames follow `evaluator-<uuid8>.json` for CLI-created files; hand-written files can use any descriptive name. Eval sets reference evaluators by `id` (UUID), not filename.
+The CLI writes evaluator JSON files into the project's evaluator directory. Filenames follow `<name>-<suffix>.json` for CLI-created files; hand-written files can use any descriptive name. Let `eval set add` write `evaluatorRefs` instead of hand-editing them.
 
 ### Deterministic example (`exact-match`)
 
@@ -69,7 +69,8 @@ The CLI writes evaluator JSON files into the project's evaluator directory. File
   "evaluatorConfig": {
     "name": "exact-greeting",
     "targetOutputKey": "greeting",
-    "ignoreCase": false
+    "caseSensitive": false,
+    "negated": false
   }
 }
 ```
@@ -136,7 +137,7 @@ uip maestro flow eval set list --path ./MySolution/MyFlow --output json
 
 - **Don't pass `--type` in PascalCase.** `ExactMatch` fails; only `exact-match` is accepted.
 - **Don't omit `--model` on `llm-judge-*`.** The cloud worker fail-fasts before calling the LLM gateway; the resulting 500 is unhelpful.
-- **Don't reference an evaluator by filename in `evaluatorRefs`.** Use the `id` UUID — filenames are informational.
+- **Don't hand-write evaluator refs unless you are repairing an eval set.** Use `eval set add --evaluators <id_or_file_base>` or omit `--evaluators` so the CLI links all current evaluators.
 - **Don't copy evaluator JSON across projects without regenerating UUIDs.** `id` collisions silently corrupt resolution.
 - **Don't use deterministic evaluators (`exact-match`, `json-similarity`, `contains`) for natural-language outputs.** They will fail almost every test that paraphrases.
 - **Don't mix trajectory and output evaluators on the same data point unless the data point provides both `--expected` and `--expected-agent-behavior`.** Otherwise one of them scores against an empty placeholder.

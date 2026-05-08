@@ -18,12 +18,14 @@ For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN ev
 
 ## Critical rules
 
-1. **Never run `uip solution upload` automatically as part of an eval workflow.** The eval run requires the Flow solution to already exist in Studio Web, but uploading from the local working tree clobbers whatever is on Studio Web. If the project was pulled from Studio Web (`uip agent pull`), edited locally in VS Code, or scaffolded on disk and never uploaded, an unprompted upload will overwrite or push unintended state. Ask the user explicitly before any `uip solution upload` — see [upload-safety.md](references/upload-safety.md).
-2. **`--path` accepts a Flow project directory OR a solution directory containing exactly one Flow project.** If the solution holds multiple Flow projects, point `--path` at the specific project directory.
-3. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators) edit JSON on disk. Only `uip maestro flow eval run *` requires `uip login` and an existing Studio Web solution.
-4. **Pin a model on every LLM-judge evaluator.** Empty/missing `model` produces a cryptic 500 from the LLM gateway after retries. Pass `--model <name>` on `evaluator add` or set `model` in the JSON.
-5. **Reference evaluators by `id` (UUID), never by filename.** Eval sets store `evaluatorRefs: [<uuid>...]`. Renaming or copy-pasting evaluator JSON across projects without regenerating UUIDs silently breaks resolution.
-6. **Pre-empt timeouts on `run start --wait`.** The CLI blocks until the run reaches a terminal state or `--timeout` elapses. `--timeout` only stops local blocking — the run continues server-side; query progress with `eval run status <run_id>`.
+1. **Check Flow eval CLI availability once.** Run `uip maestro flow eval --help --output json` before using eval commands. If it returns `unknown command 'eval'`, the installed CLI does not expose Flow eval yet. Stop, report that the user needs a CLI/tool version with Flow eval support, and do not spend turns searching npm packages or source bundles.
+2. **Never run `uip solution upload` automatically as part of an eval workflow.** The eval run requires the Flow solution to already exist in Studio Web, but uploading from the local working tree clobbers whatever is on Studio Web. If the project was pulled from Studio Web (`uip agent pull`), edited locally in VS Code, or scaffolded on disk and never uploaded, an unprompted upload will overwrite or push unintended state. Ask the user explicitly before any `uip solution upload` — see [upload-safety.md](references/upload-safety.md).
+3. **`--path` accepts a Flow project directory OR a solution directory containing exactly one Flow project.** If the solution holds multiple Flow projects, point `--path` at the specific project directory.
+4. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators) edit JSON on disk. Only `uip maestro flow eval run *` requires `uip login` and an existing Studio Web solution.
+5. **Pin a model on every LLM-judge evaluator.** Empty/missing `model` produces a cryptic 500 from the LLM gateway after retries. Pass `--model <name>` on `evaluator add` or set `model` in the JSON.
+6. **Declare input variables before adding data points with `--inputs`.** `eval add` validates input keys against the Flow's declared input variables and fails fast on unknown keys. Add missing input variables first (for example, `uip maestro flow variable add My.flow name --direction in --type string --output json`) or change the data point input JSON to match the Flow schema.
+7. **Let the CLI manage evaluator references.** Eval sets store `evaluatorRefs` as the evaluator file refs produced by `evaluator add` (for example, `greeting-match-1234abcd.json`). Use `set add --evaluators <id_or_file_base>` or the default "all current evaluators" behavior instead of hand-writing refs.
+8. **Pre-empt timeouts on `run start --wait`.** The CLI blocks until the run reaches a terminal state or `--timeout` elapses. `--timeout` only stops local blocking — the run continues server-side; query progress with `eval run status <run_id>`.
 
 ## Quick Start
 
@@ -43,6 +45,7 @@ uip maestro flow eval set add "Smoke Tests" \
   --path ./MySolution/MyFlow --output json
 
 # 3. Add data points (test cases)
+#    The `message` key must already be declared as a Flow input variable.
 uip maestro flow eval add hello-test \
   --set "Smoke Tests" \
   --inputs '{"message":"hello"}' \
@@ -95,7 +98,7 @@ uip maestro flow eval run results <eval_set_run_id> \
 ## Anti-patterns
 
 - **Don't auto-run `uip solution upload`.** Even when an eval run errors with "solution not found in Studio Web", stop and ask the user — see [upload-safety.md](references/upload-safety.md). The local project may be ahead of, or diverged from, Studio Web.
-- **Don't reference an evaluator by filename in `evaluatorRefs`.** Use the `id` UUID. Filenames are informational.
+- **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer `uip maestro flow eval set add --evaluators ...` or the default all-evaluators behavior so the CLI writes the correct refs.
 - **Don't pass `--type` in PascalCase.** Only kebab-case is accepted: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`.
 - **Don't depend on a specific `--wait` polling cadence.** Treat `--wait` as a black-box block; if you need precise progress, omit it and call `eval run status` yourself.
 - **Don't compare runs from different eval sets.** `eval run compare` aligns by data-point name within the set; cross-set deltas are meaningless.

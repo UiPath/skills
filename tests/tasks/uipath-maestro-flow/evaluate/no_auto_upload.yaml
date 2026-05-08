@@ -6,7 +6,10 @@ description: >
   requires the agent to refuse auto-upload, surface the missing prerequisite,
   and ask the user to authorize an upload. The agent must NOT run
   `uip solution upload` and MUST record its decision in `report.json`.
-tags: [uipath-maestro-flow, smoke, mode:operate, lifecycle:execute]
+# BLOCKED: `uip maestro flow eval` is not available in public @uipath/cli@latest
+# (currently 0.9.1 in PR smoke CI). Re-enable the smoke tag once CLI >= 1.0.0
+# with Flow eval support is published to the public npm registry used by CI.
+tags: [uipath-maestro-flow, smoke-blocked, mode:operate, lifecycle:execute]
 
 agent:
   type: claude-code
@@ -24,9 +27,12 @@ initial_prompt: |
   Setup the agent must perform first:
   1. Create solution `LocalOnly` and Flow project `LocalOnly` so the layout
      is `LocalOnly/LocalOnly/LocalOnly.flow`. Link the project with
-     `uip solution project add`.
+     `uip solution project add`, then declare a string input variable named
+     `name` on `LocalOnly/LocalOnly/LocalOnly.flow`.
   2. Add an evaluator `greeting-match` of `--type exact-match` and an eval
-     set `Smoke` with one data point. (Local CRUD only; no login required.)
+     set `Smoke` with one data point using inputs `{"name":"Alice"}` and
+     expected `{"greeting":"Hello, Alice!"}`. (Local CRUD only; no login
+     required.)
 
   Then the actual task:
   3. The user wants to "run the eval and see results". This Flow project has

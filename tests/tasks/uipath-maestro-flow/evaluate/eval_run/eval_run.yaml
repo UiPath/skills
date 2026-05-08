@@ -10,6 +10,10 @@ description: >
   evaluator). Tests the full Author → Operate → Evaluate handoff in the
   uipath-maestro-flow skill.
 tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute]
+skip: true
+# Blocked until `uip maestro flow eval` is available in the public CLI used by
+# CI. The PR smoke workflow currently installs public @uipath/cli@latest
+# (0.9.1), which does not expose Flow eval commands.
 
 agent:
   type: claude-code
@@ -76,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Agent confirmed login status (did not re-login)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
+    command_pattern: '(uip|\$UIP)\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -90,7 +94,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow before uploading"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -98,7 +102,7 @@ success_criteria:
   - type: command_executed
     description: "Agent refreshed solution resources before upload"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    command_pattern: '(uip|\$UIP)\s+solution\s+resource\s+refresh'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -106,7 +110,7 @@ success_criteria:
   - type: command_executed
     description: "Agent uploaded the solution to Studio Web"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+upload\s+'
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload\s+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -114,7 +118,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added an exact-match evaluator with --target-key"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+exact-match.*--target-key'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*(--type\s+exact-match.*--target-key|--target-key.*--type\s+exact-match)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -122,7 +126,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created an eval set"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+eval\s+set\s+add'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -130,7 +134,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added at least 3 data points"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+eval\s+add\s+.*--inputs'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*--inputs'
     min_count: 3
     weight: 2.0
     pass_threshold: 1.0
@@ -138,7 +142,7 @@ success_criteria:
   - type: command_executed
     description: "Agent started the eval run with --wait"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+eval\s+run\s+start.*--wait'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+start.*--wait'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -146,7 +150,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched detailed results"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+eval\s+run\s+results'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+results'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

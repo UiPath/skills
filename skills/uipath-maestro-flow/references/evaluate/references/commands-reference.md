@@ -46,7 +46,7 @@ Add a data point to an eval set.
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
-| `--inputs <json>` | No | Input values as a JSON object |
+| `--inputs <json>` | No | Input values as a JSON object; keys must be declared as Flow input variables |
 | `--input-file <key=path>` | No | Attach a file as input `<key>`; **repeatable** |
 | `--expected <json>` | No | Expected output as a JSON object |
 | `--criteria <json>` | No | Per-evaluator criteria JSON object keyed by evaluator id |
@@ -195,11 +195,11 @@ The CLI emits a `Code` field on every JSON response. Useful when filtering or sc
 
 | Subcommand | `Code` |
 |------------|--------|
-| `eval add` | `MaestroFlowEvalAdd` |
-| `eval list` | `MaestroFlowEvalList` |
-| `eval remove` | `MaestroFlowEvalRemove` |
-| `eval set add` / `list` / `remove` | `MaestroFlowEvalSetAdd` / `List` / `Remove` |
-| `eval evaluator add` / `list` / `remove` | `MaestroFlowEvaluatorAdd` / `List` / `Remove` |
+| `eval add` | `FlowEvalAdd` |
+| `eval list` | `FlowEvalList` |
+| `eval remove` | `FlowEvalRemove` |
+| `eval set add` / `list` / `remove` | `FlowEvalSetAdd` / `FlowEvalSetList` / `FlowEvalSetRemove` |
+| `eval evaluator add` / `list` / `remove` | `FlowEvalEvaluatorAdd` / `FlowEvalEvaluatorList` / `FlowEvalEvaluatorRemove` |
 | `eval run start` (no `--wait`) | `MaestroFlowEvalRunStarted` |
 | `eval run start --wait` (summary) | `MaestroFlowEvalRunCompleted` |
 | `eval run status` | `MaestroFlowEvalRunStatus` |
