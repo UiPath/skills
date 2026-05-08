@@ -14,7 +14,7 @@ Trigger:
 Skip:
 
 - Tweaking an existing scenario's manifest or fixtures — edit them directly, no generation pass needed.
-- Adding tests for *other* skills — use `.claude/commands/generate-tasks.md` instead.
+- Adding tests for *other* skills — use `.claude/commands/generate-task.md` instead.
 
 ## Inputs
 

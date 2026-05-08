@@ -8,7 +8,7 @@ Analyze what a skill teaches vs what its tests verify. Produce a gap analysis wi
 
 **Output:** Markdown report(s) in `tests/reports/<skill-name>.md` (e.g., `tests/reports/uipath-maestro-flow.md`), unless the user specifies a different path. Overwrite existing reports at the same path.
 
-**Feed-forward contract.** This report is the primary input to `/generate-tasks <skill> [focus]`. Write gap titles as short noun phrases and suggested task IDs the way you'd want them typed back as a focus string (e.g. "Brown-field editing of existing flows" → `generate-tasks uipath-maestro-flow Brown-field editing of existing flows`).
+**Feed-forward contract.** This report is the primary input to `/generate-task <description>`. `/generate-task` takes a free-form description and infers the target skill from it — write gap titles as self-contained scenario descriptions that name the skill or its CLI surface, so the reader can paste a gap straight into `/generate-task` (e.g. "Brown-field editing of existing uipath-maestro-flow projects" → `/generate-task Brown-field editing of existing uipath-maestro-flow projects`).
 
 ---
 
@@ -411,7 +411,7 @@ Group by theme. Include cross-cutting features (variable management, expression 
 
 ## Coverage Gaps — Priority Ranked
 
-Gap titles are short noun phrases — the exact string a reader would paste into `/generate-tasks <skill> <focus>`. Include entries emitted by the Phase 4g automatic signals (lifecycle gap, scenario gap, negative-test gap, tier gap) alongside skill-specific gaps.
+Gap titles are short scenario descriptions — the exact string a reader would paste into `/generate-task <description>`. Each title must be self-contained enough that `/generate-task` can infer the target skill from it (mention the skill name or its CLI surface). Include entries emitted by the Phase 4g automatic signals (lifecycle gap, scenario gap, negative-test gap, tier gap) alongside skill-specific gaps.
 
 ### High Priority
 
@@ -429,7 +429,7 @@ Gaps in edge cases or features that other tests partially cover indirectly.
 
 ## Recommendations
 
-Top 5–10 tests to write next, ordered by how much coverage they add. Each recommendation carries the full proposed tag list so `/generate-tasks` can consume it verbatim.
+Top 5–10 tests to write next, ordered by how much coverage they add. Each recommendation carries the full proposed tag list so `/generate-task` can consume it verbatim.
 
 1. **`<suggested-task-id>`** (e2e, lifecycle:generate, shape:multi-node, node:loop, node:transform) — Covers: `core.logic.loop`, `core.logic.merge`, `core.action.transform`, iteration pattern. *Why:* The entire control-flow family is untested; a single test with a loop-and-merge topology covers 4 components.
 2. **`skill-flow-edit-loop`** (e2e, lifecycle:edit, shape:multi-node, node:loop) — Covers: editing an existing flow, adding a loop node to an existing topology. *Why:* No test carries the `edit` lifecycle or `brown-field` scenario — modifying existing flows is a first-class workflow in this skill.
@@ -484,7 +484,7 @@ List all components grouped by category. Use a compact format — no Direct/Indi
 
 ## Recommended Starter Tests
 
-Recommend 2 smoke tests and 2 e2e tests to establish baseline coverage (per CONTRIBUTING.md minimum bar: 1 smoke + 1 e2e). For each, include the full proposed tag list so `/generate-tasks` can consume the recommendation verbatim:
+Recommend 2 smoke tests and 2 e2e tests to establish baseline coverage (per CONTRIBUTING.md minimum bar: 1 smoke + 1 e2e). For each, include the full proposed tag list so `/generate-task` can consume the recommendation verbatim:
 
 1. **`<suggested-task-id>`** (smoke, lifecycle:generate) — Covers: <components, rules>. *Why:* <rationale>. <Infrastructure note if needed.>
 2. **`<suggested-task-id>`** (e2e, lifecycle:generate, shape:multi-node, feature:<X>) — Covers: <…>. *Why:* <…>.
@@ -595,7 +595,7 @@ The table also surfaces the **tier gap** signal from Phase 4g: a skill with test
 
 ## Top 10 Recommended Tests
 
-Across all skills, prioritized by coverage impact. Prefer tests that are feasible to implement (local-only or cloud-auth-only over platform-specific). Each recommendation carries the full proposed tag list so `/generate-tasks` can lift it verbatim.
+Across all skills, prioritized by coverage impact. Prefer tests that are feasible to implement (local-only or cloud-auth-only over platform-specific). Each recommendation carries the full proposed tag list so `/generate-task` can lift it verbatim.
 
 1. **`skill-<name>-<capability>`** (<skill>, tier, lifecycle, scenario, …features) — <what it covers and why>. <Infra note if needed.>
 ```
@@ -614,6 +614,6 @@ Across all skills, prioritized by coverage impact. Prefer tests that are feasibl
 8. **Match recommendations to existing test patterns.** Look at how existing tests are structured (YAML format, check script patterns, tag conventions) and suggest new tests that follow the same patterns. Recommend realistic tests — flag infrastructure dependencies and prefer tests that can run in CI (local-only or cloud-auth-only).
 9. **Anti-patterns come from SKILL.md only.** Count items in the main Anti-Patterns / What NOT to Do section. Do not trawl reference files for additional "never do X" statements — those are implementation-level guidance, not skill-level anti-patterns.
 10. **Flag infrastructure requirements.** Every report should note what environment the skill needs for testing. The summary should include an Infra column so readers can quickly see which skills are CI-testable vs platform-gated.
-11. **Tag every recommendation.** Suggested tests in the Gaps and Recommendations sections must carry the proposed tag list (tier, lifecycle, scenario, features) from the Tag Taxonomy. These recommendations feed `/generate-tasks` — the validated tag set must travel with them so no inference is required downstream.
+11. **Tag every recommendation.** Suggested tests in the Gaps and Recommendations sections must carry the proposed tag list (tier, lifecycle, scenario, features) from the Tag Taxonomy. These recommendations feed `/generate-task` — the validated tag set must travel with them so no inference is required downstream.
 12. **Minimum bar lives in the summary.** The smoke+e2e minimum-bar check lives in the summary's Minimum Bar Check section and nowhere else. Per-skill reports may note the status but must not restate the rule — link back to the summary instead.
 13. **Planned skills count as 0%.** Every entry in the Planned Skills Registry (Phase 1) whose folder is missing produces a stub report via the planned-skill template AND a row in the summary roll-up at 0% coverage. Do not silently drop them just because there is no SKILL.md to extract from — that is the entire point of the registry. Once `skills/<name>/` exists, the existence check in Phase 1 step 1 routes the skill into the normal templates automatically, with no edit to this command file required. Only edit the registry to add a new planned skill or remove a cancelled one.

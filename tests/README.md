@@ -475,19 +475,19 @@ Reports are written to `tests/reports/<skill-name>.md` and include:
 
 The command is defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
 
-### Generating Test Tasks
+### Generating a Test Task
 
-Use the `/generate-tasks` slash command to scaffold new test tasks based on coverage gaps:
+Use the `/generate-task` slash command to scaffold a single task YAML from a free-form description of the scenario to cover. The command always infers the target skill from the description — do not pass a skill name.
 
 ```bash
-/generate-tasks uipath-platform                      # highest-priority gaps
-/generate-tasks uipath-platform authentication        # specific focus area
-/generate-tasks uipath-maestro-flow smoke             # specific test tier
+/generate-task smoke test for folder listing via uip orchestrator
+/generate-task e2e flow that uses HITL with an approval gate and write-back
+/generate-task cover the new uip flow registry get subcommand
 ```
 
-This generates task YAML files (and optional check scripts) in `tests/tasks/<skill-name>/`. Generated tasks are **starting points for reference only** — review and improve them before relying on them for CI. In particular, verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
+This generates one task YAML (and optional check script) in `tests/tasks/<skill-name>/`. Generated tasks are **unverified scaffolds** — before merging, run the task end-to-end with `coder-eval` and add a passing-run claim to the PR description (the lint workflow flags missing claims as High severity). Verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
 
-The command is defined in [`.claude/commands/generate-tasks.md`](../.claude/commands/generate-tasks.md).
+The command is defined in [`.claude/commands/generate-task.md`](../.claude/commands/generate-task.md).
 
 ## Further Reading
 
