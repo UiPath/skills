@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inline agent + external escalation (ActionCenter) check.
+"""Inline agent + solution escalation (ActionCenter) check.
 
 Validates:
   1. Flow has a `uipath.agent.autonomous` node and a
@@ -13,17 +13,18 @@ Validates:
        - channels contains at least one entry with
          type == "actionCenter" (lowercase) and a non-empty name
 
-  Note: the escalation resource.json format does not expose a
-  `location` field — the solution-vs-external distinction is captured
-  by where the ActionCenter app actually lives (external in Shared for
-  F18) and by the test prompt wording.
+  Note: the escalation resource.json format documented in
+  agent-json-format.md does not expose a `location` field on escalation
+  resources. The solution-vs-external distinction is captured by where
+  the ActionCenter app actually lives (separate project inside this
+  solution for F13) and by the test prompt wording.
 """
 
 import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
@@ -33,7 +34,7 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "FraudFlowSol" / "FraudFlow" / "FraudFlow.flow"
+FLOW_PATH = Path(os.getcwd()) / "ReviewFlowSol" / "ReviewFlow" / "ReviewFlow.flow"
 ESCALATION_NODE_TYPE = "uipath.agent.resource.escalation"
 
 
