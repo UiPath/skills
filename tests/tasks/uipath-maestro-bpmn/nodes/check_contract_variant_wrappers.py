@@ -37,6 +37,19 @@ def require_wrapper(root: ET.Element, wrapper: str, extension_name: str, type_va
         fail(f"missing bpmn:{wrapper} with {type_value} uipath:{extension_name} shell")
 
 
+def require_uipath_element(root: ET.Element, local_name: str, description: str) -> None:
+    if not root.findall(f".//uipath:{local_name}", NS):
+        fail(f"missing {description}")
+
+
+def require_uipath_attr_value(
+    root: ET.Element, local_name: str, attr_name: str, expected_value: str, description: str
+) -> None:
+    values = {elem.attrib.get(attr_name) for elem in root.findall(f".//uipath:{local_name}", NS)}
+    if expected_value not in values:
+        fail(f"missing {description}: {expected_value}")
+
+
 def main() -> None:
     path, root = parse_bpmn("Contract")
 
@@ -54,22 +67,14 @@ def main() -> None:
     for wrapper, extension_name, type_value in expected:
         require_wrapper(root, wrapper, extension_name, type_value)
 
-    migration_versions = {
-        elem.attrib.get("version") for elem in root.findall(".//uipath:migrationVersion", NS)
-    }
     for version in {"5", "11", "11.5"}:
-        if version not in migration_versions:
-            fail(f"missing migration version: {version}")
+        require_uipath_attr_value(root, "migrationVersion", "version", version, "migration version")
 
-    script_versions = {
-        elem.attrib.get("value") for elem in root.findall(".//uipath:scriptVersion", NS)
-    }
-    if "v2" not in script_versions:
-        fail("missing preserved legacy scriptVersion v2")
-    if not root.findall(".//uipath:caseManagement", NS):
-        fail("missing preserve-only uipath:caseManagement payload")
-    if not root.findall(".//uipath:Activity", NS):
-        fail("missing preserve-only generic uipath:Activity payload")
+    require_uipath_attr_value(
+        root, "scriptVersion", "value", "v2", "preserved legacy scriptVersion"
+    )
+    require_uipath_element(root, "caseManagement", "preserve-only uipath:caseManagement payload")
+    require_uipath_element(root, "Activity", "preserve-only generic uipath:Activity payload")
 
     require_no_private_connector_values(root)
     require_sequence_integrity(root)

@@ -38,6 +38,7 @@
       <bpmn:extensionElements>
         <uipath:activity version="v1">
           <uipath:type value="A2A.AgentExecution" version="v1" />
+          <uipath:context />
           <uipath:input name="Prompt" type="string" value="Summarize the synthetic request." />
         </uipath:activity>
       </bpmn:extensionElements>
@@ -48,6 +49,7 @@
       <bpmn:extensionElements>
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
+          <uipath:context />
           <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{"requestId":"=requestId"}]]></uipath:input>
         </uipath:activity>
       </bpmn:extensionElements>
@@ -58,6 +60,7 @@
       <bpmn:extensionElements>
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.BusinessRules" version="v1" />
+          <uipath:context />
           <uipath:input name="facts" type="json" target="bodyField"><![CDATA[{"requestId":"=requestId"}]]></uipath:input>
         </uipath:activity>
       </bpmn:extensionElements>
@@ -68,6 +71,7 @@
       <bpmn:extensionElements>
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.CreateQueueItem" version="v1" />
+          <uipath:context />
           <uipath:input name="itemData" type="json" target="bodyField"><![CDATA[{"requestId":"=requestId"}]]></uipath:input>
           <uipath:output name="QueueItemId" type="string" var="workItemId" source="id" />
         </uipath:activity>
@@ -79,6 +83,7 @@
       <bpmn:extensionElements>
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.CreateAndWaitForQueueItem" version="v1" />
+          <uipath:context />
           <uipath:input name="reference" type="string" value="=workItemId" />
         </uipath:activity>
       </bpmn:extensionElements>
@@ -89,6 +94,7 @@
       <bpmn:extensionElements>
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.StartAgenticProcess" version="v1" />
+          <uipath:context />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_WaitQueue_To_CallAgentic</bpmn:incoming>
@@ -98,6 +104,7 @@
       <bpmn:extensionElements>
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.StartCaseMgmtProcess" version="v1" />
+          <uipath:context />
         </uipath:activity>
         <uipath:caseManagement version="v1"><![CDATA[{"mode":"preserve-only","note":"Synthetic case-management payload"}]]></uipath:caseManagement>
       </bpmn:extensionElements>
