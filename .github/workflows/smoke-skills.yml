@@ -205,17 +205,22 @@ jobs:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      # Install from public npm at @latest. `--@uipath:registry=`
-      # forces the @uipath scope to public npm regardless of any
-      # `.npmrc` scope mapping (e.g., to the internal GitHub Packages
-      # feed, which carries divergent 1.0.0-alpha.* prereleases). See
-      # smoke-rpa-skills.yml for the full rationale.
-      - name: Install uip CLI (public npm @latest)
+      # Install from public npm. `--@uipath:registry=` forces the
+      # @uipath scope to public npm regardless of any `.npmrc` scope
+      # mapping. See smoke-rpa-skills.yml for the full rationale.
+      # Uses @alpha tag for CLI to pick up admin-tool (not yet in
+      # stable release). Revert to @latest once admin-tool ships stable.
+      - name: Install uip CLI + admin tool (public npm)
         run: |
           npm install -g \
             --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest
+            @uipath/cli@alpha \
+            @uipath/admin-tool@alpha
           uip --version
+          echo "--- Installed @uipath/* packages ---"
+          npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
+          echo "--- uip admin ---"
+          uip admin --help || true
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
       # smoke tasks (orchestrator / integration-service / data-fabric / ...)
