@@ -1,0 +1,28 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_SubprocessMultiInstance",
+      "name": "Start",
+      "filePath": "/content/subprocess-multi-instance.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

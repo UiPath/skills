@@ -40,6 +40,10 @@
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
+# Maestro BPMN skill
+/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
