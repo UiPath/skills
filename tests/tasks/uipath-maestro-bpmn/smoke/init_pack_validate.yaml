@@ -45,9 +45,17 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the BPMN project with CLI validation or a local XML check"
     tool_name: "Bash"
-    command_pattern: '((uip|\$UIP)\s+(maestro\s+)?bpmn\s+validate|python3?\s+(-c\s+[\s\S]*ET\.parse\([\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn|<<\s*[''"]?EOF[''"]?[\s\S]*ET\.parse\([\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn))'
+    command_pattern: '((uip|\$UIP)\s+(maestro\s+)?bpmn\s+validate|xmllint\s+[\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn|python3?\s+(-c\s+[\s\S]*(ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn[\s\S]*ET\.parse|ET\.parse\([\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn|bpmn_file\s*=\s*[''"]ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn[''"][\s\S]*ET\.parse\(bpmn_file\))|<<\s*[''"]?EOF[''"]?[\s\S]*(ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn[\s\S]*ET\.parse|ET\.parse\([\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn|bpmn_file\s*=\s*[''"]ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn[''"][\s\S]*ET\.parse\(bpmn_file\))))'
     min_count: 1
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Created BPMN source parses as XML in the scored workspace"
+    command: "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn')\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
