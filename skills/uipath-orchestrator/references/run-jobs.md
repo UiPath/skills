@@ -187,7 +187,7 @@ Retrieve LLM and agentic execution traces for Agent-type processes:
 uip or jobs traces <job-key> --output json
 ```
 
-Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For deeper span-level data, use `uip traces spans get` (see [traces.md](../traces.md)).
+Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For deeper span-level data, use `uip traces spans get [trace-id]` (or `uip traces spans get --job-key <key>`).
 
 Traces are cross-folder -- no `--folder-path` required.
 

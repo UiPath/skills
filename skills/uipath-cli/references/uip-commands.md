@@ -31,68 +31,58 @@
 
 ## Orchestrator (`uip or`)
 
-Manage folders, jobs, processes, machines, users, packages, and more. See [orchestrator/](orchestrator/orchestrator.md).
+Manage folders, jobs, processes, machines, users, packages, and more. See [`uipath-orchestrator`](../../uipath-orchestrator/SKILL.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Folders** | `list [--all]`, `get`, `create`, `edit`, `delete`, `move`, `runtimes` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Jobs** | `list`, `get`, `start`, `stop`, `restart`, `resume`, `logs [--export]`, `traces`, `healing-data`, `history` | [Run Jobs](orchestrator/run-jobs.md) |
-| **Processes** | `list`, `get`, `create`, `edit`, `update-version`, `rollback` | [Run Jobs](orchestrator/run-jobs.md) |
-| **Packages** | `list`, `get`, `versions`, `entry-points`, `upload`, `download` | [Run Jobs](orchestrator/run-jobs.md) |
-| **Machines** | `list`, `get`, `create`, `edit`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `edit`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Roles** | `list-roles`, `list-permissions`, `get-role`, `create-role`, `edit-role`, `delete-role`, `list-role-users`, `set-role-users`, `list-user-roles`, `assign` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Sessions** | `list-attended-sessions`, `list-unattended-sessions`, `list-machines-sessions`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](orchestrator/manage-sessions.md) |
-| **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](orchestrator/tenant-admin.md) |
-| **Calendars** | `list`, `get`, `create`, `update`, `delete` | [Tenant Admin](orchestrator/tenant-admin.md) |
-| **Licenses** | `list --type`, `toggle`, `info` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Audit Logs** | `list [--export]` | [Tenant Admin](orchestrator/tenant-admin.md) |
-| **Credential Stores** | `list`, `get` | [Tenant Admin](orchestrator/tenant-admin.md) |
-| **Feeds** | `list` | [Tenant Admin](orchestrator/tenant-admin.md) |
-| **Attachments** | `list --job-key`, `download` | [Tenant Admin](orchestrator/tenant-admin.md) |
+| **Folders** | `list [--all]`, `get`, `create`, `edit`, `delete`, `move`, `runtimes` | [Setup Environment](../../uipath-orchestrator/references/setup-environment.md) |
+| **Jobs** | `list`, `get`, `start`, `stop`, `restart`, `resume`, `logs [--export]`, `traces`, `healing-data`, `history` | [Run Jobs](../../uipath-orchestrator/references/run-jobs.md) |
+| **Processes** | `list`, `get`, `create`, `edit`, `update-version`, `rollback` | [Run Jobs](../../uipath-orchestrator/references/run-jobs.md) |
+| **Packages** | `list`, `get`, `versions`, `entry-points`, `upload`, `download` | [Run Jobs](../../uipath-orchestrator/references/run-jobs.md) |
+| **Machines** | `list`, `get`, `create`, `edit`, `delete`, `assign`, `unassign` | [Setup Environment](../../uipath-orchestrator/references/setup-environment.md) |
+| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `edit`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](../../uipath-orchestrator/references/setup-environment.md) |
+| **Roles** | `list`, `permissions`, `get`, `create`, `edit`, `delete`, `users list`, `users set`, `user-roles list`, `user-permissions list`, `assign` | [Setup Environment](../../uipath-orchestrator/references/setup-environment.md) |
+| **Sessions** | `attended`, `unattended`, `machines`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](../../uipath-orchestrator/references/manage-sessions.md) |
+| **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](../../uipath-orchestrator/references/tenant-admin.md) |
+| **Calendars** | `list`, `get`, `create`, `update`, `delete` | [Tenant Admin](../../uipath-orchestrator/references/tenant-admin.md) |
+| **Licenses** | `list --type`, `toggle`, `info` | [Setup Environment](../../uipath-orchestrator/references/setup-environment.md) |
+| **Audit Logs** | `list [--export]` | [Tenant Admin](../../uipath-orchestrator/references/tenant-admin.md) |
+| **Credential Stores** | `list`, `get` | [Tenant Admin](../../uipath-orchestrator/references/tenant-admin.md) |
+| **Feeds** | `list` | [Tenant Admin](../../uipath-orchestrator/references/tenant-admin.md) |
+| **Attachments** | `list --job-key`, `download` | [Tenant Admin](../../uipath-orchestrator/references/tenant-admin.md) |
 
 ---
 
 ## Resource (`uip resource`)
 
-Manage assets, queues, triggers, buckets, libraries, and webhooks. See [resources/](resources/resources.md).
+Manage assets, queues, triggers, buckets, libraries, and webhooks. See [`uipath-resources`](../../uipath-resources/SKILL.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](resources/manage-assets.md) |
-| **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare` | [Process Queues](resources/process-queues.md) |
-| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `set-progress`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](resources/process-queues.md) |
-| **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](resources/work-with-storage.md) |
-| **Bucket Files** | `list`, `list-dirs`, `get`, `read`, `write`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](resources/work-with-storage.md) |
-| **Triggers** | `list`, `get`, `create`, `update [--enabled\|--disabled]`, `delete`, `history` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
-| **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](resources/resources.md) |
-| **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
+| **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](../../uipath-resources/references/manage-assets.md) |
+| **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `get-stats`, `share`, `unshare` | [Process Queues](../../uipath-resources/references/process-queues.md) |
+| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `set-progress`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](../../uipath-resources/references/process-queues.md) |
+| **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](../../uipath-resources/references/work-with-storage.md) |
+| **Bucket Files** | `list`, `list-dirs`, `get`, `download`, `upload`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](../../uipath-resources/references/work-with-storage.md) |
+| **Triggers** | `list`, `get`, `create`, `update [--enabled\|--disabled]`, `delete`, `history` | [Triggers & Webhooks](../../uipath-resources/references/triggers-and-webhooks.md) |
+| **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](../../uipath-resources/references/resources.md) |
+| **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](../../uipath-resources/references/triggers-and-webhooks.md) |
 
 ---
 
 ## Solution (`uip solution`)
 
-Create, pack, publish, and deploy solutions. See [solution/](solution/solution.md).
+Create, pack, publish, and deploy solutions. See [`uipath-solution`](../../uipath-solution/SKILL.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Lifecycle** | `new`, `delete`, `upload` | [Develop Solution](solution/develop-solution.md) |
-| **Project** | `add`, `remove`, `import` | [Develop Solution](solution/develop-solution.md) |
-| **Resource** | `list`, `refresh` | [Develop Solution](solution/develop-solution.md) |
-| **Pack/Publish** | `pack`, `publish` | [Pack & Deploy](solution/pack-and-deploy.md) |
-| **Deploy** | `run`, `status`, `list`, `activate`, `uninstall` | [Pack & Deploy](solution/pack-and-deploy.md) |
-| **Deploy Config** | `config get`, `config set`, `config link`, `config unlink` | [Pack & Deploy](solution/pack-and-deploy.md) |
-| **Packages** | `list`, `delete` | [Activate & Manage](solution/activate-and-manage.md) |
-
----
-
-## Traces (`uip traces`)
-
-LLM execution trace observability. See [traces.md](traces.md).
-
-| Command | Description |
-|---|---|
-| `uip traces spans get [trace-id]` | Get spans by trace ID or `--job-key` |
+| **Lifecycle** | `new`, `delete`, `upload` | [Develop Solution](../../uipath-solution/references/develop-solution.md) |
+| **Project** | `add`, `remove`, `import` | [Develop Solution](../../uipath-solution/references/develop-solution.md) |
+| **Resource** | `list`, `refresh`, `get` | [Develop Solution](../../uipath-solution/references/develop-solution.md) |
+| **Pack/Publish** | `pack`, `publish` | [Pack & Deploy](../../uipath-solution/references/pack-and-deploy.md) |
+| **Deploy** | `run`, `status`, `list`, `activate`, `uninstall` | [Pack & Deploy](../../uipath-solution/references/pack-and-deploy.md) |
+| **Deploy Config** | `config get`, `config set`, `config link`, `config unlink` | [Pack & Deploy](../../uipath-solution/references/pack-and-deploy.md) |
+| **Packages** | `list`, `delete` | [Activate & Manage](../../uipath-solution/references/activate-and-manage.md) |
 
 ---
 
@@ -100,7 +90,8 @@ LLM execution trace observability. See [traces.md](traces.md).
 
 | Group | Command | Description |
 |---|---|---|
-| **Integration Service** | `uip is --help` | Connectors, connections, activities, triggers, webhooks |
+| **Integration Service** | `uip is --help` | See [`uipath-integration-service`](../../uipath-integration-service/SKILL.md) |
+| **Traces** | `uip traces spans get [trace-id]` | LLM execution trace observability (`--job-key` to scope) |
 | **Test Manager** | `uip tm --help` | Test projects, sets, cases, executions |
 | **RPA** | `uip rpa --help` | RPA workflow management |
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |

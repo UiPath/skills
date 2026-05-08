@@ -25,7 +25,7 @@ If you find yourself thinking *"I'll grab the auth token and PUT to the bucket d
 
 ## Prerequisites
 
-- Authenticated: `uip login` (see `uipath-platform` for auth flows).
+- Authenticated: `uip login` (see `uipath-cli` for auth flows).
 - Tenant selected: `uip login tenant set <tenant-name>`.
 - Folder context: most commands need `--folder-path "<name-or-path>"` or `--folder-key <guid>`. Buckets can also use `--all-folders`. Queues/triggers create derive folder from the release. Webhooks and libraries are tenant-scoped (no folder).
 
