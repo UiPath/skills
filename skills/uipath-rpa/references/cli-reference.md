@@ -233,6 +233,34 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
 
 **Relationship to `run-file`:** `run-file` compiles internally, so a successful smoke test implies `build` would pass. When no smoke test is run (side effects, interactive workflow, no test input), `build` is the required end-goal check for compilability — including attribute-form expression failures (`JIT compilation is disabled for non-Legacy projects`) in XAML projects with `expressionLanguage: CSharp` that don't surface during static `get-errors`.
 
+`build` does NOT run the workflow analyzer end-to-end; project-wide rules (empty argument values, naming conventions, governance policies) require `uip rpa analyze` separately. See [validation-guide.md § Project-Level Done Gate](validation-guide.md#project-level-done-gate-required-before-returning-a-project).
+
+---
+
+### analyze
+
+Run the UiPath Workflow Analyzer against the project. Catches what `build` and `get-errors` miss: empty argument values, project-wide analyzer rules, governance/policy violations. CLI equivalent of Studio's "Analyze Project". Required error-free before declaring a project-level task done.
+
+```bash
+uip rpa analyze "<PROJECT_DIR>" --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<projectDir>` | Yes | Path to the project directory (positional — not `--project-dir`) |
+| `--log-level` | No | `Debug` / `Info` / `Warn` / `Error`. Default `Warn`. |
+| `--exclude-configured-sources` | No | Exclude user/machine-configured NuGet sources |
+| `--nuget-sources-config-path` | No | Path to a custom NuGet sources config file |
+| `--default-severity` | No | Default severity when a rule has none configured |
+| `--governance-file-path` | No | Path to a governance/policy rules file |
+| `--governance-file-type` | No | Type of the governance file |
+| `--detailed-log-path` | No | Path to write a detailed log file |
+| `--skip-analyze` | No | No-op for this subcommand; present for parity with `build` |
+
+**Done-gate semantics.** Only items with `severity: error` block. `warning` and `info` do not require fixing. If an `error` rule appears bogus or domain-incorrect, escalate to the user with rule ID + recommendation rather than silencing it. See [validation-guide.md § Bogus-rule escalation](validation-guide.md#bogus-rule-escalation).
+
+**Relationship to `pack`.** `uip rpa pack` runs `analyze` implicitly unless `--skip-analyze` is passed. Running `analyze` standalone gives a clean pass/fail signal independent of pack output — see [publishing-guide.md](publishing-guide.md).
+
 ---
 
 ### get-analyzer-rules

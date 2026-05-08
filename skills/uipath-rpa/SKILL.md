@@ -123,10 +123,10 @@ Skip this path when the task has no UI surface (data transforms, IS connector ca
      1. `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Catches: structural XAML, missing references, analyzer rules, schema violations.
      2. Then `uip rpa build "<PROJECT_DIR>" --output json` until clean. Catches what `get-errors` misses: **unknown member names** (`NGetText.Value` when the property is `Text`), **invalid enum values** (`Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, attribute-form C# expression JIT failures. `get-errors` returns "no diagnostics found" for these; `build` reports them at compile time.
      3. Cap the combined loop at 5 fix attempts. Fix one thing per iteration; re-run both validators.
-   - **Project-level end-goal** (before reporting done): the per-file step's project-level `build` already establishes compilability. A successful `uip rpa run-file` smoke test covers this too. Skip the standalone end-goal `build` only if the per-file `build` already passed clean on the project's current state.
+   - **Project-level end-goal** (before reporting done): the per-file step's project-level `build` establishes compilability — successful `uip rpa run-file` smoke test covers this too. Then `uip rpa analyze "<PROJECT_DIR>" --output json` must report zero `severity: error` items (warnings and info do not block). `analyze` catches what `build` and `get-errors` miss: empty argument values, project-wide analyzer rules, governance violations. **Never skip `analyze` before declaring done** — Studio's "Analyze Project" runs the same checks and will surface what was skipped. If an `error` rule looks bogus or domain-incorrect, escalate to the user with rule ID + recommendation rather than silencing it.
 
    See [references/validation-guide.md](references/validation-guide.md).
-4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** After every create or edit: per-file `get-errors` to clean **and** project-level `build` to clean — both, in that order. `get-errors` clean alone is not "validated"; it cannot see member or enum errors. See [references/validation-guide.md](references/validation-guide.md).
+4. **ALWAYS validate files as you go AND verify the project builds and analyzes clean before declaring done.** After every create or edit: per-file `get-errors` to clean, then project-level `uip rpa build` to clean. Before declaring a project-level task done: `uip rpa analyze "<PROJECT_DIR>" --output json` must be error-free (zero `severity: error` items; warnings and info do not block). All three gates, in that order. `get-errors` clean alone is not "validated" — it cannot see member, enum, or project-wide analyzer errors. Bogus-looking error rules go to the user, not to silent suppression. See [references/validation-guide.md](references/validation-guide.md).
 5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
@@ -275,6 +275,7 @@ Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]` for expre
 | `get-analyzer-rules --project-dir "<dir>"` | List enabled Workflow Analyzer rules — run before generating |
 | `get-errors --file-path "<file>"` | Per-file static validation (structure, references, analyzer rules) |
 | `build "<PROJECT_DIR>"` | Compile-time validation (member names, enum values, JIT expressions) — run after `get-errors` is clean |
+| `analyze "<PROJECT_DIR>"` | Project-level analyzer (empty arg values, project-wide rules, governance) — required error-free before declaring done |
 
 ### Common Activities
 
@@ -351,7 +352,7 @@ Additional UIA procedures and guides:
 
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
-2. **Validation status** — per-file `get-errors` result (all files passed, or remaining errors) **and** project-level `uip rpa build` result. Both must be clean to claim verification — `get-errors` clean alone is insufficient (it does not detect unknown member names or invalid enum values). If `build` has not run since the last edit, say so explicitly rather than claiming success.
+2. **Validation status** — per-file `get-errors` result (all files passed, or remaining errors), project-level `uip rpa build` result, **and** project-level `uip rpa analyze` result (zero `severity: error` items). All three must be clean to claim verification — `get-errors` clean alone is insufficient (no member/enum errors), and `build` clean alone misses what only `analyze` catches (empty argument values, project-wide analyzer rules). If any of the three has not run since the last edit, say so explicitly rather than claiming success. If `analyze` reports an `error` rule that looks bogus, surface the rule ID + recommendation to the user instead of declaring done.
 3. **Plan completion** — which task checkboxes in `docs/plans/*.md` are now `[x]`; list any still `[ ]` and, for each, the Stop-condition item that interrupted it (or "not reached" if execution was cut short another way)
 4. **How to run** — the `uip rpa run-file` command (if applicable)
 5. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)

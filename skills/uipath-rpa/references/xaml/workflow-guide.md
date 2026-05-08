@@ -8,7 +8,7 @@ Discovery-first approach with iterative error-driven refinement for generating a
 2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
 3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
 4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa get-errors`, fix what breaks, repeat.
-5. **Validate After Every Change** — **MUST** validate with **both** `get-errors` and `uip rpa build` after every change. **NEVER** assume an edit succeeded. `get-errors` clean alone is not validated — it does not catch unknown member names or invalid enum values; `build` does.
+5. **Validate After Every Change** — **MUST** validate with `get-errors` then `uip rpa build` after every change. **NEVER** assume an edit succeeded. Before declaring the project-level task done, also run `uip rpa analyze` and require zero `severity: error` items — `build` does not catch empty argument values, project-wide analyzer rules, or governance violations. `get-errors` clean alone is not validated.
 6. **Fix Errors by Category** — Triage in order: Package → Structure → Type → Activity Properties → Logic.
 
 ---
@@ -195,18 +195,22 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 
 ## Phase 3: Validate & Fix Loop
 
-**MUST** repeat until 0-error state from **both** `get-errors` and `build`, or max 5 fix attempts. After 5 attempts, stop and present remaining errors to the user.
+**MUST** repeat the per-file inner loop until 0-error state from `get-errors` and `build`, or max 5 fix attempts. After the inner loop converges, run `uip rpa analyze` as the project-level done gate — must be error-free. After 5 combined fix attempts, stop and present remaining errors to the user.
 
 ### Step 3.1: Check for Errors
 
-Run both validators per iteration. `get-errors` catches structural / reference / analyzer issues; `build` catches member-name and enum-value mistakes that `get-errors` misses (e.g. `NGetText.Value` when the property is `Text`, `Operator="StartsWith"` when the enum has no such member). See [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop) for the canonical loop.
+Run validators in three layers. `get-errors` catches structural / reference / per-file analyzer issues; `build` catches member-name and enum-value mistakes (e.g. `NGetText.Value` when the property is `Text`, `Operator="StartsWith"` when the enum has no such member); `analyze` catches project-wide issues `build` doesn't run — empty argument values, naming-convention rules, governance violations. See [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop) for the canonical loop.
 
 ```bash
+# Per-file inner loop:
 uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+
+# Project-level done gate (before declaring done):
+uip rpa analyze "<PROJECT_DIR>" --output json
 ```
 
-`--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks. Treat `get-errors` clean as half-done — `build` clean is the signal to exit the loop.
+`--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks. Treat `get-errors` clean as one-third done — only zero `severity: error` items from `analyze` after `build` is clean is the signal to exit. If an `analyze` `error` rule looks bogus, escalate to the user with rule ID + recommendation; do not silence it.
 
 ### Step 3.2: Categorize and Fix
 
@@ -240,8 +244,9 @@ For detailed procedures, see [../validation-guide.md](../validation-guide.md).
 
 - **NEVER** generate large, complex workflows in one go
 - **NEVER** manually craft UI selectors outside of `uia-configure-target` skill flow
-- **NEVER** assume a create/edit succeeded without validating with **both** `get-errors` and `build`
-- **NEVER** treat "no diagnostics found" from `get-errors` as final — run `build` next; member-name and enum-value errors hide behind a clean `get-errors`
+- **NEVER** assume a create/edit succeeded without validating with `get-errors` then `build`, and **NEVER** declare project-level done without `analyze` error-free
+- **NEVER** treat "no diagnostics found" from `get-errors` as final — run `build` next; member-name and enum-value errors hide behind a clean `get-errors`. And `build` clean is not "done" — empty argument values and project-wide analyzer rules surface only in `analyze`
+- **NEVER** silently silence an `analyze` `severity: error` rule that looks bogus — escalate to the user with rule ID and recommendation
 - **NEVER** stop the iteration loop before correctly rendering all activities
 - **NEVER** guess properties, types, or configurations without checking docs
 - **NEVER** use incorrect keys with `uip rpa get-workflow-example` (always from list results)

@@ -32,22 +32,37 @@ When an error occurs, identify the root cause, fix **only** that one thing, and 
 
 ## Validation Iteration Loop
 
-After every file create or edit, validate with **both** `get-errors` and `build`. They catch disjoint error classes — neither alone is sufficient. Run them in sequence on every iteration; do not stop at "`get-errors` is clean".
+After every file create or edit, validate with `get-errors`, `build`, and `analyze`. They catch disjoint error classes — none alone is sufficient. The first two run on every iteration; `analyze` is the project-level done gate that runs once after the inner loop converges.
 
 ```
-REPEAT:
+REPEAT (per-file inner loop):
   1. uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
   2. IF get-errors has errors -> fix one thing, GOTO 1
   3. uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
   4. IF build has errors -> fix one thing, GOTO 1
-  5. EXIT to Smoke Test
+  5. EXIT inner loop
+
+PROJECT-LEVEL DONE GATE (before declaring done):
+  6. uip rpa analyze "<PROJECT_DIR>" --output json
+  7. IF any item has severity: error -> fix one thing, GOTO 1
+     - If a severity:error rule appears bogus or domain-incorrect, escalate to the user
+       with rule ID + recommendation; do NOT silence the rule unilaterally
+  8. EXIT to Smoke Test
 ```
 
-**Why both.** `get-errors` is static analysis: it catches structural XAML, missing references, analyzer rules, and schema violations. `build` is the compiler: it catches **unknown member names** (e.g. `NGetText.Value` when the property is `Text`), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `get-errors` returns "no diagnostics found" for these classes; `build` flags them at compile time. Trusting only `get-errors` ships broken workflows.
+**Why all three.** Each catches a disjoint error class:
 
-**Target the specific file:** Use `--file-path` on `get-errors` to validate only the file you changed -- faster than validating the whole project. `build` is project-scoped (no `--file-path`); when it errors, identify the offending file from the build output and re-run `get-errors --file-path` on that file as part of the fix loop.
+- `get-errors` — static per-file analysis: structural XAML, missing references, analyzer rules, schema violations.
+- `build` — compiler: **unknown member names** (e.g. `NGetText.Value` when the property is `Text`), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, attribute-form C# expression JIT failures. `get-errors` returns "no diagnostics found" for these.
+- `analyze` — project-level analyzer: **empty argument values** (e.g. `<InArgument></InArgument>` — passes per-file `get-errors`, fails project-level `analyze`), project-wide analyzer rules with no per-file pointer, governance/policy violations when `--governance-file-path` is set. `build` doesn't run these checks.
 
-**Cap at 5 fix attempts** across the combined `get-errors` + `build` loop. After 5 failed iterations, present the remaining errors to the user. They may require domain knowledge or environment-specific fixes.
+Trusting only `get-errors` + `build` ships projects that fail Studio's "Analyze Project" the moment the user opens them.
+
+**Severity threshold for `analyze`.** Only `severity: error` items block the done gate. `warning` and `info` items are advisory and do not require fixing. If an `error` rule looks bogus (false positive on a project-specific pattern, conflicts with a documented exception), escalate to the user with the rule ID, file path, and recommendation — never silently suppress.
+
+**Target the specific file:** Use `--file-path` on `get-errors` to validate only the file you changed — faster than validating the whole project. `build` and `analyze` are project-scoped (no `--file-path`); when either errors, identify the offending file from the output and re-run `get-errors --file-path` on that file as part of the fix loop.
+
+**Cap at 5 fix attempts** across the combined `get-errors` + `build` + `analyze` loop. After 5 failed iterations, present the remaining errors to the user. They may require domain knowledge or environment-specific fixes.
 
 ### Rules
 
@@ -59,26 +74,40 @@ REPEAT:
 
 See [cli-reference.md](cli-reference.md) for full `get-errors` and `run-file` command documentation.
 
-## Project Build Verification (Required Before Returning a Project)
+## Project-Level Done Gate (Required Before Returning a Project)
 
-Every project returned to the user must compile. The per-file iteration loop above already includes `build` after `get-errors` is clean — if that loop completed cleanly on the project's current state, this gate is already satisfied. Otherwise, run:
+Every project returned to the user must compile **and** pass project-level analysis. The per-file iteration loop above includes `build` after `get-errors` is clean. The done gate adds `analyze` on top:
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+uip rpa analyze "<PROJECT_DIR>" --output json
 ```
 
-`get-errors` is static analysis and misses compile-time failures: unknown member names, invalid enum values, member resolution / CacheMetadata failures, and JIT failures like `JIT compilation is disabled for non-Legacy projects` — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md). If `build` fails, apply the same fix loop as above (fix one thing, re-run, cap at 5). A successful `run-file` smoke test substitutes for `build` — `run-file` compiles internally.
+A successful `run-file` smoke test substitutes for `build` (run-file compiles internally) but does NOT substitute for `analyze` — they cover different error classes.
 
-### Errors `build` catches that `get-errors` misses
+### Disjoint error classes — what each command catches
 
-| Error class | Example | Why `get-errors` misses it |
-|-------------|---------|----------------------------|
-| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `Text`) | `get-errors` does not resolve property names against activity assemblies |
-| Invalid enum value | `Operator="StartsWith"` on `VerifyExpressionWithOperator` (enum has no such member) | Enum membership is checked at CacheMetadata / compile time, not static parse |
-| CacheMetadata / member resolution | Required-extension misses, type-mismatch on `InArgument<T>` | Surfaces only when the runtime instantiates the activity |
-| Attribute-form C# expressions | `Value="x + y"` in `expressionLanguage: CSharp` projects | JIT compiler needs the expression in element form — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md) |
+| Error class | Caught by | Example | Why others miss it |
+|-------------|-----------|---------|--------------------|
+| Structural XAML, missing references, schema | `get-errors` | malformed XML, undeclared namespace | `build` and `analyze` assume parseable input |
+| Unknown member name | `build` | `<uix:NGetText Value="[x]" />` (correct: `Text`) | `get-errors` does not resolve property names against activity assemblies |
+| Invalid enum value | `build` | `Operator="StartsWith"` on `VerifyExpressionWithOperator` | Enum membership is checked at CacheMetadata / compile time, not static parse |
+| CacheMetadata / member resolution | `build` | Required-extension misses, type-mismatch on `InArgument<T>` | Surfaces only when the runtime instantiates the activity |
+| Attribute-form C# expressions | `build` | `Value="x + y"` in `expressionLanguage: CSharp` projects | JIT compiler needs the expression in element form — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md) |
+| Empty argument values | `analyze` | `<InArgument x:TypeArguments="x:String"></InArgument>` | Passes per-file `get-errors`; `build` accepts the empty form. See [xaml/common-pitfalls.md § Empty Argument Values](xaml/common-pitfalls.md#empty-argument-values) |
+| Project-wide analyzer rules with no per-file pointer | `analyze` | naming conventions, package usage rules, missing required arguments at project scope | `get-errors` reports per-file scope only |
+| Governance / policy violations | `analyze` (with `--governance-file-path`) | required logging activities, restricted package usage | Outside `build`'s compile pass |
 
-When you see "no diagnostics found" from `get-errors`, you have not validated the file. Run `build` next.
+When `get-errors` reports "no diagnostics found", you have not validated the file. Run `build`. When `build` is clean, you have not validated the project. Run `analyze`.
+
+### Bogus-rule escalation
+
+If `analyze` reports a `severity: error` item that appears to be a false positive (rule contradicts a documented exception, fails on a project-specific intentional pattern, or recommends a change that breaks a working integration):
+
+1. Do NOT silence the rule by editing analyzer config.
+2. Surface to the user: rule ID (e.g. `ST-DBP-010`), severity, file path / activity, recommendation, and why it appears bogus.
+3. Offer choices: (a) accept the recommendation and apply the fix, (b) suppress the rule for this instance with a code comment / project-level exclusion, (c) keep as-is and document the deviation. Let the user decide.
+4. Only proceed past the done gate after the user confirms.
 
 ## Smoke Test
 
