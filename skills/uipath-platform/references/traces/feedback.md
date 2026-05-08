@@ -3,11 +3,6 @@
 Annotate traces or spans with sentiment and comments for LLM observability.
 Use for agent output quality review and building evaluation datasets.
 
-## Feedback lifecycle
-
-Feedback has a moderation status: `Pending` → `Approved` or `Dismissed`.
-Use `--status` on `list` and `list detailed` to filter by lifecycle stage.
-
 ## Commands
 
 | Command | Purpose |
@@ -57,7 +52,6 @@ uip traces feedback get <feedback-id> --output json
 ```bash
 uip traces feedback list \
   --trace-id <trace-id> \
-  --status Pending \
   --folder-key <folder-key> \
   --output json
 ```
@@ -68,7 +62,6 @@ uip traces feedback list \
 | `--span-id` | Filter by span |
 | `--agent-id` / `--agent-version` | Filter by agent |
 | `--positive` / `--negative` | Filter by sentiment |
-| `--status` | Repeatable: `Pending`, `Approved`, `Dismissed` |
 | `--limit` | Default 20, max 100 |
 | `--skip` | Pagination offset, default 0 |
 | `--folder-key` | Optional |
