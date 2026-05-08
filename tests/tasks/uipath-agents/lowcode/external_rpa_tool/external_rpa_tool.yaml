@@ -3,7 +3,8 @@ description: >
   Add RPA tool (external resource). End-to-end test: scaffold a
   standalone low-code agent that calls an EXTERNAL RPA process living
   OUTSIDE this solution (already deployed to Orchestrator as
-  "FibonacciRPA" in the "Shared/uipath-agents" folder). Verifies the
+  "FibonacciRPA" in the "Shared/uipath-agents/FibonacciRPA"
+  folder). Verifies the
   tool resource.json uses `type: "process"`, `location: "external"`,
   the deployed `folderPath`, and a UUID-shaped `referenceKey` fetched
   via `uip solution resource list`. Also verifies that `uip agent

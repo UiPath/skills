@@ -33,7 +33,7 @@ RESOURCE = ROOT / "resources" / "FibonacciRPA" / "resource.json"
 BINDINGS = ROOT / "bindings_v2.json"
 
 EXPECTED_PROCESS_NAME = "FibonacciRPA"
-EXPECTED_FOLDER_PATH = "Shared/uipath-agents"
+EXPECTED_FOLDER_PATH = "Shared/uipath-agents/FibonacciRPA"
 
 
 def load(path: Path) -> dict:
