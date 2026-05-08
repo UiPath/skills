@@ -1,0 +1,117 @@
+task_id: skill-flow-trigger-with-array-filter
+description: >
+  Verifies the uipath-maestro-flow skill teaches agents that connector-mandated event
+  parameters (e.g. Gmail folder = INBOX) belong on `eventParameters`, not duplicated as
+  freeform filter leaves. Regression guard for ENGCE-57498 / ENGCE-57552.
+tags: [uipath-maestro-flow, smoke, connector-trigger, filter, mandatory-filter]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  You are authoring a UiPath Flow triggered by a Gmail "Email Received" event for
+  the user's INBOX folder. The user also wants to narrow to emails whose subject
+  contains "invoice".
+
+  Use the `uipath-maestro-flow` skill. Do NOT run `uip maestro flow node configure`
+  or any command that requires a live connection — this sandbox has no UiPath tenant.
+  Instead, plan the exact `--detail` JSON you would pass to `uip maestro flow node
+  configure` for the trigger.
+
+  Write the planned trigger `--detail` JSON to `trigger_detail.json`. It must contain:
+    - connectionId, folderKey, eventMode (placeholder values are fine)
+    - eventParameters with the Gmail folder set to "INBOX" (the mandatory filter source —
+      the CLI emits the JMES projection automatically; do NOT put `folder` in the freeform
+      `filter` tree)
+    - a `filter` object containing ONLY the user's freeform "subject contains invoice" leaf
+
+  Also save a short summary to report.json:
+    {
+      "scenario": "gmail-mandatory-folder-plus-subject-filter",
+      "mandatory_via_event_parameters": true,
+      "freeform_tree_excludes_folder": true,
+      "notes": "<one sentence explaining why folder lives in eventParameters, not filter>"
+    }
+
+success_criteria:
+  - type: file_exists
+    description: "trigger_detail.json exists"
+    path: "trigger_detail.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "trigger_detail.json is valid JSON"
+    command: "python3 -c \"import json; json.load(open('trigger_detail.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "mandatory folder lives on eventParameters, not the freeform filter"
+    path: "trigger_detail.json"
+    assertions:
+      # eventParameters must carry the folder value — this is what the CLI feeds
+      # through buildMandatoryFilterExpression to emit (ParentFolders[?ID=='INBOX']).
+      - expression: "type(eventParameters)"
+        operator: equals
+        expected: "object"
+      - expression: "eventParameters.folder"
+        operator: equals
+        expected: "INBOX"
+      # The freeform tree must exist for the user's subject filter.
+      - expression: "type(filter)"
+        operator: equals
+        expected: "object"
+      - expression: "filter.groupOperator"
+        operator: type
+        expected: "number"
+      - expression: "type(filter.filters)"
+        operator: equals
+        expected: "array"
+      - expression: "length(filter.filters)"
+        operator: gte
+        expected: 1
+      # ENGCE-57498 regression guard: top-level filterExpression must not appear.
+      - expression: "type(filterExpression)"
+        operator: equals
+        expected: "null"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "freeform filter targets subject (not the mandatory folder field)"
+    command: "python3 $TASK_DIR/check_trigger_filter.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "freeform tree does NOT redundantly reference folder / ParentFolders"
+    command: |
+      python3 -c "
+      import json, sys
+      detail = json.load(open('trigger_detail.json'))
+      tree = detail.get('filter') or {}
+      def leaves(node):
+          if isinstance(node, dict):
+              if 'operator' in node and isinstance(node.get('operator'), str):
+                  yield node
+              for v in node.values():
+                  yield from leaves(v)
+          elif isinstance(node, list):
+              for item in node:
+                  yield from leaves(item)
+      ids = [str(l.get('id', '')).lower() for l in leaves(tree)]
+      bad = [i for i in ids if 'folder' in i or 'parentfolders' in i]
+      if bad:
+          sys.exit(f'FAIL: freeform tree references mandatory folder leaf {bad!r} — set via eventParameters instead')
+      print('PASS: freeform tree excludes mandatory folder field')
+      "
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
