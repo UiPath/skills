@@ -1,0 +1,6 @@
+description = "Scaffold a single coder-eval task YAML (and optional check script) from a free-form description."
+prompt = """
+@{.claude/commands/generate-task.md}
+
+User input: {{args}}
+"""
