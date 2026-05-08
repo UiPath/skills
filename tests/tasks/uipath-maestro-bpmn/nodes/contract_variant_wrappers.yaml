@@ -1,0 +1,61 @@
+task_id: skill-bpmn-contract-variant-wrappers
+description: >
+  XML contract eval: agent authors public-safe Maestro BPMN wrappers for
+  documented Orchestrator, A2A, queue, business-rule, call-activity, wait-event,
+  migration, and preserve-only extension variants.
+tags: [uipath-maestro-bpmn, integration, lifecycle:generate, contract:xml, node:service-task, node:call-activity, connector]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 90
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "ContractVariantsBpmn".
+  Use synthetic placeholder resource names only. Do not include tenant URLs,
+  folder keys, connection IDs, queue IDs, release keys, real process names, or
+  real user names.
+
+  The BPMN must include a public-safe process that manually starts, visits each
+  wrapper below, and ends:
+  - `bpmn:serviceTask` with `Orchestrator.StartAgentJob`.
+  - `bpmn:serviceTask` with `A2A.AgentExecution`.
+  - `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
+  - `bpmn:businessRuleTask` with `Orchestrator.BusinessRules`.
+  - `bpmn:sendTask` with `Orchestrator.CreateQueueItem`.
+  - `bpmn:serviceTask` with `Orchestrator.CreateAndWaitForQueueItem`.
+  - `bpmn:callActivity` with `Orchestrator.StartAgenticProcess`.
+  - `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcess`; if a
+    case-management payload is needed, mark it preserve-only and synthetic.
+  - `bpmn:receiveTask` with `Intsvc.WaitForEvent`; keep connector details
+    placeholder-safe and do not hand-author private connection metadata.
+  - Preserve numeric `uipath:migrationVersion` values `5`, `11`, and `11.5`.
+  - Preserve a legacy `uipath:scriptVersion` value `v2` on a script task while
+    still following the skill guidance that new scripts should prefer `v3`.
+  - Preserve a generic unsupported `uipath:Activity` payload instead of
+    rewriting or deleting it.
+
+  Include BPMN DI for every visible node and sequence flow. Do not upload,
+  publish, deploy, debug, or run the process.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "ContractVariantsBpmn/ContractVariantsBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Contract variant wrappers use the documented BPMN element types"
+    command: "python3 $TASK_DIR/check_contract_variant_wrappers.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
