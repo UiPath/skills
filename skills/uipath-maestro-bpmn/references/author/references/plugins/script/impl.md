@@ -17,7 +17,11 @@ The model may edit:
 
 - Script tasks execute through Jint, not Node.js or a browser runtime.
 - Keep script source deterministic and side-effect-light.
-- Use `args` as the input object when that is the local convention.
+- Keep the XML mapping input named `args`, but read mapped fields as top-level
+  script identifiers. For example, a mapped `caseId` field is available as
+  `caseId`, not `args.caseId`.
+- When mapping BPMN variables into script inputs, use runtime variable-id
+  expressions such as `=vars.Var_CaseId`, not bare names such as `=caseId`.
 - Return or map explicit outputs instead of mutating undeclared globals.
 - Prefer `uipath:scriptVersion value="v3"` unless preserving an imported version.
 - Available helpers are limited to `uipath.aggregate`, `uipath._aggregate`, `uipath._pipe`, and no-op `console` methods.
@@ -32,4 +36,4 @@ The model may edit:
 - Output variables exist and are writable.
 - Script CDATA is syntactically coherent.
 - `uipath:scriptVersion` is present when required by the local contract.
-- For `v2` and later, returned JSON may map through `response`; older script versions must return a JSON object.
+- For `v2` and later, returned JSON may map through `=result.response`; older script versions must return a JSON object.

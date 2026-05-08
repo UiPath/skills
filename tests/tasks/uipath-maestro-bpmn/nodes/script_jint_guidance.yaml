@@ -25,6 +25,12 @@ initial_prompt: |
   Requirements:
   - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`.
   - Include the UiPath script version metadata and prefer version `v3`.
+  - Map script inputs through `uipath:input name="args"`, but write the script
+    body using top-level identifiers such as `amount` and `daysOverdue`, not
+    `args.amount` or `args.daysOverdue`.
+  - Use UiPath variable-id expressions in input mappings, for example
+    `=vars.<amount variable id>`, not bare expressions such as `=amount`.
+  - Map the script result back to the declared `riskScore` output variable.
   - Write script content that is compatible with the Jint runtime. Do not use
     Node.js modules, filesystem APIs, network APIs, browser globals, packages,
     timers, or long-running async behavior.

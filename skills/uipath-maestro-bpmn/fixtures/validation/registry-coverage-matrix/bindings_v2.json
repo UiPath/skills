@@ -1,0 +1,11 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_RegistryConnection",
+      "type": "connection",
+      "name": "Synthetic Registry Connection",
+      "resourceKey": "synthetic-registry-connection"
+    }
+  ]
+}

@@ -214,11 +214,13 @@ class Validator:
                         self.contract_hits.add(f"{wrapper}:{service_type}")
 
     def validate_contract_coverage(self) -> None:
-        # Representative public-safe XML shells from
-        # references/author/references/supported-elements.md. CLI-owned
-        # Intsvc.* enrichment is intentionally covered by representative
-        # fixture sidecars, not by every connector-specific service type.
+        # Public-safe XML shells from the current registry surface plus
+        # preserve-only imported payloads. CLI-owned Intsvc.* entries are
+        # represented with synthetic binding shells only; connector-specific
+        # schemas and generated package resources remain outside this fixture.
         expected = {
+            "userTask:Actions.HITL",
+            "serviceTask:Orchestrator.StartJob",
             "serviceTask:Orchestrator.StartAgentJob",
             "serviceTask:A2A.AgentExecution",
             "serviceTask:Orchestrator.ExecuteApiWorkflowAsync",
@@ -236,6 +238,14 @@ class Validator:
             "receiveTask:Intsvc.WaitForEvent",
             "startEvent:Intsvc.EventTrigger",
             "serviceTask:Intsvc.ActivityExecution",
+            "serviceTask:Intsvc.AsyncExecution",
+            "serviceTask:Intsvc.SyncAgentExecution",
+            "serviceTask:Intsvc.AsyncAgentExecution",
+            "serviceTask:Intsvc.SyncWorkflowExecution",
+            "serviceTask:Intsvc.AsyncWorkflowExecution",
+            "sendTask:Intsvc.HttpExecution",
+            "sendTask:Intsvc.UnifiedHttpRequest",
+            "startEvent:Intsvc.TimerTrigger",
             "preserve:caseManagement",
             "preserve:generic-uipath-Activity",
             "migration:5",
@@ -503,17 +513,36 @@ class Validator:
         }
 
         if service_type.startswith("Intsvc."):
+            connection_backed = {
+                "Intsvc.ActivityExecution",
+                "Intsvc.WaitForEvent",
+                "Intsvc.EventTrigger",
+                "Intsvc.AsyncExecution",
+                "Intsvc.SyncAgentExecution",
+                "Intsvc.AsyncAgentExecution",
+                "Intsvc.SyncWorkflowExecution",
+                "Intsvc.AsyncWorkflowExecution",
+            }
+            operation_backed = {
+                "Intsvc.ActivityExecution",
+                "Intsvc.AsyncExecution",
+                "Intsvc.SyncAgentExecution",
+                "Intsvc.AsyncAgentExecution",
+                "Intsvc.SyncWorkflowExecution",
+                "Intsvc.AsyncWorkflowExecution",
+            }
             connection = context_inputs.get("connection", "")
-            match = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", connection)
-            if not match or match.group(1) not in bindings:
-                self.error(path, f"{service_type} missing generated connection binding")
-            if "connectorKey" not in context_inputs:
-                self.error(path, f"{service_type} missing connectorKey")
-            if service_type in {"Intsvc.ActivityExecution", "Intsvc.AsyncExecution"}:
+            if service_type in connection_backed:
+                match = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", connection)
+                if not match or match.group(1) not in bindings:
+                    self.error(path, f"{service_type} missing generated connection binding")
+                if "connectorKey" not in context_inputs:
+                    self.error(path, f"{service_type} missing connectorKey")
+            if service_type in operation_backed:
                 for required in ("activity", "operation"):
                     if required not in context_inputs:
                         self.error(path, f"{service_type} missing {required}")
-            if service_type == "Intsvc.EventTrigger":
+            if service_type in {"Intsvc.EventTrigger", "Intsvc.WaitForEvent"}:
                 for required in ("trigger", "eventName"):
                     if required not in context_inputs:
                         self.error(path, f"{service_type} missing {required}")

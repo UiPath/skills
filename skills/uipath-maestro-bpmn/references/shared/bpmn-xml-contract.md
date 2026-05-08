@@ -13,6 +13,8 @@ Generated BPMN must be valid BPMN 2.0 with the UiPath extension namespace.
 - Every visible flow node should have a `bpmndi:BPMNShape` with bounds.
 - Every visible edge should have a `bpmndi:BPMNEdge` with waypoints.
 - Conditions and scripts should use a leading `=` where the frontend expects expressions.
+- UiPath extension expressions should read BPMN variables through `vars.<variableId>`,
+  for example `=vars.Var_RequestId`, rather than bare names.
 - CDATA is the expected representation for JSON bodies, schemas, scripts, variable schemas, custom output bodies, and case-management payload bodies.
 
 ## Supported model-authored BPMN

@@ -11,6 +11,9 @@ The layout mirrors the Flow eval suite:
   contract variants from imported-wrapper parsing, including async call
   activities, message events, case-management shells, preserve-only payloads,
   and numeric migration metadata.
+- `skills/uipath-maestro-bpmn/fixtures/validation/registry-coverage-matrix/`
+  keeps the static fixture corpus aligned with the current registry wrapper
+  surface without claiming cloud execution of resource-backed tasks.
 - `connector/` covers Integration Service boundary behavior without cloud-side mutations.
 - `_shared/` contains small Python helpers for durable XML shape assertions.
 
