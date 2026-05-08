@@ -90,7 +90,7 @@ uip solution project list --solution-folder ./InvoiceAutomation --output json
 
 ## Step 6: List Resources
 
-Show resources of a given kind declared in the solution, available in Orchestrator, or both. `--kind` is required — pick one kind at a time. Run from inside the solution directory (default), or pass `--solution-folder <path>` to target another location.
+Show resources declared in the solution, available in Orchestrator, or both. Pass `--kind` to narrow to one resource kind. Run from inside the solution directory (default), or pass `--solution-folder <path>` to target another location.
 
 ```bash
 # from inside the solution dir
@@ -105,7 +105,7 @@ uip solution resource list --kind App --solution-folder ./InvoiceAutomation --ou
 | Option | Values | Default |
 |--------|--------|---------|
 | `--solution-folder <path>` | Path to solution root | Current working directory |
-| `--kind <kind>` (required) | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger` (any RCS kind) | — |
+| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger` (any RCS kind) | All kinds |
 | `--search <term>` | Name substring match | No filter |
 | `--source <source>` | `all`, `local`, `remote` | `all` |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
@@ -347,7 +347,7 @@ When `[solutionFile]` is omitted, the CLI walks up from the project path looking
 
 ### `--solution-folder` defaults to cwd
 
-`resource list / refresh / get` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list --kind <kind>`) or pass `--solution-folder <path>` explicitly.
+`resource list / refresh / get` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly.
 
 ### `resource get` for cross-folder inspection
 
@@ -364,7 +364,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
 | Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
 | Remove a project | `uip solution project remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
-| List resources | `uip solution resource list --kind <kind> --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; pick one kind per call |
+| List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; add `--kind <kind>` to narrow to one resource kind |
 | Pack | `uip solution pack <solution-dir> <output-dir>` | See [pack-and-deploy.md](pack-and-deploy.md) for full pack/publish/deploy flow |
 
 ---
