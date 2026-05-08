@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_CustomerOnboarding" targetNamespace="http://uipath.com/synthetic/dogfood/customer-onboarding" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="dogfood">
+  <bpmn:process id="Process_CustomerOnboarding" name="Customer Onboarding Approval" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="Var_CustomerName" name="customerName" type="string" elementId="Event_start" />
+        <uipath:input id="Var_ContractValue" name="contractValue" type="number" elementId="Event_start" />
+        <uipath:inputOutput id="Var_RiskDecision" name="riskDecision" type="string" />
+        <uipath:inputOutput id="Var_ApprovalOutcome" name="approvalOutcome" type="string" />
+        <uipath:output id="Var_OnboardingStatus" name="onboardingStatus" type="string" />
+        <uipath:output id="Var_NotificationStatus" name="notificationStatus" type="string" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_CreateCustomerRecord" name="Create Customer Record" type="process" elementId="Task_CreateCustomerRecord" resource="CreateCustomerRecord" resourceSubType="process" resourceKey="synthetic-create-customer-record" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="Manual onboarding request">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="a885320d-f424-4dbd-8e31-a4170925dff6" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_To_RiskDecision</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Task_RiskDecision" name="Calculate risk decision" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:input name="customerName" value="=customerName" />
+          <uipath:input name="contractValue" value="=contractValue" />
+          <uipath:output name="response" var="riskDecision" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_To_RiskDecision</bpmn:incoming>
+      <bpmn:outgoing>Flow_RiskDecision_To_Gateway</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+const value = Number(contractValue || 0);
+if (value >= 100000) {
+  return "manual_review";
+}
+return "auto_approve";
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_RequiresApproval" name="Needs approval?" default="Flow_Gateway_To_CreateRecord">
+      <bpmn:incoming>Flow_RiskDecision_To_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Gateway_To_Approval</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Gateway_To_CreateRecord</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_ManagerApproval" name="Manager approval">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="taskTitle" value="Approve customer onboarding" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"customerName":"=customerName","contractValue":"=contractValue","riskDecision":"=riskDecision"}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="approvalOutcome" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Gateway_To_Approval</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approval_To_OutcomeGateway</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_ApprovalOutcome" name="Approved?" default="Flow_Outcome_To_Rejected">
+      <bpmn:incoming>Flow_Approval_To_OutcomeGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Outcome_To_CreateRecord</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Outcome_To_Rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_CreateCustomerRecord" name="Create customer record">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="process" type="resource" value="=bindings.Binding_CreateCustomerRecord" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"customerName":"=customerName","contractValue":"=contractValue"}]]></uipath:input>
+          <uipath:output name="JobState" type="string" var="onboardingStatus" source="state" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Gateway_To_CreateRecord</bpmn:incoming>
+      <bpmn:incoming>Flow_Outcome_To_CreateRecord</bpmn:incoming>
+      <bpmn:outgoing>Flow_CreateRecord_To_Notify</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="Task_NotifyCustomerSuccess" name="Notify customer success (IS draft)">
+      <bpmn:incoming>Flow_CreateRecord_To_Notify</bpmn:incoming>
+      <bpmn:outgoing>Flow_Notify_To_Complete</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:textAnnotation id="Annotation_NotifyCustomerSuccess">
+      <bpmn:text>Integration Service notification intent: enrich as Intsvc.ActivityExecution after selecting connector, operation, connection, and schemas with CLI registry-backed tooling.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Assoc_Notify_To_Annotation" sourceRef="Task_NotifyCustomerSuccess" targetRef="Annotation_NotifyCustomerSuccess" />
+    <bpmn:endEvent id="End_Complete" name="Onboarding complete">
+      <bpmn:incoming>Flow_Notify_To_Complete</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Rejected" name="Onboarding rejected">
+      <bpmn:incoming>Flow_Outcome_To_Rejected</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_To_RiskDecision" sourceRef="Event_start" targetRef="Task_RiskDecision" />
+    <bpmn:sequenceFlow id="Flow_RiskDecision_To_Gateway" sourceRef="Task_RiskDecision" targetRef="Gateway_RequiresApproval" />
+    <bpmn:sequenceFlow id="Flow_Gateway_To_Approval" sourceRef="Gateway_RequiresApproval" targetRef="Task_ManagerApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=riskDecision == "manual_review"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Gateway_To_CreateRecord" sourceRef="Gateway_RequiresApproval" targetRef="Task_CreateCustomerRecord" />
+    <bpmn:sequenceFlow id="Flow_Approval_To_OutcomeGateway" sourceRef="Task_ManagerApproval" targetRef="Gateway_ApprovalOutcome" />
+    <bpmn:sequenceFlow id="Flow_Outcome_To_CreateRecord" sourceRef="Gateway_ApprovalOutcome" targetRef="Task_CreateCustomerRecord">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=approvalOutcome == "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Outcome_To_Rejected" sourceRef="Gateway_ApprovalOutcome" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="Flow_CreateRecord_To_Notify" sourceRef="Task_CreateCustomerRecord" targetRef="Task_NotifyCustomerSuccess" />
+    <bpmn:sequenceFlow id="Flow_Notify_To_Complete" sourceRef="Task_NotifyCustomerSuccess" targetRef="End_Complete" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_CustomerOnboarding">
+    <bpmndi:BPMNPlane id="Plane_CustomerOnboarding" bpmnElement="Process_CustomerOnboarding">
+      <bpmndi:BPMNShape id="Shape_Event_start" bpmnElement="Event_start"><dc:Bounds x="100" y="170" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RiskDecision" bpmnElement="Task_RiskDecision"><dc:Bounds x="190" y="148" width="150" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_RequiresApproval" bpmnElement="Gateway_RequiresApproval" isMarkerVisible="true"><dc:Bounds x="400" y="163" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ManagerApproval" bpmnElement="Task_ManagerApproval"><dc:Bounds x="520" y="70" width="150" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_ApprovalOutcome" bpmnElement="Gateway_ApprovalOutcome" isMarkerVisible="true"><dc:Bounds x="730" y="85" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CreateCustomerRecord" bpmnElement="Task_CreateCustomerRecord"><dc:Bounds x="850" y="148" width="170" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_NotifyCustomerSuccess" bpmnElement="Task_NotifyCustomerSuccess"><dc:Bounds x="1090" y="148" width="180" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Annotation_NotifyCustomerSuccess" bpmnElement="Annotation_NotifyCustomerSuccess"><dc:Bounds x="1090" y="270" width="250" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Complete" bpmnElement="End_Complete"><dc:Bounds x="1350" y="170" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Rejected" bpmnElement="End_Rejected"><dc:Bounds x="850" y="28" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Start_To_RiskDecision" bpmnElement="Flow_Start_To_RiskDecision"><di:waypoint x="136" y="188" /><di:waypoint x="190" y="188" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_RiskDecision_To_Gateway" bpmnElement="Flow_RiskDecision_To_Gateway"><di:waypoint x="340" y="188" /><di:waypoint x="400" y="188" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Gateway_To_Approval" bpmnElement="Flow_Gateway_To_Approval"><di:waypoint x="425" y="163" /><di:waypoint x="425" y="110" /><di:waypoint x="520" y="110" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Gateway_To_CreateRecord" bpmnElement="Flow_Gateway_To_CreateRecord"><di:waypoint x="450" y="188" /><di:waypoint x="850" y="188" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Approval_To_OutcomeGateway" bpmnElement="Flow_Approval_To_OutcomeGateway"><di:waypoint x="670" y="110" /><di:waypoint x="730" y="110" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Outcome_To_CreateRecord" bpmnElement="Flow_Outcome_To_CreateRecord"><di:waypoint x="755" y="135" /><di:waypoint x="755" y="188" /><di:waypoint x="850" y="188" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Outcome_To_Rejected" bpmnElement="Flow_Outcome_To_Rejected"><di:waypoint x="780" y="110" /><di:waypoint x="820" y="110" /><di:waypoint x="820" y="46" /><di:waypoint x="850" y="46" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CreateRecord_To_Notify" bpmnElement="Flow_CreateRecord_To_Notify"><di:waypoint x="1020" y="188" /><di:waypoint x="1090" y="188" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Notify_To_Complete" bpmnElement="Flow_Notify_To_Complete"><di:waypoint x="1270" y="188" /><di:waypoint x="1350" y="188" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Assoc_Notify_To_Annotation" bpmnElement="Assoc_Notify_To_Annotation"><di:waypoint x="1180" y="228" /><di:waypoint x="1180" y="270" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

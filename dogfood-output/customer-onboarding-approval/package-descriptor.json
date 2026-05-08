@@ -1,0 +1,9 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/package-descriptor",
+  "files": {
+    "operate.json": "operate.json",
+    "entry-points.json": "entry-points.json",
+    "bindings.json": "bindings_v2.json",
+    "customer-onboarding-approval.bpmn": "customer-onboarding-approval.bpmn"
+  }
+}
