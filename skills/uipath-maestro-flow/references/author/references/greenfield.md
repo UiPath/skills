@@ -98,6 +98,8 @@ cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output js
 
 The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
 
+> **Bash session state persists across tool calls.** This `cd` is **not scoped to one Bash invocation** — your cwd remains inside `<SolutionName>/` for every subsequent `Bash` call until you `cd` somewhere else. Plan the rest of Step 2 (and Steps 3–6) accordingly: either keep using paths relative to the solution dir, or anchor with `$(pwd)` / the absolute `Data.Path` returned by `flow init`. Do NOT prefix later commands with the original `<directory>/<SolutionName>/...` — that would resolve as `<SolutionName>/<directory>/<SolutionName>/...` and look like a layout bug when it isn't.
+
 `--output json` is required so Step 2c can inspect `Data.SolutionRegistration.Status` to confirm the project was auto-registered with the parent solution.
 
 ### 2c. Verify the project is registered in the solution
@@ -150,11 +152,17 @@ If the registration was skipped because of single-nesting, **delete the partial 
 
 **Self-check — run this before Step 3:**
 
+After Step 2b your cwd is inside `<SolutionName>/` (the `cd` persists). Verify the flow file using a `$(pwd)`-anchored absolute path so the check is robust to that cwd drift:
+
 ```bash
-ls "<directory>/<SolutionName>/<ProjectName>/<ProjectName>.flow"
+ls "$(pwd)/<ProjectName>/<ProjectName>.flow"
 ```
 
-If the file does not exist at that exact path (double-nested), Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
+Equivalent: use the absolute project dir reported by `flow init` in `Data.Path` and append `/<ProjectName>.flow`. Either form gives an absolute path that doesn't depend on the current cwd.
+
+> **Don't write `<SolutionName>/<ProjectName>/<ProjectName>.flow` here.** From inside `<SolutionName>/` that resolves to `<SolutionName>/<SolutionName>/<ProjectName>/<ProjectName>.flow` (triple-nested) and the `ls` will fail even though the layout is correct. That false negative wastes turns chasing a non-bug.
+
+If the file does not exist at the absolute double-nested path, Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
 
 See [shared/file-format.md](../../shared/file-format.md) for the full project structure.
 

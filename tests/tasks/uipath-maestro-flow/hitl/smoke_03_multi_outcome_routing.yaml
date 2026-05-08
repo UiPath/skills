@@ -33,7 +33,7 @@ initial_prompt: |
   The Decision node condition must reference the HITL output using the
   correct runtime variable path ($vars.<nodeId>.output.<fieldName>).
 
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command

@@ -5,7 +5,9 @@ description: >
   build the full flow (trigger → script → HITL → script → end), wire edges correctly
   including the completed handle, and validate. Tests that both the maestro-flow and
   human-in-the-loop skills work together across the full authoring lifecycle.
-tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, integration, devcon]
+  Validate-only: inline HITL nodes block on human review and cannot be `flow debug`-ged
+  headlessly, so correctness is enforced via the semantic checker rather than runtime.
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, devcon]
 
 agent:
   type: claude-code
