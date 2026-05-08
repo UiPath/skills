@@ -135,6 +135,7 @@ Skip this path when the task has no UI surface (data transforms, IS connector ca
 7. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
 7a. **[UIA] Verify UIA prerequisites before invoking `uia-configure-target`.** UIA minimum is `26.4.1-preview` (source-of-truth: [uia-prerequisites.md](references/uia-prerequisites.md) — kept in sync with that file). Run the prerequisite check in that file. If `UiPath.UIAutomation.Activities` is below the minimum or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent: ask the user to upgrade or fall back to indication authoring — never silently route to a non-existent skill path. If the plan header records `UI capture: indication-only`, skip `uia-configure-target` entirely and use indication authoring.
 8. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
+9. **For "leverage existing libraries", "reuse what we have", or "find shared libraries" requests, default search target is the tenant feed — not the local filesystem, NuGet.org, or repeated keyword-permutation calls.** Use `uip resource libraries list --limit 500 --output-filter "<JMESPath>" --output json` to discover deployed libraries before adding NuGet dependencies. On zero results from the first filtered call, escalate to the zero-results branch — do not loop back with new keyword sets. Skip when an SDD already records "Shared libraries referenced" in §16 (those have been confirmed) or when the user has explicitly said "no shared libraries" earlier in the session. See [tenant-library-search-guide.md](references/tenant-library-search-guide.md) for the full procedure (auth preflight, keyword extraction, JMESPath null-Title guard, ranking, zero-results branch, manual fallback, and the `install-or-update-packages` follow-up).
 
 ### Execution Discipline (Both Modes)
 
@@ -194,6 +195,7 @@ Skip this path when the task has no UI surface (data transforms, IS connector ca
 | **Pack & publish project to Orchestrator** | Both | [publishing-guide.md](references/publishing-guide.md) |
 | **List project best-practice / analyzer rules** | Both | [cli-reference.md § get-analyzer-rules](references/cli-reference.md) |
 | **Add a NuGet package** | Coded | [coded/operations-guide.md § Add Dependency](references/coded/operations-guide.md) → [coded/third-party-packages-guide.md](references/coded/third-party-packages-guide.md) |
+| **Find / reuse existing tenant libraries** | Both | [tenant-library-search-guide.md](references/tenant-library-search-guide.md) |
 | **Invoke a PowerShell script from a workflow** | Both | [powershell-interop-guide.md](references/powershell-interop-guide.md) |
 | **List / install Data Fabric entities** | Both | [cli-reference.md § Data Fabric Entities](references/cli-reference.md#commands----data-fabric-entities) |
 | **Discover activity APIs** | Coded | [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md) |

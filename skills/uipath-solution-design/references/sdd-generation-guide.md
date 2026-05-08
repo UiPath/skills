@@ -84,23 +84,51 @@ Follow the [PDD Analysis Guide](pdd-analysis-guide.md) to extract data from the 
 
 **Key Contacts go into §1 Delivery Team.** The PDD's Key Contacts section (SA, BA, developers, PM, SME / Process Owner) populates the Delivery Team table in §1 of the RPA template. Include only roles the PDD explicitly names — do not invent or leave rows as `[SME REVIEW]`; omit silent rows instead.
 
-### Step 2.5: Org Context Check
+### Step 2.5: Tenant Library Discovery
 
-One piece of context cannot be inferred from any PDD — whether the organization maintains shared RPA libraries that every new project must reference (e.g., `CommonLibrary`, `<Company>.Activities`). Ask this question in BOTH Autonomous and Interactive modes — it is a hard blocker for correct §14 Packages content.
-
-Use `AskUserQuestion` with the numbered-choice format:
-
-> Does your organization maintain shared RPA libraries (e.g., `CommonLibrary`) that every new project must reference in its §14 Packages?
->
-> 1. **No / none that apply here** *(recommended)* — I will not list any shared library in §14
-> 2. **Yes — CommonLibrary** — I will include `CommonLibrary` in each sub-project's §14 Packages
-> 3. **Yes — other** — you will name the libraries; I will include them in each sub-project's §14
-
-Record the answer and propagate in Phase 2:
-- Add the library names to each sub-project's §14 Packages table (one row per shared library, per sub-project).
-- Add the same list to §16 Deployment Environment → "Shared libraries referenced".
+The org's deployed libraries cannot be inferred from any PDD. Query the tenant feed to discover candidates the new project should reference. Run in BOTH Autonomous and Interactive modes — this drives §14 Packages and §16 "Shared libraries referenced".
 
 Skip this step for non-RPA primaries (Agents, Coded Apps, Flow, Case, API Workflows) — shared RPA libraries do not apply to those products' package models.
+
+Follow the [Tenant Library Search Guide](tenant-library-search-guide.md) for the full procedure (CLI surface, JMESPath filter recipe, ranking rules, anti-patterns). The summary:
+
+1. **Auth preflight** — one `uip resource libraries list --limit 1 --output json` call. If it fails on auth, jump to the manual fallback below.
+2. **Extract up to 6 keywords** from the PDD's Application Inventory + org-prefix terms (`Common`, `Shared`, `<Company>` if mentioned in the PDD).
+3. **Run one filtered call** combining all keywords with `||` in `--output-filter`. Always guard `Title != null`.
+4. **Rank candidates** (org-prefix match first, then capability/domain match, then Authors-org boost; de-duplicate by Title keeping latest Version).
+5. **Branch on the result.** Do not loop back to step 2 with new keyword permutations.
+   - **≥1 candidate after ranking — present the top 5 via `AskUserQuestion` with `multiSelect: true`.** Phrase:
+
+     > The tenant feed contains the following libraries that may apply to this project. Select any that should be referenced in §14 Packages — leave all unchecked to skip:
+     >
+     > - `<PackageId>` `<Version>` — `<Title>`
+     > - …
+
+   - **0 candidates — present a single-select numbered fallback.**
+
+     > No org-published libraries matched the search. How would you like to proceed?
+     >
+     > 1. **Proceed without shared libraries** *(recommended)* — §14 will list only public NuGet dependencies; the reuse mandate becomes a forward note in §16
+     > 2. **Search a specific name or prefix** — re-run with the team's actual library naming convention
+     > 3. **Provide names manually** — name libraries to include even if not yet deployed; flag as `[VERIFY DEPLOYMENT]`
+     > 4. **Pause and re-authenticate to a different tenant** — if libraries live elsewhere
+
+6. **Record the selection.** For each selected library:
+   - Add a row to every sub-project's §14 Packages table.
+   - Add the package ID to §16 Deployment Environment → "Shared libraries referenced".
+
+#### Manual fallback — auth preflight failed
+
+If the preflight call returns `Result: "Failure"` with an auth-related message, surface that and use the legacy numbered-choice question:
+
+> Tenant library search is unavailable (not authenticated to a UiPath tenant). Provide shared libraries manually?
+>
+> 1. **Skip — no shared libraries** *(recommended)*
+> 2. **Yes — `CommonLibrary`** (the conventional default)
+> 3. **Yes — other** — you will name the libraries
+> 4. **Authenticate first** — run `uip auth login`, then re-invoke the skill
+
+Propagate the user's named libraries to §14 / §16 as in step 6 above.
 
 ### Step 3: Detect Gaps
 
