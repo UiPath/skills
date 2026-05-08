@@ -95,3 +95,11 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent has a job-attachment file input (definitions + $ref)"
+    command: "python3 $TASK_DIR/check_job_attachment_input.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
