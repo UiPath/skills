@@ -27,7 +27,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available in the environment.
-  - Do not run `uip maestro flow debug` — just validate locally.
+  - Validate locally with `uip maestro flow validate`.
 
 success_criteria:
   - type: command_executed

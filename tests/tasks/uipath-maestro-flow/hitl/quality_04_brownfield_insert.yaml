@@ -35,7 +35,7 @@ initial_prompt: |
   The original extractMeta → End edge must be removed.
   The extractMeta → HITL edge and HITL → End edge must be added.
 
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command
