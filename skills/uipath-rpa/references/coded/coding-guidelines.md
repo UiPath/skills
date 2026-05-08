@@ -201,7 +201,7 @@ C) <user-driven approach>
 | **No Studio instances found** | Only relevant for `diff` / `focus-activity` — they need Studio Desktop. Every other command runs headless and doesn't need a Desktop instance. | Run `uip rpa start-studio --project-dir "<PROJECT_DIR>"` if you actually need Studio Desktop; otherwise re-run the command — headless Studio relaunches automatically |
 | **Stale pipe / ENOENT** | Studio instance crashed or was closed | The tool retries automatically; if persistent, re-run the command (headless) or restart Studio Desktop |
 | **Workflow cannot be found** | Entrypoint not in project.json | Verify project.json entrypoint has the file listed (Process projects only — Tests and Library projects do not use `entryPoints`) |
-| **Service property not available** | Missing package dependency | Add required package to project.json dependencies |
+| **Service property not available** | Missing package dependency | Install the required package via `uip rpa install-or-update-packages --project-dir "<PROJECT_DIR>" --packages '[{"id":"<PACKAGE_ID>"}]' --output json` (no `add-dependency` command exists; do not hand-edit `project.json`) |
 | **Timeout** | Studio took too long to start. First headless call on a cold NuGet cache can take 30–90 s. | Increase timeout: `--timeout 600` |
 | **"Target name 'X' is not part of the current screen"** | Element descriptor used on wrong screen handle | Use the `UiTargetApp` handle from `Open`/`Attach` for the screen that owns the element |
 | **"Cannot select item. It was not found among existing items"** | `SelectItem` fails on web dropdowns | Use `TypeInto` instead of `SelectItem` for web `<select>` elements |

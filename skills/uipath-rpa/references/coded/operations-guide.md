@@ -393,17 +393,26 @@ namespace MyProjectName
 
 ## Add a Dependency
 
+Canonical CLI: `uip rpa install-or-update-packages`. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command** — agents that try it get `Unknown command: add-dependency`. See [cli-reference.md § install-or-update-packages](../cli-reference.md).
+
 **Steps:**
-1. Read `project.json` to check existing dependencies
-2. Add the package to `dependencies` with version in bracket notation: `"PackageName": "[version]"`
-3. Only add packages the project actually needs. Available UiPath packages and their latest v25.x versions:
-   - `"UiPath.System.Activities": "[25.12.2]"` — system activities (assets, queues, credentials)
-   - `"UiPath.Testing.Activities": "[25.10.2]"` — testing and assertions. Pin this exact patch — `[25.10.0]` and `[25.10.1]` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
-   - `"UiPath.UIAutomation.Activities": "[25.10.21]"` — UI automation
-   - `"UiPath.Excel.Activities": "[3.3.1]"` — Excel automation
-   - `"UiPath.Word.Activities": "[2.3.1]"` — Word automation
-   - `"UiPath.Presentations.Activities": "[2.3.1]"` — PowerPoint automation
-   - `"UiPath.Mail.Activities": "[2.5.10]"` — Mail automation
-   - `"UiPath.MicrosoftOffice365.Activities": "[3.6.10]"` — Microsoft 365 (Graph API: mail, calendar, Excel cloud, OneDrive, SharePoint)
-   - `"UiPath.GSuite.Activities": "[3.6.10]"` — Google Workspace (Gmail, Calendar, Drive, Sheets, Docs)
-4. Third-party NuGet packages can also be added — same bracket notation (see [third-party-packages-guide.md](third-party-packages-guide.md))
+1. Read `project.json` to check existing dependencies — skip packages already at the desired version.
+2. Run:
+   ```bash
+   uip rpa install-or-update-packages --project-dir "<PROJECT_DIR>" --packages '[{"id":"<PACKAGE_ID>","version":"<VERSION>"}]' --output json
+   ```
+   Omit `version` to resolve the latest compatible. Pin a version only when there is a known compatibility constraint (see pinned versions below). The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
+3. Only install packages the project actually needs.
+
+**Pinned versions for UiPath activity packages (current v25.x):**
+- `UiPath.System.Activities` → `25.12.2` — system activities (assets, queues, credentials)
+- `UiPath.Testing.Activities` → `25.10.2` — testing and assertions. Pin this exact patch — `25.10.0` and `25.10.1` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
+- `UiPath.UIAutomation.Activities` → `25.10.21` — UI automation
+- `UiPath.Excel.Activities` → `3.3.1` — Excel automation
+- `UiPath.Word.Activities` → `2.3.1` — Word automation
+- `UiPath.Presentations.Activities` → `2.3.1` — PowerPoint automation
+- `UiPath.Mail.Activities` → `2.5.10` — Mail automation
+- `UiPath.MicrosoftOffice365.Activities` → `3.6.10` — Microsoft 365 (Graph API: mail, calendar, Excel cloud, OneDrive, SharePoint)
+- `UiPath.GSuite.Activities` → `3.6.10` — Google Workspace (Gmail, Calendar, Drive, Sheets, Docs)
+
+**Third-party NuGet packages:** same CLI — pass the public NuGet package ID as `id`. See [third-party-packages-guide.md](third-party-packages-guide.md).
