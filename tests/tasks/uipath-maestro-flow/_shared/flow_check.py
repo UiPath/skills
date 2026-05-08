@@ -71,15 +71,11 @@ def assert_flow_has_node_type(
     """
     if not hints:
         return
-    project_dir = _find_project(project_glob)
     types_seen: set[str] = set()
-    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
-        with open(path) as f:
-            flow = json.load(f)
-        for node in flow.get("nodes") or []:
-            t = node.get("type")
-            if t:
-                types_seen.add(t)
+    for node in _iter_flow_nodes(project_glob):
+        t = node.get("type")
+        if t:
+            types_seen.add(t)
     for hint in hints:
         needle = hint.lower()
         if not any(needle in t.lower() for t in types_seen):
@@ -87,6 +83,54 @@ def assert_flow_has_node_type(
                 f"No node matches type hint {hint!r}. "
                 f"Node types seen: {sorted(types_seen)}"
             )
+
+
+def assert_flow_uses_connector_target(
+    connector_key: str, *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require a native connector node or HTTP proxy node targeting connector_key.
+
+    Some connector-backed flows are authored as ``core.action.http.v2`` nodes
+    with ``bodyParameters.authentication = "connector"`` and a
+    ``targetConnector`` rather than as ``uipath.connector.*`` node types.
+    Treat that as connector usage only when a real connection id and folder key
+    are also present, so a manual HTTP request cannot satisfy connector tests.
+    """
+    expected = connector_key.lower()
+    seen: list[str] = []
+
+    for node in _iter_flow_nodes(project_glob):
+        node_type = str(node.get("type") or "")
+        node_type_lower = node_type.lower()
+        seen.append(node_type)
+
+        if "uipath.connector" in node_type_lower and expected in node_type_lower:
+            return
+
+        detail = (node.get("inputs") or {}).get("detail") or {}
+        if not isinstance(detail, dict):
+            continue
+        body = detail.get("bodyParameters") or {}
+        if not isinstance(body, dict):
+            continue
+
+        target = str(body.get("targetConnector") or body.get("connectorKey") or "")
+        authentication = str(body.get("authentication") or "")
+        connection_id = detail.get("connectionId")
+        folder_key = detail.get("connectionFolderKey")
+        if (
+            node_type_lower.startswith("core.action.http")
+            and target.lower() == expected
+            and authentication.lower() == "connector"
+            and _non_empty_binding_value(connection_id)
+            and _non_empty_binding_value(folder_key)
+        ):
+            return
+
+    _fail(
+        f"No node uses connector target {connector_key!r}. "
+        f"Node types seen: {sorted(set(seen))}"
+    )
 
 
 def collect_outputs(payload: dict) -> list[Any]:
@@ -210,6 +254,18 @@ def _parse_json(stdout: str) -> dict | None:
                 except json.JSONDecodeError:
                     continue
     return None
+
+
+def _iter_flow_nodes(project_glob: str):
+    project_dir = _find_project(project_glob)
+    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+        with open(path) as f:
+            flow = json.load(f)
+        yield from flow.get("nodes") or []
+
+
+def _non_empty_binding_value(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value != "ImplicitConnection"
 
 
 def _find_project(pattern: str) -> str:

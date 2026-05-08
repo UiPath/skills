@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flow_check import (  # noqa: E402
     assert_flow_has_node_type,
+    assert_flow_uses_connector_target,
     assert_output_int_in_range,
     assert_output_value,
     assert_outputs_contain,
@@ -37,7 +38,12 @@ def _write_flow(tmp_path, node_types):
     proj = tmp_path / "MyFlow"
     proj.mkdir()
     (proj / "project.uiproj").write_text("{}")
-    flow = {"nodes": [{"id": f"n{i}", "type": t} for i, t in enumerate(node_types)]}
+    flow = {
+        "nodes": [
+            node if isinstance(node, dict) else {"id": f"n{i}", "type": node}
+            for i, node in enumerate(node_types)
+        ]
+    }
     (proj / "MyFlow.flow").write_text(json.dumps(flow))
     return tmp_path
 
@@ -114,6 +120,70 @@ def test_assert_flow_has_node_type_fails_when_absent(tmp_path, monkeypatch):
 def test_assert_flow_has_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
     assert_flow_has_node_type([])
+
+
+# ── assert_flow_uses_connector_target ──────────────────────────────────────
+
+
+def test_assert_flow_uses_connector_target_accepts_native_connector_node(
+    tmp_path, monkeypatch
+):
+    root = _write_flow(
+        tmp_path, ["uipath.connector.uipath-salesforce-slack.ConversationsInfo"]
+    )
+    monkeypatch.chdir(root)
+    assert_flow_uses_connector_target("uipath-salesforce-slack")
+
+
+def test_assert_flow_uses_connector_target_accepts_http_proxy_binding(
+    tmp_path, monkeypatch
+):
+    root = _write_flow(
+        tmp_path,
+        [
+            {
+                "id": "getChannelInfo",
+                "type": "core.action.http.v2",
+                "inputs": {
+                    "detail": {
+                        "connectionId": "7aa668d3-12eb-45a6-96d0-59617fd834d7",
+                        "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+                        "bodyParameters": {
+                            "authentication": "connector",
+                            "targetConnector": "uipath-salesforce-slack",
+                        },
+                    }
+                },
+            }
+        ],
+    )
+    monkeypatch.chdir(root)
+    assert_flow_uses_connector_target("uipath-salesforce-slack")
+
+
+def test_assert_flow_uses_connector_target_rejects_manual_http(tmp_path, monkeypatch):
+    root = _write_flow(
+        tmp_path,
+        [
+            {
+                "id": "manualRequest",
+                "type": "core.action.http.v2",
+                "inputs": {
+                    "detail": {
+                        "connectionId": "ImplicitConnection",
+                        "connectionFolderKey": "ImplicitConnection",
+                        "bodyParameters": {
+                            "authentication": "anonymous",
+                            "targetConnector": "uipath-salesforce-slack",
+                        },
+                    }
+                },
+            }
+        ],
+    )
+    monkeypatch.chdir(root)
+    with pytest.raises(SystemExit, match="uipath-salesforce-slack"):
+        assert_flow_uses_connector_target("uipath-salesforce-slack")
 
 
 # ── assert_output_value ─────────────────────────────────────────────────────
