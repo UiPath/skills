@@ -24,23 +24,19 @@ Identity Server management via `uip admin`. Users, groups, robot accounts, exter
 ## Critical Rules
 
 1. **Verify login first.** Run `uip login status --output json`. If not logged in: `uip login`.
-2. **Organization ID is resolved automatically from login.** The CLI reads org ID from the active session. No need to pass `--organization` unless overriding for a different partition.
-3. **Discover before creating.** Always `list` before `create` to avoid duplicates. Robot account and group names must be unique within a partition.
+2. **Organization ID is resolved automatically from login.** CLI reads org ID from active session.
+3. **Discover before creating.** `list` before `create` to avoid duplicates. Applies to robot accounts, groups, and external apps — not to `users invite`.
 4. **Use `--output json` on all commands.** Parse programmatically. Present results conversationally.
 5. **Secrets shown only once.** When creating external apps or generating secrets, secret value appears only in creation response. Warn user to save immediately.
 6. **External apps require scopes at creation.** `--scope` is required. Common scopes: `OR.Folders`, `OR.Assets`, `OR.Queues`, `OR.Jobs`, `OR.Machines`.
 7. **Group membership uses user IDs, not usernames.** Resolve IDs via `users list` before `groups members add` or `groups members revoke`.
 8. **Confirm before delete.** Always confirm with user before running `delete` on users, groups, robot accounts, or external apps.
-9. **Stop on error.** If any command fails, show error to user. Do not retry auth failures — ask user to run `uip login`.
+9. **Stop on error (interactive use).** If any command fails, show error to user. Do not retry auth failures — ask user to run `uip login`.
 
 ## What NOT to Do
 
-1. **Never hardcode organization IDs.** Resolve dynamically from `uip login status`.
-2. **Never skip `list`.** Duplicate robot accounts or groups cause confusing errors.
-3. **Never pass usernames to group membership.** Only user IDs (UUIDs) accepted.
-4. **Never assume secrets persist.** Returned once at creation. If lost, generate new one.
-5. **Never delete built-in groups.** `type: "BuiltIn"` groups cannot be deleted. Only custom groups.
-6. **Never pass IDs as flags.** Resource IDs and names are positional arguments: `groups members add <GROUP_ID> --user-ids ...`, NOT `--group-id <GROUP_ID>`. Same for all `get`, `update`, `delete`, `create` subcommands.
+1. **Never delete built-in groups.** `type: "BuiltIn"` groups cannot be deleted. Only custom groups.
+2. **Never pass IDs as flags.** Resource IDs and names are positional arguments: `groups members add <GROUP_ID> --user-ids ...`, NOT `--group-id <GROUP_ID>`. Same for all `get`, `update`, `delete`, `create` subcommands.
 
 ## Quick Start
 

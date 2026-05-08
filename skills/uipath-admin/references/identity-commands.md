@@ -1,11 +1,21 @@
 # Identity CLI Command Reference
 
-Complete reference for all `uip admin` commands. Every command supports `--output json` and `--login-validity <minutes>`. Organization ID is resolved automatically from the active login session.
+Complete reference for all `uip admin` commands.
+
+## Global Flags
+
+Every command accepts these flags (omitted from per-command tables):
+
+| Flag | Description |
+|------|-------------|
+| `--output <format>` | Output format: `json`, `table`, `yaml`, `plain` (default: json) |
+| `--login-validity <minutes>` | Override token validity — forces refresh if token expires within this window |
+
+Organization ID is resolved automatically from the active login session.
 
 ## Prerequisites
 
 ```bash
-# Verify login — org ID is resolved automatically
 uip login status --output json
 ```
 
@@ -280,7 +290,7 @@ uip admin robot-accounts create "<NAME>" \
 
 ### `robot-accounts update`
 
-Update a robot account's display name.
+Update a robot account. At least one field flag is required.
 
 ```bash
 uip admin robot-accounts update <ROBOT_ACCOUNT_ID> \

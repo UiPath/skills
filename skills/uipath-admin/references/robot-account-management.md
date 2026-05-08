@@ -6,15 +6,7 @@ Robot accounts represent unattended automation identities that run processes wit
 
 ## Credential Model
 
-Robot accounts use a dedicated credential mechanism managed by Orchestrator — when a robot is connected to a machine, Orchestrator provisions a robot-specific Client ID + Secret bound to the system-level `Robot.S2S` client. This is **separate from external apps**.
-
-| Concept | Purpose | Managed By |
-|---------|---------|------------|
-| **Robot account** | Identity — who the robot is | Identity Server (`uip admin`) |
-| **Robot credentials** | Per-robot Client ID + Secret for machine auth | Orchestrator (machine connection) |
-| **External app** | OAuth2 client for API integrations, CI/CD pipelines | Identity Server (`uip admin`) |
-
-> **Do not create external apps as robot credentials.** External apps are for third-party integrations and CI/CD — not for connecting robots to machines. Robot credentials are provisioned automatically when configuring a machine connection in Orchestrator.
+See [SKILL.md — Robot Accounts vs External Apps](../SKILL.md#robot-accounts-vs-external-apps) for the full distinction. Key point: robot credentials are provisioned by Orchestrator during machine connection — do not create external apps as robot credentials.
 
 ## Workflow: Create a Robot Account
 

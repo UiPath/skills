@@ -53,7 +53,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the group"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+create\s+.*Invoice.Processing.Team'
+    command_pattern: 'uip\s+admin\s+groups\s+create\s+.*Invoice\s+Processing\s+Team'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

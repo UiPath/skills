@@ -24,7 +24,7 @@ sandbox:
 
 initial_prompt: |
   Onboard an unattended invoice-processing robot ("invoice-processor" /
-  "Invoice Processing Robot") with appropriate group access.
+  "Invoice Processing Robot") and add it to the "Automation Users" group.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
