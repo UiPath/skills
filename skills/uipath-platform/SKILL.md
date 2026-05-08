@@ -1,272 +1,36 @@
 ---
 name: uipath-platform
-description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, uip CLI. For Test Manager→uipath-test. Not for writing workflow code."
+description: "Router skill for UiPath — load this when you're unsure which focused skill covers a task. Points at uipath-cli, uipath-orchestrator, uipath-resources, uipath-solution, uipath-integration-service. Use BEFORE writing any custom code that calls UiPath APIs."
+when_to_use: "User mentions UiPath, Orchestrator, Studio Web, agent / process / workflow / package / asset / queue / bucket / library / webhook / trigger / connector / connection / activity / solution / pack / publish / deploy, but the more specific skill (resources, orchestrator, solution, integration-service, cli) hasn't been loaded yet. Stop reading after the routing table — pick a focused skill and load it."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
-# UiPath Development Environment Assistant
+# UiPath Platform — Router
 
-Comprehensive guide for setting up and managing UiPath development environments, Orchestrator resources, solutions, and CLI tooling.
+The UiPath CLI surface is large enough that it lives in **focused skills**, not in this one. This skill is a router: it tells you which skill to load for the task at hand, and reminds you to use `uip` CLI commands instead of hand-rolled REST.
 
-## When to Use This Skill
+## Use the CLI. Don't roll your own REST.
 
-- User wants to **authenticate** with UiPath Cloud (login, logout, switch tenants)
-- User wants to **manage Orchestrator folders** (list, create, edit, move, delete)
-- User wants to **manage Orchestrator assets** (list, create, get, update, delete)
-- User wants to **manage resources** (assets, queues, queue items, storage buckets, bucket files)
-- User wants to **work with solutions** (create, pack, publish, deploy, activate)
-- User asks about **UiPath platform concepts** (tenants, folders, robots, queues, packages)
-- User wants to **install or manage CLI tools** (search, install, update)
-- User wants to set up a **CI/CD pipeline** for UiPath automation projects
-- User asks **how to deploy** an automation to Orchestrator
+**Always use `uip` CLI commands.** The CLI covers Orchestrator, Studio Web/RCS, Integration Service, and solution lifecycle end-to-end. Hand-rolling HTTP calls (e.g. building auth headers from `~/.uipath/.auth` and POSTing to `/odata/...`) almost always misses something the CLI gets right (folder header, OData filter shape, retry semantics, validation envelopes). Reach for raw REST only after you have searched the focused skill below for your task and confirmed there is no `uip` command for what you need.
 
-## Auth token location
+## Where do I go?
 
-The CLI stores credentials at **`~/.uipath/.auth`** after login:
-```
-UIPATH_URL=https://alpha.uipath.com
-UIPATH_ORG_NAME=my_org
-UIPATH_TENANT_NAME=my_tenant
-UIPATH_ACCESS_TOKEN=eyJ...
-UIPATH_ORGANIZATION_ID=...
-UIPATH_TENANT_ID=...
-```
-
-This token can be reused for direct Orchestrator REST API calls when CLI commands don't cover a use case.
-
-## Quick Start
-
-### Step 1 — Authenticate
-
-Before interacting with Orchestrator, solutions, or Integration Service, the user must be logged in.
-
-**Interactive login (browser OAuth2):**
-```bash
-uip login --output json
-```
-
-For a custom authority (e.g., alpha.uipath.com):
-```bash
-uip login --authority "https://alpha.uipath.com/identity_" --it --output json
-```
-
-For non-interactive (CI/CD) scenarios, use client credentials:
-```bash
-uip login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --output json
-```
-
-Check login status:
-```bash
-uip login status --output json
-```
-
-### Step 2 — Select a Tenant
-
-List available tenants and set the active one:
-
-```bash
-uip login tenant list --output json
-uip login tenant set "<TENANT_NAME>" --output json
-```
-
-### Step 3 — Explore Orchestrator
-
-List folders to orient yourself:
-```bash
-uip or folders list --output json
-```
-
-### Step 4 — Work with Solutions or Orchestrator Resources
-
-Choose the appropriate operation from the Task Navigation table below.
-
-## Task Navigation
-
-| I need to... | Read these |
+| You want to... | Load skill |
 |---|---|
-| **Authenticate / manage tenants** | [references/uip-commands.md](references/uip-commands.md) |
-| **Set up folders, users, machines** | [references/orchestrator/setup-environment.md](references/orchestrator/setup-environment.md) |
-| **Run and monitor jobs** | [references/orchestrator/run-jobs.md](references/orchestrator/run-jobs.md) |
-| **Manage sessions and runtimes** | [references/orchestrator/manage-sessions.md](references/orchestrator/manage-sessions.md) |
-| **Tenant settings, calendars, audit logs** | [references/orchestrator/tenant-admin.md](references/orchestrator/tenant-admin.md) |
-| **Understand Orchestrator concepts** | [references/orchestrator/orchestrator.md](references/orchestrator/orchestrator.md) |
-| **Manage assets** | [references/resources/manage-assets.md](references/resources/manage-assets.md) |
-| **Work with queues and queue items** | [references/resources/process-queues.md](references/resources/process-queues.md) |
-| **Work with storage buckets and files** | [references/resources/work-with-storage.md](references/resources/work-with-storage.md) |
-| **Set up triggers and webhooks** | [references/resources/triggers-and-webhooks.md](references/resources/triggers-and-webhooks.md) |
-| **Develop a solution** | [references/solution/develop-solution.md](references/solution/develop-solution.md) |
-| **Pack, publish, deploy solutions** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
-| **Activate / uninstall deployments** | [references/solution/activate-and-manage.md](references/solution/activate-and-manage.md) |
-| **Set up CI/CD pipeline** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
-| **Debug LLM/agent traces** | [references/traces.md](references/traces.md) |
-| **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
-| **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
-| **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
+| Log in / log out / switch tenant / set output format / find a command by keyword | [`uipath-cli`](../uipath-cli/SKILL.md) |
+| Create folders, manage users/roles/machines, start jobs, upload packages, manage processes (releases), tenant-level admin (calendars, credential stores, audit logs, settings, feeds, attachments, sessions) | [`uipath-orchestrator`](../uipath-orchestrator/SKILL.md) |
+| Manage Orchestrator-scoped resources: storage buckets and bucket files, assets, queues and queue items, libraries (.nupkg), webhooks, triggers (time/queue/api) | [`uipath-resources`](../uipath-resources/SKILL.md) |
+| Build, pack, publish, deploy, activate, or maintain a multi-project UiPath **solution** | [`uipath-solution`](../uipath-solution/SKILL.md) |
+| Integration Service — connectors, connections, activities, IS triggers, agent-workflow reference resolution | [`uipath-integration-service`](../uipath-integration-service/SKILL.md) |
+| Author UiPath workflows themselves (`.cs` coded or `.xaml`) | [`uipath-rpa`](../uipath-rpa/SKILL.md) |
+| Test Manager (test projects, cases, sets, executions, reports) | [`uipath-test`](../uipath-test/SKILL.md) |
+| Agents (Python agent projects, prompts, tools, memory) | [`uipath-agents`](../uipath-agents/SKILL.md) |
 
-## Resolving UiPath Studio
+## Common pitfalls before you load a focused skill
 
-Some operations (creating projects, validating, running workflows, packing) require UiPath Studio. When Studio is needed:
+1. **Folder context.** Most resource and orchestrator commands need either `--folder-path "<name-or-path>"` or `--folder-key <guid>`. A few commands are tenant-scoped (libraries, webhooks, calendars, credential stores, settings, audit logs). The error message tells you which.
+2. **Output is JSON-first.** Always pass `--output json` when scripting. The envelope is `{ Result, Code, Data, Pagination? }` for success or `{ Result: "Failure"|"ValidationError", Message, Instructions }` for failure. Exit code is non-zero on failure.
+3. **Curated vs raw output.** `orchestrator-tool` curates list/get output by default into a PascalCase projection; `--all-fields` returns the raw camelCase DTO. `resource-tool` always returns the raw DTO (no curation, no `--all-fields` flag). Don't mix them up when parsing.
+4. **PascalCase keys are convention for UiPath envelopes.** `Result`, `Code`, `Data`, `Pagination`, `Returned`, `Limit`, `Offset`, `HasMore`. Keys *inside* `Data` follow the rule above (curated PascalCase or raw camelCase).
 
-1. **Check for a running instance first:**
-   ```bash
-   rpa-tool list-instances --output json
-   ```
-
-2. **If no instance is running, try the standard install location:**
-   ```bash
-   rpa-tool start-studio --output json
-   ```
-
-3. **If that fails (version too old, not found, etc.) — ASK THE USER where their Studio build is located.** Do NOT search the entire filesystem. Common locations include:
-   - `C:\Program Files\UiPath\Studio`
-   - A dev build directory (e.g., `dev4/Studio/Output/bin/Debug`)
-   - A custom install path
-
-4. **Once you have the path, pass it explicitly:**
-   ```bash
-   rpa-tool start-studio --studio-dir "<STUDIO_DIR>" --output json
-   ```
-
-> **Never spend time searching for Studio automatically.** If the default doesn't work, ask immediately — the user knows where their build is.
-
-## Key Concepts
-
-### UiPath Platform Hierarchy
-
-```
-Organization
-  └── Tenant(s)
-        └── Folder(s)              ← Orchestrator folders (logical containers)
-              ├── Processes         ← Published automation packages
-              ├── Assets            ← Key-value configuration (Text, Bool, Integer, Credential, Secret)
-              ├── Queues            ← Work item queues for distributed processing
-              ├── Jobs              ← Running/completed process executions
-              ├── Triggers          ← Event-based or queue-based job triggers
-              ├── Schedules         ← Time-based job scheduling (cron)
-              ├── Storage Buckets   ← File storage for automation data
-              ├── Machines          ← Robot execution environments
-              └── Robots            ← Attended/Unattended execution agents
-```
-
-### Robot Types
-
-| Type | Description | Use Case |
-|------|-------------|----------|
-| **Attended** | Runs alongside a human user, triggered via UiPath Assistant | Front-office tasks, user-assisted automation |
-| **Unattended** | Runs autonomously in virtual environments, managed by Orchestrator | Back-office tasks, scheduled processing, 24/7 operations |
-
-### Folder Types
-
-| Type | Description |
-|------|-------------|
-| **Standard** | Default folder for organizing automations |
-| **Personal** | User-specific workspace |
-| **Virtual** | Logical grouping without physical separation |
-| **Solution** | Folder created by solution deployment |
-| **DebugSolution** | Debug variant of a solution folder |
-
-### Asset Types
-
-| Type | Description |
-|------|-------------|
-| **Text** | Plain text value |
-| **Bool** | Boolean (true/false) |
-| **Integer** | Numeric integer value |
-| **Credential** | Username + password pair |
-| **Secret** | Encrypted secret value |
-| **DBConnectionString** | Database connection string |
-| **HttpConnectionString** | HTTP connection string |
-| **WindowsCredential** | Windows credential pair |
-
-## CLI Overview
-
-The UiPath CLI (`uip`) is a unified command-line tool for interacting with the UiPath platform:
-
-| Command Group | Prefix | Description | Status |
-|---|---|---|---|
-| **Authentication** | `login`, `logout` | OAuth2, client credentials, PAT, tenant management | Available |
-| **Orchestrator** | `or` | Folders, jobs, processes, releases | Available |
-| **Resource** | `resource` | Assets, queues, queue items, storage buckets, bucket files | Available |
-| **Solutions** | `solution` | Create, pack, publish, deploy solutions | Available |
-| **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
-| **Test Manager** | `tm` | Test projects, test sets, test cases, executions, reports | Available |
-| **Tools** | `tools` | CLI tool extension management | Available |
-| **MCP** | `mcp` | Model Context Protocol server | Available |
-| **Coded Agents** | `codedagent` | Python agent lifecycle (setup, exec) | Available |
-| **RPA** | `rpa` | RPA workflow management (create, compile, validate, execute) | Available |
-
-### Global Options
-
-Every `uip` command accepts:
-
-| Option | Description | Default |
-|---|---|---|
-| `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` | `table` (interactive), `json` (non-interactive) |
-| `--output-filter <expression>` | JMESPath expression to filter JSON output | -- |
-| `--verbose` | Enable verbose/debug logging | Off |
-| `--help` / `-h` | Display help for the command | -- |
-| `--version` / `-v` | Display CLI version | -- |
-
-> **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
->
-> **Use `--output-filter` to extract specific fields** instead of piping output to `python3`, `jq`, or other post-processing tools. The filter uses [JMESPath](https://jmespath.org/) syntax. Example: `--output json --output-filter "Data[].{id: id, name: name}"`
-
-## Deployment Lifecycle
-
-The typical deployment workflow for a UiPath automation:
-
-```
-1. Develop    → Create/edit coded workflows or RPA projects locally
-2. Validate   → uip rpa get-errors --use-studio
-3. Pack       → uip solution pack
-4. Login      → uip login
-5. Publish    → uip solution publish
-6. Deploy     → uip solution deploy run -n "<NAME>" -c "<CONFIG_KEY>"
-```
-
-### Practical Deployment Notes
-
-- **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
-- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
-
-## Orchestrator REST API (Fallback)
-
-When CLI commands are insufficient, use the Orchestrator REST API directly with the stored access token:
-
-```bash
-source ~/.uipath/.auth
-
-# Upload a .nupkg package
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.UploadPackage" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -F "file=@./MyProject.1.0.0.nupkg"
-
-# Create a process (release) from an uploaded package
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -d '{"Name":"MyProcess","ProcessKey":"MyProject","ProcessVersion":"1.0.0"}'
-
-# Start a job
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Jobs/UiPath.Server.Configuration.OData.StartJobs" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -d '{"startInfo":{"ReleaseKey":"<RELEASE_KEY>","Strategy":"ModernJobsCount","JobsCount":1,"RuntimeType":"Unattended","InputArguments":"{}"}}'
-```
-
-The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip or folders list`).
-
-## References
-
-- **[CLI Command Reference](references/uip-commands.md)** — Every `uip` command with workflow links
-- **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
-- **[Resources](references/resources/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
-- **[Solutions](references/solution/solution.md)** — Solution lifecycle: create, pack, publish, deploy
-- **[Traces](references/traces.md)** — LLM execution trace observability
-- **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources
-- **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
-
-> **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.
+That's enough to get oriented. **Pick the skill row from the table that matches your task and load it now** — don't try to do real work from this router.
