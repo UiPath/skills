@@ -2,6 +2,25 @@
 
 For initial project scaffolding, follow [lifecycle/setup.md](lifecycle/setup.md) — it covers preflight, framework selection, starting points, and the workflow.
 
+## Project State Detection (run once, before step 1)
+
+Inspect the working directory and its ancestors. Compute the variables below — every later step branches on them. Re-running the flow is safe: each step is gated on these signals and skips itself when its work is already done.
+
+| Variable | How to detect | Used by |
+|---|---|---|
+| `project_state` | `local-workspace` if any ancestor contains `.sw-path-marker` or `.local/folder.lock` (Studio Web–specific markers — `*.uipx` alone does NOT qualify). Else `existing-coded` if cwd has `pyproject.toml` with `uipath` dep + a `<framework>.json`. Else `greenfield`. | Steps 1, 2, 3, 8, 9 |
+| `framework` | Read from existing `<framework>.json` (`langgraph.json` / `llama_index.json` / `openai_agents.json` / `uipath.json` with `functions`). `none` if absent. | Step 1 |
+| `has_venv` | `.venv/` exists in cwd | Step 2 |
+| `has_entry_points` | `entry-points.json` exists | Steps 2, 6 |
+| `has_bindings` | `bindings.json` exists | Step 4 |
+| `has_smoke_set` | `evaluations/eval-sets/smoke-test.json` exists | Step 7 |
+| `has_evaluators` | any `evaluations/evaluators/*.json` exists | Step 7 |
+| `has_project_id` | `.env` contains `UIPATH_PROJECT_ID=<guid>` | Step 8 |
+
+When `project_state == local-workspace`, also read [lifecycle/local-workspace.md](lifecycle/local-workspace.md) for files-owned-by-Studio-Web and anti-patterns. The lifecycle itself is the One-Prompt Flow below — Local Workspace differs at step 8 (auto-sync replaces options A and B; the user is asked only C or Skip) and at step 9 (deploy options remain available, but Studio Web's publish-from-UI button is the most common path).
+
+**State signals are recomputed implicitly by reading the filesystem at the step that consumes them.** Steps that mutate state (Setup creates `.venv`; Build/Run can rerun `init` and update `entry-points.json`; Evaluate creates `evaluations/`; Delivery may write `UIPATH_PROJECT_ID` to `.env`) update the underlying files; later steps read fresh values, not the initial table. Treat the table above as a snapshot at flow start, not a frozen contract.
+
 ## CLI Conventions
 
 | Command family | Accepts `--output json` |
@@ -50,11 +69,25 @@ When the user asks to create and deploy an agent end-to-end, follow these steps 
 
 **IMPORTANT: Do NOT stop between steps to ask "would you like me to continue?" or list next steps. Execute the entire flow automatically.** Pause only when (a) you hit an **architectural fork** — a step with multiple valid implementations (framework choice, HITL pattern, evaluator type, deploy target, conversational vs not, etc.) — or (b) you need data only the user has (credentials, project ID). At a fork, apply **infer-or-ask**: if the prompt or context names the choice, infer it and continue; otherwise output ONLY the choice question as your entire response, then STOP and wait. For missing data, output ONLY the data request. After getting the answer, resume immediately. Forks for each step are documented in that step's referenced file — read the reference when you reach the step; do not guess.
 
-Steps 8 and 9 are mandatory stops: always ask, even if the user only said "build". Use `AskUserQuestion` (or platform equivalent); fall back to plain text only when no UI tool exists.
+Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the user only said "build". Use `AskUserQuestion` (or platform equivalent); fall back to plain text only when no UI tool exists. They are **automatically resolved** for `local-workspace` (auto-sync) and for `existing-coded` with `has_project_id == true` (push) — see steps 8 and 9 for the branch logic.
 
-1. **Framework** — Select per the [Framework Selection](#framework-selection) section below. This MUST happen before setup so framework dependencies/config are added consistently.
-2. **Setup** — Follow the Workflow in [lifecycle/setup.md](lifecycle/setup.md). Infer the project name from the user's prompt or the current directory. **Do NOT authenticate yet** — auth happens after build.
-3. **Build** — Implement agent logic using the selected framework's patterns. After scaffolding and before running `uip codedagent init`, inspect the generated code and clean up scaffold hazards:
+1. **Framework** — **Skip if `framework != none`** (already chosen — verify the right `<framework>.json` is present and continue). Else select per the [Framework Selection](#framework-selection) section below.
+2. **Setup** — Idempotent by `project_state` and `has_venv`:
+   - `local-workspace` → Studio Web already scaffolded `pyproject.toml` / `<framework>.json` / `entry-points.json` / `bindings.json`. Run **only** the venv prep block when `has_venv == false`:
+
+     ```bash
+     uv venv --python 3.13
+     source .venv/bin/activate                 # Windows: .venv\Scripts\activate
+     uv sync
+     uip codedagent setup --force
+     ```
+
+     If `has_venv == true`, just `source .venv/bin/activate` and continue. Do **not** run `uip codedagent new` or `init` (init only when `Input`/`Output` Pydantic models, the entry-function signature, or `<framework>.json` change).
+   - `existing-coded` → `source .venv/bin/activate`. If `has_venv == false`, run `uv venv --python 3.13 && source .venv/bin/activate && uv sync`. Then `uip codedagent setup --force` (idempotent — refreshes `uipathExePath`). Skip `uip codedagent new`. Run `uip codedagent init` only if `has_entry_points == false` or schemas changed.
+   - `greenfield` → Full Workflow in [lifecycle/setup.md](lifecycle/setup.md). Infer the project name from the user's prompt or the current directory.
+
+   **Do NOT authenticate yet** — auth happens after build.
+3. **Build** — Implement agent logic using the selected framework's patterns. **For `local-workspace`: skip only the scaffold-cleanup sub-step below** — Studio Web supplied a clean shell, so the module-level-client checks aren't needed. Logic edits in `main.py` proceed normally. For `greenfield` / `existing-coded`, after scaffolding and before running `uip codedagent init`, inspect the generated code and clean up scaffold hazards:
    - No module-level `UiPathChat`, `UiPathAzureChatOpenAI`, `UiPath`, or other auth-dependent clients.
    - Instantiate LLM/SDK clients inside graph nodes/functions only.
    - Ensure importing `main.py` works without UiPath auth.
@@ -66,12 +99,12 @@ Steps 8 and 9 are mandatory stops: always ask, even if the user only said "build
 > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
 
 Then STOP and wait. On reply, run the matching one-shot login from [../authentication.md](../authentication.md) (maps environment → `--authority`). Never run `uip login` without `--tenant`.
-6. **Run** — Test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
-7. **Evaluate** — Create **both** the evaluator config and the eval set, then run evals locally (with `--no-report`).
+6. **Run** — Re-run `uip codedagent init` first **only when** `Input`/`Output` Pydantic models, the entry-function signature, or `<framework>.json` changed since the last run, **or** `has_entry_points == false`. Otherwise `entry-points.json` is already current — skip init. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
+7. **Evaluate** — Run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report`. Idempotent by `has_evaluators` / `has_smoke_set`: create the missing one(s) only — **never overwrite an existing evaluator config or smoke set**, the user may have tuned them.
 
    **Note:** `uipath-llm-judge-trajectory-similarity` requires emitted trace spans to populate `AgentRunHistory`. Plain `StateGraph` agents without explicit OpenTelemetry tracing produce empty history → all cases score 0.0 even on successful runs. If the smoke set scores 0.0, verify the agent actually executed (via local `uip codedagent run`) before treating it as a logic failure; consider an output-only evaluator for non-conversational graphs.
 
-   **First**, create `evaluations/evaluators/llm-judge-trajectory.json`. If the default `model` below is not available in the user's tenant, call `sdk.agenthub.get_available_llm_models()` and substitute a `model_name` from the returned list.
+   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-trajectory.json`. If the default `model` below is not available in the user's tenant, call `sdk.agenthub.get_available_llm_models()` and substitute a `model_name` from the returned list.
 
    ```json
    {
@@ -88,7 +121,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    }
    ```
 
-   **Then**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array):
+   **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array):
    ```json
    {
      "version": "1.0",
@@ -111,33 +144,50 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    ```
 
    **Finally**, run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report` (use the entrypoint name from `entry-points.json`).
-8. **Delivery target.** Stop and ask via `AskUserQuestion` (header `"Delivery"`, `multiSelect: false`).
+8. **Delivery target.** Single branch point. **Evaluate branches in order — Local Workspace projects also have `UIPATH_PROJECT_ID` set in `.env`, so the `local-workspace` check MUST come before the `has_project_id` check, or Local Workspace will incorrectly fall into the push branch:**
 
-   **Question:** *How do you want to use the agent next?*
+   - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask via `AskUserQuestion` (header `"Delivery"`, `multiSelect: false`):
 
-   | # | Label (≤5 words) | Description |
-   |---|---|---|
-   | A | Studio Web — you set it up | You open Studio Web, create a Coded Agent project inside a solution, paste the project ID. I'll write `UIPATH_PROJECT_ID` to `.env` and run `uip codedagent push`. |
-   | B | Studio Web — I package & upload | I run `uip solution new`, import the agent, strip `.venv`, and run `uip solution upload`. No Studio Web setup needed from you. |
-   | C | Local dev web server | I start `uip codedagent dev` (default `http://localhost:8080`) so you can interact with the agent in the browser. Nothing is published. |
-   | — | Skip — I'm done | Stop here. The agent is built and evaluated. |
+     **Question:** *Studio Web is auto-syncing this workspace. Do you want a local dev console too?*
 
-   On reply:
-   - **A** → wait for the project ID, write `UIPATH_PROJECT_ID=<id>` to `.env`, then run `uip codedagent push`.
-   - **B** → run the local-solution flow. `uip solution new "<SOLUTION_NAME>"` creates `<cwd>/<SOLUTION_NAME>/<SOLUTION_NAME>.uipx` (sibling, not ancestor). `uip solution upload` archives verbatim and does NOT honor `packOptions.directoriesExcluded` — strip `.venv` from the imported copy or upload fails with `code 20001: solution archive is corrupt`. From the parent directory of the agent:
+     | # | Label (≤5 words) | Description |
+     |---|---|---|
+     | C | Local dev web server | I start `uip codedagent dev` (default `http://localhost:8080`) so you can interact with the agent in the browser. Studio Web continues to auto-sync. |
+     | — | Skip — continue to deploy | No console; proceed to step 9. |
 
-     ```bash
-     uip solution new "<SOLUTION_NAME>"
-     cd "<SOLUTION_NAME>"
-     uip solution project import --source "../<AGENT_PROJECT_DIR>" --output json
-     rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
-            "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
-     uip solution upload . --output json
-     ```
-   - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice; the user has signalled they want to poke at the agent in a browser, not deploy.
-   - **Skip** → continue to step 9.
+     On reply:
+     - **C** → run `uip codedagent dev` in the background; surface the URL. Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
+     - **Skip** → continue to step 9.
 
-9. **Deploy.** Only run this step after delivery options **A** or **B** (or **Skip** at step 8). After option **C**, the run ends at step 8 — do not ask. Stop and ask via `AskUserQuestion` (header `"Deploy target"`, `multiSelect: false`).
+     Do **not** run `uip codedagent push` for this branch (that's recovery only — see [lifecycle/local-workspace.md](lifecycle/local-workspace.md) § Studio-Web-Auto-Sync). Do **not** present options A or B.
+   - **(2) `has_project_id == true` (cloud workspace, project ID already set)** → Run `uip codedagent push` to upload local edits, then continue to step 9. No fork question — the delivery choice was made in a prior session.
+   - **(3) Else (greenfield / cloud workspace not yet wired)** → Stop and ask via `AskUserQuestion` (header `"Delivery"`, `multiSelect: false`).
+
+     **Question:** *How do you want to use the agent next?*
+
+     | # | Label (≤5 words) | Description |
+     |---|---|---|
+     | A | Studio Web — you set it up | You open Studio Web, create a Coded Agent project inside a solution, paste the project ID. I'll write `UIPATH_PROJECT_ID` to `.env` and run `uip codedagent push`. |
+     | B | Studio Web — I package & upload | I run `uip solution new`, import the agent, strip `.venv`, and run `uip solution upload`. No Studio Web setup needed from you. |
+     | C | Local dev web server | I start `uip codedagent dev` (default `http://localhost:8080`) so you can interact with the agent in the browser. Nothing is published. |
+     | — | Skip — I'm done | Stop here. The agent is built and evaluated. |
+
+     On reply:
+     - **A** → wait for the project ID, write `UIPATH_PROJECT_ID=<id>` to `.env`, then run `uip codedagent push`.
+     - **B** → run the local-solution flow. `uip solution new "<SOLUTION_NAME>"` creates `<cwd>/<SOLUTION_NAME>/<SOLUTION_NAME>.uipx` (sibling, not ancestor). `uip solution upload` archives verbatim and does NOT honor `packOptions.directoriesExcluded` — strip `.venv` from the imported copy or upload fails with `code 20001: solution archive is corrupt`. From the parent directory of the agent:
+
+       ```bash
+       uip solution new "<SOLUTION_NAME>"
+       cd "<SOLUTION_NAME>"
+       uip solution project import --source "../<AGENT_PROJECT_DIR>" --output json
+       rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
+              "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
+       uip solution upload . --output json
+       ```
+     - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
+     - **Skip** → continue to step 9.
+
+9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask via `AskUserQuestion` (header `"Deploy target"`, `multiSelect: false`).
 
    **Question:** *Do you want to deploy the agent? If yes, which target?*
 
@@ -149,6 +199,8 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    | — | Skip deployment | Stop here. |
 
    On reply, run `uip codedagent deploy <target-flag>`. If re-deploying, bump the patch version in `pyproject.toml` first.
+
+   > **For `project_state == local-workspace`:** the user can still choose A/B/C to publish a package via `uip codedagent deploy` — that targets package feeds (personal workspace / tenant / folder) **outside** the Studio Web project lifecycle. It is a separate distribution path from Studio Web's own publish-from-UI button, which remains available in the SW browser. Skip deployment is the most common answer here, since Studio Web's publish UI typically covers the user's intent.
 
 Read the relevant reference file at each step — do not guess.
 

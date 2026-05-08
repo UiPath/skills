@@ -18,14 +18,14 @@ Determine the agent mode before proceeding:
 
 1. **Check for existing project files** in the working directory:
    - `pyproject.toml` with `uipath` dependency + `.py` files → **Coded**
-   - `agent.json` with `"type": "lowCode"` + `project.uiproj` → **Low-code**
+   - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
 2. **No existing project found** → ask the user:
    > Should I build this as a **low-code agent** (no Python — configure through prompts and pre-built UiPath tools) or a **coded agent** (Python — full programmatic control with LangGraph, LlamaIndex, or OpenAI Agents)?
 3. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
 
 **After detection, read the quickstart for that mode before doing anything else:**
 
-- **Coded** → read [references/coded/quickstart.md](references/coded/quickstart.md)
+- **Coded** → read [references/coded/quickstart.md](references/coded/quickstart.md). Quickstart's first step detects project state (`greenfield` / `existing-coded` / `local-workspace`) and gates each lifecycle step on it. For Studio Web Local Workspace specifics, see [references/coded/lifecycle/local-workspace.md](references/coded/lifecycle/local-workspace.md).
 - **Low-code** → read [references/lowcode/lowcode.md](references/lowcode/lowcode.md)
 
 ## Task Navigation
@@ -34,6 +34,7 @@ Determine the agent mode before proceeding:
 |---|---|---|---|
 | Help user choose coded vs low-code | Both | [coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) | |
 | Authenticate | Both | [authentication.md](references/authentication.md) | |
+| Iterate on a coded agent inside a Studio Web Local Workspace solution | Coded | [coded/quickstart.md](references/coded/quickstart.md) (state detection sets `project_state = local-workspace`) | [coded/lifecycle/local-workspace.md](references/coded/lifecycle/local-workspace.md) for files-owned-by-SW + anti-patterns; `coded/lifecycle/running-agents.md`, `coded/lifecycle/evaluate.md` |
 | Create/build/deploy coded agent | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/lifecycle/*`, `coded/frameworks/*` |
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
