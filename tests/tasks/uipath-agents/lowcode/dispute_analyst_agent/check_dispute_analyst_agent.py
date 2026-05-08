@@ -17,8 +17,9 @@ Confluence spec for the Billing Dispute Resolution golden scenario:
   5. The user message template inlines every input field via
      {{input.<field>}} with a matching variable contentTokens entry
      (Critical Rules 5 and 6).
-  6. The system prompt mentions at least three dispute-domain terms,
-     guarding against the scaffolded placeholder being left in place.
+
+System-prompt quality is judged separately by the task's
+`type: llm_judge` success criterion.
 """
 
 import json
@@ -43,9 +44,6 @@ OUTPUT_FIELDS = [
     "customerFacingExplanation",
     "flags",
 ]
-
-DOMAIN_TERMS = ["dispute", "validity", "confidence", "root cause", "credit"]
-
 
 def load(path: Path) -> dict:
     if not path.is_file():
@@ -186,24 +184,6 @@ def assert_user_message_inlines(agent: dict) -> None:
     print(f"OK: user message inlines all 5 inputs with matching contentTokens")
 
 
-def assert_system_prompt_domain(agent: dict) -> None:
-    messages = agent.get("messages", [])
-    system = next(
-        (m for m in messages if isinstance(m, dict) and m.get("role") == "system"),
-        None,
-    )
-    if system is None:
-        sys.exit("FAIL: agent.json.messages has no entry with role == 'system'")
-    content = (system.get("content") or "").lower()
-    hits = [term for term in DOMAIN_TERMS if term in content]
-    if len(hits) < 3:
-        sys.exit(
-            f"FAIL: system prompt does not look dispute-domain-specific; "
-            f"matched {hits!r} out of {DOMAIN_TERMS!r}"
-        )
-    print(f"OK: system prompt covers dispute-domain terms ({hits})")
-
-
 def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
@@ -213,7 +193,6 @@ def main() -> None:
     assert_input_shape(in_schema)
     assert_output_shape(out_schema)
     assert_user_message_inlines(agent)
-    assert_system_prompt_domain(agent)
 
 
 if __name__ == "__main__":

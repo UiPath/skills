@@ -6,8 +6,8 @@ description: >
   outputSchema exposing validity, rootCause, rootCauseDetail,
   recommendedResolution, recommendedCreditAmount, confidenceScore,
   rationale, customerFacingExplanation, and flags. Validates schema
-  sync, field presence, contentTokens for every input, and a
-  domain-specific system prompt.
+  sync, field presence, contentTokens for every input, and uses an LLM
+  judge to score the system prompt for dispute-domain coverage.
 tags: [uipath-agents, e2e, low-code]
 
 agent:
@@ -126,9 +126,42 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Schema sync, input/output field presence, contentTokens for all 5 inputs, and domain-specific system prompt"
+    description: "Schema sync, input/output field presence, and contentTokens for all 5 inputs"
     command: "python3 $TASK_DIR/check_dispute_analyst_agent.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    weight: 4.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt covers validity semantics, confidence threshold, and root-cause/resolution decision logic"
+    files: ["DisputeSol/DisputeAnalystAgent/agent.json"]
+    weight: 1.0
+    pass_threshold: 0.8
+    prompt: |
+      You are grading the `messages[]` entry with `role == "system"` inside
+      `DisputeSol/DisputeAnalystAgent/agent.json`. Ignore every other field
+      (schemas, projectId, tools, the user message). Only the system
+      prompt's `content` string is under review.
+
+      Score the system prompt on three rubric items, each worth 1/3 of
+      the final score:
+
+        R1. Validity enum semantics — does it explain what each of
+            `invalid`, `valid_low`, and `valid_high` means? All three
+            names must be addressed (paraphrase is fine; literal labels
+            are not required if the meaning is clear).
+
+        R2. Confidence threshold — does it state that confidence scores
+            below 0.80 never auto-approve (or equivalent: require human
+            review / escalate / no autonomous action)?
+
+        R3. Decision logic — does it describe how the agent picks a
+            `rootCause` AND a `recommendedResolution`? Both must be
+            addressed (criteria, mapping, or signals — not just listing
+            the enum values).
+
+      Award 1.0 for clear and specific coverage of an item, 0.5 for
+      partial/ambiguous coverage, 0.0 for missing. The final `score` is
+      the average of R1, R2, R3 rounded to two decimals. If `agent.json`
+      is missing or has no system message, score 0.0.
