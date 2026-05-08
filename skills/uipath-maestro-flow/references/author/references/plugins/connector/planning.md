@@ -59,8 +59,8 @@ A `registry search <service>` that returns **only `uipath.connector.trigger.*`**
 When `registry search` returns triggers but **no activities** for a service whose connector you've already confirmed exists (`uip is connectors list`), or returns nothing at all for a well-known connector, **force a fresh pull before falling back**:
 
 ```bash
-uip maestro flow registry pull --force                                  # bypass the 30-min cache
-uip maestro flow registry search <service> --output json                # re-check after the fresh pull
+uip maestro flow registry pull --force
+uip maestro flow registry search <service> --output json
 ```
 
 If the second search still returns no activities for that connector, the fallback to managed HTTP (Tier 2 below) is legitimate. If the second search now lists activities, the cache was stale — proceed with the connector activity node as Tier 1.
