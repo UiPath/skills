@@ -1,0 +1,6 @@
+{
+  "Name": "BenefitsEnrollment",
+  "ProjectType": "Process",
+  "Description": "Scenario 2 demo - processes NewHireEnrollment queue items against Acme Benefits portal",
+  "MainFile": "Main.xaml"
+}
