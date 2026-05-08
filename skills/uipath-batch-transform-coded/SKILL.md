@@ -11,7 +11,7 @@ BatchTransform applies one LLM prompt to every row of a CSV and produces an augm
 
 Coded agent surface: Python with `uipath` + `uipath-langchain`. Yield `CreateBatchTransform` from `@durable_interrupt`.
 
-> Product use cases: address-match validation (Medline), sales-order next-action recommendations (WireMasters), MCC categorization (Fiserv).
+> Product use cases: address-match validation, sales-order next-action recommendations, MCC categorization.
 
 ## When to Use
 

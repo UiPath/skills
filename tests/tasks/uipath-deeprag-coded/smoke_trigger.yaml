@@ -20,7 +20,7 @@ initial_prompt: |
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-deeprag-coded skill"
-    skill_name: "uipath-deeprag-coded"
+    expected_skill: "uipath-deeprag-coded"
     expected: "yes"
     weight: 3.0
     pass_threshold: 1.0

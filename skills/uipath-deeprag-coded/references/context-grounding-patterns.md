@@ -16,7 +16,7 @@ This is a hard rule: BatchTransform accepts CSV only; DeepRAG accepts PDF or TXT
 | Mode | Input | What it does | Best for |
 |---|---|---|---|
 | **BatchTransform (BT)** | CSV | Iterate every row of the CSV (CSV is the datasource — hosted in a context-grounding index purely so the runtime can iterate), apply the same prompt to each row, optionally augment with a per-row web search, write augmented rows (original columns + new LLM-filled columns) to an Orchestrator bucket attachment. | Bulk extraction, per-row classification, address-match validation, vendor enrichment, sales-order triage. One row in, one row out. |
-| **DeepRAG** | PDF / TXT | Iterative research-and-synthesis pass over an ephemeral index built from runtime attachments. Returns a single grounded narrative with optional citations. | Summarize / research / synthesize across one or more runtime documents. One question, one answer. |
+| **DeepRAG** | PDF / TXT | Iterative research-and-synthesis pass over an ephemeral index built from runtime attachments. Returns a single grounded narrative with citations (optional bounding-box anchors). Handles large files and produces longer / denser output than `analyze-attachments`. | Summarize / research / synthesize across one or more runtime documents — especially when the file is large or the answer needs citations. One question, one answer. Prefer over `analyze-attachments` (lower page limits, one-shot synthesis). |
 | **Index search** (semantic / structured) | Pre-built index | Query a stable, pre-built context-grounding index. Returns ranked snippets. | Stable knowledge bases (policies, manuals, FAQs) — corpus does not change per run. |
 
 ## Decision Matrix

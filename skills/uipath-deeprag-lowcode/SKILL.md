@@ -56,7 +56,7 @@ For `.csv` input → `uipath-batch-transform-lowcode`. For coded agents (Python,
 
 - ❌ **Setting `referenceKey` to a non-null value** on a built-in tool. Non-null `referenceKey` identifies an external tool reference — built-in tools must use `null`.
 - ❌ **Setting `type` to anything other than `"internal"`** for a built-in tool. The validator rejects `"external"`, `"custom"`, etc. for built-ins.
-- ❌ **Using `deep-rag` when `analyze-attachments` fits.** Single-file extraction is `analyze-attachments`. DeepRAG is for cross-document synthesis.
+- ❌ **Reaching for `analyze-attachments` instead of `deep-rag` on non-trivial documents.** `analyze-attachments` has lower page limits and is one-shot synthesis — it struggles to output as much as DeepRAG. Prefer `deep-rag` for large files, citations, or longer answers; reach for `analyze-attachments` only for small single-file extraction.
 - ❌ **Using `deep-rag` when the task is per-row / tabular.** That is BatchTransform.
 - ❌ **Forgetting to wire the tool node** in inline-in-flow agents. The flow must have an explicit edge from agent `tool` → tool node `input`.
 - ❌ **Vague system prompt.** Without "when to call DeepRAG" guidance, the agent will misroute work.

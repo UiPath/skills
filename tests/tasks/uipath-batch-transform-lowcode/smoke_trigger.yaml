@@ -20,7 +20,7 @@ initial_prompt: |
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-batch-transform-lowcode skill"
-    skill_name: "uipath-batch-transform-lowcode"
+    expected_skill: "uipath-batch-transform-lowcode"
     expected: "yes"
     weight: 3.0
     pass_threshold: 1.0

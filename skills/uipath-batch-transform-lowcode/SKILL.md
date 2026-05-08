@@ -11,7 +11,7 @@ BatchTransform applies one LLM prompt to every row of a CSV and writes augmented
 
 Low-code surface: Studio Web Agent Builder, `agent.json` projects. Enable the built-in `batch-transform` tool resource; runtime handles the index lifecycle, output upload, resume events.
 
-> Product use cases: address-match validation (Medline), sales-order next-action recommendations (WireMasters), MCC categorization (Fiserv).
+> Product use cases: address-match validation, sales-order next-action recommendations, MCC categorization.
 
 ## When to Use
 

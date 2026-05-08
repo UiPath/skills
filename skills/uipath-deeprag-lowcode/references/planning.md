@@ -36,7 +36,7 @@ There are two valid shapes for enabling DeepRAG on a low-code agent. This skill 
 
 | Decision | Rule |
 |---|---|
-| `deep-rag` vs `analyze-attachments` | DeepRAG synthesizes across multiple attachments / iterative research; analyze-attachments does single-file extraction. See [context-grounding-patterns.md](context-grounding-patterns.md) for the BT/DR/index decision matrix. |
+| `deep-rag` vs `analyze-attachments` | Prefer `deep-rag`. It handles larger files, returns citations (with optional bounding-box anchors), and produces denser output. `analyze-attachments` is one-shot synthesis with lower page limits — reach for it only when the document is small and the task is a single-shot extraction. See [context-grounding-patterns.md](context-grounding-patterns.md) for the BT/DR/index decision matrix. |
 | `deep-rag` vs `load-attachments` | `load-attachments` only makes attachment text available to the agent; `deep-rag` runs an iterative synthesis pass. Use `load-attachments` when the agent will reason directly over short contents; use `deep-rag` for long / multiple docs. |
 | Standalone agent vs inline-in-flow | Same `resource.json` shape for both. The flow wiring differs — inline requires an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md). |
 
