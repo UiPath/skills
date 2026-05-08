@@ -1,34 +1,25 @@
 #!/usr/bin/env python3
-"""Built-in tool resource check.
+"""Built-in tool + job-attachment input checks for DocAnalystAgent.
 
-Validates that the agent enabled at least one built-in tool by
-authoring a resource.json under DocAnalystAgent/resources/ that
-matches the static built-in-tools registry:
+A. Some resources/*/resource.json is a built-in tool: $resourceType=tool,
+   type=internal, referenceKey=null, isEnabled, id UUID-shaped,
+   properties.toolType in the registry. Prompt asks for "Analyze Files",
+   so toolType=analyze-attachments must be present.
 
-  - $resourceType == "tool"
-  - type == "internal"
-  - referenceKey is null
-  - properties.toolType is one of the four documented keys:
-      "analyze-attachments" | "load-attachments" |
-      "deep-rag" | "batch-transform"
-  - id is a UUID-shaped string
-  - isEnabled is truthy
-
-Since the prompt asked for "Analyze Files" specifically, we also
-verify at least one resource uses toolType == "analyze-attachments".
-
-The resource directory name is not prescribed (agent may use any
-human-readable name), so we scan every resource.json under
-DocAnalystAgent/resources/.
+B. agent.json declares inputSchema.definitions["job-attachment"] (object),
+   at least one property uses $ref="#/definitions/job-attachment", and
+   every such input is referenced as {{input.<name>}} in messages[].content.
 """
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "DocsSol" / "DocAnalystAgent"
 RESOURCES_DIR = ROOT / "resources"
+AGENT_JSON = ROOT / "agent.json"
 
 BUILTIN_TOOL_TYPES = {
     "analyze-attachments",
@@ -36,6 +27,8 @@ BUILTIN_TOOL_TYPES = {
     "deep-rag",
     "batch-transform",
 }
+
+JOB_ATTACHMENT_REF = "#/definitions/job-attachment"
 
 
 def load(path: Path) -> dict:
@@ -89,7 +82,7 @@ def assert_builtin_shape(path: Path, resource: dict) -> str:
     return tool_type
 
 
-def main() -> None:
+def assert_builtin_tool_enabled() -> None:
     files = find_resource_jsons()
     builtin_tool_types_seen = []
     for f in files:
@@ -111,6 +104,64 @@ def main() -> None:
             f'Got toolTypes: {builtin_tool_types_seen}'
         )
     print('OK: "Analyze Files" (toolType="analyze-attachments") is enabled')
+
+
+def assert_job_attachment_input(agent: dict) -> None:
+    schema = agent.get("inputSchema") or {}
+
+    defs = schema.get("definitions") or {}
+    ja_def = defs.get("job-attachment")
+    if not isinstance(ja_def, dict):
+        sys.exit(
+            'FAIL: agent.json inputSchema.definitions["job-attachment"] is missing. '
+            "Define a job-attachment schema so the agent can accept file inputs "
+            "for the Analyze Files tool."
+        )
+    if ja_def.get("type") != "object":
+        sys.exit(
+            'FAIL: inputSchema.definitions["job-attachment"] must be an object '
+            f'schema, got type={ja_def.get("type")!r}'
+        )
+    print('OK: inputSchema.definitions["job-attachment"] is defined')
+
+    props = schema.get("properties") or {}
+    refs = [
+        name
+        for name, prop in props.items()
+        if isinstance(prop, dict) and prop.get("$ref") == JOB_ATTACHMENT_REF
+    ]
+    if not refs:
+        sys.exit(
+            f'FAIL: no inputSchema property uses $ref="{JOB_ATTACHMENT_REF}". '
+            "The agent has no file input — the Analyze Files tool would have "
+            "nothing to analyze."
+        )
+    print(f"OK: input properties typed as job-attachment: {refs}")
+
+    messages = agent.get("messages") or []
+    bodies = [m.get("content", "") for m in messages if isinstance(m, dict)]
+    missing = []
+    for name in refs:
+        # Match {{ input.<name> }} with any internal whitespace.
+        pattern = re.compile(
+            r"\{\{\s*input\." + re.escape(name) + r"\s*\}\}"
+        )
+        if not any(pattern.search(body) for body in bodies):
+            missing.append(name)
+    if missing:
+        sys.exit(
+            f"FAIL: job-attachment input(s) {missing} are declared but "
+            "never referenced as {{input.<name>}} in any message content. "
+            "Every attachment input must be wired into a prompt or the "
+            "model never sees it."
+        )
+    print(f"OK: all job-attachment inputs are referenced in messages: {refs}")
+
+
+def main() -> None:
+    assert_builtin_tool_enabled()
+    agent = load(AGENT_JSON)
+    assert_job_attachment_input(agent)
 
 
 if __name__ == "__main__":
