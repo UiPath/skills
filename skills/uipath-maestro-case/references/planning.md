@@ -50,7 +50,7 @@ uip maestro case registry pull
 
 If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
-**Capture `Data.UIPATH_URL` from the `login status` JSON for Step 2.1 tenant-override detection.** If `login status` failed or the field is absent, treat tenant override as unavailable and let Step 2.1 fall through to prompt-phrase detection — do not re-run `login status`.
+**Capture `Data.BaseUrl` from the `login status` JSON for Step 2.1 tenant-override detection.** If `login status` failed or the field is absent, treat tenant override as unavailable and let Step 2.1 fall through to prompt-phrase detection — do not re-run `login status`.
 
 ## Step 2 — Locate and parse the design document
 
@@ -68,15 +68,15 @@ Resolution order (first match wins):
 
 #### 2.1.a — Tenant override (alpha environment)
 
-Read the `Data.UIPATH_URL` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
+Read the `Data.BaseUrl` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
 
 ```
-> Schema: v20 (alpha tenant override — UIPATH_URL=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
+> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
 ```
 
 Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
 
-If `Data.UIPATH_URL` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
+If `Data.BaseUrl` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
 
 #### 2.1.b — User-prompt phrase
 
