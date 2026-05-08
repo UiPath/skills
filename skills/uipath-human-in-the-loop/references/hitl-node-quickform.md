@@ -99,7 +99,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 {
   "id": "invoiceReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "quick",
@@ -118,14 +118,16 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Invoice ID",
           "type": "text",
           "direction": "input",
-          "binding": "=js:$vars.fetchInvoice.output.invoiceId"
+          "binding": "=js:$vars.fetchInvoice.output.invoiceId",
+          "variable": "=js:$vars.fetchInvoice.output.invoiceId"
         },
         {
           "id": "amount",
           "label": "Amount",
           "type": "number",
           "direction": "input",
-          "binding": "=js:$vars.fetchInvoice.output.amount"
+          "binding": "=js:$vars.fetchInvoice.output.amount",
+          "variable": "=js:$vars.fetchInvoice.output.amount"
         },
         {
           "id": "notes",
@@ -155,8 +157,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
     "status":   { "type": "string", "source": "=result.Action", "var": "status" },
     "notes":    { "type": "string", "source": "=result.notes",    "var": "notes",    "custom": true },
     "decision": { "type": "string", "source": "=result.decision", "var": "decision", "custom": true }
-  },
-  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
+  }
 }
 ```
 
@@ -287,7 +288,8 @@ The agent translates the user's business description into the `fields[]` and `ou
 | `direction` | `inputs[]` items → `"input"`, `outputs[]` → `"output"`, `inOuts[]` → `"inOut"` |
 | field `type` | `"string"` → `"text"`, `"number"` → `"number"`, `"boolean"` → `"boolean"`, `"date"` → `"date"` |
 | `binding` | Read `variables.nodes` for node outputs → `"=js:$vars.<nodeId>.<outputId>.<field>"`. Read `variables.globals` for flow-level inputs → `"=js:$vars.<globalId>"`. Always read both before constructing bindings — never assume source |
-| `variable` | output/inOut variable name — defaults to `id` if not specified |
+| `variable` (input/inOut direction) | Set to the **same expression as `binding`**. The BPMN engine reads `variable` to build `HitlTaskArguments` and pre-populate the form at task-creation time. `binding` alone is only stored for workbench display — the runtime does not read it. Without `variable`, input fields appear blank in Action Center and inline debug. |
+| `variable` (output direction) | Short camelCase name for the output variable — defaults to `id` if not specified |
 | `required` | omit if false; set `true` for mandatory outputs |
 | `outcomes[0]` | `isPrimary: true`, `outcomeType: "Positive"` |
 | `outcomes[1+]` | `isPrimary: false`, `outcomeType: "Negative"` (use `"Neutral"` for middle outcomes like Skip/Defer) |
@@ -299,8 +301,8 @@ Business description: *"Reviewer sees invoice ID and amount, clicks Approve or R
 
 ```json
 "fields": [
-  { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "=js:$vars.fetchData1.output.invoiceId" },
-  { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "=js:$vars.fetchData1.output.amount" }
+  { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "=js:$vars.fetchData1.output.invoiceId", "variable": "=js:$vars.fetchData1.output.invoiceId" },
+  { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "=js:$vars.fetchData1.output.amount",    "variable": "=js:$vars.fetchData1.output.amount" }
 ],
 "outcomes": [
   { "id": "approve", "name": "Approve", "isPrimary": true,  "outcomeType": "Positive" },
@@ -314,7 +316,7 @@ Business description: *"Human sees the AI-drafted email, can edit it, then click
 
 ```json
 "fields": [
-  { "id": "recipient",  "label": "Recipient",  "type": "text", "direction": "input", "binding": "=js:$vars.draft1.output.recipient" },
+  { "id": "recipient",  "label": "Recipient",  "type": "text", "direction": "input", "binding": "=js:$vars.draft1.output.recipient", "variable": "=js:$vars.draft1.output.recipient" },
   { "id": "emailbody",  "label": "Email Body", "type": "text", "direction": "inOut", "binding": "=js:$vars.draft1.output.body", "variable": "emailBody" }
 ],
 "outcomes": [
@@ -329,7 +331,7 @@ Business description: *"Agent couldn't extract vendor name or cost center. Human
 
 ```json
 "fields": [
-  { "id": "rawextract",  "label": "Raw Extract",  "type": "text", "direction": "input",  "binding": "=js:$vars.extract1.output.rawText" },
+  { "id": "rawextract",  "label": "Raw Extract",  "type": "text", "direction": "input",  "binding": "=js:$vars.extract1.output.rawText", "variable": "=js:$vars.extract1.output.rawText" },
   { "id": "vendorname",  "label": "Vendor Name",  "type": "text", "direction": "output", "variable": "vendorName",  "required": true },
   { "id": "costcenter",  "label": "Cost Center",  "type": "text", "direction": "output", "variable": "costCenter", "required": true }
 ],
@@ -344,8 +346,8 @@ Business description: *"If agent confidence is low, escalate. Human sees reasoni
 
 ```json
 "fields": [
-  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "text",   "direction": "input",  "binding": "=js:$vars.classify1.output.reasoning" },
-  { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "=js:$vars.classify1.output.score" },
+  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "text",   "direction": "input",  "binding": "=js:$vars.classify1.output.reasoning", "variable": "=js:$vars.classify1.output.reasoning" },
+  { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "=js:$vars.classify1.output.score",     "variable": "=js:$vars.classify1.output.score" },
   { "id": "notes",           "label": "Notes",            "type": "text",   "direction": "output", "variable": "notes" }
 ],
 "outcomes": [
