@@ -22,7 +22,7 @@ sandbox:
 initial_prompt: |
   Add a script node called "convertToCelsius" between getWeather and formatSummary that converts the temp from F to C. Return both values. Also update formatSummary to include the Celsius value in its summary string.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 

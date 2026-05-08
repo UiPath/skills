@@ -34,7 +34,7 @@ initial_prompt: |
   The Decision node condition MUST use the exact field-level runtime variable
   path — not just $vars.<nodeId>.output but specifically the approved field.
 
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command

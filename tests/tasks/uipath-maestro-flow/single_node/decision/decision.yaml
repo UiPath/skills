@@ -22,7 +22,7 @@ initial_prompt: |
   temperature in Fahrenheit as input. If the temperature is greater than 75,
   the flow should output "warm". Otherwise it should output "cool".
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 

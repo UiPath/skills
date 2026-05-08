@@ -20,7 +20,7 @@ initial_prompt: |
   Create a UiPath Flow project named "LoopMultiply" that multiplies the
   numbers [13, 15, 17] together using a Loop node and returns the product.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 
