@@ -98,7 +98,17 @@
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_WaitQueue_To_CallAgentic</bpmn:incoming>
-      <bpmn:outgoing>Flow_CallAgentic_To_CallCase</bpmn:outgoing>
+      <bpmn:outgoing>Flow_CallAgentic_To_CallAgenticAsync</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="Call_AgenticProcessAsync" name="Call Agentic Process Async">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartAgenticProcessAsync" version="v1" />
+          <uipath:context />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_CallAgentic_To_CallAgenticAsync</bpmn:incoming>
+      <bpmn:outgoing>Flow_CallAgenticAsync_To_CallCase</bpmn:outgoing>
     </bpmn:callActivity>
     <bpmn:callActivity id="Call_CaseManagement" name="Call Case Management">
       <bpmn:extensionElements>
@@ -108,8 +118,18 @@
         </uipath:activity>
         <uipath:caseManagement version="v1"><![CDATA[{"mode":"preserve-only","note":"Synthetic case-management payload"}]]></uipath:caseManagement>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_CallAgentic_To_CallCase</bpmn:incoming>
-      <bpmn:outgoing>Flow_CallCase_To_WaitEvent</bpmn:outgoing>
+      <bpmn:incoming>Flow_CallAgenticAsync_To_CallCase</bpmn:incoming>
+      <bpmn:outgoing>Flow_CallCase_To_CallCaseAsync</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="Call_CaseManagementAsync" name="Call Case Management Async">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartCaseMgmtProcessAsync" version="v1" />
+          <uipath:context />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_CallCase_To_CallCaseAsync</bpmn:incoming>
+      <bpmn:outgoing>Flow_CallCaseAsync_To_WaitEvent</bpmn:outgoing>
     </bpmn:callActivity>
     <bpmn:receiveTask id="Task_WaitForExternalEvent" name="Wait For External Event">
       <bpmn:extensionElements>
@@ -123,16 +143,60 @@
           </uipath:context>
         </uipath:event>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_CallCase_To_WaitEvent</bpmn:incoming>
-      <bpmn:outgoing>Flow_WaitEvent_To_Script</bpmn:outgoing>
+      <bpmn:incoming>Flow_CallCaseAsync_To_WaitEvent</bpmn:incoming>
+      <bpmn:outgoing>Flow_WaitEvent_To_SendMessage</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageDef_ExternalSignal" messageRef="Message_ExternalSignal" />
     </bpmn:receiveTask>
+    <bpmn:intermediateThrowEvent id="Event_SendMessage" name="Send Message">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Maestro.SendMessageEvent" version="v1" />
+          <uipath:context>
+            <uipath:input name="messageName" type="string" value="SyntheticReply" />
+            <uipath:input name="payload" type="json"><![CDATA[{"requestId":"=requestId","result":"=result"}]]></uipath:input>
+          </uipath:context>
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_WaitEvent_To_SendMessage</bpmn:incoming>
+      <bpmn:outgoing>Flow_SendMessage_To_CaseScheduler</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_SyntheticReply" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:serviceTask id="Task_CasePlanScheduler" name="Case Plan Scheduler">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1" preservation="draft-only">
+          <uipath:type value="Maestro.CasePlanScheduler" version="v1" />
+          <uipath:context />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SendMessage_To_CaseScheduler</bpmn:incoming>
+      <bpmn:outgoing>Flow_CaseScheduler_To_CaseGuardrails</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CaseManagerGuardrails" name="Case Manager Guardrails">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1" preservation="preserve-only">
+          <uipath:type value="Maestro.CaseManagerGuardrails" version="v1" />
+          <uipath:context />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_CaseScheduler_To_CaseGuardrails</bpmn:incoming>
+      <bpmn:outgoing>Flow_CaseGuardrails_To_CaseRules</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CaseRulesEvaluator" name="Case Rules Evaluator">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1" preservation="preserve-only">
+          <uipath:type value="Maestro.CaseRulesEvaluator" version="v1" />
+          <uipath:context />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_CaseGuardrails_To_CaseRules</bpmn:incoming>
+      <bpmn:outgoing>Flow_CaseRules_To_Script</bpmn:outgoing>
+    </bpmn:serviceTask>
     <bpmn:scriptTask id="Task_LegacyScript" name="Legacy Script" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v2" />
         <uipath:Activity version="v1" preservation="unsupported"><![CDATA[{"kind":"generic","behavior":"preserve-only"}]]></uipath:Activity>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_WaitEvent_To_Script</bpmn:incoming>
+      <bpmn:incoming>Flow_CaseRules_To_Script</bpmn:incoming>
       <bpmn:outgoing>Flow_Script_To_End</bpmn:outgoing>
       <bpmn:script><![CDATA[
 return { result: "preserved" };
@@ -148,9 +212,15 @@ return { result: "preserved" };
     <bpmn:sequenceFlow id="Flow_BusinessRule_To_CreateQueue" sourceRef="Task_BusinessRule" targetRef="Task_CreateQueueItem" />
     <bpmn:sequenceFlow id="Flow_CreateQueue_To_WaitQueue" sourceRef="Task_CreateQueueItem" targetRef="Task_WaitQueueItem" />
     <bpmn:sequenceFlow id="Flow_WaitQueue_To_CallAgentic" sourceRef="Task_WaitQueueItem" targetRef="Call_AgenticProcess" />
-    <bpmn:sequenceFlow id="Flow_CallAgentic_To_CallCase" sourceRef="Call_AgenticProcess" targetRef="Call_CaseManagement" />
-    <bpmn:sequenceFlow id="Flow_CallCase_To_WaitEvent" sourceRef="Call_CaseManagement" targetRef="Task_WaitForExternalEvent" />
-    <bpmn:sequenceFlow id="Flow_WaitEvent_To_Script" sourceRef="Task_WaitForExternalEvent" targetRef="Task_LegacyScript" />
+    <bpmn:sequenceFlow id="Flow_CallAgentic_To_CallAgenticAsync" sourceRef="Call_AgenticProcess" targetRef="Call_AgenticProcessAsync" />
+    <bpmn:sequenceFlow id="Flow_CallAgenticAsync_To_CallCase" sourceRef="Call_AgenticProcessAsync" targetRef="Call_CaseManagement" />
+    <bpmn:sequenceFlow id="Flow_CallCase_To_CallCaseAsync" sourceRef="Call_CaseManagement" targetRef="Call_CaseManagementAsync" />
+    <bpmn:sequenceFlow id="Flow_CallCaseAsync_To_WaitEvent" sourceRef="Call_CaseManagementAsync" targetRef="Task_WaitForExternalEvent" />
+    <bpmn:sequenceFlow id="Flow_WaitEvent_To_SendMessage" sourceRef="Task_WaitForExternalEvent" targetRef="Event_SendMessage" />
+    <bpmn:sequenceFlow id="Flow_SendMessage_To_CaseScheduler" sourceRef="Event_SendMessage" targetRef="Task_CasePlanScheduler" />
+    <bpmn:sequenceFlow id="Flow_CaseScheduler_To_CaseGuardrails" sourceRef="Task_CasePlanScheduler" targetRef="Task_CaseManagerGuardrails" />
+    <bpmn:sequenceFlow id="Flow_CaseGuardrails_To_CaseRules" sourceRef="Task_CaseManagerGuardrails" targetRef="Task_CaseRulesEvaluator" />
+    <bpmn:sequenceFlow id="Flow_CaseRules_To_Script" sourceRef="Task_CaseRulesEvaluator" targetRef="Task_LegacyScript" />
     <bpmn:sequenceFlow id="Flow_Script_To_End" sourceRef="Task_LegacyScript" targetRef="End_Done" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="Diagram_ContractVariants">
@@ -163,10 +233,16 @@ return { result: "preserved" };
       <bpmndi:BPMNShape id="Shape_Task_CreateQueueItem" bpmnElement="Task_CreateQueueItem"><dc:Bounds x="800" y="108" width="120" height="80" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_Task_WaitQueueItem" bpmnElement="Task_WaitQueueItem"><dc:Bounds x="960" y="108" width="120" height="80" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Shape_Call_AgenticProcess" bpmnElement="Call_AgenticProcess"><dc:Bounds x="1120" y="108" width="120" height="80" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_Call_CaseManagement" bpmnElement="Call_CaseManagement"><dc:Bounds x="1280" y="108" width="120" height="80" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_Task_WaitForExternalEvent" bpmnElement="Task_WaitForExternalEvent"><dc:Bounds x="1440" y="108" width="120" height="80" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_Task_LegacyScript" bpmnElement="Task_LegacyScript"><dc:Bounds x="1600" y="108" width="120" height="80" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_End_Done" bpmnElement="End_Done"><dc:Bounds x="1760" y="130" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Call_AgenticProcessAsync" bpmnElement="Call_AgenticProcessAsync"><dc:Bounds x="1280" y="108" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Call_CaseManagement" bpmnElement="Call_CaseManagement"><dc:Bounds x="1440" y="108" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Call_CaseManagementAsync" bpmnElement="Call_CaseManagementAsync"><dc:Bounds x="1600" y="108" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_WaitForExternalEvent" bpmnElement="Task_WaitForExternalEvent"><dc:Bounds x="1760" y="108" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Event_SendMessage" bpmnElement="Event_SendMessage"><dc:Bounds x="1922" y="130" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CasePlanScheduler" bpmnElement="Task_CasePlanScheduler"><dc:Bounds x="2000" y="108" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CaseManagerGuardrails" bpmnElement="Task_CaseManagerGuardrails"><dc:Bounds x="2160" y="108" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CaseRulesEvaluator" bpmnElement="Task_CaseRulesEvaluator"><dc:Bounds x="2320" y="108" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_LegacyScript" bpmnElement="Task_LegacyScript"><dc:Bounds x="2480" y="108" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Done" bpmnElement="End_Done"><dc:Bounds x="2640" y="130" width="36" height="36" /></bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Edge_Flow_Start_To_AgentJob" bpmnElement="Flow_Start_To_AgentJob"><di:waypoint x="116" y="148" /><di:waypoint x="160" y="148" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_Flow_AgentJob_To_A2A" bpmnElement="Flow_AgentJob_To_A2A"><di:waypoint x="280" y="148" /><di:waypoint x="320" y="148" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_Flow_A2A_To_ApiWorkflow" bpmnElement="Flow_A2A_To_ApiWorkflow"><di:waypoint x="440" y="148" /><di:waypoint x="480" y="148" /></bpmndi:BPMNEdge>
@@ -174,10 +250,16 @@ return { result: "preserved" };
       <bpmndi:BPMNEdge id="Edge_Flow_BusinessRule_To_CreateQueue" bpmnElement="Flow_BusinessRule_To_CreateQueue"><di:waypoint x="760" y="148" /><di:waypoint x="800" y="148" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_Flow_CreateQueue_To_WaitQueue" bpmnElement="Flow_CreateQueue_To_WaitQueue"><di:waypoint x="920" y="148" /><di:waypoint x="960" y="148" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Edge_Flow_WaitQueue_To_CallAgentic" bpmnElement="Flow_WaitQueue_To_CallAgentic"><di:waypoint x="1080" y="148" /><di:waypoint x="1120" y="148" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Edge_Flow_CallAgentic_To_CallCase" bpmnElement="Flow_CallAgentic_To_CallCase"><di:waypoint x="1240" y="148" /><di:waypoint x="1280" y="148" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Edge_Flow_CallCase_To_WaitEvent" bpmnElement="Flow_CallCase_To_WaitEvent"><di:waypoint x="1400" y="148" /><di:waypoint x="1440" y="148" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Edge_Flow_WaitEvent_To_Script" bpmnElement="Flow_WaitEvent_To_Script"><di:waypoint x="1560" y="148" /><di:waypoint x="1600" y="148" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Edge_Flow_Script_To_End" bpmnElement="Flow_Script_To_End"><di:waypoint x="1720" y="148" /><di:waypoint x="1760" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CallAgentic_To_CallAgenticAsync" bpmnElement="Flow_CallAgentic_To_CallAgenticAsync"><di:waypoint x="1240" y="148" /><di:waypoint x="1280" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CallAgenticAsync_To_CallCase" bpmnElement="Flow_CallAgenticAsync_To_CallCase"><di:waypoint x="1400" y="148" /><di:waypoint x="1440" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CallCase_To_CallCaseAsync" bpmnElement="Flow_CallCase_To_CallCaseAsync"><di:waypoint x="1560" y="148" /><di:waypoint x="1600" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CallCaseAsync_To_WaitEvent" bpmnElement="Flow_CallCaseAsync_To_WaitEvent"><di:waypoint x="1720" y="148" /><di:waypoint x="1760" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_WaitEvent_To_SendMessage" bpmnElement="Flow_WaitEvent_To_SendMessage"><di:waypoint x="1880" y="148" /><di:waypoint x="1922" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_SendMessage_To_CaseScheduler" bpmnElement="Flow_SendMessage_To_CaseScheduler"><di:waypoint x="1958" y="148" /><di:waypoint x="2000" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CaseScheduler_To_CaseGuardrails" bpmnElement="Flow_CaseScheduler_To_CaseGuardrails"><di:waypoint x="2120" y="148" /><di:waypoint x="2160" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CaseGuardrails_To_CaseRules" bpmnElement="Flow_CaseGuardrails_To_CaseRules"><di:waypoint x="2280" y="148" /><di:waypoint x="2320" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CaseRules_To_Script" bpmnElement="Flow_CaseRules_To_Script"><di:waypoint x="2440" y="148" /><di:waypoint x="2480" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Script_To_End" bpmnElement="Flow_Script_To_End"><di:waypoint x="2600" y="148" /><di:waypoint x="2640" y="148" /></bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

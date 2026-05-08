@@ -53,7 +53,12 @@ def require_uipath_attr_value(
 def main() -> None:
     path, root = parse_bpmn("Contract")
 
-    expected = [
+    # Representative coverage for public-safe model-authored or preserve-only XML
+    # shells. This is intentionally not an exhaustive mirror of
+    # supported-elements.md: CLI-owned Intsvc.* enrichment is covered by the
+    # integration-service fixture, while this fixture keeps one wait shell to
+    # assert the model/CLI boundary stays explicit.
+    expected_model_or_preserve_shells = [
         ("serviceTask", "activity", "Orchestrator.StartAgentJob"),
         ("serviceTask", "activity", "A2A.AgentExecution"),
         ("serviceTask", "activity", "Orchestrator.ExecuteApiWorkflowAsync"),
@@ -61,10 +66,16 @@ def main() -> None:
         ("sendTask", "activity", "Orchestrator.CreateQueueItem"),
         ("serviceTask", "activity", "Orchestrator.CreateAndWaitForQueueItem"),
         ("callActivity", "activity", "Orchestrator.StartAgenticProcess"),
+        ("callActivity", "activity", "Orchestrator.StartAgenticProcessAsync"),
         ("callActivity", "activity", "Orchestrator.StartCaseMgmtProcess"),
+        ("callActivity", "activity", "Orchestrator.StartCaseMgmtProcessAsync"),
+        ("intermediateThrowEvent", "event", "Maestro.SendMessageEvent"),
+        ("serviceTask", "activity", "Maestro.CasePlanScheduler"),
+        ("serviceTask", "activity", "Maestro.CaseManagerGuardrails"),
+        ("serviceTask", "activity", "Maestro.CaseRulesEvaluator"),
         ("receiveTask", "event", "Intsvc.WaitForEvent"),
     ]
-    for wrapper, extension_name, type_value in expected:
+    for wrapper, extension_name, type_value in expected_model_or_preserve_shells:
         require_wrapper(root, wrapper, extension_name, type_value)
 
     for version in {"5", "11", "11.5"}:
