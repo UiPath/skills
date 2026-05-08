@@ -1,19 +1,12 @@
 # User Management
 
-Workflows for managing Identity Server users via `uip admin users`.
+Workflows for managing users via `uip admin users`. For full command syntax and flags, see [identity-commands.md](identity-commands.md#users--uip-admin-users).
 
 ## Workflow: Discover Existing Users
 
-Before creating or modifying users, list what exists.
-
 ```bash
-# List all users in the organization
 uip admin users list --output json
-
-# Search for a specific user
 uip admin users list --search "john" --output json
-
-# Get full details for a specific user
 uip admin users get <USER_ID> --output json
 ```
 
@@ -35,78 +28,34 @@ uip admin users invite \
 
 ## Workflow: Create a User (Direct Provisioning)
 
-> **Ask for confirmation before using this command.** Explain that `users invite` is the standard onboarding method and confirm the user specifically wants direct account creation.
+> **Ask for confirmation before using this command.** Explain that `users invite` is the standard method for human onboarding and confirm the user specifically wants direct account creation.
 
-1. List existing users to avoid duplicates:
-   ```bash
-   uip admin users list --search "<USERNAME>" --output json
-   ```
+Use `create` instead of `invite` when:
+- **Migrations & batch imports** — syncing users from external systems
+- **Service accounts** — accounts with admin-set passwords, no email workflow needed
+- **Admin-provisioned access** — user needs immediate login without waiting for email acceptance
+- **No email available** — `create` does not require an email address; `invite` does
 
-2. If the user does not exist, create them:
-   ```bash
-   uip admin users create "<USERNAME>" \
-     --email "<EMAIL>" \
-     --name "<FIRST_NAME>" \
-     --surname "<LAST_NAME>" \
-     --output json
-   ```
-
-3. Verify creation:
-   ```bash
-   uip admin users list --search "<USERNAME>" --output json
-   ```
+1. Check for duplicates: `uip admin users list --search "<USERNAME>" --output json`
+2. Create: `uip admin users create "<USERNAME>" --email "<EMAIL>" --name "<FIRST_NAME>" --surname "<LAST_NAME>" --output json`
+3. Verify: `uip admin users list --search "<USERNAME>" --output json`
 
 ## Workflow: Update a User
 
-1. Get current user details:
-   ```bash
-   uip admin users get <USER_ID> --output json
-   ```
-
-2. Update the desired fields (at least one is required):
-   ```bash
-   uip admin users update <USER_ID> \
-     --email "<NEW_EMAIL>" \
-     --name "<NEW_NAME>" \
-     --surname "<NEW_SURNAME>" \
-     --output json
-   ```
+1. Get current details: `uip admin users get <USER_ID> --output json`
+2. Update (at least one field required): `uip admin users update <USER_ID> --email "<NEW_EMAIL>" --output json`
 
 ## Workflow: Delete a User
 
-1. Confirm the user ID:
-   ```bash
-   uip admin users get <USER_ID> --output json
-   ```
+1. Confirm user ID: `uip admin users get <USER_ID> --output json`
+2. Confirm with user before proceeding.
+3. Delete: `uip admin users delete <USER_ID> --output json`
 
-2. Confirm with the user before proceeding.
-
-3. Delete:
-   ```bash
-   uip admin users delete <USER_ID> --output json
-   ```
-
-## Pagination
-
-For large user lists, use `--limit` and `--offset`:
+## Pagination and Sorting
 
 ```bash
-# First page (20 users)
 uip admin users list --limit 20 --offset 0 --output json
-
-# Second page
-uip admin users list --limit 20 --offset 20 --output json
-```
-
-## Sorting
-
-Sort results by field and direction:
-
-```bash
-uip admin users list \
-  --order-by "UserName" \
-  --order-direction "asc" \
-  --output json
+uip admin users list --order-by "UserName" --order-direction "asc" --output json
 ```
 
 ## Error Handling

@@ -1,6 +1,6 @@
 # Group Management
 
-Workflows for managing Identity Server groups and group membership via `uip admin groups`.
+Workflows for managing groups and group membership via `uip admin groups`. For full command syntax and flags, see [identity-commands.md](identity-commands.md#groups--uip-admin-groups).
 
 ## Group Types
 
@@ -12,33 +12,16 @@ Workflows for managing Identity Server groups and group membership via `uip admi
 ## Workflow: List and Inspect Groups
 
 ```bash
-# List all groups
 uip admin groups list --output json
-
-# Get group details
 uip admin groups get <GROUP_ID> --output json
-
-# List group members
 uip admin groups members list <GROUP_ID> --output json
 ```
 
 ## Workflow: Create a Group
 
-1. List existing groups to avoid duplicates:
-   ```bash
-   uip admin groups list --output json
-   ```
-
-2. Create the group:
-   ```bash
-   uip admin groups create "<GROUP_NAME>" \
-     --output json
-   ```
-
-3. Verify creation:
-   ```bash
-   uip admin groups list --output json
-   ```
+1. Check for duplicates: `uip admin groups list --output json`
+2. Create: `uip admin groups create "<GROUP_NAME>" --output json`
+3. Verify: `uip admin groups list --output json`
 
 ## Workflow: Manage Group Membership
 
@@ -46,70 +29,32 @@ Group membership commands use **user IDs** (UUIDs), not usernames. Always resolv
 
 ### Add Members
 
-1. Resolve user IDs:
-   ```bash
-   uip admin users list --search "<USER_NAME>" --output json
-   ```
-
-2. Add users to the group:
-   ```bash
-   uip admin groups members add <GROUP_ID> \
-     --user-ids "<USER_ID_1>,<USER_ID_2>" \
-     --output json
-   ```
-
-3. Verify membership:
-   ```bash
-   uip admin groups members list <GROUP_ID> --output json
-   ```
+1. Resolve user IDs: `uip admin users list --search "<USER_NAME>" --output json`
+2. Add: `uip admin groups members add <GROUP_ID> --user-ids "<USER_ID_1>,<USER_ID_2>" --output json`
+3. Verify: `uip admin groups members list <GROUP_ID> --output json`
 
 ### Remove Members
 
-1. List current members to get IDs:
-   ```bash
-   uip admin groups members list <GROUP_ID> --output json
-   ```
-
-2. Remove specific users:
-   ```bash
-   uip admin groups members revoke <GROUP_ID> \
-     --user-ids "<USER_ID>" \
-     --output json
-   ```
+1. List current members: `uip admin groups members list <GROUP_ID> --output json`
+2. Remove: `uip admin groups members revoke <GROUP_ID> --user-ids "<USER_ID>" --output json`
 
 ## Workflow: Rename a Group
 
 ```bash
-uip admin groups update <GROUP_ID> \
-  --name "<NEW_NAME>" \
-  --output json
+uip admin groups update <GROUP_ID> --name "<NEW_NAME>" --output json
 ```
 
 ## Workflow: Delete a Group
 
-1. Verify it is a custom group (not built-in):
-   ```bash
-   uip admin groups get <GROUP_ID> --output json
-   ```
-   Check that `type` is `Custom`. Built-in groups cannot be deleted.
-
-2. Confirm with the user.
-
-3. Delete:
-   ```bash
-   uip admin groups delete <GROUP_ID> --output json
-   ```
+1. Verify it is a custom group (not built-in): `uip admin groups get <GROUP_ID> --output json` — check `type` is `Custom`.
+2. Confirm with user.
+3. Delete: `uip admin groups delete <GROUP_ID> --output json`
 
 ## Pagination for Members
 
 ```bash
-# First page
-uip admin groups members list <GROUP_ID> \
-  --limit 50 --offset 0 --output json
-
-# Next page
-uip admin groups members list <GROUP_ID> \
-  --limit 50 --offset 50 --output json
+uip admin groups members list <GROUP_ID> --limit 50 --offset 0 --output json
+uip admin groups members list <GROUP_ID> --limit 50 --offset 50 --output json
 ```
 
 ## Error Handling

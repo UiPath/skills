@@ -93,3 +93,4 @@
 
 # Admin skill (Identity Server management)
 /skills/uipath-admin/ @UiPath/Identity
+/tests/tasks/uipath-admin/ @UiPath/Identity

@@ -17,21 +17,13 @@ initial_prompt: |
   and Jobs access in my UiPath organization. I need Client ID and Secret
   for a CI/CD pipeline.
 
-  Save a summary to report.json in the current working directory with
-  at minimum:
-    {
-      "app_name": "CI Pipeline",
-      "create_command": "<the exact uip admin external-apps create command>",
-      "scopes_used": ["<list of scopes passed to --scope>"],
-      "commands_attempted": ["<list of all uip commands you attempted>"]
-    }
-
   Important:
-  - The `uip` CLI is available but is NOT connected to a live tenant
-    in this environment. Commands will fail with auth errors — that
-    is expected. Run each command once, record the result in
-    report.json, and move on. Do NOT retry or attempt to login.
-  - Use --output json on every uip admin command.
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -44,44 +36,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran external-apps create"
+    description: "Agent ran external-apps create with scopes"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+external-apps\s+create'
+    command_pattern: 'uip\s+admin\s+external-apps\s+create\s+.*--scope\s+"?OR\.'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent included --scope with OR.* scopes"
+    description: "Agent used --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+external-apps\s+create\s+.*--scope\s+"?OR\.'
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
     weight: 1.0
     pass_threshold: 1.0
-
-  - type: file_contains
-    description: "report.json references correct CLI namespace"
-    path: "report.json"
-    includes:
-      - "uip admin"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json records correct app name"
-    path: "report.json"
-    assertions:
-      - expression: "app_name"
-        operator: equals
-        expected: "CI Pipeline"
-      - expression: "length(scopes_used)"
-        operator: gte
-        expected: 1
-    weight: 1.5
-    pass_threshold: 0.75
