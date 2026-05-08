@@ -12,7 +12,7 @@ Read-only against `skills/` and `tests/`; the only file writes are stub eval tas
 - A PR number (e.g. `667`) → fetch via `gh pr diff <N>` and `gh pr view <N> --json files`.
 - A space-separated list of file paths → audit those paths directly (skip diff fetch).
 
-**Output:** Single markdown report printed to chat. No PR comment, no file writes unless the user accepts a stub.
+**Output:** Single markdown report printed to chat, then an optional Phase 6 that dispatches one parallel agent per affected skill (each running its evals in its own tmux window so the user can `tmux attach` and watch live). No PR comment. No file writes unless the user accepts a stub.
 
 ---
 
@@ -211,6 +211,104 @@ Brief one-line per changed file that DID match an eval, naming the eval. Helps t
 
 ---
 
+## Phase 6 — Optionally dispatch the recommended evals
+
+After printing the report, **ask the user**:
+
+> Run the recommended evals now? Each affected skill gets its own parallel agent + tmux window so you can attach and watch.
+
+Use `AskUserQuestion` with options `Yes — dispatch all`, `Pick specific skills`, `No — done`.
+
+If the user picks **No**, stop. The report is the deliverable.
+
+If the user picks **Yes** or **Pick specific**, dispatch one Agent **per affected skill**, in **parallel** (single message, multiple `Agent` tool uses). Do NOT spawn one agent per YAML — one per skill keeps blast radius bounded and matches the folder-map model.
+
+### 6a. tmux session setup
+
+Once per audit, before dispatch:
+
+```bash
+SESSION="skill-pr-audit-$(date +%s)"
+tmux new-session -d -s "$SESSION" -n "overview" 'echo "Audit dispatch $(date)"; bash -i'
+echo "Attach with: tmux attach -t $SESSION"
+```
+
+Print the attach command to the user **immediately** so they can open another terminal and watch while agents run.
+
+### 6b. Per-skill window
+
+For each affected skill, create a tmux window named after the skill **before** spawning its agent. The agent is told to run its commands inside that window so the user sees live output:
+
+```bash
+tmux new-window -t "$SESSION" -n "<skill>" "cd $(git rev-parse --show-toplevel) && bash -i"
+```
+
+### 6c. Per-skill agent prompt (template)
+
+Spawn one `Agent` call per skill with `subagent_type: general-purpose` and `run_in_background: true`. Each agent's prompt is **self-contained** (it doesn't see the conversation), so include:
+
+- The skill name
+- The exact list of YAMLs to run (from Phase 2's "Evals to run" table — only the ones in this skill)
+- The `make` / `coder-eval` command to invoke
+- The tmux session and window name
+- The expected output format
+
+Template:
+
+```
+You are running the eval suite for the UiPath skill `<skill>` as part of a PR audit.
+
+Repo root: <absolute path to repo>
+tmux session: <SESSION>
+tmux window: <skill>
+
+Tasks to run (in this window):
+<bulleted list of yaml paths>
+
+Run them via:
+  tmux send-keys -t <SESSION>:<skill> 'cd <repo root> && make tags TAGS="<skill> <relevant-tier>"' C-m
+
+Or, for individual tasks:
+  tmux send-keys -t <SESSION>:<skill> '.venv/bin/coder-eval run tasks/<skill>/<...>.yaml --output-dir runs/audit-<timestamp>' C-m
+
+Then poll the window output (tmux capture-pane -t <SESSION>:<skill> -p) every ~30s until the run completes
+or 30 minutes elapses, whichever comes first. Do not sleep-poll faster than 30s.
+
+Report back, in <300 words:
+- Total tasks run, passed, failed
+- For each failure: task_id, the failing success_criterion, and a 1-line cause hypothesis
+- Whether any failure plausibly traces to the diff in this PR vs being an unrelated flake
+
+Do NOT modify skill or eval files. Read-only.
+```
+
+### 6d. Aggregate and report
+
+When all skill agents finish, print a final summary table:
+
+| Skill | Tasks run | Passed | Failed | Likely PR-related? |
+|---|---|---|---|---|
+| uipath-maestro-flow | … | … | … | … |
+| uipath-platform | … | … | … | … |
+
+Then print the tmux attach command again so the user can inspect any window:
+
+```
+tmux attach -t <SESSION>          # then Ctrl-b w to switch windows
+```
+
+If the user picked **Pick specific skills**, ask which subset via `AskUserQuestion` and dispatch only those.
+
+### 6e. Cleanup
+
+Do NOT kill the tmux session automatically. The user may want to inspect output afterward. Mention in the final summary:
+
+```
+When done: tmux kill-session -t <SESSION>
+```
+
+---
+
 ## Rules
 
 1. **Read-only by default.** Stubs are printed, not written. Only write if the user explicitly accepts.
@@ -221,3 +319,7 @@ Brief one-line per changed file that DID match an eval, naming the eval. Helps t
 6. **Match recommendation tags to the closest sibling eval.** Read the nearest existing task YAML under the same `tests/tasks/<skill>/` directory and reuse its `agent`/`sandbox` blocks verbatim in stubs — don't invent new shapes.
 7. **Stop early if there are no skill or test changes.** A diff that touches only CI, docs outside `skills/`, or `plugin.json` produces a one-line "nothing to audit" report.
 8. **Run independent steps in parallel.** Phase 1 file-list, Phase 2 candidate-eval listing, and Phase 3a diff-surface extraction are independent — fan them out as parallel `Bash` / `Read` calls when the diff spans multiple skills.
+9. **One agent per skill, not per YAML.** Phase 6 dispatches at most one Agent per affected skill. Spawning one agent per individual eval YAML is forbidden — it doesn't add signal and explodes cost.
+10. **Always confirm before dispatch.** Phase 6 must ask via `AskUserQuestion` after the report prints. Never auto-run evals.
+11. **Never kill the tmux session.** The user attaches after the run to inspect failures. Print the `tmux kill-session` command in the summary instead.
+12. **Background, don't block.** Phase 6 agents run with `run_in_background: true`. The dispatching turn prints the attach command and the summary table when agents return; it does not block on a foreground agent.
