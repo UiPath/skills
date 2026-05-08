@@ -253,6 +253,29 @@ Spawn one `Agent` call per skill with `subagent_type: general-purpose` and `run_
 - The tmux session and window name
 - The expected output format
 
+**Default scope: tasks tagged `connector` only.** This skill audits PRs whose changes typically affect connector authoring / reference resolution. Running every smoke + integration + e2e task is wasteful when 90% are unrelated. Filter the YAML list per skill to those whose `tags:` array includes `connector`. Override only when:
+
+- The diff touches a non-connector plugin folder (e.g. `plugins/decision/`, `plugins/script/`, `plugins/transform/`) — also include tasks tagged with that node type
+- The diff touches `SKILL.md` — run all smoke tasks plus connector tasks (broadest signal)
+- The user explicitly says "run everything"
+
+Pre-filter the YAML list before dispatch:
+
+```bash
+# In Phase 2, when listing candidate evals, narrow to connector-tagged tasks:
+for f in tests/tasks/<skill>/**/*.yaml; do
+  grep -lE '^\s*tags:.*\bconnector\b' "$f" 2>/dev/null
+done
+```
+
+Or, equivalent via `make`:
+
+```bash
+make tags TAGS="<skill> connector"
+```
+
+State the filter applied at the top of the dispatch — e.g. `Filter: tag=connector (12 of 54 maestro-flow tasks)`.
+
 Template:
 
 ```
@@ -323,3 +346,4 @@ When done: tmux kill-session -t <SESSION>
 10. **Always confirm before dispatch.** Phase 6 must ask via `AskUserQuestion` after the report prints. Never auto-run evals.
 11. **Never kill the tmux session.** The user attaches after the run to inspect failures. Print the `tmux kill-session` command in the summary instead.
 12. **Background, don't block.** Phase 6 agents run with `run_in_background: true`. The dispatching turn prints the attach command and the summary table when agents return; it does not block on a foreground agent.
+13. **Filter to `connector`-tagged tasks by default.** Phase 6 dispatch runs only tasks whose YAML `tags:` includes `connector`. Override per Phase 6c only when the diff hits a non-connector plugin or `SKILL.md`, or when the user explicitly says "run everything". State the filter and the YAML count at the top of dispatch.
