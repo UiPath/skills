@@ -214,6 +214,10 @@ class Validator:
                         self.contract_hits.add(f"{wrapper}:{service_type}")
 
     def validate_contract_coverage(self) -> None:
+        # Representative public-safe XML shells from
+        # references/author/references/supported-elements.md. CLI-owned
+        # Intsvc.* enrichment is intentionally covered by representative
+        # fixture sidecars, not by every connector-specific service type.
         expected = {
             "serviceTask:Orchestrator.StartAgentJob",
             "serviceTask:A2A.AgentExecution",
@@ -222,7 +226,13 @@ class Validator:
             "sendTask:Orchestrator.CreateQueueItem",
             "serviceTask:Orchestrator.CreateAndWaitForQueueItem",
             "callActivity:Orchestrator.StartAgenticProcess",
+            "callActivity:Orchestrator.StartAgenticProcessAsync",
             "callActivity:Orchestrator.StartCaseMgmtProcess",
+            "callActivity:Orchestrator.StartCaseMgmtProcessAsync",
+            "intermediateThrowEvent:Maestro.SendMessageEvent",
+            "serviceTask:Maestro.CasePlanScheduler",
+            "serviceTask:Maestro.CaseManagerGuardrails",
+            "serviceTask:Maestro.CaseRulesEvaluator",
             "receiveTask:Intsvc.WaitForEvent",
             "startEvent:Intsvc.EventTrigger",
             "serviceTask:Intsvc.ActivityExecution",

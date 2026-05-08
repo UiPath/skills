@@ -8,8 +8,9 @@ The layout mirrors the Flow eval suite:
 - `author/` covers BPMN skeleton structure, gateways, sequence flows, and diagrams.
 - `nodes/` covers task wrapper and script-task authoring behavior.
 - `nodes/contract_variant_wrappers.yaml` covers public-safe Maestro BPMN XML
-  contract variants from imported-wrapper parsing, including preserve-only
-  payloads and numeric migration metadata.
+  contract variants from imported-wrapper parsing, including async call
+  activities, message events, case-management shells, preserve-only payloads,
+  and numeric migration metadata.
 - `connector/` covers Integration Service boundary behavior without cloud-side mutations.
 - `_shared/` contains small Python helpers for durable XML shape assertions.
 
