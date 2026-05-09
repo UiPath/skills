@@ -29,6 +29,10 @@ initial_prompt: |
     or pack command exists.
   - If the installed CLI does not expose a Maestro BPMN validate command, run
     a local XML validation command against ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn.
+    Execute the validation as an explicit Bash command before packaging; saying
+    the file looks valid or reading metadata is not enough. This exact fallback
+    is acceptable:
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn')"`.
   - Do not upload, publish, deploy, debug, or run the process.
   - Keep generated package artifacts in a local output directory, not under
     the skill repository.
