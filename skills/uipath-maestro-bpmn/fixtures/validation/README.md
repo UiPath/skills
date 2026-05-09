@@ -52,8 +52,8 @@ validation_fixture_projects=8 bpmn_files=8 errors=0
 
 The local checker also runs a narrow negative regression for a misnamed
 single-file BPMN project, seeded from the `gateway-boundary-error/` fixture. The
-source QA repro is `.rookery/qa/gateway_misnamed_repro.log`; the regression
-passes only when basename validation rejects the renamed project metadata.
+regression passes only when basename validation rejects copied project metadata
+whose single BPMN file no longer matches the project directory name.
 
 ## Open Questions for Maestro Owners
 

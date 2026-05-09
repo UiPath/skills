@@ -18,7 +18,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "fixtures" / "validation"
-GATEWAY_MISNAMED_REPRO_LOG = ".rookery/qa/gateway_misnamed_repro.log"
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 BPMNDI_NS = "http://www.omg.org/spec/BPMN/20100524/DI"
 DI_NS = "http://www.omg.org/spec/DD/20100524/DI"
@@ -203,7 +202,8 @@ class Validator:
             details = "; ".join(regression.errors) or "no validation error"
             return [
                 "regression gateway-misnamed-repro failed: expected basename validation "
-                f"error for misnamed single-file project; see {GATEWAY_MISNAMED_REPRO_LOG}; "
+                "error for a copied project whose single BPMN file no longer matches "
+                "the project directory name; "
                 f"observed: {details}"
             ]
 
