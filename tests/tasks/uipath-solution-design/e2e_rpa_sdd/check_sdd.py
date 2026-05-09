@@ -67,11 +67,11 @@ def check_sections(content: str) -> list[str]:
     failures = []
     for section in REQUIRED_SECTIONS:
         pattern = (
-            rf"^#{{1,4}}\s+"                       # heading marker (h1-h4)
-            rf"\**\s*"                             # optional opening bold
-            rf"(?:§\s*)?"                          # optional § prefix
-            rf"(?:\d+(?:\.\d+)*\s*[.\):—–-]?\s+)?" # optional 1. / 1.1 / 1) / 1 — etc.
-            rf"\**\s*"                             # optional bold before the title
+            rf"^#{{1,4}}\s+"  # heading marker (h1-h4)
+            rf"\**\s*"  # optional opening bold
+            rf"(?:§\s*)?"  # optional § prefix
+            rf"(?:\d+(?:\.\d+)*\s*[.\):—–-]?\s+)?"  # optional 1. / 1.1 / 1) / 1 — etc.
+            rf"\**\s*"  # optional bold before the title
             rf"{re.escape(section)}"
         )
         if not re.search(pattern, content, re.MULTILINE | re.IGNORECASE):
@@ -121,7 +121,9 @@ def check_table_minimums(content: str) -> list[str]:
     """Verify key tables have enough rows."""
     failures = []
 
-    steps = count_table_rows(content, r"^#{1,3}\s+.*(?:Step Summary|Detailed Process Steps)")
+    steps = count_table_rows(
+        content, r"^#{1,3}\s+.*(?:Step Summary|Detailed Process Steps)"
+    )
     if steps < MIN_PROCESS_STEPS:
         failures.append(
             f"Process steps table has {steps} rows (minimum {MIN_PROCESS_STEPS})"
@@ -135,9 +137,7 @@ def check_table_minimums(content: str) -> list[str]:
 
     errors = count_table_rows(content, r"^#{1,3}\s+.*Error Handling")
     if errors < MIN_SYSTEM_ERRORS:
-        failures.append(
-            f"Error table has {errors} rows (minimum {MIN_SYSTEM_ERRORS})"
-        )
+        failures.append(f"Error table has {errors} rows (minimum {MIN_SYSTEM_ERRORS})")
 
     apps = count_table_rows(content, r"^#{1,3}\s+.*Application Inventory")
     if apps < MIN_APPLICATIONS:

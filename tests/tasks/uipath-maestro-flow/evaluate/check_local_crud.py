@@ -13,6 +13,7 @@ ran the right shell command):
 These checks fail if the agent ran the commands but they errored, or if
 the agent fabricated stdout without producing real files.
 """
+
 from __future__ import annotations
 
 import json
@@ -84,7 +85,9 @@ def main() -> None:
         sys.exit('FAIL: data point "hello" has empty inputs')
     if not (hello.get("expectedOutput") or hello.get("expected")):
         sys.exit('FAIL: data point "hello" has no expectedOutput / expected field')
-    print(f"OK: eval set {set_match[0]} contains data point 'hello' with inputs + expected")
+    print(
+        f"OK: eval set {set_match[0]} contains data point 'hello' with inputs + expected"
+    )
 
 
 if __name__ == "__main__":

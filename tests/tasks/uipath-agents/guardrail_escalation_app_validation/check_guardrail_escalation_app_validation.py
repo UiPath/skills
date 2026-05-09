@@ -35,7 +35,9 @@ def main() -> None:
 
     guardrails = agent.get("guardrails")
     if not isinstance(guardrails, list) or len(guardrails) == 0:
-        print("OK: no guardrails array (or empty) — agent did not write the escalate guardrail")
+        print(
+            "OK: no guardrails array (or empty) — agent did not write the escalate guardrail"
+        )
         return
 
     # Check that no guardrail uses EscalationWorksApp in an escalate action
@@ -51,13 +53,13 @@ def main() -> None:
         app_name = app.get("name", "")
         if "EscalationWorksApp" in app_name:
             sys.exit(
-                f"FAIL: agent wrote an escalate guardrail using EscalationWorksApp "
-                f"without validating the action schema. The app is incompatible — "
-                f"it has inputs=[input], outputs=[output], outcomes=[Submit,Reject] "
-                f"instead of the required 8 inputs, 3 outputs, and Approve/Reject outcomes. "
-                f"The agent should have reported: "
-                f"'EscalationWorksApp does not have the required action schema "
-                f"configuration for tool guardrails.'"
+                "FAIL: agent wrote an escalate guardrail using EscalationWorksApp "
+                "without validating the action schema. The app is incompatible — "
+                "it has inputs=[input], outputs=[output], outcomes=[Submit,Reject] "
+                "instead of the required 8 inputs, 3 outputs, and Approve/Reject outcomes. "
+                "The agent should have reported: "
+                "'EscalationWorksApp does not have the required action schema "
+                "configuration for tool guardrails.'"
             )
 
     print("OK: no escalate guardrail references EscalationWorksApp")

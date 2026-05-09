@@ -28,7 +28,10 @@ def _load_flow() -> dict:
 
 def _assert_edge_exists(flow: dict, source_id: str, target_id: str) -> None:
     for edge in flow.get("edges") or []:
-        if edge.get("sourceNodeId") == source_id and edge.get("targetNodeId") == target_id:
+        if (
+            edge.get("sourceNodeId") == source_id
+            and edge.get("targetNodeId") == target_id
+        ):
             return
     sys.exit(f"FAIL: no edge from '{source_id}' to '{target_id}'")
 
@@ -42,7 +45,11 @@ def main():
 
     # Decision must come before formatSummary: getWeather → decision node
     # Find the decision node id
-    decision_ids = [n["id"] for n in flow.get("nodes") or [] if n.get("type") == "core.logic.decision"]
+    decision_ids = [
+        n["id"]
+        for n in flow.get("nodes") or []
+        if n.get("type") == "core.logic.decision"
+    ]
     if not decision_ids:
         sys.exit("FAIL: no decision node found")
     decision_id = decision_ids[0]
@@ -50,7 +57,11 @@ def main():
     _assert_edge_exists(flow, "getWeather", decision_id)
 
     # formatSummary must exist and be downstream of decision
-    fmt_ids = [n["id"] for n in flow.get("nodes") or [] if n.get("type") == "core.action.script"]
+    fmt_ids = [
+        n["id"]
+        for n in flow.get("nodes") or []
+        if n.get("type") == "core.action.script"
+    ]
     if not fmt_ids:
         sys.exit("FAIL: no script node (formatSummary) found")
 
@@ -64,7 +75,9 @@ def main():
     # Runtime check
     payload = run_debug(timeout=240)
     assert_outputs_contain(payload, ["nice day", "bring a jacket"], require_all=False)
-    print("OK: decision before formatSummary, branches merged, single end node, debug valid")
+    print(
+        "OK: decision before formatSummary, branches merged, single end node, debug valid"
+    )
 
 
 if __name__ == "__main__":

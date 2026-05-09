@@ -83,7 +83,9 @@ def _assert_filter_tree_shape(tree, *, source: str) -> None:
         )
 
     values = [_leaf_value(n) for n in leaves]
-    if not any(isinstance(v, str) and v.strip().lower() == EXPECTED_VALUE for v in values):
+    if not any(
+        isinstance(v, str) and v.strip().lower() == EXPECTED_VALUE for v in values
+    ):
         sys.exit(
             f"FAIL: {source} has no leaf with value '{EXPECTED_VALUE}' "
             f"(found values: {[v for v in values if v is not None]})"
@@ -94,7 +96,8 @@ def _check_where_detail() -> None:
     if not os.path.exists("where_detail.json"):
         sys.exit("FAIL: where_detail.json not found")
     try:
-        plan = json.load(open("where_detail.json"))
+        with open("where_detail.json") as f:
+            plan = json.load(f)
     except json.JSONDecodeError as e:
         sys.exit(f"FAIL: where_detail.json is not valid JSON: {e}")
 
@@ -116,7 +119,8 @@ def _find_flow() -> str:
 
 def _check_flow_structure() -> None:
     flow_path = _find_flow()
-    raw = open(flow_path).read()
+    with open(flow_path) as f:
+        raw = f.read()
     try:
         flow = json.loads(raw)
     except json.JSONDecodeError as e:

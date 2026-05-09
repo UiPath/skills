@@ -4,12 +4,12 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
 
 ## Prerequisites
 
-1. **UiPath private PyPI credentials** (optional) — only needed if `coder-eval` resolves to packages on the UiPath Azure DevOps `ml-packages` feed. Export these **before** running `make install` to enable the private feed:
+1. **UiPath private PyPI credentials** — `coder-eval` currently resolves packages from the UiPath Azure DevOps `ml-packages` feed. Export these **before** running `make install`:
    ```bash
    export UV_INDEX_UIPATH_USERNAME=<your-ado-username>
    export UV_INDEX_UIPATH_PASSWORD=<your-ado-pat>
    ```
-   The Makefile composes these into `UV_EXTRA_INDEX_URL` for `uv pip install`. If either variable is empty, install continues against public PyPI only and prints a notice.
+   The Makefile composes these into `UV_EXTRA_INDEX_URL` for `uv pip install`. If your shell already has a usable `UV_EXTRA_INDEX_URL`, the Makefile uses it directly.
 
 2. **coder-eval** — install from GitHub (creates a local `.venv`, requires Python 3.13+):
    ```bash
@@ -40,6 +40,9 @@ make integration
 
 # Run all e2e tests
 make e2e
+
+# Check local Python helper formatting/linting
+make check
 
 # Run tests matching a combination of tags (AND semantics — tasks must carry all listed tags) (defaults to experiments/default.yaml):
 make tags TAGS="integration connector-feature"

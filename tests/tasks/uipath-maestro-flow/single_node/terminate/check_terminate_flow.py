@@ -24,10 +24,14 @@ def _check_parallel_branches(project_dir):
         flow = json.load(f)
 
     edges = flow.get("edges", [])
-    trigger_ids = {n["id"] for n in flow.get("nodes", []) if "trigger" in n.get("type", "")}
+    trigger_ids = {
+        n["id"] for n in flow.get("nodes", []) if "trigger" in n.get("type", "")
+    }
     outgoing = [e for e in edges if e.get("sourceNodeId") in trigger_ids]
     if len(outgoing) < 2:
-        sys.exit(f"FAIL: Expected 2+ edges from trigger for parallel branches, found {len(outgoing)}")
+        sys.exit(
+            f"FAIL: Expected 2+ edges from trigger for parallel branches, found {len(outgoing)}"
+        )
 
     print("OK: Parallel branches from trigger verified")
 
@@ -45,9 +49,13 @@ def main():
     terminated = [e for e in executions if e.get("status") == "Terminated"]
     if not terminated:
         statuses = [(e.get("elementId"), e.get("status")) for e in executions]
-        sys.exit(f"FAIL: No element was Terminated — terminate node didn't kill the delay branch. Statuses: {statuses}")
+        sys.exit(
+            f"FAIL: No element was Terminated — terminate node didn't kill the delay branch. Statuses: {statuses}"
+        )
 
-    print(f"OK: Terminate + Delay nodes present; {len(terminated)} element(s) terminated")
+    print(
+        f"OK: Terminate + Delay nodes present; {len(terminated)} element(s) terminated"
+    )
 
 
 if __name__ == "__main__":

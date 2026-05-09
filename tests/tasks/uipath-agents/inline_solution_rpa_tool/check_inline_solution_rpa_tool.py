@@ -59,17 +59,23 @@ def main() -> None:
     }
     for key, want in expected.items():
         if resource.get(key) != want:
-            sys.exit(f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}")
+            sys.exit(
+                f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}"
+            )
     print(
-        f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
+        f"OK: {resource_path.relative_to(Path(os.getcwd()))} is "
         f'$resourceType="tool", type="process", location="solution"'
     )
 
     props = resource.get("properties") or {}
     if props.get("processName") != "CalculatePay":
-        sys.exit(f'FAIL: properties.processName should be "CalculatePay", got {props.get("processName")!r}')
+        sys.exit(
+            f'FAIL: properties.processName should be "CalculatePay", got {props.get("processName")!r}'
+        )
     if props.get("folderPath") != "solution_folder":
-        sys.exit(f'FAIL: properties.folderPath should be "solution_folder", got {props.get("folderPath")!r}')
+        sys.exit(
+            f'FAIL: properties.folderPath should be "solution_folder", got {props.get("folderPath")!r}'
+        )
     print('OK: properties.processName="CalculatePay", folderPath="solution_folder"')
 
 

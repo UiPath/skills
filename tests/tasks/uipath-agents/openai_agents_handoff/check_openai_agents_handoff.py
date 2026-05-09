@@ -39,8 +39,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bindings_assertions import load_bindings  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
+from _shared.bindings_assertions import load_bindings  # noqa: E402
 from _shared.project_root import find_project_root  # noqa: E402
 
 ROOT = find_project_root("triage-bot")
@@ -64,8 +64,7 @@ def check_pyproject() -> None:
     text = _read_text(ROOT / "pyproject.toml")
     if "[build-system]" in text:
         sys.exit(
-            "FAIL: pyproject.toml contains a [build-system] section — "
-            "Critical Rule C1 forbids it."
+            "FAIL: pyproject.toml contains a [build-system] section — Critical Rule C1 forbids it."
         )
     if "[project]" not in text or "authors" not in text:
         sys.exit("FAIL: pyproject.toml is missing [project] or `authors`")
@@ -86,9 +85,9 @@ def check_openai_agents_json() -> None:
     target = next(iter(agents.values()))
     if not isinstance(target, str) or ":main" not in target:
         sys.exit(
-            f'FAIL: openai_agents.json should point at the factory function '
-            f'(`<file>:main`), got {target!r}. Pointing at a top-level '
-            f'variable would break the lazy-LLM-init invariant.'
+            f"FAIL: openai_agents.json should point at the factory function "
+            f"(`<file>:main`), got {target!r}. Pointing at a top-level "
+            f"variable would break the lazy-LLM-init invariant."
         )
     print(f"OK: openai_agents.json registers an agent -> {target!r} (factory pattern)")
 
@@ -120,8 +119,7 @@ def check_main_py() -> None:
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
     print(
-        "OK: main.py has no module-level UiPath* construction "
-        "(factory-function pattern preserved)"
+        "OK: main.py has no module-level UiPath* construction (factory-function pattern preserved)"
     )
     # Confirm set_default_openai_client is INSIDE a function body — not at
     # module level — by AST walk.
@@ -129,7 +127,10 @@ def check_main_py() -> None:
     for node in tree.body:
         if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
             func = node.value.func
-            if isinstance(func, ast.Attribute) and func.attr == "set_default_openai_client":
+            if (
+                isinstance(func, ast.Attribute)
+                and func.attr == "set_default_openai_client"
+            ):
                 sys.exit(
                     f"FAIL: main.py:{node.lineno} `set_default_openai_client(...)` "
                     "is at module level — it must run inside the factory "
@@ -148,9 +149,9 @@ def check_entry_points() -> None:
     for field in ("customer_id", "messages"):
         if field not in raw:
             sys.exit(
-                f'FAIL: entry-points.json schemas do not mention `{field}`. '
-                f'`uip codedagent init` did not pick up the Agent[CustomerInput] '
-                f'context type. Got: {raw}'
+                f"FAIL: entry-points.json schemas do not mention `{field}`. "
+                f"`uip codedagent init` did not pick up the Agent[CustomerInput] "
+                f"context type. Got: {raw}"
             )
     print(
         "OK: entry-points.json reflects the Agent[CustomerInput] context "
@@ -172,7 +173,9 @@ def main() -> None:
     check_entry_points()
     check_bindings()
     if not (ROOT / "run_marker.txt").is_file():
-        sys.exit(f"FAIL: {ROOT}/run_marker.txt does not exist — `uip codedagent run` likely never finished")
+        sys.exit(
+            f"FAIL: {ROOT}/run_marker.txt does not exist — `uip codedagent run` likely never finished"
+        )
     print("OK: run_marker.txt exists (run completed cleanly)")
 
 

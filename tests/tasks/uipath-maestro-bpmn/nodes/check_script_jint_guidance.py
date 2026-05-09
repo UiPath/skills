@@ -118,7 +118,9 @@ def main() -> None:
     if present:
         fail(f"script uses APIs outside the Jint boundary: {present}")
     if "args." in body:
-        fail("script body should read mapped fields as top-level identifiers, not args.*")
+        fail(
+            "script body should read mapped fields as top-level identifiers, not args.*"
+        )
     for identifier in ("amount", "daysOverdue"):
         if identifier not in body:
             fail(f"script body should reference mapped input identifier {identifier!r}")
@@ -137,14 +139,20 @@ def main() -> None:
         if expected not in args_body:
             fail(f"script args should map {variable_name!r} through {expected!r}")
         if f"={variable_name}" in args_body:
-            fail(f"script args should not use bare variable expression ={variable_name}")
+            fail(
+                f"script args should not use bare variable expression ={variable_name}"
+            )
 
     output_var = variables["riskScore"]
     outputs = uipath_outputs(task)
     if not any(out.attrib.get("var") == output_var for out in outputs):
         fail("script output must map to the declared riskScore variable id")
-    if not any((out.attrib.get("source") or "").startswith("=result.") for out in outputs):
-        fail("script output should map from a result expression such as =result.response")
+    if not any(
+        (out.attrib.get("source") or "").startswith("=result.") for out in outputs
+    ):
+        fail(
+            "script output should map from a result expression such as =result.response"
+        )
 
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)

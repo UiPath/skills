@@ -87,13 +87,17 @@ def _check_output_mappings(flow: dict, dr_node_id: str) -> None:
     """
     globals_ = (flow.get("variables") or {}).get("globals") or []
     for var_id in ("summary", "citations"):
-        if not any(v.get("id") == var_id and v.get("direction") == "out" for v in globals_):
+        if not any(
+            v.get("id") == var_id and v.get("direction") == "out" for v in globals_
+        ):
             _fail(
                 f"flow has no `out` variable with id={var_id!r}. The task prompt asks for "
                 f"`{var_id}` to be surfaced as a flow output."
             )
 
-    end_nodes = [n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"]
+    end_nodes = [
+        n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"
+    ]
     if not end_nodes:
         _fail("flow has no End node — required to terminate the path and map outputs")
 

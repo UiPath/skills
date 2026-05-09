@@ -108,7 +108,11 @@ def _check_result_output_mapping(flow: dict, bt_node_id: str) -> None:
     """
     globals_ = (flow.get("variables") or {}).get("globals") or []
     result_var = next(
-        (v for v in globals_ if v.get("id") == "result" and v.get("direction") == "out"),
+        (
+            v
+            for v in globals_
+            if v.get("id") == "result" and v.get("direction") == "out"
+        ),
         None,
     )
     if result_var is None:
@@ -117,7 +121,9 @@ def _check_result_output_mapping(flow: dict, bt_node_id: str) -> None:
             "Batch Transform result file handle to be surfaced as a flow output named `result`."
         )
 
-    end_nodes = [n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"]
+    end_nodes = [
+        n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"
+    ]
     if not end_nodes:
         _fail("flow has no End node — required to terminate the path and map outputs")
 

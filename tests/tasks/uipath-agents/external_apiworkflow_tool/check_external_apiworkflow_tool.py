@@ -50,7 +50,9 @@ def assert_properties(resource: dict) -> None:
         sys.exit(f"FAIL: resource.json.properties is not an object: {props!r}")
     fpath = props.get("folderPath")
     if not isinstance(fpath, str) or not fpath.strip():
-        sys.exit(f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}")
+        sys.exit(
+            f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}"
+        )
     if fpath == "solution_folder":
         sys.exit(
             'FAIL: properties.folderPath is "solution_folder", which is only '
@@ -65,7 +67,9 @@ def assert_identity_and_schemas(resource: dict) -> None:
     if not isinstance(rid, str) or "-" not in rid:
         sys.exit(f"FAIL: resource id missing or malformed: {rid!r}")
     if not resource.get("isEnabled"):
-        sys.exit(f"FAIL: resource.isEnabled must be truthy, got {resource.get('isEnabled')!r}")
+        sys.exit(
+            f"FAIL: resource.isEnabled must be truthy, got {resource.get('isEnabled')!r}"
+        )
     if not isinstance(resource.get("inputSchema"), dict):
         sys.exit("FAIL: resource.inputSchema must be an object")
     if not isinstance(resource.get("outputSchema"), dict):

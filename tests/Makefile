@@ -1,8 +1,12 @@
-.PHONY: help install all smoke integration e2e tags
+.PHONY: help install check fmt lint all smoke integration e2e tags
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
 VENV := .venv
-CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) $(VENV)/bin/coder-eval
+PYTHON_VERSION ?= 3.13
+CODER_EVAL_PACKAGE ?= coder-eval @ git+https://github.com/UiPath/coder_eval.git
+CODER_EVAL_BIN := $(VENV)/bin/coder-eval
+CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) $(CODER_EVAL_BIN)
+RUFF ?= uvx ruff
 TASKS := $(shell find tasks -name '*.yaml' -type f)
 TASK_PARALLELISM ?= 1
 
@@ -10,19 +14,31 @@ help:  ## Show available commands
 	@grep -E '^[a-zA-Z0-9_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install:  ## Install coder-eval into local .venv (requires Python 3.13+; UV_INDEX_UIPATH_USERNAME/PASSWORD optional for private ml-packages feed)
-	uv venv --python 3.13 $(VENV)
-	@if [ -n "$$UV_INDEX_UIPATH_USERNAME" ] && [ -n "$$UV_INDEX_UIPATH_PASSWORD" ]; then \
+install:  ## Install coder-eval into local .venv (requires Python 3.13+ and the UiPath ml-packages feed)
+	@if [ -z "$$UV_EXTRA_INDEX_URL" ] && { [ -z "$$UV_INDEX_UIPATH_USERNAME" ] || [ -z "$$UV_INDEX_UIPATH_PASSWORD" ]; }; then \
+	  echo "ERROR: coder-eval currently requires packages from the UiPath ml-packages feed."; \
+	  echo "Set UV_EXTRA_INDEX_URL, or set both UV_INDEX_UIPATH_USERNAME and UV_INDEX_UIPATH_PASSWORD."; \
+	  exit 2; \
+	fi
+	uv venv --python $(PYTHON_VERSION) $(VENV)
+	@if [ -n "$$UV_EXTRA_INDEX_URL" ]; then \
+	  echo "Using UV_EXTRA_INDEX_URL for additional package resolution."; \
+	  uv pip install --python $(VENV)/bin/python "$(CODER_EVAL_PACKAGE)"; \
+	elif [ -n "$$UV_INDEX_UIPATH_USERNAME" ] && [ -n "$$UV_INDEX_UIPATH_PASSWORD" ]; then \
 	  echo "Using UiPath private PyPI feed (ml-packages)."; \
 	  UV_EXTRA_INDEX_URL="https://$$UV_INDEX_UIPATH_USERNAME:$$UV_INDEX_UIPATH_PASSWORD@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/" \
-	    uv pip install --python $(VENV)/bin/python "coder-eval @ git+https://github.com/UiPath/coder_eval.git"; \
-	else \
-	  echo "UV_INDEX_UIPATH_USERNAME/PASSWORD not set — installing without the UiPath private PyPI feed."; \
-	  echo "Set both variables before running 'make install' if you need packages from the ml-packages feed."; \
-	  uv pip install --python $(VENV)/bin/python "coder-eval @ git+https://github.com/UiPath/coder_eval.git"; \
+	    uv pip install --python $(VENV)/bin/python "$(CODER_EVAL_PACKAGE)"; \
 	fi
 	@echo ""
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
+
+check: fmt lint  ## Run local format and lint checks for test helper scripts
+
+fmt:  ## Check Python formatting under tests/
+	$(RUFF) format --check .
+
+lint:  ## Lint Python helper scripts under tests/
+	$(RUFF) check .
 
 all:  ## Run all tests (smoke + integration + e2e) in a single run
 	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml -j $(TASK_PARALLELISM) -v

@@ -74,9 +74,9 @@ def find_resource_node(
         descriptor = f"type {node_type!r}"
     elif node_type_prefix is not None:
         matches = [
-            n for n in nodes
-            if isinstance(n.get("type"), str)
-            and n["type"].startswith(node_type_prefix)
+            n
+            for n in nodes
+            if isinstance(n.get("type"), str) and n["type"].startswith(node_type_prefix)
         ]
         descriptor = f"type starting with {node_type_prefix!r}"
     else:
@@ -97,8 +97,7 @@ def resolve_inline_agent_dir(flow_path: Path, agent_node: dict) -> Path:
     agent_dir = flow_path.parent / source
     if not agent_dir.is_dir():
         sys.exit(
-            f"FAIL: model.source {source!r} does not point to an existing "
-            f"directory ({agent_dir})"
+            f"FAIL: model.source {source!r} does not point to an existing directory ({agent_dir})"
         )
     return agent_dir
 
@@ -114,7 +113,8 @@ def assert_edge(
     """Assert that an edge wires source_id:source_port -> target_id:target_port."""
     edges = flow.get("edges") or []
     matches = [
-        e for e in edges
+        e
+        for e in edges
         if e.get("sourceNodeId") == source_id
         and e.get("sourcePort") == source_port
         and e.get("targetNodeId") == target_id

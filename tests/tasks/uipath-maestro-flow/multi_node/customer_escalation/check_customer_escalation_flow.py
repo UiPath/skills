@@ -70,15 +70,21 @@ def main() -> None:
         fail("Flow must contain nodes[] and edges[]")
 
     if len(nodes) < 5:
-        fail(f"Expected >=5 nodes (trigger + 2 scripts + decision + branch action(s)), found {len(nodes)}")
+        fail(
+            f"Expected >=5 nodes (trigger + 2 scripts + decision + branch action(s)), found {len(nodes)}"
+        )
 
     outlook_trigger = [n for n in nodes if is_trigger(n) and references(n, "outlook")]
-    if not outlook_trigger and not any(is_trigger(n) and references(n, "office365") for n in nodes):
+    if not outlook_trigger and not any(
+        is_trigger(n) and references(n, "office365") for n in nodes
+    ):
         fail("No Outlook (or office365) trigger node found")
 
     scripts = [n for n in nodes if node_type(n) == "core.action.script"]
     if len(scripts) < 2:
-        fail(f"Expected >=2 core.action.script nodes (urgency + VIP classifier), found {len(scripts)}")
+        fail(
+            f"Expected >=2 core.action.script nodes (urgency + VIP classifier), found {len(scripts)}"
+        )
 
     decisions = [n for n in nodes if node_type(n) == "core.logic.decision"]
     if len(decisions) != 1:
@@ -88,18 +94,31 @@ def main() -> None:
         fail("Decision node missing id")
 
     out_edges = [
-        e for e in edges
-        if decision_id in (e.get("sourceNodeId"), e.get("source"), e.get("from"), e.get("sourceId"))
+        e
+        for e in edges
+        if decision_id
+        in (e.get("sourceNodeId"), e.get("source"), e.get("from"), e.get("sourceId"))
     ]
     if len(out_edges) < 2:
-        fail(f"Decision node must have >=2 outgoing edges (VIP + standard), found {len(out_edges)}")
+        fail(
+            f"Decision node must have >=2 outgoing edges (VIP + standard), found {len(out_edges)}"
+        )
 
     if not any(references(n, "slack") for n in nodes):
-        fail("No Slack connector reference found anywhere in flow (VIP branch should DM via Slack)")
+        fail(
+            "No Slack connector reference found anywhere in flow (VIP branch should DM via Slack)"
+        )
 
-    non_trigger_outlook = [n for n in nodes if not is_trigger(n) and (references(n, "outlook") or references(n, "office365"))]
+    non_trigger_outlook = [
+        n
+        for n in nodes
+        if not is_trigger(n)
+        and (references(n, "outlook") or references(n, "office365"))
+    ]
     if not non_trigger_outlook:
-        fail("No non-trigger Outlook reference found (expected reply-to-sender action on at least one branch)")
+        fail(
+            "No non-trigger Outlook reference found (expected reply-to-sender action on at least one branch)"
+        )
 
     print(
         f"PASS: {len(nodes)} nodes, {len(scripts)} scripts, decision with {len(out_edges)} branches, "

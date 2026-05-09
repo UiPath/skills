@@ -48,14 +48,19 @@ def assert_envelope(bindings: dict) -> list:
         sys.exit(f'FAIL: bindings.json version should be "2.0", got {version!r}')
     resources = bindings.get("resources")
     if not isinstance(resources, list) or not resources:
-        sys.exit(f"FAIL: bindings.json resources must be a non-empty list, got {resources!r}")
-    print(f'OK: bindings.json envelope is version="2.0" with {len(resources)} resource(s)')
+        sys.exit(
+            f"FAIL: bindings.json resources must be a non-empty list, got {resources!r}"
+        )
+    print(
+        f'OK: bindings.json envelope is version="2.0" with {len(resources)} resource(s)'
+    )
     return resources
 
 
 def find_asset_entry(resources: list) -> dict:
     matches = [
-        r for r in resources
+        r
+        for r in resources
         if isinstance(r, dict)
         and r.get("resource") == "asset"
         and r.get("key") == EXPECTED_KEY
@@ -87,9 +92,7 @@ def assert_value_shape(entry: dict) -> None:
             f'FAIL: value.folderPath.defaultValue should be "{EXPECTED_FOLDER}", '
             f"got {folder_block.get('defaultValue')!r}"
         )
-    print(
-        f'OK: value.name="{EXPECTED_NAME}", value.folderPath="{EXPECTED_FOLDER}"'
-    )
+    print(f'OK: value.name="{EXPECTED_NAME}", value.folderPath="{EXPECTED_FOLDER}"')
 
 
 def assert_subtype(entry: dict) -> None:

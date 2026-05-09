@@ -26,8 +26,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bindings_assertions import load_bindings  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
+from _shared.bindings_assertions import load_bindings  # noqa: E402
 from _shared.project_root import find_project_root  # noqa: E402
 
 ROOT = find_project_root("qna-workflow")
@@ -51,8 +51,7 @@ def check_pyproject() -> None:
     text = _read_text(ROOT / "pyproject.toml")
     if "[build-system]" in text:
         sys.exit(
-            "FAIL: pyproject.toml contains a [build-system] section — "
-            "Critical Rule C1 forbids it."
+            "FAIL: pyproject.toml contains a [build-system] section — Critical Rule C1 forbids it."
         )
     if "[project]" not in text or "authors" not in text:
         sys.exit("FAIL: pyproject.toml is missing [project] or `authors`")
@@ -73,8 +72,8 @@ def check_llama_index_json() -> None:
     target = next(iter(workflows.values()))
     if not isinstance(target, str) or ":" not in target:
         sys.exit(
-            f'FAIL: llama_index.json workflows entry should map to a '
-            f'`<file>:<variable>` reference, got {target!r}'
+            f"FAIL: llama_index.json workflows entry should map to a "
+            f"`<file>:<variable>` reference, got {target!r}"
         )
     print(f"OK: llama_index.json registers a workflow -> {target!r}")
 
@@ -93,8 +92,7 @@ def check_main_py() -> None:
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
     print(
-        "OK: main.py has no module-level UiPath* construction "
-        "(lazy-LLM-init invariant holds)"
+        "OK: main.py has no module-level UiPath* construction (lazy-LLM-init invariant holds)"
     )
 
 
@@ -107,13 +105,12 @@ def check_entry_points() -> None:
     for field in ("question", "answer", "word_count"):
         if field not in raw:
             sys.exit(
-                f'FAIL: entry-points.json schemas do not mention `{field}`. '
-                f'StartEvent/StopEvent fields were not picked up by '
-                f'`uip codedagent init`. Got: {raw}'
+                f"FAIL: entry-points.json schemas do not mention `{field}`. "
+                f"StartEvent/StopEvent fields were not picked up by "
+                f"`uip codedagent init`. Got: {raw}"
             )
     print(
-        "OK: entry-points.json reflects StartEvent/StopEvent fields "
-        "(question, answer, word_count)"
+        "OK: entry-points.json reflects StartEvent/StopEvent fields (question, answer, word_count)"
     )
 
 
@@ -131,7 +128,9 @@ def main() -> None:
     check_entry_points()
     check_bindings()
     if not (ROOT / "run_marker.txt").is_file():
-        sys.exit(f"FAIL: {ROOT}/run_marker.txt does not exist — `uip codedagent run` likely never finished")
+        sys.exit(
+            f"FAIL: {ROOT}/run_marker.txt does not exist — `uip codedagent run` likely never finished"
+        )
     print("OK: run_marker.txt exists (run completed cleanly)")
 
 

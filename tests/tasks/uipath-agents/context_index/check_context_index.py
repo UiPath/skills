@@ -41,7 +41,9 @@ def load(path: Path) -> dict:
 def assert_context_resource(resource: dict) -> None:
     rtype = resource.get("$resourceType")
     if rtype != "context":
-        sys.exit(f'FAIL: resource.json $resourceType should be "context", got {rtype!r}')
+        sys.exit(
+            f'FAIL: resource.json $resourceType should be "context", got {rtype!r}'
+        )
     ctype = resource.get("contextType")
     if ctype != "index":
         sys.exit(f'FAIL: resource.json contextType should be "index", got {ctype!r}')
@@ -50,7 +52,9 @@ def assert_context_resource(resource: dict) -> None:
         sys.exit(
             f'FAIL: resource.json indexName should be "ProductKnowledge", got {index_name!r}'
         )
-    print('OK: resource.json is $resourceType="context", contextType="index", indexName="ProductKnowledge"')
+    print(
+        'OK: resource.json is $resourceType="context", contextType="index", indexName="ProductKnowledge"'
+    )
 
 
 def assert_retrieval_mode(resource: dict) -> None:
@@ -95,10 +99,14 @@ def assert_input_shape(schema: dict) -> None:
         )
     q = props["question"]
     if not isinstance(q, dict) or q.get("type") != "string":
-        sys.exit(f"FAIL: inputSchema.properties.question.type should be 'string', got {q!r}")
+        sys.exit(
+            f"FAIL: inputSchema.properties.question.type should be 'string', got {q!r}"
+        )
     required = schema.get("required")
     if not isinstance(required, list) or "question" not in required:
-        sys.exit(f"FAIL: inputSchema.required must contain 'question', got {required!r}")
+        sys.exit(
+            f"FAIL: inputSchema.required must contain 'question', got {required!r}"
+        )
     print("OK: inputSchema declares required question:string")
 
 
@@ -110,7 +118,9 @@ def assert_output_shape(schema: dict) -> None:
         )
     a = props["answer"]
     if not isinstance(a, dict) or a.get("type") != "string":
-        sys.exit(f"FAIL: outputSchema.properties.answer.type should be 'string', got {a!r}")
+        sys.exit(
+            f"FAIL: outputSchema.properties.answer.type should be 'string', got {a!r}"
+        )
     print("OK: outputSchema declares answer:string")
 
 

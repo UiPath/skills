@@ -58,18 +58,16 @@ def main() -> None:
 
     # --- find builtInValidator with pii_detection ---
     pii = [
-        g for g in guardrails
+        g
+        for g in guardrails
         if g.get("$guardrailType") == "builtInValidator"
         and g.get("validatorType") == "pii_detection"
     ]
     if not pii:
-        types = [
-            (g.get("$guardrailType"), g.get("validatorType"))
-            for g in guardrails
-        ]
+        types = [(g.get("$guardrailType"), g.get("validatorType")) for g in guardrails]
         sys.exit(
-            f"FAIL: no guardrail with $guardrailType == \"builtInValidator\" "
-            f"and validatorType == \"pii_detection\". Got: {types}"
+            f'FAIL: no guardrail with $guardrailType == "builtInValidator" '
+            f'and validatorType == "pii_detection". Got: {types}'
         )
     g = pii[0]
     print('OK: found builtInValidator guardrail with validatorType == "pii_detection"')
@@ -86,8 +84,7 @@ def main() -> None:
         sys.exit(f"FAIL: guardrail.action must be an object, got {action!r}")
     if action.get("$actionType") != "block":
         sys.exit(
-            f'FAIL: guardrail.action.$actionType must be "block", '
-            f"got {action.get('$actionType')!r}"
+            f'FAIL: guardrail.action.$actionType must be "block", got {action.get("$actionType")!r}'
         )
     print('OK: action.$actionType == "block"')
 
@@ -97,7 +94,9 @@ def main() -> None:
         sys.exit(f"FAIL: guardrail.selector must be an object, got {selector!r}")
     scopes = selector.get("scopes")
     if not isinstance(scopes, list) or len(scopes) == 0:
-        sys.exit(f"FAIL: guardrail.selector.scopes must be a non-empty array, got {scopes!r}")
+        sys.exit(
+            f"FAIL: guardrail.selector.scopes must be a non-empty array, got {scopes!r}"
+        )
     invalid = [s for s in scopes if s not in VALID_SCOPES]
     if invalid:
         sys.exit(
@@ -116,8 +115,7 @@ def main() -> None:
     if entities_param is None:
         ids = [p.get("id") for p in params if isinstance(p, dict)]
         sys.exit(
-            f'FAIL: validatorParameters missing parameter with id == "entities". '
-            f"Got ids: {ids}"
+            f'FAIL: validatorParameters missing parameter with id == "entities". Got ids: {ids}'
         )
     if entities_param.get("$parameterType") != "enum-list":
         sys.exit(
@@ -126,7 +124,9 @@ def main() -> None:
         )
     entities_value = entities_param.get("value")
     if not isinstance(entities_value, list):
-        sys.exit(f"FAIL: entities parameter.value must be an array, got {entities_value!r}")
+        sys.exit(
+            f"FAIL: entities parameter.value must be an array, got {entities_value!r}"
+        )
     entities_set = set(entities_value)
     missing = REQUIRED_ENTITIES - entities_set
     if missing:
@@ -135,7 +135,9 @@ def main() -> None:
             f"missing: {sorted(missing)}. Got: {entities_value}"
         )
     # Check PascalCase (first letter uppercase, no underscores)
-    snake = [e for e in entities_value if "_" in e or (isinstance(e, str) and e[0].islower())]
+    snake = [
+        e for e in entities_value if "_" in e or (isinstance(e, str) and e[0].islower())
+    ]
     if snake:
         sys.exit(
             f"FAIL: entity names must be PascalCase (not snake_case). "

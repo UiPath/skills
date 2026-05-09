@@ -68,21 +68,23 @@ def main() -> None:
             sys.exit(f"FAIL: escalation isEnabled must be truthy at {path}")
         channels = data.get("channels") or []
         ac = [
-            c for c in channels
+            c
+            for c in channels
             if isinstance(c, dict)
             and c.get("name") == "ActionCenter"
             and c.get("type") == "ActionCenter"
         ]
         if not ac:
             sys.exit(
-                f"FAIL: {path} has no channel with name=='ActionCenter' "
-                f"and type=='ActionCenter'"
+                f"FAIL: {path} has no channel with name=='ActionCenter' and type=='ActionCenter'"
             )
-        print(f"OK: escalation resource at {path.name} is valid (id={rid}, {len(ac)} ActionCenter channel(s))")
+        print(
+            f"OK: escalation resource at {path.name} is valid (id={rid}, {len(ac)} ActionCenter channel(s))"
+        )
         return
 
     sys.exit(
-        f'FAIL: no escalation resource found under {resources_dir} — '
+        f"FAIL: no escalation resource found under {resources_dir} — "
         'expected at least one resource.json with $resourceType="escalation"'
     )
 

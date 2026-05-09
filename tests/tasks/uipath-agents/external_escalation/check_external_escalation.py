@@ -50,16 +50,23 @@ def assert_escalation_header(resource: dict) -> None:
     if not isinstance(name, str) or not name.strip():
         sys.exit(f"FAIL: escalation name missing or empty: {name!r}")
     if not resource.get("isEnabled"):
-        sys.exit(f"FAIL: escalation isEnabled must be truthy, got {resource.get('isEnabled')!r}")
-    print(f'OK: resource.json is $resourceType="escalation" (id={eid}, name={name!r}, isEnabled=true)')
+        sys.exit(
+            f"FAIL: escalation isEnabled must be truthy, got {resource.get('isEnabled')!r}"
+        )
+    print(
+        f'OK: resource.json is $resourceType="escalation" (id={eid}, name={name!r}, isEnabled=true)'
+    )
 
 
 def assert_actioncenter_channel(resource: dict) -> None:
     channels = resource.get("channels")
     if not isinstance(channels, list) or not channels:
-        sys.exit(f"FAIL: escalation.channels must be a non-empty list, got {channels!r}")
+        sys.exit(
+            f"FAIL: escalation.channels must be a non-empty list, got {channels!r}"
+        )
     ac_channels = [
-        c for c in channels
+        c
+        for c in channels
         if isinstance(c, dict)
         and c.get("name") == "ActionCenter"
         and c.get("type") == "ActionCenter"

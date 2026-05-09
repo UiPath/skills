@@ -51,9 +51,7 @@ def assert_agent_and_connector_nodes(flow: dict) -> tuple:
     nodes = flow.get("nodes") or []
     agent_nodes = [n for n in nodes if n.get("type") == INLINE_AGENT_NODE_TYPE]
     if not agent_nodes:
-        sys.exit(
-            f"FAIL: flow has no node of type {INLINE_AGENT_NODE_TYPE!r}"
-        )
+        sys.exit(f"FAIL: flow has no node of type {INLINE_AGENT_NODE_TYPE!r}")
     agent_node = agent_nodes[0]
 
     connector_nodes = [n for n in nodes if n.get("type") == CONNECTOR_TOOL_NODE_TYPE]
@@ -69,7 +67,9 @@ def assert_agent_and_connector_nodes(flow: dict) -> tuple:
     if not connector_node.get("id"):
         sys.exit(f"FAIL: {CONNECTOR_TOOL_NODE_TYPE} node has no id")
 
-    print(f"OK: flow has both {INLINE_AGENT_NODE_TYPE!r} and {CONNECTOR_TOOL_NODE_TYPE!r} nodes")
+    print(
+        f"OK: flow has both {INLINE_AGENT_NODE_TYPE!r} and {CONNECTOR_TOOL_NODE_TYPE!r} nodes"
+    )
     return agent_node, connector_node
 
 
@@ -80,8 +80,7 @@ def assert_agent_source_dir(agent_node: dict) -> Path:
     agent_dir = FLOW_PATH.parent / source
     if not agent_dir.is_dir():
         sys.exit(
-            f"FAIL: model.source {source!r} does not point to an existing "
-            f"directory ({agent_dir})"
+            f"FAIL: model.source {source!r} does not point to an existing directory ({agent_dir})"
         )
     print(f"OK: inline agent directory resolves to {agent_dir.name}")
     return agent_dir
@@ -90,7 +89,8 @@ def assert_agent_source_dir(agent_node: dict) -> Path:
 def assert_tool_edge(flow: dict, agent_id: str, connector_id: str) -> None:
     edges = flow.get("edges") or []
     matching = [
-        e for e in edges
+        e
+        for e in edges
         if e.get("sourceNodeId") == agent_id
         and e.get("sourcePort") == "tool"
         and e.get("targetNodeId") == connector_id
@@ -148,7 +148,9 @@ def assert_bindings_v2_authored() -> None:
     except json.JSONDecodeError as e:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
     if not isinstance(data, (dict, list)):
-        sys.exit(f"FAIL: {path} root is neither object nor array: {type(data).__name__}")
+        sys.exit(
+            f"FAIL: {path} root is neither object nor array: {type(data).__name__}"
+        )
     print(f"OK: bindings_v2.json authored at {path.relative_to(SOLUTION.parent)}")
 
 

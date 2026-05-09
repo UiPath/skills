@@ -60,12 +60,16 @@ def main() -> None:
             f'(distinct from "tool"), got {resource.get("$resourceType")!r}'
         )
     if resource.get("name") != "GitHubMcp":
-        sys.exit(f'FAIL: MCP resource name should be "GitHubMcp", got {resource.get("name")!r}')
+        sys.exit(
+            f'FAIL: MCP resource name should be "GitHubMcp", got {resource.get("name")!r}'
+        )
     description = resource.get("description")
     if not isinstance(description, str) or not description.strip():
         sys.exit(f"FAIL: MCP resource description missing or empty: {description!r}")
     if not resource.get("isEnabled"):
-        sys.exit(f"FAIL: MCP resource isEnabled must be truthy, got {resource.get('isEnabled')!r}")
+        sys.exit(
+            f"FAIL: MCP resource isEnabled must be truthy, got {resource.get('isEnabled')!r}"
+        )
     rid = resource.get("id")
     if not isinstance(rid, str) or "-" not in rid:
         sys.exit(f"FAIL: MCP resource id missing or malformed: {rid!r}")
@@ -73,9 +77,9 @@ def main() -> None:
     if not isinstance(tools, list):
         sys.exit(f"FAIL: MCP resource tools must be a list, got {tools!r}")
     print(
-        f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
+        f"OK: {resource_path.relative_to(Path(os.getcwd()))} is "
         f'$resourceType="mcp", name="GitHubMcp", id={rid}, isEnabled=true, '
-        f'tools list present ({len(tools)} entries)'
+        f"tools list present ({len(tools)} entries)"
     )
 
 

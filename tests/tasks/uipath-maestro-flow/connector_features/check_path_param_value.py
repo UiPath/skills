@@ -44,7 +44,9 @@ def main() -> None:
         if isinstance(path_params, dict):
             for value in path_params.values():
                 if str(value) == needle:
-                    print(f"OK: {needle!r} found in pathParameters of node {node.get('id')!r}")
+                    print(
+                        f"OK: {needle!r} found in pathParameters of node {node.get('id')!r}"
+                    )
                     return
         for key in ("url", "endpoint"):
             target = str(detail.get(key, "") or "")

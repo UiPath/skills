@@ -25,7 +25,9 @@ import subprocess
 import sys
 import time
 import uuid
-from typing import Any, Callable
+from collections.abc import Callable
+from contextlib import suppress
+from typing import Any
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.join(HERE, "Canary", "Canary")
@@ -169,10 +171,8 @@ def cleanup(solution_id: str | None) -> None:
                 f"(solutionId={solution_id} may need manual cleanup)",
                 file=sys.stderr,
             )
-    try:
+    with suppress(FileNotFoundError):
         os.remove(UIPX_PATH)
-    except FileNotFoundError:
-        pass
 
 
 def run_debug() -> tuple[dict, str | None]:
@@ -241,7 +241,7 @@ def main() -> int:
 
         errors: list[str] = []
         if payload.get("finalStatus") != "Completed":
-            errors.append(f"finalStatus != Completed")
+            errors.append("finalStatus != Completed")
 
         print()
         for eid, path, matcher, fmt in LEGS:

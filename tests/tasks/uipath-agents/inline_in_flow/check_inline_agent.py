@@ -34,8 +34,7 @@ def main() -> None:
     agent_nodes = [n for n in nodes if n.get("type") == INLINE_AGENT_NODE_TYPE]
     if not agent_nodes:
         sys.exit(
-            f"FAIL: {FLOW_PATH.name} has no node of type "
-            f"{INLINE_AGENT_NODE_TYPE!r}"
+            f"FAIL: {FLOW_PATH.name} has no node of type {INLINE_AGENT_NODE_TYPE!r}"
         )
 
     agent_node = agent_nodes[0]
@@ -43,15 +42,12 @@ def main() -> None:
 
     source = model.get("source")
     if not source:
-        sys.exit(
-            f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no model.source"
-        )
+        sys.exit(f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no model.source")
 
     agent_dir = FLOW_PATH.parent / source
     if not agent_dir.is_dir():
         sys.exit(
-            f"FAIL: model.source {source!r} does not point to an "
-            f"existing directory ({agent_dir})"
+            f"FAIL: model.source {source!r} does not point to an existing directory ({agent_dir})"
         )
 
     print(
@@ -75,11 +71,13 @@ def main() -> None:
 
     edges = flow.get("edges") or []
     incoming_input = [
-        e for e in edges
+        e
+        for e in edges
         if e.get("targetNodeId") == agent_id and e.get("targetPort") == "input"
     ]
     outgoing_success = [
-        e for e in edges
+        e
+        for e in edges
         if e.get("sourceNodeId") == agent_id and e.get("sourcePort") == "success"
     ]
     if not incoming_input:

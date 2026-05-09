@@ -179,7 +179,9 @@ def parse_transcript(path: Path) -> dict:
             user_initial_prompt = result["first_user_text"]
 
     inferred = (
-        _slugify(inferred_release_name) if inferred_release_name else "diagnostic-scenario"
+        _slugify(inferred_release_name)
+        if inferred_release_name
+        else "diagnostic-scenario"
     )
 
     return {
@@ -293,7 +295,13 @@ def _parse_one(path: Path) -> dict:
                     elif block.get("is_error"):
                         exit_code = 1
                     if project_release_name is None:
-                        for field in ("ReleaseName", "processKey", "ProcessKey", "processName", "ProcessName"):
+                        for field in (
+                            "ReleaseName",
+                            "processKey",
+                            "ProcessKey",
+                            "processName",
+                            "ProcessName",
+                        ):
                             rel = re.search(rf'"{field}"\s*:\s*"([^"]+)"', stdout)
                             if rel:
                                 project_release_name = rel.group(1)

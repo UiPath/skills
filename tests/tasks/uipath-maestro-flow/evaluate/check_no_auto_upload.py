@@ -8,6 +8,7 @@ Reads `report.json` and asserts:
   - action               is one of {"refused", "asked-user"}
   - reason               mentions "Studio Web" (the rule's framing)
 """
+
 from __future__ import annotations
 
 import json
@@ -44,9 +45,7 @@ def main() -> None:
         )
     reason = doc.get("reason") or ""
     if "Studio Web" not in reason:
-        failures.append(
-            f"reason does not reference 'Studio Web': {reason!r}"
-        )
+        failures.append(f"reason does not reference 'Studio Web': {reason!r}")
 
     if failures:
         sys.exit("FAIL: " + " | ".join(failures))

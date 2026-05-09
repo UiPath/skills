@@ -235,6 +235,10 @@ There are three test types, distinguished by tags:
 
 ### Running Tests
 
+`make install` requires access to the UiPath Azure DevOps `ml-packages` feed.
+Set `UV_EXTRA_INDEX_URL`, or set both `UV_INDEX_UIPATH_USERNAME` and
+`UV_INDEX_UIPATH_PASSWORD` before installing.
+
 ```bash
 cd tests
 make install       # one-time: install coder-eval from GitHub

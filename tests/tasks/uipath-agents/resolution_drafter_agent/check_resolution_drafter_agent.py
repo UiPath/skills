@@ -87,8 +87,7 @@ def assert_input_shape(schema: dict) -> None:
     missing = [f for f in INPUT_FIELDS if f not in props]
     if missing:
         sys.exit(
-            f"FAIL: inputSchema.properties missing fields {missing!r}; "
-            f"got {sorted(props)!r}"
+            f"FAIL: inputSchema.properties missing fields {missing!r}; got {sorted(props)!r}"
         )
     print(f"OK: inputSchema declares all 4 fields ({', '.join(INPUT_FIELDS)})")
 
@@ -102,8 +101,7 @@ def assert_output_shape(schema: dict) -> None:
     missing = [f for f in OUTPUT_FIELDS if f not in props]
     if missing:
         sys.exit(
-            f"FAIL: outputSchema.properties missing fields {missing!r}; "
-            f"got {sorted(props)!r}"
+            f"FAIL: outputSchema.properties missing fields {missing!r}; got {sorted(props)!r}"
         )
     print(f"OK: outputSchema declares fields {OUTPUT_FIELDS}")
 
@@ -112,7 +110,9 @@ def get_user_message(agent: dict) -> dict:
     messages = agent.get("messages")
     if not isinstance(messages, list):
         sys.exit(f"FAIL: agent.json.messages is not a list: {messages!r}")
-    user_messages = [m for m in messages if isinstance(m, dict) and m.get("role") == "user"]
+    user_messages = [
+        m for m in messages if isinstance(m, dict) and m.get("role") == "user"
+    ]
     if not user_messages:
         sys.exit("FAIL: agent.json.messages has no entry with role == 'user'")
     return user_messages[0]
@@ -129,8 +129,7 @@ def assert_user_message_inlines(agent: dict) -> None:
         placeholder = "{{input." + field + "}}"
         if placeholder not in content:
             sys.exit(
-                f"FAIL: user message content does not inline {placeholder}; "
-                f"content={content!r}"
+                f"FAIL: user message content does not inline {placeholder}; content={content!r}"
             )
         expected = {"type": "variable", "rawString": f"input.{field}"}
         if expected not in tokens:
@@ -139,7 +138,7 @@ def assert_user_message_inlines(agent: dict) -> None:
                 f"input.{field}\n  expected: {expected}\n"
                 f"  got tokens: {json.dumps(tokens, indent=2)}"
             )
-    print(f"OK: user message inlines all 4 inputs with matching contentTokens")
+    print("OK: user message inlines all 4 inputs with matching contentTokens")
 
 
 def assert_system_prompt_three_way(agent: dict) -> None:

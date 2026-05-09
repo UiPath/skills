@@ -44,7 +44,9 @@ def main() -> None:
         target_id=tool_node["id"],
         target_port="input",
     )
-    print("OK: agent 'tool' handle is wired to external API workflow tool node's 'input' handle")
+    print(
+        "OK: agent 'tool' handle is wired to external API workflow tool node's 'input' handle"
+    )
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
     resource_path = agent_dir / "resources" / "GetLatestQuote" / "resource.json"
@@ -57,16 +59,20 @@ def main() -> None:
     }
     for key, want in expected.items():
         if resource.get(key) != want:
-            sys.exit(f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}")
+            sys.exit(
+                f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}"
+            )
     print(
-        f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
+        f"OK: {resource_path.relative_to(Path(os.getcwd()))} is "
         f'$resourceType="tool", type="api", location="external"'
     )
 
     props = resource.get("properties") or {}
     fpath = props.get("folderPath")
     if not isinstance(fpath, str) or not fpath.strip():
-        sys.exit(f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}")
+        sys.exit(
+            f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}"
+        )
     if fpath == "solution_folder":
         sys.exit(
             'FAIL: properties.folderPath is "solution_folder", which is only '

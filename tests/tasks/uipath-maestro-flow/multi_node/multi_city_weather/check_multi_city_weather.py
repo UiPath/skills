@@ -4,7 +4,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
     assert_outputs_contain,
@@ -22,9 +24,7 @@ def main():
     assert_outputs_contain(payload, ["Seattle", "Phoenix", "New York"])
 
     # At least one verdict must appear — proves the script classified the temp
-    assert_outputs_contain(
-        payload, ["warm", "cold"], require_all=False
-    )
+    assert_outputs_contain(payload, ["warm", "cold"], require_all=False)
     print("OK: loop + HTTP + script all executed, all 3 cities with verdicts present")
 
 

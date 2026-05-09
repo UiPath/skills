@@ -21,10 +21,10 @@ ROOT = Path(os.getcwd())
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bindings_assertions import (  # noqa: E402
-    load_bindings,
-    find_resource,
     assert_value_field,
     count_resources_by_type,
+    find_resource,
+    load_bindings,
 )
 
 
@@ -62,14 +62,16 @@ def main() -> None:
         value = entry.get("value") or {}
         ep = value.get("EntryPointUniqueId")
         if not isinstance(ep, dict):
-            print(f"OK: {entry.get('resource')} binding has no EntryPointUniqueId (acceptable)")
+            print(
+                f"OK: {entry.get('resource')} binding has no EntryPointUniqueId (acceptable)"
+            )
             continue
         uid = ep.get("defaultValue")
         if uid not in real:
             sys.exit(
-                f'FAIL: {entry.get("resource")} binding references '
-                f'EntryPointUniqueId={uid!r}, which is not one of the real '
-                f'entrypoints {sorted(real)}.'
+                f"FAIL: {entry.get('resource')} binding references "
+                f"EntryPointUniqueId={uid!r}, which is not one of the real "
+                f"entrypoints {sorted(real)}."
             )
         print(
             f"OK: {entry.get('resource')} binding's EntryPointUniqueId "

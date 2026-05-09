@@ -58,16 +58,19 @@ def find_resource_jsons() -> list:
 
 def is_builtin_tool(resource: dict) -> bool:
     return (
-        resource.get("$resourceType") == "tool"
-        and resource.get("type") == "internal"
+        resource.get("$resourceType") == "tool" and resource.get("type") == "internal"
     )
 
 
 def assert_builtin_shape(path: Path, resource: dict) -> str:
     if resource.get("$resourceType") != "tool":
-        sys.exit(f'FAIL: {path} $resourceType should be "tool", got {resource.get("$resourceType")!r}')
+        sys.exit(
+            f'FAIL: {path} $resourceType should be "tool", got {resource.get("$resourceType")!r}'
+        )
     if resource.get("type") != "internal":
-        sys.exit(f'FAIL: {path} type should be "internal" for a built-in tool, got {resource.get("type")!r}')
+        sys.exit(
+            f'FAIL: {path} type should be "internal" for a built-in tool, got {resource.get("type")!r}'
+        )
     if resource.get("referenceKey") is not None:
         sys.exit(
             f"FAIL: {path} referenceKey should be null for a built-in tool "
@@ -108,7 +111,7 @@ def main() -> None:
         sys.exit(
             f'FAIL: prompt asked for the "Analyze Files" built-in tool '
             f'(toolType "analyze-attachments"), but none was enabled. '
-            f'Got toolTypes: {builtin_tool_types_seen}'
+            f"Got toolTypes: {builtin_tool_types_seen}"
         )
     print('OK: "Analyze Files" (toolType="analyze-attachments") is enabled')
 

@@ -43,7 +43,9 @@ def main() -> None:
         target_id=tool_node["id"],
         target_port="input",
     )
-    print("OK: agent 'tool' handle is wired to external agent-as-tool node's 'input' handle")
+    print(
+        "OK: agent 'tool' handle is wired to external agent-as-tool node's 'input' handle"
+    )
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
     resource_path = agent_dir / "resources" / "SupportExpert" / "resource.json"
@@ -56,25 +58,33 @@ def main() -> None:
     }
     for key, want in expected.items():
         if resource.get(key) != want:
-            sys.exit(f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}")
+            sys.exit(
+                f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}"
+            )
     print(
-        f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
+        f"OK: {resource_path.relative_to(Path(os.getcwd()))} is "
         f'$resourceType="tool", type="agent", location="external"'
     )
 
     props = resource.get("properties") or {}
     if props.get("processName") != "SupportExpert":
-        sys.exit(f'FAIL: properties.processName should be "SupportExpert", got {props.get("processName")!r}')
+        sys.exit(
+            f'FAIL: properties.processName should be "SupportExpert", got {props.get("processName")!r}'
+        )
     fpath = props.get("folderPath")
     if not isinstance(fpath, str) or not fpath.strip():
-        sys.exit(f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}")
+        sys.exit(
+            f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}"
+        )
     if fpath == "solution_folder":
         sys.exit(
             'FAIL: properties.folderPath is "solution_folder", which is only '
             'valid for location=="solution". External agent tools require a '
             'real Orchestrator folder path like "Shared".'
         )
-    print(f'OK: properties.processName="SupportExpert", folderPath={fpath!r} (not "solution_folder")')
+    print(
+        f'OK: properties.processName="SupportExpert", folderPath={fpath!r} (not "solution_folder")'
+    )
 
 
 if __name__ == "__main__":

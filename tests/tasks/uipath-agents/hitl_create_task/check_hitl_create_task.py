@@ -21,7 +21,6 @@ Also runs the lazy-LLM-init AST scan as a hygiene check.
 from __future__ import annotations
 
 import ast
-import json
 import os
 import re
 import sys
@@ -33,13 +32,13 @@ from _shared.project_root import find_project_root  # noqa: E402
 ROOT = find_project_root("expense-approver")
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bindings_assertions import (  # noqa: E402
-    load_bindings,
-    find_resource,
-    assert_value_field,
-    assert_metadata_field,
-)
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
+from _shared.bindings_assertions import (  # noqa: E402
+    assert_metadata_field,
+    assert_value_field,
+    find_resource,
+    load_bindings,
+)
 
 
 def _read_text(path: Path) -> str:
@@ -102,7 +101,9 @@ def check_imports_and_calls(text: str, tree: ast.Module) -> None:
     if not re.search(r"from\s+langgraph\.types\s+import\s+[^\n]*\binterrupt\b", text):
         sys.exit("FAIL: missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateEscalation\b", text):
+    if not re.search(
+        r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateEscalation\b", text
+    ):
         sys.exit(
             "FAIL: missing `from uipath.platform.common import CreateEscalation`. "
             "The prompt describes an explicit escalation — the skill prescribes "
@@ -118,11 +119,11 @@ def check_imports_and_calls(text: str, tree: ast.Module) -> None:
     expected = {"app_name": "ExpenseReview", "app_folder_path": "Finance"}
     for kw, want in expected.items():
         if kw not in kwargs:
-            sys.exit(f'FAIL: `CreateEscalation(...)` is missing `{kw}=`')
+            sys.exit(f"FAIL: `CreateEscalation(...)` is missing `{kw}=`")
         got = _resolve_kwarg(kwargs[kw], consts)
         if got != want:
             sys.exit(
-                f'FAIL: `CreateEscalation({kw}=...)` resolves to {got!r}, expected {want!r}.'
+                f"FAIL: `CreateEscalation({kw}=...)` resolves to {got!r}, expected {want!r}."
             )
     print('OK: escalation targets app_name="ExpenseReview" / app_folder_path="Finance"')
 

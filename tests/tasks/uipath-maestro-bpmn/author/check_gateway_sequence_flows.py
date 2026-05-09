@@ -24,7 +24,9 @@ def main() -> None:
         fail(f"expected at least 8 sequence flows in {path}, found {len(flows)}")
     if not any(attr(gateway, "default") for gateway in exclusive):
         fail("exclusive gateway is missing a default sequence-flow reference")
-    conditioned = [flow for flow in flows if flow.find("bpmn:conditionExpression", NS) is not None]
+    conditioned = [
+        flow for flow in flows if flow.find("bpmn:conditionExpression", NS) is not None
+    ]
     if not conditioned:
         fail("missing conditional sequence flow")
     require_sequence_integrity(root)

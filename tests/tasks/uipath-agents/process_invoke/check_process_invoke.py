@@ -27,13 +27,13 @@ from _shared.project_root import find_project_root  # noqa: E402
 ROOT = find_project_root("data-orchestrator")
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bindings_assertions import (  # noqa: E402
-    load_bindings,
-    find_resource,
-    assert_value_field,
-    assert_metadata_field,
-)
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
+from _shared.bindings_assertions import (  # noqa: E402
+    assert_metadata_field,
+    assert_value_field,
+    find_resource,
+    load_bindings,
+)
 
 
 def _read_text(path: Path) -> str:

@@ -23,8 +23,8 @@ import os
 import re
 import subprocess
 import sys
-from typing import Any, Iterable, Sequence
-
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 # ── Public helpers ──────────────────────────────────────────────────────────
 
@@ -84,8 +84,7 @@ def assert_flow_has_node_type(
         needle = hint.lower()
         if not any(needle in t.lower() for t in types_seen):
             _fail(
-                f"No node matches type hint {hint!r}. "
-                f"Node types seen: {sorted(types_seen)}"
+                f"No node matches type hint {hint!r}. Node types seen: {sorted(types_seen)}"
             )
 
 
@@ -170,9 +169,12 @@ def assert_output_value(payload: dict, expected: Any) -> None:
     for v in outs:
         if v == expected:
             return
-        if isinstance(expected, str) and isinstance(v, str):
-            if expected.lower() in v.lower():
-                return
+        if (
+            isinstance(expected, str)
+            and isinstance(v, str)
+            and expected.lower() in v.lower()
+        ):
+            return
     _fail(f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}")
 
 
@@ -218,9 +220,7 @@ def _find_project(pattern: str) -> str:
         _fail(f"No project.uiproj found matching {pattern}")
     if len(projects) > 1:
         joined = "\n  - ".join(projects)
-        _fail(
-            f"Multiple projects match {pattern!r} — refusing to guess:\n  - {joined}"
-        )
+        _fail(f"Multiple projects match {pattern!r} — refusing to guess:\n  - {joined}")
     return os.path.dirname(projects[0])
 
 

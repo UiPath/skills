@@ -47,7 +47,9 @@ def main():
         )
 
     # 2. At least one leaf must use the PascalCase `Contains` operator.
-    operators = {n.get("operator") for n in leaves if isinstance(n.get("operator"), str)}
+    operators = {
+        n.get("operator") for n in leaves if isinstance(n.get("operator"), str)
+    }
     if "Contains" not in operators:
         sys.exit(
             f"FAIL: expected PascalCase `Contains` operator in filter tree, "

@@ -56,16 +56,18 @@ def check_evaluator_configs() -> None:
             expected_type = EXPECTED_EVALUATORS[eval_id]
             if type_id != expected_type:
                 sys.exit(
-                    f'FAIL: evaluator {eval_id!r} should have evaluatorTypeId='
-                    f'{expected_type!r}, got {type_id!r}'
+                    f"FAIL: evaluator {eval_id!r} should have evaluatorTypeId="
+                    f"{expected_type!r}, got {type_id!r}"
                 )
             found_by_id[eval_id] = json_file
-            print(f'OK: evaluator config {json_file.name} has id={eval_id!r} typeId={type_id!r}')
+            print(
+                f"OK: evaluator config {json_file.name} has id={eval_id!r} typeId={type_id!r}"
+            )
     missing = set(EXPECTED_EVALUATORS) - set(found_by_id)
     if missing:
         sys.exit(
-            f'FAIL: missing evaluator configs for ids {sorted(missing)}. '
-            f'Found ids: {sorted(found_by_id)}'
+            f"FAIL: missing evaluator configs for ids {sorted(missing)}. "
+            f"Found ids: {sorted(found_by_id)}"
         )
 
 
@@ -86,8 +88,7 @@ def check_eval_set() -> None:
     missing_refs = set(EXPECTED_EVALUATORS) - set(refs)
     if missing_refs:
         sys.exit(
-            f'FAIL: eval set `evaluatorRefs` is missing {sorted(missing_refs)}. '
-            f'Got: {refs}'
+            f"FAIL: eval set `evaluatorRefs` is missing {sorted(missing_refs)}. Got: {refs}"
         )
     cases = doc.get("evaluations") or []
     if len(cases) < 2:
@@ -97,23 +98,23 @@ def check_eval_set() -> None:
         for evaluator_id in EXPECTED_EVALUATORS:
             if evaluator_id not in crit:
                 sys.exit(
-                    f'FAIL: test case {i} (`{case.get("id", "?")}`) does not '
-                    f'key evaluationCriterias on {evaluator_id!r}. Got keys: '
-                    f'{list(crit.keys())}'
+                    f"FAIL: test case {i} (`{case.get('id', '?')}`) does not "
+                    f"key evaluationCriterias on {evaluator_id!r}. Got keys: "
+                    f"{list(crit.keys())}"
                 )
         # Trajectory judge requires `expectedAgentBehavior`.
         traj = crit.get("LLMJudgeTrajectoryEvaluator") or {}
         if not traj.get("expectedAgentBehavior"):
             sys.exit(
-                f'FAIL: test case {i} LLMJudgeTrajectoryEvaluator entry is '
-                f'missing the required `expectedAgentBehavior` field. Got: {traj}'
+                f"FAIL: test case {i} LLMJudgeTrajectoryEvaluator entry is "
+                f"missing the required `expectedAgentBehavior` field. Got: {traj}"
             )
         # Output judge requires `expectedOutput`.
         out = crit.get("LLMJudgeOutputEvaluator") or {}
         if "expectedOutput" not in out:
             sys.exit(
-                f'FAIL: test case {i} LLMJudgeOutputEvaluator entry is '
-                f'missing the required `expectedOutput` field. Got: {out}'
+                f"FAIL: test case {i} LLMJudgeOutputEvaluator entry is "
+                f"missing the required `expectedOutput` field. Got: {out}"
             )
     print(
         f"OK: eval set {path.name} references both judges across {len(cases)} "
@@ -125,7 +126,9 @@ def check_results() -> None:
     path = ROOT / "eval-results.json"
     doc = _load_json(path)
     if not isinstance(doc, dict):
-        sys.exit(f"FAIL: {path.name} top-level should be an object, got {type(doc).__name__}")
+        sys.exit(
+            f"FAIL: {path.name} top-level should be an object, got {type(doc).__name__}"
+        )
     cases = doc.get("evaluationSetResults")
     if not isinstance(cases, list) or not cases:
         sys.exit(
@@ -144,9 +147,9 @@ def check_results() -> None:
     missing = set(EXPECTED_EVALUATORS) - seen_ids
     if missing:
         sys.exit(
-            f'FAIL: results file does not surface evaluatorId entries for '
-            f'{sorted(missing)} (seen: {sorted(seen_ids)}). Both judges '
-            f'should run on every test case.'
+            f"FAIL: results file does not surface evaluatorId entries for "
+            f"{sorted(missing)} (seen: {sorted(seen_ids)}). Both judges "
+            f"should run on every test case."
         )
     print(
         f"OK: results file references both evaluator ids ({sorted(seen_ids)}) "

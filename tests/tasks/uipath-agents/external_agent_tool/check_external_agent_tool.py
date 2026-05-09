@@ -42,7 +42,9 @@ def assert_tool_header(resource: dict) -> None:
         got = resource.get(key)
         if got != want:
             sys.exit(f"FAIL: resource.json {key!r} should be {want!r}, got {got!r}")
-    print('OK: resource.json is $resourceType="tool", type="agent", location="external"')
+    print(
+        'OK: resource.json is $resourceType="tool", type="agent", location="external"'
+    )
 
 
 def assert_properties(resource: dict) -> None:
@@ -55,14 +57,18 @@ def assert_properties(resource: dict) -> None:
         )
     fpath = props.get("folderPath")
     if not isinstance(fpath, str) or not fpath.strip():
-        sys.exit(f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}")
+        sys.exit(
+            f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}"
+        )
     if fpath == "solution_folder":
         sys.exit(
             'FAIL: properties.folderPath is "solution_folder", which is only '
             'valid for location=="solution". External agent tools require a '
             'real Orchestrator folder path like "Shared".'
         )
-    print(f'OK: properties.processName="SupportExpert", folderPath={fpath!r} (not "solution_folder")')
+    print(
+        f'OK: properties.processName="SupportExpert", folderPath={fpath!r} (not "solution_folder")'
+    )
 
 
 def assert_identity_and_schemas(resource: dict) -> None:
@@ -70,7 +76,9 @@ def assert_identity_and_schemas(resource: dict) -> None:
     if not isinstance(rid, str) or "-" not in rid:
         sys.exit(f"FAIL: resource id missing or malformed: {rid!r}")
     if not resource.get("isEnabled"):
-        sys.exit(f"FAIL: resource.isEnabled must be truthy, got {resource.get('isEnabled')!r}")
+        sys.exit(
+            f"FAIL: resource.isEnabled must be truthy, got {resource.get('isEnabled')!r}"
+        )
     if not isinstance(resource.get("inputSchema"), dict):
         sys.exit("FAIL: resource.inputSchema must be an object")
     if not isinstance(resource.get("outputSchema"), dict):

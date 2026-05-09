@@ -16,7 +16,9 @@ from _shared.bpmn_check import (  # noqa: E402
 )
 
 
-def has_typed_extension(element: ET.Element, extension_name: str, type_value: str) -> bool:
+def has_typed_extension(
+    element: ET.Element, extension_name: str, type_value: str
+) -> bool:
     ext = element.find("bpmn:extensionElements", NS)
     if ext is None:
         return False
@@ -27,7 +29,9 @@ def has_typed_extension(element: ET.Element, extension_name: str, type_value: st
     return False
 
 
-def require_wrapper(root: ET.Element, wrapper: str, extension_name: str, type_value: str) -> None:
+def require_wrapper(
+    root: ET.Element, wrapper: str, extension_name: str, type_value: str
+) -> None:
     matches = [
         elem
         for elem in elements(root, wrapper)
@@ -43,9 +47,16 @@ def require_uipath_element(root: ET.Element, local_name: str, description: str) 
 
 
 def require_uipath_attr_value(
-    root: ET.Element, local_name: str, attr_name: str, expected_value: str, description: str
+    root: ET.Element,
+    local_name: str,
+    attr_name: str,
+    expected_value: str,
+    description: str,
 ) -> None:
-    values = {elem.attrib.get(attr_name) for elem in root.findall(f".//uipath:{local_name}", NS)}
+    values = {
+        elem.attrib.get(attr_name)
+        for elem in root.findall(f".//uipath:{local_name}", NS)
+    }
     if expected_value not in values:
         fail(f"missing {description}: {expected_value}")
 
@@ -79,13 +90,19 @@ def main() -> None:
         require_wrapper(root, wrapper, extension_name, type_value)
 
     for version in {"5", "11", "11.5"}:
-        require_uipath_attr_value(root, "migrationVersion", "version", version, "migration version")
+        require_uipath_attr_value(
+            root, "migrationVersion", "version", version, "migration version"
+        )
 
     require_uipath_attr_value(
         root, "scriptVersion", "value", "v2", "preserved legacy scriptVersion"
     )
-    require_uipath_element(root, "caseManagement", "preserve-only uipath:caseManagement payload")
-    require_uipath_element(root, "Activity", "preserve-only generic uipath:Activity payload")
+    require_uipath_element(
+        root, "caseManagement", "preserve-only uipath:caseManagement payload"
+    )
+    require_uipath_element(
+        root, "Activity", "preserve-only generic uipath:Activity payload"
+    )
 
     require_no_private_connector_values(root)
     require_sequence_integrity(root)

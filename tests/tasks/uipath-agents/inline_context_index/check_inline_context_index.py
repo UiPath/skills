@@ -26,7 +26,9 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "KnowledgeFlowSol" / "KnowledgeFlow" / "KnowledgeFlow.flow"
+FLOW_PATH = (
+    Path(os.getcwd()) / "KnowledgeFlowSol" / "KnowledgeFlow" / "KnowledgeFlow.flow"
+)
 CONTEXT_INDEX_NODE_TYPE = "uipath.agent.resource.context.index"
 VALID_RETRIEVAL_MODES = {"semantic", "structured", "deepRAG", "batchTransform"}
 
@@ -51,13 +53,19 @@ def main() -> None:
     resource = load_json(resource_path)
 
     if resource.get("$resourceType") != "context":
-        sys.exit(f'FAIL: {resource_path} $resourceType should be "context", got {resource.get("$resourceType")!r}')
+        sys.exit(
+            f'FAIL: {resource_path} $resourceType should be "context", got {resource.get("$resourceType")!r}'
+        )
     if resource.get("contextType") != "index":
-        sys.exit(f'FAIL: {resource_path} contextType should be "index", got {resource.get("contextType")!r}')
+        sys.exit(
+            f'FAIL: {resource_path} contextType should be "index", got {resource.get("contextType")!r}'
+        )
     if resource.get("indexName") != "ProductKnowledge":
-        sys.exit(f'FAIL: {resource_path} indexName should be "ProductKnowledge", got {resource.get("indexName")!r}')
+        sys.exit(
+            f'FAIL: {resource_path} indexName should be "ProductKnowledge", got {resource.get("indexName")!r}'
+        )
     print(
-        f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
+        f"OK: {resource_path.relative_to(Path(os.getcwd()))} is "
         f'$resourceType="context", contextType="index", indexName="ProductKnowledge"'
     )
 

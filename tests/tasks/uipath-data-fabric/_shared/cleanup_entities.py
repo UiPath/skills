@@ -25,13 +25,13 @@ Deletes via: POST <tenant-url>/dataservice_/api/Entity/<entityId>/delete
 Exit 0 always — cleanup failures never fail the test.
 """
 
+import argparse
 import json
 import os
 import subprocess
 import sys
-import argparse
-import urllib.request
 import urllib.error
+import urllib.request
 
 
 def get_auth_token() -> tuple[str, str]:
@@ -57,12 +57,18 @@ def get_auth_token() -> tuple[str, str]:
         try:
             result = subprocess.run(
                 ["uip", "login", "status", "--output", "json"],
-                capture_output=True, text=True, timeout=30,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             if result.returncode != 0:
-                raise RuntimeError(f"uip login status failed (exit {result.returncode}): {result.stderr}")
+                raise RuntimeError(
+                    f"uip login status failed (exit {result.returncode}): {result.stderr}"
+                )
             if not result.stdout.strip():
-                raise RuntimeError(f"uip login status returned empty output; stderr: {result.stderr}")
+                raise RuntimeError(
+                    f"uip login status returned empty output; stderr: {result.stderr}"
+                )
             data = json.loads(result.stdout)
             inner = data.get("Data") or data
             org = inner.get("Organization") or ""
@@ -97,9 +103,13 @@ def delete_entity(tenant_url: str, token: str, entity_id: str) -> None:
             print(f"OK: deleted entity {entity_id} — HTTP {resp.status}")
     except urllib.error.HTTPError as e:
         if e.code == 404:
-            print(f"SKIP: entity {entity_id} not found (already deleted or never created)")
+            print(
+                f"SKIP: entity {entity_id} not found (already deleted or never created)"
+            )
         else:
-            raise RuntimeError(f"DELETE {url} returned HTTP {e.code}: {e.read().decode()}") from e
+            raise RuntimeError(
+                f"DELETE {url} returned HTTP {e.code}: {e.read().decode()}"
+            ) from e
 
 
 def resolve_entity_ids(args) -> list[str]:
@@ -134,7 +144,9 @@ def resolve_entity_ids(args) -> list[str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Delete test-created Data Fabric entities")
+    parser = argparse.ArgumentParser(
+        description="Delete test-created Data Fabric entities"
+    )
     parser.add_argument("--entity-id", help="Entity ID to delete directly")
     args = parser.parse_args()
 

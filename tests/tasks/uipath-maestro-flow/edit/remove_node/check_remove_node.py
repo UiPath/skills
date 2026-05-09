@@ -26,7 +26,9 @@ def _assert_node_absent(node_id: str) -> None:
             flow = json.load(f)
         for node in flow.get("nodes") or []:
             if node.get("id") == node_id:
-                sys.exit(f"FAIL: node '{node_id}' should have been removed but still exists")
+                sys.exit(
+                    f"FAIL: node '{node_id}' should have been removed but still exists"
+                )
 
 
 def _assert_edge_exists(source_id: str, target_id: str) -> None:
@@ -38,7 +40,10 @@ def _assert_edge_exists(source_id: str, target_id: str) -> None:
         with open(path) as f:
             flow = json.load(f)
         for edge in flow.get("edges") or []:
-            if edge.get("sourceNodeId") == source_id and edge.get("targetNodeId") == target_id:
+            if (
+                edge.get("sourceNodeId") == source_id
+                and edge.get("targetNodeId") == target_id
+            ):
                 return
     sys.exit(f"FAIL: no edge from '{source_id}' to '{target_id}'")
 

@@ -35,14 +35,16 @@ import ast
 import sys
 from pathlib import Path
 
-DEFAULT_LLM_CLASS_NAMES = frozenset({
-    "UiPath",
-    "UiPathAzureChatOpenAI",
-    "UiPathChat",
-    "UiPathChatOpenAI",
-    "UiPathOpenAIEmbeddings",
-    "UiPathAzureOpenAIEmbeddings",
-})
+DEFAULT_LLM_CLASS_NAMES = frozenset(
+    {
+        "UiPath",
+        "UiPathAzureChatOpenAI",
+        "UiPathChat",
+        "UiPathChatOpenAI",
+        "UiPathOpenAIEmbeddings",
+        "UiPathAzureOpenAIEmbeddings",
+    }
+)
 
 
 def _called_class_name(node: ast.Call) -> str | None:
@@ -91,15 +93,17 @@ def find_module_level_llm_clients(
         #   - `llm: UiPathChat = UiPathChat()`  (AnnAssign)
         #   - `UiPathChat()`                    (bare Expr)
         candidate_calls: list[ast.Call] = []
-        if isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Call):
-            candidate_calls.append(stmt.value)
-        elif (
-            isinstance(stmt, ast.AnnAssign)
-            and stmt.value is not None
+        if (
+            isinstance(stmt, ast.Assign)
+            and isinstance(stmt.value, ast.Call)
+            or (
+                isinstance(stmt, ast.AnnAssign)
+                and stmt.value is not None
+                and isinstance(stmt.value, ast.Call)
+            )
+            or isinstance(stmt, ast.Expr)
             and isinstance(stmt.value, ast.Call)
         ):
-            candidate_calls.append(stmt.value)
-        elif isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
             candidate_calls.append(stmt.value)
         for call in candidate_calls:
             name = _called_class_name(call)

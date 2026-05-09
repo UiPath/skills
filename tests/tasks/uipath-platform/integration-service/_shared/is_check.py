@@ -21,10 +21,10 @@ import json
 import re
 import sys
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _find(pattern: str) -> str:
     """Find a single file matching the glob pattern, or exit."""
@@ -52,8 +52,10 @@ def _assert_key(data: dict, key: str, label: str):
 
 def _assert_type(value, expected_type, label: str):
     if not isinstance(value, expected_type):
-        sys.exit(f"FAIL: {label} should be {expected_type.__name__}, "
-                 f"got {type(value).__name__}: {value!r}")
+        sys.exit(
+            f"FAIL: {label} should be {expected_type.__name__}, "
+            f"got {type(value).__name__}: {value!r}"
+        )
     return value
 
 
@@ -68,14 +70,14 @@ def _assert_commands(cmds: list, patterns: list[str], label: str) -> None:
     for pattern in patterns:
         if not re.search(pattern, joined, re.IGNORECASE):
             sys.exit(
-                f"FAIL: {label} — no command matching /{pattern}/ found in "
-                f"commands_used: {cmds}"
+                f"FAIL: {label} — no command matching /{pattern}/ found in commands_used: {cmds}"
             )
 
 
 # ---------------------------------------------------------------------------
 # Per-test checks
 # ---------------------------------------------------------------------------
+
 
 def check_connector_discovery() -> None:
     """Validate connector_discovery: correct search commands, HTTP fallback.
@@ -101,14 +103,19 @@ def check_connector_discovery() -> None:
 
     cmds = _assert_key(data, "commands_used", "report")
     _assert_type(cmds, list, "report.commands_used")
-    _assert_commands(cmds, [
-        r"uip\s+is\s+connectors\s+list",   # used connectors list
-        r"--filter",                         # used --filter flag
-        r"--output\s+json",                  # used --output json
-    ], "report.commands_used")
+    _assert_commands(
+        cmds,
+        [
+            r"uip\s+is\s+connectors\s+list",  # used connectors list
+            r"--filter",  # used --filter flag
+            r"--output\s+json",  # used --output json
+        ],
+        "report.commands_used",
+    )
 
-    print(f"OK: connector_discovery — {len(cmds)} commands logged, "
-          f"HTTP fallback documented")
+    print(
+        f"OK: connector_discovery — {len(cmds)} commands logged, HTTP fallback documented"
+    )
 
 
 def check_connection_lifecycle() -> None:
@@ -144,8 +151,7 @@ def check_connection_lifecycle() -> None:
     _assert_type(create_cmd, str, "report.create_command")
     if not re.search(r"uip\s+is\s+connections\s+create", create_cmd, re.IGNORECASE):
         sys.exit(
-            f"FAIL: create_command should contain 'uip is connections create' "
-            f"— got: {create_cmd!r}"
+            f"FAIL: create_command should contain 'uip is connections create' — got: {create_cmd!r}"
         )
 
     # Validate the agent documented the correct edit command syntax
@@ -154,21 +160,26 @@ def check_connection_lifecycle() -> None:
     _assert_type(edit_cmd, str, "report.edit_command")
     if not re.search(r"uip\s+is\s+connections\s+edit", edit_cmd, re.IGNORECASE):
         sys.exit(
-            f"FAIL: edit_command should contain 'uip is connections edit' "
-            f"— got: {edit_cmd!r}"
+            f"FAIL: edit_command should contain 'uip is connections edit' — got: {edit_cmd!r}"
         )
 
     # Validate commands_used — only list and ping were actually run
     cmds = _assert_key(data, "commands_used", "report")
     _assert_type(cmds, list, "report.commands_used")
-    _assert_commands(cmds, [
-        r"uip\s+is\s+connections\s+list",   # listed connections
-        r"uip\s+is\s+connections\s+ping",    # pinged a connection
-        r"--output\s+json",                  # used --output json
-    ], "report.commands_used")
+    _assert_commands(
+        cmds,
+        [
+            r"uip\s+is\s+connections\s+list",  # listed connections
+            r"uip\s+is\s+connections\s+ping",  # pinged a connection
+            r"--output\s+json",  # used --output json
+        ],
+        "report.commands_used",
+    )
 
-    print(f"OK: connection_lifecycle — {len(cmds)} commands executed, "
-          f"connections_found={found}, create/edit commands documented correctly")
+    print(
+        f"OK: connection_lifecycle — {len(cmds)} commands executed, "
+        f"connections_found={found}, create/edit commands documented correctly"
+    )
 
 
 def check_activity_discovery() -> None:
@@ -202,15 +213,21 @@ def check_activity_discovery() -> None:
 
     cmds = _assert_key(data, "commands_used", "report")
     _assert_type(cmds, list, "report.commands_used")
-    _assert_commands(cmds, [
-        r"uip\s+is\s+activities\s+list",    # listed activities
-        r"--triggers",                        # used --triggers flag
-        r"--output\s+json",                  # used --output json
-    ], "report.commands_used")
+    _assert_commands(
+        cmds,
+        [
+            r"uip\s+is\s+activities\s+list",  # listed activities
+            r"--triggers",  # used --triggers flag
+            r"--output\s+json",  # used --output json
+        ],
+        "report.commands_used",
+    )
 
-    print(f"OK: activity_discovery — {len(cmds)} commands logged, "
-          f"activity_count={act}, trigger_count={trig}, "
-          f"explanation={len(explanation)} chars")
+    print(
+        f"OK: activity_discovery — {len(cmds)} commands logged, "
+        f"activity_count={act}, trigger_count={trig}, "
+        f"explanation={len(explanation)} chars"
+    )
 
 
 def check_resource_describe() -> None:
@@ -240,15 +257,21 @@ def check_resource_describe() -> None:
 
     cmds = _assert_key(data, "commands_used", "report")
     _assert_type(cmds, list, "report.commands_used")
-    _assert_commands(cmds, [
-        r"uip\s+is\s+resources\s+list",      # listed resources
-        r"uip\s+is\s+resources\s+describe",   # described resource
-        r"--operation",                        # used --operation flag
-        r"--output\s+json",                    # used --output json
-    ], "report.commands_used")
+    _assert_commands(
+        cmds,
+        [
+            r"uip\s+is\s+resources\s+list",  # listed resources
+            r"uip\s+is\s+resources\s+describe",  # described resource
+            r"--operation",  # used --operation flag
+            r"--output\s+json",  # used --output json
+        ],
+        "report.commands_used",
+    )
 
-    print(f"OK: resource_describe — {len(cmds)} commands logged, "
-          f"{len(fields)} contact_fields, {len(req)} required_fields")
+    print(
+        f"OK: resource_describe — {len(cmds)} commands logged, "
+        f"{len(fields)} contact_fields, {len(req)} required_fields"
+    )
 
 
 def check_resource_execute() -> None:
@@ -276,15 +299,18 @@ def check_resource_execute() -> None:
 
     # Validate all 6 workflow actions are present
     expected_actions = [
-        "find_connector", "find_connection", "ping_connection",
-        "discover_resources", "describe_resource", "execute_create",
+        "find_connector",
+        "find_connection",
+        "ping_connection",
+        "discover_resources",
+        "describe_resource",
+        "execute_create",
     ]
     actual_actions = [s.get("action", "") for s in steps]
     for expected in expected_actions:
         if not any(expected in a for a in actual_actions):
             sys.exit(
-                f"FAIL: workflow_steps missing action '{expected}' "
-                f"— got {actual_actions}"
+                f"FAIL: workflow_steps missing action '{expected}' — got {actual_actions}"
             )
 
     # Validate workflow ordering: each action must appear after its predecessor
@@ -295,27 +321,36 @@ def check_resource_execute() -> None:
                 action_indices[ea] = i
     for j in range(1, len(expected_actions)):
         prev, curr = expected_actions[j - 1], expected_actions[j]
-        if prev in action_indices and curr in action_indices:
-            if action_indices[curr] < action_indices[prev]:
-                sys.exit(
-                    f"FAIL: workflow order wrong — '{curr}' (step {action_indices[curr]}) "
-                    f"appeared before '{prev}' (step {action_indices[prev]})"
-                )
+        if (
+            prev in action_indices
+            and curr in action_indices
+            and action_indices[curr] < action_indices[prev]
+        ):
+            sys.exit(
+                f"FAIL: workflow order wrong — '{curr}' (step {action_indices[curr]}) "
+                f"appeared before '{prev}' (step {action_indices[prev]})"
+            )
 
     # Validate commands_used
     cmds = _assert_key(data, "commands_used", "report")
     _assert_type(cmds, list, "report.commands_used")
     if len(cmds) < 5:
         sys.exit(f"FAIL: commands_used has {len(cmds)} entries, expected >= 5")
-    _assert_commands(cmds, [
-        r"uip\s+is\s+connectors\s+list",         # step 1
-        r"uip\s+is\s+connections\s+(list|ping)",   # step 2-3
-        r"uip\s+is\s+resources\s+execute",         # step 6
-        r"--output\s+json",                        # universal flag
-    ], "report.commands_used")
+    _assert_commands(
+        cmds,
+        [
+            r"uip\s+is\s+connectors\s+list",  # step 1
+            r"uip\s+is\s+connections\s+(list|ping)",  # step 2-3
+            r"uip\s+is\s+resources\s+execute",  # step 6
+            r"--output\s+json",  # universal flag
+        ],
+        "report.commands_used",
+    )
 
-    print(f"OK: resource_execute — {len(steps)} workflow steps in correct order, "
-          f"{len(cmds)} commands logged")
+    print(
+        f"OK: resource_execute — {len(steps)} workflow steps in correct order, "
+        f"{len(cmds)} commands logged"
+    )
 
 
 # ---------------------------------------------------------------------------
