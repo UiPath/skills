@@ -1,0 +1,89 @@
+task_id: skill-bpmn-registry-discovery
+description: >
+  Registry discovery eval: agent uses `uip maestro bpmn registry list/search/get`
+  to discover documented agent, queue, and connector wrapper types and to
+  produce evidence that links the canvas registry surface back to the skill's
+  supported-element map without inventing private resource metadata. Requires
+  the `uip` CLI on PATH.
+tags: [uipath-maestro-bpmn, integration, "lifecycle:inspect", connector, "feature:connections", resource]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 60
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Use the registry discovery commands of the installed `uip` CLI to enumerate
+  the documented Maestro BPMN wrapper surface for agent, queue, and connector
+  resource types. Save evidence locally without uploading, publishing,
+  deploying, debugging, or running anything.
+
+  Requirements:
+  - Save outputs under a local `registry-evidence/` directory you create.
+  - Run a registry list call that covers the documented wrapper surface.
+  - Run a registry search call for at least one documented agent or queue
+    wrapper type (for example `Orchestrator.StartAgentJob` or
+    `Orchestrator.CreateQueueItem`).
+  - Run a registry get call for at least one documented wrapper type.
+  - Use `--output json` for parsed CLI calls and write the raw JSON output
+    files into `registry-evidence/`.
+  - Add a short `registry-evidence/notes.md` summarizing which agent, queue,
+    and connector wrapper types were observed, citing the wrapper identifiers
+    by name.
+  - Do not invent connection IDs, folder keys, tenant URLs, real connector
+    keys, or release keys.
+  - Do not upload, publish, deploy, debug, or run anything.
+
+success_criteria:
+  - type: file_exists
+    description: "Registry discovery evidence directory was created"
+    path: "registry-evidence"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a Maestro BPMN registry list call"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a Maestro BPMN registry search call"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+search'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a Maestro BPMN registry get call"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+get'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json for parsed registry calls"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+[\s\S]*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Registry evidence covers documented agent, queue, and connector wrapper types"
+    command: "python3 $TASK_DIR/check_registry_discovery.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

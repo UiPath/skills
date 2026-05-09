@@ -1,0 +1,73 @@
+task_id: skill-bpmn-validation-fixtures-pack
+description: >
+  Lifecycle smoke: agent uses the uipath-maestro-bpmn skill to package the
+  validation fixture corpus locally. Mirrors the manual smoke "pack each
+  fixture" matrix and complements the validate-side fixture smoke.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:package"]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 30
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Package each validation fixture project locally without cloud-side effects.
+
+  Each fixture lives in its own subdirectory under `fixtures/validation/`:
+  - `fixtures/validation/linear-process/`
+  - `fixtures/validation/gateway-boundary-error/`
+  - `fixtures/validation/integration-service-enriched/`
+  - `fixtures/validation/subprocess-multi-instance/`
+  - `fixtures/validation/contract-variants/`
+  - `fixtures/validation/registry-coverage-matrix/`
+
+  Requirements:
+  - Use the installed `uip` CLI to pack each fixture project when a supported
+    Maestro BPMN pack command is available. Send packed output to a local
+    output directory you choose, not into the fixture folder.
+  - If the installed CLI does not expose a Maestro BPMN pack command, run a
+    local fallback that confirms each fixture's BPMN source parses as XML and
+    note the missing CLI command in your final report.
+  - Do not upload, publish, deploy, debug, or run any process.
+  - Do not edit fixture files.
+
+success_criteria:
+  - type: file_exists
+    description: "Fixture corpus is present in the scored workspace"
+    path: "fixtures/validation/README.md"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted Maestro BPMN pack for at least three fixture projects (or ran a documented local fallback)"
+    tool_name: "Bash"
+    command_pattern: '((uip|\$UIP)\s+(maestro\s+)?bpmn\s+pack|python3?\s+[\s\S]*ET\.parse\([\s\S]*fixtures/validation/[\s\S]*\.bpmn|xmllint\s+[\s\S]*fixtures/validation/[\s\S]*\.bpmn)'
+    min_count: 3
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every fixture BPMN file in the corpus parses as XML in the scored workspace"
+    command: "python3 $TASK_DIR/check_validation_fixtures_pack.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json for parsed uip CLI calls"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 1.0
