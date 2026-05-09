@@ -61,14 +61,17 @@ uip resource triggers create --type time \
   --cron "0 0 9 ? * 1-5" \
   --time-zone "Europe/Bucharest" \
   --runtime-type Unattended \
-  --job-priority Normal \
-  --folder-path "Finance" --output json
+  --job-priority Normal --output json
 ```
+
+`triggers create` does not take `--folder-path` / `--folder-key` — the
+folder is derived from the release the trigger is bound to. Same for all
+three trigger types.
 
 `--time-zone` takes an IANA time zone ID (e.g. `UTC`, `Europe/Bucharest`, `America/Los_Angeles`).
 
 Additional options:
-- `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then enable them in bulk via `triggers enable`.
+- `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then flip them on later via `triggers update <key> --enabled`.
 - `--calendar-key` — skip holidays, from `uip or calendars list`.
 - `--stop-strategy` — `SoftStop` or `Kill`.
 - `--input-arguments` — JSON-encoded input arguments map.
@@ -83,8 +86,7 @@ uip resource triggers create --type queue \
   --release-key <process-key> \
   --queue-key <queue-key> \
   --items-threshold 1 --max-jobs 3 \
-  --runtime-type Unattended --job-priority Normal \
-  --folder-path "Finance" --output json
+  --runtime-type Unattended --job-priority Normal --output json
 ```
 
 Additional options: `--items-per-job` (default 1), `--activate-on-complete` (re-trigger on job completion).
@@ -123,13 +125,22 @@ uip resource triggers update <trigger-key> --type time \
   --cron "0 30 8 ? * 1-5" --folder-path "Finance" --output json
 ```
 
+> **`--type` matters on get/update/delete.** Default is `time`. If you pass an api or queue trigger key without `--type api` / `--type queue`, the command hits ProcessSchedules and returns `HTTP 404: ProcessSchedule does not exist.` The error instructions surface a hint pointing at the right `--type` — re-run with the correct one. (`triggers list` shows the type per entry.)
+
+> **Enum flag values are case-insensitive.** `--method POST`, `--runtime-type SERVERLESS`, `--job-priority HIGH` all work and are normalized to canonical PascalCase before the API call. Same on `queue-items` (`--priority high` ≡ `High`) and `processes edit` (`--retention-action delete`, `--robot-size standard`).
+
 ---
 
-## Step 4: Enable, Disable, Delete
+## Step 4: Toggle, Delete
+
+`triggers update` already does a get + patch internally, so the dedicated
+`enable` / `disable` subcommands have been folded into it via mutually
+exclusive `--enabled` / `--disabled` flags. Same applies to all three
+trigger types (time, queue, api).
 
 ```bash
-uip resource triggers disable <trigger-key> --type time --folder-path "Finance" --output json
-uip resource triggers enable <trigger-key> --type time --folder-path "Finance" --output json
+uip resource triggers update <trigger-key> --type time --folder-path "Finance" --disabled --output json
+uip resource triggers update <trigger-key> --type time --folder-path "Finance" --enabled --output json
 uip resource triggers delete <trigger-key> --type time --folder-path "Finance" --output json
 ```
 
@@ -161,17 +172,17 @@ Returns names like `job.completed`, `job.faulted`, `queueItem.failed`. Use these
 
 ### Create a Webhook
 
+The webhook name is a **positional argument**, aligned with `calendars create <name>` and `queues create <name>`:
+
 ```bash
 # Subscribe to specific events
-uip resource webhooks create \
-  --name "JobFailureAlert" \
+uip resource webhooks create "JobFailureAlert" \
   --url "https://hooks.example.com/uipath" \
   --events "job.faulted,job.stopped" \
   --secret "my-signing-secret" --output json
 
 # Subscribe to ALL events (omit --events)
-uip resource webhooks create \
-  --name "AuditHook" \
+uip resource webhooks create "AuditHook" \
   --url "https://hooks.example.com/audit" --output json
 ```
 
@@ -186,6 +197,10 @@ uip resource webhooks get <webhook-key> --output json
 uip resource webhooks update <webhook-key> \
   --url "https://new.example.com/hook" \
   --events "job.faulted,queueItem.failed" --output json
+
+# Toggle without renaming or changing other fields:
+uip resource webhooks update <webhook-key> --disabled --output json
+uip resource webhooks update <webhook-key> --enabled --output json
 
 uip resource webhooks ping <webhook-key> --output json     # test connectivity
 uip resource webhooks delete <webhook-key> --output json
@@ -223,8 +238,7 @@ uip resource triggers create --type queue \
   --folder-path "Finance" --output json
 
 # 4. Webhook: notify on job failures
-uip resource webhooks create \
-  --name "InvoiceFailureAlert" \
+uip resource webhooks create "InvoiceFailureAlert" \
   --url "https://hooks.slack.com/services/T00/B00/xxx" \
   --events "job.faulted,job.stopped" \
   --secret "webhook-signing-key" --output json

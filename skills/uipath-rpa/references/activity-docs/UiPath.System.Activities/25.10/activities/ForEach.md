@@ -53,5 +53,5 @@ Iterates over a collection. Uses `ui:` namespace prefix. The `x:TypeArguments` o
 - `x:TypeArguments` on `ui:ForEach`, `ActivityAction`, and `DelegateInArgument` must ALL match the item type
 - `ForEach.Values` is always `InArgument x:TypeArguments="sc:IEnumerable"` regardless of item type
 - The `DelegateInArgument` `Name` is the loop variable name — usable inside the Body
-- Body must contain exactly **one** activity — wrap multiple activities in a `<Sequence>`
+- Body wraps content in `<Sequence>` — even for a single activity. Studio's designer expects the wrap as a drop zone.
 - `CurrentIndex="{x:Null}"` is optional (stores current iteration index if set to a variable)

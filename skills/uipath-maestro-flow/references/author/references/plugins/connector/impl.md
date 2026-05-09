@@ -13,6 +13,7 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
    - `connectionFolderKey` — the Orchestrator folder key in the authored `.flow` file. `node configure --detail` accepts `folderKey` as input and writes it back as `connectionFolderKey`.
    - `method` — HTTP method from `registry get` → `connectorMethodInfo.method` (e.g., `POST`)
    - `endpoint` — API path. Read `connectorMethodInfo.path` (from `registry get`) or `availableOperations[].path` (from `is resources describe`).
+   - `objectName` — required for generic activities (see below). The API object name (e.g. `"Opportunity"`); ignored for concrete nodes.
    - `bodyParameters` — field-value pairs for the request body. Read field names from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
    - `queryParameters` — field-value pairs for query string parameters. Read from `connectorMethodInfo.parameters[]` where `type: query` (`registry get`) or `parameters[]` (`is resources describe`).
    - `pathParameters` — field-value pairs for path placeholders in `endpoint` (e.g. `{conversationsInfoId}`). Read from `connectorMethodInfo.parameters[]` where `type: path` (`registry get`) or `parameters[]` (`is resources describe`).
@@ -20,6 +21,15 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
    - `customFieldsRequestDetails` — design-time cache for connectors with an api-type ObjectAction at top-level `objectActions[]` OR `connectorMethodInfo.design.actions[]` (e.g. Jira `GenerateSchema`, Dataservice V3 `FetchObjectMetadataTenant`). camelCase keys; `parameterValues` as `[key, value]` tuples. See Step 6c.
 
 ---
+
+## Generic vs Concrete Activities
+
+Connector nodes come in two flavors:
+
+- **Concrete** — the node type encodes a specific object + operation (e.g. `uipath.connector.uipath-atlassian-jira.curated_create_issue`). `inputDefinition.fields[]` is populated; `method` and `endpoint` are fixed.
+- **Generic** — the node type encodes only the operation (e.g. `uipath.connector.uipath-salesforce-sfdc.list-records`, `…insert-record`, `…update-record`). `inputDefinition` is `{}`; the node needs an extra `objectName` in `--detail`, and `method` / `endpoint` come from `is resources describe`.
+
+To classify a node, read `Node.form.sections[0].fields[0].componentProps.connectorDetail.configuration` from the `registry get` response, parse it as JSON, and check `activityType`. `"Generic"` → run Step 2a to discover `objectName` (and capture `operation` from the same marker for the `--operation` flag in Step 3). Anything else → skip Step 2a.
 
 ## Critical: Connector Definition Must Include `form`
 
@@ -72,6 +82,21 @@ This returns enriched `inputDefinition.fields` and `outputDefinition.fields` wit
 
 The response also includes `connectorMethodInfo` with the real HTTP `method` (e.g. `GET`, `POST`) and `path` template (e.g. `/ConversationsInfo/{conversationsInfoId}`). **Save `connectorMethodInfo.method` and `connectorMethodInfo.path`** — you must pass them to `node configure` later as `method` and `endpoint`.
 
+> **For generic activities, `connectorMethodInfo` is empty.** Method and endpoint are object-specific and only resolve once Step 2a picks an `objectName`; Step 3 then surfaces them via `availableOperations[]`. Don't try to derive them from the manifest alone.
+
+### Step 2a — Discover the object name (generic activities only)
+
+Skip this step for concrete activities — they encode the object in the node type. For generic activities (`activityType: "Generic"`), list the connection's catalog and pick the object the user wants to act on.
+
+```bash
+uip is resources list "<connector-key>" --connection-id "<connection-id>" --output json \
+  --output-filter "[?contains(DisplayName,'<search>')].{Name:Name,Path:Path,Custom:Custom}"
+```
+
+- `Name` — what `--detail.objectName` accepts. Case-sensitive (e.g. `"Opportunity"`, not `"opportunity"`). Don't substitute `DisplayName`.
+- `Path` — API endpoint suffix (e.g. `/Opportunity`). Pair with the operation's HTTP method (Step 3) for `endpoint`.
+- `Custom` — `true` for tenant-defined objects.
+
 ### Step 3 — Describe the resource and read full metadata
 
 Run `is resources describe` to fetch and cache the full operation metadata, then **read the cached metadata file** for complete field details including descriptions, types, references, and query/path parameters. The describe summary omits some of this.
@@ -94,7 +119,11 @@ The full metadata contains:
 
 ### Step 3a — Resolve parent-field-driven custom fields (api-type ObjectActions)
 
-For connectors whose required fields depend on parent-field selections (Jira `GenerateSchema` keyed off project + issue type, Salesforce SOQL `GenerateQuerySchema` keyed off the query string, Dataservice V3 `FetchObjectMetadataTenant` keyed off `tenantEntityName`), the base `describe` returns only base fields. Pass parent values via `-f, --field` to preview the full required-field set the runtime will see — see [/uipath:uipath-platform — resources.md > Parent-Field-Driven Custom Fields (api-type ObjectActions)](../../../../../../uipath-platform/references/integration-service/resources.md#parent-field-driven-custom-fields-api-type-objectactions) for the full procedure, flag table, merge semantics, and error recovery.
+**Run whenever the activity has a parent-field-driven schema** — an api-type ObjectAction in `objectActions[]` or `connectorMethodInfo.design.actions[]` (see Step 6c's support table). Applies to **every** operation with such an action — Create/Edit/Update for parent-driven required body fields AND Get/Retrieve/Query for the response-schema fields downstream nodes will reference. The base `describe` returns only static metadata; this step runs the matching ObjectAction against the live connection so the cache you author in Step 6c is a replay of a real call, not a fabrication.
+
+Pass parent values via `-f, --field` — see [/uipath:uipath-platform — resources.md > Parent-Field-Driven Custom Fields (api-type ObjectActions)](../../../../../../uipath-platform/references/integration-service/resources.md#parent-field-driven-custom-fields-api-type-objectactions) for the full procedure, flag table, merge semantics, and error recovery.
+
+> **Skipping is not free even when the runtime call works.** For Get/Retrieve the upstream API returns data regardless — runtime stays green. The fetch is what makes Step 6c's `customFieldsRequestDetails` honest: without it, Studio Web has no schema to render the activity's custom fields, and any downstream `$vars.<thisNode>.output.<custom-field>` resolves to undefined. `flow validate` does not catch this — it surfaces as silent design-time corruption (MST-9107-class).
 
 Run this before Step 5 (validate required fields) and reuse the same parent-field values in Step 6c's `customFieldsRequestDetails.parameterValues` (with the encoded keys).
 
@@ -192,7 +221,9 @@ Workaround:
 
 #### Step 6b — Run configure
 
-After adding the node with `uip maestro flow node add`, configure it with the resolved connection and field values:
+After adding the node with `uip maestro flow node add`, configure it with the resolved connection and field values.
+
+**Concrete activity** (Jira `curated_create_issue` — object encoded in node type):
 
 ```bash
 uip maestro flow node configure <file> <nodeId> \
@@ -200,12 +231,36 @@ uip maestro flow node configure <file> <nodeId> \
   --output json
 ```
 
+**Generic activity, list** (Salesforce `list-records` against Opportunity — object selected at configure time, no per-record input):
+
+```bash
+uip maestro flow node configure <file> <nodeId> \
+  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "GET", "endpoint": "/Opportunity", "objectName": "Opportunity"}' \
+  --output json
+```
+
+**Generic activity, retrieve-by-id** (Salesforce `get-record` against Account — object plus a path parameter for the record ID):
+
+```bash
+uip maestro flow node configure <file> <nodeId> \
+  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "GETBYID", "endpoint": "/Account/{accountId}", "objectName": "Account", "pathParameters": {"accountId": "001KY000007uI02YAE"}}' \
+  --output json
+```
+
+Path-parameterized GETs are a distinct shape from list/query: `endpoint` carries `{<placeholder>}` tokens and `pathParameters` supplies the values. Resolve the ID via `is resources execute list <connector-key> <objectName>` (Step 4) — never paste IDs across connections (see [reference-resolution.md](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical)).
+
+The `objectName` field is required for generic nodes (see "Generic vs Concrete Activities" above). The CLI fails fast with a runnable hint when it's missing on a generic node. For concrete nodes the field is ignored if supplied.
+
 **Source of truth for `method` and `endpoint`** — pick either (both read the same upstream IS metadata):
 
-- `registry get` (Step 2) → `connectorMethodInfo.method` and `connectorMethodInfo.path`
-- `is resources describe ... --operation <Op>` (Step 3) → `availableOperations[].method` and `availableOperations[].path`
+- `registry get` (Step 2) → `connectorMethodInfo.method` and `connectorMethodInfo.path` — populated for **concrete** activities only.
+- `is resources describe <connector-key> <objectName> --operation <Op>` (Step 3) → `availableOperations[].method` and `availableOperations[].path` — works for both, and is the only source for **generic** activities.
 
-Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
+> **Method label — pass the IS describe value verbatim.** `is resources describe` sometimes returns synthesized IS-side labels (notably `"GETBYID"` for path-parameterized retrieve operations). The CLI accepts both standard HTTP verbs (`GET`, `POST`, …) and IS-side labels (`GETBYID`) — copy `operation.method` from `is resources describe` as-is and the CLI normalizes to the underlying HTTP verb internally. Don't translate by hand.
+
+> **`flow validate` cross-checks `method` against the activity's `operation`.** If the value you pass disagrees with the operation baked into the node by `node add` (e.g. `method: "POST"` on a Retrieve activity), validate fails with `HTTP method "<X>" does not match operation "<Y>". Expected "<Z>"`. This catches stale copy-paste — fix by re-reading `operation.method` from `is resources describe` against the right `--operation`.
+
+Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (`registry get`, concrete only) or `requestFields[].name` (`is resources describe`, both).
 
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 
@@ -291,7 +346,7 @@ Rules:
 - camelCase keys (`objectActionName`, `parameterValues`). PascalCase rejected at validate time.
 - `parameterValues` is an **array of `[key, value]` tuples** — never an object map. The IS-side serializer emits a `Map<string,string|null>` via `Array.from(entries())`; the CLI rejects object-map form.
 - Tuple value is `string` or `null`. Use `null` for tokens the user has not yet set.
-- The CLI does NOT validate ObjectAction existence or token coverage — agent is responsible. Read `apiConfiguration.url` / `body` from the action (top-level `objectActions[]` OR `connectorMethodInfo.design.actions[]`) to discover required tokens.
+- The CLI does NOT validate ObjectAction existence or token coverage at configure time. **Always run Step 3a first** with the planned parent-field combination — if it errors with `No api-type ObjectAction matched for fields [...]`, the cache you're about to write is wrong (adjust tokens or action name); if it succeeds, the response confirms the action and tokens are real, and you author `customFieldsRequestDetails` from that result, not from memory or doc examples. Read `apiConfiguration.url` / `body` from the matched action (top-level `objectActions[]` OR `connectorMethodInfo.design.actions[]`) to enumerate required tokens.
 
 **CLI invocation — pass BOTH halves.** The runtime input bucket (`bodyParameters` / `queryParameters` / `pathParameters`) AND the design-time cache (`customFieldsRequestDetails`) must both appear in the same `--detail`. Omitting the runtime bucket is the most common mistake — the cache alone does not feed the connector at runtime.
 

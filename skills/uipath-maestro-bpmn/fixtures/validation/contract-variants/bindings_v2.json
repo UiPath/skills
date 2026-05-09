@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_EventConnection",
+      "type": "connection",
+      "name": "Synthetic Event Connection",
+      "resourceKey": "synthetic-event-connection"
+    },
+    {
+      "id": "Binding_EventTrigger",
+      "type": "eventTrigger",
+      "name": "Synthetic Event Trigger",
+      "resourceKey": "synthetic-event-trigger"
+    }
+  ]
+}

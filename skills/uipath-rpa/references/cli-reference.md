@@ -185,7 +185,15 @@ uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command St
 | `--input-arguments` | No | JSON string of input arguments |
 | `--log-level` | No | Logging verbosity level |
 
-`Data.runResult` is a **JSON string** (not an object) -- parse it to get `Output` and `HasErrors`.
+The response is a standard CLI envelope: `{Result: "Success"|"Failure", Code, Data: {runResult: "<json-string>"}, Message?, Instructions?}`. `Data.runResult` is a **JSON string** (not an object) — parse it separately to read the run result, which has exactly three fields:
+
+- `Output` — the workflow's own serialized output arguments JSON (`""` for non-`Start*` commands and on debug-command responses). **`Output` carries the workflow's data, not a verdict.**
+- `HasErrors` — `true` iff execution did not complete successfully (compile failure, validation failure, unhandled exception, cancellation, or timeout); `false` otherwise.
+- `ErrorMessage` — formatted error chain when `HasErrors: true`; `null` otherwise.
+
+Workflow log output (`Log Message` activity, system traces) does NOT appear in `runResult`. Logs are streamed in real time during execution on a separate channel; the result envelope only carries the verdict and the workflow's output data.
+
+> **Single source of truth for success/failure: outer `Result` (and equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled runtime exceptions — the CLI propagates them. **DO NOT infer failure from streamed log entries' `Level`.** A successful workflow may emit `Log Message` at `Error` or `Warning` level as observability — those are workflow-emitted data, not CLI failures. Treating log levels as a verdict flips green runs to "failed" and burns retries on healthy workflows.
 
 ---
 
@@ -272,12 +280,15 @@ Omit `version` to automatically resolve the latest compatible version (preferred
 Get available versions for a NuGet package.
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --output jsonuip rpa get-versions --package-id <PackageId> --include-prerelease --output json```
+uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--package-id` | Yes | NuGet package ID to query |
 | `--include-prerelease` | No | Include prerelease versions (default false) |
+
+> **Default to `--include-prerelease`.** UiPath activity packages frequently ship as `-preview` between stable releases, and previews carry the freshest activity surface and `.local/docs` content. Omitting the flag hides them and the agent picks a stale stable. When the user already has a stable version installed and a newer (stable or preview) is available, inform them and offer the upgrade — never force.
 
 ---
 

@@ -19,6 +19,10 @@ Variables may include:
 
 Entry point inputs use `elementId` to scope an input variable to the corresponding root-level start event. Root output variables become entry point output schema properties. JSON schema variables carry the schema body in CDATA; generated entry-point schema should strip `$schema`.
 
+Canvas exports commonly model trigger-bound values as `uipath:inputOutput`
+variables scoped with `elementId`. Prefer that shape for new runtime-oriented
+examples unless preserving imported `uipath:input` XML.
+
 Subprocesses can carry scoped `uipath:variables` in subprocess extension elements. Do not silently move variables across scopes.
 
 Author variables in pass 2 after the BPMN skeleton and entry points are stable. If an entry point changes during pass 1, update every variable whose `elementId` points at the old start event.
@@ -59,8 +63,18 @@ Conditions, scripts, variable mappings, and skip conditions are expression-norma
 
 Use a leading `=` for expressions where the frontend/runtime expects expression content. Treat plain strings as literals.
 
+When a UiPath extension expression reads a BPMN variable, reference the
+variable by its XML variable id through the runtime `vars` object, for example
+`=vars.Var_RequestId`. Do not use bare names such as `=requestId` in generated
+runtime examples.
+
 Gateway conditions belong on outgoing sequence flows. Service skip conditions belong on the documented `uipath:activity` attribute. Script source belongs in BPMN `script` CDATA, not in an extension text field.
 
 ## Script tasks
 
-Script tasks use BPMN `script` CDATA with `scriptFormat="JavaScript"`. UiPath script inputs are merged into a single JSON `uipath:input name="args"` body with an `inputSchema` in context. Script outputs must map to declared variables.
+Script tasks use BPMN `script` CDATA with `scriptFormat="JavaScript"`. UiPath
+script inputs are declared in a single JSON `uipath:input name="args"` body
+with an `inputSchema` in context, but the Jint script body receives the mapped
+fields as top-level identifiers. For example, a mapped `caseId` field is read
+as `caseId` in script source, not `args.caseId`. Script outputs must map back
+to declared variable ids, usually with sources such as `=result.response`.

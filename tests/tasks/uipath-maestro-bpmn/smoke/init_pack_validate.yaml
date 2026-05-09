@@ -1,0 +1,96 @@
+task_id: skill-bpmn-init-pack-validate
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to create
+  a repo-shaped Maestro BPMN Process Orchestration project, validate it
+  locally, and package it without cloud-side effects.
+tags: [uipath-maestro-bpmn, smoke, lifecycle:generate, lifecycle:validate, lifecycle:package]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 60
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Maestro BPMN Process Orchestration project named
+  "ExpenseReviewBpmn".
+
+  Load and follow the uipath-maestro-bpmn skill. Keep this local only:
+  create the project, author a minimal manual-start BPMN process with one
+  task and one end event, validate it, and package it to a local output
+  directory.
+
+  Requirements:
+  - Use the installed `uip` CLI when a supported Maestro BPMN init, validate,
+    or pack command exists.
+  - If the installed CLI does not expose a Maestro BPMN validate command, run
+    a local XML validation command against ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn.
+  - Do not upload, publish, deploy, debug, or run the process.
+  - Keep generated package artifacts in a local output directory, not under
+    the skill repository.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent used a Maestro BPMN init or scaffold command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+(init|new|create)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the BPMN project with CLI validation or a local XML check"
+    tool_name: "Bash"
+    command_pattern: '((uip|\$UIP)\s+(maestro\s+)?bpmn\s+validate|xmllint\s+[\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn|python3?\s+(-c\s+[\s\S]*(ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn[\s\S]*ET\.parse|ET\.parse\([\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn|bpmn_file\s*=\s*[''"]ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn[''"][\s\S]*ET\.parse\(bpmn_file\))|<<\s*[''"]?EOF[''"]?[\s\S]*(ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn[\s\S]*ET\.parse|ET\.parse\([\s\S]*ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn|bpmn_file\s*=\s*[''"]ExpenseReviewBpmn/ExpenseReviewBpmn\.bpmn[''"][\s\S]*ET\.parse\(bpmn_file\))))'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Created BPMN source parses as XML in the scored workspace"
+    command: "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn')\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent packaged the BPMN project locally"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+pack'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json for parsed uip CLI calls"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Project metadata was created"
+    path: "ExpenseReviewBpmn/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file contains a BPMN diagram for Studio Web import"
+    path: "ExpenseReviewBpmn/ExpenseReviewBpmn.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "bpmndi:BPMNPlane"
+    weight: 1.0
+    pass_threshold: 1.0

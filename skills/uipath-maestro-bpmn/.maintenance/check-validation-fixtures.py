@@ -71,6 +71,7 @@ class Validator:
         self.errors: list[str] = []
         self.projects = 0
         self.bpmn_files = 0
+        self.contract_hits: set[str] = set()
 
     def error(self, path: Path, message: str) -> None:
         self.errors.append(f"{path.relative_to(ROOT)}: {message}")
@@ -83,6 +84,8 @@ class Validator:
         for project in sorted(p for p in FIXTURES.iterdir() if p.is_dir()):
             self.projects += 1
             self.validate_project(project)
+
+        self.validate_contract_coverage()
 
         for err in self.errors:
             print(f"ERROR: {err}")
@@ -176,6 +179,86 @@ class Validator:
         self.validate_message_events(path, root, elements_by_id)
         self.validate_multi_instance(path, root, variables)
         self.validate_uipath_extensions(path, root, bindings, variables)
+        self.record_contract_coverage(root)
+
+    def record_contract_coverage(self, root: ET.Element) -> None:
+        for version in root.findall(f".//{{{UIPATH_NS}}}migrationVersion"):
+            value = version.attrib.get("version")
+            if value:
+                self.contract_hits.add(f"migration:{value}")
+
+        for script_version in root.findall(f".//{{{UIPATH_NS}}}scriptVersion"):
+            value = script_version.attrib.get("value")
+            if value:
+                self.contract_hits.add(f"scriptVersion:{value}")
+
+        if root.findall(f".//{{{UIPATH_NS}}}caseManagement"):
+            self.contract_hits.add("preserve:caseManagement")
+        if root.findall(f".//{{{UIPATH_NS}}}Activity"):
+            self.contract_hits.add("preserve:generic-uipath-Activity")
+
+        for bpmn_elem in root.iter():
+            if ns(bpmn_elem.tag) != BPMN_NS:
+                continue
+            wrapper = local(bpmn_elem.tag)
+            extension = bpmn_elem.find(f"{{{BPMN_NS}}}extensionElements")
+            if extension is None:
+                continue
+            for extension_kind in ("activity", "event"):
+                for payload in extension.findall(f"{{{UIPATH_NS}}}{extension_kind}"):
+                    type_elem = payload.find(f"{{{UIPATH_NS}}}type")
+                    if type_elem is None:
+                        continue
+                    service_type = type_elem.attrib.get("value")
+                    if service_type:
+                        self.contract_hits.add(f"{wrapper}:{service_type}")
+
+    def validate_contract_coverage(self) -> None:
+        # Public-safe XML shells from the current registry surface plus
+        # preserve-only imported payloads. CLI-owned Intsvc.* entries are
+        # represented with synthetic binding shells only; connector-specific
+        # schemas and generated package resources remain outside this fixture.
+        expected = {
+            "userTask:Actions.HITL",
+            "serviceTask:Orchestrator.StartJob",
+            "serviceTask:Orchestrator.StartAgentJob",
+            "serviceTask:A2A.AgentExecution",
+            "serviceTask:Orchestrator.ExecuteApiWorkflowAsync",
+            "businessRuleTask:Orchestrator.BusinessRules",
+            "sendTask:Orchestrator.CreateQueueItem",
+            "serviceTask:Orchestrator.CreateAndWaitForQueueItem",
+            "callActivity:Orchestrator.StartAgenticProcess",
+            "callActivity:Orchestrator.StartAgenticProcessAsync",
+            "callActivity:Orchestrator.StartCaseMgmtProcess",
+            "callActivity:Orchestrator.StartCaseMgmtProcessAsync",
+            "intermediateThrowEvent:Maestro.SendMessageEvent",
+            "serviceTask:Maestro.CasePlanScheduler",
+            "serviceTask:Maestro.CaseManagerGuardrails",
+            "serviceTask:Maestro.CaseRulesEvaluator",
+            "receiveTask:Intsvc.WaitForEvent",
+            "startEvent:Intsvc.EventTrigger",
+            "serviceTask:Intsvc.ActivityExecution",
+            "serviceTask:Intsvc.AsyncExecution",
+            "serviceTask:Intsvc.SyncAgentExecution",
+            "serviceTask:Intsvc.AsyncAgentExecution",
+            "serviceTask:Intsvc.SyncWorkflowExecution",
+            "serviceTask:Intsvc.AsyncWorkflowExecution",
+            "sendTask:Intsvc.HttpExecution",
+            "sendTask:Intsvc.UnifiedHttpRequest",
+            "startEvent:Intsvc.TimerTrigger",
+            "preserve:caseManagement",
+            "preserve:generic-uipath-Activity",
+            "migration:5",
+            "migration:11",
+            "migration:11.5",
+            "scriptVersion:v2",
+            "scriptVersion:v3",
+        }
+        missing = sorted(expected - self.contract_hits)
+        if missing:
+            self.errors.append(
+                "fixtures/validation: missing XML contract coverage for " + ", ".join(missing)
+            )
 
     def collect_root_bindings(self, process: ET.Element) -> dict[str, ET.Element]:
         result: dict[str, ET.Element] = {}
@@ -420,24 +503,46 @@ class Validator:
             return
 
         context = elem.find(f"{{{UIPATH_NS}}}context")
+        if context is None:
+            self.error(path, f"{service_type} missing context")
+            return
         context_inputs = {
             child.attrib.get("name"): child.attrib.get("value", "")
             for child in list(context)
-            if context is not None and local(child.tag) == "input"
+            if local(child.tag) == "input"
         }
 
         if service_type.startswith("Intsvc."):
+            connection_backed = {
+                "Intsvc.ActivityExecution",
+                "Intsvc.WaitForEvent",
+                "Intsvc.EventTrigger",
+                "Intsvc.AsyncExecution",
+                "Intsvc.SyncAgentExecution",
+                "Intsvc.AsyncAgentExecution",
+                "Intsvc.SyncWorkflowExecution",
+                "Intsvc.AsyncWorkflowExecution",
+            }
+            operation_backed = {
+                "Intsvc.ActivityExecution",
+                "Intsvc.AsyncExecution",
+                "Intsvc.SyncAgentExecution",
+                "Intsvc.AsyncAgentExecution",
+                "Intsvc.SyncWorkflowExecution",
+                "Intsvc.AsyncWorkflowExecution",
+            }
             connection = context_inputs.get("connection", "")
-            match = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", connection)
-            if not match or match.group(1) not in bindings:
-                self.error(path, f"{service_type} missing generated connection binding")
-            if "connectorKey" not in context_inputs:
-                self.error(path, f"{service_type} missing connectorKey")
-            if service_type in {"Intsvc.ActivityExecution", "Intsvc.AsyncExecution"}:
+            if service_type in connection_backed:
+                match = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", connection)
+                if not match or match.group(1) not in bindings:
+                    self.error(path, f"{service_type} missing generated connection binding")
+                if "connectorKey" not in context_inputs:
+                    self.error(path, f"{service_type} missing connectorKey")
+            if service_type in operation_backed:
                 for required in ("activity", "operation"):
                     if required not in context_inputs:
                         self.error(path, f"{service_type} missing {required}")
-            if service_type == "Intsvc.EventTrigger":
+            if service_type in {"Intsvc.EventTrigger", "Intsvc.WaitForEvent"}:
                 for required in ("trigger", "eventName"):
                     if required not in context_inputs:
                         self.error(path, f"{service_type} missing {required}")

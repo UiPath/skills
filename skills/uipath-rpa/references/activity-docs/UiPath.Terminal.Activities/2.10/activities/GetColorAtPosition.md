@@ -42,8 +42,10 @@ Color availability depends on the terminal provider and emulation type. Not all 
 ## XAML Example
 
 ```xml
-<ta:TerminalGetColorAtPosition DisplayName="Get Color at Position"
+<uit:TerminalGetColorAtPosition DisplayName="Get Color at Position"
                                 Row="[3]"
                                 Column="[5]"
-                                TerminalColor="[charColor]" />
+                                TerminalColor="[charColor]"
+                                WaitType="READY"
+                                DelayMS="300" />
 ```

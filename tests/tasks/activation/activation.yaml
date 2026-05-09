@@ -1,0 +1,137 @@
+task_id: skill-activation
+description: >
+  Skill activation eval: measures whether each covered UiPath skill is
+  invoked iff a user prompt warrants it. ONE agent run per row; per-skill
+  confusion matrices (precision / recall / F1) are computed in parallel
+  from the same traces by stacking one skill_triggered criterion per skill.
+  See README.md for coverage notes.
+tags: [activation, classification]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+dataset:
+  paths:
+    - uipath-agents.jsonl
+    - uipath-coded-apps.jsonl
+    - uipath-data-fabric.jsonl
+    - uipath-diagnostics.jsonl
+    - uipath-feedback.jsonl
+    - uipath-gov-access-policy.jsonl
+    - uipath-gov-aops-policy.jsonl
+    - uipath-human-in-the-loop.jsonl
+    - uipath-interact.jsonl
+    - uipath-maestro-case.jsonl
+    - uipath-maestro-flow.jsonl
+    - uipath-planner.jsonl
+    - uipath-platform.jsonl
+    - uipath-review.jsonl
+    - uipath-rpa.jsonl
+    - uipath-rpa-legacy.jsonl
+    - uipath-solution-design.jsonl
+    - uipath-tasks.jsonl
+    - uipath-test.jsonl
+    - negative.jsonl
+
+initial_prompt: "${row.prompt}"
+
+# 19 skill_triggered criteria — one per skill. Each derives expected internally
+# from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~900 no
+# per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
+success_criteria:
+  - type: skill_triggered
+    description: "uipath-agents activation"
+    skill_name: uipath-agents
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-coded-apps activation"
+    skill_name: uipath-coded-apps
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-data-fabric activation"
+    skill_name: uipath-data-fabric
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-diagnostics activation"
+    skill_name: uipath-diagnostics
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-feedback activation"
+    skill_name: uipath-feedback
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-gov-access-policy activation"
+    skill_name: uipath-gov-access-policy
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-gov-aops-policy activation"
+    skill_name: uipath-gov-aops-policy
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-human-in-the-loop activation"
+    skill_name: uipath-human-in-the-loop
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-interact activation"
+    skill_name: uipath-interact
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-maestro-case activation"
+    skill_name: uipath-maestro-case
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-maestro-flow activation"
+    skill_name: uipath-maestro-flow
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-planner activation"
+    skill_name: uipath-planner
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-platform activation"
+    skill_name: uipath-platform
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-review activation"
+    skill_name: uipath-review
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-rpa activation"
+    skill_name: uipath-rpa
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-rpa-legacy activation"
+    skill_name: uipath-rpa-legacy
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-solution-design activation"
+    skill_name: uipath-solution-design
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-tasks activation"
+    skill_name: uipath-tasks
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-test activation"
+    skill_name: uipath-test
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}

@@ -1,0 +1,6 @@
+{
+  "Name": "PurchaseOrderProcessing",
+  "ProjectType": "Process",
+  "Description": "Purchase order processing demo - reads POs via Microsoft 365, validates against pricing table asset",
+  "MainFile": "Main.xaml"
+}

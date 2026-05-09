@@ -13,6 +13,8 @@ Generated BPMN must be valid BPMN 2.0 with the UiPath extension namespace.
 - Every visible flow node should have a `bpmndi:BPMNShape` with bounds.
 - Every visible edge should have a `bpmndi:BPMNEdge` with waypoints.
 - Conditions and scripts should use a leading `=` where the frontend expects expressions.
+- UiPath extension expressions should read BPMN variables through `vars.<variableId>`,
+  for example `=vars.Var_RequestId`, rather than bare names.
 - CDATA is the expected representation for JSON bodies, schemas, scripts, variable schemas, custom output bodies, and case-management payload bodies.
 
 ## Supported model-authored BPMN
@@ -57,13 +59,13 @@ Use lower-case XML aliases in examples and authoring guidance:
 - Root `uipath:bindings version="v1"` for placeholder-safe resource bindings when the binding contract is documented.
 - Root-level start event `uipath:entryPointId value="..."` for runnable entry points.
 - `uipath:mapping version="v1"` for `BPMN.Variables` mappings.
-- `uipath:scriptVersion value="..."` for script task metadata.
-- `uipath:migrationVersion version="..."` as import migration metadata to preserve.
+- `uipath:scriptVersion value="..."` for script task metadata. Prefer `v3` for new script tasks; preserve imported `v2` metadata unless the user explicitly migrates it.
+- `uipath:migrationVersion version="..."` as import migration metadata to preserve, including numeric values such as `5`, `11`, and `11.5`.
 - `uipath:loopCharacteristics inputCollection="..." inputElement="..."` under loop characteristic extensions.
 - `uipath:retry`, `uipath:errorMapping`, and `uipath:tags` when the user gives explicit public-safe metadata.
 - `uipath:activity` and `uipath:event` shells for documented non-Integration-Service service types.
 
-Do not invent `uipath:caseManagement` payloads without a dedicated case-management contract.
+Do not invent `uipath:caseManagement` payloads without a dedicated case-management contract. Preserve imported `uipath:caseManagement` and unknown generic `uipath:Activity` payloads unless the edit explicitly normalizes them.
 
 ## Non-Integration-Service task shells
 
@@ -121,4 +123,4 @@ Validation should report:
 
 ## Migration behavior
 
-Prefer current extension shapes instead of relying on import migrations. Preserve existing `uipath:migrationVersion` values and unknown extension payloads. Warn on old or unknown migrations unless the file cannot be interpreted.
+Prefer current extension shapes instead of relying on import migrations. Preserve existing `uipath:migrationVersion` values, including numeric values like `5`, `11`, and `11.5`, and preserve unknown extension payloads such as generic `uipath:Activity`. Warn on old or unknown migrations unless the file cannot be interpreted.

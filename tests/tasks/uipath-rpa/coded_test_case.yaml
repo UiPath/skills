@@ -32,7 +32,13 @@ initial_prompt: |
         (the partial-class pattern from the skill — NOT a base class, NOT
         a separate `CodedWorkflowHooks` class). The file extends the
         existing `CodedWorkflow` partial declared by the project.
-      * Browser open in `Before(...)`, browser close in `After(...)`.
+      * `Before(...)` and `After(...)` may contain stub bodies — a
+        `Log(...)` call or a comment describing the intended browser
+        open/close is fine. Do NOT install
+        `UiPath.UIAutomation.Activities` or chase the `uiAutomation`
+        service in coded mode for this task; the test scaffold has no
+        Object Repository targets configured, and the rubric validates
+        the partial-class hook *shape*, not real browser automation.
   - Create one coded test case `LoginTests/TestLoginSuccess.cs`:
       * Class `TestLoginSuccess : CodedWorkflow` with the `[TestCase]`
         attribute on the `Execute` method.

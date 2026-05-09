@@ -97,6 +97,38 @@ success_criteria:
     weight: 0.5
     pass_threshold: 1.0
 
+  - type: file_exists
+    description: "Contract variants BPMN fixture is available"
+    path: "fixtures/validation/contract-variants/contract-variants.bpmn"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Contract variants fixture covers public-safe XML contract wrappers"
+    path: "fixtures/validation/contract-variants/contract-variants.bpmn"
+    includes:
+      - "Orchestrator.StartAgentJob"
+      - "A2A.AgentExecution"
+      - "Orchestrator.ExecuteApiWorkflowAsync"
+      - "Orchestrator.BusinessRules"
+      - "Orchestrator.CreateQueueItem"
+      - "Orchestrator.CreateAndWaitForQueueItem"
+      - "Orchestrator.StartAgenticProcess"
+      - "Orchestrator.StartAgenticProcessAsync"
+      - "Orchestrator.StartCaseMgmtProcess"
+      - "Orchestrator.StartCaseMgmtProcessAsync"
+      - "Maestro.SendMessageEvent"
+      - "Maestro.CasePlanScheduler"
+      - "Maestro.CaseManagerGuardrails"
+      - "Maestro.CaseRulesEvaluator"
+      - "Intsvc.WaitForEvent"
+      - "uipath:caseManagement"
+      - "uipath:Activity"
+      - "scriptVersion value=\"v2\""
+      - "migrationVersion version=\"11.5\""
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: file_contains
     description: "Fixture README includes public-safety rules"
     path: "fixtures/validation/README.md"

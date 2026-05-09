@@ -46,9 +46,11 @@ Searches the terminal screen for a text string and moves the terminal cursor to 
 ## XAML Example
 
 ```xml
-<ta:TerminalMoveCursorToText DisplayName="Move Cursor to Text"
+<uit:TerminalMoveCursorToText DisplayName="Move Cursor to Text"
                                Text="[&quot;Password:&quot;]"
                                IgnoreCase="True"
                                Row="[foundRow]"
-                               Column="[foundCol]" />
+                               Column="[foundCol]"
+                               WaitType="READY"
+                               DelayMS="300" />
 ```

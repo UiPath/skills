@@ -1,8 +1,8 @@
 task_id: skill-flow-update-node
 description: >
-  Create a UiPath Flow that fetches today's weather in Bellevue from open-meteo,
-  formats a summary with a script, and branches on temperature: if > 60F output
-  'nice day', otherwise 'bring a jacket'. Exercises HTTP, script, and decision nodes.
+  Edit an existing Bellevue-weather flow: rewrite the decision-branch script
+  outputs from 'nice day' / 'bring a jacket' to 'amazing day' / 'go home'.
+  Exercises script-node update without restructuring the flow.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:decision]
 max_iterations: 1
 
@@ -23,7 +23,7 @@ initial_prompt: |
   Update the flow to ensure if temperature is greater than 60F returns a summary with a message field 'amazing day',
   otherwise the message field should be 'go home'.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 

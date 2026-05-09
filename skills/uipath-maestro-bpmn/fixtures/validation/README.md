@@ -10,6 +10,19 @@ Public-safe fixture corpus for the `uipath-maestro-bpmn` skill maintenance check
 | `gateway-boundary-error/` | Exclusive gateway conditions/defaults, service task retry/error mapping, boundary error event, terminate end, tags, and package manifest checks. |
 | `integration-service-enriched/` | Integration Service trigger and activity extensions, root connection/property bindings, generated `bindings_v2.json` resources, entry point schema, and package metadata. |
 | `subprocess-multi-instance/` | Subprocess scoped variables, multi-instance loop metadata, script task metadata, mappings, message event, and diagram/waypoint coverage. |
+| `contract-variants/` | Representative public-safe Orchestrator agent, A2A, API workflow, business rule, queue, agentic/case call activity, message send event, case-management draft/preserve shells, `Intsvc.WaitForEvent`, numeric migration, legacy script, and preserve-only extension variants. |
+| `registry-coverage-matrix/` | Synthetic static wrapper coverage for current registry rows not otherwise covered by the corpus, including HITL, plain RPA, timer, HTTP, unified HTTP, and remaining Integration Service execution variants. |
+
+## Contract Coverage Scope
+
+The `contract-variants/` fixture is representative coverage for public-safe XML shells and preservation boundaries; it is not a claim that every row in `references/author/references/supported-elements.md` has a static fixture. Coverage is split as follows:
+
+| Bucket | Static fixture coverage |
+| --- | --- |
+| Model-owned or model-draft non-Integration-Service shells | Covered by `contract-variants/` for Orchestrator agent/API workflow/queue/business-rule wrappers, agentic and case-management sync/async call activities, and `Maestro.SendMessageEvent`. |
+| Preserve-only or dedicated-contract case-management XML | Covered by `contract-variants/` for `uipath:caseManagement`, generic `uipath:Activity`, `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`, and `Maestro.CaseRulesEvaluator` preservation/draft shells. |
+| CLI-owned `Intsvc.*` enrichment | Covered as synthetic wrapper shells only. `contract-variants/` keeps one representative `Intsvc.WaitForEvent` shell; `integration-service-enriched/` covers enriched trigger/activity sidecars; `registry-coverage-matrix/` covers the remaining current registry wrapper names without claiming connector-specific schemas are model-owned. |
+| Standard BPMN structures | Covered across the fixture corpus by targeted structural checks, not by a row-for-row supported-elements matrix. |
 
 ## Pilot Scenarios
 
@@ -20,13 +33,15 @@ The corpus was piloted against these public-safe authoring and debugging request
 | Create a service-desk intake process with a connector trigger, ticket creation, and generated package metadata. | `integration-service-enriched/` | Kept the model/CLI boundary explicit: connector metadata, connection bindings, and generated resources must come from enrichment before Operate. |
 | Debug an approval workflow where the run takes the wrong branch and then faults on error handling. | `gateway-boundary-error/` | Tightened checks around gateway conditions/defaults, boundary error references, and package metadata drift. |
 | Author a batch item processor with a scoped subprocess, sequential multi-instance loop, script normalization, and a message wait. | `subprocess-multi-instance/` | Added checks for message references and multi-instance collection/item metadata so stuck-loop and stuck-wait issues are caught locally. |
+| Review imported XML that mixes public Orchestrator wrappers, Integration Service waits, message events, case-management draft/preserve shells, numeric migrations, legacy script metadata, and unsupported UiPath extension payloads. | `contract-variants/` | Added structural checks that wrappers stay on the documented BPMN element classes and preserve-only payloads are retained without private identifiers. |
+| Compare the static fixture corpus against the registry surface exposed by `uip maestro bpmn registry list`. | `registry-coverage-matrix/` plus existing fixtures | Filled the missing wrapper rows with synthetic placeholders while keeping cloud resource resolution as a later authenticated test. |
 
 ## Validation Output
 
 Latest local fixture validation from this pilot:
 
 ```text
-validation_fixture_projects=4 bpmn_files=4 errors=0
+validation_fixture_projects=6 bpmn_files=6 errors=0
 ```
 
 ## Open Questions for Maestro Owners

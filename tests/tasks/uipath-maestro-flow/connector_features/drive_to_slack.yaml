@@ -1,0 +1,51 @@
+task_id: skill-flow-ipe-drive-to-slack
+description: >
+  E2E cross-connector scenario — downloads a file from Google Drive and posts
+  it into a Slack channel via the "Send File to channel" activity. Exercises
+  binary file flow between two IS connectors in a single Flow.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, e2e, uipath-google-drive, uipath-salesforce-slack]
+
+task_timeout: 1500
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 120
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    # Pin shared across all connector_features tasks — bump in lockstep.
+    env_packages:
+      - "@uipath/cli"
+initial_prompt: |
+  Create a new Flow project called "DriveToSlackTest" with a manual trigger.
+  It should download a file from Google Drive and then post that file into a 
+  Slack channel named "coding-agent-testing" using Slack's "Send File to channel" activity.
+  Wire the file output of the download operation to the channel input of the slack send file.  
+  Validate the final flow file.
+  For Download File activity for google drive, use the file name 'dummy_file_1366.txt'.
+  For Send File, send as `user`.
+  For google drive, use the connection name 'is.sandboxes.test@gmail.com', and for slack
+  use the connection name 'is-sandboxes'.
+
+success_criteria:
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Drive→Slack flow checks: structure, connector wiring, and debug step finished green"
+    command: "python3 $TASK_DIR/check_drive_to_slack.py"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+max_iterations: 1

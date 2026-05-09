@@ -42,9 +42,15 @@ If you encounter auth errors (401, 403, "not authenticated") during any phase, p
 
 **ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
 
+**`create-project` always scaffolds XAML.** Regardless of flags, the templates produce XAML files: `BlankTemplate` → `Main.xaml`, `TestAutomationProjectTemplate` → `TestCase.xaml`, `LibraryProcessTemplate` → XAML library workflows. There is no flag that flips the scaffolding to coded.
+
+**`--expression-language` is independent of coded vs XAML.** It controls VB vs C# syntax inside XAML activity expressions — not whether the project has `.cs` workflow files. Coded workflows (`.cs` with `[Workflow]` / `[TestCase]`) work fine in both `VisualBasic` and `CSharp` projects.
+
+**To work in coded mode**, scaffold the project (always XAML), then add `.cs` workflow files following [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. The scaffolded `Main.xaml` / `TestCase.xaml` can stay alongside your `.cs` files — `.xaml` and `.cs` workflows coexist freely.
+
 **First, decide which template to use** — see [§ Template selection](#template-selection) below **before** running any `create-project` command. Defaulting to `--template-id BlankTemplate` is correct only when the user did not name a template or domain pattern.
 
-### For XAML Projects
+### For XAML Projects (default for new projects)
 
 ```bash
 uip rpa create-project \
@@ -57,17 +63,13 @@ uip rpa create-project \
   --output json
 ```
 
-**Expression language for XAML projects:** Prefer `VisualBasic` for Windows target framework projects.
+**Expression language:** Prefer `VisualBasic` for Windows target framework projects. Use `CSharp` only when the user explicitly asks for C# expressions inside XAML activities.
 
 **`--studio-dir`:** Optional. Headless Studio does not need it. Pass it only when you have explicitly forced Studio Desktop (`UIPATH_RPA_TOOL_USE_STUDIO=1`, or invoking `diff`/`focus-activity`) and Studio's auto-detection from the registry fails.
 
-### For Coded Projects
+### For Coded Projects (only when the user explicitly requested coded)
 
-```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json
-```
-
-Use `--template-id TestAutomationProjectTemplate` for test projects, or `--template-id LibraryProcessTemplate` for libraries.
+Run the **same** `create-project` command as for an XAML project (above) — there is no separate coded form. After it scaffolds, add `.cs` workflow files per [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. The scaffolded `Main.xaml` / `TestCase.xaml` can stay — remove it only if the user explicitly asks for a coded-only project.
 
 #### Parameters
 

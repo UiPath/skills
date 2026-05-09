@@ -58,14 +58,11 @@ def _check_path_params(flow: dict[str, Any]) -> None:
     _require_all(
         _http_fallback_text(flow),
         [
-            "tasks.googleapis.com/tasks/v1/lists",
-            "/tasks/",
+            "engce-00000",
             "method",
-            "delete",
-            "tasklistid",
-            "taskid",
+            "get",
         ],
-        "Google Tasks path-params HTTP fallback",
+        "Jira Get Issue path-params HTTP fallback",
     )
 
 

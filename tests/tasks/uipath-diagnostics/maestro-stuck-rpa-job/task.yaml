@@ -10,7 +10,7 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
   max_turns: 60
-  turn_timeout: 1200
+  turn_timeout: 1000
 
 sandbox:
   driver: tempdir
@@ -33,7 +33,7 @@ success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-diagnostics skill"
     skill_name: "uipath:uipath-diagnostics"
-    expected: "yes"
+    expected_skill: "uipath:uipath-diagnostics"
     weight: 1.0
 
   - type: llm_judge

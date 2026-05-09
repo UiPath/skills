@@ -45,13 +45,16 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 |------|-------------|
 | `<ProjectName>` | **(required)** Project directory name. Created inside the current directory |
 
-Run from inside the solution directory so the resulting layout is `<SolutionDir>/<ProjectName>/`. Pair with `uip solution project add ./<ProjectName>` to register it in `.uipx`.
+Run from inside the solution directory so the resulting layout is `<SolutionDir>/<ProjectName>/`. When run from inside a solution directory, `case init` **auto-registers** the project with the parent `.uipx` — confirm via `Data.SolutionRegistration.Status` in the response (`Registered` or `AlreadyRegistered`). Use `uip solution project add ./<ProjectName>` only as a fallback when `Status` is `Skipped` or `Failed`. Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution project add` step — see `implementation.md` § Step 6.
 
 ---
 
 ## uip solution project add
 
-Register a project with an existing solution.
+Register a project with an existing solution. Used in two scenarios in this skill:
+
+1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
+2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered`, this command is redundant.
 
 ```bash
 uip solution project add <ProjectName> <SolutionName>.uipx
@@ -62,7 +65,7 @@ uip solution project add <ProjectName> <SolutionName>.uipx
 | `<ProjectName>` | **(required)** Project directory name (must already exist with `project.uiproj`) |
 | `<SolutionName>.uipx` | **(required)** Path to the solution `.uipx` |
 
-Adds the project to `.uipx.Projects[]`. Run after the case plugin has scaffolded `project.uiproj`.
+Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
 
 ---
 

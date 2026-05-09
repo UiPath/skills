@@ -7,13 +7,13 @@ description: >
   only — trigger-fired execution is not reliably testable against the
   shared Outlook connection (see skills repo outlook_trigger_inbox task
   notes).
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector]
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 60
+  max_turns: 120
   turn_timeout: 1200
 
 task_timeout: 2400
@@ -27,24 +27,21 @@ sandbox:
 
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new
-  Outlook inbox emails, parses the subject and body for urgency keywords
-  (urgent, critical, emergency, asap, down, outage, broken, immediately,
-  p0, p1, sev1) using a script node, then looks up the sender's domain
-  against a mock CRM VIP list (uipath.com, microsoft.com, google.com,
-  amazon.com, apple.com, salesforce.com, outlook.com) in another script
-  node, and branches with a decision node on whether the email is both
-  urgent AND from a VIP.
+  Outlook inbox emails and routes each one based on two signals: whether
+  it looks urgent (decide the keyword set yourself) and whether the
+  sender is a VIP (decide the VIP rule yourself — domain allow-list,
+  tag lookup, etc.).
 
-  If true, send two Slack DMs to rocky.madden@uipath.com — one escalation
-  alert with sender info, tier, subject, and preview, and one manager
-  notification with a 15-minute SLA — then reply to the sender via Outlook
-  with a VIP acknowledgment promising a 15-minute response.
+  Use one script node for urgency classification and another for VIP
+  classification, then branch with a decision node on the combined
+  result.
 
-  If false, generate a mock SUPPORT-XXXX ticket in a script node with
-  priority based on urgency, then reply to the sender via Outlook with
-  the ticket ID, priority, assignee, and a 24-hour SLA.
+  - High-touch branch (urgent AND VIP): notify on Slack and reply to
+    the sender via Outlook with a fast-response acknowledgment.
+  - Standard branch: generate a support ticket in a script node and
+    reply to the sender via Outlook with the ticket details.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a
   single pass.
@@ -60,6 +57,19 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  # ── Structural correctness ────────────────────────────────────────────
+  # Validate-only check — sandbox has no live Outlook / Slack tenant,
+  # so the agent can't `flow debug`. The checker enforces the prompt's
+  # required shape: Outlook trigger, two classifier scripts, a decision
+  # node with two branches, and Slack + Outlook-reply references.
+  - type: run_command
+    description: "Flow has Outlook trigger, classifier scripts, decision with two branches, Slack DM and Outlook reply references"
+    command: "python3 $TASK_DIR/check_customer_escalation_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 10.0
     pass_threshold: 1.0
 
 max_iterations: 1

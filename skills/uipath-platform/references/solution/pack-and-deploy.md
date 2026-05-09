@@ -132,9 +132,34 @@ Options: `--folder-path`, `--take` (default 10), `--order-by`, `--order-directio
 
 ## Configuration Workflow
 
-The config workflow lets you customize resource settings and link to existing Orchestrator resources before deploying. This is the key to environment-specific deployments.
+The deploy config is a plain JSON file that lists every resource the package exposes, along with its default properties and an optional `linkToResource` directive. It controls two things at deploy time:
 
-### Fetch Default Configuration
+- **Per-resource properties** — queue retry count, retention periods, conflict-resolution behaviour, etc.
+- **Link vs. install** — whether each resource is bound to an existing Orchestrator/Apps entity (`linkToResource` set) or provisioned fresh in the deployment folder (no `linkToResource`).
+
+The CLI exposes `get` / `set` / `link` / `unlink` for the common edits, but the file is just JSON — you can also open it in an editor and modify any field directly. Pass the file to `deploy run --config-file <path>` to apply.
+
+### File Structure
+
+`deploy config get` writes a top-level `resources` array. Each entry looks like:
+
+```jsonc
+{
+  "kind": "bucket",                                   // resource kind
+  "name": "test",                                     // resource name in the solution
+  "resourceKey": "19f344d2-...",                      // solution-resource key (cloud GUID for resources imported from RCS)
+  "folderPaths": ["solution_folder"],                 // folders the resource lives in inside the solution
+  "configuration": { /* kind-specific properties */ },
+  "linkToResource": {                                 // optional — present only when linked
+    "name": "ProductionBucket",
+    "folderPath": "Shared/Production"
+  }
+}
+```
+
+Only `linkToResource` toggles link vs. install. Everything else under `configuration` is forwarded to the resource at deploy time and can be edited freely — change retention periods, conflict-fixing actions, queue/process settings, or the kind-specific nested fields (e.g. an index's `storageBucketReference`, a process's `retentionBucketRef`) by writing to the JSON directly. Some `configuration` fields cross-reference other resources by `resourceKey`; when you edit link state on one resource, align those cross-refs on its dependents by hand if the topology changes.
+
+### Fetch the Default Configuration
 
 ```bash
 uip solution deploy config get "MySolution" -d config.json --output json
@@ -143,7 +168,7 @@ uip solution deploy config get "MySolution" -d config.json --output json
 uip solution deploy config get "MySolution" -d config.json --package-version "2.0.0" --output json
 ```
 
-This writes a JSON file containing all configurable resources and their default properties.
+The fetched file already contains every resource with default values — no manual scaffolding required.
 
 ### Set a Resource Property
 
@@ -151,7 +176,7 @@ This writes a JSON file containing all configurable resources and their default 
 uip solution deploy config set config.json MyQueue maxNumberOfRetries 5
 ```
 
-Arguments: `<config-file> <resource-name> <property> <value>`.
+Arguments: `<config-file> <resource-name> <property> <value>`. Property names match the keys under `configuration` (visible in the file).
 
 ### Set a Property for All Resources
 
@@ -159,26 +184,34 @@ Arguments: `<config-file> <resource-name> <property> <value>`.
 uip solution deploy config set config.json --all conflictFixingAction UseExisting
 ```
 
-The `--all` flag only works with `conflictFixingAction`. This controls what happens when a resource with the same name already exists in the target folder.
+`--all` is restricted to `conflictFixingAction` — the field that controls what happens when a resource with the same name already exists in the target folder.
 
 ### Link to an Existing Orchestrator Resource
 
-Instead of creating a new resource during deployment, link a solution resource to one that already exists:
+Add `linkToResource` so the deployment binds to an existing entity instead of creating a new one:
 
 ```bash
 uip solution deploy config link config.json MyQueue \
   --name ProductionQueue --folder-path "Shared/Production"
 ```
 
-This tells the deployment to use the existing `ProductionQueue` in `Shared/Production` instead of creating a new `MyQueue`.
+Effect on the file: appends `linkToResource: { name, folderPath }` to the matched resource entry. The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist.
+
+When the same resource name appears multiple times in the config (different kinds), pass `resourceKey` instead of `name` to disambiguate. The CLI surfaces the available keys in the error message.
 
 ### Unlink a Resource
 
-Remove a link so the resource is created fresh during deployment:
+Remove the link so the resource is provisioned fresh in the deployment folder:
 
 ```bash
 uip solution deploy config unlink config.json MyQueue
 ```
+
+Effect on the file: deletes the `linkToResource` field. The unlink command requires a `linkToResource` to already exist — to start from a default-install config, simply leave (or never add) the field.
+
+### Editing the Config File Directly
+
+Every change the CLI makes is a small edit to the JSON, and the file isn't restricted to the fields `set` / `link` / `unlink` know about. Any property under `configuration`, any cross-reference (e.g. `storageBucketReference.key`), or any new top-level resource entry can be edited or added by hand when the built-in commands don't cover the case. Validate by running `deploy run --config-file <path>` — the deploy fails fast if a referenced resource doesn't exist.
 
 ### Deploy with Configuration
 
@@ -190,6 +223,8 @@ uip solution deploy run -n "InvoiceAutomation-Prod" \
   --folder-name "ProdFolder" --folder-path "Production" \
   --config-file config.json --output json
 ```
+
+Without `--config-file`, the deployment uses package defaults. With `--config-file`, every resource is provisioned exactly as the file describes — fresh-install for any entry without `linkToResource`, bound for any entry with one.
 
 ---
 
@@ -263,7 +298,11 @@ On `deploy run`, `--folder-path` is the **parent** folder, not the deployment fo
 
 ### Config `link` Connects to Existing Resources
 
-`config link` does not copy or move a resource. It tells the deployment to use an existing Orchestrator resource instead of creating a new one. The linked resource must already exist in the specified folder.
+`config link` does not copy or move a resource. It writes a `linkToResource` directive that points the deployment at an existing Orchestrator/Apps resource instead of creating a new one. The linked resource must already exist in the specified folder when `deploy run` executes.
+
+### Cross-Resource References Don't Auto-Update
+
+Some resources reference others through `configuration` fields (an index's `storageBucketReference.key` pointing at a bucket, a process's `retentionBucketRef`, etc.). `link` / `unlink` only touch the targeted resource — they do not rewrite cross-references on its dependents. When you change link state for a resource that other entries point at, open the config file and align the cross-reference fields by hand.
 
 ### Config `set --all` is Limited
 
@@ -282,4 +321,5 @@ Folder filtering with `--folder-path` happens **after** fetching `--take` result
 ## Related
 
 - [develop-solution.md](develop-solution.md) -- Create and structure a solution from scratch
+- [scenarios.md](scenarios.md) -- Recipes for same-name resources, cross-refs, shared cloud entities, virtual assets at deploy
 - [activate-and-manage.md](activate-and-manage.md) -- Activate deployments, uninstall, manage packages
