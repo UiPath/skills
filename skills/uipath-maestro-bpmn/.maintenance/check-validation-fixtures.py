@@ -699,14 +699,26 @@ class Validator:
             resource.get("id")
             for resource in data["bindings_v2.json"].get("resources", [])  # type: ignore[union-attr]
         }
+        package_resources = {
+            resource.get("id"): resource
+            for resource in data["bindings_v2.json"].get("resources", [])  # type: ignore[union-attr]
+            if isinstance(resource, dict)
+        }
         for binding_id in root_bindings:
             if binding_id not in package_bindings:
                 self.error(
                     project / "bindings_v2.json", f"missing resource for binding {binding_id}"
                 )
+            else:
+                self.validate_binding_resource(
+                    project / "bindings_v2.json",
+                    root_bindings[binding_id],
+                    package_resources[binding_id],
+                )
 
         entry_points = data["entry-points.json"].get("entryPoints", [])  # type: ignore[union-attr]
         package_eps = {ep.get("id"): ep for ep in entry_points}
+        expected_schemas = self.expected_entry_point_schemas(process)
         for start in [c for c in list(process) if local(c.tag) == "startEvent"]:
             ep = start.find(f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}entryPointId")
             if ep is None:
@@ -717,6 +729,172 @@ class Validator:
                 self.error(project / "entry-points.json", f"missing entry point {ep_id}")
             elif package_eps[ep_id].get("filePath") != file_path:
                 self.error(project / "entry-points.json", f"entry point {ep_id} has wrong filePath")
+            elif ep_id in expected_schemas:
+                expected_input, expected_output = expected_schemas[ep_id]
+                actual = package_eps[ep_id]
+                if actual.get("inputSchema") != expected_input:
+                    self.error(
+                        project / "entry-points.json",
+                        f"entry point {ep_id} inputSchema differs from BPMN variables",
+                    )
+                if actual.get("outputSchema") != expected_output:
+                    self.error(
+                        project / "entry-points.json",
+                        f"entry point {ep_id} outputSchema differs from BPMN variables",
+                    )
+
+        self.validate_intsvc_package_enrichment(
+            project / "bindings_v2.json", root, root_bindings, package_resources
+        )
+
+    def expected_entry_point_schemas(
+        self, process: ET.Element
+    ) -> dict[str, tuple[dict[str, object], dict[str, object]]]:
+        root_variables = process.find(f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}variables")
+        inputs_by_start: dict[str, dict[str, object]] = {}
+        outputs: dict[str, object] = {}
+        if root_variables is not None:
+            for variable in list(root_variables):
+                name = variable.attrib.get("name")
+                if not name:
+                    continue
+                schema = self.variable_schema(variable)
+                if local(variable.tag) == "input":
+                    element_id = variable.attrib.get("elementId")
+                    if element_id:
+                        inputs_by_start.setdefault(element_id, {})[name] = schema
+                elif local(variable.tag) == "output":
+                    outputs[name] = schema
+
+        expected: dict[str, tuple[dict[str, object], dict[str, object]]] = {}
+        for start in [c for c in list(process) if local(c.tag) == "startEvent"]:
+            ep = start.find(f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}entryPointId")
+            if ep is None or not ep.attrib.get("value"):
+                continue
+            expected[ep.attrib["value"]] = (
+                {"type": "object", "properties": inputs_by_start.get(start.attrib["id"], {})},
+                {"type": "object", "properties": outputs},
+            )
+        return expected
+
+    def variable_schema(self, variable: ET.Element) -> dict[str, object]:
+        var_type = variable.attrib.get("type", "string")
+        if var_type == "jsonSchema":
+            try:
+                schema = json.loads(variable.text or "{}")
+            except json.JSONDecodeError:
+                return {"type": "object"}
+            if isinstance(schema, dict):
+                schema.pop("$schema", None)
+                return schema
+            return {"type": "object"}
+
+        type_map = {
+            "boolean": "boolean",
+            "integer": "integer",
+            "number": "number",
+            "array": "array",
+            "object": "object",
+            "json": "object",
+            "string": "string",
+        }
+        return {"type": type_map.get(var_type, "string")}
+
+    def validate_binding_resource(
+        self, path: Path, binding: ET.Element, resource: dict[str, object]
+    ) -> None:
+        binding_id = binding.attrib.get("id")
+        expected_kind = binding.attrib.get("type")
+        if resource.get("name") != binding.attrib.get("name"):
+            self.error(path, f"resource {binding_id} name differs from BPMN binding")
+        if expected_kind and resource.get("kind") != expected_kind:
+            self.error(path, f"resource {binding_id} kind differs from BPMN binding")
+        if binding.attrib.get("resourceKey") and resource.get("resourceKey") != binding.attrib.get(
+            "resourceKey"
+        ):
+            self.error(path, f"resource {binding_id} resourceKey differs from BPMN binding")
+
+        metadata = resource.get("metadata")
+        if not isinstance(metadata, dict):
+            self.error(path, f"resource {binding_id} metadata must be an object")
+            return
+        if metadata.get("BindingsVersion") != "v1":
+            self.error(path, f"resource {binding_id} metadata.BindingsVersion must be v1")
+        if metadata.get("DisplayLabel") != binding.attrib.get("name"):
+            self.error(path, f"resource {binding_id} metadata.DisplayLabel differs from binding")
+
+        expected_subtype = binding.attrib.get("resourceSubType") or binding.attrib.get("type")
+        if metadata.get("SubType") != expected_subtype:
+            self.error(path, f"resource {binding_id} metadata.SubType differs from binding")
+
+    def validate_intsvc_package_enrichment(
+        self,
+        path: Path,
+        root: ET.Element,
+        bindings: dict[str, ET.Element],
+        package_resources: dict[object, dict[str, object]],
+    ) -> None:
+        for elem in root.iter():
+            if ns(elem.tag) != UIPATH_NS or local(elem.tag) not in {"activity", "event"}:
+                continue
+            type_elem = elem.find(f"{{{UIPATH_NS}}}type")
+            service_type = type_elem.attrib.get("value") if type_elem is not None else ""
+            if not service_type.startswith("Intsvc."):
+                continue
+
+            context = elem.find(f"{{{UIPATH_NS}}}context")
+            context_inputs = {
+                child.attrib.get("name"): child.attrib.get("value", "")
+                for child in list(context)
+                if context is not None and local(child.tag) == "input"
+            }
+            connector_key = context_inputs.get("connectorKey")
+            for name, value in context_inputs.items():
+                binding_id = self.binding_expression_id(value)
+                if not binding_id:
+                    continue
+                binding = bindings.get(binding_id)
+                resource = package_resources.get(binding_id)
+                if binding is None or resource is None:
+                    continue
+                metadata = resource.get("metadata")
+                if not isinstance(metadata, dict):
+                    continue
+                if name in {"connection", "trigger"} and connector_key:
+                    if metadata.get("Connector") != connector_key:
+                        self.error(
+                            path,
+                            f"{service_type} {name} resource {binding_id} connector metadata differs",
+                        )
+                    if metadata.get("SolutionsSupport") != "Required":
+                        self.error(
+                            path,
+                            f"{service_type} {name} resource {binding_id} must require solutions support",
+                        )
+                if binding.attrib.get("propertyAttribute") and name not in {
+                    "connection",
+                    "trigger",
+                }:
+                    parent_id = self.binding_expression_id(context_inputs.get("trigger", ""))
+                    parent = package_resources.get(parent_id)
+                    expected_parent = (
+                        parent.get("resourceKey") if isinstance(parent, dict) else None
+                    )
+                    if expected_parent and metadata.get("ParentResourceKey") != expected_parent:
+                        self.error(
+                            path,
+                            f"{service_type} property resource {binding_id} has wrong parent key",
+                        )
+
+            if (
+                service_type in {"Intsvc.ActivityExecution", "Intsvc.AsyncExecution"}
+                and elem.find(f"{{{UIPATH_NS}}}inputSchema") is None
+            ):
+                self.error(path, f"{service_type} missing generated inputSchema")
+
+    def binding_expression_id(self, value: str) -> str | None:
+        match = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", value)
+        return match.group(1) if match else None
 
 
 if __name__ == "__main__":

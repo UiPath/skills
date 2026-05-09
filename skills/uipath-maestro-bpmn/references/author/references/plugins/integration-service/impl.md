@@ -43,3 +43,5 @@ Before Operate, confirm that:
 - Required filters and parameters are present.
 - Trigger property bindings are generated for trigger elements.
 - No private IDs are present in files intended for commit.
+
+Use [shared/local-metadata-regeneration-guide.md](../../../../shared/local-metadata-regeneration-guide.md) to verify the generated `bindings_v2.json`, `entry-points.json`, and `Intsvc.*` payloads agree before upload, debug, publish, or deploy.

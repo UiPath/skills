@@ -38,6 +38,7 @@ Guide for authoring, inspecting, validating, packaging, operating, and diagnosin
 | Package, upload, publish, run, or manage lifecycle | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Understand project layout and package files | [references/shared/project-layout.md](references/shared/project-layout.md) |
+| Regenerate or verify local package metadata | [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md) |
 | Understand BPMN XML authoring boundaries | [references/shared/bpmn-xml-contract.md](references/shared/bpmn-xml-contract.md) |
 | Understand variables, bindings, entry points, and expressions | [references/shared/variables-bindings-expressions.md](references/shared/variables-bindings-expressions.md) |
 | Understand CLI conventions and side-effect boundaries | [references/shared/cli-conventions.md](references/shared/cli-conventions.md) |

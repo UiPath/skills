@@ -37,6 +37,8 @@ When generated package files exist, verify that:
 - `operate.json` points at the intended main BPMN file and content type.
 - `package-descriptor.json` includes the BPMN and generated JSON files under content.
 
+Use [shared/local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) when a mismatch requires local regeneration or Integration Service enrichment.
+
 ## Result handling
 
 - Blocking errors must be fixed before upload, publish, debug, or run.

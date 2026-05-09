@@ -16,6 +16,8 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
 
 Treat these JSON files as derived unless a CLI contract explicitly identifies a field as user-authored. For source fixes, edit BPMN or rerun CLI enrichment rather than patching generated output by hand.
 
+For the regeneration and drift-check contract, see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
+
 ## Package content
 
 A Process Orchestration package content folder contains:

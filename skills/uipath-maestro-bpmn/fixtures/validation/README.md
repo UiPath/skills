@@ -57,7 +57,6 @@ passes only when basename validation rejects the renamed project metadata.
 
 - Should `uipath:loopCharacteristics` remain the stable public contract for multi-instance collection and item binding, or should fixture validation prefer registry/CLI-generated loop metadata when available?
 - Which `Intsvc.*` context fields are mandatory across all connector families versus connector-specific fields that should stay outside this static checker?
-- Should `entry-points.json` validation compare full input schemas against root variables, or only verify entry point IDs and file paths until the CLI generator owns schema normalization?
 
 ## Maintenance Commands
 
