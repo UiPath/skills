@@ -4,7 +4,10 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
 
 ## Canonical source files
 
-- `<project>.bpmn` - BPMN process source and UiPath extension XML.
+- `<project>.bpmn` - BPMN process source and UiPath extension XML. For a new
+  project, keep the BPMN source basename exactly aligned with the project
+  directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
+  `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
 - `project.uiproj` - UiPath project metadata.
 
 ## Generated or CLI-managed package files
