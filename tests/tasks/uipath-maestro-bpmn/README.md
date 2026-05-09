@@ -13,6 +13,9 @@ The layout mirrors the Flow eval suite:
   diagrams. `simple_approval_bpmn.yaml` composes the manual smoke "simple
   approval" matrix (StartAgentJob, gateway, CreateQueueItem, script task,
   variables, migration metadata, BPMN DI) in one task.
+- `authoring/` covers implementation-matrix rows that should not be
+  fixture-only: business rules, API workflow execution, and the script/Jint
+  lifecycle path.
 - `nodes/` covers task wrapper and script-task authoring behavior.
 - `nodes/contract_variant_wrappers.yaml` covers public-safe Maestro BPMN XML
   contract variants from imported-wrapper parsing, including async call
