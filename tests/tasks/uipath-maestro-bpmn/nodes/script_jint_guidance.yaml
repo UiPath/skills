@@ -27,7 +27,8 @@ initial_prompt: |
     `http://uipath.org/schema/bpmn`; do not use workflow-activities
     namespaces for BPMN extension XML.
   - Declare root `uipath:variables version="v1"` entries for `amount`,
-    `daysOverdue`, and `riskScore`.
+    `daysOverdue`, and `riskScore` inside `bpmn:process` /
+    `bpmn:extensionElements`.
   - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`.
   - Include the UiPath script version metadata and prefer version `v3`.
   - Map script inputs through `uipath:input name="args"`, but write the script

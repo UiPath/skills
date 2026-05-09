@@ -45,6 +45,8 @@ initial_prompt: |
 
   Do NOT retry, cancel, migrate, move a cursor, debug, run a process, upload,
   publish, deploy, ask for approval, confirmation, or feedback.
+  Use the `uip maestro bpmn ... --output json` commands for diagnostic reads;
+  do not inspect `mocks/`, `fixtures/`, or response JSON files directly.
 
 success_criteria:
   - type: command_executed
