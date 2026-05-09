@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Verify the registry-evidence directory covers agent, queue, and connector wrappers.
+"""Verify raw registry JSON covers agent, queue, and connector wrappers.
 
-The agent stores raw CLI output and notes locally. This checker walks the
-combined text body and confirms each required wrapper family is referenced.
-The skill's supported-element map already gates private-value safety, so this
-checker focuses on coverage signal rather than redacting registry field names.
+The agent stores raw CLI output locally. This checker intentionally ignores
+agent-written prose so the task cannot pass by summarizing expected wrapper
+names without preserving registry command output.
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -34,14 +34,18 @@ def main() -> None:
     if not evidence.is_dir():
         sys.exit("FAIL: registry-evidence directory missing")
 
-    files = [p for p in evidence.rglob("*") if p.is_file()]
+    files = [p for p in evidence.rglob("*.json") if p.is_file()]
     if not files:
-        sys.exit("FAIL: registry-evidence directory has no files")
+        sys.exit("FAIL: registry-evidence directory has no raw JSON files")
 
     body_parts: list[str] = []
     for path in files:
         try:
-            body_parts.append(path.read_text(encoding="utf-8", errors="ignore"))
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            json.loads(text)
+            body_parts.append(text)
+        except json.JSONDecodeError as exc:
+            sys.exit(f"FAIL: registry evidence file is not valid JSON: {path}: {exc}")
         except OSError as exc:
             sys.exit(f"FAIL: could not read {path}: {exc}")
     body = "\n".join(body_parts)

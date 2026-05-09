@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Verify the BPMN sources of the validation fixture corpus still parse.
+"""Verify the validation fixture corpus still parses and was packaged.
 
-Run from the scored workspace after the agent has packed (or attempted to
-pack) each fixture. Checks that the fixture corpus has not been mutated and
-that every fixture BPMN file is well-formed.
+Run from the scored workspace after the agent has packed each fixture. Checks
+that the fixture corpus has not been mutated, every fixture BPMN file is
+well-formed, and local package artifacts were produced outside fixture folders.
 """
 
 from __future__ import annotations
@@ -20,6 +20,8 @@ EXPECTED = (
     "fixtures/validation/contract-variants/contract-variants.bpmn",
     "fixtures/validation/registry-coverage-matrix/registry-coverage-matrix.bpmn",
 )
+
+PACKAGE_OUTPUT = Path("fixture-pack-output")
 
 
 def main() -> None:
@@ -38,7 +40,22 @@ def main() -> None:
         sys.exit(f"FAIL: missing fixture BPMN files: {missing}")
     if bad:
         sys.exit(f"FAIL: fixture BPMN files no longer parse: {bad}")
-    print(f"OK: {len(EXPECTED)} fixture BPMN files parse")
+
+    packages = list(PACKAGE_OUTPUT.rglob("*.nupkg"))
+    if len(packages) < len(EXPECTED):
+        sys.exit(
+            "FAIL: expected at least "
+            f"{len(EXPECTED)} package artifacts under {PACKAGE_OUTPUT}, found {len(packages)}"
+        )
+    fixture_package_paths = [
+        str(path) for path in packages if "fixtures/validation" in path.as_posix()
+    ]
+    if fixture_package_paths:
+        sys.exit(
+            f"FAIL: package artifacts were written under fixture folders: {fixture_package_paths}"
+        )
+
+    print(f"OK: {len(EXPECTED)} fixture BPMN files parse and {len(packages)} packages exist")
 
 
 if __name__ == "__main__":

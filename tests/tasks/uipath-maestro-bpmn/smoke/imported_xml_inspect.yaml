@@ -52,22 +52,27 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Inspection report names every required fixture"
-    path: "inspection-report.md"
-    includes:
-      - "gateway-boundary-error"
-      - "integration-service-enriched"
-      - "subprocess-multi-instance"
+  - type: command_executed
+    description: "Agent opened the gateway boundary error BPMN fixture"
+    tool_name: "Read"
+    command_pattern: 'fixtures/validation/gateway-boundary-error/gateway-boundary-error\.bpmn'
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Inspection report identifies the documented model/CLI split for Integration Service enrichment"
-    path: "inspection-report.md"
-    includes:
-      - "Integration Service"
-      - "CLI"
+  - type: command_executed
+    description: "Agent opened the Integration Service enriched BPMN fixture"
+    tool_name: "Read"
+    command_pattern: 'fixtures/validation/integration-service-enriched/integration-service-enriched\.bpmn'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent opened the subprocess multi-instance BPMN fixture"
+    tool_name: "Read"
+    command_pattern: 'fixtures/validation/subprocess-multi-instance/subprocess-multi-instance\.bpmn'
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 

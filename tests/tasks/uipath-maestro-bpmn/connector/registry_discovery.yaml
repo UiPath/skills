@@ -20,23 +20,18 @@ sandbox:
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
-  Use the registry discovery commands of the installed `uip` CLI to enumerate
-  the documented Maestro BPMN wrapper surface for agent, queue, and connector
-  resource types. Save evidence locally without uploading, publishing,
-  deploying, debugging, or running anything.
+  Use the installed `uip` CLI's Maestro BPMN registry surface to discover the
+  documented wrapper surface for agent, queue, and connector resource types.
+  Save evidence locally without uploading, publishing, deploying, debugging, or
+  running anything.
 
   Requirements:
   - Save outputs under a local `registry-evidence/` directory you create.
-  - Run a registry list call that covers the documented wrapper surface.
-  - Run a registry search call for at least one documented agent or queue
-    wrapper type (for example `Orchestrator.StartAgentJob` or
-    `Orchestrator.CreateQueueItem`).
-  - Run a registry get call for at least one documented wrapper type.
-  - Use `--output json` for parsed CLI calls and write the raw JSON output
+  - Capture raw JSON evidence for the overall registry catalog, a filtered
+    lookup for at least one documented agent or queue wrapper type, and the
+    detailed registry record for at least one documented wrapper type.
+  - Use `--output json` for parsed CLI calls and write only the raw JSON output
     files into `registry-evidence/`.
-  - Add a short `registry-evidence/notes.md` summarizing which agent, queue,
-    and connector wrapper types were observed, citing the wrapper identifiers
-    by name.
   - Do not invent connection IDs, folder keys, tenant URLs, real connector
     keys, or release keys.
   - Do not upload, publish, deploy, debug, or run anything.

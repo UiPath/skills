@@ -32,12 +32,9 @@ initial_prompt: |
   - `fixtures/validation/registry-coverage-matrix/`
 
   Requirements:
-  - Use the installed `uip` CLI to pack each fixture project when a supported
-    Maestro BPMN pack command is available. Send packed output to a local
-    output directory you choose, not into the fixture folder.
-  - If the installed CLI does not expose a Maestro BPMN pack command, run a
-    local fallback that confirms each fixture's BPMN source parses as XML and
-    note the missing CLI command in your final report.
+  - Use the installed `uip` CLI to pack each fixture project. Send packed
+    output to a local `fixture-pack-output/` directory, not into the fixture
+    folders.
   - Do not upload, publish, deploy, debug, or run any process.
   - Do not edit fixture files.
 
@@ -49,19 +46,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attempted Maestro BPMN pack for at least three fixture projects (or ran a documented local fallback)"
+    description: "Agent attempted Maestro BPMN pack for each fixture project"
     tool_name: "Bash"
-    command_pattern: '((uip|\$UIP)\s+(maestro\s+)?bpmn\s+pack|python3?\s+[\s\S]*ET\.parse\([\s\S]*fixtures/validation/[\s\S]*\.bpmn|xmllint\s+[\s\S]*fixtures/validation/[\s\S]*\.bpmn)'
-    min_count: 3
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+pack\s+fixtures/validation/[\w-]+[\s/]+fixture-pack-output\s+--output\s+json'
+    min_count: 6
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Every fixture BPMN file in the corpus parses as XML in the scored workspace"
+    description: "Every fixture BPMN file parses and local package artifacts exist"
     command: "python3 $TASK_DIR/check_validation_fixtures_pack.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 3.0
+    weight: 4.0
     pass_threshold: 1.0
 
   - type: command_executed
