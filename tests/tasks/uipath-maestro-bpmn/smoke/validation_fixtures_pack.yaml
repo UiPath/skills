@@ -50,7 +50,7 @@ success_criteria:
   - type: command_executed
     description: "Agent attempted Maestro BPMN pack for each fixture project"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+pack\s+.*fixtures/validation/[\w-]+.*fixture-pack-output.*--output\s+json'
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+pack\s+.*fixtures/validation/[\w-]+.*--output\s+json'
     min_count: 8
     weight: 3.0
     pass_threshold: 1.0

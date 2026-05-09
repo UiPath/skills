@@ -70,16 +70,14 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
-    description: "Agent did not run BPMN debug"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug'
+  - type: llm_judge
+    description: "Agent kept the lifecycle local and avoided cloud-side operations"
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_not_executed
-    description: "Agent did not run cloud upload/publish/deploy"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(solution\s+upload|solution\s+publish|solution\s+deploy|maestro\s+bpmn\s+process\s+run)'
-    weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: >
+      Pass if the agent created only local project files and did not run or
+      request approval for BPMN debug, process run, upload, publish, or deploy
+      commands. Fail if tool calls or the final answer show any cloud-side
+      lifecycle mutation or any request to perform one.

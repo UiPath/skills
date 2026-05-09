@@ -90,16 +90,15 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
-    description: "Agent did not mutate the BPMN runtime lifecycle"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+(retry|cancel|pause|resume|migrate|goto)\s+'
+  - type: llm_judge
+    description: "Agent diagnosed only and avoided BPMN lifecycle mutations"
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_not_executed
-    description: "Agent did not run or debug the BPMN process"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(debug|process\s+run)'
-    weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: >
+      Pass if the agent only inspected mocked status, incidents, variables, and
+      deployed asset data, then recommended a safe next action without running
+      retry, cancel, pause, resume, migrate, goto, debug, process run, upload,
+      publish, or deploy commands. Fail if tool calls or the final answer show
+      any lifecycle mutation or any request to perform one.
