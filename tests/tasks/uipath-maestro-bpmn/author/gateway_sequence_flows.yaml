@@ -2,7 +2,7 @@ task_id: skill-bpmn-gateway-sequence-flows
 description: >
   Authoring eval: agent creates a BPMN skeleton with gateway branching,
   joining, default routing, sequence-flow conditions, and BPMN DI.
-tags: [uipath-maestro-bpmn, smoke, lifecycle:generate, shape:multi-node, node:gateway]
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:multi-node, node:gateway]
 
 agent:
   type: claude-code

@@ -3,7 +3,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to create
   a repo-shaped Maestro BPMN Process Orchestration project, validate it
   locally, and package it without cloud-side effects.
-tags: [uipath-maestro-bpmn, smoke, lifecycle:generate, lifecycle:validate, lifecycle:package]
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, lifecycle:validate, lifecycle:package]
 
 agent:
   type: claude-code
