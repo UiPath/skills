@@ -44,6 +44,11 @@ Latest local fixture validation from this pilot:
 validation_fixture_projects=6 bpmn_files=6 errors=0
 ```
 
+The local checker also runs a narrow negative regression for a misnamed
+single-file BPMN project, seeded from the `gateway-boundary-error/` fixture. The
+source QA repro is `.rookery/qa/gateway_misnamed_repro.log`; the regression
+passes only when basename validation rejects the renamed project metadata.
+
 ## Open Questions for Maestro Owners
 
 - Should `uipath:loopCharacteristics` remain the stable public contract for multi-instance collection and item binding, or should fixture validation prefer registry/CLI-generated loop metadata when available?

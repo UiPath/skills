@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "fixtures" / "validation"
+GATEWAY_MISNAMED_REPRO_LOG = ".rookery/qa/gateway_misnamed_repro.log"
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 BPMNDI_NS = "http://www.omg.org/spec/BPMN/20100524/DI"
 DI_NS = "http://www.omg.org/spec/DD/20100524/DI"
@@ -86,6 +89,8 @@ class Validator:
             self.validate_project(project)
 
         self.validate_contract_coverage()
+        regression_errors = self.validate_regressions()
+        self.errors.extend(regression_errors)
 
         for err in self.errors:
             print(f"ERROR: {err}")
@@ -126,6 +131,45 @@ class Validator:
         root = tree.getroot()
         self.validate_bpmn_document(bpmn, root)
         self.validate_package_files(project, bpmn.name, root)
+
+    def validate_regressions(self) -> list[str]:
+        errors: list[str] = []
+        errors.extend(self.validate_gateway_misnamed_repro())
+        return errors
+
+    def validate_gateway_misnamed_repro(self) -> list[str]:
+        """Assert single-BPMN package metadata fails when the BPMN basename drifts."""
+
+        fixture = FIXTURES / "gateway-boundary-error"
+        if not fixture.is_dir():
+            return [
+                "regression gateway-misnamed-repro: "
+                "source fixture gateway-boundary-error is missing"
+            ]
+
+        with tempfile.TemporaryDirectory(prefix="gateway-misnamed-repro-", dir=ROOT) as tmp:
+            project = Path(tmp) / "gateway-boundary-error"
+            shutil.copytree(fixture, project)
+            original_bpmn = project / "gateway-boundary-error.bpmn"
+            renamed_bpmn = project / "gateway-misnamed-repro.bpmn"
+            original_bpmn.rename(renamed_bpmn)
+
+            regression = Validator()
+            regression.validate_project(project)
+            basename_errors = [
+                err
+                for err in regression.errors
+                if "main basename does not match single BPMN file basename" in err
+            ]
+            if basename_errors:
+                return []
+
+            details = "; ".join(regression.errors) or "no validation error"
+            return [
+                "regression gateway-misnamed-repro failed: expected basename validation "
+                f"error for misnamed single-file project; see {GATEWAY_MISNAMED_REPRO_LOG}; "
+                f"observed: {details}"
+            ]
 
     def validate_public_safety(self, path: Path, text: str) -> None:
         patterns = {
@@ -565,10 +609,16 @@ class Validator:
                 self.error(path, f"JSON parse failed: {exc}")
                 return
 
-        if data["project.uiproj"].get("main") != bpmn_name:  # type: ignore[union-attr]
-            self.error(project / "project.uiproj", "main does not match BPMN file")
-        if data["operate.json"].get("main") != bpmn_name:  # type: ignore[union-attr]
-            self.error(project / "operate.json", "main does not match BPMN file")
+        if Path(str(data["project.uiproj"].get("main", ""))).name != bpmn_name:  # type: ignore[union-attr]
+            self.error(
+                project / "project.uiproj",
+                "main basename does not match single BPMN file basename",
+            )
+        if Path(str(data["operate.json"].get("main", ""))).name != bpmn_name:  # type: ignore[union-attr]
+            self.error(
+                project / "operate.json",
+                "main basename does not match single BPMN file basename",
+            )
         if data["operate.json"].get("contentType") != "ProcessOrchestration":  # type: ignore[union-attr]
             self.error(project / "operate.json", "contentType must be ProcessOrchestration")
 
