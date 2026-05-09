@@ -49,6 +49,7 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 | Choose an editing operation | [references/editing-operations.md](references/editing-operations.md) |
 | Choose what the model may write | [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md) |
 | Choose supported BPMN elements and extension wrappers | [references/supported-elements.md](references/supported-elements.md) |
+| Copy a minimal XML shell for a wrapper | [shared/wrapper-shells.md](../shared/wrapper-shells.md) |
 | Add resource-backed task recipes | [references/task-recipes/](references/task-recipes/) |
 | Work with Integration Service nodes/triggers | [references/plugins/integration-service/](references/plugins/integration-service/) |
 

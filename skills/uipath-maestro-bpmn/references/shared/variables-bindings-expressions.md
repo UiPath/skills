@@ -78,3 +78,8 @@ with an `inputSchema` in context, but the Jint script body receives the mapped
 fields as top-level identifiers. For example, a mapped `caseId` field is read
 as `caseId` in script source, not `args.caseId`. Script outputs must map back
 to declared variable ids, usually with sources such as `=result.response`.
+
+For the exact required XML shape — including `uipath:input name="args"` with
+`=vars.<variableId>` mapping bodies and a Jint-safe top-level identifier
+script — see [../author/references/plugins/script/impl.md](../author/references/plugins/script/impl.md#minimal-jint-script-task-shell)
+and [wrapper-shells.md](wrapper-shells.md).
