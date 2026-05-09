@@ -26,6 +26,8 @@ The `contract-variants/` fixture is representative coverage for public-safe XML 
 | CLI-owned `Intsvc.*` enrichment | Covered as synthetic wrapper shells only. `contract-variants/` keeps one representative `Intsvc.WaitForEvent` shell; `integration-service-enriched/` covers enriched trigger/activity sidecars; `registry-coverage-matrix/` covers the remaining current registry wrapper names without claiming connector-specific schemas are model-owned. |
 | Standard BPMN structures | Covered across the fixture corpus by targeted structural checks, not by a row-for-row supported-elements matrix. |
 
+The Integration Service fixture is intentionally shape-only. It verifies where enriched XML, bindings, and generated package metadata appear, but it is not evidence that those connector values are valid for a live tenant. Real projects still require current registry-backed enrichment before Operate.
+
 ## Pilot Scenarios
 
 The corpus was piloted against these public-safe authoring and debugging requests:

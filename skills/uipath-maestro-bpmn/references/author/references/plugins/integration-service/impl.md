@@ -14,9 +14,11 @@ The model may edit:
 
 The model must keep any Integration Service service payload as draft intent unless CLI enrichment has supplied the concrete metadata.
 
+Sanitized fixtures may be used to understand where enriched XML and generated package files appear, but their connector keys, resource keys, operation names, schemas, and bindings must not be copied into a live project.
+
 ## CLI-owned implementation
 
-The CLI or registry-backed tool must generate or enrich:
+The CLI or registry-backed tool must generate or enrich from current tenant/registry data:
 
 - `uipath:activity` or `uipath:event` contents for `Intsvc.*` service types.
 - `uipath:type` service type and version from supported metadata.
@@ -43,5 +45,6 @@ Before Operate, confirm that:
 - Required filters and parameters are present.
 - Trigger property bindings are generated for trigger elements.
 - No private IDs are present in files intended for commit.
+- Enrichment evidence comes from the current target tenant/registry, not from copied exports or synthetic fixtures.
 
 Use [shared/local-metadata-regeneration-guide.md](../../../../shared/local-metadata-regeneration-guide.md) to verify the generated `bindings_v2.json`, `entry-points.json`, and `Intsvc.*` payloads agree before upload, debug, publish, or deploy.

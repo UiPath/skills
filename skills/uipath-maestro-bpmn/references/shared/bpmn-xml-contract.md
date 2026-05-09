@@ -51,6 +51,14 @@ For non-trivial authoring, split generation into two passes:
 
 Do not combine connector selection, connection binding, dynamic schema generation, and topology rewrites in one opaque edit.
 
+## Executable contract boundary
+
+The current confirmed generation boundary is preserve/model-shell only for areas whose runtime contract depends on tenant state, registry metadata, or non-BPMN subscriptions. Do not add generation guidance that creates executable payloads for those areas until the contract is fixture-backed and CLI-validated.
+
+- Signals: standard BPMN signal definitions and signal event references are model-owned XML. Runtime-executable cross-process signal subscriptions, correlation, payload schema contracts, and tenant/resource/channel bindings are outside the model-owned contract unless a dedicated CLI or operator-owned contract supplies them.
+- Integration Service: model authors may create the surrounding BPMN node and document connector intent. Executable `Intsvc.*` activity/event XML, connection bindings, connector metadata, trigger property bindings, filters, parameters, and dynamic schemas require live registry-backed CLI enrichment for the target tenant before upload, debug, publish, or deploy.
+- Brownfield files: preserve imported executable signal or Integration Service extension XML unless the user explicitly asks for normalization and the CLI can validate the replacement.
+
 ## UiPath extensions the model may write
 
 Use lower-case XML aliases in examples and authoring guidance:

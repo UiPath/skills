@@ -21,6 +21,14 @@ Use this plugin reference when a BPMN process needs:
 5. Keep the surrounding BPMN structure model-authored: start/event/task placement, sequence flows, gateways, error handling, and diagrams.
 6. Hand the Integration Service element to CLI enrichment before validation for upload/debug/publish.
 
+## Live enrichment expectation
+
+Executable Integration Service nodes require live registry-backed enrichment for the target tenant. Static examples and sanitized fixtures demonstrate shape only; they are not reusable connector metadata.
+
+- Use current CLI/registry data for connector keys, operation/event names, object metadata, connection availability, trigger properties, filters, parameter schemas, and generated output schemas.
+- Treat stale exported metadata, copied tenant identifiers, or fixture values as non-authoritative.
+- If live enrichment is unavailable, keep the node as draft intent and stop before Operate. Do not hand-author enough `Intsvc.*` XML to make the node appear executable.
+
 ## Model may draft
 
 - A placeholder service task, start event, or intermediate event with a stable element ID.
