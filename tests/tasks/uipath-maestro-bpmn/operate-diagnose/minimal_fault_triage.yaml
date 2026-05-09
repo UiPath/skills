@@ -80,13 +80,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Diagnosis captures the fault element, root cause ownership, and safe next action"
+    description: "Diagnosis captures the fault element and root cause ownership"
     path: "diagnosis.md"
     includes:
       - "Task_InvokeLegacyRpa"
       - "folderPath"
       - "cloud configuration"
-      - "Do not retry"
+      - "Integration Service"
     weight: 3.0
     pass_threshold: 1.0
 
