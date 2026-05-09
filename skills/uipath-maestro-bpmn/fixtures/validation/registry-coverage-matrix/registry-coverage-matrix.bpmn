@@ -48,6 +48,7 @@
             <uipath:input name="activity" type="string" value="synthetic-activity" />
             <uipath:input name="operation" type="string" value="synthetic.operation" />
           </uipath:context>
+          <uipath:inputSchema><![CDATA[{"type":"object","properties":{}}]]></uipath:inputSchema>
           <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
         </uipath:activity>
       </bpmn:extensionElements>

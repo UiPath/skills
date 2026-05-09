@@ -3,9 +3,16 @@
   "resources": [
     {
       "id": "Binding_RegistryConnection",
-      "type": "connection",
+      "kind": "connection",
       "name": "Synthetic Registry Connection",
-      "resourceKey": "synthetic-registry-connection"
+      "resourceKey": "synthetic-registry-connection",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Registry Connection",
+        "SolutionsSupport": "Required",
+        "SubType": "connection",
+        "Connector": "synthetic-connector"
+      }
     }
   ]
 }
