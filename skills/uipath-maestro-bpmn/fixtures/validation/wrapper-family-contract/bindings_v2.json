@@ -1,0 +1,92 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_AgentDefinition",
+      "name": "Synthetic Agent",
+      "kind": "agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "agent"
+      }
+    },
+    {
+      "id": "Binding_ApiWorkflow",
+      "name": "Synthetic API Workflow",
+      "kind": "process",
+      "resourceKey": "synthetic-api-workflow",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic API Workflow",
+        "SolutionsSupport": "Required",
+        "SubType": "apiWorkflow"
+      }
+    },
+    {
+      "id": "Binding_BusinessRule",
+      "name": "Synthetic Business Rule",
+      "kind": "process",
+      "resourceKey": "synthetic-business-rule",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Business Rule",
+        "SolutionsSupport": "Required",
+        "SubType": "businessRules"
+      }
+    },
+    {
+      "id": "Binding_Queue",
+      "name": "Synthetic Queue",
+      "kind": "queue",
+      "resourceKey": "synthetic-queue",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Queue",
+        "SolutionsSupport": "Required",
+        "SubType": "queue"
+      }
+    },
+    {
+      "id": "Binding_CaseProcess",
+      "name": "Synthetic Case Process",
+      "kind": "process",
+      "resourceKey": "synthetic-case-process",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Case Process",
+        "SolutionsSupport": "Required",
+        "SubType": "caseManagement"
+      }
+    },
+    {
+      "id": "Binding_WaitConnection",
+      "name": "Synthetic Connector Connection",
+      "kind": "connection",
+      "resourceKey": "synthetic-connector-connection",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Connector Connection",
+        "SolutionsSupport": "Required",
+        "SubType": "connection",
+        "Connector": "synthetic-connector"
+      }
+    },
+    {
+      "id": "Binding_WaitTrigger",
+      "name": "Synthetic Connector Trigger",
+      "kind": "eventTrigger",
+      "resourceKey": "synthetic-connector-trigger",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Connector Trigger",
+        "SolutionsSupport": "Required",
+        "SubType": "eventTrigger",
+        "Connector": "synthetic-connector",
+        "EventName": "CaseUpdated"
+      }
+    }
+  ]
+}

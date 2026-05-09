@@ -13,6 +13,7 @@ Public-safe fixture corpus for the `uipath-maestro-bpmn` skill maintenance check
 | `subprocess-multi-instance/` | Subprocess scoped variables, multi-instance loop metadata, script task metadata, mappings, message event, and diagram/waypoint coverage. |
 | `contract-variants/` | Representative public-safe Orchestrator agent, A2A, API workflow, business rule, queue, agentic/case call activity, message send event, case-management draft/preserve shells, `Intsvc.WaitForEvent`, numeric migration, legacy script, and preserve-only extension variants. |
 | `registry-coverage-matrix/` | Synthetic static wrapper coverage for current registry rows not otherwise covered by the corpus, including HITL, plain RPA, timer, HTTP, unified HTTP, and remaining Integration Service execution variants. |
+| `wrapper-family-contract/` | Frontend XML wrapper coverage for `A2A.AgentExecution`, API workflow, business rule, queue wait, case-management call activity, and `Intsvc.WaitForEvent` enrichment paths. |
 
 ## Contract Coverage Scope
 
@@ -37,13 +38,14 @@ The corpus was piloted against these public-safe authoring and debugging request
 | Author a batch item processor with a scoped subprocess, sequential multi-instance loop, script normalization, and a message wait. | `subprocess-multi-instance/` | Added checks for message references and multi-instance collection/item metadata so stuck-loop and stuck-wait issues are caught locally. |
 | Review imported XML that mixes public Orchestrator wrappers, Integration Service waits, message events, case-management draft/preserve shells, numeric migrations, legacy script metadata, and unsupported UiPath extension payloads. | `contract-variants/` | Added structural checks that wrappers stay on the documented BPMN element classes and preserve-only payloads are retained without private identifiers. |
 | Compare the static fixture corpus against the registry surface exposed by `uip maestro bpmn registry list`. | `registry-coverage-matrix/` plus existing fixtures | Filled the missing wrapper rows with synthetic placeholders while keeping cloud resource resolution as a later authenticated test. |
+| Verify that frontend XML keeps the documented BPMN wrapper family for agent execution, API workflow, business rules, queue wait, case management, and connector wait nodes. | `wrapper-family-contract/` | Added contract checks for wrapper-to-service-type alignment so coverage fails if runtime/enrichment paths drift to the wrong BPMN element family. |
 
 ## Validation Output
 
 Latest local fixture validation from this pilot:
 
 ```text
-validation_fixture_projects=6 bpmn_files=6 errors=0
+validation_fixture_projects=8 bpmn_files=8 errors=0
 ```
 
 The local checker also runs a narrow negative regression for a misnamed

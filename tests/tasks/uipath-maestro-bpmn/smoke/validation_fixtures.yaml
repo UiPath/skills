@@ -109,6 +109,12 @@ success_criteria:
     weight: 0.5
     pass_threshold: 1.0
 
+  - type: file_exists
+    description: "Wrapper family contract BPMN fixture is available"
+    path: "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn"
+    weight: 0.5
+    pass_threshold: 1.0
+
   - type: file_contains
     description: "Contract variants fixture covers public-safe XML contract wrappers"
     path: "fixtures/validation/contract-variants/contract-variants.bpmn"
@@ -132,6 +138,22 @@ success_criteria:
       - "uipath:Activity"
       - "scriptVersion value=\"v2\""
       - "migrationVersion version=\"11.5\""
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Wrapper family contract fixture covers the missing frontend XML runtime and enrichment families"
+    path: "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn"
+    includes:
+      - "A2A.AgentExecution"
+      - "Orchestrator.ExecuteApiWorkflowAsync"
+      - "Orchestrator.BusinessRules"
+      - "Orchestrator.CreateAndWaitForQueueItem"
+      - "Orchestrator.StartCaseMgmtProcess"
+      - "Intsvc.WaitForEvent"
+      - "<bpmn:businessRuleTask"
+      - "<bpmn:callActivity"
+      - "<bpmn:receiveTask"
     weight: 1.0
     pass_threshold: 1.0
 

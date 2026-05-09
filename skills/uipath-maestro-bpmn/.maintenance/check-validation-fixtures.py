@@ -58,6 +58,34 @@ ALLOWED_URLS = (
     "http://uipath.com/synthetic/maestro-bpmn/",
 )
 
+SERVICE_TYPE_WRAPPERS = {
+    "A2A.AgentExecution": {"wrapper": {"serviceTask"}, "extension": "activity"},
+    "Orchestrator.ExecuteApiWorkflowAsync": {
+        "wrapper": {"serviceTask"},
+        "extension": "activity",
+    },
+    "Orchestrator.BusinessRules": {
+        "wrapper": {"businessRuleTask"},
+        "extension": "activity",
+    },
+    "Orchestrator.CreateAndWaitForQueueItem": {
+        "wrapper": {"serviceTask"},
+        "extension": "activity",
+    },
+    "Orchestrator.StartCaseMgmtProcess": {
+        "wrapper": {"callActivity"},
+        "extension": "activity",
+    },
+    "Orchestrator.StartCaseMgmtProcessAsync": {
+        "wrapper": {"callActivity"},
+        "extension": "activity",
+    },
+    "Intsvc.WaitForEvent": {
+        "wrapper": {"receiveTask", "intermediateCatchEvent", "boundaryEvent"},
+        "extension": "event",
+    },
+}
+
 
 def local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1] if "}" in tag else tag
@@ -67,6 +95,14 @@ def ns(tag: str) -> str:
     if tag.startswith("{"):
         return tag[1:].split("}", 1)[0]
     return ""
+
+
+def build_parent_map(root: ET.Element) -> dict[int, ET.Element]:
+    parents: dict[int, ET.Element] = {}
+    for parent in root.iter():
+        for child in parent:
+            parents[id(child)] = parent
+    return parents
 
 
 class Validator:
@@ -519,11 +555,12 @@ class Validator:
         bindings: dict[str, ET.Element],
         variables: dict[str, set[str]],
     ) -> None:
+        parent_map = build_parent_map(root)
         for elem in root.iter():
             if ns(elem.tag) != UIPATH_NS:
                 continue
             if local(elem.tag) in {"activity", "event"}:
-                self.validate_activity_or_event(path, elem, bindings)
+                self.validate_activity_or_event(path, elem, bindings, parent_map)
             if local(elem.tag) == "output":
                 target = elem.attrib.get("var") or elem.attrib.get("target")
                 if target and target not in variables["all"]:
@@ -538,13 +575,35 @@ class Validator:
                 self.error(path, f"expression may contain assignment: {value}")
 
     def validate_activity_or_event(
-        self, path: Path, elem: ET.Element, bindings: dict[str, ET.Element]
+        self,
+        path: Path,
+        elem: ET.Element,
+        bindings: dict[str, ET.Element],
+        parent_map: dict[int, ET.Element],
     ) -> None:
         type_elem = elem.find(f"{{{UIPATH_NS}}}type")
         service_type = type_elem.attrib.get("value") if type_elem is not None else None
         if not service_type:
             self.error(path, "uipath activity/event missing type")
             return
+
+        extension_kind = local(elem.tag)
+        extension_elements = parent_map.get(id(elem))
+        wrapper = local(parent_map.get(id(extension_elements), ET.Element("")).tag)
+        expected = SERVICE_TYPE_WRAPPERS.get(service_type)
+        if expected is not None:
+            if extension_kind != expected["extension"]:
+                self.error(
+                    path,
+                    f"{service_type} must use uipath:{expected['extension']}, found "
+                    f"uipath:{extension_kind}",
+                )
+            if wrapper not in expected["wrapper"]:
+                self.error(
+                    path,
+                    f"{service_type} must use BPMN wrapper "
+                    f"{sorted(expected['wrapper'])}, found {wrapper or 'unknown'}",
+                )
 
         context = elem.find(f"{{{UIPATH_NS}}}context")
         if context is None:
