@@ -77,4 +77,18 @@ script inputs are declared in a single JSON `uipath:input name="args"` body
 with an `inputSchema` in context, but the Jint script body receives the mapped
 fields as top-level identifiers. For example, a mapped `caseId` field is read
 as `caseId` in script source, not `args.caseId`. Script outputs must map back
-to declared variable ids, usually with sources such as `=result.response`.
+to declared variable ids through the `var` attribute, usually with sources such
+as `=result.response`:
+
+```xml
+<uipath:mapping version="v1">
+  <uipath:input name="args"><![CDATA[
+    {"caseId":"=vars.Var_CaseId"}
+  ]]></uipath:input>
+  <uipath:output name="status" type="string" var="Var_Status" source="=result.response" />
+</uipath:mapping>
+```
+
+Do not use `name="Var_Status"` as a substitute for `var="Var_Status"`. The
+`name` field identifies the output field; `var` identifies the target BPMN
+variable.

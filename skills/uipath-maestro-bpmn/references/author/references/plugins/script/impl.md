@@ -23,6 +23,18 @@ The model may edit:
 - When mapping BPMN variables into script inputs, use runtime variable-id
   expressions such as `=vars.Var_CaseId`, not bare names such as `=caseId`.
 - Return or map explicit outputs instead of mutating undeclared globals.
+- Script output mappings must target variables through the `var` attribute.
+  Do not put the target variable id in `name`. Use `name` for the output
+  field/display name and `var` for the declared BPMN variable id:
+
+  ```xml
+  <uipath:mapping version="v1">
+    <uipath:input name="args"><![CDATA[
+      {"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}
+    ]]></uipath:input>
+    <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
+  </uipath:mapping>
+  ```
 - Prefer `uipath:scriptVersion value="v3"` unless preserving an imported version.
 - Available helpers are limited to `uipath.aggregate`, `uipath._aggregate`, `uipath._pipe`, and no-op `console` methods.
 - Do not use npm packages, filesystem, network, browser globals, or long-running async behavior.
