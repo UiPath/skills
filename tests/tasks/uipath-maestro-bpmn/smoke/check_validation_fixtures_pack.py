@@ -14,11 +14,13 @@ from pathlib import Path
 
 EXPECTED = (
     "fixtures/validation/linear-process/linear-process.bpmn",
+    "fixtures/validation/imported-brownfield-preservation/imported-brownfield-preservation.bpmn",
     "fixtures/validation/gateway-boundary-error/gateway-boundary-error.bpmn",
     "fixtures/validation/integration-service-enriched/integration-service-enriched.bpmn",
     "fixtures/validation/subprocess-multi-instance/subprocess-multi-instance.bpmn",
     "fixtures/validation/contract-variants/contract-variants.bpmn",
     "fixtures/validation/registry-coverage-matrix/registry-coverage-matrix.bpmn",
+    "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn",
 )
 
 PACKAGE_OUTPUT = Path("fixture-pack-output")
