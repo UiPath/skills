@@ -1,0 +1,11 @@
+{
+  "id": "inc-triage-001",
+  "elementId": "Task_InvokeLegacyRpa",
+  "category": "BindingResolution",
+  "message": "Resource binding 'folderPath' resolved to a folder the process cannot access.",
+  "safeDetails": {
+    "resourceKey": "Orchestrator.StartJob",
+    "bindingName": "folderPath",
+    "redacted": true
+  }
+}

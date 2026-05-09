@@ -1,0 +1,85 @@
+task_id: skill-bpmn-e2e-invoice-exception-triage
+description: >
+  Skill-guided e2e evaluation: agent uses the uipath-maestro-bpmn skill to
+  author a synthetic BPMN Process Orchestration project with a script task,
+  gateway branch, human review task, and complete package metadata. This
+  exercises greenfield BPMN source authoring, diagram requirements, and local
+  package-file consistency without cloud-side effects.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "node:hitl", "feature:approval-gate"]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a new local Maestro BPMN Process Orchestration project named
+  InvoiceExceptionTriage. The project must be fully synthetic and public-safe.
+
+  Model this process:
+  - Manual start event accepts invoiceId and amount variables.
+  - Script task classifyInvoice sets a risk value.
+  - Exclusive gateway routeByRisk sends low-risk invoices to an auto-approved
+    end event and high-risk invoices to a user task named Review invoice.
+  - The human review path ends at a reviewed end event.
+
+  Include BPMN DI shapes/edges for all visible elements and create the package
+  metadata files expected by the skill:
+  project.uiproj, bindings_v2.json, entry-points.json, operate.json, and
+  package-descriptor.json.
+
+  Do NOT upload, publish, deploy, debug, run a process, ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and implementation.
+  Build the complete local project end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source file was created"
+    path: "InvoiceExceptionTriage/InvoiceExceptionTriage.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Project metadata file was created"
+    path: "InvoiceExceptionTriage/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Package operate metadata was created"
+    path: "InvoiceExceptionTriage/operate.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated BPMN project has the required process structure and package references"
+    command: "python3 $TASK_DIR/check_invoice_exception_triage.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run BPMN debug"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run cloud upload/publish/deploy"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+upload|solution\s+publish|solution\s+deploy|maestro\s+bpmn\s+process\s+run)'
+    weight: 2.0
+    pass_threshold: 1.0

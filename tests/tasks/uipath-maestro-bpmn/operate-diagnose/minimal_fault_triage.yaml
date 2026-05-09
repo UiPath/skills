@@ -1,0 +1,105 @@
+task_id: skill-bpmn-operate-diagnose-minimal-fault-triage
+description: >
+  Minimal lifecycle coverage for the uipath-maestro-bpmn skill's Operate and
+  Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the
+  diagnostic priority ladder, and recommends the safe next operate action
+  without performing lifecycle mutations.
+tags: [uipath-maestro-bpmn, smoke, "mode:diagnose", "lifecycle:execute"]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 20
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A BPMN process run failed. Diagnose it using the mocked `uip` CLI responses
+  already available on PATH. Public-safe identifiers:
+  - job key: job-triage-001
+  - instance id: inst-triage-001
+  - folder key: folder-public
+
+  Write a concise diagnosis to diagnosis.md. Include:
+  - faulting BPMN element id
+  - user-visible symptom
+  - likely root cause
+  - whether the fix belongs in BPMN source, generated package metadata,
+    Integration Service enrichment, or cloud configuration
+  - safe next operate action
+
+  Do NOT retry, cancel, migrate, move a cursor, debug, run a process, upload,
+  publish, deploy, ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked the BPMN job status"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+job\s+status\s+job-triage-001\s+--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read instance incidents with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public\s+--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected runtime variables with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public\s+--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the deployed BPMN asset"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public\s+--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Diagnosis captures the fault element, root cause ownership, and safe next action"
+    path: "diagnosis.md"
+    includes:
+      - "Task_InvokeLegacyRpa"
+      - "folderPath"
+      - "cloud configuration"
+      - "Do not retry"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not mutate the BPMN runtime lifecycle"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+(retry|cancel|pause|resume|migrate|goto)\s+'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run or debug the BPMN process"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(debug|process\s+run)'
+    weight: 2.0
+    pass_threshold: 1.0
