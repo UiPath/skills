@@ -80,6 +80,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
+    description: "Imported brownfield preservation BPMN fixture is available"
+    path: "fixtures/validation/imported-brownfield-preservation/imported-brownfield-preservation.bpmn"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
     description: "Integration Service package bindings fixture is available"
     path: "fixtures/validation/integration-service-enriched/bindings_v2.json"
     weight: 0.5

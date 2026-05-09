@@ -7,6 +7,7 @@ Public-safe fixture corpus for the `uipath-maestro-bpmn` skill maintenance check
 | Fixture | Coverage |
 | --- | --- |
 | `linear-process/` | Minimal executable process, root variables, entry point ID, BPMN DI, and generated package metadata. |
+| `imported-brownfield-preservation/` | Imported brownfield preservation case with numeric `uipath:migrationVersion`, legacy `uipath:scriptVersion value="v2"`, and matching generated package metadata. |
 | `gateway-boundary-error/` | Exclusive gateway conditions/defaults, service task retry/error mapping, boundary error event, terminate end, tags, and package manifest checks. |
 | `integration-service-enriched/` | Integration Service trigger and activity extensions, root connection/property bindings, generated `bindings_v2.json` resources, entry point schema, and package metadata. |
 | `subprocess-multi-instance/` | Subprocess scoped variables, multi-instance loop metadata, script task metadata, mappings, message event, and diagram/waypoint coverage. |
@@ -31,6 +32,7 @@ The corpus was piloted against these public-safe authoring and debugging request
 | Request | Fixtures used | Result |
 | --- | --- | --- |
 | Create a service-desk intake process with a connector trigger, ticket creation, and generated package metadata. | `integration-service-enriched/` | Kept the model/CLI boundary explicit: connector metadata, connection bindings, and generated resources must come from enrichment before Operate. |
+| Validate that imported XML survives local checks without normalizing legacy script metadata. | `imported-brownfield-preservation/` | Covers the XML analyst baseline by preserving numeric `uipath:migrationVersion` values and imported `uipath:scriptVersion value="v2"` alongside package metadata. |
 | Debug an approval workflow where the run takes the wrong branch and then faults on error handling. | `gateway-boundary-error/` | Tightened checks around gateway conditions/defaults, boundary error references, and package metadata drift. |
 | Author a batch item processor with a scoped subprocess, sequential multi-instance loop, script normalization, and a message wait. | `subprocess-multi-instance/` | Added checks for message references and multi-instance collection/item metadata so stuck-loop and stuck-wait issues are caught locally. |
 | Review imported XML that mixes public Orchestrator wrappers, Integration Service waits, message events, case-management draft/preserve shells, numeric migrations, legacy script metadata, and unsupported UiPath extension payloads. | `contract-variants/` | Added structural checks that wrappers stay on the documented BPMN element classes and preserve-only payloads are retained without private identifiers. |
