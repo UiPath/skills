@@ -44,6 +44,13 @@ cd tests
 make tags TAGS="uipath-maestro-bpmn smoke" EXPERIMENT=experiments/default.yaml
 ```
 
+Run the Maestro BPMN e2e author/validate/pack eval:
+
+```bash
+cd tests
+make tags TAGS="uipath-maestro-bpmn e2e" EXPERIMENT=experiments/e2e.yaml
+```
+
 Run all tests for this skill:
 
 ```bash
