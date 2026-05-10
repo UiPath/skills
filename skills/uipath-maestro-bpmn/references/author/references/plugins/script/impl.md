@@ -33,7 +33,7 @@ The model may edit:
 ## Minimal Jint script task shell
 
 Copy this shape when authoring a new BPMN script task. It is the exact
-mapping shape the canvas import path expects: `uipath:input name="args"`
+mapping shape Maestro expects: `uipath:input name="args"`
 wraps the mapped fields, the script body reads top-level identifiers,
 and the output maps back through `=result.<field>`.
 
@@ -59,7 +59,7 @@ return { response: score };
 </bpmn:scriptTask>
 ```
 
-Required pieces and the exact tokens the canvas import path looks for:
+Required pieces:
 
 | Position | Required token | Why |
 | --- | --- | --- |

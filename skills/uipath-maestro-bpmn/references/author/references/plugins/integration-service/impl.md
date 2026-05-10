@@ -95,23 +95,16 @@ operator and the CLI know which fields are still placeholders. Add a
 `README.md` (or `notes.md`) inside the project that lists every CLI-owned
 blocker before upload, publish, debug, or run.
 
-The README must literally include each blocker phrase below verbatim (case
-does not matter, but the wording does). Downstream packaging and eval
-checks string-match these tokens to confirm the boundary stays explicit:
+The README should make each unresolved CLI-owned blocker explicit:
 
 1. **`connector metadata`** - the CLI fills in `uipath:type` operation/event metadata, version, and connector key.
 2. **`connection binding`** - the CLI generates the root `uipath:bindings` connection entry and the `=bindings.<id>` references on the node.
-3. **`dynamic schemas`** - the CLI generates the `uipath:inputSchema` payloads and the generated output schemas. Use this exact phrase, not "dynamic input/output schemas".
+3. **`dynamic schemas`** - the CLI generates the `uipath:inputSchema` payloads and the generated output schemas.
 4. **`bindings_v2.json`** - the CLI generates the binding resources, deduplicated by resource key.
 5. **`entry-points.json`** - the CLI generates trigger entry-point wiring and the root variable schema.
 6. **`operate.json`** - the CLI generates project ID, main file, target framework, and runtime options.
 7. **`package-descriptor.json`** - the CLI generates manifest entries for the BPMN file and generated JSON.
 8. **`package metadata`** - the CLI produces the final package identifiers, paths, and generated outputs.
-
-> Required literal phrases the README must contain at minimum:
-> `connection binding`, `dynamic schemas`, `bindings_v2.json`, and
-> `package metadata`. Skipping or paraphrasing any of these breaks the
-> boundary check.
 
 Minimal `README.md` template:
 

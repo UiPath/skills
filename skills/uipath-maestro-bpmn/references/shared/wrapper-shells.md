@@ -3,8 +3,8 @@
 Copyable, public-safe XML shells for each documented Maestro BPMN wrapper.
 Use these as the starting point during pass 2 authoring; substitute synthetic
 IDs and public-safe values for your project. Every shell shows the exact
-required tokens (`bpmn:*` element class + `uipath:type value="..."`) the
-canvas import path looks for.
+required tokens (`bpmn:*` element class + `uipath:type value="..."`) used by
+Maestro BPMN import and validation.
 
 Anchors of every shell:
 
@@ -403,7 +403,7 @@ Rules:
 
 - [bpmn-xml-contract.md](bpmn-xml-contract.md) - model-owned versus CLI-owned XML.
 - [variables-bindings-expressions.md](variables-bindings-expressions.md) - variable id, binding, mapping, and expression rules.
-- [../author/references/supported-elements.md](../author/references/supported-elements.md) - source-backed wrapper coverage map.
+- [../author/references/supported-elements.md](../author/references/supported-elements.md) - supported wrapper coverage map.
 - [../author/references/task-recipes/](../author/references/task-recipes/) - per-recipe planning notes.
 - [../author/references/plugins/integration-service/](../author/references/plugins/integration-service/) - Integration Service draft shell and CLI enrichment boundary.
 - [../../fixtures/validation/contract-variants/contract-variants.bpmn](../../fixtures/validation/contract-variants/contract-variants.bpmn) - the canonical full fixture combining every shell above with BPMN DI.

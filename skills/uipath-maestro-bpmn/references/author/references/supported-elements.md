@@ -1,6 +1,6 @@
 # Supported Elements
 
-Use this source-backed coverage map before choosing a BPMN wrapper or UiPath extension type. It reflects the current canvas registry, BPMN XML serializer, CLI BPMN manifest, parser element enum, and executor dispatch behavior. Treat anything outside this map as preserve-only unless a newer product contract says otherwise.
+Use this supported coverage map before choosing a BPMN wrapper or UiPath extension type. Treat anything outside this map as preserve-only unless a newer product contract says otherwise.
 
 ## Modeling rule
 
