@@ -64,7 +64,7 @@ def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = 
     """Append a structured record of this invocation to .calls.jsonl.
 
     Best-effort: any logging error is swallowed so a broken log file never
-    breaks an agent's command. The file is the source of truth for
+    breaks an agent's command. The file is the canonical record for
     expected-vs-performed coverage analysis after the run.
     """
     record = {

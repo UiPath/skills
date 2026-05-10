@@ -15,7 +15,7 @@ The model may edit:
 ## Implementation rules
 
 - Store branch logic on outgoing sequence flows, not on the gateway element.
-- Use a leading `=` for runtime expressions where the frontend expects expressions.
+- Use a leading `=` for runtime expressions where Maestro expects expressions.
 - Do not use assignment expressions in gateway conditions.
 - Prefer explicit default flows for fallthrough paths.
 - Use parallel gateways only when every branch should run or rejoin.

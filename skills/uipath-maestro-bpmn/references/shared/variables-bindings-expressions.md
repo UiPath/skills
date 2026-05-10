@@ -19,7 +19,7 @@ Variables may include:
 
 Entry point inputs use `elementId` to scope an input variable to the corresponding root-level start event. Root output variables become entry point output schema properties. JSON schema variables carry the schema body in CDATA; generated entry-point schema should strip `$schema`.
 
-Canvas exports commonly model trigger-bound values as `uipath:inputOutput`
+Maestro exports commonly model trigger-bound values as `uipath:inputOutput`
 variables scoped with `elementId`. Prefer that shape for new runtime-oriented
 examples unless preserving imported `uipath:input` XML.
 
@@ -59,9 +59,9 @@ When changing a task ID, subprocess ID, or entry start event, recheck every mapp
 
 ## Expressions
 
-Conditions, scripts, variable mappings, and skip conditions are expression-normalized during import. Author expressions in the frontend-compatible form and avoid assignment operators where canvas validation forbids assignment.
+Conditions, scripts, variable mappings, and skip conditions are expression-normalized during import. Author expressions in the Maestro-compatible form and avoid assignment operators in fields that require read-only expression evaluation.
 
-Use a leading `=` for expressions where the frontend/runtime expects expression content. Treat plain strings as literals.
+Use a leading `=` for expressions where Maestro expects expression content. Treat plain strings as literals.
 
 When a UiPath extension expression reads a BPMN variable, reference the
 variable by its XML variable id through the runtime `vars` object, for example

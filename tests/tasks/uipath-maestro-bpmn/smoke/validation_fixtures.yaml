@@ -142,7 +142,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Wrapper family contract fixture covers the missing frontend XML runtime and enrichment families"
+    description: "Wrapper family contract fixture covers Maestro BPMN wrapper and enrichment families"
     path: "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn"
     includes:
       - "A2A.AgentExecution"

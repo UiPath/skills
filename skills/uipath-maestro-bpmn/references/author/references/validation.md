@@ -24,7 +24,7 @@ Validate these before Operate:
 - Event subprocesses have exactly one start event.
 - Boundary error events and error event subprocesses reference valid error definitions.
 - Multi-instance collection and item bindings reference declared variables and use explicit sequential/parallel metadata.
-- Expressions avoid assignment operators where frontend validation forbids assignment.
+- Expressions avoid assignment operators in fields that require read-only expression evaluation.
 - Output mappings target declared variables.
 - CLI-owned Integration Service fields have been enriched or are clearly marked as blockers.
 

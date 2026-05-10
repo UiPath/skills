@@ -97,7 +97,7 @@ Diagnose with cursors and element executions, then reconcile the `bpmn:message`,
 ## Expression treated as literal
 
 An expression field is authored as a plain literal string.
-Use expression form where the frontend/runtime expects evaluation, and avoid assignment operators in fields where
+Use expression form where Maestro expects evaluation, and avoid assignment operators in fields where
 validation forbids assignment.
 
 ## Deployed asset differs from local BPMN

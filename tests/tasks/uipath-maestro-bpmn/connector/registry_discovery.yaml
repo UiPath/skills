@@ -1,10 +1,9 @@
 task_id: skill-bpmn-registry-discovery
 description: >
   Registry discovery eval: agent uses the Maestro BPMN registry surface to
-  discover documented agent, queue, and connector wrapper types and to produce
-  raw evidence that links the canvas registry surface back to the skill's
-  supported-element map without inventing private resource metadata. Requires
-  the `uip` CLI on PATH.
+  discover documented agent, queue, and connector wrapper types and to save
+  public-safe CLI evidence for the skill's supported-element map without
+  inventing private resource metadata. Requires the `uip` CLI on PATH.
 tags: [uipath-maestro-bpmn, integration, "lifecycle:inspect", connector, "feature:connections", resource]
 
 agent:

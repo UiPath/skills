@@ -1,6 +1,6 @@
 # Supported Elements
 
-Use this source-backed coverage map before choosing a BPMN wrapper or UiPath extension type. It reflects the current canvas registry, BPMN XML serializer, CLI BPMN manifest, parser element enum, and executor dispatch behavior. Treat anything outside this map as preserve-only unless a newer product contract says otherwise.
+Use this supported coverage map before choosing a BPMN wrapper or UiPath extension type. Treat anything outside this map as preserve-only unless a newer product contract says otherwise.
 
 ## Modeling rule
 
@@ -28,7 +28,7 @@ The model may author these standard BPMN structures when the process intent is c
 | Flow | `bpmn:sequenceFlow` with source, target, optional condition, optional default references on gateways |
 | Definitions | `bpmn:message`, `bpmn:signal`, `bpmn:error`, `bpmn:escalation`, item definitions, data objects, data stores, participants when required by the model |
 
-`bpmn:transaction` can appear in the canvas manifest, but do not generate new executable transaction flows until there is a dedicated execution contract. Preserve imported transactions unless the user asks to normalize.
+`bpmn:transaction` can appear in imported projects, but do not generate new executable transaction flows until there is a dedicated execution contract. Preserve imported transactions unless the user asks to normalize.
 
 ## UiPath extension coverage
 
@@ -37,7 +37,7 @@ Use lower-case XML tags in authored examples: `uipath:activity`, `uipath:event`,
 | Extension type | BPMN wrapper | XML tag | Ownership |
 | --- | --- | --- | --- |
 | `BPMN.Variables` | `bpmn:task`, start/end mapping contexts | `uipath:mapping` | Model-owned |
-| `BPMN.ScriptTask` canvas schema | `bpmn:scriptTask` | `uipath:mapping` plus `uipath:scriptVersion` | Model-owned; parser executes as `Scp.Script` |
+| `BPMN.ScriptTask` | `bpmn:scriptTask` | `uipath:mapping` plus `uipath:scriptVersion` | Model-owned; parser executes as `Scp.Script` |
 | `Actions.HITL` | `bpmn:userTask` | `uipath:activity` | Model may draft shell; resource/form binding resolved by CLI or operator |
 | `Orchestrator.StartJob` | `bpmn:serviceTask` | `uipath:activity` | Model may draft shell; resource binding and schemas resolved by CLI or operator |
 | `Orchestrator.StartAgentJob` | `bpmn:serviceTask` | `uipath:activity` | Model may draft shell; agent binding and schemas resolved by CLI or operator |
@@ -73,7 +73,7 @@ Script tasks execute JavaScript through Jint, not Node.js or a browser runtime.
 
 - Use `bpmn:scriptTask scriptFormat="JavaScript"`.
 - Put source in `bpmn:script` CDATA and include `uipath:scriptVersion`; prefer `v3`.
-- Inputs are exposed as named JavaScript variables after the canvas merges mapped inputs into an `args` JSON body.
+- Inputs are exposed as named JavaScript variables after Maestro maps inputs into an `args` JSON body.
 - Available helpers are limited to `uipath.aggregate`, `uipath._aggregate`, `uipath._pipe`, and a no-op `console`.
 - There is a 64 MB memory limit and a 30 second execution timeout.
 - Do not use packages, filesystem, network, browser globals, or long-running async behavior.

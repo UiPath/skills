@@ -17,7 +17,7 @@ Capability index for local BPMN project authoring. Author owns source edits, loc
 
 1. **Use the two-pass workflow for non-trivial authoring** - first generate or edit a pure BPMN skeleton with readable IDs and diagram geometry, then ask the operator to confirm the process shape, then add UiPath variables, bindings, mappings, entry points, and documented non-Integration-Service extensions.
 2. **Keep pass 1 standard BPMN-first** - pass 1 may include placeholders and annotations for resource intent, but it must not invent `uipath:activity`, `uipath:event`, connector bindings, generated schemas, or package metadata.
-3. **Read the BPMN XML contract before editing** - the frontend contract defines which XML the model may author and which pieces require CLI generation or enrichment.
+3. **Read the BPMN XML contract before editing** - the Maestro BPMN contract defines which XML the model may author and which pieces require CLI generation or enrichment.
 4. **Default to reviewable file edits for BPMN source** - edit `.bpmn` directly for model-owned XML so diffs stay inspectable.
 5. **Choose BPMN element class before resource recipe** - RPA, agents, and API workflows are service tasks; queue create is a send task; business rules are business rule tasks; HITL is a user task. See [supported-elements.md](references/supported-elements.md).
 6. **Do not hand-author Integration Service details** - use [plugins/integration-service/](references/plugins/integration-service/) for the planning and implementation boundary.
@@ -85,7 +85,7 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 - [planning-arch.md](references/planning-arch.md) - pass 1 BPMN skeleton planning
 - [planning-impl.md](references/planning-impl.md) - pass 2 UiPath extension fill
 - [editing-operations.md](references/editing-operations.md) - safe edit operations for BPMN XML
-- [supported-elements.md](references/supported-elements.md) - source-backed supported BPMN elements and UiPath extension wrappers
+- [supported-elements.md](references/supported-elements.md) - supported BPMN elements and UiPath extension wrappers
 - [task-recipes/](references/task-recipes/) - BPMN-first recipes for resource-backed tasks
 - [validation.md](references/validation.md) - local validation checklist
 - [plugins/integration-service/](references/plugins/integration-service/) - Integration Service planning and CLI enrichment boundary
