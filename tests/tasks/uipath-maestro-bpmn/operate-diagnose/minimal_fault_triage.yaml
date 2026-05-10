@@ -87,7 +87,7 @@ success_criteria:
     includes:
       - "Task_InvokeLegacyRpa"
       - "folderPath"
-      - "cloud configuration"
+      - "Cloud configuration"
       - "Integration Service"
     weight: 3.0
     pass_threshold: 1.0
