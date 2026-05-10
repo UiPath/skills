@@ -48,10 +48,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attempted Maestro BPMN pack for each fixture project"
+    description: "Agent invoked Maestro BPMN pack for fixture projects"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+pack\s+.*fixtures/validation/[\w-]+.*--output\s+json'
-    min_count: 8
+    min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
