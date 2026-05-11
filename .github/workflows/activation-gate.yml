@@ -11,7 +11,11 @@ concurrency:
 
 on:
   # No paths: filter — see smoke-skills.yml for the required-check rationale.
+  # ready_for_review is added so the gate fires the moment a PR exits draft;
+  # the gate job itself is then skipped on drafts (see `if:` below) to keep
+  # iteration-on-draft cheap.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 jobs:
@@ -25,7 +29,9 @@ jobs:
         with: { fetch-depth: 0 }
 
       - id: detect
-        env: { BASE_REF: ${{ github.base_ref }} }
+        # base_ref is empty on workflow_dispatch — fall back to main so manual
+        # re-runs against a feature branch still resolve a sane merge-base.
+        env: { BASE_REF: ${{ github.base_ref || 'main' }} }
         run: |
           set -euo pipefail
           BASE_SHA=$(git merge-base "origin/$BASE_REF" HEAD)
@@ -51,7 +57,11 @@ jobs:
 
   gate:
     needs: detect
-    if: needs.detect.outputs.skip != 'true'
+    # Skip drafts to keep iteration cheap; the gate fires on transition to
+    # ready (via the ready_for_review event type above) and on every push to
+    # a ready PR. workflow_dispatch has no draft flag → the != 'true' check
+    # treats undefined as not-draft, so manual dispatch still runs the gate.
+    if: needs.detect.outputs.skip != 'true' && github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     name: ${{ matrix.skill }}
     timeout-minutes: 30
