@@ -11,7 +11,7 @@ from pathlib import Path
 CHECKER = Path(__file__).with_name("check_devcon_expense_approval.py")
 
 
-def _write_flow(tmp_path: Path, binding: str) -> Path:
+def _write_flow(tmp_path: Path, binding: str) -> None:
     project = tmp_path / "ExpenseApproval" / "ExpenseApproval"
     project.mkdir(parents=True)
     flow = project / "ExpenseApproval.flow"
@@ -74,7 +74,6 @@ def _write_flow(tmp_path: Path, binding: str) -> Path:
         ),
         encoding="utf-8",
     )
-    return flow
 
 
 def _run_checker(tmp_path: Path) -> subprocess.CompletedProcess[str]:
@@ -101,3 +100,21 @@ def test_accepts_expression_hitl_input_binding(tmp_path: Path) -> None:
     result = _run_checker(tmp_path)
 
     assert result.returncode == 0, result.stderr
+
+
+def test_rejects_hardcoded_hitl_input_binding(tmp_path: Path) -> None:
+    _write_flow(tmp_path, "hardcoded-value")
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode != 0
+    assert "HITL input bindings must use" in result.stderr
+
+
+def test_rejects_hitl_input_binding_without_output_segment(tmp_path: Path) -> None:
+    _write_flow(tmp_path, "vars.fetchExpense.amount")
+
+    result = _run_checker(tmp_path)
+
+    assert result.returncode != 0
+    assert "HITL input bindings must use" in result.stderr
