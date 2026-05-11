@@ -1,8 +1,12 @@
 # Maestro
 
-Agentic orchestration platform built on top of Orchestrator. Enables BPMN-based process design with human-in-the-loop tasks, AI agent tasks, and service tasks orchestrated across multiple swimlanes.
+Agentic orchestration platform built on top of Orchestrator. Maestro supports three process authoring styles, each with its own CLI subcommand:
 
-Maestro processes are designed in Studio Web using a BPMN editor, deployed as solutions to Orchestrator, and managed through the Maestro Instance Management UI.
+- **BPMN** (`uip maestro bpmn`) — formal BPMN 2.0 process design with swimlanes, gateways, boundary events, service tasks, and multi-instance markers. Authored in Studio Web's BPMN editor (`.bpmn` files). Best for orchestrating long-running, multi-actor business processes with rich exception flow.
+- **Flow** (`uip maestro flow`) — lightweight node-and-edge process design (`.flow` files). Lower ceremony than BPMN; emphasizes connectors, scripts, sub-flows, and human-in-the-loop nodes. Best for connector-heavy automations and quick agent-orchestrated flows.
+- **Case Management** (`uip maestro case`) — case-centric workflows with stages, tasks, SLAs, escalations, triggers, and edges (Case definition JSON). Best for human-driven, evolving work where progress is tracked per case rather than per linear process run.
+
+Processes are designed in Studio Web, deployed as solutions to Orchestrator, and managed through the Maestro Instance Management UI.
 
 ## Dependencies
 
@@ -47,11 +51,11 @@ Organization (cloud.uipath.com)
 
 Maestro CLI commands are namespaced by process type. Pick the subcommand that matches the process:
 
-| Process type | Subcommand | Source artifacts |
-|--------------|------------|------------------|
-| BPMN process | `uip maestro bpmn ...` | `.bpmn` files (Studio Web BPMN editor) |
-| Flow process | `uip maestro flow ...` | `.flow` files |
-| Case Management | `uip maestro case ...` | Case definition JSON |
+| Process type | Subcommand | Source artifacts | One-liner |
+|--------------|------------|------------------|-----------|
+| BPMN | `uip maestro bpmn ...` | `.bpmn` files (Studio Web BPMN editor) | Formal BPMN 2.0 with swimlanes, gateways, boundary events, service/human/agent tasks |
+| Flow | `uip maestro flow ...` | `.flow` files | Lightweight node-and-edge orchestration; connector-heavy, lower ceremony than BPMN |
+| Case | `uip maestro case ...` | Case definition JSON | Case-centric work with stages, tasks, SLAs, escalations, and triggers |
 
 **Identify the process type first** — check the source artifact, the `processType` field on incidents/instances, or ask the user. Running `uip maestro bpmn instance get <id>` against a Flow instance returns no data. Substitute `<type>` below with `bpmn`, `flow`, or `case`.
 
