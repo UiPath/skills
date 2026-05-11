@@ -42,6 +42,9 @@ initial_prompt: |
   - whether the fix belongs in BPMN source, generated package metadata,
     Integration Service enrichment, or cloud configuration
   - safe next operate action
+  Use these exact ownership labels even when a category is not implicated:
+  `BPMN source`, `Generated package metadata`, `Integration Service enrichment`,
+  and `Cloud configuration`.
 
   Do NOT retry, cancel, migrate, move a cursor, debug, run a process, upload,
   publish, deploy, ask for approval, confirmation, or feedback.
@@ -88,7 +91,7 @@ success_criteria:
       - "Task_InvokeLegacyRpa"
       - "folderPath"
       - "Cloud configuration"
-      - "Integration Service"
+      - "Integration Service enrichment"
     weight: 3.0
     pass_threshold: 1.0
 
