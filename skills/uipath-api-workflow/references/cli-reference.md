@@ -62,6 +62,173 @@ uip api-workflow run ./greet.json \
   --output json
 ```
 
+## `uip api-workflow registry`
+
+Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the old `uip case registry` flow for api-workflow authoring. Both subcommands require `uip login`.
+
+### `uip api-workflow registry resolve`
+
+Search the API-workflow-compatible TypeCache by keyword. Returns candidate activities with the GUID, connector key, object name, and HTTP method needed for `stub`.
+
+```bash
+uip api-workflow registry resolve <keyword> [--limit <n>] --output json
+```
+
+| Argument / Flag | Required | Description |
+|--|--|--|
+| `<keyword>` | yes | Substring matched against `displayName`, `connectorKey`, `objectName`, `fullName`. Case-insensitive. |
+| `-l, --limit <n>` | no | Max results (default: 20). |
+
+Success output:
+```json
+{
+  "Result": "Success",
+  "Code": "ActivityResolveSuccess",
+  "Data": {
+    "Keyword": "newest email",
+    "ResultCount": 1,
+    "Matches": [
+      {
+        "uiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
+        "displayName": "Get Newest Email",
+        "description": "...",
+        "connectorKey": "uipath-microsoft-outlook365",
+        "objectName": "getNewestEmail",
+        "httpMethod": "GET",
+        "activityType": "Curated"
+      }
+    ]
+  }
+}
+```
+
+Failure modes:
+- `"Not logged in. Run 'uip login' first."`
+- `"No activities matched '<keyword>'"` — try a different keyword (vendor-internal names differ from marketing names).
+- `"Invalid --limit value"` — must be a positive integer.
+
+### `uip api-workflow registry stub`
+
+Emit a ready-to-paste activity object for a known `uiPathActivityTypeId`. Combines the TypeCache entry (GUID + `InstanceParameters`) with Integration Service Elements metadata (full path, request/response fields, multipart signal) and picks Http kind (`UiPath.Http`) or IntSvc kind (`UiPath.IntSvc`) by `connectorKey`.
+
+```bash
+uip api-workflow registry stub <activity-type-id> \
+  [--connection-id <uuid>] \
+  [--instance <n>] \
+  [--slot-key <PascalCase>] \
+  [--inputs <json>] \
+  --output json
+```
+
+| Argument / Flag | Required | Description |
+|--|--|--|
+| `<activity-type-id>` | yes | The `uiPathActivityTypeId` GUID from `resolve`. |
+| `--connection-id <uuid>` | IntSvc kind only | Pinged vendor connection UUID. IntSvc kind leaves `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` placeholders if omitted. Ignored for Http kind (HTTP). |
+| `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
+| `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. Export bucket key always derives from `objectName + "_<n>"`. |
+| `-i, --inputs <json>` | no | JSON object mapping field names to values. Field names match the IS schema (flat dotted keys — `"message.subject"`, not `{message:{subject:…}}`). Pass bare strings for literals; `${...}` for expression references. |
+
+Success output:
+```json
+{
+  "Result": "Success",
+  "Code": "ActivityStubSuccess",
+  "Data": {
+    "Kind": "IntSvc",
+    "SlotKey": "GetNewestEmail_1",
+    "ExportBucketKey": "getNewestEmail_1",
+    "Activity": { "GetNewestEmail_1": { "call": "UiPath.IntSvc", ... } },
+    "ResponseFields": [ { "name": "subject", ... } ],
+    "IsEnrichmentAvailable": true,
+    "Warnings": [...]
+  }
+}
+```
+
+`Data.Activity` drops directly into `Sequence_1.do`. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
+
+`Data.Warnings` (when present):
+- `"IS Elements metadata could not be fetched…"` → IS schema lookup failed; stub uses fallback path `/<objectName>` and ships no `requestFields`. Endpoint may be wrong (no hub prefix, no multipart declaration).
+- `"No --connection-id provided…"` → IntSvc kind stub has placeholder UUIDs; replace before running.
+
+Failure modes:
+- `"Activity '<guid>' not found in the Api-compatible TypeCache"` — re-run `resolve` to find a valid GUID.
+- `"Activity type '<X>' is not supported in v1"` — only `Curated` activities are stubbed today; Generic / Trigger flavors require additional `InstanceParameters` fields not yet handled.
+- `"Invalid --inputs JSON"` — `--inputs` must be a JSON object (`'{"key":"value"}'`).
+
+### Typical sequence
+
+```bash
+# 1. Resolve
+uip api-workflow registry resolve "outlook newest email" --output json
+
+# 2. (IntSvc kind only) verify a connection
+uip is connections list uipath-microsoft-outlook365 --output json
+uip is connections ping <uuid> --output json
+
+# 3a. Stub
+uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
+  --connection-id <uuid> \
+  --inputs '{"parentFolderId":"Inbox"}' \
+  --output json
+
+# 3b. Cross-check required request fields — stub silently drops required: true fields
+uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
+  --operation List \
+  --connection-id <uuid> \
+  --output json
+
+# 4. Drop Data.Activity into Sequence_1.do, fill missing required fields, replace placeholders.
+
+# 5. (Solutions-mode + IntSvc kind) write Solution/resources/solution_folder/connection/<connector-key>/<name>.json
+
+# 6. Validate:
+uip api-workflow run ./my-workflow.json --output json
+```
+
+See [connector-activity-discovery.md](connector-activity-discovery.md) for the full flow, field-shape rules, the Solution-resource file shape, and worked examples.
+
+## `uip is resources describe`
+
+Read the IS Elements schema for one operation on one connector. Used as the **required cross-check** after `uip api-workflow registry stub` (which silently drops `required: true` request fields).
+
+```bash
+uip is resources describe <connector-key> <object-name> \
+  [--operation <operation>] \
+  [--connection-id <uuid>] \
+  --output json
+```
+
+| Argument / Flag | Required | Description |
+|--|--|--|
+| `<connector-key>` | yes | Connector key (e.g. `uipath-microsoft-outlook365`). |
+| `<object-name>` | yes | IS object name (e.g. `getNewestEmail`). |
+| `--operation <op>` | no (recommended) | IS operation name (`List`, `Create`, `Get`, …). Without it, the call returns the available operations and prompts you to re-run with `--operation`. |
+| `--connection-id <uuid>` | no | A pinged vendor connection UUID. Improves the field metadata (lookups can resolve, defaults from the live element are returned). |
+
+Sample output (Outlook `getNewestEmail`, `--operation List`):
+
+```json
+{
+  "Data": {
+    "queryParameters": [
+      { "name": "parentFolderId", "required": true,  "displayName": "Email folder" },
+      { "name": "filter",         "required": false },
+      { "name": "unReadOnly",     "required": false, "defaultValue": false },
+      { "name": "withAttachmentsOnly", "required": false, "defaultValue": false },
+      { "name": "importance",     "required": false, "defaultValue": "any" },
+      { "name": "markAsRead",     "required": false, "defaultValue": false },
+      { "name": "orderBy",        "required": false, "defaultValue": "receivedDateTime desc" },
+      { "name": "top",            "required": false, "defaultValue": "1" }
+    ],
+    "pathParameters": null,
+    "bodyParameters": null
+  }
+}
+```
+
+For every entry with `required: true`, confirm the stub's emitted activity has a value at `with.<location>Parameters.<name>`. Re-stub with `--inputs '{"<name>":"<value>"}'` or hand-edit. See [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields) and [troubleshooting.md](troubleshooting.md#required-request-field-dropped-by-registry-stub).
+
 ## `uip solution new`
 
 Create an empty solution file. Required before adding API workflow projects.

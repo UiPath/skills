@@ -276,8 +276,237 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Activity card renders with a "block" / "forbidden" icon in the designer
 
 - **Symptom:** StudioWeb shows the activity as blocked; you can only delete it. Run-time behavior depends — sometimes the activity is silently skipped, leading to downstream `$context.outputs.<missing>` errors.
-- **Cause:** StudioWeb's designer doesn't recognize the activity type. For HTTP-style cards specifically, the designer's `restoreFromTaskItem` (`connector-translator.ts`) requires `call: "UiPath.Http"` (or `"UiPath.IntSvc"`, `"UiPath.IntSvcEvent"`) AND a `metadata.configuration` blob containing at minimum `instanceParameters`. Plain `call: "http"` and missing/empty configurations both produce the block icon.
-- **Status:** This skill does NOT cover HTTP/Connector activities — they're out of scope precisely because of this metadata requirement. If you encounter this, either: (a) author the offending activity directly in StudioWeb's designer (which generates the correct metadata), or (b) wait for the skill to grow `uip case registry`-backed metadata generation for known activity types.
+- **Cause:** StudioWeb's designer doesn't recognize the activity type. For HTTP-style cards specifically, the designer's `restoreFromTaskItem` (`connector-translator.ts:113`) requires `call: "UiPath.Http"` (or `"UiPath.IntSvc"`, `"UiPath.IntSvcEvent"`) AND a `metadata.configuration` blob containing at minimum `instanceParameters` (`connector-translator.ts:121-136`). Plain `call: "http"` and missing/empty configurations both produce the block icon.
+- **Fix:** Run the discovery flow in [connector-activity-discovery.md](connector-activity-discovery.md) to get a stub with the right `uiPathActivityTypeId` and `metadata.configuration` already filled in. The connector-call-example.json template shows the correct shape verified end-to-end. Common mistakes that produce block icons:
+  - Used `call: "http"` (the simple form). **Fix:** switch to `call: "UiPath.Http"` (Http kind) or `call: "UiPath.IntSvc"` (IntSvc kind) — re-stub via `uip api-workflow registry stub <guid>` and replace the activity.
+  - Used `call: "UiPath.Http"` but `metadata.configuration` is missing or `"{}"`. **Fix:** re-stub via `uip api-workflow registry stub <guid>` — the stub builds the essential-only configuration automatically.
+  - Invented a `uiPathActivityTypeId` value or used the default fallback (`111d59b7-...`). **Fix:** look up the real GUID via `uip api-workflow registry resolve "<keyword>"`. (The fallback won't crash, but renders as a generic "Connector" card instead of the right one.)
+
+### `uip is connections ping` returns 404 `"Connection [<uuid>] is invalid or you do not have access to it"`
+
+- **Symptom:** A connection appeared in `uip is connections list <connectorKey> --output json` with `State: "Enabled"`. Pinging it returns HTTP 404 with the message above (sometimes also `Code: "ConnectionNotEnabled"`). The agent is tempted to proceed anyway because the listing said the connection was enabled.
+- **Cause:** The filtered `uip is connections list <connectorKey>` listing is not authoritative. It can return **stale or orphaned records** — connections where the underlying element instance was deleted upstream, or that were created in a different org/tenant. The unfiltered `uip is connections list` (no connector argument) often shows a different, working UUID for the same `ConnectorKey`.
+- **Fix:** Run the unfiltered listing and find the working UUID:
+  ```bash
+  uip is connections list --output json
+  # Search Data[] for entries with ConnectorKey == "<connector-key>"
+  # Take a different Id, then ping it:
+  uip is connections ping <alternate-uuid> --output json
+  # If Code: "ConnectionPing" — use this UUID in the workflow
+  ```
+- **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. If neither the filtered nor unfiltered listing yields a working UUID, abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
+- **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only) for the full discovery+fallback flow.
+
+### IntSvc kind activity output read at the root returns `undefined`
+
+- **Symptom:** A `UiPath.IntSvc` activity (Outlook GetNewestEmail, Gmail Send Email, GitHub Search Issues, …) ran successfully — the run output shows the vendor data in the activity result. Downstream code that reads `$context.outputs.<Activity>.<field>` gets `undefined`. If conditions like `${$context.outputs.getNewestEmail_1?.subject?.length > 15}` always evaluate false. JsInvoke scripts return empty values.
+- **Cause:** IntSvc kind (`call: "UiPath.IntSvc"`) wraps the vendor payload in `.content`. The activity output is `{ statusCode: 200, content: { <vendor fields> }, headers: {...} }` — the actual data is one level deeper than the root.
+- **Fix:** Read through `.content`:
+  ```javascript
+  // ✗ Wrong — always undefined
+  "${$context.outputs.getNewestEmail_1?.subject}"
+
+  // ✓ Correct
+  "${$context.outputs.getNewestEmail_1?.content?.subject}"
+  ```
+  For list-shaped responses (e.g. `getMessages`, `searchIssues`), the items live under `.content.value[]`:
+  ```javascript
+  "${$context.outputs.getMessages_1?.content?.value?.[0]?.subject}"
+  ```
+- **Defensive form for JsInvoke** (handles the local-CLI quirk where `.content` is sometimes a JSON string):
+  ```javascript
+  const out = $context.outputs.getNewestEmail_1;
+  const raw = out && (out.content !== undefined ? out.content : out);
+  const body = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+  const item = body && Array.isArray(body.value) ? body.value[0] : body;
+  return { subject: (item && (item.subject || item.Subject)) || '' };
+  ```
+- **Note the camelCase export key** (`getNewestEmail_1`, not `GetNewestEmail_1`). Connector activities have a slot/export divergence — see "Connector activity export key is camelCase, not the slot's PascalCase" below.
+- **Http kind (`UiPath.Http`) is the same shape:** `{ statusCode, content, headers }`. The `.content` field carries the parsed response body. The wrapping is universal across both kinds.
+
+### Connector `bodyParameters` fields disappear after StudioWeb save (nested objects dropped)
+
+- **Symptom:** Authored a connector activity with nested body — `{ message: { toRecipients: "...", subject: "...", body: { content: "..." } }, saveToSentItems: true }`. Workflow runs locally. Open it in StudioWeb (or save via the designer); the `message` block is gone from the file. Only fields whose names appear at the top level of `bodyParameters` survive (e.g. `saveToSentItems`). The vendor receives a payload missing the actual message data.
+- **Cause:** StudioWeb's connector deserializer (`buildConnectorProperties` in `connector-translator-utils.ts`) scans `bodyParameters` for keys that match the connector's input-field names verbatim. Field names like `message.toRecipients` are flat dotted strings — the dot is a literal character, not a path separator. The deserializer does NOT recurse into nested objects. Nested-object values aren't found, the field model shows them empty, and the next save persists the empty model.
+- **Fix:** Use flat dotted keys matching the schema's `requestFields[].name` verbatim:
+  ```json
+  // ✗ Wrong — dropped on save
+  "bodyParameters": {
+    "message": {
+      "toRecipients": "andrei.hodoroaga@uipath.com",
+      "subject": "test",
+      "body": { "content": "<p>hi</p>", "contentType": "Html" }
+    },
+    "saveToSentItems": true
+  }
+
+  // ✓ Correct — survives roundtrip
+  "bodyParameters": {
+    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.subject": "test",
+    "message.body.content": "<p>hi</p>",
+    "message.body.contentType": "Html",
+    "saveToSentItems": true
+  }
+  ```
+- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys](connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys).
+
+### Connector `bodyParameters` literal cleared after StudioWeb save (`${'literal'}` read as expression)
+
+- **Symptom:** Authored connector body with literals wrapped per the Assign rule — `"message.toRecipients": "${'andrei.hodoroaga@uipath.com'}"`. Workflow runs locally. After StudioWeb save, the field becomes empty (or shows a non-literal expression marker in the designer); the email goes out with no recipient.
+- **Cause:** SKILL.md rule 5 (literal-wrap as `${'foo'}`) applies to **Assign / Response / If `when`**, NOT to connector params. StudioWeb's connector field detector treats `${...}` as a non-literal expression — it's looking for either a bare literal value or a real reference. `${'foo'}` looks like neither (it's a literal-disguised-as-expression), so the value isn't bound as a field literal and is dropped.
+- **Fix:** Bare literals in connector params:
+  ```json
+  // ✗ Wrong — cleared on save
+  "bodyParameters": {
+    "message.toRecipients": "${'andrei.hodoroaga@uipath.com'}",
+    "message.subject": "${'this is a claude skill test'}"
+  }
+
+  // ✓ Correct — bare literals
+  "bodyParameters": {
+    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.subject": "this is a claude skill test"
+  }
+  ```
+  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped](connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped).
+
+### Connector activity export key is camelCase, not the slot's PascalCase
+
+- **Symptom:** Authored a connector activity as `"GetNewestEmail_1"` with export `"GetNewestEmail_1": $output`. Workflow runs locally; downstream `$context.outputs.GetNewestEmail_1.content.subject` returns the correct value. After opening or saving in StudioWeb, downstream reads return `undefined`. The TypeScript linter shows `TS2551: Property 'GetNewestEmail_1' does not exist on type 'typeof outputs'. Did you mean 'getNewestEmail_1'?`. Diff of the file shows the export bucket key was renamed to `getNewestEmail_1` (camelCase) — the slot key in the `do` array stayed `GetNewestEmail_1` (PascalCase).
+- **Cause:** Connector activities are the only activity type where StudioWeb's serializer renames the export bucket. Every other type (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps "slot key === export key." For connector activities, StudioWeb writes the export bucket as `Config.objectName` (camelCase, with `-` → `_`) suffixed with `_<N>`. So `getNewestEmail` → `getNewestEmail_1`, `send-mail-v2` → `send_mail_v2_1`, `http-request` → `http_request_1`. The slot key is left as the human-friendly PascalCase you authored.
+- **Fix:** Author the export bucket key in the StudioWeb-canonical form from the start. The slot key stays PascalCase; the export bucket and every downstream `$context.outputs.<X>` reference uses camelCase:
+  ```json
+  // ✓ Correct — author both keys correctly the first time
+  {
+    "GetNewestEmail_1": {                          // slot key — PascalCase
+      "call": "UiPath.IntSvc",
+      "with": { ... },
+      "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"getNewestEmail_1\": $output } }" }
+                                                   // export bucket — camelCase
+    }
+  }
+  ```
+  And every downstream consumer:
+  ```json
+  "when": "${$context.outputs.getNewestEmail_1?.content?.subject?.length > 15}"
+  "response": "${{ subject: $context.outputs.getNewestEmail_1.content.subject }}"
+  ```
+- **Derivation rule:** take `objectName` from `uip api-workflow registry resolve` (or read `Data.ExportBucketKey` from `uip api-workflow registry stub`), replace any non-identifier character (e.g. `-`) with `_`, append `_<N>`. See [connector-activity-discovery.md#rule-c--slot-key-pascalcase--export-bucket-key-camelcase-objectname--n](connector-activity-discovery.md#rule-c--slot-key-pascalcase--export-bucket-key-camelcase-objectname--n).
+
+### `400 "Unable to parse multipart body"` from a curated send-email-style endpoint
+
+- **Symptom:** Workflow runs against a vendor curated activity (Outlook `send-mail-v2`, Gmail `sendEmail` with attachments, etc.) and the vendor returns `400 "Unable to parse multipart body"`. The request `Content-Type` header was `application/json`. The body looked structurally correct (recipient, subject, body all present).
+- **Cause:** The endpoint expects `multipart/form-data`, not `application/json`. Multipart-only endpoints typically support file attachments — they encode the email JSON as one form part and any attached files as other parts. The activity needs a `multipartParameters` declaration alongside `bodyParameters`. Without it, the executor sends `application/json` with the raw `bodyParameters` payload, and the vendor's multipart parser rejects it.
+- **Detection:** Re-stub the activity (`uip api-workflow registry stub <guid> --connection-id <uuid> --output json`) — the CLI calls IS Elements internally and declares `multipartParameters` automatically when it sees `parameters[].type === "multipart"`. If `Data.Activity.with.multipartParameters` is missing from the stub output, the endpoint isn't multipart. (Manual fallback if the stub's enrichment failed: `uip is resources describe <connector-key> <object-name> --output json` and read the `parameters` section.)
+- **Fix:** Mirror the parameters on the activity. For Outlook `send-mail-v2`:
+  ```json
+  "with": {
+    "endpoint": "/hubs/productivity/send-mail-v2",
+    "bodyParameters": {
+      "message.toRecipients": "andrei.hodoroaga@uipath.com",
+      "message.subject": "...",
+      "message.body.content": "...",
+      "message.body.contentType": "Text",
+      "saveToSentItems": true
+    },
+    "queryParameters": { "saveAsDraft": false },
+    "multipartParameters": [
+      { "name": "file", "dataType": "file" },
+      { "name": "body", "dataType": "string" }
+    ]
+  }
+  ```
+- **What the executor does with `multipartParameters`:** `is-utils.js:constructMultipartFormData` walks the array. For `dataType: "string"` parts, it JSON-stringifies the **entire `bodyParameters` object** and stuffs the resulting string into the multipart part with that name. So `bodyParameters` (with its flat-dotted keys) becomes the JSON content of the multipart `body` part. For `dataType: "file"` parts, the part is left empty unless the activity supplies a file reference (rarely needed for the no-attachment case — Outlook accepts an empty `file` part). See [connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration](connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration).
+
+### Properties panel: "to debug this resource, select a connection for it from the resource definition page"
+
+- **Symptom:** The workflow runs locally with `uip api-workflow run` AND from "Run" in StudioWeb. Open the activity card in the designer, click the connection field, and the properties panel renders the connection as invalid with the message **"to debug this resource, select a connection for it from the resource definition page."** `bindings_v2.json` contains a correct `Connection` resource entry; `Workflow.json` has `connectionId` / `connectionResourceId` set to the same pinged UUID.
+- **Cause:** **In a Solutions-mode project, every connection used by an activity must ALSO be declared as a Solution resource** in a file at `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`. StudioWeb's properties panel resolves connections from this tree, not from `Workflow.json` or `bindings_v2.json` — and the CLI does not write this file. So a CLI- or skill-generated workflow ends up with the runtime able to resolve the connection (which is why "Run" works) but the panel unable to validate it (which is why the message shows). Distinct from `bindings_v2.json`: that file is StudioWeb-generated and is per-activity binding; the resource file is per-connection and per-Solution.
+- **Detection:** Look for the file:
+  ```bash
+  ls Solution/resources/solution_folder/connection/<connector-key>/ 2>/dev/null
+  # → ENOENT or empty → file missing → this is the bug
+  ```
+  Also check that `bindings_v2.json`'s `"key"` matches `Workflow.json`'s `connectionId` matches the missing resource file's intended `"key"` — same UUID across all three.
+- **Fix:** Author the missing file. Start from [assets/templates/solution-connection-resource-template.json](../assets/templates/solution-connection-resource-template.json) and fill in the placeholders:
+  ```json
+  {
+    "docVersion": "1.0.0",
+    "resource": {
+      "name": "<connection Name from `uip is connections list`>",
+      "kind": "connection",
+      "type": "<connector key, e.g. uipath-microsoft-outlook365>",
+      "apiVersion": "integrationservice.uipath.com/v1",
+      "isOverridable": true,
+      "dependencies": [],
+      "runtimeDependencies": [],
+      "folders": [{ "fullyQualifiedName": "solution_folder" }],
+      "spec": {
+        "connectorName": "<ConnectorName from `uip is connections list`, e.g. Microsoft Outlook 365>",
+        "name": "<same connection Name>",
+        "authenticationType": "AuthenticateAfterDeployment",
+        "connectorVersion": "<from stub's metadata.configuration.essentialConfiguration.connectorVersion, fallback \"1.0.0\">",
+        "connectorKey": "<connector key>",
+        "pollingInterval": 5
+      },
+      "locks": [],
+      "key": "<connection UUID — MUST equal Workflow.json's connectionId>",
+      "files": []
+    }
+  }
+  ```
+  Place it at `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`. Reuse the `solution_folder` name from any existing `Solution/resources/<folder>/package/<workflow>.json` (`folders[0].fullyQualifiedName`); default is `"solution_folder"`. One file per unique connection UUID — if the workflow has two activities reusing one connection, write one file; two distinct connections → two files.
+- **Note on the user-profile debug overwrite.** StudioWeb additionally writes `Solution/userProfile/<guid>/debug_overwrites.json` mapping `solutionResourceKey` to a concrete folder + connection at debug time. That file is per-user state, written by the designer the first time you assign a debug connection. The agent does not author it; if it's missing, debug runs from the StudioWeb UI will prompt for a connection but won't 401.
+- **See also:** [connector-activity-discovery.md — Step 5](connector-activity-discovery.md#step-5--solutions-mode-intsvc-kind-declare-the-connection-as-a-solution-resource) for the full flow, including where each field value comes from.
+
+### Required request field dropped by `registry stub`
+
+- **Symptom:** A vendor curated activity (Outlook `getNewestEmail`, Gmail `searchMessages`, …) runs locally — sometimes returning unexpected results (wrong folder, no filter applied) — and fails in cloud with a 4xx, OR the StudioWeb properties panel marks a field with a red border and an "invalid" badge but no clear error text. `registry stub`'s output shows `queryParameters: {}`, `pathParameters: {}`, or `bodyParameters: {}` for an endpoint that obviously needs inputs.
+- **Cause:** **`uip api-workflow registry stub` silently drops `required: true` request fields that weren't passed via `--inputs`.** The IS Elements metadata is correct (`fieldsContainer.inputFields[]` inside the stub's `metadata.configuration` blob lists every field with the right `required` flag), but the stub doesn't populate the matching `<location>Parameters` slot from it. Verified for `getNewestEmail`: requires `parentFolderId` (`fieldLocation: "query"`), stub returns `queryParameters: {}`.
+- **Detection:** Two ways to surface the missing fields.
+  - **From the stub output directly.** Parse the JSON-encoded string at `Data.Activity.<SlotKey>.metadata.configuration` → `optionalConfiguration.fieldsContainer.inputFields[]`. Filter for `required === true`. Any entry whose `name` is absent from the corresponding `with.<fieldLocation>Parameters` block is missing.
+  - **Cleaner: re-describe the operation.** Call `uip is resources describe`:
+    ```bash
+    uip is resources describe <connector-key> <object-name> \
+      --operation <operation> \
+      --connection-id <pinged-uuid> \
+      --output json
+    ```
+    `<operation>` is the IS-Elements operation name (`List`, `Create`, `Get`, …) — listed by the same command without `--operation`. The returned `Data.queryParameters[]` / `Data.pathParameters[]` / `Data.bodyParameters[]` arrays mark each entry with `required`.
+- **Fix:** Either re-run the stub with the missing fields included via `--inputs`:
+  ```bash
+  uip api-workflow registry stub <activity-type-id> \
+    --connection-id <uuid> \
+    --inputs '{"parentFolderId": "inbox"}' \
+    --output json
+  ```
+  Or hand-edit the activity to insert the missing field — **bare literal** (rule 16(b)), **flat dotted key** if a body/nested field (rule 16(a)). Example:
+  ```json
+  "with": {
+    ...
+    "queryParameters": {
+      "parentFolderId": "inbox"
+    }
+  }
+  ```
+- **Well-known shortcuts.** MS Graph accepts well-known folder names (`"inbox"`, `"sentitems"`, `"drafts"`) as `parentFolderId`. They run, but StudioWeb's FolderPicker only displays the friendly folder name when the value matches an ID from its lookup cache. For exact UI fidelity, fetch the real ID via `uip is resources execute <connector-key> list <object-name> --connection-id <uuid>` against the field's `lookup.path` (often `/MailFolders`, `/Folders`, etc.).
+- **Heuristic:** when the stub returns empty `queryParameters` / `pathParameters` / `bodyParameters` for a non-trivial vendor operation, treat it as the bug. Real endpoints (CRUD on real objects, list-with-filters operations) almost never have zero required inputs.
+- **Upstream:** the stub IS surfacing the metadata it has — `metadata.configuration` contains the full `inputFields` list — so this is a CLI-side fix where the stub should populate defaults/placeholders from `required: true` fields, not a missing-data issue. Until that ships, the cross-check is mandatory per skill rule 16 step 4.
+- **See also:** [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields).
+
+### `401 — Failed to execute IS call to /<endpoint>: Invalid Organization or User secret, or invalid Element token provided`
+
+- **Symptom:** The workflow runs locally with `uip api-workflow run` but fails in StudioWeb cloud (or against the real IS proxy) with a 401 status. The error detail says `"Invalid Organization or User secret, or invalid Element token provided."` — sounds like a credential / auth-token issue but is often something else.
+- **Cause:** The IS proxy's auth flow for `/elements_/v3/element/instances/{connectionId}/{operationName}` rejected the call. There are two distinct sub-cases — diagnose by looking at the URL the proxy hit:
+
+  **Sub-case A — Wrong endpoint on the connection's element.** The endpoint in the proxy URL doesn't exist on the target connection's connector. Most common when an agent uses Http kind (`call: "UiPath.Http"` with `endpoint: "/http-request"`) but `connectionId` points at a vendor connection (Outlook, Gmail, etc.) instead of a `uipath-uipath-http` connection. The Outlook connector has no `/http-request` operation, only its curated ones (`/getNewestEmail`, `/sendEmail`, …) — so the proxy returns 401 as a generic "I can't service this request" rather than "operation not found."
+  - **Fix:** Switch to IntSvc kind (`call: "UiPath.IntSvc"`, `with.connector` = the vendor key, `with.endpoint` = `"/<curated-operation-name>"`). See [connector-activity-discovery.md — IntSvc kind](connector-activity-discovery.md#intsvc-kind--call-uipathintsvc-vendor-curated-activity) — IntSvc kind is for vendor activities, Http kind is only for the `uipath-uipath-http` HTTP Request activity.
+
+  **Sub-case B — Connection is in a broken state.** The endpoint is right (e.g. `/getNewestEmail` on an Outlook connection), but the connection's upstream OAuth token is expired, never properly authorized, or the running identity doesn't have access to the connection.
+  - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at alpha.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
+
+- **Prevention:** The discovery flow's Step 4b (`uip is connections ping`) is mandatory specifically to catch sub-case B before authoring. Don't author against a connection that doesn't ping — the workflow shape will look right and even run locally, but fail at deployment time.
 
 ---
 
