@@ -87,6 +87,39 @@ ensure_npm_package() {
     return
   fi
 
+  # bun-global mirror of the same gate. On hosts that install @uipath
+  # plugins via bun, the npm install fall-through below is guaranteed
+  # to fail (the prerelease tarball ships `workspace:*` deps that npm
+  # rejects with EUNSUPPORTEDPROTOCOL), so upgrade via bun instead.
+  # Freshness query reuses `npm view` — pure registry read, no install
+  # side-effects, honors $UIPATH_REGISTRY_FLAG.
+  local bun_pkg_json="$HOME/.bun/install/global/node_modules/$pkg/package.json"
+  if [ -f "$bun_pkg_json" ]; then
+    local installed_ver latest_ver
+    installed_ver="$(grep -m1 '"version"' "$bun_pkg_json" 2>/dev/null | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+    # `|| true` keeps `set -e` from killing the script on registry
+    # errors; the lenient match below treats empty $latest_ver as "skip".
+    latest_ver="$(npm view "$pkg" version $UIPATH_REGISTRY_FLAG 2>/dev/null || true)"
+
+    # Lenient match — mirrors the npm path, which treats empty `npm
+    # outdated` output (including transient registry errors) as "skip".
+    if [ -n "$installed_ver" ] \
+       && { [ -z "$latest_ver" ] || [ "$installed_ver" = "$latest_ver" ]; }; then
+      return
+    fi
+
+    # Outdated → upgrade via bun. On failure, warn and continue: the
+    # existing bun-installed copy still works, so a flaky upgrade
+    # shouldn't break the session (asymmetric vs. the npm path's
+    # exit 2, where install failure means no tool at all).
+    local bun_output
+    if ! bun_output="$(bun install -g "$pkg" 2>&1)"; then
+      echo "Warning: failed to upgrade $pkg via bun (continuing with installed $installed_ver):" >&2
+      echo "$bun_output" >&2
+    fi
+    return
+  fi
+
   local output
   if ! output="$(npm install -g $UIPATH_REGISTRY_FLAG "$pkg" 2>&1)"; then
     echo "Failed to install $pkg:" >&2
