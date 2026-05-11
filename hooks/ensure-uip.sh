@@ -113,7 +113,7 @@ ensure_npm_package() {
     # shouldn't break the session (asymmetric vs. the npm path's
     # exit 2, where install failure means no tool at all).
     local bun_output
-    if ! bun_output="$(bun install -g "$pkg" 2>&1)"; then
+    if command -v bun &>/dev/null && ! bun_output="$(bun install -g "$pkg" 2>&1)"; then
       echo "Warning: failed to upgrade $pkg via bun (continuing with installed $installed_ver):" >&2
       echo "$bun_output" >&2
     fi
