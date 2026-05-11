@@ -61,8 +61,8 @@ success_criteria:
     include_agent_output: true
     include_tool_calls: true
     files:
-      - .investigation/state.json
-      - .investigation/hypotheses.json
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath diagnostic agent against a known-correct
       reference outcome. The Reference solution attached to this prompt

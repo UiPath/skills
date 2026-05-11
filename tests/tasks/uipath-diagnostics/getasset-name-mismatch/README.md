@@ -29,9 +29,9 @@ This maps to:
 > **Note on fixtures.** Unlike `rpa-preflight-failure` and
 > `faulted_excel_o365`, the fixtures here were authored from the
 > documented playbook signature rather than captured from a real
-> `.investigation/` session. Before treating this test's score as a
-> regression signal, replay against a real failed job and regenerate
-> via `_shared/scripts/generate_scenario.py` — see
+> `.local/investigations/` session. Before treating this test's score
+> as a regression signal, replay against a real failed job and
+> regenerate via `_shared/scripts/generate_scenario.py` — see
 > `tests/tasks/uipath-diagnostics/CLAUDE.md`.
 
 ## Success criteria
@@ -46,7 +46,7 @@ The test scores the **conclusion**, not the trajectory:
 
 ```bash
 python tests/tasks/uipath-diagnostics/_shared/scripts/generate_scenario.py \
-    --investigation <path-to-.investigation> \
+    --investigation <path-to-.local/investigations> \
     --project <path-to-failing-project> \
     --transcript <path-to-session-jsonl> \
     --scenario-name getasset-name-mismatch --apply

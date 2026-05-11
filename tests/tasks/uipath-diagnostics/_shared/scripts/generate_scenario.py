@@ -9,7 +9,7 @@ unless `--output` is overridden.
 
 Usage:
     python generate_scenario.py \
-        --investigation <.investigation dir> \
+        --investigation <.local/investigations dir> \
         --project <uipath project dir> \
         --transcript <claude code jsonl> \
         [--resolution <RESOLUTION.md>] \
@@ -104,6 +104,11 @@ success_criteria:
     expected_skill: "uipath-diagnostics"
     weight: 1.0
 
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
   - type: llm_judge
     description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
     weight: 3.0
@@ -112,8 +117,8 @@ success_criteria:
     include_agent_output: true
     include_tool_calls: true
     files:
-      - .investigation/state.json
-      - .investigation/hypotheses.json
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath diagnostic agent against a known-correct
       reference outcome (the attached RESOLUTION.md).

@@ -76,4 +76,4 @@ Investigation Summary:
 
 ---
 
-Would you like help implementing any of the fixes, or should I clean up the `.investigation/` directory?
+Would you like help implementing any of the fixes, or should I clean up the `.local/investigations/` directory?

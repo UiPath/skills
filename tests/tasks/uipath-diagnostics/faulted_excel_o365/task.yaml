@@ -3,7 +3,7 @@ description: >
   Faithful replay of a real UiPath diagnostic investigation. The agent
   runs the uipath-diagnostics skill against a uip CLI mock whose
   responses are the verbatim sub-agent outputs from the real session
-  (.investigation/raw/*.json). Success = the agent reaches the same
+  (.local/investigations/raw/*.json). Success = the agent reaches the same
   root cause as RESOLUTION.md: an Integration Service connection
   (e62228b7-...) that lives in another user's workspace and is not
   resolvable from the runner's Personal workspace, matching the
@@ -35,7 +35,7 @@ sandbox:
     # 2. Full project source — frozen snapshot of the failing process.
     - type: template_dir
       path: process
-    # 3. Per-scenario fixtures (manifest + .investigation/raw responses).
+    # 3. Per-scenario fixtures (manifest + .local/investigations/raw responses).
     - type: template_dir
       path: fixtures
   # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock
@@ -62,6 +62,12 @@ success_criteria:
     expected_skill: "uipath-diagnostics"
     weight: 1.0
 
+  # Confirms the skill wrote its state to the new .local/investigations/ location.
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
   # Single comprehensive agentic check: the diagnostic must (a) load the
   # correct playbook AND (b) reach the same conclusion as RESOLUTION.md.
   - type: llm_judge
@@ -72,8 +78,8 @@ success_criteria:
     include_agent_output: true
     include_tool_calls: true
     files:
-      - .investigation/state.json
-      - .investigation/hypotheses.json
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath diagnostic agent against a known-correct
       reference outcome. The Reference solution attached to this prompt

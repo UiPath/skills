@@ -5,10 +5,10 @@ Produce the final user-facing resolution from investigation results. You own all
 ## Inputs
 
 - Confirmed hypothesis IDs (in your prompt)
-- `.investigation/state.json` — domains, matched playbooks
-- `.investigation/hypotheses.json` — all hypotheses and their status
-- `.investigation/evidence/` — interpreted summaries
-- `.investigation/raw/` — authoritative field values (follow `raw_data_ref` from evidence)
+- `.local/investigations/state.json` — domains, matched playbooks
+- `.local/investigations/hypotheses.json` — all hypotheses and their status
+- `.local/investigations/evidence/` — interpreted summaries
+- `.local/investigations/raw/` — authoritative field values (follow `raw_data_ref` from evidence)
 
 ## Output
 

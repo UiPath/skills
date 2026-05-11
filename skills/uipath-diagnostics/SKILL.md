@@ -20,7 +20,7 @@ All agents (including you) follow the invariants and confidence-level behavior d
 
 ## 2. Investigation State
 
-All state lives in `.investigation/` (relative to working directory). Schemas in `schemas/`.
+All state lives in `.local/investigations/` (relative to working directory). Schemas in `schemas/`.
 
 | File | Purpose | Writers |
 |------|---------|---------|
@@ -95,7 +95,7 @@ Spawn the depth-verifier sub-agent (`agents/depth-verifier.md`). Pass it the
 confirmed hypothesis ID(s), `state.json` path, and the matched playbook path.
 The verifier reads `hypotheses.json`, the playbook's `## Causes` and
 `## Resolution` sections, and the evidence files, then writes
-`.investigation/depth-check.json` with one of:
+`.local/investigations/depth-check.json` with one of:
 
 - `verdict: "verified"` — the confirmed hypothesis names a specific cause
   from the playbook, has cause-specific evidence (not just symptom-level),
@@ -163,14 +163,14 @@ Do NOT skip the Post-presentation actions block when:
 
 Only after all actions are complete (accepted, declined, or surfaced as blocked) proceed to the generic follow-up:
 
-**If root cause found** — offer to help implement any further changes or clean up `.investigation/`.
+**If root cause found** — offer to help implement any further changes or clean up `.local/investigations/`.
 
 **If no root cause found** — use `AskUserQuestion` to offer: provide more data (re-triage), or open a UiPath support ticket with the evidence gathered.
 
 ## 7. Operational Details
 
-**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions, context, working directory path, and the absolute path to `.investigation/` in the prompt.
+**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions, context, working directory path, and the absolute path to `.local/investigations/` in the prompt.
 
 **Progress:** Use `TaskCreate`/`TaskUpdate` for each phase. Tailor subjects to the user's problem.
 
-**Cleanup:** After investigation completes, offer to delete or preserve `.investigation/`.
+**Cleanup:** After investigation completes, offer to delete or preserve `.local/investigations/`.

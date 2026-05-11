@@ -28,7 +28,7 @@ This maps to:
 
 > **Note on fixtures.** Like `getasset-name-mismatch`, fixtures here
 > were authored from the documented playbook signature rather than
-> captured from a real `.investigation/` session. Regenerate via
+> captured from a real `.local/investigations/` session. Regenerate via
 > `_shared/scripts/generate_scenario.py` from a real failed-job
 > session before treating this test's score as a regression signal.
 
@@ -57,7 +57,7 @@ The test scores the **conclusion**, not the trajectory:
 
 ```bash
 python tests/tasks/uipath-diagnostics/_shared/scripts/generate_scenario.py \
-    --investigation <path-to-.investigation> \
+    --investigation <path-to-.local/investigations> \
     --project <path-to-failing-project> \
     --transcript <path-to-session-jsonl> \
     --scenario-name getasset-folder-scope-mismatch --apply

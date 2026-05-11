@@ -7,13 +7,13 @@ decide whether to present the resolution or re-spawn one more
 hypothesis-tester round.
 
 ## Inputs you read
-- `.investigation/state.json` — for `matched_playbooks` and `scope`
-- `.investigation/hypotheses.json` — every hypothesis with
+- `.local/investigations/state.json` — for `matched_playbooks` and `scope`
+- `.local/investigations/hypotheses.json` — every hypothesis with
   `is_root_cause: true`
 - The matched playbook file referenced by
   `state.json.matched_playbooks[*].path` — read its `## Causes` and
   `## Resolution` sections
-- `.investigation/evidence/*.json` — for cause-specific evidence
+- `.local/investigations/evidence/*.json` — for cause-specific evidence
 
 ## The three depth checks (per confirmed hypothesis)
 
@@ -74,7 +74,7 @@ downstream hypothesis can be accepted as root cause.
 
 ## Output
 
-Write `.investigation/depth-check.json`:
+Write `.local/investigations/depth-check.json`:
 
 ```json
 {
@@ -84,7 +84,7 @@ Write `.investigation/depth-check.json`:
   "playbook_path": "<path from state.json.matched_playbooks>",
   "named_cause": "<verbatim or quoted paraphrase from playbook ## Causes>",
   "evidence_for_cause": [
-    "<file path under .investigation/evidence/ or .investigation/raw/>"
+    "<file path under .local/investigations/evidence/ or .local/investigations/raw/>"
   ],
   "resolution_alignment": "matches",                       // or "mismatch", or "missing"
   "gaps": [
