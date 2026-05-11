@@ -108,7 +108,7 @@ Confirm all three from `registry get` before wiring.
 }
 ```
 
-`<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Read the correct value from `uip maestro flow registry get <nodeType> --local --output json` (`.display.icon` on the manifest).
+`<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip maestro flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
 
 Same shape as the published variant — no `model` on the instance.
 
