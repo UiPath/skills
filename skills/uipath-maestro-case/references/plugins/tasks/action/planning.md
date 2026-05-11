@@ -21,7 +21,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 
 ## Task Title Fallback
 
-`task-title` is what the user sees in the Actions app. Always emit it — the validator requires it even on placeholders. Derive in this order:
+`task-title` is what the user sees in the Actions app. Required on resolved action tasks (placeholders skip — see § Unresolved Fallback). Derive in this order:
 
 1. SDD has an explicit title or question field → use it
 2. SDD has a Description → summarize into a short, concise title
@@ -40,9 +40,11 @@ See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for 
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). **Keep `task-title:`** — the validator requires it even on placeholder action tasks. Derive via the fallback above. See [placeholder-tasks.md](../../../placeholder-tasks.md).
+Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
 
 ## Recipient Handling
+
+> Resolved action tasks only — placeholders skip this entire section (see § Unresolved Fallback).
 
 - If sdd.md **names a specific user email**, record it in `tasks.md`. Sets `assignmentCriteria: "user"` at execution time.
 - If sdd.md **names a group or role**, do **not** record a recipient — group assignment is configured separately via Actions app rules. Record a note in `tasks.md` so the user remembers to configure group assignment externally.
@@ -57,6 +59,8 @@ Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found
 For open-ended inputs like an email address, use a direct prompt rather than AskUserQuestion with a finite option list.
 
 ## tasks.md Entry Format
+
+Resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](../../../placeholder-tasks.md#tasksmd-planning-entry-shape).
 
 ```markdown
 ## T<n>: Add action task "<display-name>" to "<stage>"

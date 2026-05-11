@@ -67,7 +67,7 @@ A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 
 Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. Connector placeholders follow the same shape with `type` set to `connector-activity` or `connector-trigger` and no `data.typeId` / `data.connectionId` keys.
 
-> **`action` placeholders MUST include `data.taskTitle`** — validator rejects empty per [`plugins/tasks/action/impl-json.md`](plugins/tasks/action/impl-json.md). Source from sdd.md's task-title hint or fall back to `displayName`. Include `data.priority` and `data.recipient` if known from planning; otherwise omit those keys. Other placeholder fields (`data.context`, `data.inputs`, `data.outputs`, `data.actionCatalogName`) stay omitted until the action-app is attached.
+> **`action` placeholders follow the same shape as every other task class — `data: {}`, nothing populated.** Omit `data.taskTitle`, `data.priority`, `data.recipient`, `data.context`, `data.inputs`, `data.outputs`, `data.actionCatalogName` — even when sdd.md provides values for them. The sdd-stated values are captured in the planning entry's wiring text block and re-applied during the upgrade procedure (§ Step 4).
 
 ### In-stage timer
 

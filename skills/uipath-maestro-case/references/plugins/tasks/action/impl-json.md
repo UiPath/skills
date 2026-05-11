@@ -33,7 +33,7 @@
 
 | Field | Notes |
 |---|---|
-| `data.taskTitle` | Required, even on placeholders. Validator rejects empty. |
+| `data.taskTitle` | Required on **resolved** action tasks — validator rejects empty. Placeholders omit it (along with every other `data.*` action-specific key); see [placeholder-tasks.md](../../../placeholder-tasks.md). |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
 | `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
 | `data.actionCatalogName` | `deploymentTitle` from tasks.md |
