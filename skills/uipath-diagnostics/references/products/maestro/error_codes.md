@@ -2,6 +2,8 @@
 
 Source: `UiPath.PO.Errors/ErrorCode.cs` + `ErrorCodeMessages.resx`
 
+For high-volume production errors, see the **Top-20 Production Errors** table at the bottom of this file. It links engine codes (and Orchestrator codes for non-engine surfaces) to ranked playbooks.
+
 ## Error Code Ranges
 
 | Range | Subsystem |
@@ -260,7 +262,7 @@ Source: `UiPath.PO.Errors/ErrorCode.cs` + `ErrorCodeMessages.resx`
 | 400006 | BpmnGenericWorkflowFailure | BPMN generic workflow failure |
 | 400007 | BpmnMarkerInputNullError | Input collection for the marker element must not be null |
 | 400008 | BpmnMarkerInputEvaluationFailure | Failed to evaluate the input collection variable for the marker element |
-| 400009 | ElementExecutionLoopDetected | This element has executed an abnormal number of times. Potential loop detected. |
+| 400009 | ElementExecutionLoopDetected | Possible loop detected: element 'X' has been executed more than 100 times. Failing the instance to prevent infinite loop. |
 | 400010 | CaseManagementInvalidJson | Invalid case management process metadata JSON format |
 | 400020 | CreateTriggersForEventSubProcessFailed | Failed to create triggers for Event SubProcess |
 | 400023 | CasePlanOverviewParseError | Failed to retrieve the case plan overview |
@@ -308,3 +310,32 @@ Source: `UiPath.PO.Errors/ErrorCode.cs` + `ErrorCodeMessages.resx`
 | 450011 | MaestroMessageSendEventBlobFailure | Failed to handle message publish |
 | 450012 | MaestroMessageSendFailure | Failed to send maestro message |
 | 450013 | MaestroMessageReceiverNotFound | Message receiver not found |
+
+## Top-20 Production Errors → Playbook Mapping
+
+Ranked by production telemetry volume. Source: [PO.BpmnEngine PR #3092 — `docs/error-catalog.md`](https://github.com/UiPath/PO.BpmnEngine/pull/3092). API-debuggability column tells you whether PIMS APIs alone are enough.
+
+| # | Error | HTTP | Engine code | Orch / connector code | API debug | Playbook |
+|---|-------|:----:|-------------|-----------------------|:---------:|----------|
+| 1 | Personal Automation quota exceeded | 502 | — | 170002 (propagated) | Full | [personal-automation-quota.md](./playbooks/personal-automation-quota.md) |
+| 2 | Job's associated process could not be found | 404 | — | 170007 | Partial | [process-not-found-404.md](./playbooks/process-not-found-404.md) |
+| 3 | No unattended robot permissions in folder | 409 | — | #1671 | Full | [unattended-robot-permissions.md](./playbooks/unattended-robot-permissions.md) |
+| 4 | Job Operation Timeout | 502 | — | — | Partial | [job-operation-timeout.md](./playbooks/job-operation-timeout.md) |
+| 5 | Input does not conform to schema | 400 | — | — | Full | [input-schema-mismatch.md](./playbooks/input-schema-mismatch.md) |
+| 6 | Missing value for required parameter | 400 | — | — | Full | [missing-required-parameter.md](./playbooks/missing-required-parameter.md) |
+| 7 | Generic Error_400 | 400 | — | — | None | [generic-error-400.md](./playbooks/generic-error-400.md) |
+| 8 | Expression evaluation — property not found | 400 | 400300 / 400301 / 400302 | — | Full | [expression-evaluation-errors.md](./playbooks/expression-evaluation-errors.md) |
+| 9 | No outgoing flow condition met | 400 | **400001 (NoOutgoingFlow)** | — | None* | [gateway-no-outgoing-flow.md](./playbooks/gateway-no-outgoing-flow.md) |
+| 10 | Loop detected (>100 executions) | 400 | **400009 (ElementExecutionLoopDetected)** | — | Partial | [loop-detected.md](./playbooks/loop-detected.md) |
+| 11 | 'File' field required | 502 | — | DAP-RT-1003 | Full | [file-field-required.md](./playbooks/file-field-required.md) |
+| 12 | Integration Services 404 | 404 | 102001 (IntSvcResourceNotFound) | — | None | [integration-service-404.md](./playbooks/integration-service-404.md) |
+| 13 | Insufficient funds / Agent Units | 400 | — | — | Full | [insufficient-funds.md](./playbooks/insufficient-funds.md) |
+| 14 | Marker element input collection is null | 400 | **400007 (BpmnMarkerInputNullError)** | — | Partial | [marker-input-null.md](./playbooks/marker-input-null.md) |
+| 15 | Integration Services 400 | 400 | 102003 (IntSvcBadRequest) | — | None | [integration-service-400.md](./playbooks/integration-service-400.md) |
+| 16 | Folder does not exist or no access | 400 | — | #1100 | Full | [folder-not-accessible.md](./playbooks/folder-not-accessible.md) |
+| 17 | No machine with Unattended/NonProduction runtimes | 409 | — | #2818 | Partial | [no-suitable-runtime-machine.md](./playbooks/no-suitable-runtime-machine.md) |
+| 18 | No Message events found | 400 | (450010 if `MaestroMessageReceiveFromBlobFailed`) | — | None | [no-message-events.md](./playbooks/no-message-events.md) |
+| 19 | Foreground job requires unattended robot | 409 | — | #1230 | Full | [foreground-unattended-robot.md](./playbooks/foreground-unattended-robot.md) |
+| 20 | Index outside bounds of array | 502 | — | — | None | [index-out-of-bounds.md](./playbooks/index-out-of-bounds.md) |
+
+> *\* Error #9 (`NoOutgoingFlow`) becomes Fully Diagnosable once [PR #3092](https://github.com/UiPath/PO.BpmnEngine/pull/3092) lands and the `IncludeGatewayDebugInfoInIncidents` targeted feature flag is enabled — incident `errorDetails` then includes all outgoing flow conditions, the default flow config, and variable values (truncated to 200 chars) at evaluation time.*

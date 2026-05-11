@@ -20,6 +20,8 @@ Error codes appear in the Maestro incident detail view. Ask the user for the inc
 
 Full error code reference: [error_codes.md](./error_codes.md) — all error codes by subsystem with numeric values and messages.
 
+**Always check [summary.md](./summary.md) Top-20 table first** — it lists the highest-volume Maestro errors (by production telemetry) with direct playbook links and marks each one's API debuggability (Full / Partial / None). Route there before walking the range table below.
+
 Quick routing by range:
 
 | Range | Subsystem | Common action |
@@ -46,6 +48,33 @@ After the Orchestrator job data bundle (job details, logs, history) is collected
 3. **Full incident details** — `uip maestro instance incidents <instance-id> -f <folder-key>`. This returns `errorDetails` with stack traces. Do NOT use `uip maestro incident summary` — that returns summaries only without error details.
 4. **Element executions** — `uip maestro instance element-executions <instance-id> -f <folder-key>` to see what each BPMN element did and where execution stopped
 5. **Child jobs** — if the BPMN process has service tasks, list child jobs and check their state and error messages. The child's failure reason is often the actual root cause.
+
+## Top-20 Error Quick Route
+
+Match the error text/code in the incident to one of the highest-volume Maestro errors before doing a full investigation. Full table with playbook links: [summary.md](./summary.md).
+
+| Symptom hint | Playbook |
+|--------------|----------|
+| `Personal Automation quota` | [personal-automation-quota.md](./playbooks/personal-automation-quota.md) |
+| `job's associated process could not be found` / 170007 | [process-not-found-404.md](./playbooks/process-not-found-404.md) |
+| `unattended robot permissions in the current folder` / #1671 | [unattended-robot-permissions.md](./playbooks/unattended-robot-permissions.md) |
+| `Job Operation Timeout` | [job-operation-timeout.md](./playbooks/job-operation-timeout.md) |
+| `Input does not conform to schema` / `InputArgumentsSchema` | [input-schema-mismatch.md](./playbooks/input-schema-mismatch.md) |
+| `Missing value for required parameter` | [missing-required-parameter.md](./playbooks/missing-required-parameter.md) |
+| `Error_400` (no specific name) | [generic-error-400.md](./playbooks/generic-error-400.md) |
+| `Property 'X' not found against object of type ExpressionDictionary` | [expression-evaluation-errors.md](./playbooks/expression-evaluation-errors.md) |
+| `No condition for an outgoing flow was met` / 400001 | [gateway-no-outgoing-flow.md](./playbooks/gateway-no-outgoing-flow.md) |
+| `Possible loop detected` / 400009 | [loop-detected.md](./playbooks/loop-detected.md) |
+| `"File" field is required` / DAP-RT-1003 | [file-field-required.md](./playbooks/file-field-required.md) |
+| `Request to Integration Services failed with status code '404'` | [integration-service-404.md](./playbooks/integration-service-404.md) |
+| `Insufficient funds` / Agent Units | [insufficient-funds.md](./playbooks/insufficient-funds.md) |
+| `Input collection for the marker element must not be null` / 400007 | [marker-input-null.md](./playbooks/marker-input-null.md) |
+| `Request to Integration Services failed with status code '400'` | [integration-service-400.md](./playbooks/integration-service-400.md) |
+| `Folder does not exist or the user does not have access` / #1100 | [folder-not-accessible.md](./playbooks/folder-not-accessible.md) |
+| `Could not find a machine with Unattended or NonProduction runtimes` / #2818 | [no-suitable-runtime-machine.md](./playbooks/no-suitable-runtime-machine.md) |
+| `No Message events found` / `No File events found` | [no-message-events.md](./playbooks/no-message-events.md) |
+| `Foreground job requires an unattended robot` / #1230 | [foreground-unattended-robot.md](./playbooks/foreground-unattended-robot.md) |
+| `Index was outside the bounds of the array` | [index-out-of-bounds.md](./playbooks/index-out-of-bounds.md) |
 
 ## Testing Prerequisites
 
