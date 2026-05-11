@@ -843,10 +843,13 @@ class Validator:
                 continue
 
             context = elem.find(f"{{{UIPATH_NS}}}context")
+            if context is None:
+                self.error(path, f"{service_type} missing context")
+                continue
             context_inputs = {
                 child.attrib.get("name"): child.attrib.get("value", "")
                 for child in list(context)
-                if context is not None and local(child.tag) == "input"
+                if local(child.tag) == "input"
             }
             connector_key = context_inputs.get("connectorKey")
             for name, value in context_inputs.items():

@@ -18,7 +18,7 @@ from _shared.bpmn_assertions import (  # noqa: E402
     mapping_inputs,
     mapping_outputs,
     one_element,
-    variable_names,
+    variable_ids,
 )
 
 PROJECT = Path("ScriptNormalizer/ScriptNormalizer")
@@ -53,7 +53,7 @@ def main() -> None:
     if len(outputs) < 1:
         fail("scriptTask should map a response/output variable")
 
-    declared = variable_names(root)
+    declared = variable_ids(root)
     output_targets = {out.attrib.get("var") or out.attrib.get("target") for out in outputs}
     missing = sorted(target for target in output_targets if target and target not in declared)
     if missing:

@@ -18,7 +18,7 @@ from _shared.bpmn_assertions import (  # noqa: E402
     mapping_inputs,
     mapping_outputs,
     one_element,
-    variable_names,
+    variable_ids,
 )
 
 PROJECT = Path("ApiWorkflowDispatch/ApiWorkflowDispatch")
@@ -51,7 +51,7 @@ def main() -> None:
     if len(outputs) < 2:
         fail("API workflow task should map invocation/status/result outputs")
 
-    declared = variable_names(root)
+    declared = variable_ids(root)
     output_targets = {out.attrib.get("var") or out.attrib.get("target") for out in outputs}
     missing = sorted(target for target in output_targets if target and target not in declared)
     if missing:

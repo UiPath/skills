@@ -79,6 +79,15 @@ def variable_names(root: ET.Element) -> set[str]:
     return names
 
 
+def variable_ids(root: ET.Element) -> set[str]:
+    ids: set[str] = set()
+    for var in root.findall(f".//{{{UIPATH_NS}}}variables/*"):
+        variable_id = var.attrib.get("id")
+        if variable_id:
+            ids.add(variable_id)
+    return ids
+
+
 def assert_has_shape(root: ET.Element, bpmn_id: str) -> None:
     shape = root.find(f".//{{{BPMNDI_NS}}}BPMNShape[@bpmnElement='{bpmn_id}']")
     if shape is None:
