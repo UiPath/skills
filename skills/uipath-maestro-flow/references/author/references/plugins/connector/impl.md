@@ -628,6 +628,36 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
 | `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
 
+---
+
+## Agent Tool Connector Nodes
+
+Agent tool connector nodes (`uipath.agent.resource.tool.connector.<connector-key>.<operation>`) are IS connector tools wired to an inline agent's `tool` artifact port. They use the **same `inputs.detail` structure** and the **same `uip maestro flow node configure` CLI carve-out** as regular connector activity nodes.
+
+When `node configure` detects an agent tool connector node, it automatically populates `optionalConfiguration.fieldsContainer` (with `inputFields`, `outputJsonSchema`, and `clrType` on every field) and `bodyParameters` with `{{prompt:}}` defaults. This is in addition to the standard configuration (connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, etc.). The `fieldsContainer` is what `uip agent validate --inline-in-flow` reads to build the tool's `resource.json`.
+
+### Configuration
+
+After adding the tool node to the flow (with its definition from `registry get`), run `node configure` exactly as for regular connector nodes:
+
+```bash
+uip maestro flow node configure <FlowFile>.flow <nodeId> \
+  --detail '{"connectionId":"<CONN_UUID>","folderKey":"<FOLDER_KEY>","method":"POST","endpoint":"<path>"}' \
+  --output json
+```
+
+This single command populates the complete `inputs.detail` — connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, `fieldsContainer` (with `inputFields`, `outputJsonSchema`, `clrType`), and `bodyParameters` with `{{prompt:}}` defaults. It also creates the top-level `bindings[]` entries. The `endpoint` path and `method` come from the definition's `model.context[]` or from `uip is resources describe`.
+
+### Debug Tips
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| Studio Web: "Field Type cannot be resolved" | `clrType` missing from `fieldsContainer.inputFields` | Add `clrType` block to every inputField — see Step 2b |
+| `AGENT_RUNTIME.HTTP_ERROR` / status 400 | `resource.json` has empty schemas because `fieldsContainer` is missing from `configuration` | Augment `configuration` with `fieldsContainer` — see Step 2 |
+| `uip agent validate` shows `resources: 0` | No resource.json generated — `configuration` lacks `fieldsContainer`, or tool node not wired to agent's `tool` port | Check edges and augment configuration with fieldsContainer |
+
+---
+
 ### Debug Tips
 
 1. **Always check top-level `bindings[]` in the `.flow` file** — connector nodes silently fail if a binding is missing or malformed. Compare against the Authoring top-level `bindings[]` schema above. Do not inspect `bindings_v2.json` as ground truth; it is regenerated from the `.flow` on every debug/pack.

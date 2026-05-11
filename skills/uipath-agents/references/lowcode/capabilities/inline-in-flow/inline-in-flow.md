@@ -166,6 +166,32 @@ Additional notes for inline-in-flow:
 - **`inputSchema.properties`**: Must include `"guardrails": { "type": "array" }` alongside the process arguments — the runtime expects it.
 - **All fields from the template in [../process/process.md](../process/process.md) are required** — especially `$resourceType: "tool"`, `guardrail`, `properties.processName`, `properties.exampleCalls`, `isEnabled`, and `argumentProperties`. A `resource.json` missing `$resourceType` will not be recognized by `uip agent validate`, resulting in `"resources": 0` validated and an empty `bindings_v2.json`.
 
+## Inline-in-Flow IS Connector Tool resource.json
+
+The `resource.json` for IS connector tools inside an inline-in-flow agent uses the **same format** as IS tools in standalone agents. See [../integration-service/integration-service.md](../integration-service/integration-service.md) for the full resource.json shape, properties, and field reference.
+
+**Path:** `<FlowProjectDir>/<projectId>/resources/<RES_UUID>/resource.json`
+
+**Auto-generation by `uip agent validate --inline-in-flow`:** When the parent `.flow` file contains IS connector tool nodes wired to this agent via `tool` artifact edges, `uip agent validate --inline-in-flow` automatically discovers them and generates the corresponding `resource.json` files. This means you do **not** need to hand-author IS tool resource.json files — just configure the connector tool node in the flow (via `uip maestro flow node configure`), then run validate.
+
+The auto-generation:
+1. Navigates up from the inline agent directory to find the parent `.flow` file
+2. Finds all `uipath.agent.resource.tool.connector.*` nodes connected to this agent's `tool` port
+3. Reads each node's `inputs.detail` (connectionId, endpoint, configuration, telemetryData) and its definition
+4. Generates a `resource.json` with `type: "integration"` in `<projectDir>/resources/<UUID>/resource.json`
+5. Skips nodes that already have a `resource.json` (idempotent — won't overwrite user edits)
+
+Additional notes for inline-in-flow IS tools:
+- **`type`**: Always `"integration"` (not `"process"`)
+- **`location`**: Always `"external"` for IS connector tools
+- **`id`**: The generated UUID for the resource directory name
+- **`properties.connection`**: Populated from `inputs.detail.connectionId`, `inputs.detail.connectionFolderKey`, and the connector key from the definition's `model.context[]`
+- **`properties.parameters`**: Built from the connector's `fieldsContainer.inputFields` in `detail.configuration`. User-supplied values from `detail.bodyParameters` are included; fields without values default to `{{prompt}}` (LLM-decides-at-runtime)
+- **`iconUrl`**: Taken from the definition's `display.icon` (the type-cache URL)
+- No `referenceKey` or `argumentProperties` (those are process-tool-only fields)
+- **bindings_v2.json**: When using `--bindings-target`, validate generates a `resource: "connection"` binding entry for the IS tool's connection (with `metadata.connector` set to the connector key)
+- **Solution-level resources**: `uip solution resource refresh` creates `resources/solution_folder/connection/<connector-key>/<connection-name>.json` for IS tools (not `process/` + `package/` like RPA tools)
+
 ## Flow Node Structure
 
 ### Node type
