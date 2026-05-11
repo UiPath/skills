@@ -20,7 +20,7 @@ Distinguish from:
 
 ## Resolution Pipeline
 
-Follow the 7-step pipeline in [connector-trigger-common.md](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both event triggers and in-stage connector-trigger tasks.
+Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both event triggers and in-stage connector-trigger tasks.
 
 ## tasks.md Entry Format
 
@@ -34,8 +34,8 @@ T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in
 - object-name: <objectName>
 - event-operation: <eventOperation>
 - event-mode: <polling|webhooks>
-- input-values: {"parentFolderId": "AAMkADNm..."}
-- filter: "(contains(subject, 'urgent'))"
+- input-values: {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
+- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}]}
 - order: after T01
 - verify: Confirm trigger configured with correct event parameters
 ```
