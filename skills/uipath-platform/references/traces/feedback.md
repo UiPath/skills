@@ -18,7 +18,7 @@ Use for agent output quality review and building evaluation datasets.
 
 ```bash
 uip traces feedback create \
-  --trace-id 4bf92f3577b34da6a3ce929d0e0e4736 \
+  --trace-id <TRACE_ID> \
   --positive \
   --comment "Correct summary" \
   --category "Output" \
