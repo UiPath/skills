@@ -18,6 +18,7 @@ from flow_check import (  # noqa: E402
     assert_output_value,
     assert_outputs_contain,
     collect_outputs,
+    run_debug,
 )
 
 
@@ -169,3 +170,70 @@ def test_assert_outputs_contain_fails_when_missing():
     payload = _payload(globals_=[{"value": "hello"}])
     with pytest.raises(SystemExit, match="missing"):
         assert_outputs_contain(payload, ["world"])
+
+
+# ── run_debug --folder-id env-var override ─────────────────────────────────
+
+
+def _stub_run_debug_subprocess(tmp_path, monkeypatch):
+    """Set up a minimal project layout and capture the constructed CLI command.
+
+    Returns the list captured by ``subprocess.run`` so each test can assert on
+    the exact argv shape (including or excluding ``--folder-id``).
+    """
+    import json
+    import subprocess
+
+    proj = tmp_path / "MyFlow"
+    proj.mkdir()
+    (proj / "project.uiproj").write_text("{}")
+    (proj / "MyFlow.flow").write_text("{}")
+    monkeypatch.chdir(tmp_path)
+
+    captured: dict[str, list[str]] = {}
+
+    class _Completed:
+        returncode = 0
+        stdout = json.dumps(
+            {"Data": {"finalStatus": "Completed", "variables": {"globals": {}}}}
+        )
+        stderr = ""
+
+    def fake_run(cmd, *_args, **_kwargs):
+        captured["cmd"] = list(cmd)
+        return _Completed()
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    return captured
+
+
+def test_run_debug_passes_folder_id_when_env_set(tmp_path, monkeypatch):
+    captured = _stub_run_debug_subprocess(tmp_path, monkeypatch)
+    monkeypatch.setenv("UIPATH_FLOW_DEBUG_FOLDER_ID", "12345")
+
+    run_debug(timeout=5)
+
+    assert "--folder-id" in captured["cmd"]
+    idx = captured["cmd"].index("--folder-id")
+    assert captured["cmd"][idx + 1] == "12345"
+
+
+def test_run_debug_omits_folder_id_when_env_unset(tmp_path, monkeypatch):
+    captured = _stub_run_debug_subprocess(tmp_path, monkeypatch)
+    monkeypatch.delenv("UIPATH_FLOW_DEBUG_FOLDER_ID", raising=False)
+
+    run_debug(timeout=5)
+
+    assert "--folder-id" not in captured["cmd"]
+
+
+def test_run_debug_omits_folder_id_when_env_blank(tmp_path, monkeypatch):
+    # Treat empty string the same as unset — the env var must contain a real
+    # folder id, otherwise the CLI would error with "--folder-id must be a
+    # positive number" and mask real eval failures.
+    captured = _stub_run_debug_subprocess(tmp_path, monkeypatch)
+    monkeypatch.setenv("UIPATH_FLOW_DEBUG_FOLDER_ID", "")
+
+    run_debug(timeout=5)
+
+    assert "--folder-id" not in captured["cmd"]

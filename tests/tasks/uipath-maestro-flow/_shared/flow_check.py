@@ -36,9 +36,21 @@ def run_debug(
     project_glob: str = "**/project.uiproj",
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
-    parsed ``Data`` payload. Exits on any step failing."""
+    parsed ``Data`` payload. Exits on any step failing.
+
+    When the ``UIPATH_FLOW_DEBUG_FOLDER_ID`` environment variable is set, its
+    value is passed through as ``--folder-id`` so the CLI uses the targeted
+    folder via ``/odata/Folders({id})`` and skips personal-workspace discovery.
+    That discovery hits ``/api/Folders/GetAllForCurrentUser``, which requires
+    ``Folders.Read.PersonalWorkspace`` — a permission the eval service account
+    routinely lacks (HTTP 403). With the env var set, debug works without
+    that permission as long as the account can read the targeted folder.
+    """
     project_dir = _find_project(project_glob)
     cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
+    folder_id = os.environ.get("UIPATH_FLOW_DEBUG_FOLDER_ID")
+    if folder_id:
+        cmd.extend(["--folder-id", folder_id])
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
