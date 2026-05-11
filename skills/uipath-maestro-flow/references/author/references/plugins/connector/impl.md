@@ -628,6 +628,155 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
 | `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
 
+---
+
+## Agent Tool Connector Nodes
+
+Agent tool connector nodes (`uipath.agent.resource.tool.connector.<connector-key>.<operation>`) are IS connector tools wired to an inline agent's `tool` artifact port. They use the **same `inputs.detail` structure** as regular connector activity nodes but differ in two ways:
+
+1. **`uip maestro flow node configure` does NOT work** — the CLI rejects `uipath.agent.resource.tool.connector.*` types. Build `inputs.detail` manually with `Edit` / `Write`.
+2. **`inputs.detail.configuration` must contain `fieldsContainer`** — the CLI's `uip agent validate --inline-in-flow` maps `fieldsContainer.inputFields` and `fieldsContainer.outputJsonSchema` into the tool's `resource.json`. Without it, the generated `resource.json` has empty schemas/parameters and the tool fails at runtime (`AGENT_RUNTIME.HTTP_ERROR` / status 400).
+
+### Configuration workflow
+
+Follow Steps 1–5 from the regular connector workflow above (discover node, find connection, fetch IS metadata). Then build `inputs.detail` manually:
+
+**Step A — Fetch IS metadata.** Use `uip is resources describe` from the [/uipath:uipath-platform](/uipath:uipath-platform) skill (`references/integration-service/resources.md`):
+
+```bash
+uip is resources describe "<connector-key>" "<objectName>" \
+  --operation create --connection-id "<connectionId>" --output json
+```
+
+The `objectName` comes from the registry definition's `model.context[]` entry named `objectName` (e.g., `v2::webSearch`).
+
+**Step B — Build `fieldsContainer.inputFields[]`.** Map each IS `requestFields[]` entry to the full ConnectorField format. Studio Web requires `clrType` or it throws "Field Type cannot be resolved.":
+
+```json
+{
+  "typeScriptDefinition": null,
+  "id": "<name>",
+  "name": "<name>",
+  "displayName": "<displayName>",
+  "description": "<description>",
+  "type": "<type>",
+  "sortOrder": "<1-based index>",
+  "defaultValue": "<first enum value or null>",
+  "primaryKey": false,
+  "enum": [{ "name": "<val>", "value": "<val>" }],
+  "design": { "loadByDefault": true, "isMultiSelect": false, "enableUserOverride": false, "isHidden": false, "position": "<required ? 'primary' : 'secondary'>", "validation": false },
+  "fieldActions": null,
+  "searchable": false,
+  "searchableJoins": null,
+  "required": "<true|false>",
+  "request": true,
+  "response": false,
+  "responseCurated": false,
+  "fieldLocation": "body",
+  "onCanvas": null,
+  "isJitField": false,
+  "isFieldActionParent": false,
+  "isMainResponseField": false,
+  "isMethodParameter": false,
+  "isBackgroundField": false,
+  "filterTree": null,
+  "filterNeedsRefresh": null,
+  "arrayInputPaths": null,
+  "clrType": { "_elementType": null, "_isNullable": false, "isArray": false, "genericTypeArguments": [], "fullName": null, "name": "<CLR_NAME>", "assemblyQualifiedName": "<CLR_NAME>", "isValueType": true },
+  "forceExpressionEditor": false,
+  "requiredGroups": null,
+  "disableExpressions": false,
+  "backingField": null,
+  "searchableDisplayName": null,
+  "selectedResourceId": null,
+  "sampleValue": ""
+}
+```
+
+**`clrType` mapping from IS field type:**
+
+| IS type | `clrType.name` / `assemblyQualifiedName` |
+| --- | --- |
+| `string` | `String` |
+| `integer` | `Int` |
+| `number` | `Double` |
+| `boolean` | `Boolean` |
+
+**Step C — Build `fieldsContainer.outputJsonSchema`.** Build a JSON Schema object from IS `responseFields[]`. For array-typed fields (e.g., `results[*].title`), group under a single array property with `$ref` to a `definitions` entry.
+
+**Step D — Build `bodyParameters`.** For each request field: enum fields → first enum value; required dynamic fields → `"{{prompt: \"<description>\"}}"` (the agent supplies at runtime); optional fields → `"{{prompt: \"<description>\"}}"`.
+
+**Step E — Assemble `configuration`.** The `instanceParameters` value is a **parsed JSON object** (not a string). Read it from the definition's `form.sections[0].fields[0].componentProps.connectorDetail.configuration` — that field is a JSON string, so `JSON.parse()` / `json.loads()` it into an object before embedding. If `instanceParameters` stays a string, Studio Web cannot read `instanceParameters.connectorKey` and throws "ConnectorKey cannot be null.":
+
+```json
+{
+  "essentialConfiguration": {
+    "connectorVersion": null,
+    "executionType": null,
+    "customFieldsRequestDetails": null,
+    "instanceParameters": "<parsed from definition>",
+    "objectName": "<objectName>",
+    "operation": "create",
+    "packageVersion": "1.0.0",
+    "httpMethod": "<method>",
+    "path": "<endpoint>",
+    "unifiedTypesCompatible": true
+  },
+  "optionalConfiguration": {
+    "connectorName": "<connectorDisplayName>",
+    "objectDisplayName": "<operationDisplayName>",
+    "fieldsContainer": {
+      "inputFields": "<array from Step B>",
+      "outputJsonSchema": "<object from Step C>",
+      "outputFields": [],
+      "hasFileOutput": false,
+      "populateOutputFields": true,
+      "hasUnifiedTypes": true
+    }
+  }
+}
+```
+
+Stringify and prefix with `=jsonString:`.
+
+**Step F — Assemble `inputs.detail`.** All fields shown — do not omit any:
+
+```json
+{
+  "connector": "<connectorKey>",
+  "connectionId": "<CONNECTION_UUID>",
+  "connectionResourceId": "<CONNECTION_UUID>",
+  "connectionFolderKey": "<FOLDER_KEY_UUID>",
+  "method": "<POST|GET|etc>",
+  "endpoint": "<path>",
+  "bodyParameters": "<from Step D>",
+  "configuration": "<from Step E, =jsonString: prefixed>",
+  "uiPathActivityTypeId": "<from definition form.componentProps.connectorDetail.uiPathActivityTypeId>",
+  "errorState": { "issues": [] },
+  "telemetryData": {
+    "connectorKey": "<connectorKey>",
+    "connectorName": "<connectorDisplayName>",
+    "operationType": "create",
+    "objectName": "<objectName>",
+    "objectDisplayName": "<operationDisplayName>",
+    "primaryKeyName": ""
+  }
+}
+```
+
+> **`connector` and `connectionResourceId` are required.** Studio Web reads `connector` to resolve the ConnectorKey — if null, it throws "ConnectorKey cannot be null." `connectionResourceId` must equal `connectionId`.
+
+### Debug Tips
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| Studio Web: "ConnectorKey cannot be null" | `inputs.detail.connector` is missing/null, OR `essentialConfiguration.instanceParameters` is a JSON string instead of a parsed object | Ensure `"connector": "<connectorKey>"` is in `inputs.detail` AND `instanceParameters` in the `configuration` is a parsed object (not a string) — see Step E |
+| Studio Web: "Field Type cannot be resolved" | `clrType` missing from `fieldsContainer.inputFields` | Add `clrType` block to every inputField — see Step B above |
+| `AGENT_RUNTIME.HTTP_ERROR` / status 400 | `resource.json` has empty schemas because `fieldsContainer` is missing from `configuration` | Rebuild `inputs.detail.configuration` with `fieldsContainer` — see Steps B–E |
+| `uip agent validate` shows `resources: 0` | No resource.json generated — `configuration` lacks `fieldsContainer`, or tool node not wired to agent's `tool` port | Check edges and rebuild configuration |
+
+---
+
 ### Debug Tips
 
 1. **Always check top-level `bindings[]` in the `.flow` file** — connector nodes silently fail if a binding is missing or malformed. Compare against the Authoring top-level `bindings[]` schema above. Do not inspect `bindings_v2.json` as ground truth; it is regenerated from the `.flow` on every debug/pack.

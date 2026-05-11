@@ -4,6 +4,8 @@ Walkthrough for adding a tool that calls an Integration Service connector activi
 
 For Orchestrator process tools (RPA / agent / API / agentic process), see [../process/process.md](../process/process.md).
 
+**Inline-in-flow agents:** When an IS connector tool is added to an inline agent inside a flow, `uip agent validate --inline-in-flow` auto-generates the resource.json from the configured flow node — no manual authoring needed. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) § "Inline-in-Flow IS Connector Tool resource.json".
+
 ## When to Use
 
 - Agent needs to call a third-party SaaS / API exposed via UiPath Integration Service (Slack, Salesforce, Jira, ServiceNow, Web Search, etc.)

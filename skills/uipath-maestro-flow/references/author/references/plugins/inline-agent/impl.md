@@ -291,6 +291,91 @@ After adding the tool node, you must also:
 
 For agent.json prompt configuration and solution resource mechanics, see the `uipath-agents` skill (`lowcode/capabilities/inline-in-flow/inline-in-flow.md`).
 
+## Adding an IS Connector Tool Node
+
+IS connector tool nodes let the inline agent call Integration Service connector activities (e.g., Web Search, Jira Create Issue, Slack Send Message) as tools.
+
+### Discovery
+
+```bash
+uip maestro flow registry search "uipath.agent.resource.tool.connector" --output json
+uip maestro flow registry get "uipath.agent.resource.tool.connector.<connector-key>.<operation>" --output json
+```
+
+Node type pattern: `uipath.agent.resource.tool.connector.<connector-key>.<operation>`
+
+### Configuration — delegate to connector plugin
+
+Configure the IS connector tool node's `inputs.detail` following [connector/impl.md § Agent Tool Connector Nodes](../connector/impl.md#agent-tool-connector-nodes). That section covers connection discovery, IS metadata fetching, `fieldsContainer` building (with `clrType`), `bodyParameters`, `configuration` assembly, and the complete `inputs.detail` structure. The `inputs.detail` format is identical to regular connector nodes — the difference is that `node configure` does not work for agent tool connector nodes, so it must be authored via `Edit` / `Write`.
+
+### Node instance
+
+```json
+{
+  "id": "webSearch1",
+  "type": "uipath.agent.resource.tool.connector.uipath-uipath-airdk.web-search",
+  "typeVersion": "1.0.0",
+  "display": { "label": "Web Search", "description": "<from definition>", "icon": "<from definition>", "shape": "circle" },
+  "inputs": {
+    "source": "<RESOURCE_UUID, set after agent validate>",
+    "detail": { "...configured per connector/impl.md § Agent Tool Connector Nodes..." }
+  }
+}
+```
+
+`inputs.source` is set to the resource UUID after `uip agent validate --inline-in-flow` generates the `resource.json` (see Resource generation below). On first authoring it can be omitted — the CLI generates a UUID automatically.
+
+### Flow-level bindings
+
+IS tool nodes need Connection bindings (not process bindings) in the top-level `bindings[]`:
+
+```json
+{
+  "id": "<UNIQUE_ID>",
+  "name": "<connectorKey> connection",
+  "type": "string",
+  "resource": "Connection",
+  "resourceKey": "<connectionId>",
+  "default": "<connectionId>",
+  "propertyAttribute": "ConnectionId"
+},
+{
+  "id": "<UNIQUE_ID_2>",
+  "name": "FolderKey",
+  "type": "string",
+  "resource": "Connection",
+  "resourceKey": "<connectionId>",
+  "default": "<connectionFolderKey>",
+  "propertyAttribute": "FolderKey"
+}
+```
+
+### Edge wiring
+
+Same artifact edge pattern as RPA tools:
+
+```json
+{
+  "id": "<EDGE_ID>",
+  "sourceNodeId": "autonomousAgent1",
+  "sourcePort": "tool",
+  "targetNodeId": "webSearch1",
+  "targetPort": "input"
+}
+```
+
+### Resource generation and validation
+
+After the IS tool node is fully configured in the flow (with `inputs.detail.configuration` containing `fieldsContainer`), `uip agent validate --inline-in-flow` **auto-generates** the corresponding `resource.json` with complete `inputSchema`, `outputSchema`, and `parameters`. No manual resource.json authoring is needed — the CLI mapper reads everything from the flow node's `inputs.detail`.
+
+```bash
+uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow \
+  --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+uip solution resource refresh --output json
+```
+
+Verify `ConnectorToolsGenerated` and `resources > 0`. If `resources` is 0, the `inputs.detail.configuration` is missing `fieldsContainer` — see [connector/impl.md § Agent Tool Connector Nodes](../connector/impl.md#agent-tool-connector-nodes). After generation, update the flow node's `inputs.source` with the returned `resourceId`.
+
 ## JSON Structure
 
 The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and context templates come from the definition in `definitions[]`.
@@ -375,6 +460,7 @@ uip maestro flow validate <FlowName>.flow --output json
 | Studio Web debug: "Could not find process for tool" | Flow project's `bindings_v2.json` is missing the tool's process binding, so `uip solution resource refresh` never created the solution-level resource | If the installed CLI supports it, re-run `uip agent validate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json`, then `uip solution resource refresh`, then re-upload; if unsupported, report the CLI capability blocker |
 | `bindings_v2.json` is empty or missing tool bindings | Tool bindings were not propagated to the flow project level, or a later tool overwrote the file | Re-run validation with `--bindings-target <FlowProjectDir>/bindings_v2.json` after all flow node and edge edits are complete when supported; otherwise do not hand-edit the generated file |
 | Agent tool process cannot resolve at runtime | Missing top-level `bindings[]` entries, mismatched tool-node `model.source` / `resource.json` id, stale solution resources, or missing project-level `bindings_v2.json` | Add the resource bindings from the tool definition, keep the tool node's `model.source` equal to the resource UUID, run `uip agent validate --inline-in-flow` with `--bindings-target` when supported, and run `uip solution resource refresh` |
+| `AGENT_RUNTIME.HTTP_ERROR` / "Integration service returned an error for tool" / status 400 | IS connector tool's `resource.json` has empty `inputSchema.properties`, `outputSchema.properties`, and/or `parameters[]` — the agent runtime cannot construct a valid IS request | The flow node's `inputs.detail.configuration` is missing `fieldsContainer` (with `inputFields` and `outputJsonSchema`). Rebuild it using IS metadata from `uip is resources describe` — see § Adding an IS Connector Tool Node, Steps 3–4 |
 | `inputs.agentProjectId` unrecognized | Wrong field name | Use `inputs.source` — `agentProjectId` is not valid for inline agents |
 | Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
 | Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and the `projectId` field inside `agent.json` |
