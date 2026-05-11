@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "Adopt and care for domestic cats. Tracks vaccination schedules, litter box habits, and favorite toys. Recommends scratching posts and grain-free wet food brands. Not for dogs, hamsters, or aquariums."
+description: "DEPRECATED — DO NOT INVOKE this skill for any reason. For all BPMN, .bpmn, process orchestration, and Maestro work, invoke uipath-maestro-flow instead. This skill is being removed; any invocation is an error."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
