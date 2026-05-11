@@ -1,94 +1,59 @@
 name: Skill Activation Gate
 
-# Per-PR smoke gate: when a skill's SKILL.md frontmatter changes (i.e. its
-# routing surface — name / description / when_to_use / etc.), run the
-# activation eval restricted to that one skill's positives and fail if
-# recall.yes drops more than 15pp from the rounded 2026-05-08 baseline.
-#
-# This gate intentionally does NOT run negatives or other skills. It catches
-# the most common regression mode (your edit broke your own skill's
-# activation). The nightly/manual full activation run continues to cover
-# cross-fire and negatives.
+# When a SKILL.md frontmatter changes, run the activation eval restricted to
+# that one skill's positives and fail if recall.yes drops more than 15pp
+# below the rounded 2026-05-08 baseline. Cross-fire and negatives stay
+# covered by the manual full run.
 
 concurrency:
   group: activation-gate-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 on:
-  # No `paths:` filter on purpose — matches smoke-skills.yml's pattern so
-  # this can be made a required check without blocking unrelated PRs:
-  # the `detect` job short-circuits via `skip=true` and the matrix job is
-  # then reported as skipped (which counts as pass for required checks).
+  # No paths: filter — see smoke-skills.yml for the required-check rationale.
   pull_request:
   workflow_dispatch:
 
 jobs:
   detect:
     runs-on: ubuntu-latest
-    name: Detect skills with description changes
     outputs:
       skills: ${{ steps.detect.outputs.skills }}
       skip: ${{ steps.detect.outputs.skip }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
 
-      - name: Find SKILL.md files with frontmatter changes
-        id: detect
-        env:
-          BASE_REF: ${{ github.base_ref }}
+      - id: detect
+        env: { BASE_REF: ${{ github.base_ref }} }
         run: |
           set -euo pipefail
-
           BASE_SHA=$(git merge-base "origin/$BASE_REF" HEAD)
-          CHANGED=$(git diff --name-only "$BASE_SHA"...HEAD | grep -E '^skills/[^/]+/SKILL\.md$' || true)
-          if [ -z "$CHANGED" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "No SKILL.md changes — gate not triggered."
-            exit 0
-          fi
+          extract_fm() { awk '/^---$/{c++;if(c==2)exit;next} c==1{print}'; }
 
-          # Extract just the YAML frontmatter (everything between the first
-          # two `---` lines). We trigger the gate only when this region
-          # changes, because routing decisions are driven by frontmatter
-          # (name / description / when_to_use), not body content.
-          extract_fm() {
-            awk '/^---$/ { c++; if (c==2) exit; next } c==1 { print }'
-          }
-
-          SKILLS=""
-          for f in $CHANGED; do
-            skill=$(echo "$f" | sed 's|^skills/\([^/]*\)/.*|\1|')
+          SKILLS=()
+          for f in $(git diff --name-only "$BASE_SHA"...HEAD | grep -E '^skills/[^/]+/SKILL\.md$' || true); do
             base_fm=$(git show "$BASE_SHA:$f" 2>/dev/null | extract_fm || true)
             head_fm=$(extract_fm < "$f" || true)
-            if [ "$base_fm" = "$head_fm" ]; then
-              echo "Frontmatter unchanged in $f — skipping gate for $skill"
-              continue
-            fi
-            echo "Frontmatter changed in $f — gating $skill"
-            SKILLS="$SKILLS $skill"
+            [ "$base_fm" = "$head_fm" ] && continue
+            SKILLS+=("$(echo "$f" | cut -d/ -f2)")
           done
 
-          SKILLS=$(echo "$SKILLS" | xargs)
-          if [ -z "$SKILLS" ]; then
+          if [ ${#SKILLS[@]} -eq 0 ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "No frontmatter changes — gate not triggered."
             exit 0
           fi
 
-          # Emit JSON array for matrix `include` consumption.
-          JSON=$(printf '%s\n' $SKILLS | jq -R . | jq -s -c .)
+          JSON=$(printf '%s\n' "${SKILLS[@]}" | jq -R . | jq -s -c .)
           echo "skills=$JSON" >> "$GITHUB_OUTPUT"
-          echo "Will gate: $SKILLS"
+          echo "Will gate: ${SKILLS[*]}"
 
   gate:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
     runs-on: ubuntu-latest
     name: ${{ matrix.skill }}
-    # 50 rows × ~10s/row at -j 4 ~= 2-3 min per skill. 30 min covers
-    # worst-case bedrock throttling without masking real hangs.
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -96,22 +61,14 @@ jobs:
         skill: ${{ fromJSON(needs.detect.outputs.skills) }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
-
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
+        with: { python-version: '3.13' }
       - uses: astral-sh/setup-uv@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
       - name: Install coder-eval
         working-directory: .coder_eval
@@ -119,32 +76,11 @@ jobs:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      - name: Run activation gate for ${{ matrix.skill }}
+      - name: Run activation gate
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
-          # Activation eval routes through Bedrock — same as the full run.
-          # No uip auth needed: max_turns=1 means the agent decides yes/no
-          # and stops; it never actually invokes any uip subcommand.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
-          TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '4' }}
-        run: |
-          python tests/scripts/activation_gate.py \
-            --skill "${{ matrix.skill }}" \
-            --run-dir "${{ github.workspace }}/gate-run-${{ matrix.skill }}"
-
-      - name: Upload gate run artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: activation-gate-${{ matrix.skill }}-${{ github.run_id }}
-          path: |
-            gate-run-${{ matrix.skill }}/**/suite.json
-            gate-run-${{ matrix.skill }}/**/suite.md
-            gate-run-${{ matrix.skill }}/**/experiment.json
-            gate-run-${{ matrix.skill }}/**/task.json
-            gate-run-${{ matrix.skill }}/**/task.log
-          if-no-files-found: warn
-          retention-days: 14
+        run: python tests/scripts/activation_gate.py --skill "${{ matrix.skill }}"
