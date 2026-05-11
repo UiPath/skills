@@ -1,0 +1,114 @@
+task_id: skill-agent-guardrail-validate
+description: >
+  Guardrail validation: scaffold a low-code Web Research Briefing Agent (web search,
+  web summary, Slack post, A_Plus_B tools) with a deliberately misconfigured
+  harmful_content guardrail — harmfulContentEntityThresholds has an extra key ("Sexual")
+  that is not in harmfulContentEntities. Then use the skill to validate and fix all
+  issues. Verifies that the catalog is fetched, the misconfiguration is detected and
+  corrected, and the agent validates successfully after the fix.
+tags: [uipath-agents, e2e, low-code]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "WebBriefSol" containing a low-code agent "WebResearchAgent"
+  with the following configuration:
+  - System prompt: "You are a web research assistant. Research topics from the web and
+    post briefing summaries to Slack. Always cite the number of sources used."
+  - Tools: web_search (built-in), web_summary (built-in), Slack_PostMessage (Integration
+    Service), A_Plus_B (Orchestrator process for adding source counts)
+
+  After scaffolding, add exactly this guardrail to agent.json (copy it verbatim —
+  do not fix it, even though it is misconfigured):
+
+  {
+    "$guardrailType": "builtInValidator",
+    "id": "d1e2f3a4-b5c6-7890-abcd-ef1234567890",
+    "name": "Harmful content guardrail",
+    "description": "Blocks harmful content in agent outputs",
+    "validatorType": "harmful_content",
+    "validatorParameters": [
+      {
+        "$parameterType": "enum-list",
+        "id": "harmfulContentEntities",
+        "value": ["Hate", "SelfHarm"]
+      },
+      {
+        "$parameterType": "map-enum",
+        "id": "harmfulContentEntityThresholds",
+        "value": {
+          "Hate": 2,
+          "SelfHarm": 2,
+          "Sexual": 2
+        }
+      }
+    ],
+    "action": { "$actionType": "block", "reason": "Harmful content detected." },
+    "enabledForEvals": true,
+    "selector": { "scopes": ["Agent"] }
+  }
+
+  After adding the misconfigured guardrail, validate all existing guardrails and fix
+  any issues found. Fetch the guardrail catalog first to get the correctness requirements,
+  then check each guardrail against them. Apply fixes to agent.json and run
+  uip agent validate to confirm.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task end-to-end
+  in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the guardrail catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated after fix"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "WebResearchAgent/agent.json was created"
+    path: "WebBriefSol/WebResearchAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "harmful_content guardrail threshold keys match entities list (no extra key)"
+    command: "python3 $TASK_DIR/check_guardrail_validate.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
