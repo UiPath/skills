@@ -1,0 +1,51 @@
+task_id: skill-admin-authz-get-role-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to fetch
+  a single authorization role's details by id. Tests the
+  `roles get <id>` command — positional id argument and
+  `--output json` convention.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, authz, role]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a role with id 1782e940-8926-4d2d-aca7-465ba9eff474.
+  Show me what's in it.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin authorization roles get` with the id as positional argument"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+1782e940-8926-4d2d-aca7-465ba9eff474'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT pass the id as a flag (`--id`, `--role-id`) — it is positional"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+.*--(?:id|role-id)\b'
+    weight: 2.0

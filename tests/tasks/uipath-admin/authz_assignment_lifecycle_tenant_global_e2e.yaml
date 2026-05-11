@@ -1,0 +1,103 @@
+task_id: skill-admin-authz-assignment-lifecycle-tenant-global-e2e
+description: >
+  End-to-end test: full lifecycle of a role assignment for a built-in
+  TenantGlobal-scope role. TenantGlobal roles are reusable templates
+  available across every tenant — the assignment auto-fills the
+  scope path to `/tenant/<TENANT_ID>` (login tenant).
+
+  Validates: `--scope TenantGlobal` is valid on `assignments create`
+  (unlike on `assignments list`); identity flags
+  (`--identity-id`/`--identity-type User`); cleanup.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, e2e, authz, assignment-lifecycle, scope:tenant-global]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  My account needs a built-in global template role that's available
+  across every tenant in the organization. Pick an appropriate
+  existing one and assign it to me. After it's assigned, confirm it
+  appears on my account. Then clean up by removing the assignment
+  and confirming it's gone.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent resolved the current user"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(?:login\s+status|admin\s+users\s+list)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed built-in TenantGlobal-scope roles (flag order-insensitive)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--scope\s+TenantGlobal\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the assignment with --identity-id/--identity-type User; --scope TenantGlobal or default auto-fill"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+create\s+.*--role-id\s+[a-f0-9-]{8,}.*--identity-id\s+[a-f0-9-]{8,}.*--identity-type\s+User\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the assignment via `assignments list --identity-id`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+list\s+.*--identity-id\s+[a-f0-9-]{8,}'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cleaned up via `roles assignments delete` (positional id or --file batch form)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:[a-f0-9-]{8,}|--file\s+\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified removal via a second `assignments list`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+list'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT pass --scope TenantGlobal to `assignments list` (server rejects it; only valid on create)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+list\s+.*--scope\s+TenantGlobal\b'
+    weight: 1.5
+
+  - type: command_not_executed
+    description: "Agent must NOT use legacy --principal-id flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+(?:create|delete)\s+.*--principal-id'
+    weight: 2.0

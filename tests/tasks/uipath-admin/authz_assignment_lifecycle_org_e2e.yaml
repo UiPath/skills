@@ -1,0 +1,103 @@
+task_id: skill-admin-authz-assignment-lifecycle-org-e2e
+description: >
+  End-to-end test: full lifecycle of an Organization-scope role
+  assignment using an existing built-in role. Resolves the current
+  user, finds an Org-scope built-in role, creates the assignment,
+  verifies via `assignments list`, deletes the assignment, verifies
+  removal.
+
+  Validates: `--identity-id` / `--identity-type User` (NOT
+  `--principal-*`), Org-scope path auto-fill, cleanup at end of test.
+  Uses an existing built-in role — no new role created.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, e2e, authz, assignment-lifecycle, scope:organization]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Grant me organization-wide access by giving my account an existing
+  organization-level built-in role. After it's assigned, confirm it
+  shows up on my account. Then please clean up by removing the
+  assignment and confirming it's gone.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent resolved the current user (login status or users list/search)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(?:login\s+status|admin\s+users\s+list)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed built-in Org-scope roles (`--role-type BuiltIn --scope Organization`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--scope\s+Organization\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the assignment with --role-id, --identity-id, --identity-type User, and --scope Organization"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+create\s+.*--role-id\s+[a-f0-9-]{8,}.*--identity-id\s+[a-f0-9-]{8,}.*--identity-type\s+User\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the assignment appeared via `assignments list --identity-id`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+list\s+.*--identity-id\s+[a-f0-9-]{8,}'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cleaned up via `roles assignments delete <id>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:[a-f0-9-]{8,}|--file\s+\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified removal via a second `assignments list`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+list'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use legacy --principal-id flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+(?:create|delete)\s+.*--principal-id'
+    weight: 2.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use lowercase 'user' for --identity-type"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+create\s+.*--identity-type\s+user\b'
+    weight: 1.5
