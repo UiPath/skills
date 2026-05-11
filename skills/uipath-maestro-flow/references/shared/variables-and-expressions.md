@@ -2,7 +2,16 @@
 
 Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
 
-> **Read this before** adding variables or writing expressions in any flow. `flow validate` catches the structural expression-reference errors (missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107), invented `nodes.<id>.output` syntax, references to unknown variables or node IDs, output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`). Errors against open output schemas — HTTP response bodies, script returns, free-text agent output — and wrong-direction reads (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+> **Read this before** adding variables or writing expressions in any flow.
+>
+> `flow validate` catches the structural expression-reference errors:
+>
+> - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+> - Invented `nodes.<id>.output` syntax
+> - References to unknown variables or node IDs
+> - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+>
+> Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
 
 ---
 
