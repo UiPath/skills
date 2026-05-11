@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {
+      "PermissionStatus": 0,
+      "Id": "0cf4a4c8-9ada-4189-bf2d-a01d8edc18c7",
+      "TraceId": "777d35d4-26bc-49ad-bbdb-5243ba2947fc",
+      "ParentId": null,
+      "Name": "Robot Job 777d35d4-26bc-49ad-bbdb-5243ba2947fc",
+      "StartTime": "2026-05-04T10:31:32.2911004Z",
+      "EndTime": "2026-05-04T10:39:29.0035839Z",
+      "Attributes": "{\"Exception\":null}",
+      "Status": 1,
+      "OrganizationId": "d308a0c0-d09e-4158-a4e8-17d099552d6d",
+      "TenantId": "71fffd7f-0605-43ba-b025-20226cf149ce",
+      "ExpiryTimeUtc": null,
+      "FolderKey": "445c18c8-3f11-43b6-ad44-6ff83f33af18",
+      "Source": 4,
+      "SpanType": "RobotJob",
+      "ProcessKey": "63ad34e1-95ec-4b2f-aeea-34883e185220",
+      "JobKey": "777d35d4-26bc-49ad-bbdb-5243ba2947fc",
+      "ReferenceId": null,
+      "VerbosityLevel": 2,
+      "ExecutionType": null,
+      "UpdatedAt": "2026-05-04T10:39:28.6501777Z",
+      "AgentVersion": null,
+      "Attachments": null
+    }
+  ]
+}
