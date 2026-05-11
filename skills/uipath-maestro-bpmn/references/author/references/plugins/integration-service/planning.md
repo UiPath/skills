@@ -24,9 +24,14 @@ Use this plugin reference when a BPMN process needs:
 ## Model may draft
 
 - A placeholder service task, start event, or intermediate event with a stable element ID.
+- A draft `uipath:activity` or `uipath:event` shell carrying `uipath:type value="Intsvc.<Variant>"` and placeholder string `uipath:input` values. See [impl.md](impl.md#safe-placeholder-shape) and [../../../../shared/wrapper-shells.md](../../../../shared/wrapper-shells.md).
 - Public-safe display naming.
 - Surrounding sequence flows, gateways, boundary errors, and variable mappings.
-- A comment or open question stating which connector operation must be enriched.
+- A `README.md` (or `notes.md`) inside the project that lists the
+  CLI-owned blockers verbatim. The list must contain at minimum these
+  exact phrases: `connection binding`, `dynamic schemas`,
+  `bindings_v2.json`, and `package metadata`. See
+  [impl.md](impl.md#draft-handoff-notes) for the full template.
 
 ## CLI must provide
 

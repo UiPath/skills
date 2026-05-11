@@ -1,6 +1,6 @@
 # Supported Elements
 
-Use this source-backed coverage map before choosing a BPMN wrapper or UiPath extension type. It reflects the current canvas registry, BPMN XML serializer, CLI BPMN manifest, parser element enum, and executor dispatch behavior. Treat anything outside this map as preserve-only unless a newer product contract says otherwise.
+Use this supported coverage map before choosing a BPMN wrapper or UiPath extension type. Treat anything outside this map as preserve-only unless a newer product contract says otherwise.
 
 ## Modeling rule
 
@@ -32,7 +32,7 @@ The model may author these standard BPMN structures when the process intent is c
 
 ## UiPath extension coverage
 
-Use lower-case XML tags in authored examples: `uipath:activity`, `uipath:event`, and `uipath:mapping`.
+Use lower-case XML tags in authored examples: `uipath:activity`, `uipath:event`, and `uipath:mapping`. For copyable minimal XML shells per wrapper, see [../../shared/wrapper-shells.md](../../shared/wrapper-shells.md).
 
 | Extension type | BPMN wrapper | XML tag | Ownership |
 | --- | --- | --- | --- |

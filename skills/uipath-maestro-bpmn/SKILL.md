@@ -39,6 +39,7 @@ Guide for authoring, inspecting, validating, packaging, operating, and diagnosin
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Understand project layout and package files | [references/shared/project-layout.md](references/shared/project-layout.md) |
 | Understand BPMN XML authoring boundaries | [references/shared/bpmn-xml-contract.md](references/shared/bpmn-xml-contract.md) |
+| Copy minimal XML shells per supported wrapper | [references/shared/wrapper-shells.md](references/shared/wrapper-shells.md) |
 | Understand variables, bindings, entry points, and expressions | [references/shared/variables-bindings-expressions.md](references/shared/variables-bindings-expressions.md) |
 | Understand CLI conventions and side-effect boundaries | [references/shared/cli-conventions.md](references/shared/cli-conventions.md) |
 | Keep examples and commits public-safe | [references/shared/public-safety.md](references/shared/public-safety.md) |
