@@ -31,7 +31,10 @@ jobs:
       - id: detect
         # base_ref is empty on workflow_dispatch — fall back to main so manual
         # re-runs against a feature branch still resolve a sane merge-base.
-        env: { BASE_REF: ${{ github.base_ref || 'main' }} }
+        # Block-style env: the inner `'main'` single quotes break flow-mapping
+        # parsing in strict YAML readers.
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
         run: |
           set -euo pipefail
           BASE_SHA=$(git merge-base "origin/$BASE_REF" HEAD)
