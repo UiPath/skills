@@ -31,7 +31,7 @@ initial_prompt: |
   Wire: Trigger -> HITL ->|completed| Script -> End
 
   Use the inline quickform node (uipath.human-in-the-loop).
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command

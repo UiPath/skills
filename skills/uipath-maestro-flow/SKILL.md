@@ -1,12 +1,12 @@
 ---
 name: uipath-maestro-flow
-description: "Always invoke for `.flow` files. UiPath Maestro Flow — build, edit, run, debug, fix. Create, connect nodes; connector, approval, script, subflow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For Python/agent.json→uipath-agents. For Orchestrator/solution lifecycle without Flow→uipath-platform. For Test Manager→uipath-test."
+description: "Always invoke for `.flow` files. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Flow Skill
 
-Comprehensive guide for creating, editing, validating, debugging, publishing, and diagnosing UiPath Flow projects using the `uip` CLI and `.flow` file format. The skill is organized into three capabilities — **Author**, **Operate**, **Diagnose** — each with its own index doc.
+Comprehensive guide for creating, editing, validating, debugging, publishing, diagnosing, and evaluating UiPath Flow projects using the `uip` CLI and `.flow` file format. The skill is organized into four capabilities — **Author**, **Operate**, **Diagnose**, **Evaluate** — each with its own index doc.
 
 ## When to use this skill
 
@@ -35,6 +35,13 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 - Read incidents, runtime variables, deployed BPMN
 - Recognize known failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout)
 
+**Evaluate** — designing and running evaluations against a deployed flow. Read [references/evaluate/CAPABILITY.md](references/evaluate/CAPABILITY.md).
+
+- Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*`) for a Flow project
+- Create eval sets, add data points (test cases), pin entry points
+- Start Studio Web eval runs, poll status, fetch results, compare runs
+- Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first)
+
 ## Capability router
 
 | I want to...                                                 | Read                                                                                             |
@@ -42,6 +49,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 | Create a new flow or edit an existing one                    | [references/author/CAPABILITY.md](references/author/CAPABILITY.md)                               |
 | Publish, deploy, debug, or manage a flow's lifecycle         | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md)                             |
 | Diagnose a failed or misbehaving flow run                    | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md)                           |
+| Design and run evaluations (`uip maestro flow eval`)         | [references/evaluate/CAPABILITY.md](references/evaluate/CAPABILITY.md)                           |
 | Look up CLI command syntax                                   | [references/shared/cli-commands.md](references/shared/cli-commands.md)                           |
 | Look up CLI conventions (`--output json`, login, FOLDER_KEY) | [references/shared/cli-conventions.md](references/shared/cli-conventions.md)                     |
 | Understand the `.flow` JSON format                           | [references/shared/file-format.md](references/shared/file-format.md)                             |
@@ -73,6 +81,7 @@ These rules apply across all three capabilities. Each capability index adds capa
 
 - **Never use `--format json` on any `uip` command** — the flag is `--output json` (rule #1). `--format` produces `error: unknown option '--format'` and exit code 3 on every `uip` subcommand, not a helpful message pointing you at `--output`.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects (rule #2). Use `flow validate` for checking correctness.
+- **Never silently pick the first match from `uip maestro flow registry search`.** When a search returns multiple connectors for the same intent, apply the canonical Connector Disambiguation ladder via [connector/planning.md — Disambiguation](references/author/references/plugins/connector/planning.md#disambiguation--when-search-returns-multiple-connectors-for-the-same-intent), which defers to the Integration Service rules.
 - **Never write `customFieldsRequestDetails.parameterValues` as a JSON object map** — Studio Web's TS port emits `Map<string,string|null>` via `Array.from(entries())`, so the on-wire shape is `[[key, value], ...]` tuples. Object-form `{key: value}` is rejected by the CLI at validate time. Inner keys are camelCase (`objectActionName`, `parameterValues`), not PascalCase. See [connector/impl.md Step 6c](references/author/references/plugins/connector/impl.md).
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

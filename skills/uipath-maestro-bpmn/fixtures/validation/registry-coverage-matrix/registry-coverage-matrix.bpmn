@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_RegistryCoverageMatrix" targetNamespace="http://uipath.com/synthetic/maestro-bpmn/registry-coverage">
+  <bpmn:process id="Process_RegistryCoverageMatrix" name="Registry Coverage Matrix" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_RegistryConnection" name="Synthetic Registry Connection" type="connection" elementId="Task_AsyncExecution" resource="SyntheticConnector" resourceSubType="connection" resourceKey="synthetic-registry-connection" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_Manual" name="Manual Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="Entry_RegistryCoverageManual" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_To_HITL</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_HITL" name="Create Action App Task">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="actionAppName" type="string" value="Synthetic Action" />
+          </uipath:context>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_To_HITL</bpmn:incoming>
+      <bpmn:outgoing>Flow_HITL_To_StartJob</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_StartJob" name="Start RPA Job">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="name" type="string" value="Synthetic RPA Process" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HITL_To_StartJob</bpmn:incoming>
+      <bpmn:outgoing>Flow_StartJob_To_AsyncExecution</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_AsyncExecution" name="Integration Service Async Execution">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.AsyncExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connection" type="resource" value="=bindings.Binding_RegistryConnection" />
+            <uipath:input name="connectorKey" type="string" value="synthetic-connector" />
+            <uipath:input name="activity" type="string" value="synthetic-activity" />
+            <uipath:input name="operation" type="string" value="synthetic.operation" />
+          </uipath:context>
+          <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartJob_To_AsyncExecution</bpmn:incoming>
+      <bpmn:outgoing>Flow_AsyncExecution_To_SyncAgent</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_SyncAgentExecution" name="Sync Agent Execution">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.SyncAgentExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connection" type="resource" value="=bindings.Binding_RegistryConnection" />
+            <uipath:input name="connectorKey" type="string" value="synthetic-connector" />
+            <uipath:input name="activity" type="string" value="synthetic-agent" />
+            <uipath:input name="operation" type="string" value="synthetic.agent.sync" />
+          </uipath:context>
+          <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_AsyncExecution_To_SyncAgent</bpmn:incoming>
+      <bpmn:outgoing>Flow_SyncAgent_To_AsyncAgent</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_AsyncAgentExecution" name="Async Agent Execution">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.AsyncAgentExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connection" type="resource" value="=bindings.Binding_RegistryConnection" />
+            <uipath:input name="connectorKey" type="string" value="synthetic-connector" />
+            <uipath:input name="activity" type="string" value="synthetic-agent" />
+            <uipath:input name="operation" type="string" value="synthetic.agent.async" />
+          </uipath:context>
+          <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SyncAgent_To_AsyncAgent</bpmn:incoming>
+      <bpmn:outgoing>Flow_AsyncAgent_To_SyncWorkflow</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_SyncWorkflowExecution" name="Sync Workflow Execution">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.SyncWorkflowExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connection" type="resource" value="=bindings.Binding_RegistryConnection" />
+            <uipath:input name="connectorKey" type="string" value="synthetic-connector" />
+            <uipath:input name="activity" type="string" value="synthetic-workflow" />
+            <uipath:input name="operation" type="string" value="synthetic.workflow.sync" />
+          </uipath:context>
+          <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_AsyncAgent_To_SyncWorkflow</bpmn:incoming>
+      <bpmn:outgoing>Flow_SyncWorkflow_To_AsyncWorkflow</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_AsyncWorkflowExecution" name="Async Workflow Execution">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.AsyncWorkflowExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connection" type="resource" value="=bindings.Binding_RegistryConnection" />
+            <uipath:input name="connectorKey" type="string" value="synthetic-connector" />
+            <uipath:input name="activity" type="string" value="synthetic-workflow" />
+            <uipath:input name="operation" type="string" value="synthetic.workflow.async" />
+          </uipath:context>
+          <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SyncWorkflow_To_AsyncWorkflow</bpmn:incoming>
+      <bpmn:outgoing>Flow_AsyncWorkflow_To_HttpExecution</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="Task_HttpExecution" name="Legacy HTTP Request">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.HttpExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="method" type="string" value="GET" />
+            <uipath:input name="path" type="string" value="synthetic-endpoint" />
+          </uipath:context>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_AsyncWorkflow_To_HttpExecution</bpmn:incoming>
+      <bpmn:outgoing>Flow_HttpExecution_To_UnifiedHttp</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sendTask id="Task_UnifiedHttpRequest" name="Unified HTTP Request">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.UnifiedHttpRequest" version="v1" />
+          <uipath:context>
+            <uipath:input name="method" type="string" value="GET" />
+            <uipath:input name="path" type="string" value="synthetic-endpoint" />
+          </uipath:context>
+          <uipath:input name="body" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HttpExecution_To_UnifiedHttp</bpmn:incoming>
+      <bpmn:outgoing>Flow_UnifiedHttp_To_End</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="End_Done" name="Done">
+      <bpmn:incoming>Flow_UnifiedHttp_To_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="Start_Timer" name="Timer Trigger">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.TimerTrigger" version="v1" />
+          <uipath:context>
+            <uipath:input name="schedule" type="string" value="Synthetic schedule" />
+          </uipath:context>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Timer_To_TimerEnd</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerDef_Synthetic" />
+    </bpmn:startEvent>
+    <bpmn:endEvent id="End_TimerDone" name="Timer Done">
+      <bpmn:incoming>Flow_Timer_To_TimerEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_To_HITL" sourceRef="Start_Manual" targetRef="Task_HITL" />
+    <bpmn:sequenceFlow id="Flow_HITL_To_StartJob" sourceRef="Task_HITL" targetRef="Task_StartJob" />
+    <bpmn:sequenceFlow id="Flow_StartJob_To_AsyncExecution" sourceRef="Task_StartJob" targetRef="Task_AsyncExecution" />
+    <bpmn:sequenceFlow id="Flow_AsyncExecution_To_SyncAgent" sourceRef="Task_AsyncExecution" targetRef="Task_SyncAgentExecution" />
+    <bpmn:sequenceFlow id="Flow_SyncAgent_To_AsyncAgent" sourceRef="Task_SyncAgentExecution" targetRef="Task_AsyncAgentExecution" />
+    <bpmn:sequenceFlow id="Flow_AsyncAgent_To_SyncWorkflow" sourceRef="Task_AsyncAgentExecution" targetRef="Task_SyncWorkflowExecution" />
+    <bpmn:sequenceFlow id="Flow_SyncWorkflow_To_AsyncWorkflow" sourceRef="Task_SyncWorkflowExecution" targetRef="Task_AsyncWorkflowExecution" />
+    <bpmn:sequenceFlow id="Flow_AsyncWorkflow_To_HttpExecution" sourceRef="Task_AsyncWorkflowExecution" targetRef="Task_HttpExecution" />
+    <bpmn:sequenceFlow id="Flow_HttpExecution_To_UnifiedHttp" sourceRef="Task_HttpExecution" targetRef="Task_UnifiedHttpRequest" />
+    <bpmn:sequenceFlow id="Flow_UnifiedHttp_To_End" sourceRef="Task_UnifiedHttpRequest" targetRef="End_Done" />
+    <bpmn:sequenceFlow id="Flow_Timer_To_TimerEnd" sourceRef="Start_Timer" targetRef="End_TimerDone" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_RegistryCoverageMatrix">
+    <bpmndi:BPMNPlane id="Plane_RegistryCoverageMatrix" bpmnElement="Process_RegistryCoverageMatrix">
+      <bpmndi:BPMNShape id="Shape_Start_Manual" bpmnElement="Start_Manual"><dc:Bounds x="80" y="160" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_HITL" bpmnElement="Task_HITL"><dc:Bounds x="160" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_StartJob" bpmnElement="Task_StartJob"><dc:Bounds x="320" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AsyncExecution" bpmnElement="Task_AsyncExecution"><dc:Bounds x="480" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_SyncAgentExecution" bpmnElement="Task_SyncAgentExecution"><dc:Bounds x="640" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AsyncAgentExecution" bpmnElement="Task_AsyncAgentExecution"><dc:Bounds x="800" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_SyncWorkflowExecution" bpmnElement="Task_SyncWorkflowExecution"><dc:Bounds x="960" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AsyncWorkflowExecution" bpmnElement="Task_AsyncWorkflowExecution"><dc:Bounds x="1120" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_HttpExecution" bpmnElement="Task_HttpExecution"><dc:Bounds x="1280" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_UnifiedHttpRequest" bpmnElement="Task_UnifiedHttpRequest"><dc:Bounds x="1440" y="138" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Done" bpmnElement="End_Done"><dc:Bounds x="1600" y="160" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Start_Timer" bpmnElement="Start_Timer"><dc:Bounds x="80" y="300" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_TimerDone" bpmnElement="End_TimerDone"><dc:Bounds x="240" y="300" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Start_To_HITL" bpmnElement="Flow_Start_To_HITL"><di:waypoint x="116" y="178" /><di:waypoint x="160" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_HITL_To_StartJob" bpmnElement="Flow_HITL_To_StartJob"><di:waypoint x="280" y="178" /><di:waypoint x="320" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_StartJob_To_AsyncExecution" bpmnElement="Flow_StartJob_To_AsyncExecution"><di:waypoint x="440" y="178" /><di:waypoint x="480" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_AsyncExecution_To_SyncAgent" bpmnElement="Flow_AsyncExecution_To_SyncAgent"><di:waypoint x="600" y="178" /><di:waypoint x="640" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_SyncAgent_To_AsyncAgent" bpmnElement="Flow_SyncAgent_To_AsyncAgent"><di:waypoint x="760" y="178" /><di:waypoint x="800" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_AsyncAgent_To_SyncWorkflow" bpmnElement="Flow_AsyncAgent_To_SyncWorkflow"><di:waypoint x="920" y="178" /><di:waypoint x="960" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_SyncWorkflow_To_AsyncWorkflow" bpmnElement="Flow_SyncWorkflow_To_AsyncWorkflow"><di:waypoint x="1080" y="178" /><di:waypoint x="1120" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_AsyncWorkflow_To_HttpExecution" bpmnElement="Flow_AsyncWorkflow_To_HttpExecution"><di:waypoint x="1240" y="178" /><di:waypoint x="1280" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_HttpExecution_To_UnifiedHttp" bpmnElement="Flow_HttpExecution_To_UnifiedHttp"><di:waypoint x="1400" y="178" /><di:waypoint x="1440" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_UnifiedHttp_To_End" bpmnElement="Flow_UnifiedHttp_To_End"><di:waypoint x="1560" y="178" /><di:waypoint x="1600" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Timer_To_TimerEnd" bpmnElement="Flow_Timer_To_TimerEnd"><di:waypoint x="116" y="318" /><di:waypoint x="240" y="318" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -61,6 +61,80 @@ Per screen, use the batched entry points the OR CLI already exposes — one roun
 
 Concrete subcommands, flag names, and accepted argument shapes for each batched entry point: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. The package owns the syntax; this skill owns only the per-screen call-count shape above.
 
+## Cross-Process Helper Dialogs (Sign-in, OAuth, System Pop-ups)
+
+Some apps spawn a **separate process** for sign-in, consent, or system dialogs — not just a new window in the same app. Examples:
+
+- Microsoft Store sign-in opens in `WWAHost.exe` (not `WinStore.App.exe`)
+- Office desktop sign-in / Microsoft Account flows hosted in `WWAHost.exe` or `Microsoft.AAD.BrokerPlugin`
+- OAuth pop-ups launched by an enterprise app into the system browser
+- Save / Open / Print / UAC dialogs hosted by `consent.exe`, `dllhost.exe`, etc.
+
+When inner UIA activities target one of these helper processes while the outer `NApplicationCard` scopes the original app, validation fails with:
+
+```
+The indicated element does not belong to the target application/browser.
+```
+
+The validator compares each child target's `ScopeSelectorArgument` against the parent card's `TargetApp` selector — different `app=` values trigger this error every time, even when the runtime selectors are correct.
+
+### Pattern: Nest a Second `NApplicationCard` for the Helper Process
+
+Wrap the activities that target the helper process in their own `NApplicationCard` scoped to that process. Use a wildcard title (`title='*'`) when the helper presents multiple sub-dialogs (e.g., "Sign in" → "Enter password" → "Stay signed in?") so a single nested card covers them all.
+
+```xml
+<!-- Outer: original app -->
+<uix:NApplicationCard ScopeGuid="<outer-guid>" Version="V2" HealingAgentBehavior="Job" ...>
+  <uix:NApplicationCard.TargetApp>
+    <uix:TargetApp Selector="&lt;wnd app='WinStore.App.exe' title='Microsoft Store' /&gt;" Version="V2" />
+  </uix:NApplicationCard.TargetApp>
+  <uix:NApplicationCard.Body>
+    <ActivityAction x:TypeArguments="x:Object">
+      <ActivityAction.Argument>
+        <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+      </ActivityAction.Argument>
+      <Sequence>
+        <!-- Activity that triggers the helper-process launch (still in outer scope) -->
+        <uix:NClick ScopeIdentifier="<outer-guid>" ... DisplayName="Click Sign In" ... />
+
+        <!-- Inner: helper process (nested card) -->
+        <uix:NApplicationCard ScopeGuid="<inner-guid>" Version="V2" HealingAgentBehavior="Job" ...>
+          <uix:NApplicationCard.TargetApp>
+            <uix:TargetApp Selector="&lt;wnd app='WWAHost.exe' title='*' /&gt;" Version="V2" />
+          </uix:NApplicationCard.TargetApp>
+          <uix:NApplicationCard.Body>
+            <ActivityAction x:TypeArguments="x:Object">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionDataInner" />
+              </ActivityAction.Argument>
+              <Sequence>
+                <!-- Activities here use ScopeIdentifier="<inner-guid>" -->
+                <uix:NTypeInto ScopeIdentifier="<inner-guid>" ... />
+                <uix:NClick   ScopeIdentifier="<inner-guid>" ... />
+              </Sequence>
+            </ActivityAction>
+          </uix:NApplicationCard.Body>
+        </uix:NApplicationCard>
+
+        <!-- Back in outer scope after the helper closes -->
+        <uix:NCheckState ScopeIdentifier="<outer-guid>" ... DisplayName="Verify Signed In" ... />
+      </Sequence>
+    </ActivityAction>
+  </uix:NApplicationCard.Body>
+</uix:NApplicationCard>
+```
+
+**Rules:**
+
+1. **One `NApplicationCard` per process** — every direct or transitive child activity must target the same `app=` as its enclosing card's `TargetApp`. If activities target two processes, you need two cards.
+2. **Each card has its own `ScopeGuid`.** Child activities reference their card via `ScopeIdentifier="<that-card's-ScopeGuid>"`. When moving an activity from one card to another, update `ScopeIdentifier` — `get-errors` will not catch a mismatched value, but the activity will run against the wrong scope at runtime.
+3. **Card-level `HealingAgentBehavior`** uses `NHealingAgentBehavior` (`Job`/`Disabled`/`RecommendationOnly`) — not `SameAsCard`. See [ui-automation-guide.md § Common UIA Pitfalls](ui-automation-guide.md#common-uia-pitfalls).
+4. **Use `title='*'`** on the helper-process card only when multiple sub-dialogs share the same `app=` and you want a single scope to span them. If sub-dialogs have stable, distinct titles AND only the outer `app=` is shared with the host app (rare), prefer a separate card per dialog so failures localize cleanly.
+
+### Capturing Targets for Helper Processes
+
+The helper process is a separate UIA-visible window once it appears, so the standard capture loop applies — pre-flight Window Baseline → trigger the launch (e.g., click "Sign In") via `uip rpa uia interact` → run `uia-configure-target` against the helper window → register elements → continue. Treat the helper process as its own capture screen under the Complete-then-advance rule above; do not try to capture helper-process elements through the host app's window selector.
+
 ## Indication Fallback
 
 > **Use indication when elements appear only after user interaction** (e.g., a compose form that opens after clicking a button), so `uia-configure-target`'s automated capture cannot see them. Indication requires the user to physically click on the target.

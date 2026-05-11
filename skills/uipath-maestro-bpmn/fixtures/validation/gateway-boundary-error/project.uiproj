@@ -1,0 +1,7 @@
+{
+  "projectVersion": "1.0.0",
+  "projectType": "ProcessOrchestration",
+  "name": "GatewayBoundaryError",
+  "description": "Synthetic gateway and boundary-error validation fixture.",
+  "main": "gateway-boundary-error.bpmn"
+}

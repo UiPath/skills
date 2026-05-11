@@ -46,6 +46,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Scaffolding, validating, or running solution lifecycle commands | [project-lifecycle.md](project-lifecycle.md) |
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
 | External tools / IS tools / index contexts / escalations behave unexpectedly after `uip solution resource refresh` | [solution-resources.md](solution-resources.md) |
+| Running evaluations, adding test cases, managing evaluators | [evaluations/evaluate.md](evaluations/evaluate.md) |
 
 ### Capability Registry
 

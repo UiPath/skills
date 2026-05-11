@@ -236,6 +236,36 @@ See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-
 
 See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
 
+## uip maestro flow eval
+
+Evaluation surface — evaluator CRUD, eval set CRUD, data point CRUD, Studio Web run start/status/results/list/compare. Local CRUD requires no login; `eval run *` requires `uip login` and a Flow solution that already exists in Studio Web. **Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/references/upload-safety.md](../evaluate/references/upload-safety.md).
+
+```bash
+# Data points (test cases) — inline inside eval set JSON
+uip maestro flow eval add <name>    --set <set> [flags]  --output json
+uip maestro flow eval list          --set <set> --path <flow_project> --output json
+uip maestro flow eval remove <id>   --set <set> --path <flow_project> --output json
+
+# Eval sets
+uip maestro flow eval set add <name> [--evaluators <refs>] [--entry-point <id>] --path <flow_project> --output json
+uip maestro flow eval set list      --path <flow_project> --output json
+uip maestro flow eval set remove <id> --path <flow_project> --output json
+
+# Evaluators (7 types: exact-match, json-similarity, contains, llm-judge-output|strict-json|trajectory|trajectory-simulation)
+uip maestro flow eval evaluator add <name> --type <type> [--model <m>] [--target-key <k>] [--prompt <p>] --path <flow_project> --output json
+uip maestro flow eval evaluator list      --path <flow_project> --output json
+uip maestro flow eval evaluator remove <id> --path <flow_project> --output json
+
+# Runs (require uip login + solution in Studio Web)
+uip maestro flow eval run start <name>   --set <set> [--entry-point <e>] [--wait [--timeout <s>]] --path <flow_project> --output json
+uip maestro flow eval run status <run_id> --set <set> --path <flow_project> --output json
+uip maestro flow eval run results <run_id> --set <set> [--only-failed] [--verbose] [--export-format json|csv] --path <flow_project> --output json
+uip maestro flow eval run list           --set <set> --path <flow_project> --output json
+uip maestro flow eval run compare <run_a> --compare-to <run_b> --set <set> --path <flow_project> --output json
+```
+
+For full flag tables, evaluator type details, eval set JSON shape, and the run-safety rule, see the [Evaluate capability](../evaluate/CAPABILITY.md).
+
 ## uip maestro flow registry
 
 Manage the local node type cache. No auth required for OOTB nodes; login for tenant-specific connector nodes.

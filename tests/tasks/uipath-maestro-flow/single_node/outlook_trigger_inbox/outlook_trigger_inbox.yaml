@@ -32,7 +32,7 @@ initial_prompt: |
   then End the flow with a single `out` variable named `matchedSubject` mapped
   from that Script node's output.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a single pass.
 

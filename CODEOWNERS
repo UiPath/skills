@@ -40,6 +40,10 @@
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
+# Maestro BPMN skill
+/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
@@ -54,6 +58,7 @@
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
@@ -83,3 +88,7 @@
 # Tasks skill (Action Center Operate)
 /skills/uipath-tasks/ @UiPath/ActionCenterDev
 /tests/tasks/uipath-tasks/ @UiPath/ActionCenterDev
+
+# Admin skill (Identity Server management)
+/skills/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge
+/tests/tasks/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge

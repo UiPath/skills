@@ -1,0 +1,99 @@
+task_id: skill-admin-identity-group-membership
+description: >
+  End-to-end test: agent manages group membership. Creates a custom
+  group, discovers users, adds members, verifies membership, then
+  removes a member. Tests full group lifecycle and the critical rule
+  about using user IDs (not usernames) for membership operations.
+  Command-construction only — no live tenant available for
+  side-effect verification.
+tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
+max_iterations: 2
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 40
+  turn_timeout: 600
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Set up a new "Invoice Processing Team" group containing the first
+  two users in the org, verify membership, then remove the second user.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed existing groups first (discover before create)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the group"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+create\s+.*Invoice\s+Processing\s+Team'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed users to resolve IDs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added members with --user-ids"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+members\s+add\s+.*--user-ids'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified membership via members list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+members\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent removed a member with members revoke"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+members\s+revoke\s+.*--user-ids'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent consistently used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 5
+    weight: 1.0
+    pass_threshold: 1.0

@@ -158,13 +158,15 @@ uip maestro flow init <ProjectName> --output json
 #   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 
-After running, verify the file exists at the double-nested path:
+After running, verify the file exists at the double-nested path. The `cd <SolutionName>` above persists across Bash calls, so anchor the check with `$(pwd)` instead of repeating `<SolutionName>/`:
 
 ```bash
-ls "<SolutionName>/<ProjectName>/<ProjectName>.flow"
+ls "$(pwd)/<ProjectName>/<ProjectName>.flow"
 ```
 
-If not, the `init` step was wrong — do not try to patch the layout by hand.
+A relative `ls "<SolutionName>/<ProjectName>/<ProjectName>.flow"` here resolves to `<SolutionName>/<SolutionName>/<ProjectName>/<ProjectName>.flow` (triple-nested) and reports "no such file" even on a correctly-scaffolded solution — a false negative that turns a healthy layout into a fake bug.
+
+If the absolute path doesn't exist, the `init` step was wrong — do not try to patch the layout by hand.
 
 ### Reference
 

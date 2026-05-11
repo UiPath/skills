@@ -4,6 +4,8 @@ This plugin covers **flow-specific** operations for inline agent nodes: adding t
 
 Node type: `uipath.agent.autonomous`. The agent is bound to a local subdirectory via `inputs.source = <projectId>`. The node's BPMN type and `serviceType` (`Orchestrator.StartInlineAgentJob`) come from the definition in `definitions[]`.
 
+For coded (Python) agents, use the [`agent`](../agent/impl.md) plugin (`uipath.core.agent.{key}`) — inline agents are low-code only.
+
 ## Prerequisite — Scaffold the Inline Agent
 
 ```bash
