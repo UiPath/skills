@@ -38,6 +38,12 @@ def field_text(field: dict, key: str) -> str:
     return value.lower() if isinstance(value, str) else ""
 
 
+def is_upstream_output_binding(binding: str) -> bool:
+    return (
+        binding.startswith("vars.") or binding.startswith("=js:$vars.")
+    ) and ".output." in binding
+
+
 def main() -> None:
     flow = load_flow()
     nodes = flow.get("nodes")
@@ -101,8 +107,11 @@ def main() -> None:
     ]
     if not input_bindings:
         fail("HITL input fields must be bound to upstream script output")
-    if not any(binding.startswith("=js:$vars.") and ".output." in binding for binding in input_bindings):
-        fail("HITL input bindings must use =js:$vars.<node>.output.<field>")
+    if not any(is_upstream_output_binding(binding) for binding in input_bindings):
+        fail(
+            "HITL input bindings must use vars.<node>.output.<field> "
+            "or =js:$vars.<node>.output.<field>"
+        )
 
     if not any(e.get("sourceNodeId") == hitl_id and e.get("sourcePort") == "completed" for e in edges):
         fail("HITL completed handle must be wired")
