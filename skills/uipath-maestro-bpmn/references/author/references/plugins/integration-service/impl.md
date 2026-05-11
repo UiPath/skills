@@ -119,14 +119,14 @@ connector enrichment is CLI-owned.
 
 ## CLI-owned blockers (must be enriched before upload, debug, publish, or run)
 
-- **Connector metadata** - real connector key, operation/event name, version, and resource keys.
-- **Connection binding** - real connection: a root `uipath:bindings` connection entry plus a `=bindings.<id>` `type="resource"` input on the node.
-- **Dynamic schemas** - `uipath:inputSchema` payloads and any generated output schemas come from connector metadata.
+- **`connector metadata`** - real connector key, operation/event name, version, and resource keys.
+- **`connection binding`** - real connection: a root `uipath:bindings` connection entry plus a `=bindings.<id>` `type="resource"` input on the node.
+- **`dynamic schemas`** - `uipath:inputSchema` payloads and any generated output schemas come from connector metadata.
 - **`bindings_v2.json`** - generated binding resources, deduplicated by resource key.
 - **`entry-points.json`** - entry-point wiring derived from root variables.
 - **`operate.json`** - project ID, main file, target framework, and runtime options.
 - **`package-descriptor.json`** - manifest entries for the BPMN file and generated JSON.
-- **Package metadata** - final package identifiers, paths, and generated outputs.
+- **`package metadata`** - final package identifiers, paths, and generated outputs.
 
 ## Public-safety constraints
 
