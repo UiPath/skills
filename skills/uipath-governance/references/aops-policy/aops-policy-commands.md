@@ -8,7 +8,7 @@ Single source of truth for every `uip gov aops-policy` subcommand, its flags, an
 
 ## uip gov aops-policy list
 
-List policies (optionally filtered by product).
+List policies (optionally filtered by product). Returns policy **metadata** only (`identifier`, `name`, `productName`, `priority`, `availability`) — not the policy `data` payload. Fetch one policy via `get` to retrieve `data`.
 
 ```bash
 uip gov aops-policy list --output json
@@ -252,10 +252,12 @@ uip gov aops-policy deployment tenant list --output json
 
 Optional: `--limit <N>` (default 20), `--offset <N>` (zero-based page index, default 0). Tenant variant also accepts `--product-name <PRODUCT_NAME>` to scope results to tenants with an assignment for that product.
 
-**Output:** `Data` is an array.
-- User entries: `identifier`, `name`, and `source` (the identity-provider source — e.g. `cloud`, `local`, `aad`). This is **not** a full IdP roster; it includes only users the governance service has already seen.
-- Group entries: `identifier`, `name`, `source`. Typically only groups that have at least one policy override are returned.
-- Tenant entries: `identifier`, `name`, and `tenantPolicies[]`. Each policy entry carries `productIdentifier`, `licenseTypeIdentifier` (GUID), and `policyIdentifier`.
+> **Tenant variant triggers an OMS sync** before returning, so the page reflects the latest tenant catalog (new tenants, disabled/re-enabled state) — not governance's local cache. The first call after a tenant create/delete may take longer.
+
+**Output:** `Data` is `{ totalCount: <N>, result: [ ... ] }`. Iterate `Data.result[]`.
+- User entries: `identifier`, `name`, `email`, `source` (identity-provider source — e.g. `cloud`, `local`, `aad`), `lastModified`, `isActive`. This is **not** a full IdP roster; it includes only users the governance service has already seen.
+- Group entries: `identifier`, `name`, `source`, `lastModified`, `isActive`. Typically only groups that have at least one policy override are returned.
+- Tenant entries: `identifier`, `name`, `url`, `status`, and `tenantPolicies[]`. Each policy entry carries `productIdentifier`, `licenseTypeIdentifier` (GUID), and `policyIdentifier`.
 
 ### deployment {user|group|tenant} get
 
@@ -275,9 +277,14 @@ uip gov aops-policy deployment tenant get <TENANT_ID> --output json
 
 Apply assignments non-interactively via `--input`. **FULL-REPLACE, not merge** — entries not in the input file are removed from the subject. To preserve existing assignments while adding new ones, seed the input from `deployment <subject> get`.
 
+> **Auto-registration on first call.** For `user configure` and `group configure`, if the subject is not yet known to the governance service, the command auto-registers it in the same call (`AddUser` / `AddGroup` endpoints) — no separate registration step is needed. Pass any IdP-sourced GUID (from `uip admin users list` / `uip admin groups list`) directly. The `--source` flag is consumed only on the upsert path; on first-time registration the server resolves source from CIS.
+
+> **Tenant variant triggers an OMS sync** before saving, so a freshly-created tenant (or a tenant whose status changed) is reconciled into governance before assignments are persisted. No separate "register tenant" step is needed before `tenant configure`.
+
 ```bash
 uip gov aops-policy deployment user configure "<USER_ID>" \
   --user "<USER_DISPLAY_NAME>" \
+  --email "<USER_EMAIL>" \
   --source "<IDP_SOURCE>" \
   --input "<SESSION_DIR>/user-policies.json" \
   --output json
@@ -298,7 +305,7 @@ uip gov aops-policy deployment tenant configure "<TENANT_ID>" \
 
 | Subject | Display-name flag | Extra flags | Notes |
 |---------|-------------------|-------------|-------|
-| user    | `--user <NAME>`   | `--source <SRC>` (default `local`; e.g. `cloud`, `aad`) | Display name stored alongside the override (surfaced in audit logs / UI). |
+| user    | `--user <NAME>`   | `--source <SRC>` (default `local`; e.g. `cloud`, `aad`), `--email <EMAIL>` (defaults to `--user` value) | Display name stored alongside the override (surfaced in audit logs / UI). `--email` is consumed only on first-time auto-registration (`AddUser` path) and ignored thereafter — pass it when the IdP supplied a distinct email. |
 | group   | `--group <NAME>`  | `--source <SRC>` (default `local`)                      | Display name stored alongside the override. |
 | tenant  | `--tenant-name <NAME>` | —                                                  | Must match the tenant's name in the governance service (from `tenant get`/`tenant list`). |
 
@@ -322,7 +329,7 @@ uip gov aops-policy deployment group delete "<GROUP_ID>" --output json
 
 ### deployment tenant remove
 
-Remove a tenant's assignment for a single product (optionally one license type). **Destructive.** Internally this is a client-side read-modify-write — the CLI runs `get` → filters out the matching entry → calls `configure` — so it is not atomic. Fails fast with `No matching policy assignment to remove` when nothing matches.
+Remove a tenant's assignment for a single product (optionally one license type). **Destructive.** Internally this is a client-side read-modify-write — the CLI triggers an OMS sync, runs `get` → filters out the matching entry → calls `configure` — so it is not atomic. Fails fast with `No matching policy assignment to remove` when nothing matches.
 
 ```bash
 uip gov aops-policy deployment tenant remove "<TENANT_ID>" \
@@ -368,7 +375,7 @@ Modes 2 and 3 require an S2S token (read from the `UIP_S2S_TOKEN` environment va
 
 | Flag | Description |
 |------|-------------|
-| `--s2s-token <TOKEN>` | S2S bearer token. Overrides the user token from `uip login`. Required for `--user-id` or `--tenant-only`. Prefer setting `UIP_S2S_TOKEN` in the environment — the CLI reads it automatically so the token never lands in shell history. See [Authentication](#authentication). |
+| `--s2s-token <TOKEN>` | S2S bearer token. Overrides the user token from `uip login`. Required for `--user-id` or `--tenant-only`. Prefer setting `UIP_S2S_TOKEN` in the environment — the CLI reads it automatically. Tokens passed as `--s2s-token <TOKEN>` are visible in process listings (`ps aux`, `/proc/*/cmdline`) as well as shell history. See [Authentication](#authentication). |
 | `--user-id <GUID>` | Look up the effective policy for a specific user (runs the full user→group→tenant walk). Requires `--s2s-token`. |
 | `--tenant-only` | Bypass the user/group chain — return the tenant-level assignment only. Requires `--s2s-token`. |
 

@@ -281,7 +281,7 @@ jq '.Data.data' "$SESSION_DIR/current-policy.json" > "$SESSION_DIR/existing-poli
 
 > **Critical:** on update, the blueprint is the existing policy's `data` object — NOT the product's default `form-data.json`. Using the product defaults would silently wipe every non-default setting the user previously configured. Only use form-data defaults as a fallback for brand-new fields added to the product template after the policy was originally created.
 
-### Step 3 — Determine what to change (prompt only for missing information)
+### Step 3 — Determine what to change (pre-fill defaults; prompt only on ambiguity)
 
 **Skip rule:** if the user's original request already specified what to change (e.g. *"update policy X to set priority 3"* or *"add Gemini to the disabled models in policy X"*), apply that intent directly — do not re-ask. Only prompt when the user said `"update policy X"` with no details.
 
