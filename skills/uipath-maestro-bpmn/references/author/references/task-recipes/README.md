@@ -2,6 +2,8 @@
 
 Use these recipes after the BPMN skeleton is chosen. They describe how UiPath resource-backed work maps onto standard BPMN task classes.
 
+> Copyable minimal XML shell per wrapper: [../../../shared/wrapper-shells.md](../../../shared/wrapper-shells.md). Each recipe below describes when to use it and what fields are model- versus CLI-owned; copy the matching shell from `wrapper-shells.md` for the exact XML.
+
 | Need | BPMN element | Recipe |
 | --- | --- | --- |
 | Start an RPA process | `bpmn:serviceTask` | [rpa-job.md](rpa-job.md) |

@@ -59,10 +59,10 @@ uip codedapp push
 uip codedapp push abc-123-def
 
 # Push a custom build directory (default: dist)
-uip codedapp push --buildDir build
+uip codedapp push --build-dir build
 
 # Skip importing referenced resources
-uip codedapp push --ignoreResources
+uip codedapp push --ignore-resources
 ```
 
 ### What Gets Pushed
@@ -72,7 +72,7 @@ The command uploads the contents of the build directory (default: `dist/`) to St
 - Static assets (images, fonts, etc.)
 - Any other files in the build output
 
-The `--ignoreResources` flag skips importing referenced resources (connections, assets) that may be declared in the app.
+The `--ignore-resources` flag skips importing referenced resources (connections, assets) that may be declared in the app.
 
 ## Pull Workflow
 
@@ -89,7 +89,7 @@ uip codedapp pull abc-123-def
 ### Pull to a Specific Directory
 
 ```bash
-uip codedapp pull --targetDir ./my-app
+uip codedapp pull --target-dir ./my-app
 ```
 
 ### Handling File Conflicts
@@ -128,7 +128,7 @@ uip codedapp push
 uip login
 
 # 2. Pull the project (get project ID from Studio Web URL)
-uip codedapp pull <project-id> --targetDir ./my-app
+uip codedapp pull <project-id> --target-dir ./my-app
 
 # 3. Install dependencies
 cd my-app

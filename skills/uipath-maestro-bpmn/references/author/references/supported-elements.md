@@ -32,7 +32,7 @@ The model may author these standard BPMN structures when the process intent is c
 
 ## UiPath extension coverage
 
-Use lower-case XML tags in authored examples: `uipath:activity`, `uipath:event`, and `uipath:mapping`.
+Use lower-case XML tags in authored examples: `uipath:activity`, `uipath:event`, and `uipath:mapping`. For copyable minimal XML shells per wrapper, see [../../shared/wrapper-shells.md](../../shared/wrapper-shells.md).
 
 | Extension type | BPMN wrapper | XML tag | Ownership |
 | --- | --- | --- | --- |

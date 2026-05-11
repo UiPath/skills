@@ -92,3 +92,8 @@ as `=result.response`:
 Do not use `name="Var_Status"` as a substitute for `var="Var_Status"`. The
 `name` field identifies the output field; `var` identifies the target BPMN
 variable.
+
+For the exact required XML shape — including `uipath:input name="args"` with
+`=vars.<variableId>` mapping bodies and a Jint-safe top-level identifier
+script — see [../author/references/plugins/script/impl.md](../author/references/plugins/script/impl.md#minimal-jint-script-task-shell)
+and [wrapper-shells.md](wrapper-shells.md).

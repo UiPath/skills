@@ -1,0 +1,143 @@
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "jobs",
+    "Description": "Manage UiPath Orchestrator jobs (process executions). Start jobs from processes, monitor execution, check logs and traces.",
+    "Usage": "uip or jobs [options] [command]",
+    "Arguments": [],
+    "Options": [
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Subcommands": [
+      {
+        "Name": "list [options]",
+        "Description": "List jobs. Returns job key, state, process name, timing, and machine info. Use --state to filter by job state (Pending, Running, Successful, Faulted, Stopped, Stopping, Suspended, Resumed, Terminating). Provide --folder-path or --folder-key to scope to a folder, or omit for cross-folder listing."
+      },
+      {
+        "Name": "get [options] <job-key>",
+        "Description": "Get a job by its key (GUID). Returns state, input/output arguments, timing, machine info, and error details if faulted. If the job is in Pending state, also includes diagnostic reasons (robot availability, capacity, etc.). No folder context needed — the key is globally unique. Use 'jobs list' to find job keys."
+      },
+      {
+        "Name": "start [options] <process-key>",
+        "Description": "Start a job for a process. Returns the created job(s) with keys. The <process-key> is the GUID from 'processes list' (not 'packages list'). Folder is optional — if not provided, it is inferred from the process. Use 'packages entry-points' to see input/output argument schemas for the process."
+      },
+      {
+        "Name": "stop [options] <job-keys...>",
+        "Description": "Stop one or more running or pending jobs. With a single key: respects --strategy (SoftStop or Kill). With multiple keys: always force-stops (Kill) using the bulk API. No folder context needed — resolved from job key."
+      },
+      {
+        "Name": "restart [options] <job-key>",
+        "Description": "Restart a faulted or stopped job. Creates a new job from the same process. No folder context needed — resolved from job key."
+      },
+      {
+        "Name": "resume [options] <job-key>",
+        "Description": "Resume a suspended job. Jobs become suspended when they use the 'Suspend' activity (long-running workflows that wait for external input). Optionally pass new --input-arguments to continue execution with updated data. No folder context needed — resolved from job key."
+      },
+      {
+        "Name": "logs [options] <job-key>",
+        "Description": "Get robot execution logs for a job. Filter by --level to quickly find errors. Folder context is inferred from the job key. Logs are returned newest-first."
+      },
+      {
+        "Name": "traces [options] <job-key>",
+        "Description": "Get LlmOps execution traces for an agentic job. Shows LLM interactions, tool calls, and agent decisions made during execution. Only available for Agent-type processes. Folder context is inferred from the job key."
+      },
+      {
+        "Name": "healing-data [options] <job-key>",
+        "Description": "Download healing agent (Autopilot for Robots) recovery data as a ZIP file. Contains screenshots, UI element data, and recovery logs. Only available for jobs where the healing agent was active. Triggers an async export, polls until complete, then downloads the ZIP."
+      },
+      {
+        "Name": "history [options] <job-key>",
+        "Description": "Get state transition history for a job. Shows timestamps for each state change (Pending → Running → Successful/Faulted). Useful for understanding job lifecycle and identifying delays. Folder context is resolved automatically from the job key."
+      },
+      {
+        "Name": "help [command]",
+        "Description": "display help for command"
+      }
+    ],
+    "GlobalOptions": [
+      {
+        "Flags": "--output <table|json|yaml|plain>",
+        "Description": "Output format (default: json)"
+      },
+      {
+        "Flags": "--output-filter <expression>",
+        "Description": "JMESPath expression to filter output"
+      },
+      {
+        "Flags": "--log-level <debug|info|warn|error>",
+        "Description": "Log level threshold (default: info)"
+      },
+      {
+        "Flags": "--log-file <path>",
+        "Description": "Write logs to file instead of stderr"
+      }
+    ]
+  }
+}{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "processes",
+    "Description": "Manage UiPath processes (runnable bindings of packages to folders). Processes are what you execute with 'jobs start'. Use 'packages' to manage the uploaded automation code.",
+    "Usage": "uip or processes [options] [command]",
+    "Arguments": [],
+    "Options": [
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Subcommands": [
+      {
+        "Name": "list [options]",
+        "Description": "List processes in a folder. Requires --folder-path or --folder-key. Returns process key (GUID), name, version, and type. Use the process key with 'jobs start' to execute a process."
+      },
+      {
+        "Name": "get [options] <process-key>",
+        "Description": "Get detailed process information by key (GUID). Returns version, entry point, input/output argument schemas, process type, and configuration. No folder context needed — the key is globally unique. Use 'processes list' to find process keys."
+      },
+      {
+        "Name": "create [options]",
+        "Description": "Create a new process by binding a package to a folder. Requires --folder-path or --folder-key. Use 'packages list' to find the package key and 'packages versions' to find available versions. After creation, start the process with 'jobs start <process-key>'."
+      },
+      {
+        "Name": "update-version [options] <process-keys...>",
+        "Description": "Update one or more processes to the latest package version, or a specific version with --version. Folder is optional — if not provided, it is inferred from the process key. Running jobs are not affected — only new jobs will use the updated version. Accepts one or more process keys. Multiple keys use the bulk API. Use --version only with a single key."
+      },
+      {
+        "Name": "edit [options] <process-key>",
+        "Description": "Edit process settings by key (GUID). No folder needed — resolves cross-folder. Only provided fields are updated (PATCH). Use 'processes get' to see current values."
+      },
+      {
+        "Name": "rollback [options] <process-key>",
+        "Description": "Rollback a process to its previous package version. Folder is optional — if not provided, it is inferred from the process key. Useful when a new version causes issues and you need to quickly revert."
+      },
+      {
+        "Name": "help [command]",
+        "Description": "display help for command"
+      }
+    ],
+    "GlobalOptions": [
+      {
+        "Flags": "--output <table|json|yaml|plain>",
+        "Description": "Output format (default: json)"
+      },
+      {
+        "Flags": "--output-filter <expression>",
+        "Description": "JMESPath expression to filter output"
+      },
+      {
+        "Flags": "--log-level <debug|info|warn|error>",
+        "Description": "Log level threshold (default: info)"
+      },
+      {
+        "Flags": "--log-file <path>",
+        "Description": "Write logs to file instead of stderr"
+      }
+    ]
+  }
+}

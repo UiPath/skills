@@ -55,6 +55,54 @@ The model may edit:
 - Do not embed secrets, account data, URLs, or local paths.
 - Do not use scripts as a substitute for connector enrichment or RPA work.
 
+## Minimal Jint script task shell
+
+Copy this shape when authoring a new BPMN script task. It is the exact
+mapping shape Maestro expects: `uipath:input name="args"`
+wraps the mapped fields, the script body reads top-level identifiers,
+and the output maps back through `=result.<field>`.
+
+```xml
+<bpmn:scriptTask id="Task_RiskScore" name="Risk Score" scriptFormat="JavaScript">
+  <bpmn:extensionElements>
+    <uipath:scriptVersion value="v3" />
+    <uipath:mapping version="v1">
+      <uipath:type value="BPMN.Variables" version="v1" />
+      <uipath:context>
+        <uipath:inputSchema><![CDATA[{"type":"object","properties":{"amount":{"type":"number"},"daysOverdue":{"type":"number"}}}]]></uipath:inputSchema>
+      </uipath:context>
+      <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
+      <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
+    </uipath:mapping>
+  </bpmn:extensionElements>
+  <bpmn:incoming>Flow_Start_To_RiskScore</bpmn:incoming>
+  <bpmn:outgoing>Flow_RiskScore_To_End</bpmn:outgoing>
+  <bpmn:script><![CDATA[
+var score = amount * 0.01 + daysOverdue * 2;
+return { response: score };
+]]></bpmn:script>
+</bpmn:scriptTask>
+```
+
+Required pieces:
+
+| Position | Required token | Why |
+| --- | --- | --- |
+| `bpmn:scriptTask` attribute | `scriptFormat="JavaScript"` | Selects the Jint executor |
+| `uipath:scriptVersion` | `value="v3"` for new scripts; preserve `value="v2"` only on imports | Selects the script contract |
+| `uipath:input` | `name="args"` | The canvas merges `args` JSON into top-level script identifiers |
+| `uipath:input` body | `=vars.<variableId>` for each mapped field | Reads root variables by id, not by name |
+| `bpmn:script` CDATA | top-level identifiers (`amount`, `daysOverdue`); not `args.amount` | Jint sees the merged JSON as top-level vars |
+| `uipath:output` | `source="=result.<field>"` for `v2+`; `var` points at a declared variable id | Maps the script return back to a declared variable |
+
+Anti-patterns the checker rejects:
+
+- `uipath:input` with `name` other than `args`.
+- Bare `=amount` style expressions instead of `=vars.Var_Amount`.
+- `args.amount` style reads inside the script body.
+- Missing `uipath:scriptVersion` when the canvas requires it.
+- Returning a bare value instead of `{ response: ... }` for `v2+` mappings.
+
 ## Validation expectations
 
 - Input variables exist and are readable.

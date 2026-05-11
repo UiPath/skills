@@ -1,6 +1,6 @@
 ---
 name: uipath-diagnostics
-description: Use when diagnosing, investigating, or troubleshooting UiPath platform & process issues - failed or stuck jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
+description: "UiPath cross-platform diagnostics — failed or stuck Orchestrator jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems. For .flow run diagnosis→uipath-maestro-flow. For .bpmn run diagnosis→uipath-maestro-bpmn. For .xaml/.cs workflow debug→uipath-rpa. For platform ops→uipath-platform."
 ---
 
 # UiPath Diagnostic Agent

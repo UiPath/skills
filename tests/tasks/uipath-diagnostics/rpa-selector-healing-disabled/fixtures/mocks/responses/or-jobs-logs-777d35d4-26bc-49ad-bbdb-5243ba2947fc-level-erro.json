@@ -1,0 +1,156 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:39:25.379Z",
+      "Message": "Failed to enroll Kevin Park : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:39:09.653Z",
+      "Message": "Failed to enroll Laura Sanchez : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:38:53.978Z",
+      "Message": "Failed to enroll Tyler Nguyen : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:38:38.389Z",
+      "Message": "Failed to enroll Aisha Nkomo : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:38:22.685Z",
+      "Message": "Failed to enroll James O'Brien : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:38:07.097Z",
+      "Message": "Failed to enroll Priya Patel : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:37:51.491Z",
+      "Message": "Failed to enroll Marcus Williams : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:37:35.716Z",
+      "Message": "Failed to enroll Emma Thompson : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:37:20.050Z",
+      "Message": "Failed to enroll David Osei : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:37:04.421Z",
+      "Message": "Failed to enroll Sarah Kim : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:36:48.822Z",
+      "Message": "Failed to enroll John Rivera : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:36:32.962Z",
+      "Message": "Failed to enroll Emma Thompson : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:36:17.122Z",
+      "Message": "Failed to enroll David Osei : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:36:01.323Z",
+      "Message": "Failed to enroll Sarah Kim : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:35:45.546Z",
+      "Message": "Failed to enroll John Rivera : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:35:29.853Z",
+      "Message": "Failed to enroll Kevin Park : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:35:14.248Z",
+      "Message": "Failed to enroll Laura Sanchez : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:34:58.561Z",
+      "Message": "Failed to enroll Tyler Nguyen : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:34:42.847Z",
+      "Message": "Failed to enroll Aisha Nkomo : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:34:27.166Z",
+      "Message": "Failed to enroll James O'Brien : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:34:11.557Z",
+      "Message": "Failed to enroll Priya Patel : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:33:55.763Z",
+      "Message": "Failed to enroll Marcus Williams : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:33:40.025Z",
+      "Message": "Failed to enroll Emma Thompson : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:33:24.331Z",
+      "Message": "Failed to enroll David Osei : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:33:08.675Z",
+      "Message": "Failed to enroll Sarah Kim : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:32:52.948Z",
+      "Message": "Failed to enroll John Rivera : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:32:37.279Z",
+      "Message": "Failed to enroll Emma Thompson : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:32:21.686Z",
+      "Message": "Failed to enroll David Osei : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:32:06.058Z",
+      "Message": "Failed to enroll Sarah Kim : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-04T10:31:50.109Z",
+      "Message": "Failed to enroll John Rivera : Could not find the UI element corresponding to this selector:\r\n[1] <html app='chrome.exe' />\n[2] <webctrl id='employeeName' tag='INPUT' />\n\r\nSearch failed at selector tag:\r\n[2] <webctrl id='employeeName' tag='INPUT' />\r\n\r\nThe closest matches found are:\r\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>\n[50%] <webctrl id='' tag='INPUT'/>"
+    }
+  ]
+}

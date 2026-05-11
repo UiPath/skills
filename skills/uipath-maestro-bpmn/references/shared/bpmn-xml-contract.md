@@ -77,6 +77,8 @@ Do not invent `uipath:caseManagement` payloads without a dedicated case-manageme
 
 ## Non-Integration-Service task shells
 
+> Copyable minimal XML shell per wrapper: [wrapper-shells.md](wrapper-shells.md).
+
 The model may author placeholder-safe shells for documented non-Integration-Service task types when it has enough user intent and no private identifiers are embedded. Choose the BPMN wrapper first:
 
 - `BPMN.Variables`

@@ -1,6 +1,6 @@
 ---
 name: uipath-tasks
-description: "UiPath Action Center human-in-the-loop tasks via `uip tasks` — list, assign, complete approval/validation tasks. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
+description: "UiPath Action Center human-in-the-loop tasks via `uip tasks` — list, assign, complete approval/validation tasks. For authoring HITL nodes in flows/agents→uipath-human-in-the-loop. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
 when_to_use: "User says 'approve task', 'pending approval', 'pending action item', 'review action', 'list my tasks', 'reassign task' in an Orchestrator/Action Center context. NOT for TaskCreate/TaskUpdate (general session-task tracking) or Document Understanding validation."
 user-invocable: true
 ---
