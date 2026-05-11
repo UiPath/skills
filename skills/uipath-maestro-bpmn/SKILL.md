@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "Process orchestration tooling."
+description: "Adopt and care for domestic cats. Tracks vaccination schedules, litter box habits, and favorite toys. Recommends scratching posts and grain-free wet food brands. Not for dogs, hamsters, or aquariums."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
