@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration skill. Activates on `.bpmn`, `project.uiproj`, `entry-points.json`, `operate.json`, `bindings_v2.json`, `package-descriptor.json`. Author, inspect, validate, package, operate, diagnose. Model writes BPMN skeleton + non-IS UiPath XML; CLI owns Integration Service nodes/templates and generated package files. For .flow JSON→uipath-maestro-flow. For XAML/coded workflows→uipath-rpa. For Python agents→uipath-agents. For Case plans→uipath-maestro-case."
+description: "Always invoke for `.bpmn`, `project.uiproj`, `entry-points.json`, `operate.json`, `bindings_v2.json`, or `package-descriptor.json` files. UiPath Maestro BPMN / Process Orchestration — author, inspect, validate, package, operate, diagnose. Model writes BPMN skeleton + non-IS UiPath XML; CLI owns Integration Service nodes/templates and generated package files. For .flow JSON→uipath-maestro-flow. For XAML/coded workflows→uipath-rpa. For Python agents→uipath-agents. For Case plans→uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -38,7 +38,9 @@ Guide for authoring, inspecting, validating, packaging, operating, and diagnosin
 | Package, upload, publish, run, or manage lifecycle | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Understand project layout and package files | [references/shared/project-layout.md](references/shared/project-layout.md) |
+| Regenerate or verify local package metadata | [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md) |
 | Understand BPMN XML authoring boundaries | [references/shared/bpmn-xml-contract.md](references/shared/bpmn-xml-contract.md) |
+| Copy minimal XML shells per supported wrapper | [references/shared/wrapper-shells.md](references/shared/wrapper-shells.md) |
 | Understand variables, bindings, entry points, and expressions | [references/shared/variables-bindings-expressions.md](references/shared/variables-bindings-expressions.md) |
 | Understand CLI conventions and side-effect boundaries | [references/shared/cli-conventions.md](references/shared/cli-conventions.md) |
 | Keep examples and commits public-safe | [references/shared/public-safety.md](references/shared/public-safety.md) |
@@ -60,7 +62,7 @@ Guide for authoring, inspecting, validating, packaging, operating, and diagnosin
 ## Anti-patterns (universal)
 
 - **Do not hand-author Integration Service connection details** - connection IDs, resource keys, connector labels, trigger property bindings, and generated schemas are CLI-owned.
-- **Do not rely on BPMN without diagrams for Studio Web import** - a valid diagram and plane are required for frontend import, and visible elements need shapes or waypoints.
+- **Do not rely on BPMN without diagrams for Studio Web import** - a valid diagram and plane are required, and visible elements need shapes or waypoints.
 - **Do not edit derived package files as the primary fix** - fix the BPMN source or rerun the CLI generator/enricher unless the package file itself is the documented source for that field.
 - **Do not include real exported XML snippets in docs or examples** - summarize patterns using public-safe synthetic IDs and placeholder values.
 

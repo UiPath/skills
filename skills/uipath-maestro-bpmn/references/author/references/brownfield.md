@@ -21,7 +21,7 @@ Use this journey when inspecting or editing an existing Maestro BPMN Process Orc
 - Preserve unknown `uipath:*` extension elements.
 - Preserve existing `uipath:migrationVersion` values.
 - Preserve tags unless the user asks to remove them.
-- Preserve generated JSON for comparison, but do not treat it as the source of truth over BPMN.
+- Preserve generated JSON for comparison, but do not treat it as authoritative over BPMN.
 - Preserve Integration Service payloads as imported unless CLI enrichment is explicitly updating them.
 - Preserve stable element IDs when possible; ID churn makes generated JSON and runtime diagnostics harder to compare.
 

@@ -1,6 +1,6 @@
 # BPMN XML Contract
 
-This document summarizes the public-safe authoring boundary for Maestro BPMN XML. It is derived from the sanitized frontend XML contract in the repository docs and intentionally avoids raw exported BPMN, tenant data, connection identifiers, private names, URLs, or local paths.
+This document summarizes the public-safe authoring boundary for Maestro BPMN XML. It intentionally avoids raw exported BPMN, tenant data, connection identifiers, private names, URLs, or local paths.
 
 ## Baseline document
 
@@ -12,12 +12,14 @@ Generated BPMN must be valid BPMN 2.0 with the UiPath extension namespace.
 - Studio Web import requires at least one valid `bpmndi:BPMNDiagram` with a `bpmndi:BPMNPlane`.
 - Every visible flow node should have a `bpmndi:BPMNShape` with bounds.
 - Every visible edge should have a `bpmndi:BPMNEdge` with waypoints.
-- Conditions and scripts should use a leading `=` where the frontend expects expressions.
+- Conditions and scripts should use a leading `=` where Maestro expects expressions.
+- UiPath extension expressions should read BPMN variables through `vars.<variableId>`,
+  for example `=vars.Var_RequestId`, rather than bare names.
 - CDATA is the expected representation for JSON bodies, schemas, scripts, variable schemas, custom output bodies, and case-management payload bodies.
 
 ## Supported model-authored BPMN
 
-For the source-backed element map and UiPath extension wrapper table, see [author/supported-elements.md](../author/references/supported-elements.md).
+For the supported element map and UiPath extension wrapper table, see [author/supported-elements.md](../author/references/supported-elements.md).
 
 The model may directly author standard BPMN structure when user intent is clear:
 
@@ -49,6 +51,14 @@ For non-trivial authoring, split generation into two passes:
 
 Do not combine connector selection, connection binding, dynamic schema generation, and topology rewrites in one opaque edit.
 
+## Executable contract boundary
+
+The current confirmed generation boundary is preserve/model-shell only for areas whose runtime contract depends on tenant state, registry metadata, or non-BPMN subscriptions. Do not add generation guidance that creates executable payloads for those areas until the contract is fixture-backed and CLI-validated.
+
+- Signals: standard BPMN signal definitions and signal event references are model-owned XML. Runtime-executable cross-process signal subscriptions, correlation, payload schema contracts, and tenant/resource/channel bindings are outside the model-owned contract unless a dedicated CLI or operator-owned contract supplies them.
+- Integration Service: model authors may create the surrounding BPMN node and document connector intent. Executable `Intsvc.*` activity/event XML, connection bindings, connector metadata, trigger property bindings, filters, parameters, and dynamic schemas require live registry-backed CLI enrichment for the target tenant before upload, debug, publish, or deploy.
+- Brownfield files: preserve imported executable signal or Integration Service extension XML unless the user explicitly asks for normalization and the CLI can validate the replacement.
+
 ## UiPath extensions the model may write
 
 Use lower-case XML aliases in examples and authoring guidance:
@@ -57,15 +67,17 @@ Use lower-case XML aliases in examples and authoring guidance:
 - Root `uipath:bindings version="v1"` for placeholder-safe resource bindings when the binding contract is documented.
 - Root-level start event `uipath:entryPointId value="..."` for runnable entry points.
 - `uipath:mapping version="v1"` for `BPMN.Variables` mappings.
-- `uipath:scriptVersion value="..."` for script task metadata.
-- `uipath:migrationVersion version="..."` as import migration metadata to preserve.
+- `uipath:scriptVersion value="..."` for script task metadata. Prefer `v3` for new script tasks; preserve imported `v2` metadata unless the user explicitly migrates it.
+- `uipath:migrationVersion version="..."` as import migration metadata to preserve, including numeric values such as `5`, `11`, and `11.5`.
 - `uipath:loopCharacteristics inputCollection="..." inputElement="..."` under loop characteristic extensions.
 - `uipath:retry`, `uipath:errorMapping`, and `uipath:tags` when the user gives explicit public-safe metadata.
 - `uipath:activity` and `uipath:event` shells for documented non-Integration-Service service types.
 
-Do not invent `uipath:caseManagement` payloads without a dedicated case-management contract.
+Do not invent `uipath:caseManagement` payloads without a dedicated case-management contract. Preserve imported `uipath:caseManagement` and unknown generic `uipath:Activity` payloads unless the edit explicitly normalizes them.
 
 ## Non-Integration-Service task shells
+
+> Copyable minimal XML shell per wrapper: [wrapper-shells.md](wrapper-shells.md).
 
 The model may author placeholder-safe shells for documented non-Integration-Service task types when it has enough user intent and no private identifiers are embedded. Choose the BPMN wrapper first:
 
@@ -95,7 +107,7 @@ The CLI must generate, enrich, or validate these before upload, debug, publish, 
 - `package-descriptor.json`, including manifest entries for BPMN and generated JSON.
 - Package identifiers and final package paths.
 - XML parse validation with the UiPath moddle descriptor.
-- Canvas validation parity for connections, gateways, start events, subprocess crossing, boundary errors, required fields, assignment-free expressions, variables, and resource references.
+- Maestro validation parity for connections, gateways, start events, subprocess crossing, boundary errors, required fields, assignment-free expressions, variables, and resource references.
 - Project scaffolding and canonical BPMN filename selection.
 
 ## Validation expectations
@@ -115,10 +127,10 @@ Validation should report:
 - Multiple blank starts in a single scope.
 - Invalid event subprocess starts.
 - Invalid or duplicate error references.
-- Expressions with assignment operators where the frontend forbids assignment.
+- Expressions with assignment operators in fields that require read-only expression evaluation.
 - Output references that do not match root or scoped variables.
 - Unresolved solution resources when validating inside a solution context.
 
 ## Migration behavior
 
-Prefer current extension shapes instead of relying on import migrations. Preserve existing `uipath:migrationVersion` values and unknown extension payloads. Warn on old or unknown migrations unless the file cannot be interpreted.
+Prefer current extension shapes instead of relying on import migrations. Preserve existing `uipath:migrationVersion` values, including numeric values like `5`, `11`, and `11.5`, and preserve unknown extension payloads such as generic `uipath:Activity`. Warn on old or unknown migrations unless the file cannot be interpreted.

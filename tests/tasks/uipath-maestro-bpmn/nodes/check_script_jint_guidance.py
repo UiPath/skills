@@ -2,6 +2,7 @@
 
 import os
 import sys
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
@@ -29,6 +30,33 @@ FORBIDDEN = [
     "document.",
     "await ",
 ]
+
+
+def root_variables_by_name(root: ET.Element) -> dict[str, str]:
+    variables: dict[str, str] = {}
+    process = root.find("bpmn:process", NS)
+    if process is None:
+        return variables
+    for variable in process.findall(
+        "bpmn:extensionElements/uipath:variables/*",
+        NS,
+    ):
+        name = variable.attrib.get("name")
+        variable_id = variable.attrib.get("id")
+        if name and variable_id:
+            variables[name] = variable_id
+    return variables
+
+
+def first_uipath_input(task: ET.Element, name: str) -> ET.Element | None:
+    return task.find(
+        f"bpmn:extensionElements/uipath:mapping/uipath:input[@name='{name}']",
+        NS,
+    )
+
+
+def uipath_outputs(task: ET.Element) -> list[ET.Element]:
+    return task.findall("bpmn:extensionElements/uipath:mapping/uipath:output", NS)
 
 
 def strip_js_comments(script: str) -> str:
@@ -73,7 +101,7 @@ def strip_js_comments(script: str) -> str:
 
 
 def main() -> None:
-    path, root = parse_bpmn("RiskScoreScriptBpmn")
+    path, root = parse_bpmn()
     scripts = elements(root, "scriptTask")
     if not scripts:
         fail("missing bpmn:scriptTask")
@@ -89,6 +117,35 @@ def main() -> None:
     present = [token for token in FORBIDDEN if token in body]
     if present:
         fail(f"script uses APIs outside the Jint boundary: {present}")
+    if "args." in body:
+        fail("script body should read mapped fields as top-level identifiers, not args.*")
+    for identifier in ("amount", "daysOverdue"):
+        if identifier not in body:
+            fail(f"script body should reference mapped input identifier {identifier!r}")
+
+    variables = root_variables_by_name(root)
+    for required in ("amount", "daysOverdue", "riskScore"):
+        if required not in variables:
+            fail(f"missing root variable named {required!r}")
+
+    args_input = first_uipath_input(task, "args")
+    if args_input is None:
+        fail('script mapping must include uipath:input name="args"')
+    args_body = text_content(args_input)
+    for variable_name in ("amount", "daysOverdue"):
+        expected = f"=vars.{variables[variable_name]}"
+        if expected not in args_body:
+            fail(f"script args should map {variable_name!r} through {expected!r}")
+        if f"={variable_name}" in args_body:
+            fail(f"script args should not use bare variable expression ={variable_name}")
+
+    output_var = variables["riskScore"]
+    outputs = uipath_outputs(task)
+    if not any(out.attrib.get("var") == output_var for out in outputs):
+        fail("script output must map to the declared riskScore variable id")
+    if not any((out.attrib.get("source") or "").startswith("=result.") for out in outputs):
+        fail("script output should map from a result expression such as =result.response")
+
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
     print(f"OK: {path} contains a Jint-compatible BPMN script task")

@@ -2,7 +2,7 @@ task_id: skill-bpmn-hitl-rpa-wrappers
 description: >
   Node wrapper eval: agent models HITL and RPA as BPMN-native wrappers using
   documented non-Integration-Service UiPath activity shells.
-tags: [uipath-maestro-bpmn, integration, lifecycle:generate, shape:multi-node, node:hitl, resource]
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, resource]
 
 agent:
   type: claude-code

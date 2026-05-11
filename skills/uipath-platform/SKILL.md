@@ -1,6 +1,6 @@
 ---
 name: uipath-platform
-description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, uip CLI. For Test Manager→uipath-test. Not for writing workflow code."
+description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, uip CLI. For workflow code (.xaml/.cs)→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 

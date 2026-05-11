@@ -31,15 +31,18 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
    element executions/cursors, generated package files, then traces.
 2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,
    and `incident get` requires `--folder-key`.
-3. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.
-4. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,
+3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture
+   files are present in a test harness, treat them as CLI backing data and do not read those files directly unless you
+   are explicitly debugging the mock harness.
+4. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.
+5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,
    or extension that needs Author work.
-5. **Separate runtime symptoms from ownership of the fix** - BPMN structure and mappings belong in Author;
+6. **Separate runtime symptoms from ownership of the fix** - BPMN structure and mappings belong in Author;
    Integration Service enrichment and generated JSON come from CLI generation;
    folder/process/release choices belong to cloud configuration.
-6. **Do not expose private runtime data** - redact tenant, user, connection, folder, URL, payload,
+7. **Do not expose private runtime data** - redact tenant, user, connection, folder, URL, payload,
    and secret values in summaries.
-7. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require
+8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require
    explicit user consent after root cause analysis.
 
 ## Workflow

@@ -22,7 +22,7 @@ Use this reference when planning BPMN script tasks.
 
 - `bpmn:scriptTask` with JavaScript script CDATA.
 - `uipath:scriptVersion`.
-- Input and output mappings using declared variables.
+- Input and output mappings using declared variables. See [impl.md](impl.md#minimal-jint-script-task-shell) for the exact required shape.
 - Diagram geometry and surrounding error paths.
 
 ## Stop conditions

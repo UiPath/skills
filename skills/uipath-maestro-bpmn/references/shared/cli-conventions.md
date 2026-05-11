@@ -27,6 +27,10 @@ For Integration Service nodes and triggers, use CLI or registry-backed tooling t
 
 If enrichment tooling is unavailable, leave the element as a draft intent and record the open question. Do not hand-author connection IDs or private resource metadata.
 
+## Local metadata regeneration
+
+When BPMN source changes, regenerate or verify local package metadata before cloud actions. The derived files are `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json`; the BPMN source and registry-backed enrichment inputs are authoritative. Follow [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md) for entry point schema, binding resource, and `Intsvc.*` payload drift checks.
+
 ## Validation before operate
 
 Before upload, debug, publish, or deploy, run the available local checks for:

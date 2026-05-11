@@ -122,9 +122,9 @@ uip is resources execute list "<connector-key>" "<reference.objectName>" \
 
 The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the final connection from Step 1c), not any other connection you've used in another flow. Use the resolved IDs — from this very `execute list` call — in the trigger's event parameter configuration.
 
-> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
+> **Paginate when looking up by name.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).
 
-**Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full reference resolution workflow**, including pagination, describe failures, and fallback strategies.
+**Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full reference-resolution workflow** (pagination, describe failures, fallbacks).
 
 ### Step 4 — Validate required event parameters
 

@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
+description: "Always invoke for `agent.json` files or Python projects with `uipath-*` deps. UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---
@@ -50,6 +50,9 @@ Determine the agent mode before proceeding:
 | Embed a low-code agent inline in a flow, or wire a multi-agent solution | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/inline-in-flow/inline-in-flow.md`, `lowcode/capabilities/process/solution-agent.md` |
 | Run low-code evaluations | Low-code | [lowcode/evaluations/evaluate.md](references/lowcode/evaluations/evaluate.md) | `lowcode/evaluations/evaluators.md`, `lowcode/evaluations/evaluation-sets.md`, `lowcode/evaluations/running-evaluations.md` |
 | Validate, pack, publish, upload, or deploy a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/solution-resources.md` |
+| Embed coded agent in a flow (solution-level) | Coded | [coded/embedding-in-flows.md](references/coded/embedding-in-flows.md) | |
+| Use coded agent in a flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) | |
+| Use coded agent as tool for another agent in flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) § Pattern 3 | |
 
 ## Resources
 

@@ -1,0 +1,43 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "777d35d4-26bc-49ad-bbdb-5243ba2947fc",
+    "StartTime": "2026-05-04T10:31:31.190Z",
+    "EndTime": "2026-05-04T10:39:28.850Z",
+    "State": "Successful",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "BatchExecutionKey": "01610aff-fe36-4a9f-a26d-f67287fe7915",
+    "Info": "Job completed",
+    "CreationTime": "2026-05-04T10:31:30.833Z",
+    "ReleaseName": "BenefitsEnrollment",
+    "Type": "Unattended",
+    "EnvironmentVariables": "",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "ReleaseVersionId": 4669692,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 7792378,
+    "FolderKey": "445c18c8-3f11-43b6-ad44-6ff83f33af18",
+    "Reference": "",
+    "ProcessType": "Process",
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "UIPATH\\USER1",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "RemoteControlAccess": "None",
+    "LastModificationTime": "2026-05-04T10:39:28.850Z",
+    "TraceId": "777d35d4-26bc-49ad-bbdb-5243ba2947fc",
+    "AutopilotForRobots": {
+      "Enabled": false,
+      "HealingEnabled": false
+    },
+    "Id": 670881758
+  }
+}

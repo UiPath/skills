@@ -9,7 +9,8 @@
       "metadata": {
         "BindingsVersion": "v1",
         "DisplayLabel": "Review Process",
-        "SolutionsSupport": "Required"
+        "SolutionsSupport": "Required",
+        "SubType": "process"
       }
     }
   ]
