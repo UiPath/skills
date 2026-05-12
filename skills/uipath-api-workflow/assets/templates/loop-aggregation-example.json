@@ -42,7 +42,18 @@
         "properties": {
           "lastTerm": { "type": "number" },
           "iterationsRun": { "type": "number" },
-          "fibSum": { "type": "number" }
+          "fibSum": { "type": "number" },
+          "classified": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": { "type": "number" },
+                "value": { "type": "number" },
+                "parity": { "type": "string" }
+              }
+            }
+          }
         },
         "title": "Outputs"
       }
