@@ -7,7 +7,7 @@ End-to-end pipeline: take a UiPath project's coded `[TestCase]` (or any test ent
 ```
 uip rpa pack            → .nupkg
 uip or packages upload  → package on Orchestrator feed
-uip or folders list-current-user  → folder UUID (the --folder-key value)
+uip or folders list      → folder UUID (the --folder-key value)
 uip tm testcases list-automations  → test entry point name (the --test-name value)
 uip tm testcases link-automation   → test case is bound
 uip tm testcases run  / testsets run   → run
@@ -42,12 +42,12 @@ Capture the returned `Id` (the package name) and `Version` from the JSON output.
 `link-automation` requires `--folder-key <UUID>` (NOT `--folder-path`). Discover it:
 
 ```bash
-uip or folders list-current-user --output json
+uip or folders list --output json
 ```
 
 Filter for the folder that owns the package. The `Key` field is the UUID.
 
-> **Use `list-current-user`, not `list`.** `list` may omit personal workspaces and solution folders. `list-current-user` returns every folder the authenticated user can target.
+> `uip or folders list` (with no flags) returns every folder the authenticated user can target — Personal, Solution, and Standard. Use `uip or folders list --all` only when you need every folder in the tenant regardless of access.
 
 ## Step 4 — Find the test entry point name
 

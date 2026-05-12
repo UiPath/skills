@@ -57,7 +57,7 @@ Output JSON includes the package `Id` (the package name Orchestrator stores) and
 Folder key (UUID — required by `processes create`, `link-automation`, etc.):
 
 ```bash
-uip or folders list-current-user --output json
+uip or folders list --output json
 ```
 
 The returned `Key` is the UUID; the `FullyQualifiedName` is the human path. Either is accepted by `--folder-path` / `--folder-key` — most other CLI calls require the UUID.
