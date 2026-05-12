@@ -73,6 +73,20 @@ ensure_npm() {
 # `ls` reads disk and doesn't need it.
 UIPATH_REGISTRY_FLAG="--@uipath:registry=https://registry.npmjs.org/"
 
+# Detect a local-source install via `npm link` / `bun link` (see the CLI
+# repo README, "Building from Source"). Linked installs point at a working
+# tree that is, by definition, ahead of the published `latest` tag —
+# upgrading would clobber the developer's local build with an older
+# registry version. Package directory is a symlink in both cases.
+is_linked_package() {
+  local pkg="$1"
+  local npm_root
+  npm_root="$(npm root -g 2>/dev/null)"
+  [ -n "$npm_root" ] && [ -L "$npm_root/$pkg" ] && return 0
+  [ -L "$HOME/.bun/install/global/node_modules/$pkg" ] && return 0
+  return 1
+}
+
 # npm install -g always re-downloads and re-installs, even if the same version
 # is already present. This is slow for a synchronous session hook and also
 # re-triggers package lifecycle scripts. Check first, install only when needed.
@@ -81,6 +95,10 @@ UIPATH_REGISTRY_FLAG="--@uipath:registry=https://registry.npmjs.org/"
 # which is misleading. Capture install output and only emit on failure.
 ensure_npm_package() {
   local pkg="$1"
+
+  if is_linked_package "$pkg"; then
+    return
+  fi
 
   if npm ls -g "$pkg" --depth=0 &>/dev/null \
      && [ -z "$(npm outdated -g "$pkg" $UIPATH_REGISTRY_FLAG 2>/dev/null)" ]; then
