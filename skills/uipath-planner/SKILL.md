@@ -32,7 +32,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — follows plan `Solution scope` (SW or local); `uipath-platform` for Orchestrator |
-| `uipath-platform` | Auth, Orchestrator resources, solution lifecycle (pack/publish/deploy), Integration Service, Test Manager | Yes (auth hub) | **Yes** — the deploy destination |
+| `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles), resources (assets, queues, storage buckets + bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), solution lifecycle (pack/publish/deploy/activate), traces | Yes (auth hub) | **Yes** — the deploy destination |
 | `uipath-interact` | Inspect and interact with live desktop/browser UI: click, type, screenshot, inspect. For app launching, ad-hoc exploration, post-build verification. Does NOT author workflows or generate selectors — that's `uipath-rpa`. | No auth | **No** |
 
 ## RPA skill routing
@@ -67,10 +67,10 @@ Ask the user key questions using AskUserQuestion. Only ask questions the request
 **Skip this question** and default to simultaneous when the request is simple and well-defined, the user is modifying an existing automation, or the task is single-skill single-step.
 
 **If "explore first, then plan":**
-- You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`.
+- You may run non-mutating discovery: `uip rpa analyze`, `uip rpa validate`, reading `project.json`.
 - **Before promising live UIA capture in the plan**, verify all three:
   1. A project with `project.json` exists at `<PROJECT_DIR>` (or will be created in Task 1 of the plan).
-  2. `UiPath.UIAutomation.Activities` version `>= 26.4.1-preview` (kept in sync with `uipath-rpa`'s declared minimum). For not-yet-created projects, check with `uip rpa get-versions --package-id UiPath.UIAutomation.Activities --include-prerelease --output json`.
+  2. `UiPath.UIAutomation.Activities` version `>= 26.4.1-preview` (kept in sync with `uipath-rpa`'s declared minimum). For not-yet-created projects, check with `uip rpa packages versions --package-id UiPath.UIAutomation.Activities --include-prerelease --output json`.
   3. If a project exists, `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is present.
 - If any check fails, the plan MUST either (a) include a Task 0 to install/upgrade UIA to the minimum and run `uip rpa restore`, or (b) fall back to indication-only authoring and record `UI capture: indication-only` in the plan header so `uipath-rpa` does not route to `uia-configure-target`.
 - Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution.

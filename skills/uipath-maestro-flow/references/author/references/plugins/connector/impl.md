@@ -19,6 +19,8 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
    - `pathParameters` — field-value pairs for path placeholders in `endpoint` (e.g. `{conversationsInfoId}`). Read from `connectorMethodInfo.parameters[]` where `type: path` (`registry get`) or `parameters[]` (`is resources describe`).
    - `filter` — structured FilterBuilder tree for list/query operations. See Step 6a.
    - `customFieldsRequestDetails` — design-time cache for connectors with an api-type ObjectAction at top-level `objectActions[]` OR `connectorMethodInfo.design.actions[]` (e.g. Jira `GenerateSchema`, Dataservice V3 `FetchObjectMetadataTenant`). camelCase keys; `parameterValues` as `[key, value]` tuples. See Step 6c.
+   - `multipartParameters` — derived from IS metadata params where `type === "multipart"`. Array of `{name, dataType, value?}`. Pass file values via `--detail.bodyParameters.<name>`; `node configure` moves file-typed values into the matching `multipartParameters[i].value` slot (matched by `name`). String-typed entries — including the body aggregator field whose name is given by `inputMetadata.multipart.bodyFieldName` — stay in `bodyParameters`.
+   - `inputMetadata` — auto-derived. `{type: "multipart", multipart: {bodyFieldName}}` when multipart params exist; `{operation: "list", pagination: {maxPageSize}}` for list operations. Driven by `methodInfo.parameters` + `methodInfo.operation`.
 
 ---
 

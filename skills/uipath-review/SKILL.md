@@ -23,7 +23,7 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 ## Critical Rules
 
 1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-coded-apps, uipath-platform).
-2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa get-errors` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `get-errors` catches structural / analyzer issues, `build` catches compile-time issues `get-errors` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip flow validate` on flows. Report every Error, Warning, and Info result from every command. A review without both `get-errors` AND `build` (for RPA) is incomplete and may ship broken member references.
+2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip flow validate` on flows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
 5. **Understand business context first.** Before evaluating optimization, ask or infer what the solution is trying to accomplish. A queue-based architecture is not "better" if the use case processes 5 items/day.
@@ -163,21 +163,21 @@ Report **all** results — Errors, Warnings, and Info — in the final review re
 2. For **each** entry point file, run validation yourself:
 
 ```bash
-uip rpa get-errors --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
-3. **Then run a project-level build** to catch what `get-errors` misses (unknown member names like `NGetText.Value`, invalid enum values like `Operator="StartsWith"`, member resolution / CacheMetadata failures, attribute-form C# expression JIT failures):
+3. **Then run a project-level build** to catch what `validate` misses (unknown member names like `NGetText.Value`, invalid enum values like `Operator="StartsWith"`, member resolution / CacheMetadata failures, attribute-form C# expression JIT failures):
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
 4. Collect **all** results from both commands — Errors, Warnings, and Info-level messages
-5. If any entry point has `get-errors` errors **or** the project fails to `build`, the project is **not deployable**
+5. If any entry point has `validate` errors **or** the project fails to `build`, the project is **not deployable**
 
 > Do NOT validate only Main.xaml — validate every file listed in `entryPoints`. A project can have multiple entry points and errors in any of them block deployment.
 
-> Do NOT report a clean review based on `get-errors` alone. `get-errors` is static analysis; it does not catch unknown member names or invalid enum values. A "0 errors" `get-errors` result with a failing `build` is a real bug that ships if the reviewer skips `build`.
+> Do NOT report a clean review based on `validate` alone. `validate` is static analysis; it does not catch unknown member names or invalid enum values. A "0 errors" `validate` result with a failing `build` is a real bug that ships if the reviewer skips `build`.
 
 #### 2b. RPA Projects — Run Workflow Analyzer
 
@@ -187,7 +187,7 @@ The Workflow Analyzer checks code quality rules (ST-NMG naming, ST-DBP design, S
 uip rpa analyze --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
-If `uip rpa analyze` is not available, `uip rpa get-errors` includes Workflow Analyzer results. Check the output for all rule violations:
+If `uip rpa analyze` is not available, `uip rpa validate` includes Workflow Analyzer results. Check the output for all rule violations:
 
 - **Error-level violations** → report as **Critical** findings (e.g., ST-SEC-007 SecureString, ST-ANA-005 missing project.json)
 - **Warning-level violations** → report as **Warning** findings (e.g., ST-DBP-003 empty Catch, ST-MRD-011 Write Line usage, ST-NMG-001 naming)
@@ -214,8 +214,8 @@ For the review report, create a validation summary:
 
 | Project | Command | Errors | Warnings | Info |
 |---|---|---|---|---|
-| InvoiceProcessor | uip rpa get-errors (Main.xaml) | 0 | 3 | 1 |
-| InvoiceProcessor | uip rpa get-errors (Helper.cs) | 1 | 0 | 0 |
+| InvoiceProcessor | uip rpa validate (Main.xaml) | 0 | 3 | 1 |
+| InvoiceProcessor | uip rpa validate (Helper.cs) | 1 | 0 | 0 |
 | InvoiceDispatcher | uip flow validate | 0 | 0 | 0 |
 | ClassifierAgent | uip agent validate | 0 | 1 | 0 |
 
@@ -451,7 +451,7 @@ Output a structured report in chat (do NOT create a file):
 - [V-E-001] <project>/<file>: **<rule-id>** — <message>
 - ...
 
-> For Legacy projects, note: "Validation CLI (`uip rpa get-errors`, `uip rpa analyze`) targets Modern projects. Legacy validation is available via the dedicated `uipath-rpa-legacy` skill."
+> For Legacy projects, note: "Validation CLI (`uip rpa validate`, `uip rpa analyze`) targets Modern projects. Legacy validation is available via the dedicated `uipath-rpa-legacy` skill."
 
 ### Critical Findings (block deployment)
 1. [C-001] <concise title> — `<project/file>` — <what to check + recommended fix>
