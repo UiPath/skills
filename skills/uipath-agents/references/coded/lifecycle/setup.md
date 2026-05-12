@@ -26,6 +26,7 @@ Pick the framework before starting. The package installed in the Workflow determ
 | Empty directory | The Workflow below |
 | Existing UiPath agent (has `main.py` + `<framework>.json` + UiPath deps) | `source .venv/bin/activate`, then `uip codedagent setup --force && uip codedagent init` only |
 | Existing Python agent (has `main.py`, missing UiPath deps / framework config) | `source .venv/bin/activate`, `uv add <FRAMEWORK_PACKAGE>`, adapt `main.py` per the framework guide, then `uip codedagent setup --force && uip codedagent init` |
+| Studio Web Local Workspace solution (ancestor contains `.sw-path-marker` or `.local/folder.lock`) | Already scaffolded by Studio Web. One-time local-run prep: `uv venv --python 3.13`, activate, `uv sync`, `uip codedagent setup --force`. Do **not** run `uip codedagent new` or `init` (init only when input/output schemas change). See [local-workspace.md](local-workspace.md) for files-owned-by-SW and anti-patterns. |
 
 ## Workflow
 

@@ -4,7 +4,7 @@ Connector activity nodes call external services (Jira, Slack, Salesforce, Outloo
 
 ## When to Use
 
-Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, pagination, and error formatting automatically.
+Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, and error formatting automatically at runtime. Note: design-time reference resolution (looking up records by name during authoring) still requires the agent to paginate — see [impl.md](impl.md).
 
 ### Decision Order
 
@@ -51,6 +51,32 @@ uip is connectors list --output json
 ```
 
 Keys are often prefixed — e.g., `uipath-salesforce-slack` not `slack`.
+
+### Sanity-check before deciding "no connector activity exists"
+
+A `registry search <service>` that returns **only `uipath.connector.trigger.*`** entries — zero activity entries — is **suspicious, not authoritative**. Connector activities and triggers are independent fetches against different typecache endpoints; the registry cache can transiently miss the activity branch when one of those endpoints flakes (TTL: 30 min). Falling through to managed HTTP at this point produces a flow that *validates* but skips the real connector node — a silent topology mistake.
+
+When `registry search` returns triggers but **no activities** for a service whose connector you've already confirmed exists (`uip is connectors list`), or returns nothing at all for a well-known connector, **force a fresh pull before falling back**:
+
+```bash
+uip maestro flow registry pull --force
+uip maestro flow registry search <service> --output json
+```
+
+If the second search still returns no activities for that connector, the fallback to managed HTTP (Tier 2 below) is legitimate. If the second search now lists activities, the cache was stale — proceed with the connector activity node as Tier 1.
+
+> **Why this matters**: a partial registry pull is an indirect failure — `registry pull` reports `Success` even when one node-source branch silently dropped its contribution. The shape (`triggers > 0 && activities == 0`) is the only local signal you have. Treat it like a stale-cache symptom, not a topology fact.
+
+### Disambiguation — when search returns multiple connectors for the same intent
+
+`uip maestro flow registry search <keyword>` routinely returns multiple connectors for the same user intent (e.g. searching `databricks` returns both the native AI-serving connector and the JDBC gateway). **Never silently pick the first match.**
+
+Apply the canonical disambiguation ladder owned by Integration Service:
+
+- [/uipath:uipath-platform — Integration Service — connectors.md — Connector Disambiguation](../../../../../../uipath-platform/references/integration-service/connectors.md#connector-disambiguation) — classify catalog/custom/mock, intent-match by `Description`, count remaining candidates (1 → silent, >1 → AskUser, 0 catalog → STOP).
+- [/uipath:uipath-platform — Integration Service — connectors.md — JDBC Gateway — Database SQL Intent](../../../../../../uipath-platform/references/integration-service/connectors.md#jdbc-gateway--database-sql-intent) — special handling when the user's intent is a database SQL operation (native connector vs JDBC gateway, connection-name keyword matching, decision matrix, lifecycle disclosure).
+
+Lock the chosen connector key in the planning notes — never re-derive per node within the same flow.
 
 ### Check Connector Connections
 

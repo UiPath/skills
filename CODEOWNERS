@@ -40,6 +40,10 @@
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
+# Maestro BPMN skill
+/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
@@ -54,6 +58,7 @@
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
@@ -65,8 +70,9 @@
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
-# AOps Governance skill
-/skills/uipath-gov-aops-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+# Governance skill
+/skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
+/tests/tasks/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
 
 # LLM Configuration skill (BYO LLM product configurations via uip llm-configuration byo-connections)
 /skills/uipath-llm-configuration-byo-connections/ @denispetre @vstoleru-uipath @dragosvelcea
@@ -83,5 +89,11 @@
 /skills/uipath-tasks/ @UiPath/ActionCenterDev
 /tests/tasks/uipath-tasks/ @UiPath/ActionCenterDev
 
-# Access Policy Governance skill (CLI-based ToolUsePolicy management)
-/skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+# Admin skill (Identity Server management)
+/skills/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge
+/tests/tasks/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge
+
+# IXP skill
+/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+/tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath

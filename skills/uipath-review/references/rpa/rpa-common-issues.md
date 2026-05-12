@@ -19,7 +19,7 @@ grep -rl "\[Workflow\]\|\[TestCase\]" --include="*.cs" . | while read f; do
 done
 ```
 
-**Fix:** Use `uipath-rpa` skill to regenerate metadata, or run `uip rpa get-errors` which will flag missing metadata.
+**Fix:** Use `uipath-rpa` skill to regenerate metadata, or run `uip rpa validate` which will flag missing metadata.
 
 ### Broken Entry Points
 

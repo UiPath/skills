@@ -1,0 +1,171 @@
+task_id: skill-flow-eval-run-e2e
+description: >
+  End-to-end eval lifecycle against a live Studio Web tenant. Agent scaffolds
+  a tiny deterministic Flow (start trigger → script → end), declares an
+  `exact-match` evaluator targeting the `greeting` output, builds an eval set
+  with 3 data points, uploads the solution to Studio Web (explicitly
+  authorized in the prompt — the upload-safety rule still applies in the
+  general case), and runs `uip maestro flow eval run start --wait`. Asserts
+  every data point scores 1.0 (deterministic agent + deterministic
+  evaluator). Tests the full Author → Operate → Evaluate handoff in the
+  uipath-maestro-flow skill.
+tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute]
+skip: true
+# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
+# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
+# under `maestro flow`). Re-enable once a release exposes the Flow eval
+# surface to the public registry used by CI. See MST-9675.
+
+agent:
+  type: claude-code
+  max_turns: 90
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a deterministic UiPath Flow and run a Studio Web evaluation
+  end-to-end. Use the `uipath-maestro-flow` skill — both the `author` and
+  `evaluate` capabilities apply.
+
+  Flow shape (the simplest thing that produces a deterministic output):
+  - One start trigger with input variable `name` (string).
+  - One script node that returns `{ greeting: "Hello, " + name + "!" }`.
+  - One end node with output variable `greeting` (string) mapped from the
+    script node's output.
+
+  Project layout: `EvalRunDemo/EvalRunDemo/EvalRunDemo.flow`. Validate before
+  proceeding.
+
+  Eval scaffolding:
+  - One evaluator named `greeting-match` of `--type exact-match` with
+    `--target-key greeting` (only score the greeting field).
+  - One eval set named `Greetings`. No `--entry-point` flag — let the eval
+    set use the project's default start node.
+  - Three data points (deterministic, all expected to score 1.0):
+      hello-alice → inputs `{"name":"Alice"}`, expected `{"greeting":"Hello, Alice!"}`
+      hello-bob   → inputs `{"name":"Bob"}`,   expected `{"greeting":"Hello, Bob!"}`
+      hello-carol → inputs `{"name":"Carol"}`, expected `{"greeting":"Hello, Carol!"}`
+
+  Run the eval (this requires Studio Web):
+  1. Confirm login with `uip login status --output json`. Do NOT re-login —
+     use whatever tenant is currently active.
+  2. **Authorized upload.** I am explicitly authorizing you to upload this
+     solution to Studio Web for the purpose of running this eval. Run
+     `uip solution resource refresh EvalRunDemo --output json` first, then
+     `uip solution upload EvalRunDemo --output json`. Surface the resulting
+     `SolutionId` and `DesignerUrl` to me before proceeding.
+  3. Start the eval run with `--wait --timeout 600 --output json`. The CLI
+     will block until completion; that is fine for this task.
+  4. Fetch detailed results with `uip maestro flow eval run results <run_id>
+     --set "Greetings" --path EvalRunDemo/EvalRunDemo --verbose --output
+     json` and write the full JSON output to `eval-results.json` in the
+     working directory.
+
+  Acceptance:
+  - Aggregate score on the run is 1.0.
+  - All 3 data points have `Status` of `Completed`.
+  - No data point reports an error or a sub-1.0 score from the
+    `exact-match` evaluator.
+
+  Important:
+  - The upload above is authorized for this run only. Do not upload other
+    artifacts.
+  - Do NOT run `uip maestro flow debug` — eval and debug are separate
+    flows.
+  - Use `--output json` on every `uip` command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent confirmed login status (did not re-login)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file exists at the double-nested path"
+    path: "EvalRunDemo/EvalRunDemo/EvalRunDemo.flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow before uploading"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed solution resources before upload"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resource\s+refresh'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded the solution to Studio Web"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added an exact-match evaluator with --target-key"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*(--type\s+exact-match.*--target-key|--target-key.*--type\s+exact-match)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created an eval set"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added at least 3 data points"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*--inputs'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started the eval run with --wait"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+start.*--wait'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched detailed results"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+results'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "eval-results.json was saved"
+    path: "eval-results.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "All 3 data points completed and scored 1.0 from exact-match evaluator"
+    command: "python3 $TASK_DIR/check_eval_run.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 8.0
+    pass_threshold: 1.0

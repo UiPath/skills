@@ -17,7 +17,7 @@ All `uip or` commands share a set of cross-cutting options:
 | `--limit <n>` | List commands | Number of items to return (default 50). |
 | `--offset <n>` | List commands | Number of items to skip for pagination. |
 | `--order-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
-| `--all-fields` | Most get/list commands | Return the full API DTO instead of the curated summary. Use when you need a field not in the default output. |
+| `--all-fields` | Most get/list commands | Return the full API DTO instead of the curated summary. Use when you need a field the curated view drops. Note: curated keys are PascalCase, raw DTO keys are camelCase — the shapes do not share casing. |
 | `--output-filter <expr>` | All commands | JMESPath expression to filter/reshape JSON output (e.g., `--output-filter "Data[].Key"`). |
 
 **Pagination pattern.** List responses include a `Pagination` block with `Returned`, `Limit`, `Offset`, and `HasMore`. When `HasMore` is `true`, increment `--offset` by `--limit` and fetch again. Continue until `HasMore` is `false` or `Returned < Limit`.
@@ -126,5 +126,5 @@ Token expiry: re-run `uip login` if you get a 401.
 
 ## Related
 
-- **Resources** (`uip resource`) -- Assets, queues, triggers, buckets, webhooks, libraries. See [resources.md](../resources/resources.md).
-- **Solutions** (`uip solution`) -- Pack, publish, and deploy solution packages. See [solution.md](../solution/solution.md).
+- **Resources** (`uip resource`) — assets, queues, triggers, buckets, webhooks, libraries → [`uipath-resources`](../resources/resources.md)
+- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](../solution/solution.md)

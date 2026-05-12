@@ -1,0 +1,72 @@
+task_id: skill-bpmn-validation-fixtures-pack
+description: >
+  Lifecycle smoke: agent uses the uipath-maestro-bpmn skill to package the
+  validation fixture corpus locally. Mirrors the manual smoke "pack each
+  fixture" matrix and complements the validate-side fixture smoke.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:package"]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 30
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Package each validation fixture project locally without cloud-side effects.
+
+  Each fixture lives in its own subdirectory under `fixtures/validation/`:
+  - `fixtures/validation/linear-process/`
+  - `fixtures/validation/imported-brownfield-preservation/`
+  - `fixtures/validation/gateway-boundary-error/`
+  - `fixtures/validation/integration-service-enriched/`
+  - `fixtures/validation/subprocess-multi-instance/`
+  - `fixtures/validation/contract-variants/`
+  - `fixtures/validation/registry-coverage-matrix/`
+  - `fixtures/validation/wrapper-family-contract/`
+
+  Requirements:
+  - Use the installed `uip` CLI to pack each fixture project. Send packed
+    output to a local `fixture-pack-output/` directory, not into the fixture
+    folders.
+  - Do not upload, publish, deploy, debug, or run any process.
+  - Do not edit fixture files.
+
+success_criteria:
+  - type: file_exists
+    description: "Fixture corpus is present in the scored workspace"
+    path: "fixtures/validation/README.md"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked Maestro BPMN pack for fixture projects"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+pack\s+.*fixtures/validation/[\w-]+.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every fixture BPMN file parses and local package artifacts exist"
+    command: "python3 $TASK_DIR/check_validation_fixtures_pack.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json for parsed uip CLI calls"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 1.0

@@ -282,31 +282,62 @@ Merge rules:
 {
   "id": "invoiceReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
-  "ui": { "position": { "x": 474, "y": 144 } },
   "inputs": {
     "type": "custom",
-    "channels": [],
     "recipient": {
-      "channels": ["Email"],
-      "assignee": { "type": "user", "value": "reviewer@company.com" }
+      "channels": ["ActionCenter"],
+      "connections": {},
+      "assignee": { "type": "group" }
     },
     "app": {
+      "displayName": "Invoice Approval",
       "name": "Invoice Approval",
       "key": "c0ba97df-8a30-4fe0-b4b4-4611a631d77b",
       "folderPath": "Shared",
-      "inputSchema": [],
-      "inOutSchema": [],
-      "appSystemName": "invoice-approval",
-      "appVersionRef": { "key": "<APP_VERSION_REF.key>", "name": "Invoice Approval" }
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "AI Agent Decision": { "type": "string" },
+          "Invoice Amount":    { "type": "integer" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "Human Agent Decision": { "type": "string" }
+        }
+      }
+    },
+    "appInputBindings": {
+      "AI Agent Decision": "=vars.<nodeId>.output.<field>",
+      "Invoice Amount":    "=metadata.InstanceId"
     },
     "schema": {
       "fields": [],
       "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
     }
   },
-  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "Task result data",
+      "source": "=result",
+      "var": "output",
+      "properties": {
+        "Action": { "type": "string", "enum": ["Submit"], "default": "Submit" }
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "Task completion status",
+      "source": "=result.Action",
+      "var": "status",
+      "enum": ["Submit"],
+      "default": "Submit"
+    }
+  }
 }
 ```
 
@@ -314,13 +345,25 @@ Merge rules:
 
 | Field | Source | Example |
 |---|---|---|
+| `displayName` | `selectedApp.name` from search | `"Invoice Approval"` |
 | `name` | `selectedApp.name` from search | `"Invoice Approval"` |
 | `key` | `selectedApp.key` from search | `"c0ba97df-8a30-4fe0-b4b4-4611a631d77b"` |
 | `folderPath` | `selectedApp.folder.fullyQualifiedName` from search | `"Shared"` |
-| `inputSchema` | `config.inputSchema` from retrieve-configuration | `[]` |
-| `inOutSchema` | `config.inOutSchema` from retrieve-configuration | `[]` |
-| `appSystemName` | `config.appSystemName` from retrieve-configuration | `"invoice-approval"` |
-| `appVersionRef` | `config.appVersionRef` from retrieve-configuration | `{ "key": "...", "name": "Invoice Approval" }` |
+| `inputSchema` | JSON Schema object built from `config.actionSchema.inputs` — `{ "type": "object", "properties": { "<param>": { "type": "string" }, ... } }` | See note |
+| `outputSchema` | JSON Schema object built from `config.actionSchema.outputs` — `{ "type": "object", "properties": { "<param>": { "type": "string" }, ... } }` | See note |
+
+> `inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), **not arrays**. Parse `spec.actionSchema` (a JSON string) from the retrieve-configuration response and extract `inputs`/`outputs` to build the property maps.
+
+### `inputs.appInputBindings` format
+
+Maps app parameter names to binding expressions. Format: `"=vars.<path>"` (with `=` prefix, no `js:`):
+
+```json
+"appInputBindings": {
+  "AI Agent Decision": "=vars.<nodeId>.output.<field>",
+  "Invoice Amount":    "=metadata.InstanceId"
+}
+```
 
 ### `inputs.recipient` options
 

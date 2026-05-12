@@ -31,7 +31,7 @@ initial_prompt: |
   Use the inline quickform node (uipath.human-in-the-loop).
   Set priority to High.
   Wire completed → decision node.
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command

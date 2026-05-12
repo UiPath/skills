@@ -110,10 +110,11 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 | Develop a Solution | [develop-solution.md](develop-solution.md) | Create, add projects, manage resources, upload |
 | Pack & Deploy | [pack-and-deploy.md](pack-and-deploy.md) | Pack, publish, deploy run, deploy config |
 | Activate & Manage | [activate-and-manage.md](activate-and-manage.md) | Activate, uninstall, packages list/delete |
+| Scenarios | [scenarios.md](scenarios.md) | Multi-project recipes — same-name across folders, intra-solution cross-refs, shared cloud resources, virtual assets at deploy |
 
 ---
 
 ## Related
 
-- **Orchestrator** (`uip or`) -- Folders, processes, jobs, machines. See [orchestrator.md](../orchestrator/orchestrator.md).
-- **Resources** (`uip resource`) -- Assets, queues, buckets used by solutions. See [resources.md](../resources/resources.md).
+- **Orchestrator** (`uip or`) — folders, processes, jobs, machines → [`uipath-orchestrator`](../orchestrator/orchestrator.md)
+- **Resources** (`uip resource`) — assets, queues, buckets used by solutions → [`uipath-resources`](../resources/resources.md)

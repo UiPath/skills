@@ -65,6 +65,8 @@ Capability index for building new flows (greenfield) and editing existing flows 
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [Edit/Write: Replace a mock](references/editing-operations-json.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 | **Add data transform nodes** | [plugins/transform/impl.md](references/plugins/transform/impl.md) |
+| **Add an LLM batch transform over CSV rows** | [plugins/batch-transform/impl.md](references/plugins/batch-transform/impl.md) — `uipath.pattern.batch-transform`, gated by tenant flag `canvas.nodes.batch-transform` |
+| **Summarize / synthesize one document with optional citations** | [plugins/summarize/impl.md](references/plugins/summarize/impl.md) — `uipath.pattern.deep-rag`, gated by tenant flag `canvas.nodes.summarize` |
 | **Create a subflow** | [plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [Edit/Write: Create a subflow](references/editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [plugins/delay/](references/plugins/delay/) or [plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
 | **Use queue nodes** | [plugins/queue/impl.md](references/plugins/queue/impl.md) |
@@ -117,6 +119,8 @@ Capability index for building new flows (greenfield) and editing existing flows 
   - [end](references/plugins/end/) — graceful flow completion
   - [terminate](references/plugins/terminate/) — abort on fatal error
   - [transform](references/plugins/transform/) — declarative filter/map/group-by
+  - [batch-transform](references/plugins/batch-transform/) — LLM-powered row-by-row CSV enrichment (`uipath.pattern.batch-transform`)
+  - [summarize](references/plugins/summarize/) — single-document synthesis / Q&A with optional citations (`uipath.pattern.deep-rag`)
   - [delay](references/plugins/delay/) — duration or date-based pause
   - [subflow](references/plugins/subflow/) — reusable node groups
   - [scheduled-trigger](references/plugins/scheduled-trigger/) — recurring schedule

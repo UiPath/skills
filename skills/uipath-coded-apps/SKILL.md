@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-apps
-description: "UiPath Coded Web Apps & Coded Action Apps (`uip codedapp`, app.config.json, action-schema.json, @uipath/uipath-typescript SDK). Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
+description: "Always invoke for `app.config.json` or `action-schema.json` files. UiPath Coded Web Apps & Coded Action Apps via `uip codedapp` and `@uipath/uipath-typescript` SDK. Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -39,7 +39,12 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 7. **Never pass access tokens as CLI flags.** JWTs are too long — use the `UIPATH_ACCESS_TOKEN` environment variable instead.
 8. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
 9. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
-10. **Use `getAppBase()` for client-side router basename.** Import from `@uipath/uipath-typescript`. It reads `uipath:app-base` at runtime and falls back to `'/'` locally. Never hardcode a path as the router basename.
+10. **Use `getAppBase()` from `@uipath/uipath-typescript` for any absolute URL constructed at runtime** — router basename, image `src`, `fetch` paths. Deployed apps mount at a non-root prefix; `/`-rooted paths work locally but 404 after deploy. Vite's `base: './'` only fixes import-time references.
+11. **`uip codedapp deploy` must run non-interactively.** Pass the folder key as `--folder-key <GUID>` (or as `UIPATH_FOLDER_KEY=<GUID>` env-var prefix — either works). The interactive folder picker fails in non-TTY contexts (CI, agent shells). If the user provides a folder **name**, resolve it to a key with `uip or folders list --output json` and match on the `Name` field (output rows are `{ Key, Name, Path, Description, Type, ParentKey }`). The `uip or ...` commands require the Orchestrator tool — install once via `uip tools install @uipath/orchestrator-tool` (check first with `uip tools list`).
+12. **Guard against text overflow in every UI.** See [patterns.md](references/patterns.md) "Preventing Text Overflow".
+13. **Inspect the DF schema before writing analytics, filters, or seeds.** Call `entities.getById(<id>)` from inside the app's authenticated session — NOT a CLI script with `~/.uipath/.auth` (different scopes, will 401). DF doesn't behave like a typical RDBMS; see [sdk/data-fabric.md](references/sdk/data-fabric.md) "Anti-shapes & gotchas".
+14. **Every list call returns ONE page — even with no options. There is no "give me everything" path.** Applies to `getAll`, `getAllRecords`, `queryRecordsById`, `getFileMetaData`, etc. `getAll()` with no options does NOT return all rows; the SDK sends no `pageSize` and the **server** applies its own cap, wrapped in a misleadingly-named `NonPaginatedResponse`. To list every row from a source that may exceed the cap, you MUST loop the cursor: `while (page.hasNextPage) { page = await getAll({ cursor: page.nextCursor }) }` and accumulate `items`. Reading `result.items.length` after a single call is almost always a bug. See [sdk/pagination.md](references/sdk/pagination.md).
+15. **Tables of dynamic data must paginate, not dump all rows in one scroll.** Page size 25–50 with next/prev/page-number controls and a "Showing X–Y of Z" summary. Top-N + "see all" is acceptable for explicitly summary panels (e.g., "Top 10 oldest"). Infinite-scroll-of-N-rows is unusable for operational dashboards. Applies to any table backed by any service (DF entities, Tasks, Jobs, Conversations, Process Instances, etc.). See [patterns.md](references/patterns.md) "Tabular Data".
 
 ## Task Navigation
 
@@ -58,8 +63,9 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **SDK: Maestro (Processes, Cases)** | [references/sdk/maestro.md](references/sdk/maestro.md) |
 | **SDK: Action Center (Tasks)** | [references/sdk/action-center.md](references/sdk/action-center.md) |
 | **SDK: Conversational Agent** | [references/sdk/conversational-agent.md](references/sdk/conversational-agent.md) |
+| **SDK: Agent Feedback** | [references/sdk/feedback.md](references/sdk/feedback.md) |
 | **SDK: Pagination** | [references/sdk/pagination.md](references/sdk/pagination.md) |
-| **UI Patterns (polling, BPMN, HITL)** | [references/patterns.md](references/patterns.md) |
+| **UI Patterns (polling, BPMN, HITL, text overflow, table pagination)** | [references/patterns.md](references/patterns.md) |
 
 ## CLI Setup
 
@@ -69,6 +75,12 @@ npm install -g @uipath/cli
 
 # Install the coded apps tool
 uip tools install @uipath/codedapp-tool
+
+# Install the Orchestrator tool (needed to resolve folder name → key for deploy)
+uip tools install @uipath/orchestrator-tool
+
+# Verify both are installed
+uip tools list
 
 # Resolve uip if not on PATH
 UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
@@ -108,9 +120,9 @@ uip login --authority https://alpha.uipath.com   # non-production environments
 
 1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`.
 2. **Build** — `npm run build`. Verify `ls dist/`.
-3. **Pack** — `uip codedapp pack dist -n <name> -v <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
+3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
-5. **Deploy** — `uip codedapp deploy`. Share the app URL with the user.
+5. **Deploy** — `uip codedapp deploy -n <name> --folder-key <GUID>`. Resolve the GUID from a user-provided folder name via `uip or folders list --output json`. Never let the command go interactive. Share the app URL with the user.
 
 ## SDK Module Imports
 
@@ -135,12 +147,12 @@ See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 | `Not authenticated` | No valid session | Run `uip login` |
 | `dist/ not found` | App not built | Run `npm run build` |
 | `Version already exists` | Same version re-published | Bump version in `pack` |
-| `Folder key required` | Missing folder for CLI deploy | Set `UIPATH_FOLDER_KEY` or pass `--folderKey`. See note below. |
+| `Folder key required` / deploy hangs on prompt | Missing folder for CLI deploy | Resolve folder name → key via `uip or folders list --output json` (match on `Name`, read `Key`), then run `uip codedapp deploy --folder-key <GUID> ...`. See [pack-publish-deploy.md](references/pack-publish-deploy.md#folder-key). |
 | `No packages found` | No `.nupkg` in `.uipath/` | Run `pack` first |
 | Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |
 | API calls fail with 401/CORS | Wrong base URL | Use `https://api.uipath.com` not `cloud.uipath.com` |
 
-> **Folder identifier names differ across CLI and SDK.** The CLI uses `UIPATH_FOLDER_KEY` / `--folderKey` (string) and applies only to `uip codedapp deploy`. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
+> **Folder identifier names differ across CLI and SDK.** The CLI uses `UIPATH_FOLDER_KEY` / `--folder-key` (string) and applies only to `uip codedapp deploy`. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
 
 ## Completion Output
 

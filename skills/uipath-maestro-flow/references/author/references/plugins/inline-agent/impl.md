@@ -4,6 +4,8 @@ This plugin covers **flow-specific** operations for inline agent nodes: adding t
 
 Node type: `uipath.agent.autonomous`. The agent is bound to a local subdirectory via `inputs.source = <projectId>`. The node's BPMN type and `serviceType` (`Orchestrator.StartInlineAgentJob`) come from the definition in `definitions[]`.
 
+For coded (Python) agents, use the [`agent`](../agent/impl.md) plugin (`uipath.core.agent.{key}`) — inline agents are low-code only.
+
 ## Prerequisite — Scaffold the Inline Agent
 
 ```bash
@@ -41,6 +43,96 @@ Use `type: "simpleText"` with `rawString` for `contentTokens`:
 ```
 
 For detailed agent configuration (contentTokens format, model settings, resource files, tool bindings), use the `uipath-agents` skill.
+
+## Wiring Flow Variables into Agent Prompts
+
+The agent runtime cannot read `$vars.*` directly. Every flow value the prompt needs (trigger output, upstream node output, flow variable) must travel through the **agent input bridge**, and every prompt token must use the runtime form `{{input.<id>}}`. Bare `{{emailSubject}}` (no `input.` prefix) and raw `{{$vars.X}}` inside `agent.json` resolve to literal text — the prompt looks plausible but the agent receives no data.
+
+The bridge is one binding plus three matching declarations. Author all four whenever the prompt references a flow value:
+
+| Where | What | Example |
+| --- | --- | --- |
+| Flow node `inputs.agentInputVariables[]` | Binding from `$vars` source to a flat slot id | `{ "id": "emailSubject", "type": "string", "binding": "=js:$vars.emailReceived1.output.subject" }` |
+| `agent.json` `inputSchema.properties.<id>` | Slot declaration matching the binding `id` and `type` | `"emailSubject": { "type": "string" }` |
+| `agent.json` `messages[].content` | Runtime token referencing the slot | `"Email subject: {{input.emailSubject}}"` |
+| `agent.json` `messages[].contentTokens[]` | Mirror of `content` with one `{ "type": "variable", "rawString": "input.<id>" }` per `{{input.X}}` token | `{ "type": "variable", "rawString": "input.emailSubject" }` |
+
+The `id` is a flat identifier you choose (alphanumeric + `_`, no dots). Use it consistently in all four places. The binding `=js:$vars.<sourceNodeId>.output.<field>` follows the standard `=js:` rule — see [../../../../shared/node-output-wiring.md](../../../../shared/node-output-wiring.md) for the full expression contract.
+
+### Worked example — wire an email-trigger payload into the agent prompt
+
+Flow node (excerpt):
+
+```json
+{
+  "id": "autonomousAgent1",
+  "type": "uipath.agent.autonomous",
+  "inputs": {
+    "systemPrompt": "Triage the inbound email.",
+    "userPrompt": "Process the inbound email payload.",
+    "source": "<projectId-uuid>",
+    "agentInputVariables": [
+      { "id": "emailSubject", "type": "string", "binding": "=js:$vars.emailReceived1.output.subject" },
+      { "id": "emailFrom",    "type": "string", "binding": "=js:$vars.emailReceived1.output.from" },
+      { "id": "emailBody",    "type": "string", "binding": "=js:$vars.emailReceived1.output.body" }
+    ],
+    "agentOutputVariables": [{ "id": "content", "type": "string" }]
+  }
+}
+```
+
+Matching `agent.json` (excerpt):
+
+```json
+{
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "emailSubject": { "type": "string" },
+      "emailFrom":    { "type": "string" },
+      "emailBody":    { "type": "string" }
+    }
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "Triage the inbound email.",
+      "contentTokens": [{ "type": "simpleText", "rawString": "Triage the inbound email." }]
+    },
+    {
+      "role": "user",
+      "content": "From {{input.emailFrom}}\nSubject: {{input.emailSubject}}\n\n{{input.emailBody}}",
+      "contentTokens": [
+        { "type": "simpleText", "rawString": "From " },
+        { "type": "variable",   "rawString": "input.emailFrom" },
+        { "type": "simpleText", "rawString": "\nSubject: " },
+        { "type": "variable",   "rawString": "input.emailSubject" },
+        { "type": "simpleText", "rawString": "\n\n" },
+        { "type": "variable",   "rawString": "input.emailBody" }
+      ]
+    }
+  ]
+}
+```
+
+The flow-node `inputs.systemPrompt` / `inputs.userPrompt` stay as short, generic validator placeholders — **do not copy the templated agent.json prompt with `{{input.<id>}}` tokens here**. Those runtime tokens only resolve inside `agent.json messages[].content`; in the flow-node they are inert text that just duplicates content and obscures which prompt is canonical. The contract that matters is: every `{{input.<id>}}` token in `agent.json` has a matching `inputSchema.properties.<id>` slot and a matching `agentInputVariables[]` binding on the flow node.
+
+### When the source field name is unknown at authoring time
+
+Some upstream nodes (notably connector triggers like email-received) only expose their full output shape after a real run — `subject`, `from`, `body` are not knowable from the registry definition alone. In that case:
+
+1. Pick descriptive slot ids (`emailSubject`, `emailFrom`, `emailBody`) and write the prompt + `inputSchema` against them.
+2. Record the `binding` strings as your **best guess** based on the connector's documented output schema (e.g., `=js:$vars.emailReceived1.output.subject`).
+3. Surface the assumption to the user with `AskUserQuestion` — list the bindings and ask the user to correct any source paths before they run or upload the flow. Do not invent field names silently.
+4. After the first real run, the author can verify the actual output paths and update the bindings; the prompt and `inputSchema` do not need to change because the slot ids are stable.
+
+### Anti-patterns
+
+- **Never write `{{plainName}}` (no `input.` prefix) in `agent.json` prompts.** It is treated as literal text by the agent runtime.
+- **Never write `{{$vars.X}}` or `{{ $vars.X }}` directly in `agent.json` prompts.** That mustache form is canvas-input syntax, not the runtime token; without the workbench rewrite step, it ships verbatim and resolves to nothing. The runtime form is `{{input.<id>}}`, paired with an `agentInputVariables[]` binding.
+- **Never copy `{{input.<id>}}` tokens into the flow-node `inputs.systemPrompt` / `inputs.userPrompt`.** Those fields are validator placeholders — keep them as short, generic strings. Runtime tokens belong in `agent.json messages[].content` only.
+- **Never leave `agentInputVariables: []` while the prompt references flow data.** Empty bindings means no values reach the agent.
+- **Never declare an `inputSchema.properties.<id>` slot without a matching `agentInputVariables[]` binding** (the slot stays empty at runtime), and never the reverse (the binding has nowhere to land).
 
 ## Registry Validation
 
@@ -241,6 +333,7 @@ Notes:
 
 - `inputs.source` — the inline agent's `projectId`; must match the subdirectory name and `agent.json.projectId`. The definition still declares `model.source: true`, but flow-core hoists that identity field onto `inputs.source` for the node instance.
 - `inputs.systemPrompt` / `inputs.userPrompt` must be non-empty for current `flow validate`. Treat them as validator placeholders; the canonical inline-agent prompts live in `agent.json`.
+- `inputs.agentInputVariables` is `[]` only for agents whose prompts reference no flow data. Whenever the prompt needs a trigger output, upstream-node output, or flow variable, populate this array per § Wiring Flow Variables into Agent Prompts above — and add matching `inputSchema.properties.<id>` slots in `agent.json`.
 - **No `model` block on the inline-agent node instance.** The node inherits serviceType/version/context from `definitions[]`; `source` lives at `inputs.source`. Stale instance fields such as `model.serviceType`, `model.version`, or `model.context` override the inherited definition and can cause runtime mismatch.
 
 ## Accessing Output
@@ -288,6 +381,7 @@ uip maestro flow validate <FlowName>.flow --output json
 | Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
 | Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and the `projectId` field inside `agent.json` |
 | Agent runs but returns empty `output.content` | Missing or malformed `contentTokens` in `agent.json` | Rebuild `messages[].contentTokens` using `{ "type": "simpleText", "rawString": "..." }` entries; see `uipath-agents` for detail |
+| Agent prompt receives literal `{{X}}` text instead of flow data, or one prompt slot resolves to nothing while others work | Bare `{{X}}` placeholders without the `input.` prefix; or `{{input.<id>}}` token written without a matching `inputSchema.properties.<id>` slot in `agent.json` and `agentInputVariables[]` binding on the flow node | Adopt the four-place contract from § Wiring Flow Variables into Agent Prompts: pick a flat slot id, add an `agentInputVariables[]` entry with `{ id, type, binding: "=js:$vars.<sourceNode>.output.<field>" }`, declare `inputSchema.properties.<id>`, write the prompt token as `{{input.<id>}}`, and add a matching `{ "type": "variable", "rawString": "input.<id>" }` to `messages[].contentTokens` |
 
 ## Repair Recipes
 

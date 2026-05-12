@@ -130,6 +130,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   "triggerNodeId": "start"
 }
 ```
+Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is nested under the trigger node's output — NOT `$vars.{id}`).
 
 ### Type Reference
 
@@ -356,11 +357,12 @@ These variables are available in all expression contexts:
 ### `$vars` Access Patterns
 
 ```javascript
-// Workflow input variable
+// Workflow global
 $vars.customerName
-
-// State variable
 $vars.counter
+
+// Trigger-associated flow input (triggerNodeId set)
+$vars.{triggerNodeId}.output.{id}
 
 // Node output (script node)
 $vars.script1.output

@@ -99,8 +99,8 @@ initial_prompt: |
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-diagnostics skill"
-    skill_name: "uipath:uipath-diagnostics"
-    expected: "yes"
+    skill_name: "uipath-diagnostics"
+    expected_skill: "uipath-diagnostics"
     weight: 1.0
 
   - type: llm_judge
@@ -222,6 +222,14 @@ PROJECT_SNAPSHOT_IGNORE_DIRS = {
     ".venv",
     ".vs",
     ".idea",
+    # UiPath Studio caches / runtime artifacts — not source.
+    ".local",
+    ".tmh",
+    ".settings",
+    ".entities",
+    ".project",
+    ".templates",
+    ".claude",
 }
 PROJECT_SNAPSHOT_IGNORE_SUFFIXES = {".pyc", ".pdb"}
 

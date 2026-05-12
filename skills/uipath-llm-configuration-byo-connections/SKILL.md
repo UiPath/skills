@@ -1,6 +1,6 @@
 ---
 name: uipath-llm-configuration-byo-connections
-description: "Manage Bring-Your-Own (BYO) LLM product configurations in the UiPath LLM Gateway via `uip llm-configuration byo-connections`. Use when the user mentions BYO LLM, custom AI provider, bringing their own OpenAI / Azure OpenAI / Bedrock / Anthropic / Google Vertex key, registering an external LLM, or wiring a tenant-owned API key into UiPath products. The CLI wraps the product-level llm-configurations endpoints on the LLM Gateway. For tenant-wide AI governance (allowed providers, blocked models) → uipath-gov-aops-policy."
+description: "UiPath BYO LLM product configurations in the LLM Gateway via `uip llm-configuration byo-connections` — list, get, create, update, delete, list-product-configs. Register tenant-owned OpenAI / Azure OpenAI / AWS Bedrock / Anthropic / Google Vertex / Mistral keys against UiPath products (agents, agenthub, jarvis, IXP, agent builder). Wraps product-level llm-configurations endpoints. For tenant-wide AI governance (allowed providers, blocked models)→uipath-governance."
 allowed-tools: Bash, Read
 ---
 
@@ -48,7 +48,7 @@ Six verbs under `uip llm-configuration byo-connections`:
 
 - **Logged in**: `uip login` with an account that has the **OrganizationAdmin** role for AI Trust Layer in the target tenant.
 - **An Integration Service connection** for the LLM vendor whose key you want to register. Discover with `uip is connections list --output json`. The connection's UUID is what `--connection-id` takes. **If none exists for the target vendor, ASK the user before proceeding** — connection creation is handled by the `uipath-platform` skill via `uip is connections create "<connector-key>"`. Translate `--connector-type` to the right IS connector key using the **Connector-Type ↔ IS Connector Key** table below. Do not fabricate a UUID.
-- **A target connections folder** exists. Discover with `uip or folders list --output json`. Its UUID is what `--folder-key` takes.
+- **A target connections folder** exists. Discover with `uip or folders list --output json`. Its UUID is what `--folder-key` takes. **Ignore folders with `Type: Personal`** — pick a Standard (shared) folder instead.
 
 ## Connector-Type ↔ IS Connector Key
 
@@ -155,11 +155,14 @@ There is no skip flag. Fix the offending mapping and retry.
 ## Typical Flow
 
 1. **Identify the feature shape**: run `list-product-configs --product P --feature F --output json` and read `modelsConfigurationOption`. If it's `AllModels` or `AnyModel`, you must use multi-mapping. If it's `AnyModelWithOwnAdditions`, use single-mapping.
-2. **Get a connection id**: `uip is connections list --output json` — copy the vendor's connection UUID. If the list has no connection for the target vendor, STOP and ask the user: *"No Integration Service connection found for &lt;vendor&gt;. Want me to hand off to the `uipath-platform` skill to create one (`uip is connections create "<connector-key>"`)? I'll resume here once it's enabled."* Use the **Connector-Type ↔ IS Connector Key** table above to pick the right `<connector-key>` based on the `--connector-type` and api-flavor you intend to register. Do not invent a UUID and do not proceed without one — server-side validation will fail with an unavailability reason.
-3. **Get the folder id**: `uip or folders list --output json` — pick the folder you want the configuration in.
-4. **Create**: invoke `byo-connections create` with the right input shape (single-mapping or repeated `--mapping`). Server-side validation runs automatically.
-5. **Confirm**: `byo-connections list --output json` — record appears.
-6. **Inspect**: `byo-connections get <id> --output json` — resolved connection details.
+2. **Ask the user which connector / vendor** to register, unless the user has already named it explicitly. Offer the supported `--connector-type` values relevant to the feature's `addYourOwn` / `allowedConnectors` (typically `OpenAi`, `AzureOpenAi`, `AmazonWebServices`, `GoogleVertex`, `OpenAiV1Compatible`). Do not assume the connector from whatever connection happens to exist — multiple vendor connections may be present, and the user's intent determines which one to use.
+3. **Get a connection id**: `uip is connections list --output json` — copy the chosen vendor's connection UUID. If the list has no connection for the target vendor, STOP and ask the user: *"No Integration Service connection found for &lt;vendor&gt;. Want me to hand off to the `uipath-platform` skill to create one (`uip is connections create "<connector-key>"`)? I'll resume here once it's enabled."* Use the **Connector-Type ↔ IS Connector Key** table above to pick the right `<connector-key>` based on the `--connector-type` and api-flavor you intend to register. Do not invent a UUID and do not proceed without one — server-side validation will fail with an unavailability reason.
+4. **Get the folder id**: `uip or folders list --output json` — pick the folder you want the configuration in. **Filter out folders whose `Type` is `Personal`** — BYO configurations belong in shared/standard folders, not in per-user personal workspaces. If only Personal folders are returned, stop and ask the user which non-personal folder to use (or to create one).
+5. **Pick the model (`--llm-name`)**: present the feature's catalog `models[]` (filtered to those whose `allowedConnectors` include the chosen `--connector-type`). **If the feature's `modelsConfigurationOption` is `AnyModelWithOwnAdditions`, always offer an extra "Add a custom model" option** alongside the catalog choices — that mode is the only one that accepts non-catalog model names, and customers frequently want to register a model the catalog doesn't list yet. For a custom model, the user supplies the `--llm-name` freely; validate the chosen `--api-flavor` against the feature's `addYourOwn[<connector-type>]` list.
+6. **Confirm the `--llm-identifier`**: by default the deployment/identifier sent to the vendor matches `--llm-name`, but they often differ — e.g. Azure OpenAI deployment names, AWS Bedrock region-prefixed inference profile IDs (`eu.anthropic.claude-...`), or OpenAI-compatible aliases. **Ask the user explicitly** whether the identifier the vendor expects matches the model name, or if a different value should be passed to `--llm-identifier`. Only skip the question if the user already provided both values.
+7. **Create**: invoke `byo-connections create` with the right input shape (single-mapping or repeated `--mapping`). Server-side validation runs automatically.
+8. **Confirm**: `byo-connections list --output json` — record appears.
+9. **Inspect**: `byo-connections get <id> --output json` — resolved connection details.
 
 ## Expected Output
 

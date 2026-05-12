@@ -1,6 +1,6 @@
 ---
 name: uipath-diagnostics
-description: Use when diagnosing UiPath platform & process issues - failed jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
+description: "UiPath cross-platform diagnostics — failed or stuck Orchestrator jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems. For .flow run diagnosis→uipath-maestro-flow. For .bpmn run diagnosis→uipath-maestro-bpmn. For .xaml/.cs workflow debug→uipath-rpa. For platform ops→uipath-platform."
 ---
 
 # UiPath Diagnostic Agent
@@ -87,6 +87,8 @@ Before classifying as **explains-WHY**, apply the upstream-cause gate. The mecha
 - **Confirmed — describes WHAT only** → symptom. Re-invoke generator with `trigger: "deepening"` and `parent_hypothesis`.
 - **All high-confidence eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from medium/low + docsai.
 
+**Co-equal-roots guard.** Before applying any "skip remaining" exit after a confirmed+verified root cause, check `state.json.matched_playbooks`. If two or more playbooks are present at the same highest confidence level AND they correspond to **distinct, independent** error signatures (different activities, different error codes, neither upstream of the other), every pending hypothesis sourced from those playbooks MUST be tested before stopping. Do not exit on the first confirmed root cause when triage found multiple co-equal roots — you will under-report and miss fixes the user has to make. Only after each co-equal hypothesis is tested (confirmed, eliminated, or inconclusive) and depth-checked when confirmed do you proceed to Resolution.
+
 ### DEPTH CHECK (after a hypothesis is confirmed as root cause)
 
 Spawn the depth-verifier sub-agent (`agents/depth-verifier.md`). Pass it the
@@ -129,7 +131,7 @@ If the user provides new data at any point (error messages, job IDs, logs, scree
 **Root cause vs. symptom:** A finding that explains WHY the failure occurs is a root cause. A finding that describes WHAT happened (but not why) is a symptom — deepen it.
 
 **When to stop testing:**
-- High-confidence root cause confirmed → DEPTH CHECK; if verified, skip remaining hypotheses and go to Resolution
+- High-confidence root cause confirmed → DEPTH CHECK; if verified AND no other co-equal-confidence playbook is still pending (see Co-equal-roots guard above), skip remaining hypotheses and go to Resolution. If co-equal playbooks remain pending, continue testing them first.
 - Medium/low root cause confirmed → DEPTH CHECK; if verified, ask user if they want to continue
 - All hypotheses exhausted (eliminated or inconclusive) → go to Resolution with "no root cause" outcome (no depth check needed when there is nothing to gate)
 
@@ -145,7 +147,23 @@ The presenter:
 
 Present the presenter's output verbatim to the user. After presenting:
 
-**If root cause found** — offer to help implement the fix or clean up `.investigation/`.
+**Execute Post-presentation actions FIRST.** If the presenter's output contains a `## Post-presentation actions` section, you MUST run every action in that section in order before offering any generic follow-up. For each action:
+
+1. Print the "Print as plain text" block exactly as written (raw selectors and other XML/HTML render poorly inside `AskUserQuestion` options or previews — always print as plain text first, separate from the question).
+2. Print the warning string verbatim if non-empty.
+3. Call `AskUserQuestion` with the question and options the action specifies. Ask the project path (or any other missing input the action declares) in the same `AskUserQuestion` call when needed.
+4. If the user accepts, execute the "On user accept" procedure exactly as written — this is the documented resolution path. Do not improvise an alternative. If the procedure references a sub-skill (e.g., `uia-improve-selector`), check for it and follow its USAGE.md. Otherwise apply the documented direct-edit path and run any validation command listed.
+5. If the user declines, stop the action; do not modify files. Move to the next action.
+6. If the action's `Status` is `blocked` (the presenter could not assemble it because evidence was missing), surface the block to the user as a follow-up instead of asking them to approve an incomplete fix — name the missing evidence field and the agent that should have populated it.
+
+Do NOT skip the Post-presentation actions block when:
+- The matched playbook was downgraded from `high` to `medium` by depth-check (the resolution procedure is preserved across confidence downgrades — see `agents/depth-verifier.md` on textual gaps).
+- The depth-verifier flagged a cause-name mismatch (textual gap). A reclassified cause does NOT invalidate the playbook's interactive resolution; both can be reported together.
+- The recovered/recommended data was produced in a recommendation-only or unproven mode (`InferredRecoveryInfo`, `RecoverySuccessful: false`). The action carries a warning string for exactly this case — present it and let the user decide.
+
+Only after all actions are complete (accepted, declined, or surfaced as blocked) proceed to the generic follow-up:
+
+**If root cause found** — offer to help implement any further changes or clean up `.investigation/`.
 
 **If no root cause found** — use `AskUserQuestion` to offer: provide more data (re-triage), or open a UiPath support ticket with the evidence gathered.
 

@@ -27,7 +27,7 @@ issues.append({                 # pseudocode — not executed
 |---|---|---|
 | `ERROR` | Required element missing — operation skipped | Binding/wiring incomplete |
 | `WARNING` | Possible problem — operation proceeded | May cause runtime issues |
-| `SKIPPED` | Intentionally deferred — skeleton/unresolved | User must complete manually |
+| `SKIPPED` | Intentionally deferred — placeholder/unresolved | User must complete manually |
 
 ## Dump
 
@@ -58,7 +58,7 @@ After Step 12 (validate), group issues by `plugin` and write to `tasks/build-iss
 
 | Step | Task | Reason |
 |---|---|---|
-| 9 | Run Compliance Check | No inputs — skeleton task |
+| 9 | Run Compliance Check | No inputs — placeholder task |
 ```
 
 - Omit severity subsections with zero entries

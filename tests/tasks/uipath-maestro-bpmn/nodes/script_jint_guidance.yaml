@@ -1,0 +1,63 @@
+task_id: skill-bpmn-script-jint-guidance
+description: >
+  Script task eval: agent authors a BPMN script task that follows the Jint
+  runtime boundary instead of Node.js, browser, filesystem, or network APIs.
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:single-node, node:script]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 60
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "RiskScoreScriptBpmn".
+  The process should manually start with `amount` and `daysOverdue` inputs,
+  calculate a risk score in a BPMN script task, and end with a `riskScore`
+  output.
+
+  Requirements:
+  - Use the documented UiPath BPMN extension namespace
+    `http://uipath.org/schema/bpmn`; do not use workflow-activities
+    namespaces for BPMN extension XML.
+  - Declare root `uipath:variables version="v1"` entries for `amount`,
+    `daysOverdue`, and `riskScore` inside `bpmn:process` /
+    `bpmn:extensionElements`.
+  - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`.
+  - Include the UiPath script version metadata and prefer version `v3`.
+  - Map script inputs through `uipath:input name="args"`, but write the script
+    body using top-level identifiers such as `amount` and `daysOverdue`, not
+    `args.amount` or `args.daysOverdue`.
+  - Use UiPath variable-id expressions in input mappings, for example
+    `=vars.<amount variable id>`, not bare expressions such as `=amount`.
+  - Map the script result back to the declared `riskScore` output variable with
+    a `uipath:output` mapping whose `var` attribute is the declared `riskScore`
+    variable id. Do not put the target variable id in the output `name`.
+  - Write script content that is compatible with the Jint runtime. Do not use
+    Node.js modules, filesystem APIs, network APIs, browser globals, packages,
+    timers, or long-running async behavior.
+  - Include BPMN DI for every visible node and sequence flow.
+  - Do not upload, publish, deploy, debug, or run the process.
+
+success_criteria:
+  - type: run_command
+    description: "BPMN source was created"
+    command: "find RiskScoreScriptBpmn -maxdepth 1 -type f -name '*.bpmn' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Script task follows Jint-compatible BPMN guidance"
+    command: "python3 $TASK_DIR/check_script_jint_guidance.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

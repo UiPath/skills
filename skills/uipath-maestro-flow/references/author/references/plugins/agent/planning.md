@@ -1,8 +1,10 @@
 # Agent Node — Planning
 
-Agent nodes invoke UiPath AI agents from within a flow. Published agents appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) agents in sibling projects are discovered via `--local` — no login or publish required.
+Agent nodes invoke UiPath AI agents from within a flow. Published agents appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) agents in sibling projects are discovered via `--local` — no login or publish required. Both **coded** (Python) and **low-code** (agent.json) agents appear here once deployed — the flow treats them identically.
 
-> **Published vs Inline:** This plugin covers the published/tenant-resource case. For agents defined inside the flow project itself (scaffolded via `uip agent init --inline-in-flow`), see [inline-agent/planning.md](../inline-agent/planning.md). Pick the published path when the agent is reused across flows or needs independent versioning; pick inline when the agent is tightly coupled to one flow.
+> **Related plugin:** [inline-agent](../inline-agent/planning.md) covers low-code agents embedded as a UUID subdirectory **inside** the flow project (`uipath.agent.autonomous`). Coded agents always use this `agent` plugin, not `inline-agent`.
+
+> **Choosing between coded and low-code, or wiring them into a flow:** see the `uipath-agents` skill — [coded-vs-lowcode-guide.md](../../../../uipath-agents/references/coded-vs-lowcode-guide.md) for the comparison, [coded/flow-integration.md](../../../../uipath-agents/references/coded/flow-integration.md) for coded-agent Flow patterns.
 
 > **If the user names an existing agent, it is a published agent — not inline.** When a prompt says "use the X agent" / "call the Y agent" / "invoke the Z coded agent" / "use the W low-code agent", the user is referring to an agent that already exists in the tenant (or in-solution). ALWAYS run `uip maestro flow registry search "<name>" --output json` BEFORE deciding to scaffold an inline agent. The words "coded" and "low-code" describe the *implementation style* of a published agent — they do NOT mean "inline". Inline (`uipath.agent.autonomous`) is only correct when the user explicitly asks to embed, inline, or create a new agent from scratch inside this flow.
 
@@ -39,6 +41,7 @@ Use workflow nodes for the deterministic parts (fetch data, transform, route) an
 - **Agent does not exist yet** — tell the user to create it in the same solution with `uipath-agents`, then use `--local` discovery
 - **Task is deterministic** — use [Script](../script/planning.md) or [Decision](../decision/planning.md)
 - **Need to call an external service API** — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md)
+- **Agent should be a tool for another agent** — don't use this node; instead add the agent as a tool resource (`uipath.agent.resource.tool.agent`) wired to a parent agent node. See the `uipath-agents` skill for the resource file format
 
 ## Ports
 
@@ -62,7 +65,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
-Requires `uip login`. Only published agents from your tenant appear.
+Requires `uip login`. Returns published tenant resources only — for in-solution sibling projects, use the `--local` discovery below.
 
 **In-solution (local, no login required):**
 

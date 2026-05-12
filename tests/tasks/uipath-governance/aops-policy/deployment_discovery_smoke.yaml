@@ -1,0 +1,68 @@
+task_id: skill-gov-aops-policy-deployment-discovery-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-governance skill to
+  discover deployment subjects — list governance users, fetch one user's
+  assignments, and list tenants with assignments. Tests the canonical
+  list→get chain and guards against flag-rename regressions
+  (`--user-name` → `--user`, `--user-identifier` → `--user-id`).
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip gov aops-policy` commands that hit the service will fail with an
+  auth error. That is acceptable — what matters is that the agent invokes
+  the correct commands with the correct flags.
+tags: [uipath-governance, smoke, deployment, discovery]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A tenant admin wants to audit AOps governance deployment state. List
+  every governance user, list every tenant that has assignments, then
+  pick the first user from the user list and fetch that user's current
+  policy assignments. Save the command output to ./output.txt for review.
+
+  If `deployment user list` fails with auth error, still call
+  `deployment user get <PLACEHOLDER_ID>` once with any placeholder user
+  identifier so the list→get chain is exercised.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, capture both stdout and stderr to
+    ./output.txt (use `> output.txt 2>&1` for the first command and
+    `>> output.txt 2>&1` for subsequent ones), and move on. Do NOT retry
+    or attempt to login.
+  - Use --output json on every uip gov aops-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip gov aops-policy deployment user list` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip gov aops-policy deployment user get <USER_ID>` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+get\s+["'']?[\w-]+["'']?\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip gov aops-policy deployment tenant list` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,59 @@
+task_id: skill-bpmn-business-rule-task
+description: >
+  Author a Maestro BPMN process that uses a dedicated business rule task,
+  proving the Orchestrator.BusinessRules row is covered by an eval and not
+  only by static fixtures.
+tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:business-rule", "feature:orchestrator"]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a UiPath Maestro BPMN Process Orchestration project at:
+    BusinessRuleDecision/BusinessRuleDecision
+
+  The main BPMN file must be:
+    BusinessRuleDecision/BusinessRuleDecision/BusinessRuleDecision.bpmn
+
+  Model a simple public-safe loan precheck:
+  - Manual start with applicant score and requested amount inputs.
+  - A dedicated `bpmn:businessRuleTask` named "Evaluate Eligibility".
+  - The task must use a `uipath:activity` shell with type
+    `Orchestrator.BusinessRules`.
+  - Map rule inputs and outputs to declared variables.
+  - Route through an exclusive gateway by rule outcome to approved/review
+    end events.
+  - Include BPMN DI for visible elements.
+
+  Also create the standard local package files next to the BPMN:
+    project.uiproj, operate.json, entry-points.json, bindings_v2.json,
+    package-descriptor.json
+
+  Do not use a generic service task for the business rule. Do not upload,
+  publish, deploy, debug, run, or call cloud-side UiPath commands. Do not ask
+  for approval or pause for feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "Business rule BPMN file was created"
+    path: "BusinessRuleDecision/BusinessRuleDecision/BusinessRuleDecision.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Business rule task uses bpmn:businessRuleTask with Orchestrator.BusinessRules"
+    command: "python3 $TASK_DIR/check_business_rule_task.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

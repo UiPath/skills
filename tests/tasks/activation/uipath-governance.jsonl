@@ -1,0 +1,50 @@
+{"id": "uipath-governance-001", "prompt": "Create a new AOps governance policy for Studio", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-002", "prompt": "List all AOps policies in my tenant", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-003", "prompt": "Update the AITrustLayer policy to block Gemini and Claude", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-004", "prompt": "Delete the old Studio governance policy", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-005", "prompt": "Deploy this policy to the Administrators group", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-006", "prompt": "What policy is currently deployed to the prod tenant?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-007", "prompt": "Block users from using ChatGPT in their agents", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-008", "prompt": "Restrict which LLMs agents can call to only the approved list", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-009", "prompt": "I want to disable Studio feedback and telemetry for my team", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-010", "prompt": "Require everyone to run Workflow Analyzer before publishing", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-011", "prompt": "Stop the Assistant from auto-launching at user login", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-012", "prompt": "Disable the Marketplace widget in Assistant", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-013", "prompt": "Only allow robots to automate outlook.exe and excel.exe — block everything else", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-014", "prompt": "Block regedit.exe and cmd.exe from being automated by any robot", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-015", "prompt": "Hide the developer panel in StudioX for all citizen devs", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-016", "prompt": "Restrict the Studio package feed to our internal Artifactory only — block public NuGet", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-017", "prompt": "Restrict Agent Builder so only the AI team can use it", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-018", "prompt": "Apply this AITL policy as the tenant-wide default", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-019", "prompt": "Show me the priority ordering for all Studio policies", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-020", "prompt": "Lower the priority of the Restrict policy so the Allow one wins for admins", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-021", "prompt": "How do I use uip gov aops-policy create?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-022", "prompt": "The customer wants to fully disable Autopilot for all process types in Studio Web — not just RPA. How do I configure that policy?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-023", "prompt": "Set a min Workflow Analyzer score of 90 before users can publish from Studio Web", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-024", "prompt": "Disable Gen AI connector for everyone in tenant but enable it for the AI team via a higher-priority policy", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-025", "prompt": "Update the existing Robot runtime policy to add cmd.exe to the blocklist", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-026", "prompt": "Create a UiPath access policy", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-027", "prompt": "uip gov access-policy create help", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-028", "prompt": "List all my ToolUsePolicy access policies", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-029", "prompt": "Get the access policy with ID 1c9d3b2a-8f7e-4a6b-9c0d-1e2f3a4b5c6d", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-030", "prompt": "Delete this access policy", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-031", "prompt": "Update an existing tool-use policy", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-032", "prompt": "Evaluate this access policy against a request", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-033", "prompt": "When my Maestro process calls the SalesforceAgent, allow it", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-034", "prompt": "Block the Marketing flow from calling the InternalDB RPA workflow", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-035", "prompt": "Restrict tool use so only Production-tagged agents can be invoked", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-036", "prompt": "Only admins can trigger the Refund Agent as a tool", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-037", "prompt": "Set up a policy so RPA workflow X can only be called by agent Y", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-038", "prompt": "I want to govern which agents can call my API workflows", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-039", "prompt": "Only members of the FinanceAdmins group should be able to invoke the Payments agent", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-040", "prompt": "deny everything except Production-tagged agents from being invoked by my flows", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-041", "prompt": "create an access policy in simulated mode first so i can preview", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-042", "prompt": "activate the access policy I just created", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-043", "prompt": "Add an actor identity rule so only user jane.doe@uipath.com can use the Approval agent as a tool", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-044", "prompt": "Author a ToolUsePolicy that excludes sandbox-tagged agents from being callable", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-045", "prompt": "The PDP is denying my tool call — help me check the access policies", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-046", "prompt": "Allow only on-behalf-of user finance.lead@example.com when the Reporting Maestro calls the LedgerAgent", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-047", "prompt": "Govern resource access by tag — only 'approved' tagged tools can be invoked by anything", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-048", "prompt": "Need to stop one specific agent from being invoked by anything in the tenant", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-049", "prompt": "Create access policy: caller must be a Maestro tagged 'prod', target must be an Agent tagged 'prod', actor must be in group prod-operators", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-050", "prompt": "Help — my agent can't call its sub-agent, I think a tool-use policy is blocking it", "expected_skill": "uipath-governance"}

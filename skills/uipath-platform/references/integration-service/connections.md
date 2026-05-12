@@ -87,6 +87,29 @@ For webhook URL retrieval after the trigger is configured, see [triggers.md — 
 
 ---
 
+## Identifying a JDBC Connection's Target DB
+
+For the JDBC gateway connector (`uipath-uipath-jdbc`, "Database Hub"), `connections list` does **not** expose `jdbcUrl` or `driverClass` — config is intentionally hidden. The only signal for "what DB does this JDBC connection point to?" is the connection **`name`**.
+
+Match case-insensitively (weak signal — surface as "likely &lt;DB&gt;", never "is &lt;DB&gt;"):
+
+| DB | Substrings in `connection.name` |
+|---|---|
+| Snowflake | `snowflake`, `sf` |
+| Databricks | `databricks`, `dbx` |
+| Postgres | `postgres`, `postgresql`, `pg` |
+| MySQL | `mysql` |
+| SQL Server | `sqlserver`, `mssql` |
+| Oracle | `oracle` |
+| Redshift | `redshift` |
+| BigQuery | `bigquery`, `bq` |
+
+If the user explicitly named a connection in their prompt (e.g. "use the `pat_databricks` connection"), that overrides name-matching — bind it directly.
+
+Used by the [connectors.md — JDBC Gateway](connectors.md#jdbc-gateway--database-sql-intent) decision matrix.
+
+---
+
 ## Scope-Related Errors
 
 A connection can be `Enabled` but lack optional OAuth scopes needed for specific activities. This typically surfaces as a **403 Forbidden** error during execute.

@@ -61,17 +61,25 @@ uip resource triggers create --type time \
   --cron "0 0 9 ? * 1-5" \
   --time-zone "Europe/Bucharest" \
   --runtime-type Unattended \
-  --job-priority Normal \
-  --folder-path "Finance" --output json
+  --job-priority Normal --output json
 ```
+
+`triggers create` does not take `--folder-path` / `--folder-key` — the
+folder is derived from the release the trigger is bound to. Same for all
+three trigger types.
 
 `--time-zone` takes an IANA time zone ID (e.g. `UTC`, `Europe/Bucharest`, `America/Los_Angeles`).
 
 Additional options:
-- `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then enable them in bulk via `triggers enable`.
-- `--calendar-key` — skip holidays, from `uip or calendars list`.
-- `--stop-strategy` — `SoftStop` or `Kill`.
-- `--input-arguments` — JSON-encoded input arguments map.
+- `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then flip them on later via `triggers update <key> --enabled`.
+- `--stop-strategy <SoftStop|Kill>` — how to stop running jobs when the next firing happens. `SoftStop` requests the workflow to stop cleanly; `Kill` terminates the runtime process.
+- `--kill-process-expression <cron>` — when `--stop-strategy=Kill`, this 6-field Quartz cron schedules **when** the kill is enforced if the workflow ignores the soft-stop request. Without it, Kill mode waits indefinitely.
+- `--input-arguments <json>` — JSON-encoded input arguments map.
+- `--target <spec>` (repeatable) — pin the trigger to one or more specific runtime targets. Format: `'machine=<machine-guid>,user=<user-guid>,session=<session-id>'`. Any combination is allowed in `dynamic` mapping mode (default), but `session` requires `machine`. Repeat the flag for multiple targets.
+- `--mapping-mode <dynamic|strict>` — validation rule for `--target`. `dynamic` (default) lets you pass any mix of machine/user/session. `strict` requires both `machine` and `user` on every target — use this when the folder has "Enable account-machine mappings" turned on.
+- `--run-as-me` — run jobs under the trigger creator's identity instead of resolving an unattended robot from the folder.
+- `--resume-on-same-context` — resume suspended jobs on the same machine that originally ran them.
+- `--calendar-key <guid>` — calendar to consult for excluded days (holidays). From `uip or calendars list`.
 
 ### Queue Trigger
 
@@ -83,8 +91,7 @@ uip resource triggers create --type queue \
   --release-key <process-key> \
   --queue-key <queue-key> \
   --items-threshold 1 --max-jobs 3 \
-  --runtime-type Unattended --job-priority Normal \
-  --folder-path "Finance" --output json
+  --runtime-type Unattended --job-priority Normal --output json
 ```
 
 Additional options: `--items-per-job` (default 1), `--activate-on-complete` (re-trigger on job completion).
@@ -123,13 +130,22 @@ uip resource triggers update <trigger-key> --type time \
   --cron "0 30 8 ? * 1-5" --folder-path "Finance" --output json
 ```
 
+> **`--type` matters on get/update/delete.** Default is `time`. If you pass an api or queue trigger key without `--type api` / `--type queue`, the command hits ProcessSchedules and returns `HTTP 404: ProcessSchedule does not exist.` The error instructions surface a hint pointing at the right `--type` — re-run with the correct one. (`triggers list` shows the type per entry.)
+
+> **Enum flag values are case-insensitive.** `--method POST`, `--runtime-type SERVERLESS`, `--job-priority HIGH` all work and are normalized to canonical PascalCase before the API call. Same on `queue-items` (`--priority high` ≡ `High`) and `processes edit` (`--retention-action delete`, `--robot-size standard`).
+
 ---
 
-## Step 4: Enable, Disable, Delete
+## Step 4: Toggle, Delete
+
+`triggers update` already does a get + patch internally, so the dedicated
+`enable` / `disable` subcommands have been folded into it via mutually
+exclusive `--enabled` / `--disabled` flags. Same applies to all three
+trigger types (time, queue, api).
 
 ```bash
-uip resource triggers disable <trigger-key> --type time --folder-path "Finance" --output json
-uip resource triggers enable <trigger-key> --type time --folder-path "Finance" --output json
+uip resource triggers update <trigger-key> --type time --folder-path "Finance" --disabled --output json
+uip resource triggers update <trigger-key> --type time --folder-path "Finance" --enabled --output json
 uip resource triggers delete <trigger-key> --type time --folder-path "Finance" --output json
 ```
 
@@ -161,21 +177,24 @@ Returns names like `job.completed`, `job.faulted`, `queueItem.failed`. Use these
 
 ### Create a Webhook
 
+The webhook name is a **positional argument**, aligned with `calendars create <name>` and `queues create <name>`:
+
 ```bash
 # Subscribe to specific events
-uip resource webhooks create \
-  --name "JobFailureAlert" \
+uip resource webhooks create "JobFailureAlert" \
   --url "https://hooks.example.com/uipath" \
   --events "job.faulted,job.stopped" \
   --secret "my-signing-secret" --output json
 
 # Subscribe to ALL events (omit --events)
-uip resource webhooks create \
-  --name "AuditHook" \
+uip resource webhooks create "AuditHook" \
   --url "https://hooks.example.com/audit" --output json
 ```
 
-Options: `--secret` (HMAC signature validation), `--allow-insecure-ssl` (skip TLS verification).
+Options:
+
+- `--secret <secret>` — shared secret used to sign every webhook delivery. Orchestrator includes the signature in the `X-UiPath-Signature` header of each POST as `sha256=<HMAC_SHA256(secret, raw_body)>`. The receiving server should recompute the HMAC over the unmodified request body and compare in constant time. Without `--secret`, payloads are sent without a signature — accept those only if the endpoint is private and you trust the network path.
+- `--allow-insecure-ssl` — skip TLS verification on the webhook URL. Only set when targeting an HTTPS endpoint with a self-signed cert in non-production. Production targets should use a real cert; flipping this off after-the-fact requires `webhooks update --no-allow-insecure-ssl` (verify the flag exists in your CLI version with `--help`).
 
 ### List, Get, Update, Test, Delete
 
@@ -186,6 +205,10 @@ uip resource webhooks get <webhook-key> --output json
 uip resource webhooks update <webhook-key> \
   --url "https://new.example.com/hook" \
   --events "job.faulted,queueItem.failed" --output json
+
+# Toggle without renaming or changing other fields:
+uip resource webhooks update <webhook-key> --disabled --output json
+uip resource webhooks update <webhook-key> --enabled --output json
 
 uip resource webhooks ping <webhook-key> --output json     # test connectivity
 uip resource webhooks delete <webhook-key> --output json
@@ -209,8 +232,7 @@ uip resource triggers create --type time \
   --release-key "c3d4e5f6-..." \
   --cron "0 0 9 ? * 1-5" --time-zone "UTC" \
   --calendar-key "<calendar-key>" \
-  --runtime-type Unattended --job-priority Normal \
-  --folder-path "Finance" --output json
+  --runtime-type Unattended --job-priority Normal --output json
 
 # 3. Queue trigger: fire when 10+ items accumulate
 uip resource queues list --folder-path "Finance" --output json   # get queue key
@@ -219,12 +241,10 @@ uip resource triggers create --type queue \
   --release-key "c3d4e5f6-..." \
   --queue-key "d4e5f6a7-..." \
   --items-threshold 10 --max-jobs 5 --activate-on-complete \
-  --runtime-type Unattended --job-priority High \
-  --folder-path "Finance" --output json
+  --runtime-type Unattended --job-priority High --output json
 
 # 4. Webhook: notify on job failures
-uip resource webhooks create \
-  --name "InvoiceFailureAlert" \
+uip resource webhooks create "InvoiceFailureAlert" \
   --url "https://hooks.slack.com/services/T00/B00/xxx" \
   --events "job.faulted,job.stopped" \
   --secret "webhook-signing-key" --output json
@@ -251,7 +271,7 @@ uip resource webhooks list --enabled --output json
 
 ## Related
 
-- [resources.md](resources.md) -- Resource tool overview and common flags
-- [../orchestrator/run-jobs.md](../orchestrator/run-jobs.md) -- Create processes, get the release key needed for triggers
-- [../orchestrator/tenant-admin.md](../orchestrator/tenant-admin.md) -- Calendar management, tenant settings affecting trigger behavior
+- [resources.md](resources.md) — Resource tool overview and common flags
+- Get the release key for `--release-key` → [`uipath-orchestrator`](../orchestrator/run-jobs.md)
+- Calendar management + tenant settings affecting trigger behavior → [`uipath-orchestrator`](../orchestrator/tenant-admin.md)
 - [process-queues.md](process-queues.md) -- Queue setup required before creating queue triggers

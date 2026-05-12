@@ -71,7 +71,7 @@ Generate a unique UUID (e.g., `5029c8a8-799b-426a-803f-c4ec75255439`). Create a 
 
 Same schema as a standalone agent (see [../../agent-definition.md](../../agent-definition.md)), with these conventions:
 - `projectId` matches the folder name UUID
-- `inputSchema.properties` is empty (flow wires data via node connections)
+- `inputSchema.properties` starts empty, but **must declare one slot per `{{input.<id>}}` token used in `messages[].content`**. Each slot's `<id>` and `type` must match the corresponding `agentInputVariables[]` entry on the flow node. See the `uipath-maestro-flow` skill's [inline-agent prompt-wiring guide](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts) for the full four-place contract.
 - `messages` have empty `content` and `contentTokens` initially (edit agent.json to set prompts with `type: "simpleText"` and `rawString`)
 - `guardrails: []` at root level — can be populated with guardrail objects. See [../guardrails/guardrails.md](../guardrails/guardrails.md)
 - No `metadata.targetRuntime` field

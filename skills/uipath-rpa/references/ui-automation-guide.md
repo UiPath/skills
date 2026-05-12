@@ -78,6 +78,7 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 - **Hallucinated keyboard shortcuts instead of UIA targets** — do NOT send keyboard shortcuts (`Ctrl+S`, `Alt+F4`, `Tab` navigation, menu mnemonics, etc.) as a substitute for clicking or typing into a real UI element. `Click` and `TypeInto` against configured targets are deterministic, survive layout changes, and are observable in logs; guessed shortcuts depend on focus, locale, and version. Reserve keyboard shortcuts for genuinely hotkey-only operations (commands with no clickable surface) and confirm the shortcut exists in the live app — never infer from OS convention or muscle memory.
 - **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient.
 - **`Cannot send input ... outside of screen bounds` on hover-revealed elements** — pop-up menu items, autocomplete entries, and dropdown rows that only appear after a hover/click frequently fail under the default input method. Switch the affected activity (or its UIA interact CLI counterpart) to a simulated input method. Available input-method values: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+- **`HealingAgentBehavior` enum split between card and child activities.** `NApplicationCard` (Use Application/Browser) accepts `NHealingAgentBehavior` — values `Job`, `Disabled`, `RecommendationOnly`. Child activities (`NClick`, `NTypeInto`, `NCheckState`, etc.) accept `NChildHealingAgentBehavior`, which adds `SameAsCard`. Putting `SameAsCard` on the card itself fails with `Failed to create a 'HealingAgentBehavior' from the text 'SameAsCard'`. When introducing a new card (e.g., a nested card for a sign-in subprocess), set its `HealingAgentBehavior` to `Job`/`Disabled`/`RecommendationOnly` — never copy the value from a child activity. Confirm via `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/common/NHealingAgentBehavior.md` and `NChildHealingAgentBehavior.md`.
 
 ---
 
@@ -159,7 +160,7 @@ Each method on `UiTargetApp` accepts targets in multiple forms:
 Read `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs`. This file contains a `Descriptors` class with the hierarchy `Descriptors.<App>.<Screen>.<Element>`.
 
 > **Generation requires Studio Desktop.** `ObjectRepository.cs` is regenerated only when Studio Desktop detects a coded workflow file (`.cs` with `[Workflow]` / `[TestCase]`) and reconciles it against the OR — `uip rpa build` alone does NOT regenerate it. If the file is missing or stale after registering elements:
-> 1. Confirm Studio Desktop is running against the project (start it with `uip rpa start-studio --project-dir "<PROJECT_DIR>"` if needed).
+> 1. Confirm Studio Desktop is running against the project (start it with `uip rpa studio start --project-dir "<PROJECT_DIR>"` if needed).
 > 2. Ensure at least one `.cs` coded workflow exists in the project — Studio only triggers regeneration when it sees a coded surface that needs descriptors.
 > 3. Save / re-open the project in Studio Desktop to force a regen pass.
 >
@@ -172,7 +173,7 @@ using <ProjectNamespace>.ObjectRepository;
 
 #### Step 2 — Check UILibrary NuGet packages
 
-Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa inspect-package`.
+Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa packages inspect`.
 
 For UILibrary packages, use the **package** namespace, not the project namespace:
 ```csharp
@@ -204,7 +205,7 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 > "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uip rpa uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
-For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `get-errors` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
+For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
 
 ### Key Concepts
 
