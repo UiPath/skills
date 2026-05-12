@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Scoped guardrail recommendation check — Llm scope only.
+"""Tool-scoped deterministic guardrail check — Send message to channel.
 
-Validates that scoped guardrail recommendation for Llm scope produces:
-  - At least 1 guardrail in agent.json
-  - All guardrails include "Llm" in selector.scopes
-  - No guardrail has ONLY "Agent" or ONLY "Tool" in scopes (without "Llm")
-  - Each guardrail has: UUID id, $actionType set, PascalCase scopes
+Validates that a custom guardrail was added for the Slack tool:
+  - At least 1 guardrail with $guardrailType == "custom" exists
+  - It targets Tool scope with matchNames containing "Send message to channel"
+  - It has a non-empty rules array, each rule has a $ruleType discriminator
+  - It has a UUID id, a $actionType set on action
 """
 
 import json
@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(os.getcwd()) / "WebResearchBriefingSolution" / "WebResearchBriefingAgent"
 AGENT = ROOT / "agent.json"
 
-VALID_SCOPES = {"Agent", "Llm", "Tool"}
+TARGET_TOOL = "Send message to channel"
 
 
 def load(path: Path) -> dict:
@@ -26,33 +26,6 @@ def load(path: Path) -> dict:
         return json.loads(path.read_text())
     except json.JSONDecodeError as e:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
-
-
-def check_structure(g: dict, idx: int) -> None:
-    gid = g.get("id")
-    if not isinstance(gid, str) or "-" not in gid:
-        sys.exit(f"FAIL: guardrail[{idx}].id missing or malformed: {gid!r}")
-
-    action = g.get("action")
-    if not isinstance(action, dict):
-        sys.exit(f"FAIL: guardrail[{idx}].action must be an object, got {action!r}")
-    if not action.get("$actionType"):
-        sys.exit(f"FAIL: guardrail[{idx}].action.$actionType is missing or empty")
-
-    selector = g.get("selector")
-    if not isinstance(selector, dict):
-        sys.exit(f"FAIL: guardrail[{idx}].selector must be an object, got {selector!r}")
-    scopes = selector.get("scopes")
-    if not isinstance(scopes, list) or len(scopes) == 0:
-        sys.exit(
-            f"FAIL: guardrail[{idx}].selector.scopes must be a non-empty array, got {scopes!r}"
-        )
-    invalid = [s for s in scopes if s not in VALID_SCOPES]
-    if invalid:
-        sys.exit(
-            f"FAIL: guardrail[{idx}].selector.scopes contains invalid values {invalid}. "
-            f"Valid PascalCase values: {sorted(VALID_SCOPES)}"
-        )
 
 
 def main() -> None:
@@ -66,34 +39,67 @@ def main() -> None:
         )
     print(f"OK: guardrails array has {len(guardrails)} entry/entries")
 
-    for i, g in enumerate(guardrails):
-        check_structure(g, i)
-    print("OK: all guardrails have valid structure")
-
-    # Every guardrail must include "Llm" in its scopes
-    non_llm = []
-    for i, g in enumerate(guardrails):
-        scopes = (g.get("selector") or {}).get("scopes", [])
-        if "Llm" not in scopes:
-            validator = g.get("validatorType") or g.get("$guardrailType") or "unknown"
-            non_llm.append((i, validator, scopes))
-
-    if non_llm:
-        details = "; ".join(
-            f"guardrail[{i}] validator={v!r} scopes={s}" for i, v, s in non_llm
-        )
+    # Find custom guardrails
+    custom = [g for g in guardrails if g.get("$guardrailType") == "custom"]
+    if not custom:
+        types = [(g.get("$guardrailType"), g.get("validatorType")) for g in guardrails]
         sys.exit(
-            f"FAIL: {len(non_llm)} guardrail(s) do not include 'Llm' in scopes "
-            f"(expected Llm-scope-only recommendations). {details}"
+            f'FAIL: no guardrail with $guardrailType == "custom" found. Got: {types}'
         )
-    print("OK: all guardrails include 'Llm' in selector.scopes")
+    print(f"OK: found {len(custom)} custom guardrail(s)")
 
-    validators = [
-        g.get("validatorType") or g.get("$guardrailType")
-        for g in guardrails
-    ]
-    print(f"OK: validators present: {validators}")
-    print("OK: scoped guardrail recommendation check passed")
+    # Find one targeting the Slack tool
+    slack_guards = []
+    for g in custom:
+        match_names = (g.get("selector") or {}).get("matchNames", [])
+        if TARGET_TOOL in match_names:
+            slack_guards.append(g)
+
+    if not slack_guards:
+        all_match_names = [
+            (g.get("selector") or {}).get("matchNames", []) for g in custom
+        ]
+        sys.exit(
+            f'FAIL: no custom guardrail targets "{TARGET_TOOL}". '
+            f"matchNames found across custom guardrails: {all_match_names}"
+        )
+    g = slack_guards[0]
+    print(f'OK: custom guardrail targets "{TARGET_TOOL}"')
+
+    # UUID id
+    gid = g.get("id")
+    if not isinstance(gid, str) or "-" not in gid:
+        sys.exit(f"FAIL: guardrail.id missing or malformed: {gid!r}")
+    print(f"OK: guardrail id is a UUID: {gid}")
+
+    # action.$actionType
+    action = g.get("action")
+    if not isinstance(action, dict) or not action.get("$actionType"):
+        sys.exit(f"FAIL: guardrail.action.$actionType missing. action={action!r}")
+    print(f"OK: action.$actionType = {action['$actionType']!r}")
+
+    # selector.scopes contains "Tool"
+    scopes = (g.get("selector") or {}).get("scopes", [])
+    if "Tool" not in scopes:
+        sys.exit(
+            f'FAIL: guardrail selector.scopes must contain "Tool", got {scopes!r}'
+        )
+    print(f"OK: selector.scopes includes 'Tool': {scopes}")
+
+    # rules array
+    rules = g.get("rules")
+    if not isinstance(rules, list) or len(rules) == 0:
+        sys.exit(
+            f"FAIL: guardrail.rules must be a non-empty array, got {rules!r}"
+        )
+    for i, rule in enumerate(rules):
+        if not rule.get("$ruleType"):
+            sys.exit(
+                f"FAIL: rules[{i}] missing $ruleType discriminator. rule={rule!r}"
+            )
+    print(f"OK: rules array has {len(rules)} rule(s), all have $ruleType")
+
+    print("OK: custom tool-scoped guardrail check passed")
 
 
 if __name__ == "__main__":

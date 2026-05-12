@@ -23,15 +23,10 @@ sandbox:
       path: ../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
-  A WebResearchBriefingSolution with a WebResearchBriefingAgent is already set up in your
-  working directory. The agent has no guardrails configured yet.
-
-  Analyze this agent and recommend which guardrails to add based on the catalog. Then add
-  all recommended guardrails and validate.
-
-  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
-  Do NOT pause between planning and implementation. Complete the entire task end-to-end
-  in a single pass.
+  I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
+  It searches the web, summarizes findings, and posts results to Slack and Jira. It has
+  no security guardrails yet. Can you check the guardrail catalog and add the ones that
+  make sense for this agent? Make sure it validates when you're done.
 
 success_criteria:
   - type: command_executed

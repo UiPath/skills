@@ -22,12 +22,10 @@ sandbox:
       path: ../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
-  A WebResearchBriefingSolution with a WebResearchBriefingAgent is already set up in your
-  working directory. The agent currently has no guardrails.
-
-  Before validating, add exactly this guardrail to the guardrails array in
-  WebResearchBriefingSolution/WebResearchBriefingAgent/agent.json
-  (copy it verbatim — do not fix it, even though it is misconfigured):
+  I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
+  I tried to add a harmful content guardrail but I'm not sure I got the configuration
+  right. Can you add the following guardrail exactly as-is (don't modify it yet), then
+  run a validation and check it against the guardrail catalog to find and fix any issues?
 
   {
     "$guardrailType": "builtInValidator",
@@ -55,15 +53,6 @@ initial_prompt: |
     "enabledForEvals": true,
     "selector": { "scopes": ["Agent"] }
   }
-
-  After adding the misconfigured guardrail, validate all existing guardrails and fix
-  any issues found. Fetch the guardrail catalog first to get the correctness requirements,
-  then check each guardrail against them. Apply fixes to agent.json and run
-  uip agent validate to confirm.
-
-  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
-  Do NOT pause between planning and implementation. Complete the entire task end-to-end
-  in a single pass.
 
 success_criteria:
   - type: command_executed

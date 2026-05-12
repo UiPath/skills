@@ -1,9 +1,10 @@
 task_id: skill-agent-guardrail-recommend-scoped
 description: >
-  Scoped guardrail recommendation: a pre-built Web Research Briefing Agent is seeded with
-  no guardrails. Recommend guardrails specifically for the Llm scope only. Verifies that
-  catalog and guardrails list are fetched, and all added guardrails target the Llm scope
-  (no Agent-only or Tool-only guardrails are added).
+  Tool-scoped deterministic guardrail: a pre-built Web Research Briefing Agent is seeded
+  with no guardrails. Add a custom (deterministic) guardrail for the "Send message to
+  channel" (Slack) tool that blocks posts containing forbidden terms before they are sent.
+  Verifies that the catalog is fetched, a custom guardrail is written with Tool scope and
+  matchNames targeting "Send message to channel", and the guardrail has valid rules.
 tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
@@ -21,31 +22,17 @@ sandbox:
       path: ../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
-  A WebResearchBriefingSolution with a WebResearchBriefingAgent is already set up in your
-  working directory. The agent has no guardrails configured yet.
-
-  Recommend and add guardrails specifically for the Llm scope only. Only add guardrails
-  that include the Llm scope — do not add Agent-scope-only or Tool-scope-only guardrails.
-  Fetch the catalog and the guardrails list first, then filter recommendations to
-  Llm-compatible validators.
-
-  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
-  Do NOT pause between planning and implementation. Complete the entire task end-to-end
-  in a single pass.
+  I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
+  I want to make sure it never posts anything marked CONFIDENTIAL to Slack. Can you add
+  a guardrail that blocks the "Send message to channel" tool when the message contains
+  the word CONFIDENTIAL? Use the guardrail catalog to figure out the right guardrail type
+  and configuration, then validate when done.
 
 success_criteria:
   - type: command_executed
     description: "Agent fetched the guardrail catalog"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent fetched the guardrails list"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+guardrails\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -59,7 +46,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "All added guardrails target Llm scope and have valid structure"
+    description: "Custom guardrail targets Send message to channel with valid rules"
     command: "python3 $TASK_DIR/check_guardrail_recommend_scoped.py"
     timeout: 30
     expected_exit_code: 0
