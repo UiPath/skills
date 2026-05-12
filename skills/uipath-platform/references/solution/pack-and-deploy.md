@@ -101,8 +101,8 @@ Key options:
 | `--package-name <name>` | Published solution package name (required) | -- |
 | `--package-version <version>` | Package version to deploy (required) | -- |
 | `--folder-name <name>` | New Orchestrator folder to create (required) | -- |
-| `--folder-path <path>` | Parent folder under which the new folder is created | -- |
-| `--folder-key <key>` | Parent folder key (GUID, alternative to `--folder-path`) | -- |
+| `--parent-folder-path <path>` | Parent folder under which the new folder is created | -- |
+| `--parent-folder-key <key>` | Parent folder key (GUID, alternative to `--parent-folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
 | `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
@@ -221,7 +221,7 @@ Pass the customized config file to `deploy run`:
 ```bash
 uip solution deploy run -n "InvoiceAutomation-Prod" \
   --package-name "MySolution" --package-version "2.0.0" \
-  --folder-name "ProdFolder" --folder-path "Production" \
+  --folder-name "ProdFolder" --parent-folder-path "Production" \
   --config-file config.json --output json
 ```
 
@@ -291,11 +291,11 @@ These are different commands with different destinations:
 
 ### `deploy run` Creates a New Folder
 
-`--folder-name` specifies a folder to **create**, not an existing folder to deploy into. If the folder already exists, deployment will fail. Use `--folder-path` to set the parent folder where the new folder is created.
+`--folder-name` specifies a folder to **create**, not an existing folder to deploy into. If the folder already exists, deployment will fail. Use `--parent-folder-path` to set the parent folder where the new folder is created.
 
-### `--folder-path` is the Parent
+### `--parent-folder-path` is the Parent
 
-On `deploy run`, `--folder-path` is the **parent** folder, not the deployment folder itself. The deployment folder is `--folder-name`, created inside `--folder-path`. To produce a nested layout like `Shared/Nica/Solution`, pre-create `Shared/Nica` (or use a previous deploy to make it) and pass `--folder-path "Shared/Nica" --folder-name "Solution"`.
+On `deploy run`, `--parent-folder-path` is the **parent** folder, not the deployment folder itself. The deployment folder is `--folder-name`, created inside `--parent-folder-path`. To produce a nested layout like `Shared/Nica/Solution`, pre-create `Shared/Nica` (or use a previous deploy to make it) and pass `--parent-folder-path "Shared/Nica" --folder-name "Solution"`.
 
 ### Config `link` Connects to Existing Resources
 

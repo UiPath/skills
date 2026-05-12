@@ -2,7 +2,7 @@
 
 Monitor robot sessions, check runtime availability, toggle debug mode, and manage maintenance windows.
 
-> For full option details on any command, use `--help` (e.g., `uip or sessions attended --help`)
+> For full option details on any command, use `--help` (e.g., `uip or sessions attended list --help`)
 
 ## When to Use
 
@@ -34,13 +34,13 @@ This shows runtime capacity per type: total slots, connected machines, and avail
 View attended robot sessions (human-interactive robots via UiPath Assistant):
 
 ```bash
-uip or sessions attended --output json
+uip or sessions attended list --output json
 
 # Filter by folder
-uip or sessions attended --folder-path "Finance" --output json
+uip or sessions attended list --folder-path "Finance" --output json
 
 # Filter by state
-uip or sessions attended --state Available --output json
+uip or sessions attended list --state Available --output json
 ```
 
 Session states: `Available`, `Busy`, `Disconnected`, `Unknown`.
@@ -50,10 +50,10 @@ Session states: `Available`, `Busy`, `Disconnected`, `Unknown`.
 View unattended robot sessions (autonomous execution robots):
 
 ```bash
-uip or sessions unattended --output json
+uip or sessions unattended list --output json
 
 # Filter by folder and runtime type
-uip or sessions unattended \
+uip or sessions unattended list \
   --folder-path "Production" \
   --runtime-type Unattended \
   --output json
@@ -64,10 +64,10 @@ uip or sessions unattended \
 View all sessions on a specific machine:
 
 ```bash
-uip or sessions machines <machine-key> --output json
+uip or sessions machines list <machine-key> --output json
 
 # Scoped to a folder
-uip or sessions machines <machine-key> \
+uip or sessions machines list <machine-key> \
   --folder-path "Production" --output json
 ```
 
@@ -154,7 +154,7 @@ Check runtime availability, inspect sessions, enable debug mode for troubleshoot
 uip or folders runtimes <folder-key> --output json
 
 # 2. List unattended sessions to find the target robot
-uip or sessions unattended \
+uip or sessions unattended list \
   --folder-path "Production" --output json
 # -> Note the session Id for the robot you need to debug
 

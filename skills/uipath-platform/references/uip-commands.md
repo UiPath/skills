@@ -37,12 +37,12 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 |---|---|---|
 | **Folders** | `list [--all]`, `get`, `create`, `edit`, `delete`, `move`, `runtimes` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Jobs** | `list`, `get`, `start`, `stop`, `restart`, `resume`, `logs [--export]`, `traces`, `healing-data`, `history` | [Run Jobs](orchestrator/run-jobs.md) |
-| **Processes** | `list`, `get`, `create`, `edit`, `update-version`, `rollback` | [Run Jobs](orchestrator/run-jobs.md) |
+| **Processes** | `list`, `get`, `resources`, `version-history`, `create`, `edit`, `update-version`, `rollback`, `delete` | [Run Jobs](orchestrator/run-jobs.md) |
 | **Packages** | `list`, `get`, `versions`, `entry-points`, `upload`, `download` | [Run Jobs](orchestrator/run-jobs.md) |
 | **Machines** | `list`, `get`, `create`, `edit`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `edit`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Roles** | `list`, `permissions`, `get`, `create`, `edit`, `delete`, `users list`, `users set`, `user-roles list`, `user-permissions list`, `assign` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Sessions** | `attended`, `unattended`, `machines`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](orchestrator/manage-sessions.md) |
+| **Sessions** | `attended list`, `unattended list`, `machines list <machine-key>`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](orchestrator/manage-sessions.md) |
 | **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Calendars** | `list`, `get`, `create`, `update`, `delete` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Licenses** | `list --type`, `toggle`, `info` | [Setup Environment](orchestrator/setup-environment.md) |
@@ -76,13 +76,13 @@ Create, pack, publish, and deploy solutions. See [`uipath-solution`](solution/so
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Lifecycle** | `new`, `delete`, `upload` | [Develop Solution](solution/develop-solution.md) |
-| **Project** | `add`, `remove`, `import` | [Develop Solution](solution/develop-solution.md) |
+| **Lifecycle** | `new`, `delete`, `upload`, `download` | [Develop Solution](solution/develop-solution.md) |
+| **Project** | `add`, `remove`, `import`, `list` | [Develop Solution](solution/develop-solution.md) |
 | **Resource** | `list`, `refresh`, `get` | [Develop Solution](solution/develop-solution.md) |
 | **Pack/Publish** | `pack`, `publish` | [Pack & Deploy](solution/pack-and-deploy.md) |
 | **Deploy** | `run`, `status`, `list`, `activate`, `uninstall` | [Pack & Deploy](solution/pack-and-deploy.md) |
 | **Deploy Config** | `config get`, `config set`, `config link`, `config unlink` | [Pack & Deploy](solution/pack-and-deploy.md) |
-| **Packages** | `list`, `delete` | [Activate & Manage](solution/activate-and-manage.md) |
+| **Packages** | `list`, `delete`, `download` | [Activate & Manage](solution/activate-and-manage.md) |
 
 ---
 
