@@ -253,7 +253,7 @@ uip or packages entry-points "InvoiceProcessor:1.0.0" --output json
 
 uip or processes create --name "InvoiceProcessor" \
   --package-key "InvoiceProcessor" --package-version "1.0.0" \
-  --folder-path "Finance" --runtime-type Unattended --job-priority Normal \
+  --folder-path "Finance" --job-priority Normal \
   --output json
 
 uip or jobs start <process-key> --folder-path "Finance" \

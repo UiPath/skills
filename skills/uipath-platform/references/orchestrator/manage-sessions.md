@@ -180,9 +180,9 @@ uip or sessions delete-inactive --output json
 
 Sessions are tenant-wide by default. Add `--folder-path` to scope results to a specific folder. This applies to:
 
-- `list-attended-sessions`
-- `list-unattended-sessions`
-- `list-machines-sessions`
+- `sessions attended list`
+- `sessions unattended list`
+- `sessions machines list`
 
 Without `--folder-path`, you see all sessions across the tenant (requires appropriate permissions).
 

@@ -72,7 +72,6 @@ three trigger types.
 
 Additional options:
 - `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then flip them on later via `triggers update <key> --enabled`.
-- `--calendar-key` — skip holidays, from `uip or calendars list`.
 - `--stop-strategy <SoftStop|Kill>` — how to stop running jobs when the next firing happens. `SoftStop` requests the workflow to stop cleanly; `Kill` terminates the runtime process.
 - `--kill-process-expression <cron>` — when `--stop-strategy=Kill`, this 6-field Quartz cron schedules **when** the kill is enforced if the workflow ignores the soft-stop request. Without it, Kill mode waits indefinitely.
 - `--input-arguments <json>` — JSON-encoded input arguments map.
