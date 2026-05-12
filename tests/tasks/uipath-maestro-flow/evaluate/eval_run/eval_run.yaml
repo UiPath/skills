@@ -11,9 +11,10 @@ description: >
   uipath-maestro-flow skill.
 tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute]
 skip: true
-# Blocked until `uip maestro flow eval` is available in the public CLI used by
-# CI. The PR smoke workflow currently installs public @uipath/cli@latest
-# (0.9.1), which does not expose Flow eval commands.
+# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
+# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
+# under `maestro flow`). Re-enable once a release exposes the Flow eval
+# surface to the public registry used by CI. See MST-9675.
 
 agent:
   type: claude-code
