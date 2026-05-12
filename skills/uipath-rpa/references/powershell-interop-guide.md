@@ -22,7 +22,7 @@ For SharePoint REST, HTTP uploads, JSON parsing, file mangling — write a coded
 |----------|------|-------|
 | `CommandText` | `InArgument<string>` | Required. Script body or single command. |
 | `IsScript` | `InArgument<bool>` | `true` → multi-line script. `false` → single cmdlet invocation. |
-| `Parameters` | typed collection | Named bindings passed in. Verify the element type via `uip rpa get-default-activity-xaml --activity-class-name "UiPath.Core.Activities.InvokePowerShell\`1"`. |
+| `Parameters` | typed collection | Named bindings passed in. Verify the element type via `uip rpa activities get-default-xaml --activity-class-name "UiPath.Core.Activities.InvokePowerShell\`1"`. |
 | `Input` | `InArgument<IEnumerable>` | Pipeline input (`$input` inside the script). |
 | `Output` | `OutArgument<IEnumerable<T>>` | Collected results. `T` is the activity's generic type argument (e.g. `PSObject`, `string`). |
 | `PowerShellProcess` | enum | `WindowsPowerShell32` / `WindowsPowerShell64` / `PowerShellCore`. Pin the runtime explicitly. |
@@ -38,7 +38,7 @@ For SharePoint REST, HTTP uploads, JSON parsing, file mangling — write a coded
     Output="[psOutput]" />
 ```
 
-For typed parameter bindings, use the `Parameters` collection instead of building a command line — no string concatenation, no quote escaping. Look up the element type with `get-default-activity-xaml` before authoring.
+For typed parameter bindings, use the `Parameters` collection instead of building a command line — no string concatenation, no quote escaping. Look up the element type with `activities get-default-xaml` before authoring.
 
 ### Choosing `PowerShellProcess`
 

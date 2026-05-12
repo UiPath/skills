@@ -35,7 +35,7 @@ Which properties exist on a given activity, the `<Activity>.md` lookup order, an
 - `InArgument<Object>` (e.g. `LogMessage.Message`) — writing `<InArgument x:TypeArguments="x:String">` instead of `x:Object` fails validation.
 - `OutArgument<T>` writeback — attribute form (`Result="[var]"`) fails with `Failed to create a '<Prop>' from the text '...'`. Use child element with `<CSharpReference>`.
 - `OutArgument` / `InOutArgument` on `InvokeWorkflowFile.Arguments` — must be a variable reference (lvalue), not a constructed expression. See [§ OutArgument Bindings Must Be Variable References](common-pitfalls.md#outargument-bindings-must-be-variable-references).
-- Empty `<InArgument x:TypeArguments="x:String"></InArgument>` — passes per-file `get-errors` but fails project `analyze` with `Value for a required activity argument 'Value' was not supplied`. Use `[String.Empty]`. See [§ Empty Argument Values](common-pitfalls.md#empty-argument-values).
+- Empty `<InArgument x:TypeArguments="x:String"></InArgument>` — passes per-file `validate` but fails project `analyze` with `Value for a required activity argument 'Value' was not supplied`. Use `[String.Empty]`. See [§ Empty Argument Values](common-pitfalls.md#empty-argument-values).
 - Plain `string` (e.g. `InvokeWorkflowFile.WorkflowFileName`) — wrap in `[brackets]` or `&quot;...&quot;` and Studio silently breaks path resolution. Use the literal path. See [§ WorkflowFileName Must Be a Plain String Path](common-pitfalls.md#workflowfilename-must-be-a-plain-string-path).
 
 ## Recipes
