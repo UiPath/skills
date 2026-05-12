@@ -1,0 +1,53 @@
+task_id: mcp-servers-slack-create
+description: >
+  Wrap Slack `send_message_to_channel_v2` Create as an MCP tool on `test-mcp-skill`.
+  LLM picks channel and provides message text; `send_as` baked with designTimeLookups.
+tags: [uipath-mcp-servers, agenthub, is-activity, designtimelookups]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write"]
+  max_turns: 10
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+initial_prompt: |
+  Use the mocked `uip` CLI.
+
+  TASK: Add a Slack 'Send Message to Channel' tool to `test-mcp-skill`.
+  Use the Slack connection in personal workspace. LLM should pick the channel
+  and provide message text. Use --dry-run on the final create call.
+
+  Refs:
+    - connector key: uipath-salesforce-slack
+    - Slack connection id: conn-mock-slack-01 (in folder-mock-workspace)
+    - MCP server: test-mcp-skill (folder-mock-shared)
+
+  Save: metadata.json, input-schema.json, output-schema.json, create-command.sh,
+  trajectory.md, summary.txt to cwd.
+
+success_criteria:
+  - type: file_contains
+    path: metadata.json
+    includes: ["uipath-salesforce-slack", "send_message_to_channel_v2"]
+  - type: file_contains
+    description: "send_as baked + designTimeLookups populated"
+    path: metadata.json
+    includes: ["send_as", "designTimeLookups", "Bot - bot"]
+  - type: file_contains
+    description: "LLM-facing channel + message fields exposed"
+    path: input-schema.json
+    includes: ["channel", "additionalProperties"]
+  - type: file_contains
+    path: create-command.sh
+    includes: ["--dry-run", "--target-identifier", "conn-mock-slack-01", "--description"]
+
+max_iterations: 1

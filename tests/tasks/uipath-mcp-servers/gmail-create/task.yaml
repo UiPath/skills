@@ -1,0 +1,49 @@
+task_id: mcp-servers-gmail-create
+description: >
+  Wrap Gmail `ApplyGmailLabel` Create as an MCP tool. LLM provides messageId + label
+  id; the addLabelIds reference is exposed at runtime (no lookup needed).
+tags: [uipath-mcp-servers, agenthub, is-activity, array-reference]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write"]
+  max_turns: 10
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+initial_prompt: |
+  Use the mocked `uip` CLI.
+
+  TASK: Add a Gmail 'Apply Label' tool to `test-mcp-skill`. Use the Gmail
+  connection in personal workspace. LLM provides the message ID and label
+  ID. Use --dry-run.
+
+  Refs:
+    - connector: uipath-google-gmail
+    - Gmail connection: conn-mock-gmail-01 (folder-mock-workspace)
+    - MCP server: test-mcp-skill (folder-mock-shared)
+
+  Save: metadata.json, input-schema.json, output-schema.json, create-command.sh,
+  trajectory.md, summary.txt.
+
+success_criteria:
+  - type: file_contains
+    path: metadata.json
+    includes: ["uipath-google-gmail", "ApplyGmailLabel"]
+  - type: file_contains
+    description: "Both fields exposed in inputSchema; staticValues empty (or just buckets)"
+    path: input-schema.json
+    includes: ["addLabelIds", "additionalProperties"]
+  - type: file_contains
+    path: create-command.sh
+    includes: ["--dry-run", "--target-identifier", "conn-mock-gmail-01", "--description"]
+
+max_iterations: 1

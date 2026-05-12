@@ -97,3 +97,6 @@
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+# MCP skill (UiPath AgentHub MCP server tools wrapping IS connector activities)
+/skills/uipath-mcp-servers/ @cosminpaunel
+/tests/tasks/uipath-mcp-servers/ @cosminpaunel

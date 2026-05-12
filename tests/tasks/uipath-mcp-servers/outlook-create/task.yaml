@@ -1,0 +1,53 @@
+task_id: mcp-servers-outlook-create
+description: >
+  Wrap Outlook 365 `ListCalendarEvents` List as an MCP tool on `test-mcp-skill`.
+  Bake outputTimezone with designTimeLookup; LLM provides date range.
+tags: [uipath-mcp-servers, agenthub, is-activity, parameters-only]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write"]
+  max_turns: 10
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+initial_prompt: |
+  Use the mocked `uip` CLI.
+
+  TASK: Add an Outlook 'List Calendar Events' tool to `test-mcp-skill`. Use
+  the Outlook 365 connection in personal workspace. Bake the output timezone
+  to a sensible value (e.g. UTC). LLM provides the date range. Use --dry-run.
+
+  Refs:
+    - connector key: uipath-microsoft-outlook365
+    - Outlook connection id: conn-mock-outlook-01 (in folder-mock-workspace)
+    - MCP server: test-mcp-skill (folder-mock-shared)
+
+  Save: metadata.json, input-schema.json, output-schema.json, create-command.sh,
+  trajectory.md, summary.txt.
+
+success_criteria:
+  - type: file_contains
+    path: metadata.json
+    includes: ["uipath-microsoft-outlook365", "ListCalendarEvents"]
+  - type: file_contains
+    description: "outputTimezone baked + label populated"
+    path: metadata.json
+    includes: ["outputTimezone", "designTimeLookups"]
+  - type: file_contains
+    description: "input schema exposes date-range fields"
+    path: input-schema.json
+    includes: ["from", "additionalProperties"]
+  - type: file_contains
+    path: create-command.sh
+    includes: ["--dry-run", "--target-identifier", "conn-mock-outlook-01", "--description"]
+
+max_iterations: 1

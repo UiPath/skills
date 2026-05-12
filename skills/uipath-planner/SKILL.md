@@ -33,6 +33,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — follows plan `Solution scope` (SW or local); `uipath-platform` for Orchestrator |
 | `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles), resources (assets, queues, storage buckets + bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), solution lifecycle (pack/publish/deploy/activate), traces | Yes (auth hub) | **Yes** — the deploy destination |
+| `uipath-mcp-servers` | UiPath AgentHub MCP server tools wrapping Integration Service connector activities (Jira, Slack, Outlook, Salesforce, etc.). Create/list/configure tools on a `uipath`-type MCP server via `uip agenthub mcp`/`mcp-tools`. NOT for FastMCP / Python `mcp` SDK / `uipath-mcp-python` server-implementation work. | Yes (`uip login`) | **Yes** — `mcp-tools create-is-activity` posts directly to AgentHub |
 | `uipath-interact` | Inspect and interact with live desktop/browser UI: click, type, screenshot, inspect. For app launching, ad-hoc exploration, post-build verification. Does NOT author workflows or generate selectors — that's `uipath-rpa`. | No auth | **No** |
 
 ## RPA skill routing
@@ -97,6 +98,7 @@ Resolve project type on your own. Stop at the first match:
 
 1. **User explicitly named a mode** ("xaml workflow", "coded workflow", "C# workflow", ".cs file", "low-code") → honor it. Record `Project type: XAML` or `Project type: C# coded` in the plan header.
 2. **Keyword signals** (look for these in the user's request, but do not echo them as labels) →
+   - "MCP server" + a slug-like name (`inbox-mcp`, `support-mcp`, etc.) + external SaaS (Jira, Slack, Outlook, Salesforce, …) → **AgentHub MCP tool** (route to `uipath-mcp-servers`). Distinguish from FastMCP / Python `mcp` SDK work — the slug + UiPath-tenant context disambiguates.
    - "agent", "AI agent", "agentic", "LLM", "LangGraph", "LlamaIndex", "OpenAI Agents" → **AI Agent**
    - "flow", "orchestrate multiple automations", `.flow` → **Flow**
    - "web app", "app", "React", "Angular", "Vue", `.uipath/` → **Application**

@@ -1,0 +1,18 @@
+{
+  "Result": "Success", "Code": "IsResourcesDescribe",
+  "Data": {
+    "name": "ApplyGmailLabel", "displayName": "Apply Label", "elementKey": "uipath-google-gmail",
+    "operation": { "name": "Create", "path": "/ApplyGmailLabel", "method": "POST" },
+    "parameters": [
+      { "name": "id", "type": "query", "displayName": "Message ID", "required": true, "dataType": "string" }
+    ],
+    "requestFields": [
+      { "name": "addLabelIds[*]", "displayName": "Labels to add", "required": true, "type": "array",
+        "reference": { "objectName": "labels", "lookupNames": ["name"], "lookupValue": "id" } }
+    ],
+    "responseFields": [
+      { "name": "id",       "type": "string", "displayName": "Message ID" },
+      { "name": "labelIds", "type": "array",  "displayName": "Applied label IDs" }
+    ]
+  }
+}
