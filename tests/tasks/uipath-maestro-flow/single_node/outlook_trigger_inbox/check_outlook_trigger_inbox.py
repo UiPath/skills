@@ -94,7 +94,7 @@ def _find_trigger_node(flow: dict) -> dict:
 
 
 def _extract_list_items(resp: dict) -> list[dict]:
-    """execute list returns Data shaped as either {items: [...], Pagination: ...}
+    """resources run list returns Data shaped as either {items: [...], Pagination: ...}
     or a plain list. Handle both."""
     data = resp.get("Data", [])
     if isinstance(data, list):
@@ -126,13 +126,13 @@ def check_folder_id_fresh():
     conn_id, _folder_key, _conn_name = _find_default_outlook_connection()
     live = _uip_json(
         [
-            "uip", "is", "resources", "execute", "list", CONNECTOR_KEY, "MailFolder",
+            "uip", "is", "resources", "run", "list", CONNECTOR_KEY, "MailFolder",
             "--connection-id", conn_id, "--output", "json",
         ]
     )
     live_ids = {f.get("id") for f in _extract_list_items(live)}
     if not live_ids:
-        sys.exit("FAIL: execute list MailFolder returned no folders on the bound connection")
+        sys.exit("FAIL: resources run list MailFolder returned no folders on the bound connection")
 
     if flow_folder_id not in live_ids:
         # Truncate the IDs in the error to avoid leaking full Exchange IDs while
