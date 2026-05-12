@@ -114,7 +114,8 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Pack, publish, deploy solutions** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
 | **Activate / uninstall deployments** | [references/solution/activate-and-manage.md](references/solution/activate-and-manage.md) |
 | **Set up CI/CD pipeline** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
-| **Debug LLM/agent traces** | [references/traces.md](references/traces.md) |
+| **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
+| **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
 | **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
@@ -281,7 +282,8 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
 - **[Resources](references/resources/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
 - **[Solutions](references/solution/solution.md)** — Solution lifecycle: create, pack, publish, deploy
-- **[Traces](references/traces.md)** — LLM execution trace observability
+- **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
+- **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
 

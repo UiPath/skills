@@ -45,5 +45,5 @@ uip traces spans get --job-key <job-key> --output json
 
 ## Related
 
-- [Run Jobs](orchestrator/run-jobs.md) — `uip or jobs traces` for trace discovery
+- [Run Jobs](../orchestrator/run-jobs.md) — `uip or jobs traces` for trace discovery
 - `uip traces spans get --help` for full option details

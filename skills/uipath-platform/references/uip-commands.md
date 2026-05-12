@@ -86,6 +86,22 @@ Create, pack, publish, and deploy solutions. See [`uipath-solution`](solution/so
 
 ---
 
+## Traces (`uip traces`)
+
+LLM execution trace observability and feedback annotation. See [traces/traces.md](traces/traces.md) (spans) and [traces/feedback.md](traces/feedback.md) (feedback).
+
+| Command | Description |
+|---|---|
+| `uip traces spans get [trace-id]` | Get spans by trace ID or `--job-key` |
+| `uip traces feedback create` | Add positive/negative feedback to a trace |
+| `uip traces feedback get <id>` | Fetch one feedback record |
+| `uip traces feedback list` | List feedback for a trace |
+| `uip traces feedback list detailed` | Cross-trace feedback with span context |
+| `uip traces feedback update <id>` | Change sentiment, comment, or categories |
+| `uip traces feedback delete <id>` | Remove feedback |
+
+---
+
 ## Other Tool Groups
 
 | Group | Command | Description |
