@@ -120,7 +120,7 @@ Inside `If_1`'s `when`, use `$currentItem` (with the `$` literal prefix — NOT 
 
 ### 4. ForEach inside ForEach (nested iteration)
 
-Outer and inner loops MUST use distinct iterator/index names.
+Outer and inner loops MUST use distinct iterator/index names — either semantic (`outerItem` / `innerItem`, `customer` / `order`) or incremental (`item1` / `item2`, `currentItem` / `currentItem2`). The constraint is "not the same string", not "different concepts".
 
 ```
 For_Each_1 (each: outerItem, in: $workflow.input.matrix, at: outerIdx)

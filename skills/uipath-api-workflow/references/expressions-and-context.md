@@ -11,7 +11,7 @@ API workflows use **JavaScript** for all expressions (`evaluate.language: "javas
 | `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task. | Per-task |
 | `$context` | Mutable shared state: `$context.variables.<name>`, `$context.outputs.<TaskName>` | Workflow run |
 | `$output` | The current task's raw output. | This task only |
-| Loop bindings | `${$currentItem}`, `${$currentItemIndex}` (note the `$` prefix — `for.each: "currentItem"` binds the global as `$currentItem`, with the `$` literal in the identifier name) | Inside the loop body |
+| Loop bindings | Whatever name you set in `for.each` / `for.at`, prefixed with `$`. Examples: `for.each: "currentItem"` → `${$currentItem}`, `for.each: "customer"` → `${$customer}`, `for.at: "idx"` → `${$idx}`. The `$` is a literal character in the identifier — the unprefixed name is NOT bound. | Inside the loop body |
 | Catch binding | `${$error}` — `catch.as: "error"` binds the global as `$error` (note the `$` prefix, same convention as loop iterators). Reference fields like `${$error.title}` / `${$error.detail}` / `${$error.originatingTaskName}`. | Inside `catch.do` |
 
 > ⚠️ **Critical:** `$input` inside a JS_Invoke that runs *after* other tasks does NOT contain the workflow's input arguments — it contains the previous task's output. To read workflow inputs reliably from anywhere, use `$workflow.input.<name>`.
