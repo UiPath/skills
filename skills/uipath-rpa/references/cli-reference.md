@@ -184,12 +184,14 @@ uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command St
 | `--command` | No | `StartExecution` (default) or `StartDebugging`. **Use `StartDebugging` for UI automation workflows** -- it pauses on error instead of tearing down the app, preserving the UI state for selector repair. Other debug commands: `Stop`, `StepInto`, `StepOver`, `StepOut`, `Continue`, `Break`, `ToggleBreakpoint`. |
 | `--input-arguments` | No | JSON string of input arguments |
 | `--log-level` | No | Logging verbosity level |
+| `--profiling` | No | Collect per-activity timings for the run. Only effective on start commands (`StartExecution`, `StartDebugging`, `TestActivity`, `StartDebuggingFromHere`) — silently ignored on stepping/breakpoint commands. Response carries `Profiling.OutputDirectory` when collection succeeds. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance). |
 
-The response is a standard CLI envelope: `{Result: "Success"|"Failure", Code, Data: {runResult: "<json-string>"}, Message?, Instructions?}`. `Data.runResult` is a **JSON string** (not an object) — parse it separately to read the run result, which has exactly three fields:
+The response is a standard CLI envelope: `{Result: "Success"|"Failure", Code, Data: {runResult: "<json-string>"}, Message?, Instructions?}`. `Data.runResult` is a **JSON string** (not an object) — parse it separately to read the run result:
 
 - `Output` — the workflow's own serialized output arguments JSON (`""` for non-`Start*` commands and on debug-command responses). **`Output` carries the workflow's data, not a verdict.**
 - `HasErrors` — `true` iff execution did not complete successfully (compile failure, validation failure, unhandled exception, cancellation, or timeout); `false` otherwise.
 - `ErrorMessage` — formatted error chain when `HasErrors: true`; `null` otherwise.
+- `Profiling` — present only when `--profiling` was passed on a start command **and** profiling collection succeeded. Single field `OutputDirectory` is the absolute path to `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` containing the `*.uistat` files for that run. `null` / omitted otherwise (profiling not requested, run did not reach the executor, or the Studio profile is missing the `EnableProfiling` flag).
 
 Workflow log output (`Log Message` activity, system traces) does NOT appear in `runResult`. Logs are streamed in real time during execution on a separate channel; the result envelope only carries the verdict and the workflow's output data.
 

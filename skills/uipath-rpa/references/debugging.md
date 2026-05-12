@@ -35,6 +35,7 @@ uip rpa run-file --file-path <relative-path> --command <Command> [--input-argume
 | `--input-arguments` | JSON object with project-level input arguments. Only for `StartExecution`, `StartDebugging`, `TestActivity`, and `StartDebuggingFromHere` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--input-variables` | JSON object with workflow-level variable values. Only for `TestActivity` and `StartDebuggingFromHere` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--log-level` | Minimum log level: `Verbose`, `Trace`, `Information` (default), `Warning`, `Error`, `Critical` |
+| `--profiling` | Collect per-activity timings. Only effective on start commands (`StartExecution`, `StartDebugging`, `TestActivity`, `StartDebuggingFromHere`); ignored on stepping / breakpoint commands. Defaults to `false`. See [Profiling Workflow Performance](#profiling-workflow-performance). |
 | `--output` | Output format: `json` (recommended), `table`, `yaml`, `plain` |
 
 ### Debug Commands
@@ -141,6 +142,7 @@ Inside `runResult`:
 | `Output` | `string` | Workflow's serialized output arguments JSON. `""` for non-`Start*` commands and on debug-command responses (`StepOver`, `Continue`, etc.). **Carries the workflow's data, not a verdict.** |
 | `HasErrors` | `bool` | `true` iff execution did not complete with `Succeeded` (compile failure, validation failure, unhandled exception, cancellation, timeout). `false` otherwise. |
 | `ErrorMessage` | `string?` | Formatted error chain when `HasErrors: true`; `null` otherwise. |
+| `Profiling` | `object?` | Present only when `--profiling` was passed on a start command and collection succeeded. Single field `OutputDirectory` — absolute path to the run's `*.uistat` folder. `null` / omitted otherwise. See [Profiling Workflow Performance](#profiling-workflow-performance). |
 
 Workflow log output (`Log Message` activity, system traces) is **streamed in real time** during execution on a separate channel. It is NOT embedded in `runResult`.
 
@@ -311,6 +313,69 @@ uip rpa run-file --file-path "ProcessOrder.xaml" \
 
 ---
 
+## Profiling Workflow Performance
+
+Use `--profiling` on a start command to collect per-activity timings — the same data Studio's **Profile Execution** tool surfaces. The executor writes `*.uistat` files into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `runResult.Profiling.OutputDirectory`. Same folder layout as Studio's own profiling history, so agent-triggered and Studio-triggered runs land side by side.
+
+### When to enable profiling
+
+| Situation | Why |
+|-----------|-----|
+| User reports a slow workflow ("X takes 5 min, was 30 s last week") | Profiling localizes the regression to specific activities instead of the whole workflow |
+| Choosing between two implementations of the same logic | Compare cumulative time across the activities each version uses |
+| A loop body looks expensive but the cost is not obvious | `*.uistat` reports execution count + min/max/avg per activity — flags hot iterations |
+| Pre-production sanity check on a long-running automation | Catches an activity whose individual time looks fine but whose cumulative share is dominant |
+
+Do **not** enable profiling by default. It is opt-in for performance investigations — a normal smoke test (`uip rpa run-file --command StartExecution`) is faster and produces no `.uistat` files to clean up.
+
+### Where the flag is effective
+
+Only start commands collect profiling — `--profiling true` is silently ignored on stepping/breakpoint commands:
+
+| Command | `--profiling` effect |
+|---------|---------------------|
+| `StartExecution` | Collects |
+| `StartDebugging` | Collects |
+| `TestActivity` | Collects (single-activity scope; useful for tuning one activity) |
+| `StartDebuggingFromHere` | Collects (partial workflow from the focused activity onward) |
+| `StepOver` / `StepInto` / `StepOut` / `Continue` / `Break` / `Stop` / `ContinueRetry` / `ContinueIgnore` / `RestartFromTop` / `ToggleBreakpoint` / `ForceSessionEnded` / `Resume` | No-op |
+
+### Reading the result
+
+```bash
+uip rpa run-file --file-path "ProcessOrders.xaml" --command StartExecution --profiling true --output json
+```
+
+Parse `Data.runResult` then inspect:
+
+```jsonc
+{
+  "Output": "{\"orderCount\":42}",
+  "HasErrors": false,
+  "ErrorMessage": null,
+  "Profiling": {
+    "OutputDirectory": "C:\\Users\\<user>\\AppData\\Local\\UiPath\\ProfiledRuns\\142305_2026-05-12_Main.xaml_ProcessOrders"
+  }
+}
+```
+
+The directory contains `*.uistat` files — one per workflow file executed in the run (top-level entry point plus every invoked workflow). Each row reports an activity with execution count, min / max / average / cumulative duration, and the cumulative percentage of total run time. Focus on:
+
+1. **Activities with the largest cumulative percentage** — the dominant time sinks. Optimize these first.
+2. **High execution count × moderate average duration** — typically loop bodies. Consider batching, caching, or hoisting work out of the loop.
+3. **Wide min/max spread on a UI activity** — flaky selectors or variable target-element resolution; cross-check with the healing-agent log.
+
+### Caveats
+
+- `Profiling` field is **absent** if the run did not reach the executor (compile failure surfaces in `ErrorMessage` instead) or if the Studio profile is missing the `EnableProfiling` flag. Treat the field as optional — never assume it is populated.
+- Numbers from a `StartDebugging` profile run differ from `StartExecution` — the debugger adds tracking overhead. For perf comparisons, always use `StartExecution`.
+- Files are not auto-cleaned. After an investigation, manually clear `%LOCALAPPDATA%\UiPath\ProfiledRuns\` if disk usage matters.
+- Profiling is per run, not aggregated across runs. To compare two implementations, run each with `--profiling true` separately and diff the `*.uistat` reports.
+
+> **Activity-targeted profiling needs Studio Desktop.** `TestActivity` and `StartDebuggingFromHere` collect profiling fine, but they depend on `focus-activity` — which only runs against Studio Desktop. See [Studio Desktop vs headless](#studio-desktop-vs-headless).
+
+---
+
 ## Reading Debug Output Effectively
 
 Read `runResult` fields in this order. **Verdict comes from the outer `Result` envelope (equivalently inner `HasErrors`) — never from log-entry levels.**
@@ -346,3 +411,4 @@ A practical example — a workflow makes an HTTP request and tries to deserializ
 - **Stop the session when done** — always issue a `Stop` command to cleanly end the debug session. If `Stop` doesn't respond, use `ForceSessionEnded` as a fallback.
 - **Use `--log-level Verbose`** when you need maximum detail about what the workflow is doing between steps.
 - **Remember expression syntax for variables** — when using `TestActivity` or `StartDebuggingFromHere`, string values need VB/C# string literal quotes inside the JSON value (e.g., `"\"hello\""` not `"hello"`).
+- **Reach for `--profiling true` only when investigating performance** — pair it with `StartExecution` for production-like numbers (the debugger adds overhead). Read the response's `Profiling.OutputDirectory`, open the `*.uistat` files, and start with activities holding the largest cumulative percentage. See [Profiling Workflow Performance](#profiling-workflow-performance).
