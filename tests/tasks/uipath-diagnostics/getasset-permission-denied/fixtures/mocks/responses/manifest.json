@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the get-asset-permission-denied playbook signature. Replace with verbatim captures from a real .investigation/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list-current-user --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-7e9d4f2a-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key 7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-7e9d4f2a-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c\" --output json",
+      "file": "or-jobs-get-9f5e4d3c-output-json.json"
+    },
+    {
+      "match": "or jobs get 9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c --output json",
+      "file": "or-jobs-get-9f5e4d3c-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c\" --level Error --output json",
+      "file": "or-jobs-logs-9f5e4d3c-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs 9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c --level Error --output json",
+      "file": "or-jobs-logs-9f5e4d3c-level-error-output-json.json"
+    },
+    {
+      "match": "or assets list --folder-key 7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a --output json",
+      "file": "or-assets-list-folder-key-7e9d4f2a-output-json.json"
+    },
+    {
+      "match": "or assets list --folder-key \"7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a\" --output json",
+      "file": "or-assets-list-folder-key-7e9d4f2a-output-json.json"
+    },
+    {
+      "match": "or users list --output json",
+      "file": "or-users-list-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}
