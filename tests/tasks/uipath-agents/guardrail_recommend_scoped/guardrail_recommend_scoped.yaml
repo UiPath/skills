@@ -1,10 +1,9 @@
 task_id: skill-agent-guardrail-recommend-scoped
 description: >
-  Scoped guardrail recommendation: scaffold a low-code Web Research Briefing Agent
-  (web search, web summary, Slack post, A_Plus_B tools), then recommend guardrails
-  specifically for the Llm scope only. Verifies that catalog and guardrails list are
-  fetched, and all added guardrails target only the Llm scope (no Agent-only or
-  Tool-only guardrails are added).
+  Scoped guardrail recommendation: a pre-built Web Research Briefing Agent is seeded with
+  no guardrails. Recommend guardrails specifically for the Llm scope only. Verifies that
+  catalog and guardrails list are fetched, and all added guardrails target the Llm scope
+  (no Agent-only or Tool-only guardrails are added).
 tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
@@ -17,42 +16,24 @@ agent:
 sandbox:
   driver: tempdir
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
-  Create a UiPath solution "WebBriefSol" containing a low-code agent "WebResearchAgent"
-  with the following configuration:
-  - System prompt: "You are a web research assistant. Research topics from the web and
-    post briefing summaries to Slack. Always cite the number of sources used."
-  - Tools: web_search (built-in), web_summary (built-in), Slack_PostMessage (Integration
-    Service), A_Plus_B (Orchestrator process for adding source counts)
-  - No guardrails initially
+  A WebResearchBriefingSolution with a WebResearchBriefingAgent is already set up in your
+  working directory. The agent has no guardrails configured yet.
 
-  After creating the agent, recommend and add guardrails specifically for the Llm scope
-  only. Only add guardrails that target the Llm scope — do not add Agent-scope or
-  Tool-scope-only guardrails. Fetch the catalog and the guardrails list first, then
-  filter recommendations to Llm-compatible validators.
+  Recommend and add guardrails specifically for the Llm scope only. Only add guardrails
+  that include the Llm scope — do not add Agent-scope-only or Tool-scope-only guardrails.
+  Fetch the catalog and the guardrails list first, then filter recommendations to
+  Llm-compatible validators.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation. Complete the entire task end-to-end
   in a single pass.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created the solution"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent scaffolded the agent"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent fetched the guardrail catalog"
     tool_name: "Bash"
@@ -74,12 +55,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "WebResearchAgent/agent.json was created"
-    path: "WebBriefSol/WebResearchAgent/agent.json"
     weight: 1.5
     pass_threshold: 1.0
 

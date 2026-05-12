@@ -13,7 +13,7 @@ import os
 import sys
 from pathlib import Path
 
-ROOT = Path(os.getcwd()) / "WebBriefSol" / "WebResearchAgent"
+ROOT = Path(os.getcwd()) / "WebResearchBriefingSolution" / "WebResearchBriefingAgent"
 AGENT = ROOT / "agent.json"
 
 

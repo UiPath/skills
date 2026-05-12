@@ -1,11 +1,10 @@
 task_id: skill-agent-guardrail-validate
 description: >
-  Guardrail validation: scaffold a low-code Web Research Briefing Agent (web search,
-  web summary, Slack post, A_Plus_B tools) with a deliberately misconfigured
-  harmful_content guardrail — harmfulContentEntityThresholds has an extra key ("Sexual")
-  that is not in harmfulContentEntities. Then use the skill to validate and fix all
-  issues. Verifies that the catalog is fetched, the misconfiguration is detected and
-  corrected, and the agent validates successfully after the fix.
+  Guardrail validation: a pre-built Web Research Briefing Agent is seeded with no guardrails.
+  Add a deliberately misconfigured harmful_content guardrail (harmfulContentEntityThresholds
+  has an extra key "Sexual" not in harmfulContentEntities), then use the skill to validate
+  and fix all issues. Verifies that the catalog is fetched, the misconfiguration is detected
+  and corrected, and the agent validates successfully after the fix.
 tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
@@ -18,17 +17,17 @@ agent:
 sandbox:
   driver: tempdir
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
-  Create a UiPath solution "WebBriefSol" containing a low-code agent "WebResearchAgent"
-  with the following configuration:
-  - System prompt: "You are a web research assistant. Research topics from the web and
-    post briefing summaries to Slack. Always cite the number of sources used."
-  - Tools: web_search (built-in), web_summary (built-in), Slack_PostMessage (Integration
-    Service), A_Plus_B (Orchestrator process for adding source counts)
+  A WebResearchBriefingSolution with a WebResearchBriefingAgent is already set up in your
+  working directory. The agent currently has no guardrails.
 
-  After scaffolding, add exactly this guardrail to agent.json (copy it verbatim —
-  do not fix it, even though it is misconfigured):
+  Before validating, add exactly this guardrail to the guardrails array in
+  WebResearchBriefingSolution/WebResearchBriefingAgent/agent.json
+  (copy it verbatim — do not fix it, even though it is misconfigured):
 
   {
     "$guardrailType": "builtInValidator",
@@ -68,22 +67,6 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent created the solution"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent scaffolded the agent"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent fetched the guardrail catalog"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
@@ -97,12 +80,6 @@ success_criteria:
     command_pattern: 'uip\s+agent\s+validate'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "WebResearchAgent/agent.json was created"
-    path: "WebBriefSol/WebResearchAgent/agent.json"
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
