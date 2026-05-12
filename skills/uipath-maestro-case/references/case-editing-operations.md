@@ -65,7 +65,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 8. **Every stage has at least one inbound edge.** Orphan stages don't execute. When adding a stage, also plan its inbound edge.
 
-9. **One task per lane (layout convention).** Increment `laneIndex` per task within a stage starting at 0. Expand `stageNode.data.tasks` to cover the lane index before pushing.
+9. **One task per lane (default).** Increment `laneIndex` per task within a stage starting at 0. Expand `stageNode.data.tasks` to cover the lane index before pushing. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `laneIndex` (shared lane = parallel siblings inside the sequential group, semantic). Solo runs-sequentially tasks still get own lane.
 
 10. **Task `elementId` = `${stageId}-${taskId}`.** Compute and write this composite string on every new task.
 

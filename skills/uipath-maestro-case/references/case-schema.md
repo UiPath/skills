@@ -240,7 +240,7 @@ Standard workflow stage. Contains tasks.
 | `parentElement` | `{id,type}` | Always `{ id: "root", type: schema.root.type }` |
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
-| `tasks` | Task[][] | 2D array: `tasks[lane][index]`. The skill places one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns. Lane has no execution meaning — sequencing and parallelism live in task-entry conditions. Empty array `[]` when no tasks yet. |
+| `tasks` | Task[][] | 2D array: `tasks[lane][index]`. Default: one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns; lane is layout-only, sequencing comes from task-entry conditions. Exception: tasks in a `runs-sequentially` group that should execute in parallel share the same lane — there, shared lane carries execution semantics (parallel siblings inside the sequential group). Empty array `[]` when no tasks yet. |
 | `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
 | `entryConditions` | EntryCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
@@ -484,7 +484,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |
 | `description` | string? | Task description |
 
-**Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. The skill convention is one task per lane.
+**Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. Default convention: one task per lane. Exception: within a `runs-sequentially` group, tasks that should run in parallel share the same lane (shared lane = parallel siblings, carries execution semantics).
 
 **Task type catalog** (full shape in each plugin's `impl-json.md`):
 

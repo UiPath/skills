@@ -171,7 +171,7 @@ Generate the task skeleton:
 }
 ```
 
-Append the task to the target stage's `tasks[]` array in its own task set (one task per lane).
+Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
 
 ### Step 9 — Append root-level bindings
 
