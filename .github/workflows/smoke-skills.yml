@@ -216,10 +216,8 @@ jobs:
         run: |
           npm install -g \
             --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@1.0.0
+            @uipath/cli@latest
           uip --version
-        # Pinned to 1.0.0: 1.0.1 ships a broken postinstall that references
-        # tanstack_runner.js which is not included in the package tarball.
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
       # smoke tasks (orchestrator / integration-service / data-fabric / ...)
