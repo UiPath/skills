@@ -46,7 +46,10 @@ BASELINES_PCT: dict[str, int] = {
 DROP_PP = 15
 
 
-def _build_task_yaml(skill: str, dataset: Path, threshold: float) -> str:
+def _build_task_yaml(skill: str, dataset: Path) -> str:
+    # Threshold gating lives in Python (see main) — keeping it out of the
+    # YAML avoids two enforcement points with potentially different
+    # comparison semantics at the boundary.
     return f"""\
 task_id: skill-activation-gate-{skill}
 description: Single-skill activation gate (positives only) for {skill}
@@ -67,7 +70,6 @@ success_criteria:
     description: "{skill} activation"
     skill_name: {skill}
     expected_skill: "${{row.expected_skill}}"
-    suite_thresholds: {{recall.yes: {threshold:.4f}}}
 """
 
 
@@ -93,10 +95,10 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix=f"activation-gate-{skill}-") as tmp:
         tmp_path = Path(tmp)
         task_yaml = tmp_path / "gate.yaml"
-        task_yaml.write_text(_build_task_yaml(skill, dataset, threshold), encoding="utf-8")
+        task_yaml.write_text(_build_task_yaml(skill, dataset), encoding="utf-8")
         run_dir = tmp_path / "run"
 
-        subprocess.run(
+        result = subprocess.run(
             [
                 "coder-eval", "run", str(task_yaml),
                 "-e", "tests/experiments/activation.yaml",
@@ -105,6 +107,12 @@ def main() -> int:
             ],
             cwd=repo_root, check=False,
         )
+        if result.returncode != 0:
+            print(
+                f"ERROR: coder-eval exited with code {result.returncode}",
+                file=sys.stderr,
+            )
+            return 2
 
         suite_json = run_dir / "default" / f"skill-activation-gate-{skill}" / "suite.json"
         if not suite_json.is_file():

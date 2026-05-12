@@ -18,6 +18,9 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   detect:
     runs-on: ubuntu-latest
@@ -42,6 +45,8 @@ jobs:
 
           SKILLS=()
           for f in $(git diff --name-only "$BASE_SHA"...HEAD | grep -E '^skills/[^/]+/SKILL\.md$' || true); do
+            # Skip deletions — the file is gone from HEAD; nothing to gate.
+            [ -f "$f" ] || continue
             base_fm=$(git show "$BASE_SHA:$f" 2>/dev/null | extract_fm || true)
             head_fm=$(extract_fm < "$f" || true)
             [ "$base_fm" = "$head_fm" ] && continue
@@ -91,9 +96,12 @@ jobs:
 
       - name: Run activation gate
         env:
+          # Pass matrix value via env (not direct ${{ }} interpolation in run:)
+          # to avoid shell expansion of any special chars in the skill name.
+          SKILL: ${{ matrix.skill }}
           SKILLS_REPO_PATH: ${{ github.workspace }}
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
-        run: python tests/scripts/activation_gate.py --skill "${{ matrix.skill }}"
+        run: python tests/scripts/activation_gate.py --skill "$SKILL"
