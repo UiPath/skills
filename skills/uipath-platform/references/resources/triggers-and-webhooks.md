@@ -73,8 +73,14 @@ three trigger types.
 Additional options:
 - `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then flip them on later via `triggers update <key> --enabled`.
 - `--calendar-key` — skip holidays, from `uip or calendars list`.
-- `--stop-strategy` — `SoftStop` or `Kill`.
-- `--input-arguments` — JSON-encoded input arguments map.
+- `--stop-strategy <SoftStop|Kill>` — how to stop running jobs when the next firing happens. `SoftStop` requests the workflow to stop cleanly; `Kill` terminates the runtime process.
+- `--kill-process-expression <cron>` — when `--stop-strategy=Kill`, this 6-field Quartz cron schedules **when** the kill is enforced if the workflow ignores the soft-stop request. Without it, Kill mode waits indefinitely.
+- `--input-arguments <json>` — JSON-encoded input arguments map.
+- `--target <spec>` (repeatable) — pin the trigger to one or more specific runtime targets. Format: `'machine=<machine-guid>,user=<user-guid>,session=<session-id>'`. Any combination is allowed in `dynamic` mapping mode (default), but `session` requires `machine`. Repeat the flag for multiple targets.
+- `--mapping-mode <dynamic|strict>` — validation rule for `--target`. `dynamic` (default) lets you pass any mix of machine/user/session. `strict` requires both `machine` and `user` on every target — use this when the folder has "Enable account-machine mappings" turned on.
+- `--run-as-me` — run jobs under the trigger creator's identity instead of resolving an unattended robot from the folder.
+- `--resume-on-same-context` — resume suspended jobs on the same machine that originally ran them.
+- `--calendar-key <guid>` — calendar to consult for excluded days (holidays). From `uip or calendars list`.
 
 ### Queue Trigger
 
@@ -186,7 +192,10 @@ uip resource webhooks create "AuditHook" \
   --url "https://hooks.example.com/audit" --output json
 ```
 
-Options: `--secret` (HMAC signature validation), `--allow-insecure-ssl` (skip TLS verification).
+Options:
+
+- `--secret <secret>` — shared secret used to sign every webhook delivery. Orchestrator includes the signature in the `X-UiPath-Signature` header of each POST as `sha256=<HMAC_SHA256(secret, raw_body)>`. The receiving server should recompute the HMAC over the unmodified request body and compare in constant time. Without `--secret`, payloads are sent without a signature — accept those only if the endpoint is private and you trust the network path.
+- `--allow-insecure-ssl` — skip TLS verification on the webhook URL. Only set when targeting an HTTPS endpoint with a self-signed cert in non-production. Production targets should use a real cert; flipping this off after-the-fact requires `webhooks update --no-allow-insecure-ssl` (verify the flag exists in your CLI version with `--help`).
 
 ### List, Get, Update, Test, Delete
 
@@ -224,8 +233,7 @@ uip resource triggers create --type time \
   --release-key "c3d4e5f6-..." \
   --cron "0 0 9 ? * 1-5" --time-zone "UTC" \
   --calendar-key "<calendar-key>" \
-  --runtime-type Unattended --job-priority Normal \
-  --folder-path "Finance" --output json
+  --runtime-type Unattended --job-priority Normal --output json
 
 # 3. Queue trigger: fire when 10+ items accumulate
 uip resource queues list --folder-path "Finance" --output json   # get queue key
@@ -234,8 +242,7 @@ uip resource triggers create --type queue \
   --release-key "c3d4e5f6-..." \
   --queue-key "d4e5f6a7-..." \
   --items-threshold 10 --max-jobs 5 --activate-on-complete \
-  --runtime-type Unattended --job-priority High \
-  --folder-path "Finance" --output json
+  --runtime-type Unattended --job-priority High --output json
 
 # 4. Webhook: notify on job failures
 uip resource webhooks create "InvoiceFailureAlert" \
@@ -265,7 +272,7 @@ uip resource webhooks list --enabled --output json
 
 ## Related
 
-- [resources.md](resources.md) -- Resource tool overview and common flags
-- [../orchestrator/run-jobs.md](../orchestrator/run-jobs.md) -- Create processes, get the release key needed for triggers
-- [../orchestrator/tenant-admin.md](../orchestrator/tenant-admin.md) -- Calendar management, tenant settings affecting trigger behavior
+- [resources.md](resources.md) — Resource tool overview and common flags
+- Get the release key for `--release-key` → [`uipath-orchestrator`](../orchestrator/run-jobs.md)
+- Calendar management + tenant settings affecting trigger behavior → [`uipath-orchestrator`](../orchestrator/tenant-admin.md)
 - [process-queues.md](process-queues.md) -- Queue setup required before creating queue triggers

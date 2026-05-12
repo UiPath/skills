@@ -107,6 +107,7 @@ Key options:
 | `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
 | `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
+| `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI proactively refreshes it before the deploy starts. Useful for long deploys close to token expiry. | 10 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
 
 ## Step 5: Check Deployment Status

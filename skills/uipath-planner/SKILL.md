@@ -32,7 +32,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — follows plan `Solution scope` (SW or local); `uipath-platform` for Orchestrator |
-| `uipath-platform` | Auth, Orchestrator resources, solution lifecycle (pack/publish/deploy), Integration Service, Test Manager | Yes (auth hub) | **Yes** — the deploy destination |
+| `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles, sessions, calendars, licenses, settings, audit logs, credential stores, feeds, attachments), resources (assets, queues, **storage buckets + bucket files**, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), solution lifecycle (pack/publish/deploy/activate), traces. **Route here for any "upload to UiPath", "create asset", "start job", "deploy solution", "configure IS connection" task — don't hand-roll REST against `cloud.uipath.com`.** | Yes (auth hub) | **Yes** — the deploy destination |
 | `uipath-interact` | Inspect and interact with live desktop/browser UI: click, type, screenshot, inspect. For app launching, ad-hoc exploration, post-build verification. Does NOT author workflows or generate selectors — that's `uipath-rpa`. | No auth | **No** |
 
 ## RPA skill routing
