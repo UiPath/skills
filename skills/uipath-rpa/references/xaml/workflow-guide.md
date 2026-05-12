@@ -218,7 +218,7 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 2. **Structural Errors** — Fix XML structure. Cross-check against [xaml-basics-and-rules.md](xaml-basics-and-rules.md).
 3. **Type Errors** — Check activity doc for correct types and enum values. For JIT types: [jit-custom-types-schema.md](jit-custom-types-schema.md).
 4. **Activity Properties Errors** — Read activity doc for properties, conditional groups, valid configurations. Fallback: `activities get-default-xaml`. Watch for OverloadGroup conflicts.
-5. **Logic Errors** — Verify expression syntax matches project language. For UI automation: use `--command StartDebugging`. See [uia-debug-workflow.md](../uia-debug-workflow.md).
+5. **Logic Errors** — Verify expression syntax matches project language. For UI automation: use `debug start`. See [uia-debug-workflow.md](../uia-debug-workflow.md).
 
 **When stuck:** Defer to user for minor config details. If failing to resolve an activity, consider InvokeCode as a last resort.
 
