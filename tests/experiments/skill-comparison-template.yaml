@@ -20,15 +20,15 @@ description: "One-sentence hypothesis under test"
 # Pass --repeats N at CLI time to override repeats without editing this file.
 # ---------------------------------------------------------------------------
 defaults:
-  max_iterations: 2
-  task_timeout: 1200
-  turn_timeout: 300
+  run_limits:
+    max_turns: 20
+    task_timeout: 1200
+    turn_timeout: 300
   repeats: 1
   agent:
     type: claude-code
     permission_mode: bypassPermissions
     model: claude-sonnet-4-6
-    max_turns: 20
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
       You are a coding agent. Work only inside your current working directory.

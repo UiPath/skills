@@ -21,7 +21,6 @@ experiment_id: skills-eval
 description: "Compare impact of docs and skills on agent SDK coding tasks"
 
 defaults:
-  max_iterations: 1
   repeats: 1
   agent:
     type: claude-code
