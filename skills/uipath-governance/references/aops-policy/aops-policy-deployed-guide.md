@@ -22,7 +22,7 @@ If the user has not provided the positional values, ask **one at a time** in thi
 1. `License type?` — if unknown, run `uip gov aops-policy license-type list --output json` and let the user pick by `name` (e.g. `Attended`, `Unattended`), not by `identifier` (GUID) or label. `deployed-policy get/list` take the `name` as the `<licenseType>` positional argument. Store as `$LICENSE_TYPE`.
 2. `Product name (identifier)?` — run `uip gov aops-policy product list --output json` if unknown.
 3. `Tenant identifier (GUID)?` — if unknown, run `uip gov aops-policy deployment tenant list --output json` and let the user pick from tenants that already have policy assignments. Store as `$TENANT_ID`.
-4. **For specific-user lookup only:** `User identifier (GUID)?` — run `uip gov aops-policy deployment user list --output json` if unknown (each entry carries `identifier`, `name`, `source`). Store as `$USER_ID`. Then ensure the S2S bearer token is available — set `UIP_S2S_TOKEN` in the caller's environment so the CLI picks it up automatically (see [aops-policy-commands.md — S2S token](./aops-policy-commands.md#s2s-token)).
+4. **For specific-user lookup only:** `User identifier (GUID)?` — run `uip gov aops-policy deployment user list --output json` if unknown (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Store the matching `identifier` as `$USER_ID`. Then ensure the S2S bearer token is available — set `UIP_S2S_TOKEN` in the caller's environment so the CLI picks it up automatically (see [aops-policy-commands.md — S2S token](./aops-policy-commands.md#s2s-token)).
 
 Proceed to the matching query below.
 
