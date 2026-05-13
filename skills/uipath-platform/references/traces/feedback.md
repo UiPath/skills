@@ -114,7 +114,7 @@ Omitting `--span-id` resolves to the root span of the trace. When an agent runs 
 
 **Always pass `--span-id` when the agent runs inside any orchestrating layer.**
 
-**Always target the `agentRun` span** — it's the only span type used in episodic memory.
+**Always target the `agentRun` span.**
 
 ### Find the agentRun span ID
 
