@@ -261,7 +261,8 @@ Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empt
         "caseIdentifierType": "<constant|external — defaults to constant>",
         "caseAppEnabled": <true|false — defaults to false>,
         "publishVersion": 2,
-        "caseUnifiedSchemaEnabled": true
+        "caseUnifiedSchemaEnabled": true,
+        "intsvcActivityConfig": "v2"
     },
     "bindings": [],
     "variables": {
@@ -290,7 +291,8 @@ Adds top-level `description` field (NOT inside `metadata`):
         "caseIdentifierType": "<constant|external>",
         "caseAppEnabled": <true|false>,
         "publishVersion": 2,
-        "caseUnifiedSchemaEnabled": true
+        "caseUnifiedSchemaEnabled": true,
+        "intsvcActivityConfig": "v2"
     },
     "bindings": [],
     "variables": {
@@ -304,7 +306,7 @@ Adds top-level `description` field (NOT inside `metadata`):
 }
 ```
 
-> **`intsvcActivityConfig` dropped in v20** — not present in `CaseManagementMetadataSchema`. Do not emit it under `metadata` or anywhere else.
+> **`intsvcActivityConfig` always emitted in v20** — set `metadata.intsvcActivityConfig: "v2"` on every v20 caseplan. Mirrors the v19 `root.data.intsvcActivityConfig` field, relocated under `metadata`.
 
 ## Formatting
 
@@ -342,6 +344,7 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
    - `version === "20.0.0"`
    - `metadata.caseUnifiedSchemaEnabled === true`
    - `metadata.publishVersion === 2`
+   - `metadata.intsvcActivityConfig === "v2"`
    - `bindings` is an array of length 0
    - `variables.inputs`, `variables.outputs`, `variables.inputOutputs` are all arrays of length 0
 3. **Empty node/edge arrays + layout.**
@@ -351,7 +354,7 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 4. **No v19 leakage.**
    - No `root` key at top level
    - No `version === "v19"` anywhere
-   - No `data.intsvcActivityConfig`
+   - No `data.intsvcActivityConfig` (v20 emits it under `metadata`, not `data`)
 
 If any check fails, halt and report — do not proceed to downstream plugins.
 

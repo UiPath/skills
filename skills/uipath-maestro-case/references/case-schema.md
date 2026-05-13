@@ -28,6 +28,7 @@ Structural reference for the case definition JSON. Shared across all node types.
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
+    "intsvcActivityConfig": "v2",
     "slaRules": [ ... ],
     "caseExitRules": [ ... ]
   },
@@ -62,7 +63,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 | `root.data.uipath.bindings` | top-level `bindings` |
 | `root.data.uipath.variables` | top-level `variables` |
 | `root.caseExitConditions` | `metadata.caseExitRules` *(field renamed)* |
-| `root.data.intsvcActivityConfig` | dropped — not in v20 metadata schema |
+| `root.data.intsvcActivityConfig` | `metadata.intsvcActivityConfig` |
 | `nodes` | `nodes` *(unchanged shape — see § 2 below)* |
 | `edges` | `edges` *(unchanged shape — see § 3 below)* |
 | — | `layout: {}` *(new top-level — see § 7 below)* |
