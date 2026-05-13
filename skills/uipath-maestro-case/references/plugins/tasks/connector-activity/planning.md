@@ -78,7 +78,7 @@ Check `inputs.{bodyFields, pathParameters, queryParameters}` for entries with a 
     "objectName": "MailFolder",
     "lookupValue": "id",
     "lookupNames": ["displayName"],
-    "discoverCommand": "uip is resources execute list uipath-microsoft-outlook365 MailFolder --connection-id <id>"
+    "discoverCommand": "uip is resources run list uipath-microsoft-outlook365 MailFolder --connection-id <id>"
 }
 ```
 

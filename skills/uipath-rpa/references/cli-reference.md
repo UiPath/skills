@@ -512,12 +512,12 @@ uip is resources describe <CONNECTOR_KEY> <OBJECT_NAME> --operation Create --out
 
 ---
 
-### resources execute
+### resources run
 
-Execute a CRUD operation on a connector resource.
+Run a CRUD operation on a connector resource.
 
 ```bash
-uip is resources execute <OPERATION> <CONNECTOR_KEY> <OBJECT_NAME> --output json
+uip is resources run <OPERATION> <CONNECTOR_KEY> <OBJECT_NAME> --output json
 ```
 
 | Parameter | Required | Description |

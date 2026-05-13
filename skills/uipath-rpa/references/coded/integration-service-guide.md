@@ -144,7 +144,7 @@ cat "<METADATA_FILE_PATH>" | python3 -c "import json,sys; d=json.load(sys.stdin)
 If the describe output has `referenceFields`, resolve each one before calling `ExecuteAsync`:
 
 ```bash
-uip is resources execute list "<CONNECTOR_KEY>" "<REFERENCED_OBJECT>" \
+uip is resources run list "<CONNECTOR_KEY>" "<REFERENCED_OBJECT>" \
   --connection-id "<CONNECTION_ID>" --output json
 # Pick the correct id from the results
 ```
@@ -451,8 +451,8 @@ namespace MyProject
             //   → object: curated_create_issue, MethodName: POST, Path: /curated_create_issue
             // Reference fields (project, issuetype, reporter) are nested objects.
             // Resolve their ids/keys via:
-            //   uip is resources execute list "uipath-atlassian-jira" "project" --connection-id <id>
-            //   uip is resources execute list "uipath-atlassian-jira" "issuetype" --connection-id <id>
+            //   uip is resources run list "uipath-atlassian-jira" "project" --connection-id <id>
+            //   uip is resources run list "uipath-atlassian-jira" "issuetype" --connection-id <id>
             var createConfig = new CodedConnectorConfiguration(
                 connection:   jiraConn,
                 objectName:   "curated_create_issue",
