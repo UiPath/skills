@@ -114,15 +114,9 @@ Omitting `--span-id` resolves to the root span of the trace. When an agent runs 
 
 **Always pass `--span-id` when the agent runs inside any orchestrating layer.**
 
-### Span type → use case
+**Always target the `agentRun` span** — it's the only span type used in episodic memory.
 
-| Span name | When to target |
-|-----------|----------------|
-| `agentRun` | Overall agent quality — correctness, reasoning, plan execution |
-| `agentOutput` | Fabrication or formatting issues in emitted text |
-| `agentMemoryLookup` | Retrieval quality — wrong memory retrieved or missing context |
-
-### Find the agentRun span ID (RPA job)
+### Find the agentRun span ID
 
 ```bash
 SPAN_ID=$(uip traces spans get --job-key <JOB_KEY> --output json \
