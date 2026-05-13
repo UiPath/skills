@@ -110,9 +110,9 @@ uip traces feedback delete <feedback-id> \
 
 ## Choosing a span
 
-Omitting `--span-id` resolves to the root span of the trace. For RPA-launched agent jobs the root is the **Robot Job** wrapper — feedback lands on the wrong span and won't surface in the agent review grid.
+Omitting `--span-id` resolves to the root span of the trace. When an agent runs inside any orchestrating layer (RPA robot job, Maestro case, parent agent, etc.) the root is the **orchestrator's** span — feedback lands on the wrong span and won't surface in the agent review grid.
 
-**Always pass `--span-id` for RPA-launched agent jobs.**
+**Always pass `--span-id` when the agent runs inside any orchestrating layer.**
 
 ### Span type → use case
 
@@ -135,7 +135,7 @@ uip traces feedback create \
   --output json
 ```
 
-> **RPA job only.** For directly-invoked agents (not via RPA), the root span is the agent execution — omitting `--span-id` is safe.
+> **Directly-invoked agents only.** When the agent is the top-level span (no parent orchestrator), the root span is the agent execution — omitting `--span-id` is safe.
 
 ## Mutual exclusion rules
 
