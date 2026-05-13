@@ -48,7 +48,6 @@ def load_flow() -> dict[str, Any]:
         return json.loads(path.read_text())
     except json.JSONDecodeError as exc:
         fail(f"{path} is not valid JSON: {exc}")
-    return {}
 
 
 def node_type(node: dict) -> str:
