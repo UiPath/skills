@@ -32,7 +32,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent filtered by asset type with --type Text (skill teaches --type filter — agent should use it, not list all assets and filter mentally)"
+    description: "Agent filtered server-side with --type Text (server-side filter — server has a flag for type, so client-side --output-filter is the wrong tool here)"
     tool_name: "Bash"
     command_pattern: 'uip\s+resource\s+assets\s+list.*--type\s+Text'
     min_count: 1

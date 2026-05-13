@@ -33,7 +33,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent filtered by job state with --state Faulted (skill teaches --state filter — agent should use it, not list all jobs and filter mentally)"
+    description: "Agent filtered server-side with --state Faulted (server-side filter — server has a flag for state, so client-side --output-filter is the wrong tool here)"
     tool_name: "Bash"
     command_pattern: 'uip\s+or\s+jobs\s+list.*--state\s+Faulted'
     min_count: 1
