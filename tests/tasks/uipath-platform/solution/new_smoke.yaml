@@ -3,7 +3,7 @@ description: >
   Smoke test: agent uses the uipath-platform skill to scaffold a new UiPath
   solution via `uip solution new` and produces the `.uipx` manifest on disk.
   Runs entirely in the sandbox tempdir — no tenant interaction.
-tags: [uipath-platform, smoke, mode:build]
+tags: [uipath-platform, smoke, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

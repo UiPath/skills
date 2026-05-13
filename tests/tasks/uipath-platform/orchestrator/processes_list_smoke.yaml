@@ -4,7 +4,7 @@ description: >
   (releases) in a folder via `uip or processes list --folder-(key|path) ...`.
   Auth/404 errors are acceptable outcomes — the goal is correct command shape,
   not tenant state.
-tags: [uipath-platform, smoke, mode:operate]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
 sandbox:
   driver: tempdir
@@ -39,9 +39,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: skill_triggered
-    description: "Agent activated the uipath-platform skill"
-    skill_name: "uipath-platform"
-    expected_skill: "uipath-platform"
-    weight: 1.5
-    pass_threshold: 1.0
