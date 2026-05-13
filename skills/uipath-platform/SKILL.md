@@ -238,39 +238,6 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 | **Coded Agents** | `codedagent` | Python agent lifecycle (setup, exec) | Available |
 | **RPA** | `rpa` | RPA workflow management (create, compile, validate, execute) | Available |
 
-### Command Routing — Which Group Owns Which Noun
-
-Resource nouns live under different top-level command groups. Picking the wrong group is the most common mistake. **All sub-command nouns are plural** (no `uip resource bucket`, only `uip resource buckets`).
-
-| Noun | Lives under | Full path | Notes |
-|---|---|---|---|
-| folders | `uip or` | `uip or folders {list,get,create,edit,move,delete,runtimes}` | tenant + folder admin |
-| jobs | `uip or` | `uip or jobs {list,get,start,stop,logs,traces,history,healing-data}` | requires `--folder-key`/`--folder-path` |
-| processes | `uip or` | `uip or processes {list,get,create,edit,resources,version-history,update-version,rollback,delete}` | published releases |
-| packages | `uip or` | `uip or packages {list,upload,download,versions,get,entry-points}` | tenant feed |
-| machines | `uip or` | `uip or machines {list,...}` | tenant-scoped |
-| sessions | `uip or` | `uip or sessions {attended,unattended,machines,list-usernames,list-user-executors,toggle-debug-mode,set-maintenance-mode,delete-inactive}` | sub-sub-commands |
-| users / roles | `uip or` | `uip or users ...`, `uip or roles ...` | tenant identity |
-| **assets** | **`uip resource`** | `uip resource assets {list,get,create,update,delete,share,unshare,get-asset-value,get-folders}` | NOT `uip or assets` |
-| **queues** | **`uip resource`** | `uip resource queues {list,get,create,update,delete,share,unshare,get-folders,get-stats}` | NOT `uip or queues` |
-| **queue-items** | **`uip resource`** | `uip resource queue-items {list,add,bulk-add,get,update,delete,delete-bulk,get-history,...}` | hyphenated, NOT `queueitems` |
-| **buckets** | **`uip resource`** | `uip resource buckets {list,get,create,update,delete,share,unshare,list-folders}` | plural — NOT `bucket` |
-| **bucket-files** | **`uip resource`** | `uip resource bucket-files {list,list-dirs,get,upload,download,delete,get-download-url,get-upload-url}` | hyphenated |
-| **libraries** | **`uip resource`** | `uip resource libraries {list,upload,download,delete}` | plural |
-| traces (spans / feedback) | `uip traces` | `uip traces spans get`, `uip traces feedback {create,list,...}` | LLM observability |
-| connectors / connections / activities | `uip is` | `uip is {connectors,connections,activities,resources,...}` | Integration Service |
-| solution lifecycle | `uip solution` | `uip solution {new,pack,publish,deploy,project,resource,packages,upload}` | scaffolding + publish + deploy |
-
-**Common mistakes the cheat-sheet prevents:**
-
-- `uip or assets list` — wrong. Assets live under `resource`, not `or`. Same for queues, buckets, libraries.
-- `uip resource bucket list` — wrong. Singular noun. Always plural: `buckets`.
-- `uip orchestrator queues list` — wrong. The group prefix is `or`, not `orchestrator`.
-- `uip resource queueitems list` — wrong. Hyphenated: `queue-items`.
-- `uip resource bucketfiles list` — wrong. Hyphenated: `bucket-files`.
-
-When unsure, run `uip <group> --help` first (`uip or --help`, `uip resource --help`) — the actual noun list is the source of truth.
-
 ### Global Options
 
 Every `uip` command accepts:
