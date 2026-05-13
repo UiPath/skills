@@ -52,7 +52,7 @@ Generate (value shown only once):
 uip admin external-apps generate-secret <CLIENT_ID> --description "Rotated secret" --expiration "2027-06-01" --output json
 ```
 
-Delete (only secret ID needed):
+Delete (only secret ID needed — confirm with user first):
 ```bash
 uip admin external-apps delete-secret <SECRET_ID> --output json
 ```
@@ -66,6 +66,14 @@ uip admin external-apps update <CLIENT_ID> \
   --name "<NEW_NAME>" \
   --app-scope "OR.Folders,OR.Jobs" \
   --output json
+```
+
+## Workflow: Delete an External App
+
+Confirm with user first — this revokes all secrets and access.
+
+```bash
+uip admin external-apps delete <CLIENT_ID> --output json
 ```
 
 ## Federated Credentials
@@ -103,6 +111,8 @@ uip admin external-apps federated-credentials update <CLIENT_ID> <CREDENTIAL_ID>
 ```
 
 ### Delete a Federated Credential
+
+Confirm with user before deleting.
 
 ```bash
 uip admin external-apps federated-credentials delete <CLIENT_ID> <CREDENTIAL_ID> --output json

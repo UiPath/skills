@@ -36,6 +36,8 @@ uip admin pat list --search "john" --output json
 
 ## Workflow: Revoke a PAT
 
+Confirm with user before revoking — this permanently invalidates the token.
+
 ```bash
 uip admin pat revoke <TOKEN_ID> --output json
 ```
