@@ -20,9 +20,9 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-The **top-level `version`** is the workflow file-format version, currently `"1.1"`. This is what `uip maestro flow init` scaffolds and what the Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. It is *not* a semver string — the file-format schema gates against a literal (`z.literal("1.1")`). Do not change it to `"1.0.0"`, `"1.0"`, or any other value when authoring new flows; older values exist only so the parser can still read legacy files.
+**Top-level `version`** = workflow file-format version, currently `"1.1"` — what `uip maestro flow init` scaffolds and what Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. Not a semver string; schema gates on a literal (`z.literal("1.1")`). Do not use `"1.0.0"`, `"1.0"`, or other values for new flows; older values exist only for legacy parser compatibility.
 
-> **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and the matching node-instance `typeVersion`) ARE governed by a strict semver schema (`versionSchema`, `/^\d+\.\d+\.\d+$/`) — a *different* Zod schema from the workflow file-format version. Mixing them up produces `Schema validation failed: Version must be in semver format` reported at `(root)`, which is the workflow-version layer's error message — but the actual offender may be a stale top-level value, not a node version. Audit the top-level `version` first.
+> **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) use a strict semver schema (`versionSchema`, `/^\d+\.\d+\.\d+$/`) — a different Zod schema. Mixing them up produces `Schema validation failed: Version must be in semver format` at `(root)` — workflow-version layer's error, but the actual offender may be a stale top-level value. Audit the top-level `version` first.
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
 
