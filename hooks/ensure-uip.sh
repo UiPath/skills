@@ -102,7 +102,9 @@ is_from_other_feed() {
     *) return 1 ;;
   esac
   cfg="$(npm config get "$scope:registry" 2>/dev/null)"
-  [ -z "$cfg" ] || [ "$cfg" = "undefined" ] && return 1
+  if [ -z "$cfg" ] || [ "$cfg" = "undefined" ]; then
+    return 1
+  fi
   case "${cfg%/}" in
     https://registry.npmjs.org) return 1 ;;
     *) return 0 ;;
