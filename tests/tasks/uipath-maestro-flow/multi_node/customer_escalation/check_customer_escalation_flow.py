@@ -5,13 +5,22 @@ Checks the .flow file the agent produced. Static-only because the prompt is
 validate-only (no live Outlook / Slack tenant). Mirrors the
 check_devcon_expense_approval.py shape.
 
+The trigger type is intentionally NOT pinned to Outlook: when no
+`uipath-microsoft-outlook365` connection exists in the sandbox, the flow
+skill's documented Tier-3 fallback is `core.trigger.manual` plus Graph
+API HTTP replies. The flow's semantic intent ("talks to Outlook") is
+already proved by the non-trigger Outlook-or-Graph reference assertion
+below.
+
 Asserts:
   1. Total node count >= 5 (trigger + 2 scripts + decision + at least one branch action)
-  2. Outlook-typed trigger node present
+  2. Exactly one trigger node present (any type — manual fallback is legitimate)
   3. >=2 script nodes (urgency + VIP classifier)
   4. Exactly one core.logic.decision node, with >=2 outgoing edges (two branches)
   5. Slack connector referenced somewhere in the flow (VIP branch DM)
-  6. Outlook referenced by at least one *non-trigger* node (reply on either branch)
+  6. Outlook reply referenced by at least one *non-trigger* node — matches
+     `outlook`, `office365`, or `graph.microsoft.com` (Graph API replies
+     are the same surface the connector wraps).
 """
 
 from __future__ import annotations
@@ -20,16 +29,17 @@ import glob
 import json
 import sys
 from pathlib import Path
+from typing import Any, NoReturn
 
 
 FLOW_GLOB = "CustomerEscalation/CustomerEscalation/CustomerEscalation.flow"
 
 
-def fail(msg: str) -> None:
+def fail(msg: str) -> NoReturn:
     sys.exit(f"FAIL: {msg}")
 
 
-def load_flow() -> dict:
+def load_flow() -> dict[str, Any]:
     matches = glob.glob(FLOW_GLOB)
     if not matches:
         fail(f"No flow file matching {FLOW_GLOB}")
@@ -72,9 +82,11 @@ def main() -> None:
     if len(nodes) < 5:
         fail(f"Expected >=5 nodes (trigger + 2 scripts + decision + branch action(s)), found {len(nodes)}")
 
-    outlook_trigger = [n for n in nodes if is_trigger(n) and references(n, "outlook")]
-    if not outlook_trigger and not any(is_trigger(n) and references(n, "office365") for n in nodes):
-        fail("No Outlook (or office365) trigger node found")
+    triggers = [n for n in nodes if is_trigger(n)]
+    if not triggers:
+        fail("No trigger node found")
+    if len(triggers) > 1:
+        fail(f"Expected exactly one trigger node, found {len(triggers)}")
 
     scripts = [n for n in nodes if node_type(n) == "core.action.script"]
     if len(scripts) < 2:
@@ -97,9 +109,16 @@ def main() -> None:
     if not any(references(n, "slack") for n in nodes):
         fail("No Slack connector reference found anywhere in flow (VIP branch should DM via Slack)")
 
-    non_trigger_outlook = [n for n in nodes if not is_trigger(n) and (references(n, "outlook") or references(n, "office365"))]
+    outlook_needles = ("outlook", "office365", "graph.microsoft.com")
+    non_trigger_outlook = [
+        n for n in nodes
+        if not is_trigger(n) and any(references(n, needle) for needle in outlook_needles)
+    ]
     if not non_trigger_outlook:
-        fail("No non-trigger Outlook reference found (expected reply-to-sender action on at least one branch)")
+        fail(
+            "No non-trigger Outlook reply reference found "
+            f"(expected one of {outlook_needles} on a reply-to-sender action on at least one branch)"
+        )
 
     print(
         f"PASS: {len(nodes)} nodes, {len(scripts)} scripts, decision with {len(out_edges)} branches, "
