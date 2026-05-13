@@ -20,9 +20,7 @@ agent:
 sandbox:
   driver: tempdir
   python: {}
-  node:
-    env_packages:
-      - "@uipath/cli"
+  node: {}
 initial_prompt: |
   Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
   or any command that requires a live connection — this sandbox has no

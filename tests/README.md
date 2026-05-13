@@ -22,6 +22,8 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
    npm install -g @uipath/cli
    ```
 
+   > **Do not add `@uipath/cli` to `sandbox.node.env_packages` in task YAMLs.** The GH smoke runner installs it globally before any task runs. Listing it in `env_packages` is redundant and, when pinned to a version, causes skew against the runner's `@latest` install.
+
 4. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for environment setup (`.env`, API keys, etc.).
 
 ## Running Tests

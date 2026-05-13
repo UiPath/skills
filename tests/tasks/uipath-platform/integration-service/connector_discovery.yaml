@@ -9,9 +9,7 @@ tags: [uipath-platform, smoke, integration-service, connectors]
 sandbox:
   driver: tempdir
   python: {}
-  node:
-    env_packages:
-      - "@uipath/cli"
+  node: {}
 
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
