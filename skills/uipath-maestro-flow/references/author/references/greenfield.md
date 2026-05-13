@@ -83,7 +83,7 @@ Check the current directory for existing `.uipx` files. If existing solutions ar
 ### 2a. Create a new solution
 
 ```bash
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 ```
 
 Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution directory before Step 2b.**
@@ -139,7 +139,7 @@ If the registration was skipped because of single-nesting, **delete the partial 
 
 ```
 <cwd>/
-└── <SolutionName>/                    ← from `uip solution new`
+└── <SolutionName>/                    ← from `uip solution init`
     ├── <SolutionName>.uipx
     └── <ProjectName>/                 ← from `uip maestro flow init` (run from inside <SolutionName>/)
         ├── <ProjectName>.flow         ← the file you edit

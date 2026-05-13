@@ -2,7 +2,7 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
 ## uip maestro flow init
 
@@ -10,7 +10,7 @@ Scaffold a new Flow project directory. **Always create a solution first** (see t
 
 ```bash
 # 1. Create solution first
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 
 # 2. Init the flow project inside the solution folder.
 #    When run from inside a solution directory, `flow init` auto-registers
@@ -234,7 +234,7 @@ See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-
 
 ## uip maestro flow node / uip maestro flow edge
 
-See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
+See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/remove/list/configure` and `edge add/remove/list` syntax, flags, and auto-managed behaviors.
 
 ## uip maestro flow eval
 

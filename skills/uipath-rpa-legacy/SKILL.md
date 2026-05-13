@@ -33,7 +33,7 @@ Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic ac
 | Edit workflow | Phase 0 → Discovery → Edit | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) |
 | Validate file | `uip rpa-legacy validate "{projectRoot}/File.xaml" --output json` | [validation-and-fixing.md](./references/validation-and-fixing.md) |
 | Validate project | `uip rpa-legacy validate "{projectRoot}" --output json` | [validation-and-fixing.md](./references/validation-and-fixing.md) |
-| Package (optional) | `uip rpa-legacy package "{projectRoot}" -o "{dir}"` | [cli-reference.md](./references/cli-reference.md) |
+| Package (optional) | `uip rpa-legacy pack "{projectRoot}" -o "{dir}"` | [cli-reference.md](./references/cli-reference.md) |
 | Debug | `uip rpa-legacy debug "{projectRoot}/File.xaml"` | [cli-reference.md](./references/cli-reference.md) |
 | Create new project | Create project.json with right packages | [project-structure.md](./references/project-structure.md) |
 | Create test data | Generate Excel/CSV/JSON/types for testing | [test-data-guide.md](./references/test-data-guide.md) |
@@ -216,7 +216,7 @@ See [cli-reference.md](./references/cli-reference.md) for all options.
 | `uip rpa-legacy type-definition <path> --type "..." --output json` | Inspect types, enum values, properties |
 | `uip rpa-legacy validate <file-or-project-path> --output json` | Validate single file or entire project |
 | `uip rpa-legacy find-package --query "..." --output json` | Search NuGet feeds for packages |
-| `uip rpa-legacy package <path> -o <dir>` | Package into .nupkg (optional) |
+| `uip rpa-legacy pack <path> -o <dir>` | Package into .nupkg (optional) |
 | `uip rpa-legacy debug <xaml-path> -i '...'` | Execute via UiRobot |
 | `uip docsai ask "question" --output json` | Search UiPath documentation |
 

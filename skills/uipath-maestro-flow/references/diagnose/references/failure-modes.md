@@ -152,7 +152,7 @@ The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of 
 Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution project add` step is no longer needed.
 
 ```bash
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 cd <SolutionName>
 uip maestro flow init <ProjectName> --output json
 # Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.

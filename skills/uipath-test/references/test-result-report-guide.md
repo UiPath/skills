@@ -81,7 +81,7 @@ When the user asks for further details, use this loop:
 
 <!-- | User asks about | Command |
 |---|---|
-| Regression history for a test case | `uip tm testcase list-result-history --project-key <KEY> --test-case-id <ID>` |
+| Regression history for a test case | `uip tm testcases list-result-history --project-key <KEY> --test-case-id <ID>` |
 | Failing assertions for a test case log | `uip tm testcaselog list-assertions --project-key <KEY> --test-case-log-id <ID>` |
 | Attachments for an execution | `uip tm attachment download --execution-id <ID>` | -->
 

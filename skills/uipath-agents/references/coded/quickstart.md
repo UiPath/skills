@@ -177,16 +177,16 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
      | # | Label (≤5 words) | Description |
      |---|---|---|
      | A | Studio Web — you set it up | You open Studio Web, create a Coded Agent project inside a solution, paste the project ID. I'll write `UIPATH_PROJECT_ID` to `.env` and run `uip codedagent push`. |
-     | B | Studio Web — I package & upload | I run `uip solution new`, import the agent, strip `.venv`, and run `uip solution upload`. No Studio Web setup needed from you. |
+     | B | Studio Web — I package & upload | I run `uip solution init`, import the agent, strip `.venv`, and run `uip solution upload`. No Studio Web setup needed from you. |
      | C | Local dev web server | I start `uip codedagent dev` (default `http://localhost:8080`) so you can interact with the agent in the browser. Nothing is published. |
      | — | Skip — I'm done | Stop here. The agent is built and evaluated. |
 
      On reply:
      - **A** → wait for the project ID, write `UIPATH_PROJECT_ID=<id>` to `.env`, then run `uip codedagent push`.
-     - **B** → run the local-solution flow. `uip solution new "<SOLUTION_NAME>"` creates `<cwd>/<SOLUTION_NAME>/<SOLUTION_NAME>.uipx` (sibling, not ancestor). `uip solution upload` archives verbatim and does NOT honor `packOptions.directoriesExcluded` — strip `.venv` from the imported copy or upload fails with `code 20001: solution archive is corrupt`. From the parent directory of the agent:
+     - **B** → run the local-solution flow. `uip solution init "<SOLUTION_NAME>"` creates `<cwd>/<SOLUTION_NAME>/<SOLUTION_NAME>.uipx` (sibling, not ancestor). `uip solution upload` archives verbatim and does NOT honor `packOptions.directoriesExcluded` — strip `.venv` from the imported copy or upload fails with `code 20001: solution archive is corrupt`. From the parent directory of the agent:
 
        ```bash
-       uip solution new "<SOLUTION_NAME>"
+       uip solution init "<SOLUTION_NAME>"
        cd "<SOLUTION_NAME>"
        uip solution project import --source "../<AGENT_PROJECT_DIR>" --output json
        rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
