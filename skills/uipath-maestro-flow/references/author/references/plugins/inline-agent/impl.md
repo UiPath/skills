@@ -306,7 +306,7 @@ Node type pattern: `uipath.agent.resource.tool.connector.<connector-key>.<operat
 
 ### Configuration — delegate to connector plugin
 
-Configure the IS connector tool node following [connector/impl.md § Agent Tool Connector Nodes](../connector/impl.md#agent-tool-connector-nodes). This is a two-step process: (1) run `uip maestro flow node configure` to populate base `inputs.detail`, then (2) augment the `configuration` with `fieldsContainer` from IS metadata so that `uip agent validate --inline-in-flow` can generate a complete `resource.json`.
+Configure the IS connector tool node using `uip maestro flow node configure` — see [connector/impl.md § Agent Tool Connector Nodes](../connector/impl.md#agent-tool-connector-nodes). This single command populates the complete `inputs.detail` including `fieldsContainer` (with `inputFields`, `outputJsonSchema`, `clrType`) and `bodyParameters`, so that `uip agent validate --inline-in-flow` can generate a complete `resource.json`.
 
 ### Node instance
 

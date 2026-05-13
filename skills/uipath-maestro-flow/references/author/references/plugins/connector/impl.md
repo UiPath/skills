@@ -632,12 +632,11 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 
 ## Agent Tool Connector Nodes
 
-Agent tool connector nodes (`uipath.agent.resource.tool.connector.<connector-key>.<operation>`) are IS connector tools wired to an inline agent's `tool` artifact port. They use the **same `inputs.detail` structure** as regular connector activity nodes. Configuration is a two-step process:
+Agent tool connector nodes (`uipath.agent.resource.tool.connector.<connector-key>.<operation>`) are IS connector tools wired to an inline agent's `tool` artifact port. They use the **same `inputs.detail` structure** and the **same `uip maestro flow node configure` CLI carve-out** as regular connector activity nodes.
 
-1. **`uip maestro flow node configure`** — populates `inputs.detail` with connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, etc. This is the same CLI carve-out used for regular connector nodes.
-2. **Augment `configuration` with `fieldsContainer`** — `node configure` does not populate `fieldsContainer` (inputFields + outputJsonSchema). The CLI's `uip agent validate --inline-in-flow` reads `fieldsContainer` to build the tool's `resource.json`. Without it, the generated `resource.json` has empty schemas/parameters and the tool fails at runtime (`AGENT_RUNTIME.HTTP_ERROR` / status 400).
+When `node configure` detects an agent tool connector node, it automatically populates `optionalConfiguration.fieldsContainer` (with `inputFields`, `outputJsonSchema`, and `clrType` on every field) and `bodyParameters` with `{{prompt:}}` defaults. This is in addition to the standard configuration (connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, etc.). The `fieldsContainer` is what `uip agent validate --inline-in-flow` reads to build the tool's `resource.json`.
 
-### Step 1 — Configure with `node configure`
+### Configuration
 
 After adding the tool node to the flow (with its definition from `registry get`), run `node configure` exactly as for regular connector nodes:
 
@@ -647,91 +646,7 @@ uip maestro flow node configure <FlowFile>.flow <nodeId> \
   --output json
 ```
 
-This populates `inputs.detail` (connection, instanceParameters as a proper object, connector key, telemetry, etc.) and creates top-level `bindings[]` entries. The `endpoint` path and `method` come from the definition's `model.context[]` or from `uip is resources describe`.
-
-### Step 2 — Augment with `fieldsContainer`
-
-Fetch IS metadata, then patch the `configuration` in `inputs.detail` to add `fieldsContainer`:
-
-**2a. Fetch IS metadata.** Use `uip is resources describe` from the [/uipath:uipath-platform](/uipath:uipath-platform) skill (`references/integration-service/resources.md`):
-
-```bash
-uip is resources describe "<connector-key>" "<objectName>" \
-  --operation create --connection-id "<connectionId>" --output json
-```
-
-The `objectName` comes from the registry definition's `model.context[]` entry named `objectName` (e.g., `v2::webSearch`).
-
-**2b. Build `fieldsContainer.inputFields[]`.** Map each IS `requestFields[]` entry to the full ConnectorField format. Studio Web requires `clrType` or it throws "Field Type cannot be resolved.":
-
-```json
-{
-  "typeScriptDefinition": null,
-  "id": "<name>",
-  "name": "<name>",
-  "displayName": "<displayName>",
-  "description": "<description>",
-  "type": "<type>",
-  "sortOrder": "<1-based index>",
-  "defaultValue": "<first enum value or null>",
-  "primaryKey": false,
-  "enum": [{ "name": "<val>", "value": "<val>" }],
-  "design": { "loadByDefault": true, "isMultiSelect": false, "enableUserOverride": false, "isHidden": false, "position": "<required ? 'primary' : 'secondary'>", "validation": false },
-  "fieldActions": null,
-  "searchable": false,
-  "searchableJoins": null,
-  "required": "<true|false>",
-  "request": true,
-  "response": false,
-  "responseCurated": false,
-  "fieldLocation": "body",
-  "onCanvas": null,
-  "isJitField": false,
-  "isFieldActionParent": false,
-  "isMainResponseField": false,
-  "isMethodParameter": false,
-  "isBackgroundField": false,
-  "filterTree": null,
-  "filterNeedsRefresh": null,
-  "arrayInputPaths": null,
-  "clrType": { "_elementType": null, "_isNullable": false, "isArray": false, "genericTypeArguments": [], "fullName": null, "name": "<CLR_NAME>", "assemblyQualifiedName": "<CLR_NAME>", "isValueType": true },
-  "forceExpressionEditor": false,
-  "requiredGroups": null,
-  "disableExpressions": false,
-  "backingField": null,
-  "searchableDisplayName": null,
-  "selectedResourceId": null,
-  "sampleValue": ""
-}
-```
-
-**`clrType` mapping from IS field type:**
-
-| IS type | `clrType.name` / `assemblyQualifiedName` |
-| --- | --- |
-| `string` | `String` |
-| `integer` | `Int` |
-| `number` | `Double` |
-| `boolean` | `Boolean` |
-
-**2c. Build `fieldsContainer.outputJsonSchema`.** Build a JSON Schema object from IS `responseFields[]`. For array-typed fields (e.g., `results[*].title`), group under a single array property with `$ref` to a `definitions` entry.
-
-**2d. Patch the `configuration`.** Parse the `=jsonString:` configuration that `node configure` wrote, add `fieldsContainer` under `optionalConfiguration`, re-stringify and write back:
-
-```python
-config = json.loads(detail["configuration"][len("=jsonString:"):])
-config.setdefault("optionalConfiguration", {})["fieldsContainer"] = {
-    "inputFields": [...],        # from Step 2b
-    "outputJsonSchema": {...},   # from Step 2c
-    "outputFields": [],
-    "hasFileOutput": False,
-    "populateOutputFields": True,
-    "hasUnifiedTypes": True
-}
-detail["configuration"] = "=jsonString:" + json.dumps(config)
-```
-
-**2e. Add `bodyParameters`.** For each request field: enum fields → first enum value; required dynamic fields → `"{{prompt: \"<description>\"}}"` (the agent supplies at runtime); optional fields → `"{{prompt: \"<description>\"}}"`. Write to `inputs.detail.bodyParameters` via `Edit`.
+This single command populates the complete `inputs.detail` — connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, `fieldsContainer` (with `inputFields`, `outputJsonSchema`, `clrType`), and `bodyParameters` with `{{prompt:}}` defaults. It also creates the top-level `bindings[]` entries. The `endpoint` path and `method` come from the definition's `model.context[]` or from `uip is resources describe`.
 
 ### Debug Tips
 
