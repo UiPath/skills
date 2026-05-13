@@ -24,7 +24,8 @@ agent:
 sandbox:
   driver: tempdir
   python: {}
-  node: {}
+  node:
+    env_packages:
       - "@uipath/test-manager-tool"
 
 initial_prompt: |
