@@ -16,7 +16,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 [critical-rules.md](critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session. The rules below are the operational must-knows; the rest live in the canonical file.
 
-1. **Edit JSON files directly.** The CLI provides only `init` (scaffold) and `validate` (check + migrate). All configuration is a file edit. Resources live in `resources/{Name}/resource.json` — never inline in `agent.json`.
+1. **Use CLI commands for supported edits.** Prefer `uip agent input add`, `uip agent output add`, `uip agent tool add`, `uip agent context add`, and `uip agent escalation add` when they cover the requested change. Edit JSON directly only for fields the CLI does not expose. Resources still live in `resources/{Name}/resource.json` — never inline in `agent.json`.
 2. **Use `--output json`** on every `uip` command.
 3. **Validate after every bulk of related edits**, not after each line. Run `uip agent validate --output json`.
 4. **Keep `agent.json` ↔ `entry-points.json` schemas in sync.** `inputSchema`/`outputSchema` must mirror `input`/`output` field-for-field.
@@ -29,8 +29,8 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 Standard workflow for any low-code agent task:
 
 1. **Scaffold** — `uip solution new` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
-2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md).
-3. **Add capabilities** — pick from the Capability Registry below. Each adds its own `resources/{Name}/resource.json`.
+2. **Edit** — use `uip agent input/output add` for schema fields when possible; edit prompts, model, and contentTokens directly in `agent.json`. Schema reference in [agent-definition.md](agent-definition.md).
+3. **Add capabilities** — use `uip agent tool/context/escalation add` when supported, then pick from the Capability Registry below for advanced or capability-specific fields. Each resource lives in `resources/{Name}/resource.json`.
 4. **Validate** — `uip agent validate --output json`. Confirm `MigrationApplied`, `StorageVersion`, `Validated`.
 5. **Refresh solution resources** — `uip solution resource refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, escalations).
 6. **Bundle and upload** — `uip solution bundle` then `uip solution upload --output json` (with user consent per Rule 6).
