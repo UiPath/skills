@@ -114,10 +114,15 @@ jobs:
       # Plain `--registry=` does NOT bypass scope mappings; only the
       # scope-specific override does.
       #
-      # Pin `@uipath/rpa-tool` to the `^0.9` line (currently 0.9.1) to
-      # avoid silently picking up `1.0.0-alpha.*` if `latest` ever
-      # shifts. `@uipath/cli` and `@uipath/rpa-legacy-tool` stay on
-      # `latest` (only the rpa-tool line has the alpha divergence).
+      # `@uipath/cli` is pinned to the `alpha` dist-tag — every merge to
+      # cli/main publishes under `alpha` (see cli/.github/workflows/ci.yml),
+      # while `latest` only moves on manual dispatch and was running weeks
+      # behind, so smoke missed regressions in newly-added tools.
+      #
+      # `@uipath/rpa-tool` stays on the `^0.9` line (currently 0.9.1) to
+      # avoid silently picking up `1.0.0-alpha.*` (the rpa-tool line has
+      # its own alpha divergence). `@uipath/rpa-legacy-tool` stays on
+      # `latest`.
       #
       # `npm install -g` runs from a fresh tempdir so any future
       # workspace-aware `package.json` at the repo root cannot pull
@@ -125,7 +130,7 @@ jobs:
       # under `<npm-prefix>/@uipath/`, where uipcli's ToolManager
       # discovers tools, so `uip rpa …` / `uip rpa-legacy …` resolve
       # without triggering auto-install.
-      - name: Install uip CLI + RPA tools (public npm, rpa-tool >=0.9)
+      - name: Install uip CLI + RPA tools (public npm, cli@alpha, rpa-tool >=0.9)
         shell: bash
         run: |
           set -e
@@ -135,7 +140,7 @@ jobs:
           npm config get registry
           npm install -g \
             --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest \
+            @uipath/cli@alpha \
             "@uipath/rpa-tool@>=0.9" \
             @uipath/rpa-legacy-tool@latest
           uip --version
