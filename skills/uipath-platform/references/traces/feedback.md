@@ -108,6 +108,35 @@ uip traces feedback delete <feedback-id> \
   --output json
 ```
 
+## Choosing a span
+
+Omitting `--span-id` resolves to the root span of the trace. For RPA-launched agent jobs the root is the **Robot Job** wrapper — feedback lands on the wrong span and won't surface in the agent review grid.
+
+**Always pass `--span-id` for RPA-launched agent jobs.**
+
+### Span type → use case
+
+| Span name | When to target |
+|-----------|----------------|
+| `agentRun` | Overall agent quality — correctness, reasoning, plan execution |
+| `agentOutput` | Fabrication or formatting issues in emitted text |
+| `agentMemoryLookup` | Retrieval quality — wrong memory retrieved or missing context |
+
+### Find the agentRun span ID (RPA job)
+
+```bash
+SPAN_ID=$(uip traces spans get --job-key <JOB_KEY> --output json \
+  | jq -r '.Data[] | select(try (.Attributes | fromjson | .type == "agentRun") catch false) | .Id')
+uip traces feedback create \
+  --trace-id <TRACE_ID> \
+  --span-id "$SPAN_ID" \
+  --positive \
+  --folder-key <FOLDER_KEY> \
+  --output json
+```
+
+> **RPA job only.** For directly-invoked agents (not via RPA), the root span is the agent execution — omitting `--span-id` is safe.
+
 ## Mutual exclusion rules
 
 1. `--positive` / `--negative` — mutually exclusive on all commands
