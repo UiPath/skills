@@ -1,9 +1,9 @@
 task_id: skill-platform-orchestrator-processes-list
 description: >
-  Smoke test: agent uses the uipath-platform skill to list published processes
-  (releases) in a folder via `uip or processes list --folder-(key|path) ...`.
-  Auth/404 errors are acceptable outcomes — the goal is correct command shape,
-  not tenant state.
+  Smoke test: agent uses the uipath-platform skill to discover an Orchestrator
+  folder it can access and list its published processes (releases) via
+  `uip or processes list --folder-(key|path) ...`. Empty results are
+  acceptable — the goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
 sandbox:
@@ -11,8 +11,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  List the processes published in the Orchestrator folder with key
-  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
+  Discover the Orchestrator folders available in the current UiPath tenant and
+  list the processes published in any one of those folders.
 
 success_criteria:
   - type: command_executed
