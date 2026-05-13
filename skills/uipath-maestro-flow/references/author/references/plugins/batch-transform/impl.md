@@ -90,7 +90,7 @@ Notes:
 - **No instance-level `model` block.** BPMN type and `serviceType: "ECS.BatchTransform"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.batch-transform --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
 - **`typeVersion` must match `definitions[<batch-transform>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
 - `inputs.outputColumns` is an **array of objects** with exactly the keys `name` and `description`. Do not flatten to a map (`{ Category: "...", Summary: "..." }`) — the canvas editor and the BPMN serializer expect the array shape.
-- `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows; the engine wraps its result under that key). Do not rewrite to `=batchTransformResult`, `=result.output`, or similar — that's a stale pre-#1380 shape.
+- `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows; the engine wraps its result under that key). Do not rewrite to `=batchTransformResult`, `=result.output`, or similar.
 - `outputs.output.type` is **`"file"`**; the result is a file handle (not a row array).
 
 ## End-node output mapping
@@ -171,4 +171,4 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 - **Do not reference downstream rows inside the prompt** — each row is processed independently; there is no way to see sibling rows. Pre-aggregate or use [Summarize](../summarize/impl.md) on a synthesized document instead.
 - **Do not chain a Batch Transform's `$vars.{nodeId}.output` directly into a Script expecting rows** — it is a file handle, not a row array.
 - **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
-- **Do not write `outputs.output.source: "=batchTransformResult"`.** That string is a stale pre-#1380 shape; the canonical value is `"=response"` (the convention every BPMN ServiceTask follows).
+- **Do not write `outputs.output.source: "=batchTransformResult"`.** The canonical value is `"=response"` (the convention every BPMN ServiceTask follows).

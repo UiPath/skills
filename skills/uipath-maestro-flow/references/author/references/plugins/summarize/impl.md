@@ -113,7 +113,7 @@ Notes:
 
 - **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
 - **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
-- `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows). Do not rewrite to `=deepRagResult` or similar — that's a stale pre-#1380 shape.
+- `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows). Do not rewrite to `=deepRagResult` or similar.
 - `outputs.output.type` is **`"object"`**, with the nested PascalCase schema above.
 - Setting `returnCitations: true` populates `content.Citations`; setting `false` omits the array entirely (the downstream consumer should tolerate either).
 
@@ -195,4 +195,4 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 - **Do not assume `content.Citations` is always present.** When `returnCitations: false`, the field is omitted; downstream code must guard.
 - **Do not use lowercase field names** (`content.text`, `content.citations`, `.ordinal`, `.page`). The runtime emits PascalCase: `content.Text`, `content.Citations`, `Ordinal`, `PageNumber`, `Source`, `Reference`.
 - **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
-- **Do not write `outputs.output.source: "=deepRagResult"`.** That string is a stale pre-#1380 shape; the canonical value is `"=response"` (the convention every BPMN ServiceTask follows).
+- **Do not write `outputs.output.source: "=deepRagResult"`.** The canonical value is `"=response"` (the convention every BPMN ServiceTask follows).
