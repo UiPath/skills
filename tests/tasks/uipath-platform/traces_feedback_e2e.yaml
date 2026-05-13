@@ -20,7 +20,7 @@ initial_prompt: |
   Use the `uipath-platform` skill.
 
   Run a feedback round-trip on a real trace:
-  - Start a job for process `$TRACES_SMOKE_PROCESS_KEY` and save the result to job.json
+  - Start a job for process `$TRACES_SMOKE_PROCESS_KEY` with `--wait-for-completion` and save the result to job.json
   - Fetch the LLM trace spans for that job and save to spans.json
   - Create positive feedback on the trace and save the response to feedback_create.json
   - Fetch the feedback record back by ID and save to feedback_get.json
