@@ -193,11 +193,6 @@ ensure_npm_package() {
     return
   fi
 
-  if npm ls -g "$pkg" --depth=0 &>/dev/null \
-     && [ -z "$(npm outdated -g "$pkg" $UIPATH_REGISTRY_FLAG 2>/dev/null)" ]; then
-    return
-  fi
-
   local output
   if ! output="$(npm install -g $UIPATH_REGISTRY_FLAG "$pkg" 2>&1)"; then
     echo "Failed to install $pkg:" >&2
