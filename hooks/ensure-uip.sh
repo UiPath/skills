@@ -87,6 +87,28 @@ is_linked_package() {
   return 1
 }
 
+# Detect a scope mapped to a non-public feed (GitHub Packages, an internal
+# Artifactory, etc.). Such builds typically carry prerelease versions ahead
+# of the public `latest` tag — forcing an upgrade against the public
+# registry would downgrade the developer's chosen feed. Signal is the
+# merged npm config for `@<scope>:registry`: if the user's `.npmrc` (any
+# level) maps the package's scope to something other than the public
+# registry, leave the install alone. Reads merged config so project/user/
+# global/env overrides are all honored. Unscoped packages → never skip.
+is_from_other_feed() {
+  local pkg="$1" scope cfg
+  case "$pkg" in
+    @*/*) scope="${pkg%%/*}" ;;
+    *) return 1 ;;
+  esac
+  cfg="$(npm config get "$scope:registry" 2>/dev/null)"
+  [ -z "$cfg" ] || [ "$cfg" = "undefined" ] && return 1
+  case "${cfg%/}" in
+    https://registry.npmjs.org) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
 # npm install -g always re-downloads and re-installs, even if the same version
 # is already present. This is slow for a synchronous session hook and also
 # re-triggers package lifecycle scripts. Check first, install only when needed.
@@ -96,7 +118,7 @@ is_linked_package() {
 ensure_npm_package() {
   local pkg="$1"
 
-  if is_linked_package "$pkg"; then
+  if is_linked_package "$pkg" || is_from_other_feed "$pkg"; then
     return
   fi
 
