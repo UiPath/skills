@@ -269,15 +269,47 @@ def _non_empty_binding_value(value: Any) -> bool:
 
 
 def _find_project(pattern: str) -> str:
-    projects = sorted(glob.glob(pattern, recursive=True))
-    if not projects:
+    """Locate the *Flow* project directory matching ``pattern``.
+
+    Tasks that legitimately ship multi-project solutions (a Flow project
+    plus a sibling agent / sub-flow / RPA project — see e.g. coded_agent,
+    lowcode_agent) produce more than one ``project.uiproj`` under the
+    solution root. The Flow project is the one with
+    ``"ProjectType": "Flow"`` in its manifest; sibling resource projects
+    declare ``"ProjectType": "Agent"`` / ``"Coded"`` / ``"Process"``.
+    Filtering by manifest avoids a 1-of-N glob collision the symptom of
+    MST-9734.
+    """
+    candidates = sorted(glob.glob(pattern, recursive=True))
+    if not candidates:
         _fail(f"No project.uiproj found matching {pattern}")
-    if len(projects) > 1:
-        joined = "\n  - ".join(projects)
+    flow_projects = [p for p in candidates if _is_flow_project(p)]
+    if not flow_projects:
+        joined = "\n  - ".join(candidates)
         _fail(
-            f"Multiple projects match {pattern!r} — refusing to guess:\n  - {joined}"
+            f"No Flow project.uiproj found matching {pattern} — "
+            f"candidates exist but none declare ProjectType=\"Flow\":\n  - {joined}"
         )
-    return os.path.dirname(projects[0])
+    if len(flow_projects) > 1:
+        joined = "\n  - ".join(flow_projects)
+        _fail(
+            f"Multiple Flow projects match {pattern!r} — refusing to guess:\n  - {joined}"
+        )
+    return os.path.dirname(flow_projects[0])
+
+
+def _is_flow_project(path: str) -> bool:
+    """Return True iff ``path`` is a ``project.uiproj`` declaring a Flow project.
+
+    Returns False (rather than raising) for unreadable / malformed manifests
+    so a single bad sibling cannot mask a legitimate Flow project.
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return False
+    return manifest.get("ProjectType") == "Flow"
 
 
 def _stringify(values: Iterable[Any]) -> str:
