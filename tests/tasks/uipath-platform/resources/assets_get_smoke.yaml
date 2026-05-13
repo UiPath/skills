@@ -20,7 +20,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+resource\s+assets\s+get\s+\S'
     min_count: 1
-    weight: 2.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
