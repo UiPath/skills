@@ -3,6 +3,15 @@ description: >
   Create a UiPath Flow that invokes the name-to-age API workflow with the
   name 'tomasz' and returns his age. Exercises API workflow resource node
   discovery and wiring.
+
+  Skipping flow debug: `uip maestro flow debug` is inherently a live-tenant
+  operation (uploads to Studio Web, creates a PIMS debug instance) and the
+  maestro-flow skill itself forbids it as a validation step (SKILL.md). The
+  published API-workflow binding `Shared/uipath-maestro-flow/NameToAge APIWF`
+  is also unreliable across no-tenant sandboxes — PIMS returns
+  PIMS-100003/500. Structural checks against the produced `.flow` artifact
+  (node type, published binding shape, prompt-required input) cover the
+  agent-side correctness without the tenant dependency (MST-9611).
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource]
 max_iterations: 1
 
@@ -34,11 +43,11 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # ── Execution checks ──────────────────────────────────────────────────
+  # ── Structural checks (no live tenant required) ───────────────────────
   - type: run_command
-    description: "Flow has an API workflow node and debug returns an age"
+    description: "Flow has an api-workflow node, published binding, and inputs.name='tomasz'"
     command: "python3 $TASK_DIR/check_api_workflow_flow.py"
-    timeout: 300
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
