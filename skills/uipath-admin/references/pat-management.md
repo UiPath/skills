@@ -4,6 +4,16 @@ Workflows for managing personal access tokens via `uip admin pat`. For full comm
 
 PATs provide scoped API authentication for users — an alternative to OAuth2 client credentials when a user-context token is needed.
 
+## Lifetime Constraints
+
+| Constraint | Value |
+|------------|-------|
+| Minimum expiration | 1 day from now |
+| Default maximum | 360 days (~1 year) |
+| Hard maximum | 1,800 days (~5 years), configurable per org |
+| Max tokens per user | 5 (default), up to 50 |
+| Max description length | 256 characters |
+
 ## Workflow: Create a PAT
 
 1. Discover available scopes: `uip admin scopes list --output json`
@@ -56,5 +66,8 @@ uip admin pat regenerate <TOKEN_ID> --expiration "2028-01-15" --output json
 |-------|-------|-----|
 | `not found` | Invalid token ID | Run `pat list` to find correct ID |
 | `Invalid expiration` | Bad date format | Use ISO 8601: `YYYY-MM-DD` |
+| `expiration too small` | Less than 1 day from now | Set at least 1 day in the future |
+| `expiration too large` | Exceeds org max (default 360 days) | Shorten expiration |
+| `limit reached` | Max tokens per user (default 5) | Revoke unused tokens first |
 | `scope not found` | Invalid scope name | Run `uip admin scopes list` to find valid scopes |
 | `HTTP 403` | Listing all tokens without admin role | Omit `--scope all` to list only your own |

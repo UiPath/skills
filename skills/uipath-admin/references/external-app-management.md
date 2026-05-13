@@ -23,7 +23,7 @@ See [SKILL.md — Scope Types](../SKILL.md#scope-types) for the `--app-scope` vs
 
 ## Workflow: Create a Public App (SPA/Mobile)
 
-Non-confidential apps have no client secret. Require `--redirect-uri` and only support user scopes.
+Non-confidential apps have no client secret. Require `--redirect-uri` and only support `--user-scope`. Do NOT use `--app-scope` with `--non-confidential` — the CLI will reject it. If user wants app-only scopes, create a confidential app (default) instead.
 
 ```bash
 uip admin external-apps create "<APP_NAME>" \
@@ -44,6 +44,8 @@ uip admin external-apps create "<APP_NAME>" \
 ```
 
 Apps with `--user-scope` require `--redirect-uri` for OAuth2 authorization code flow.
+
+> **Scope types are tied to grant types.** `client_credentials` grant (non-interactive, e.g., `uip login --client-id`) can only access app scopes. `authorization_code` grant (interactive browser flow) can only access user scopes. An app with both scope types registered works — but each grant type can only use its matching scopes. Requesting user scopes via client_credentials will fail with "not allowed to access User scopes".
 
 ## Workflow: Generate/Delete Secrets
 

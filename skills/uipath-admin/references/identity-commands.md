@@ -314,7 +314,11 @@ uip admin robot-accounts delete <ROBOT_ACCOUNT_ID> --output json
 
 ## External Apps — `uip admin external-apps`
 
-> **IDs and names are positional arguments, not flags.** Write `external-apps get <CLIENT_ID>`, NOT `external-apps get --client-id <CLIENT_ID>`. Same for `create <NAME>`, `update <ID>`, `delete <ID>`, `generate-secret <ID>`, `delete-secret <ID>`.
+> **IDs and names are positional arguments, not flags.** Write `external-apps create "My App"`, NOT `external-apps create --name "My App"`. Same for `get <CLIENT_ID>`, `update <ID>`, `delete <ID>`, `generate-secret <ID>`, `delete-secret <ID>`.
+>
+> **Non-confidential apps only support `--user-scope`.** Do NOT combine `--non-confidential` with `--app-scope` — the CLI will reject it. If user wants app-only scopes, use confidential (default).
+>
+> **`--redirect-uri` is required** for `--non-confidential` apps and any app with `--user-scope`. Always ask the user for their callback URL — do not omit it.
 
 ### `external-apps list`
 

@@ -12,10 +12,25 @@ uip admin smtp get --output json
 
 Returns host, port, SSL config, sender address, and display name. Password is never returned.
 
-## Workflow: Configure SMTP
+## Workflow: Configure SMTP (Recommended)
+
+**Test first, then save.** This prevents saving broken settings that would disrupt platform emails.
 
 1. Get current settings: `uip admin smtp get --output json`
-2. Update desired fields (only provided fields change):
+2. Test the new settings without saving — pass all SMTP options to `test`:
+   ```bash
+   uip admin smtp test \
+     --recipient "admin@example.com" \
+     --host "smtp.example.com" \
+     --port 587 \
+     --enable-ssl "true" \
+     --username "smtp-user" \
+     --password "smtp-pass" \
+     --from-address "noreply@example.com" \
+     --from-display-name "UiPath Platform" \
+     --output json
+   ```
+3. If test succeeds, save the settings:
    ```bash
    uip admin smtp update \
      --host "smtp.example.com" \
@@ -27,30 +42,23 @@ Returns host, port, SSL config, sender address, and display name. Password is ne
      --from-display-name "UiPath Platform" \
      --output json
    ```
-3. Test the configuration: `uip admin smtp test --recipient "admin@example.com" --output json`
-4. Verify by sending a user invite or password reset
+4. If test fails, fix the settings and re-test before saving.
 
-## Workflow: Test SMTP (Without Saving)
+When custom options are provided to `test`, `--password` is required.
 
-Test custom settings before committing them — pass SMTP options directly to `test`:
+> If user explicitly asks to update without testing first, proceed — but note this is not recommended as broken settings will disrupt platform emails until corrected.
+
+## Workflow: Test Saved Settings
+
+Test the currently saved SMTP configuration:
 
 ```bash
-uip admin smtp test \
-  --recipient "admin@example.com" \
-  --host "smtp.newprovider.com" \
-  --port 465 \
-  --enable-ssl "true" \
-  --username "new-user" \
-  --password "new-pass" \
-  --from-address "test@example.com" \
-  --output json
+uip admin smtp test --recipient "admin@example.com" --output json
 ```
-
-When custom options are provided, `--password` is required.
 
 ## Workflow: Delete SMTP Settings
 
-Removes all SMTP configuration. Confirm with user first — platform emails will stop working.
+Removes custom SMTP configuration, reverting to platform defaults. Confirm with user first.
 
 ```bash
 uip admin smtp delete --output json

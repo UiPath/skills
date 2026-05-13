@@ -37,7 +37,9 @@ Identity Server management via `uip admin`. Users, groups, robot accounts, exter
 ## What NOT to Do
 
 1. **Never delete built-in groups.** `type: "BuiltIn"` groups cannot be deleted. Only custom groups.
-2. **Never pass IDs as flags.** Resource IDs and names are positional arguments: `groups members add <GROUP_ID> --user-ids ...`, NOT `--group-id <GROUP_ID>`. Same for all `get`, `update`, `delete`, `create`, `revoke`, `regenerate` subcommands.
+2. **Never pass IDs or names as flags.** They are positional arguments: `external-apps create "My App"`, NOT `--name "My App"`. Same for all `get`, `update`, `delete`, `create`, `revoke`, `regenerate` subcommands.
+3. **Never combine `--non-confidential` with `--app-scope`.** Non-confidential apps only support `--user-scope`. If user wants app-only scopes, use confidential (default).
+4. **Always ask for `--redirect-uri` when creating non-confidential apps or apps with `--user-scope`.** It is required — do not omit or default it. Ask the user for their callback URL.
 
 ## Quick Start
 
