@@ -130,6 +130,10 @@ uip df records query <entity-id> \
 
 Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`. For the full type table with SQL backing types, see [`references/entity-schema.md`](references/entity-schema.md).
 
+### Advanced Field Constraints
+
+Optional per-type constraints on create/update — `lengthLimit` (STRING, MULTILINE_TEXT), `maxValue` / `minValue` (INTEGER, BIG_INTEGER, DECIMAL, FLOAT, DOUBLE), `decimalPrecision` (DECIMAL, FLOAT, DOUBLE). See `references/entity-schema.md` for ranges and examples.
+
 ---
 
 ## Workflow: Discover → Act → Verify
@@ -171,6 +175,10 @@ Pass via `--body` or `--file`. Use `--limit` and `--cursor` CLI flags for pagina
 - Operators: `=`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `not contains`, `startswith`, `endswith`, `in`, `not in`
 - For `in` / `not in` use `"valueList": ["a","b","c"]` — **not** a comma-separated `value` string
 - Response includes `HasNextPage` and `NextCursor` — pass `NextCursor` to `--cursor` for the next page
+
+## Pagination
+
+`records list` and `records query` accept `--limit` (default `50`, min `1`), `--cursor <NextCursor>` (verbatim from previous response), and `-o, --offset <number>` (jump to the page containing that record index — mutually exclusive with `--cursor`). Loop until `HasNextPage: false`. See `references/records-query.md`.
 
 ---
 
