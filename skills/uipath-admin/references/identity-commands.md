@@ -328,7 +328,7 @@ uip admin external-apps list --output json
 
 ### `external-apps get`
 
-Get external app details including resources and scopes.
+Get external app details including resources, scopes, and federated credentials.
 
 ```bash
 uip admin external-apps get <CLIENT_ID> --output json
@@ -338,23 +338,25 @@ uip admin external-apps get <CLIENT_ID> --output json
 
 ### `external-apps create`
 
-Create a confidential external app. A client secret is auto-generated and returned once.
+Create an external app. Confidential by default (generates client secret). Use `--non-confidential` for public clients.
 
 ```bash
 uip admin external-apps create "<APP_NAME>" \
-  --scope "OR.Folders,OR.Assets,OR.Queues" \
+  --app-scope "OR.Folders,OR.Assets,OR.Queues" \
   --output json
 ```
 
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<APP_NAME>` | Yes | App display name |
-| `--scope <scopes>` | Yes | Comma-separated scope names |
-| `--redirect-uri <uri>` | No | OAuth2 redirect URI |
+| `--app-scope <scopes>` | Conditional | Comma-separated application scopes (at least one scope type required) |
+| `--user-scope <scopes>` | Conditional | Comma-separated user (delegated) scopes |
+| `--scope <scopes>` | No | Deprecated alias for `--app-scope` |
+| `--redirect-uri <uri>` | Conditional | OAuth2 redirect URI(s), comma-separated. Required with `--user-scope` or `--non-confidential` |
+| `--non-confidential` | No | Create public client (no secret) |
+| `--no-secret` | No | Skip generating secret on creation |
 
 **Output code:** `ExternalClientCreated`
-
-Common scopes: `OR.Folders`, `OR.Assets`, `OR.Queues`, `OR.Jobs`, `OR.Machines`, `OR.Robots`, `OR.Execution`, `OR.Monitoring`.
 
 ### `external-apps update`
 
@@ -363,7 +365,7 @@ Update an external app. At least one field flag is required.
 ```bash
 uip admin external-apps update <CLIENT_ID> \
   --name "<NEW_NAME>" \
-  --scope "OR.Folders,OR.Jobs" \
+  --app-scope "OR.Folders,OR.Jobs" \
   --output json
 ```
 
@@ -371,8 +373,10 @@ uip admin external-apps update <CLIENT_ID> \
 |---------------|----------|-------------|
 | `<CLIENT_ID>` | Yes | External app ID |
 | `-n, --name <name>` | No | New display name |
-| `--redirect-uri <uri>` | No | New redirect URI |
-| `--scope <scopes>` | No | New comma-separated scopes (replaces existing) |
+| `--redirect-uri <uri>` | No | New redirect URI(s) |
+| `--app-scope <scopes>` | No | New application scopes (replaces existing) |
+| `--user-scope <scopes>` | No | New user scopes (replaces existing) |
+| `--scope <scopes>` | No | Deprecated alias for `--app-scope` |
 
 **Output code:** `ExternalClientUpdated`
 
@@ -388,7 +392,7 @@ uip admin external-apps delete <CLIENT_ID> --output json
 
 ### `external-apps generate-secret`
 
-Generate a new secret for an external app. The secret value is returned only once.
+Generate a new secret for an external app. Value returned only once.
 
 ```bash
 uip admin external-apps generate-secret <CLIENT_ID> --output json
@@ -415,3 +419,226 @@ uip admin external-apps delete-secret <SECRET_ID> --output json
 | `<SECRET_ID>` | Yes | Secret ID (numeric) |
 
 **Output code:** `ExternalClientSecretDeleted`
+
+### `external-apps federated-credentials list`
+
+List federated credentials for an external app.
+
+```bash
+uip admin external-apps federated-credentials list <CLIENT_ID> --output json
+```
+
+**Output code:** `FederatedCredentialList`
+
+### `external-apps federated-credentials get`
+
+Get a federated credential by ID.
+
+```bash
+uip admin external-apps federated-credentials get <CLIENT_ID> <CREDENTIAL_ID> --output json
+```
+
+**Output code:** `FederatedCredentialDetails`
+
+### `external-apps federated-credentials create`
+
+Create a federated credential. Maps an external identity (e.g., GitHub Actions OIDC) to this app.
+
+```bash
+uip admin external-apps federated-credentials create <CLIENT_ID> \
+  --name "GitHub Actions" \
+  --issuer "https://token.actions.githubusercontent.com" \
+  --audience "api://AzureADTokenExchange" \
+  --subject "repo:myorg/myrepo:ref:refs/heads/main" \
+  --output json
+```
+
+| Argument/Flag | Required | Description |
+|---------------|----------|-------------|
+| `<CLIENT_ID>` | Yes | External app ID |
+| `-n, --name <name>` | Yes | Credential name |
+| `--issuer <url>` | Yes | Token issuer URL |
+| `--audience <audience>` | Yes | Expected audience claim |
+| `--subject <subject>` | Yes | Expected subject claim |
+| `--description <text>` | No | Description |
+
+**Output code:** `FederatedCredentialCreated`
+
+### `external-apps federated-credentials update`
+
+Update a federated credential. All fields required (full replace).
+
+```bash
+uip admin external-apps federated-credentials update <CLIENT_ID> <CREDENTIAL_ID> \
+  --name "Updated Name" \
+  --issuer "https://token.actions.githubusercontent.com" \
+  --audience "api://AzureADTokenExchange" \
+  --subject "repo:myorg/myrepo:ref:refs/heads/release" \
+  --output json
+```
+
+**Output code:** `FederatedCredentialUpdated`
+
+### `external-apps federated-credentials delete`
+
+Delete a federated credential.
+
+```bash
+uip admin external-apps federated-credentials delete <CLIENT_ID> <CREDENTIAL_ID> --output json
+```
+
+**Output code:** `FederatedCredentialDeleted`
+
+---
+
+## Personal Access Tokens — `uip admin pat`
+
+> **Token ID is a positional argument for `revoke` and `regenerate`.** Write `pat revoke <TOKEN_ID>`, NOT `pat revoke --token-id <TOKEN_ID>`.
+
+### `pat list`
+
+List personal access tokens. By default lists your own. Use `--scope all` for all org tokens (admin only).
+
+```bash
+uip admin pat list --output json
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--scope <scope>` | No | `all` to list all org tokens (admin only) |
+| `--search <term>` | No | Filter by user search term (implies `--scope all`) |
+| `-l, --limit <number>` | No | Items to return (default: 50) |
+| `--offset <number>` | No | Items to skip (default: 0) |
+
+**Output code:** `PatList`
+
+### `pat create`
+
+Create a personal access token. Token value returned only once.
+
+```bash
+uip admin pat create \
+  --description "CI/CD pipeline token" \
+  --expiration "2027-01-15" \
+  --scopes "OR.Folders.Read,OR.Jobs.Read" \
+  --output json
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--description <text>` | Yes | Token description |
+| `--expiration <date>` | Yes | Expiration date (ISO 8601: `YYYY-MM-DD`) |
+| `--scopes <scopes>` | Yes | Comma-separated scope names |
+
+**Output code:** `PatCreated`
+
+### `pat revoke`
+
+Revoke a personal access token.
+
+```bash
+uip admin pat revoke <TOKEN_ID> --output json
+```
+
+**Output code:** `PatRevoked`
+
+### `pat regenerate`
+
+Regenerate a token with new expiration. New token value returned only once.
+
+```bash
+uip admin pat regenerate <TOKEN_ID> --expiration "2028-01-15" --output json
+```
+
+| Argument/Flag | Required | Description |
+|---------------|----------|-------------|
+| `<TOKEN_ID>` | Yes | Token ID (UUID) |
+| `--expiration <date>` | Yes | New expiration date (ISO 8601: `YYYY-MM-DD`) |
+
+**Output code:** `PatRegenerated`
+
+---
+
+## SMTP — `uip admin smtp`
+
+### `smtp get`
+
+Get current SMTP settings.
+
+```bash
+uip admin smtp get --output json
+```
+
+**Output code:** `SmtpSettings`
+
+### `smtp update`
+
+Update SMTP settings. At least one field required.
+
+```bash
+uip admin smtp update \
+  --host "smtp.example.com" \
+  --port 587 \
+  --enable-ssl "true" \
+  --username "smtp-user" \
+  --password "smtp-pass" \
+  --from-address "noreply@example.com" \
+  --output json
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--host <host>` | No | SMTP server hostname |
+| `--port <port>` | No | SMTP server port (1-65535) |
+| `--username <username>` | No | SMTP auth username |
+| `--password <password>` | No | SMTP auth password |
+| `--domain <domain>` | No | SMTP auth domain |
+| `--enable-ssl <value>` | No | Enable SSL/TLS: `true` or `false` |
+| `--use-default-credentials <value>` | No | Use Windows credentials: `true` or `false` |
+| `--from-address <email>` | No | Sender email address |
+| `--from-display-name <name>` | No | Sender display name |
+| `--connection-timeout <ms>` | No | Connection timeout in milliseconds (1-300000) |
+
+**Output code:** `SmtpSettingsUpdated`
+
+### `smtp delete`
+
+Delete all SMTP settings. Platform emails will stop working.
+
+```bash
+uip admin smtp delete --output json
+```
+
+**Output code:** `SmtpSettingsDeleted`
+
+### `smtp test`
+
+Test SMTP by sending a test email. Uses saved settings by default. Pass SMTP options to test custom settings without saving (requires `--password` when using custom settings).
+
+```bash
+uip admin smtp test --recipient "admin@example.com" --output json
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--recipient <email>` | Yes | Email address to send test to |
+| `--host <host>` | No | Custom SMTP host (test only) |
+| `--port <port>` | No | Custom SMTP port (test only) |
+| `--password <password>` | Conditional | Required when using custom settings |
+| *(other SMTP flags)* | No | Same as `smtp update` — used for testing only |
+
+**Output code:** `SmtpTestSent`
+
+---
+
+## Scopes — `uip admin scopes`
+
+### `scopes list`
+
+List all available OAuth2 scopes grouped by resource. Use to discover valid scope names for external apps and PATs.
+
+```bash
+uip admin scopes list --output json
+```
+
+**Output code:** `ScopesList`
