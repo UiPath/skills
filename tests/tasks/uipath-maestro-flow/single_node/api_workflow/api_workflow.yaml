@@ -34,11 +34,11 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # ── Execution checks ──────────────────────────────────────────────────
+  # ── Structural checks (no live tenant required) ───────────────────────
   - type: run_command
-    description: "Flow has an API workflow node and debug returns an age"
+    description: "Flow has an api-workflow node, published binding, and inputs.name='tomasz'"
     command: "python3 $TASK_DIR/check_api_workflow_flow.py"
-    timeout: 300
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
