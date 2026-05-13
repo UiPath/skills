@@ -15,13 +15,18 @@
 | `uip or jobs traces <job-key>` | orchestrator-tool | Lists trace IDs attached to a job |
 | `uip traces spans get` | traces-tool | Fetches detailed span data for a trace or job |
 
-**Typical flow:** Use `uip or jobs traces` to discover trace IDs, then `uip traces spans get` for the full span tree.
-
-Or skip straight to spans by job key:
+**Typical flow:** Start job with `--wait-for-completion`, then fetch spans by job key.
 
 ```bash
-uip traces spans get --job-key <job-key> --output json
+# 1. Start job and wait for it to finish
+uip or jobs start <PROCESS_KEY> --wait-for-completion --output json > job.json
+
+# 2. Fetch spans using the job key from step 1
+JOB_KEY=$(jq -r '.Data.Key // .Key' job.json)
+uip traces spans get --job-key "$JOB_KEY" --output json > spans.json
 ```
+
+> **Always use `--wait-for-completion`.** Starting without it returns before the agent runs — spans won't exist yet when you fetch them.
 
 ## Command: `uip traces spans get`
 
