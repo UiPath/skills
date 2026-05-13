@@ -6,11 +6,13 @@ description: >
   fetch, and bodyParameters carries the required fields.summary value.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira]
 
-task_timeout: 1500
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
@@ -67,4 +69,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-max_iterations: 1

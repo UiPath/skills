@@ -4,12 +4,13 @@ description: >
   to map it to the corresponding season name. Exercises Switch node discovery,
   multi-case routing, and per-branch Script logic.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, node:switch]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

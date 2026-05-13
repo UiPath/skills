@@ -8,12 +8,13 @@ description: >
   Summarize requires a pre-uploaded Orchestrator attachment and the ECS.DeepRag
   service backend, neither of which the test sandbox can provision deterministically.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, node:summarize]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

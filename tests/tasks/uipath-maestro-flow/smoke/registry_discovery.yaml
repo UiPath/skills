@@ -7,6 +7,8 @@ tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 28
 
 sandbox:

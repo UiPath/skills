@@ -11,6 +11,8 @@ tags: [uipath-diagnostics, smoke, uip-mock]
 agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write"]
+
+run_limits:
   max_turns: 5
 
 sandbox:
@@ -76,8 +78,3 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?<![\./\w])uip\s+is\s+connections\s+list'
     min_count: 1
-
-max_iterations: 1
-
-llm_reviewer:
-  enabled: false

@@ -9,6 +9,9 @@ tags: [uipath-diagnostics, e2e, faithful-replay, maestro]
 agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
 
@@ -72,9 +75,6 @@ success_criteria:
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-max_iterations: 1
-task_timeout: 2400
-
 # Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
 # end-to-end without a human. The simulator always picks the recommended /
 # affirmative option, and never invents data — keeps the diagnostic flow
@@ -97,6 +97,3 @@ simulation:
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
-
-llm_reviewer:
-  enabled: false

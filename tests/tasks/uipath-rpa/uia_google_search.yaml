@@ -13,7 +13,6 @@ tags: [uipath-rpa, smoke, uia, xaml]
 # (incl. UIAutomation) + spins up Helm — 60–90s cold start. `validate`
 # on a XAML workflow with UIA activities can run another ~45s. Budget
 # accordingly.
-task_timeout: 1800
 agent:
   type: claude-code
   # Bumped from 40 → 60: CI run 24903966636 hit error_max_turns at 40 on
@@ -21,39 +20,15 @@ agent:
   # auth-retry loops. Prompt now tells the agent to hand-author
   # project.json directly, but give turn headroom for the XAML
   # discovery/edit cycles regardless.
+
+run_limits:
+  task_timeout: 1800
   max_turns: 60
   turn_timeout: 1200
 
 sandbox:
   driver: tempdir
   python: {}
-
-llm_reviewer:
-  enabled: true
-  model: claude-sonnet-4-6
-  temperature: 0.0
-  max_tokens: 600
-  prompt: |
-    Evaluate whether the agent built a correct standard (XAML, VB.NET)
-    UiPath RPA project for this CI task using the canonical skill flow.
-
-    Score on:
-    - GoogleSearch/project.json exists with `"expressionLanguage":
-      "VisualBasic"` and UIA activity packages in dependencies.
-    - GoogleSearch/Main.xaml opens chrome.exe at google.com, types
-      "UiPath automation" into the search box, and clicks the search
-      button, using the three known selectors (chrome.exe URL,
-      textarea name='q', input name='btnK'). Use the modern Nx
-      activities (NApplicationCard + NTypeInto + NClick); the classic
-      OpenBrowser + TypeInto + Click triple is not a clean fit.
-      The Object Repository / configure-target
-      pipeline can't run without an interactive Studio session.
-    - The harness runs `uip rpa build` programmatically; the build's
-      exit code is the compile gate.
-
-    Reply terse, developer-style. Score 1.0 if selectors + query are
-    right and the project compiles.
-
 initial_prompt: |
   Build a standard UiPath RPA project named "GoogleSearch" (XAML
   workflow, VisualBasic expression language) under ./GoogleSearch

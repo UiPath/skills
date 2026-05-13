@@ -17,6 +17,8 @@ skip: true
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 50
   turn_timeout: 1800
 

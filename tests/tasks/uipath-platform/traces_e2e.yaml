@@ -5,7 +5,6 @@ description: >
   confirm at least one span is returned. Unlike traces_fetch.yaml (smoke),
   this exercises the full round-trip against a real job and real traces.
 tags: [uipath-platform, e2e, lifecycle:discover]
-max_iterations: 1
 
 agent:
   type: claude-code

@@ -6,7 +6,6 @@ description: >
   feedback on that trace, then fetches the feedback by ID and verifies the
   round-trip. No hardcoded IDs — all values derived at runtime.
 tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover]
-max_iterations: 1
 
 agent:
   type: claude-code

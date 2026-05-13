@@ -12,12 +12,13 @@ description: >
   trigger lookback). Adding a debug E2E requires a dedicated service
   mailbox with no rules; tracked as follow-up.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

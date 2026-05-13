@@ -5,12 +5,13 @@ description: >
   SDD with all template sections populated. A Python check script validates
   structural completeness and content quality.
 tags: [uipath-solution-design, e2e, rpa, sdd]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

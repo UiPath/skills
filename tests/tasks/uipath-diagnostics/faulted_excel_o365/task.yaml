@@ -19,6 +19,9 @@ agent:
   # Need Skill/Agent/AskUserQuestion/TodoWrite beyond the default's set;
   # the diagnostic skill orchestrates sub-agents.
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
 
@@ -166,11 +169,6 @@ success_criteria:
 
       Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
 
-max_iterations: 1
 # Override experiments/default.yaml's 600s limit -- the multi-agent diagnostic
 # skill (triage -> hypothesis-generator -> tester -> presenter) routinely takes
 # 10-20 minutes when sub-agents run sequentially.
-task_timeout: 2400   # 40 min total; one extra phase (depth_check) + possible re-test round
-
-llm_reviewer:
-  enabled: false

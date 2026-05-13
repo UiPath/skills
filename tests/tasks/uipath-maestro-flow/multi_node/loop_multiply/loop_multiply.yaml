@@ -4,12 +4,13 @@ description: >
   [13, 15, 17] together and return the product (3315). Exercises loop node
   wiring, variable updates, and state accumulation.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:loop]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

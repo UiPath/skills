@@ -13,10 +13,11 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 2400
   max_turns: 120
   turn_timeout: 1200
-
-task_timeout: 2400
 
 sandbox:
   driver: tempdir
@@ -72,4 +73,3 @@ success_criteria:
     weight: 10.0
     pass_threshold: 1.0
 
-max_iterations: 1

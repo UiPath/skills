@@ -14,8 +14,11 @@ tags: [uipath-diagnostics, e2e, faulted-jobs, orchestrator, system-activities, g
 agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 4500
   max_turns: 60
-  turn_timeout: 3600   # 60 min per turn — LLMGW-proxied runs of this scenario have observed up to ~30 min per turn
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -137,13 +140,11 @@ success_criteria:
 
       Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
 
-max_iterations: 1
 # Override experiments/default.yaml's 600s limit -- the multi-agent
 # diagnostic skill (triage -> hypothesis-generator -> tester -> presenter)
 # takes 25-35 min end-to-end when routed through LLMGW (proxy mode).
 # Direct Anthropic routing is faster (~8-12 min) but the test config
 # defaults to proxy, so we size for the slower path.
-task_timeout: 4500
 
 # Auto-answer the diagnostic skill's AskUserQuestion calls so the test
 # runs end-to-end without a human. The simulator always picks the
@@ -167,6 +168,3 @@ simulation:
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
-
-llm_reviewer:
-  enabled: false
