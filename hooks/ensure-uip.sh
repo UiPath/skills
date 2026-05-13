@@ -128,16 +128,23 @@ is_symlink_or_junction() {
   # with every Windows install since XP, no admin needed for query, no
   # locale-dependent output to parse. Prefer the `.exe` form so WSL
   # interop resolves it without relying on PATHEXT.
-  if command -v fsutil.exe &>/dev/null; then
-    fsutil.exe reparsepoint query "$win_p" &>/dev/null
-    return $?
+  # Windows: delegate to fsutil ONLY if the input was originally a
+  # Windows-form path. In WSL with Windows interop, fsutil.exe is on
+  # PATH even when npm is Linux-installed and the package directory is
+  # a genuine Linux symlink — querying it through a `\\wsl$\...` path
+  # is unreliable, so prefer the POSIX `[ -L ]` test for POSIX inputs.
+  if [[ "$input" =~ ^[A-Za-z]: ]]; then
+    if command -v fsutil.exe &>/dev/null; then
+      fsutil.exe reparsepoint query "$win_p" &>/dev/null
+      return $?
+    fi
+    if command -v fsutil &>/dev/null; then
+      fsutil reparsepoint query "$win_p" &>/dev/null
+      return $?
+    fi
   fi
-  if command -v fsutil &>/dev/null; then
-    fsutil reparsepoint query "$win_p" &>/dev/null
-    return $?
-  fi
-  # POSIX (Linux/macOS): `[ -L ]` covers symbolic links; junctions don't
-  # exist on these platforms.
+  # POSIX (Linux/macOS, and WSL with POSIX-form input): `[ -L ]` covers
+  # symbolic links; junctions don't exist on these platforms.
   [ -L "$posix_p" ]
 }
 
