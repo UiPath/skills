@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T11:08:25.215Z",
+      "Message": "[Get Asset] Orchestrator response: \r\nThe asset 'MyPerRobotConfig' does not have a value associated with this robot."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T11:08:25.232Z",
+      "Message": "The asset 'MyPerRobotConfig' does not have a value associated with this robot.\r\nin Main.xaml\r\n    at GetRobotAsset \"Get Asset\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}
