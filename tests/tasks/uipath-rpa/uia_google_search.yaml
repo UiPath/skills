@@ -6,18 +6,18 @@ description: >
   Type Into, and Click UIA activities with pre-known selectors. Validates the
   full XAML surface the skill teaches: project.json with VisualBasic expression
   language, ApplicationCard / TypeInto / Click activity XML, and the
-  `uip rpa get-errors` compile gate.
+  `uip rpa validate` compile gate.
 tags: [uipath-rpa, smoke, uia, xaml]
 
 # Standard XAML + UIA activities. First `uip rpa` call restores packages
-# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `get-errors`
+# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `validate`
 # on a XAML workflow with UIA activities can run another ~45s. Budget
 # accordingly.
 task_timeout: 1800
 agent:
   type: claude-code
   # Bumped from 40 → 60: CI run 24903966636 hit error_max_turns at 40 on
-  # this task after spending many turns on `uip rpa create-project`
+  # this task after spending many turns on `uip rpa init`
   # auth-retry loops. Prompt now tells the agent to hand-author
   # project.json directly, but give turn headroom for the XAML
   # discovery/edit cycles regardless.
@@ -82,7 +82,7 @@ initial_prompt: |
   Follow the uipath-rpa skill's normal flow for everything else
   (project scaffolding, validation). The `uip` CLI is authenticated
   against the sandbox tenant, so Helm-backed commands
-  (`create-project`, `get-default-activity-xaml`, `get-errors`)
+  (`init`, `activities get-default-xaml`, `validate`)
   work as documented in the skill.
 
   Use `--output json` on any uip commands you run.
@@ -127,13 +127,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
+  # Skill-fidelity signal: the skill teaches `uip rpa validate` as
   # the canonical validation step. We don't gate on its exit code —
   # the actual compile gate is the `uip rpa build` run_command below.
   - type: command_executed
-    description: "Agent ran uip rpa get-errors on Main.xaml (skill-canonical validation)"
+    description: "Agent ran uip rpa validate on Main.xaml (skill-canonical validation)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rpa\s+get-errors.*Main\.xaml'
+    command_pattern: 'uip\s+rpa\s+validate.*Main\.xaml'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

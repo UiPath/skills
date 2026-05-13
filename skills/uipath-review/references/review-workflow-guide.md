@@ -118,7 +118,7 @@ Rarely, a directory may contain nested `.uipx` files:
 
 ### RPA Validation and Workflow Analyzer
 
-The `uip rpa get-errors` command performs both structural validation AND Workflow Analyzer rule checks. Run it on **every entry point file**, not just Main.xaml.
+The `uip rpa validate` command performs both structural validation AND Workflow Analyzer rule checks. Run it on **every entry point file**, not just Main.xaml.
 
 **Step 1 — Discover all entry points:**
 
@@ -131,7 +131,7 @@ cat "<PROJECT_DIR>/project.json" | python3 -c "import json,sys; d=json.load(sys.
 
 ```bash
 # Run for EACH entry point file discovered above
-uip rpa get-errors --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 **Step 3 — Report ALL results:**
@@ -167,7 +167,7 @@ Include the Workflow Analyzer rule ID (e.g., ST-NMG-001, ST-DBP-003, ST-SEC-007)
 **Interpret results:**
 - `severity: "Error"` → maps to **Critical** in review report
 - `severity: "Warning"` → maps to **Warning** in review report
-- 0 errors does not mean the project is correct — runtime testing (`run-file`) catches logic errors
+- 0 errors does not mean the project is correct — runtime testing (`run`) catches logic errors
 
 ### Agent Validation
 
@@ -220,7 +220,7 @@ Are all required files present, correctly formatted, and schema-compliant?
 
 | Artifact | Required Files | Schema Validation |
 |---|---|---|
-| RPA | `project.json`, entry point file (.xaml or .cs) | `uip rpa get-errors` |
+| RPA | `project.json`, entry point file (.xaml or .cs) | `uip rpa validate` |
 | Agent (Low-Code) | `agent.json` | `uip agent validate` |
 | Agent (Coded) | `main.py`, framework config, `pyproject.toml` | Import check + eval |
 | Flow | `.flow`, `project.uiproj` | `uip flow validate` |
@@ -318,7 +318,7 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 
 ### Automated Validation & Workflow Analyzer Results
 
-> This section is MANDATORY. Every review must include the output of `uip rpa get-errors` (for RPA), `uip agent validate` (for agents), `uip flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
+> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
 
 | Project | File | Command | Errors | Warnings | Info |
 |---|---|---|---|---|---|

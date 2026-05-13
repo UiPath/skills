@@ -77,7 +77,7 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
   max_turns: 60
-  turn_timeout: 1200
+  turn_timeout: 1800
 
 sandbox:
   driver: tempdir

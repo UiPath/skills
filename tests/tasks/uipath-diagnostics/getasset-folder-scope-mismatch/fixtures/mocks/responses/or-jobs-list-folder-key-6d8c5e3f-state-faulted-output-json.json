@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "8e4f3b2c-1a9d-5e6f-b7c8-d9e0f1a2b3c4",
+      "State": "Faulted",
+      "ProcessName": "AssetFolderMismatch",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T09:18:42.110Z",
+      "EndTime": "2026-05-12T09:18:44.380Z",
+      "CreationTime": "2026-05-12T09:18:41.870Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

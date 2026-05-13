@@ -16,10 +16,7 @@ agent:
 sandbox:
   driver: tempdir
   python: {}
-  node:
-    # Pin shared across all connector_features tasks — bump in lockstep.
-    env_packages:
-      - "@uipath/cli"
+  node: {}
 initial_prompt: |
   Create a new Flow project called "DriveToSlackTest" with a manual trigger.
   It should download a file from Google Drive and then post that file into a 

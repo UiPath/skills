@@ -1,0 +1,166 @@
+task_id: skill-diagnostics-getasset-folder-scope-mismatch
+description: >
+  UiPath diagnostic agent must diagnose a Get Credential failure where
+  the workflow's FolderPath property points to a folder that does not
+  exist in the tenant ("OldDevFolder") and Orchestrator returns error
+  code 1100 ("Folder does not exist or the user does not have access
+  to the folder"). Success = agent matches the
+  get-asset-folder-scope-mismatch playbook AND identifies the
+  FolderPath value in Main.xaml against the actual list of folders.
+
+tags: [uipath-diagnostics, e2e, faulted-jobs, orchestrator, system-activities, get-asset, folder-scope-mismatch]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  max_turns: 60
+  turn_timeout: 3600   # 60 min per turn — LLMGW-proxied diagnostic runs observe up to ~30 min per turn
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    # 1. Shared dispatcher (mocks/uip + mocks/uip.cmd).
+    - type: template_dir
+      path: ../_shared/mock_template
+    # 2. Project source — snapshot of the failing UiPath project.
+    - type: template_dir
+      path: process
+    # 3. Per-scenario fixtures (manifest + canned uip responses).
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My AssetFolderMismatch process is faulting in Orchestrator on every
+  run. Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-diagnostics skill"
+    skill_name: "uipath-diagnostics"
+    expected_skill: "uipath-diagnostics"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the get-asset-folder-scope-mismatch playbook AND identified the wrong FolderPath value"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .investigation/state.json
+      - .investigation/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My AssetFolderMismatch process is faulting in Orchestrator
+         on every run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/system-activities/playbooks/get-asset-folder-scope-mismatch.md
+        because the runtime error
+          "Folder does not exist or the user does not have access to the folder. Error code: 1100"
+        is the verbatim signature of that playbook (code 1100 / 1101).
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             get-asset-folder-scope-mismatch playbook should appear
+             (absolute or relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/system-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             system-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        get-asset-* playbooks (not-found, permission-denied,
+        wrong-activity-type) while ruling them out. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Get Credential activity (GetRobotCredential) in
+            Main.xaml has FolderPath="OldDevFolder".
+          - "OldDevFolder" does not exist in the tenant (the folders
+            list returns only "Remote Debugging" and "Shared").
+          - Orchestrator returns error code 1100 because the activity
+            asks for an asset in a folder that doesn't exist.
+        The reference fix:
+          - Change FolderPath in Main.xaml to a folder that exists
+            (e.g., "Remote Debugging" where the job actually runs),
+            OR create "OldDevFolder" in Orchestrator and assign the
+            robot to it.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.folder_path`,
+             `requirements.error_code`, `triage_summary`, scope/domain.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the wrong FolderPath
+             (naming "OldDevFolder" explicitly and noting it is absent
+             from the tenant folder list).
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched get-asset-folder-scope-mismatch AND
+             identified the FolderPath value "OldDevFolder" as the
+             wrong target explicitly (and confirmed via the folders
+             list that it does not exist).
+        0.8  Both partial: e.g., correct playbook but conclusion says
+             "folder access failed" without naming "OldDevFolder"; or
+             conclusion names the FolderPath issue but matched the
+             system-activities investigation_guide rather than the
+             specific folder-scope-mismatch playbook.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (folder/access failure) but neither
+             matched the playbook nor identified the FolderPath value.
+        0.0  Misdiagnosed (e.g., concluded asset-not-found,
+             permission-denied, wrong-activity-type, or robot-not-
+             authenticated) or got blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+max_iterations: 1
+# Override experiments/default.yaml's 600s limit -- LLMGW-proxied runs
+# of the diagnostic skill take 25-35 min end-to-end.
+task_timeout: 4500
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
+
+llm_reviewer:
+  enabled: false

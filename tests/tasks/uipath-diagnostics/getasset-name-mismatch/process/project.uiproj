@@ -1,0 +1,6 @@
+{
+  "Name": "GetAssetFailure",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Credential failure caused by an AssetName typo (myHiddenAset vs myHiddenAsset).",
+  "MainFile": "Main.xaml"
+}

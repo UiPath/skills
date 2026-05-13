@@ -20,7 +20,7 @@ agent:
   # the diagnostic skill orchestrates sub-agents.
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
   max_turns: 60
-  turn_timeout: 800   # ~13 min per turn; observed runs land around 9-10 min for this single-root case
+  turn_timeout: 1800
 
 sandbox:
   driver: tempdir

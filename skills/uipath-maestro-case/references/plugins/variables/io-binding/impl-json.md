@@ -87,7 +87,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 
 | Check | Severity | Action |
 |---|---|---|
-| Skeleton task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
+| Placeholder task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
 | `=vars.X` not in any task `outputs[]` or root `inputOutputs[]` | `ERROR` | Skip binding |

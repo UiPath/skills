@@ -125,7 +125,7 @@ Reference IDs (mailbox folders, Slack channels, Jira projects, Google Sheets, et
 Always re-resolve reference IDs against the connection bound to the current flow. Never paste a value you saw in another flow or session:
 
 ```bash
-uip is resources execute list <connector-key> <objectName> --connection-id <CURRENT_CONNECTION_ID> --output json
+uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_CONNECTION_ID> --output json
 ```
 
 ### Reference

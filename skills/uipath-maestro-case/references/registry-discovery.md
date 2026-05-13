@@ -12,7 +12,7 @@ During sdd.md → task.md interpretation, when you need to determine:
 
 Run `uip maestro case registry pull` before any lookups. This populates the local cache at `~/.uip/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
 
-> **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). The Rule 17 / § MUST-Confirm-Before-Skeleton-Fallback gate only applies to **empty matches inside an existing cache**; a missing file is a precondition failure, not a 0-result lookup. If the file is still absent after a successful pull, the tenant has no resources of that type — proceed to skeleton.
+> **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). The Rule 17 / § MUST-Confirm-Before-Placeholder-Fallback gate only applies to **empty matches inside an existing cache**; a missing file is a precondition failure, not a 0-result lookup. If the file is still absent after a successful pull, the tenant has no resources of that type — proceed to placeholder.
 
 ## CLI Search Gaps
 
@@ -24,9 +24,9 @@ The `uip maestro case registry search` command has known gaps. In particular, it
 
 Direct cache-file inspection is the authoritative discovery method for this skill.
 
-## MUST Confirm Before Skeleton Fallback
+## MUST Confirm Before Placeholder Fallback
 
-> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any skeleton T-entry.
+> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any placeholder T-entry.
 
 Required prompt shape:
 
@@ -37,8 +37,8 @@ Header:   Force pull
 Options:
   - Yes, force pull and re-resolve
       → run `uip maestro case registry pull --force`, re-search caches, update registry-resolved.json with the second-pass results.
-        Any STILL-empty lookups go to skeleton ONLY after this round.
-  - Skip and use skeletons
+        Any STILL-empty lookups go to placeholder ONLY after this round.
+  - Skip and use placeholders
       → proceed to per-plugin Unresolved Fallback paths for the unmatched lookups.
 ```
 
@@ -116,7 +116,7 @@ for item in data:
 
 ### 3. Handle Empty Results
 
-> **Required precondition.** Before reaching this step, the [§ MUST: Confirm Before Skeleton Fallback](#must-confirm-before-skeleton-fallback) gate above MUST have been satisfied. If you have not yet run AskUserQuestion for the empty-result batch, do that first. Force pull and per-plugin Unresolved Fallback both flow through that gate.
+> **Required precondition.** Before reaching this step, the [§ MUST: Confirm Before Placeholder Fallback](#must-confirm-before-placeholder-fallback) gate above MUST have been satisfied. If you have not yet run AskUserQuestion for the empty-result batch, do that first. Force pull and per-plugin Unresolved Fallback both flow through that gate.
 
 If no match is found across all relevant cache files:
 
@@ -155,7 +155,9 @@ Additional `type` values not discoverable through cache: `rpa`, `external-agent`
 
 ## Connector Tasks
 
-For entries in `typecache-activities-index.json` or `typecache-triggers-index.json`, the full resolution pipeline (get-connector → get-connection → pick connection → describe) lives in [connector-integration.md](connector-integration.md). Registry discovery provides only the `uiPathActivityTypeId`; everything else is handled there.
+For entries in `typecache-activities-index.json` or `typecache-triggers-index.json`, the resolution pipeline (get-connection + `case spec`) lives in [connector-integration.md](connector-integration.md). Registry discovery provides only the `uiPathActivityTypeId`; everything else is handled there.
+
+After registry pull, `uip maestro case spec` is the unified metadata endpoint for connector tasks — it returns identity, connection details, inputs/outputs/filter contract, references with pre-built discoverCommand, and (in Phase 3) a populated `caseShape` ready to drop into `caseplan.json`. This replaces the legacy `case tasks describe` + `is resources describe` dance for connector activities and triggers. See [connector-integration.md § Step 3](connector-integration.md) for the call shape.
 
 - **Only use entries that have a `uiPathActivityTypeId` field.** Skip entries without it — these are non-connector activities and are not supported as case tasks at this time.
 

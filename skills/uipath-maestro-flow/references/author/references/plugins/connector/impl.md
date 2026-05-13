@@ -19,6 +19,8 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
    - `pathParameters` — field-value pairs for path placeholders in `endpoint` (e.g. `{conversationsInfoId}`). Read from `connectorMethodInfo.parameters[]` where `type: path` (`registry get`) or `parameters[]` (`is resources describe`).
    - `filter` — structured FilterBuilder tree for list/query operations. See Step 6a.
    - `customFieldsRequestDetails` — design-time cache for connectors with an api-type ObjectAction at top-level `objectActions[]` OR `connectorMethodInfo.design.actions[]` (e.g. Jira `GenerateSchema`, Dataservice V3 `FetchObjectMetadataTenant`). camelCase keys; `parameterValues` as `[key, value]` tuples. See Step 6c.
+   - `multipartParameters` — derived from IS metadata params where `type === "multipart"`. Array of `{name, dataType, value?}`. Pass file values via `--detail.bodyParameters.<name>`; `node configure` moves file-typed values into the matching `multipartParameters[i].value` slot (matched by `name`). String-typed entries — including the body aggregator field whose name is given by `inputMetadata.multipart.bodyFieldName` — stay in `bodyParameters`.
+   - `inputMetadata` — auto-derived. `{type: "multipart", multipart: {bodyFieldName}}` when multipart params exist; `{operation: "list", pagination: {maxPageSize}}` for list operations. Driven by `methodInfo.parameters` + `methodInfo.operation`.
 
 ---
 
@@ -129,18 +131,18 @@ Run this before Step 5 (validate required fields) and reuse the same parent-fiel
 
 ### Step 4 — Resolve reference fields
 
-Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources execute list` to resolve them:
+Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
 
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../../SKILL.md).
 
 ```bash
 # Example: resolve Slack channel "#test-slack" to its ID
-uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
+uip is resources run list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
   --connection-id "<id>" --output json
 # -> { "id": "C1234567890", "name": "test-slack" }
 ```
 
-The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `execute list` call — in the flow's node `inputs`. When multiple matches exist, present them via `AskUserQuestion` with one option per match plus **"Something else"** as the last option (see the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md)).
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `run list` call — in the flow's node `inputs`. When multiple matches exist, present them via `AskUserQuestion` with one option per match plus **"Something else"** as the last option (see the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md)).
 
 > **Paginate when looking up by name.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).
 
@@ -247,7 +249,7 @@ uip maestro flow node configure <file> <nodeId> \
   --output json
 ```
 
-Path-parameterized GETs are a distinct shape from list/query: `endpoint` carries `{<placeholder>}` tokens and `pathParameters` supplies the values. Resolve the ID via `is resources execute list <connector-key> <objectName>` (Step 4) — never paste IDs across connections (see [reference-resolution.md](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical)).
+Path-parameterized GETs are a distinct shape from list/query: `endpoint` carries `{<placeholder>}` tokens and `pathParameters` supplies the values. Resolve the ID via `is resources run list <connector-key> <objectName>` (Step 4) — never paste IDs across connections (see [reference-resolution.md](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical)).
 
 The `objectName` field is required for generic nodes (see "Generic vs Concrete Activities" above). The CLI fails fast with a runnable hint when it's missing on a generic node. For concrete nodes the field is ignored if supplied.
 
@@ -443,7 +445,7 @@ uip is resources describe "<connector-key>" "<objectName>" \
   --connection-id "<id>" --operation Create --output json
 
 # Reference resolution
-uip is resources execute list "<connector-key>" "<resource>" \
+uip is resources run list "<connector-key>" "<resource>" \
   --connection-id "<id>" --output json
 
 # List all available connectors
@@ -619,8 +621,8 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | No connection found | Connection not bound — top-level `bindings[]` missing or `resourceKey` doesn't match the node | Run Step 1 above to bind a connection; verify both entries (`ConnectionId` + `FolderKey`) are in the top-level `bindings[]` |
 | Connection ping failed | Connection expired or misconfigured | Re-authenticate the connection in the IS portal |
 | Missing `inputs.detail` | Node added but not configured | Run `uip maestro flow node configure` with the detail JSON (Step 6) |
-| Reference field has display name instead of ID | `uip is resources execute list` was skipped | Resolve the reference field to get the actual ID (Step 4) |
-| Node faults at runtime with "resource not found" or similar after a clean build and validate | Reference field uses an ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a Slack channel ID from workspace A pasted into a node bound to workspace B's connection) | Re-run `uip is resources execute list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `bodyParameters` / `queryParameters` in `--detail`, re-run `node configure`, re-debug. See Step 4 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../../../SKILL.md). |
+| Reference field has display name instead of ID | `uip is resources run list` was skipped | Resolve the reference field to get the actual ID (Step 4) |
+| Node faults at runtime with "resource not found" or similar after a clean build and validate | Reference field uses an ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a Slack channel ID from workspace A pasted into a node bound to workspace B's connection) | Re-run `uip is resources run list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `bodyParameters` / `queryParameters` in `--detail`, re-run `node configure`, re-debug. See Step 4 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../../../SKILL.md). |
 | Required field missing at runtime | Required input field not provided | Check metadataFile for all `required: true` fields in both `requestFields` and `parameters` |
 | `$vars` expression unresolvable | Node outputs block missing or node not connected | Verify the node has edges and upstream outputs are correctly referenced |
 | `connectorMethodInfo` missing method/path | Used `registry get` without `--connection-id` | Re-run with `--connection-id` for enriched metadata (Step 2) |

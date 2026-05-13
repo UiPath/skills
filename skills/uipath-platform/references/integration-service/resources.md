@@ -132,7 +132,7 @@ Use the global `--output-filter` flag with a JMESPath expression to extract spec
 
 ```bash
 # Extract only id, name, and email from a user list
-uip is resources execute list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
+uip is resources run list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
   --connection-id "<CONNECTION_ID>" \
   --output json \
   --output-filter "Data[].{id: id, name: name, email: profile.email}"
@@ -152,7 +152,7 @@ Common JMESPath patterns:
 
 ## Pagination
 
-`uip is resources execute list` may not return all results in a single call. **Always check for pagination** when searching for a specific item or listing all items.
+`uip is resources run list` may not return all results in a single call. **Always check for pagination** when searching for a specific item or listing all items.
 
 ### Pagination rules
 
@@ -172,12 +172,12 @@ Most IS connectors use the `elements-*` pagination protocol. The CLI returns pag
 
 ```bash
 # First page (do not pass pageSize unless the user explicitly requests a specific page size)
-uip is resources execute list "<connector-key>" "<resource>" \
+uip is resources run list "<connector-key>" "<resource>" \
   --connection-id "<id>" --output json
 # → Check Data.Pagination.HasMore and Data.Pagination.NextPageToken in the JSON response
 
 # Subsequent pages — use nextPage as the query param name (NOT nextPageToken)
-uip is resources execute list "<connector-key>" "<resource>" \
+uip is resources run list "<connector-key>" "<resource>" \
   --connection-id "<id>" --query "nextPage=<value-from-NextPageToken>" --output json
 # → Continue until Data.Pagination.HasMore is "false" or target item is found
 ```
@@ -208,7 +208,7 @@ Example response:
 Some resources support `offset`/`limit` via `--query`:
 
 ```bash
-uip is resources execute list "<connector-key>" "<object>" \
+uip is resources run list "<connector-key>" "<object>" \
   --connection-id "<id>" --query "limit=50&offset=0" --output json
 # → next page: --query "limit=50&offset=50"
 ```

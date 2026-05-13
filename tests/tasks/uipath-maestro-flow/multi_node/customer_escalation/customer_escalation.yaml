@@ -21,9 +21,7 @@ task_timeout: 2400
 sandbox:
   driver: tempdir
   python: {}
-  node:
-    env_packages:
-      - "@uipath/cli@0.1.21"
+  node: {}
 
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new

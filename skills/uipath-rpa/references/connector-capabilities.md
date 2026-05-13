@@ -36,16 +36,16 @@ Note: it's `resources describe` (not `activities describe`). The `activities` su
 
 ## Finding an Activity's Type ID (for XAML generation)
 
-For hand-authored XAML, the IS `ConnectorActivity` element needs a `UiPathActivityTypeId` GUID. Get it via `find-activities`:
+For hand-authored XAML, the IS `ConnectorActivity` element needs a `UiPathActivityTypeId` GUID. Get it via `activities find`:
 
 ```bash
-uip rpa find-activities --query "<search terms>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa activities find --query "<search terms>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 In the response, each result's `activityTypeId` field is the GUID to pass to:
 
 ```bash
-uip rpa get-default-activity-xaml \
+uip rpa activities get-default-xaml \
     --activity-type-id "<TYPE_ID>" \
     --connection-id "<CONN_ID>" \
     --project-dir "<PROJECT_DIR>" --output json

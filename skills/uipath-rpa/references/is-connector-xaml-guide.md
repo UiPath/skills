@@ -32,9 +32,9 @@ End-to-end playbook for building a headlessly-runnable IS `ConnectorActivity` XA
 ```
 
 Three ingredients:
-1. **`UiPathActivityTypeId`** — the operation's type GUID (from `find-activities`).
+1. **`UiPathActivityTypeId`** — the operation's type GUID (from `activities find`).
 2. **`ConnectionId`** — the IS connection's GUID (from `uip is connections list`).
-3. **`Configuration`** — an opaque base64 + gzip JSON blob encoding connector/operation identity. **Never hand-edit.** Always take the value from `get-default-activity-xaml`.
+3. **`Configuration`** — an opaque base64 + gzip JSON blob encoding connector/operation identity. **Never hand-edit.** Always take the value from `activities get-default-xaml`.
 
 ## Step-by-Step Flow
 
@@ -55,14 +55,14 @@ The command is **interactive** (opens a browser). If you need the user to run it
 Required for the `isactr:ConnectorActivity` type.
 
 ```bash
-uip rpa get-versions --package-id UiPath.IntegrationService.Activities --project-dir "<PROJECT_DIR>" --output json
-uip rpa install-or-update-packages --packages '[{"id":"UiPath.IntegrationService.Activities"}]' --project-dir "<PROJECT_DIR>" --output json
+uip rpa packages versions --package-id UiPath.IntegrationService.Activities --project-dir "<PROJECT_DIR>" --output json
+uip rpa packages install --packages '[{"id":"UiPath.IntegrationService.Activities"}]' --project-dir "<PROJECT_DIR>" --output json
 ```
 
 ### Step 2 — Find the operation's `activityTypeId`
 
 ```bash
-uip rpa find-activities --query "<search terms>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa activities find --query "<search terms>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 In each result, look for:
@@ -71,7 +71,7 @@ In each result, look for:
 
 If `activityTypeId` is empty, the activity is a non-dynamic BAF/vendor activity (e.g. `UiPath.Slack.Activities.Messages.SendMessage`) — different flow, not covered here.
 
-**`find-activities` is not exhaustive — be ready to iterate.** Results vary by connector: some expose 6+ typed operations with rich descriptions (Slack); others expose only 1-2 (Outlook). Try several query phrasings (`"send email"`, `"<connector> send"`, the literal operation name from `uip is activities list`). If no typeId surfaces:
+**`activities find` is not exhaustive — be ready to iterate.** Results vary by connector: some expose 6+ typed operations with rich descriptions (Slack); others expose only 1-2 (Outlook). Try several query phrasings (`"send email"`, `"<connector> send"`, the literal operation name from `uip is activities list`). If no typeId surfaces:
 
 - The operation may only be reachable via the generic `ConnectorHttpActivity` typeId (suffix `...httpRequest...`). Use it as a fallback — the field schema is still read from `uip is resources describe`, but the HTTP method/path live in the Configuration blob's `InstanceParameters`.
 - Different connectors that share a schema (e.g. a mock connector + its real counterpart) often share typeIds. The same `fbdeec58-...` "Send Email" typeId works for both `uipath-mock-outlook` and `uipath-microsoft-outlook365` — the `ConnectionId` at runtime determines which backend receives the call. Don't be surprised if the discovered typeId's description mentions a different connector than the one you're targeting.
@@ -90,7 +90,7 @@ If none exist: `uip is connections create <connector-key>` (interactive OAuth). 
 **This is the unlock step.** With both the type ID and connection ID:
 
 ```bash
-uip rpa get-default-activity-xaml \
+uip rpa activities get-default-xaml \
     --activity-type-id "<TYPE_ID>" \
     --connection-id "<CONNECTION_ID>" \
     --project-dir "<PROJECT_DIR>" \
@@ -198,8 +198,8 @@ When a requested field is absent from default `FieldObjects`:
 ### Step 7 — Validate and run
 
 ```bash
-uip rpa get-errors --file-path "<your-workflow>.xaml" --project-dir "<PROJECT_DIR>" --output json
-uip rpa run-file  --file-path "<your-workflow>.xaml" --project-dir "<PROJECT_DIR>" --output json
+uip rpa validate --file-path "<your-workflow>.xaml" --project-dir "<PROJECT_DIR>" --output json
+uip rpa run --file-path "<your-workflow>.xaml" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 If `HasErrors: true`, the `ErrorMessage` field carries the compile/runtime error.
@@ -214,7 +214,7 @@ End-to-end skeleton. Assumes `uip login` done and `UiPath.IntegrationService.Act
 
 ```bash
 # 1. Discover typeId
-uip rpa find-activities --query "Send Message to Channel" --project-dir "$P" --output json
+uip rpa activities find --query "Send Message to Channel" --project-dir "$P" --output json
 #    → 37a305b2-89b1-315d-b73f-1778839a6c47
 
 # 2. Find connection
@@ -222,7 +222,7 @@ uip is connections list uipath-salesforce-slack --output json
 #    → c57d4fd4-9dc1-46f8-8add-a835283077fa
 
 # 3. Get default XAML (returns Configuration blob + FieldObjects)
-uip rpa get-default-activity-xaml \
+uip rpa activities get-default-xaml \
     --activity-type-id "37a305b2-89b1-315d-b73f-1778839a6c47" \
     --connection-id "c57d4fd4-9dc1-46f8-8add-a835283077fa" \
     --project-dir "$P" --output json
@@ -271,7 +271,7 @@ Resulting `ConnectorActivity` body (truncated — preserve the full FieldObject 
 ## Gotchas
 
 1. **JIT OutArgument corruption** — When Studio's designer modifies an IS XAML, it can inject a `<OutArgument x:TypeArguments="uiascb:...<op>_Create" />` into the `Jit_<operation>` FieldObject that references a dynamically-compiled Studio-local assembly. Fresh loads (new Studio session, CI) can't resolve that type and fail to compile with `Unable to create activity builder`. **Strip the offending OutArgument back to `<isactr:FieldObject Name="Jit_<op>" Type="FieldArgument" />`** before shipping or running headlessly. Also remove the `xmlns:uiascb` namespace declaration from the root `<Activity>` element if nothing else references it. Tracked as PILOT-4812.
-2. **Connector-backend errors surface at runtime, not validation** — Things like `channel_not_found`, `not_authed`, rate-limit failures etc. are returned by the connector's backend after the activity calls out. They appear in the `ErrorMessage` of an actual run (with `HasErrors: true`) or in streamed log entries from the workflow's own logging, never from `get-errors`. Validation can only tell you the XAML is structurally correct and the connection slot is filled — not that the target entity exists or that the bot has permission.
+2. **Connector-backend errors surface at runtime, not validation** — Things like `channel_not_found`, `not_authed`, rate-limit failures etc. are returned by the connector's backend after the activity calls out. They appear in the `ErrorMessage` of an actual run (with `HasErrors: true`) or in streamed log entries from the workflow's own logging, never from `validate`. Validation can only tell you the XAML is structurally correct and the connection slot is filled — not that the target entity exists or that the bot has permission.
 
 3. **Configuration blob's `ConnectorKey` may be a mock/template — it is not routing metadata** — Decompressing the Configuration blob can reveal `"ConnectorKey": "uipath-mock-<something>"` even when you're targeting the real production connector (e.g. `uipath-microsoft-outlook365`). The typeId encodes the *operation schema*; the `ConnectionId` attribute determines which backend actually gets called at runtime. Don't try to "correct" the blob — it's baked, and any edit invalidates it (`Configuration contains a breaking change`). A mismatch between `ConnectorKey` in the blob and the connection's connector is expected for connectors that share schemas (mocks, legacy vs. v2, etc.) and is not an error.
 
@@ -283,7 +283,7 @@ Resulting `ConnectorActivity` body (truncated — preserve the full FieldObject 
 
 - **Do not** guess `FieldObject Name` values. Read the schema JSON from `~/.uipath/cache/integrationservice/<connector>/_static/<operation>.Create.json`.
 - **Do not** hand-edit the `Configuration` blob. It's base64 + gzip of an internal serialization — any edit triggers a `breaking change` runtime rejection.
-- **Do not** use `get-default-activity-xaml` without `--activity-type-id` for IS activities — the generic default is empty and unusable.
+- **Do not** use `activities get-default-xaml` without `--activity-type-id` for IS activities — the generic default is empty and unusable.
 - **Do not** drop FieldObjects from the default. The full list is part of the schema contract.
 - **Do not** put values in the `FieldObject Value=""` attribute — use `<FieldObject.Value><InArgument><CSharpValue>` elements.
 

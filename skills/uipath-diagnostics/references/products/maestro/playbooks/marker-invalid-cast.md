@@ -2,23 +2,34 @@
 confidence: high
 ---
 
-# Multi-Instance Marker InvalidCastException
+# Multi-Instance Marker InvalidCastException (400008)
 
 ## Context
 
 What this looks like:
-- "Failed to evaluate the input collection variable for the marker element"
-- InvalidCastException: System.Object[] to ExpressionList
+- HTTP 400, Maestro error code `400008` (`BpmnMarkerInputEvaluationFailure`)
+- Error message: `Failed to evaluate the input collection variable for the marker element`
+- Inner exception: `InvalidCastException: System.Object[] to ExpressionList`
+- Sibling: see [marker-input-null](marker-input-null.md) when the collection is null (error `400007`)
 
 What can cause it:
-- Bug in Jint-based JS expression evaluator where JS arrays cannot be cast to the internal ExpressionList type expected by the BPMN engine
+- Bug in `JavaScriptEvaluator.cs` — JS expression returns `Object[]` which cannot be cast to the internal `ExpressionList` type the BPMN engine expects on a multi-instance marker
+
+What to look for:
+- Whether the marker's "Items" expression uses `=js:` (JavaScript) — that's the trigger
+- Whether the same logic written as C# works
 
 ## Investigation
 
-1. Confirm the marker input collection uses a JavaScript expression
-2. Check if the error is InvalidCastException referencing ExpressionList
+1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json` — confirm `InvalidCastException` and `ExpressionList`
+2. Check the marker's "Items" expression language in the BPMN: `uip maestro instance asset <instance-id> -f <folder-key> --output json`
 
 ## Resolution
 
-- Switch the marker input collection expression from JavaScript to C# expressions
-- Verify the parallel marker executes successfully with all list items
+- Switch the marker's "Items" expression from JavaScript to a C# expression that returns a typed list/array
+- Re-publish and re-run; the parallel marker should iterate all items
+- If switching to C# is not feasible, work around by materializing the JS array into a typed collection variable in a preceding Script task
+
+## References
+
+- [Docs: Multi-instance markers](https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/markers-implementation)

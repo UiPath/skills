@@ -82,7 +82,7 @@ Open the file. The shape is roughly:
 After any solution-level edit, run a sanity check:
 
 ```bash
-uip solution resource list --solution-folder . --source local --output json
+uip solution resource list --kind <kind> --solution-folder . --source local --output json
 ```
 
 The list should show your resource with the new spec. If `resource refresh` reverts the change on the next run, you edited a field the bindings re-derive — back out and use the deploy-config path or SW UI instead.

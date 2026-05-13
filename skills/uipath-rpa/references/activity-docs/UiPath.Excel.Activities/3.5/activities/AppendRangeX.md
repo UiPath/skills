@@ -6,4 +6,4 @@
 |---------------|
 | `SourceRange`, `DestinationRange`, `HasHeaders`, `DestinationHasHeaders`, `PasteOptions`, `Transpose`, `StartingColumnName="{x:Null}"` |
 
-Use `uip rpa get-default-activity-xaml --use-studio` for full XAML.
+Use `uip rpa activities get-default-xaml --use-studio` for full XAML.

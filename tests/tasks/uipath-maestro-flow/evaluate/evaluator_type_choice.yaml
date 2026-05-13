@@ -8,10 +8,12 @@ description: >
   similarity → json-similarity, substring presence → contains. The
   `command_executed` regexes pin each `--type` value, so the agent has to
   both pick correctly and run the CLI to pass.
-# BLOCKED: `uip maestro flow eval` is not available in public @uipath/cli@latest
-# (currently 0.9.1 in PR smoke CI). Re-enable the smoke tag once CLI >= 1.0.0
-# with Flow eval support is published to the public npm registry used by CI.
 tags: [uipath-maestro-flow, smoke-blocked, mode:build, lifecycle:discover]
+skip: true
+# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
+# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
+# under `maestro flow`). Re-enable once a release exposes the Flow eval
+# surface to the public registry used by CI. See MST-9675.
 
 agent:
   type: claude-code

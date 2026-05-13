@@ -29,8 +29,12 @@ Gather evidence and evaluate ONE specific hypothesis.
 5. **Gather new evidence** using available tools: uip CLI, `uip docsai ask`, source code, user input
 6. **Empty-result detection:** If 3 or more queries against the same folder return empty results (`[]`) or 404 for the target entity, stop gathering evidence. Check whether the folder in `state.json` actually contains the expected entity by running a scoped query (e.g., `jobs get`, `instances get`). If the entity is not in that folder, try other folders from triage evidence or `folders list-current-user`. If no folder works, write `needs_input.json` asking the user to confirm the correct folder. Do NOT continue testing against a folder that consistently returns empty.
 7. **For large result sets:** summarize yourself — group errors by type, count patterns, extract samples
-8. **Before confirming, actively try to disprove.** Scope disproval effort per the confidence-level behavior table in shared.md. Populate `elimination_checks` for all confidence levels. Populate `execution_path_traced` for medium/low only — for each downstream entity, query its actual state, don't infer from upstream.
-9. **Set status:**
+8. **Preserve user-facing data verbatim when the playbook's `## Resolution` is interactive.** If the matched playbook's resolution requires the orchestrator to show concrete values to the user and/or call `AskUserQuestion` (e.g., apply a Healing Agent recovered selector, dismiss a detected popup, replay a specific HTTP request), the tester MUST extract those exact values into the evidence file — not paraphrase them. Examples:
+   - HA selector failures (`selector-failure-healing-fix.md`): write the failed selector XML and the recovered Partial / Fuzzy selector XML to evidence as standalone string fields (`failed_selector_xml`, `recovered_partial_selector_xml`, `recovered_fuzzy_partial_selector_xml`). Source them from `Content.FailedResolvedTarget.PartialSelector` and from the detection's `EnhancedTargetDto.PartialSelector` / `FuzzyPartialSelector` in `uia/*.json` per the playbook's Investigation step.
+   - When the playbook lists specific field paths to extract, use those paths exactly — do not summarize to "matching selector found".
+   The orchestrator will read these fields back during Resolution to drive the interactive prompt; a missing or paraphrased value blocks the documented resolution procedure.
+9. **Before confirming, actively try to disprove.** Scope disproval effort per the confidence-level behavior table in shared.md. Populate `elimination_checks` for all confidence levels. Populate `execution_path_traced` for medium/low only — for each downstream entity, query its actual state, don't infer from upstream.
+10. **Set status:**
 
    | Status | Criteria |
    |---|---|

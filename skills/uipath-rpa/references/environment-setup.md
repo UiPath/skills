@@ -4,10 +4,10 @@
 
 ## Studio Desktop vs headless Studio
 
-`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — create-project, open-project, run-file, get-errors, build, find-activities, install-or-update-packages, indicate-application/element, the `uia` group, etc. all work headless.
+`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, `indicate-application`/`indicate-element`, the `uia` group, etc. all work headless.
 
 Studio Desktop is only required for two interactive UI tools:
-- `uip rpa diff` — opens an interactive diff window in Studio's UI.
+- `uip rpa files diff` — opens an interactive diff window in Studio's UI.
 - `uip rpa focus-activity` — selects an activity in Studio's active workflow designer.
 
 For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
@@ -40,20 +40,20 @@ If you encounter auth errors (401, 403, "not authenticated") during any phase, p
 
 ## Step 0.3: Creating a New Project
 
-**ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
+**ALWAYS use `uip rpa init`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
 
-**`create-project` always scaffolds XAML.** Regardless of flags, the templates produce XAML files: `BlankTemplate` → `Main.xaml`, `TestAutomationProjectTemplate` → `TestCase.xaml`, `LibraryProcessTemplate` → XAML library workflows. There is no flag that flips the scaffolding to coded.
+**`init` always scaffolds XAML.** Regardless of flags, the templates produce XAML files: `BlankTemplate` → `Main.xaml`, `TestAutomationProjectTemplate` → `TestCase.xaml`, `LibraryProcessTemplate` → XAML library workflows. There is no flag that flips the scaffolding to coded.
 
 **`--expression-language` is independent of coded vs XAML.** It controls VB vs C# syntax inside XAML activity expressions — not whether the project has `.cs` workflow files. Coded workflows (`.cs` with `[Workflow]` / `[TestCase]`) work fine in both `VisualBasic` and `CSharp` projects.
 
 **To work in coded mode**, scaffold the project (always XAML), then add `.cs` workflow files following [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. The scaffolded `Main.xaml` / `TestCase.xaml` can stay alongside your `.cs` files — `.xaml` and `.cs` workflows coexist freely.
 
-**First, decide which template to use** — see [§ Template selection](#template-selection) below **before** running any `create-project` command. Defaulting to `--template-id BlankTemplate` is correct only when the user did not name a template or domain pattern.
+**First, decide which template to use** — see [§ Template selection](#template-selection) below **before** running any `init` command. Defaulting to `--template-id BlankTemplate` is correct only when the user did not name a template or domain pattern.
 
 ### For XAML Projects (default for new projects)
 
 ```bash
-uip rpa create-project \
+uip rpa init \
   --name "MyAutomation" \
   --location "/path/to/parent/directory" \
   --template-id "BlankTemplate" \
@@ -69,7 +69,7 @@ uip rpa create-project \
 
 ### For Coded Projects (only when the user explicitly requested coded)
 
-Run the **same** `create-project` command as for an XAML project (above) — there is no separate coded form. After it scaffolds, add `.cs` workflow files per [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. The scaffolded `Main.xaml` / `TestCase.xaml` can stay — remove it only if the user explicitly asks for a coded-only project.
+Run the **same** `init` command as for an XAML project (above) — there is no separate coded form. After it scaffolds, add `.cs` workflow files per [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. The scaffolded `Main.xaml` / `TestCase.xaml` can stay — remove it only if the user explicitly asks for a coded-only project.
 
 #### Parameters
 
@@ -82,24 +82,24 @@ Run the **same** `create-project` command as for an XAML project (above) — the
 | `--target-framework` | `Legacy`, `Windows`, `Portable` | (template default) | .NET target framework |
 | `--description` | Any string | (none) | Project description in project.json |
 
-**Note:** `uip rpa create-project` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
+**Note:** `uip rpa init` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
 
 ### Template selection
 
-Before running `create-project`, decide which template to use.
+Before running `init`, decide which template to use.
 
 **1. Trigger keywords**
 
 | User says... | Action |
 |---|---|
-| "REFramework", "ERP template", "SAP template", "based on X template", or any specific template name | Run `uip rpa search-templates --query "<term>" --output json` (see § "Search and select" below) |
+| "REFramework", "ERP template", "SAP template", "based on X template", or any specific template name | Run `uip rpa templates search --query "<term>" --output json` (see § "Search and select" below) |
 | "library", "library project" | Use `--template-id LibraryProcessTemplate` (built-in, no search) |
 | "test project", "test automation" | Use `--template-id TestAutomationProjectTemplate` (built-in, no search) |
 | Nothing template-related | Use `--template-id BlankTemplate` (default) |
 
 **2. Search and select**
 
-Run `uip rpa search-templates --query "<term>" --output json`. Apply this rule against `Data[*]`, top-down:
+Run `uip rpa templates search --query "<term>" --output json`. Apply this rule against `Data[*]`, top-down:
 
 - **User named a specific non-Official template** (e.g. "Enhanced REFramework", "Lite ReFrameWork", a specific package name) AND a `Marketplace` item's `title` or `packageId` substring-matches the user's specific qualifier ("Enhanced", "Lite", etc.) → ask the user (treat Official + that Marketplace item as candidates). Do NOT auto-pick.
 - **Exactly one item with `source == "Official"`** AND user did not name a non-Official template → pick it. No user prompt.
@@ -109,7 +109,7 @@ Run `uip rpa search-templates --query "<term>" --output json`. Apply this rule a
 
 **3. Create from package**
 
-For Official/Marketplace templates, pass `--template-package-id` (and optionally `--template-package-version` — omit for latest) to `create-project`. When `--template-package-id` is set, `--template-id` is ignored.
+For Official/Marketplace templates, pass `--template-package-id` (and optionally `--template-package-version` — omit for latest) to `init`. When `--template-package-id` is set, `--template-id` is ignored.
 
 ### From a NuGet Template Package
 
@@ -118,7 +118,7 @@ Use when the user asks for a domain-specific template, references a specific tem
 **1. Search for available templates:**
 
 ```bash
-uip rpa search-templates --query "<SEARCH_TERM>" --output json
+uip rpa templates search --query "<SEARCH_TERM>" --output json
 ```
 
 Does not require a project to be open. Returns a JSON array of `TemplateSearchResult` objects:
@@ -146,7 +146,7 @@ Does not require a project to be open. Returns a JSON array of `TemplateSearchRe
 **2. Create from the chosen template:**
 
 ```bash
-uip rpa create-project \
+uip rpa init \
   --name "MySAPAutomation" \
   --location "/path/to/parent/directory" \
   --template-package-id "<PACKAGE_ID>" \
@@ -156,12 +156,12 @@ uip rpa create-project \
 
 | Parameter | Type | Default | Notes |
 |-----------|------|---------|-------|
-| `--template-package-id` | string | (none) | NuGet package ID from `search-templates` results. **Overrides `--template-id` when set** |
+| `--template-package-id` | string | (none) | NuGet package ID from `templates search` results. **Overrides `--template-id` when set** |
 | `--template-package-version` | string | (latest) | Omit to use the latest available version |
 
 ### After Creation
 
-1. Open the project in Studio: `uip rpa open-project --project-dir "/path/to/MyAutomation"`
+1. Open the project in Studio: `uip rpa project open --project-dir "/path/to/MyAutomation"`
 2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
 3. Proceed with the skill workflow using the new project root
 
@@ -177,10 +177,10 @@ Two `uip rpa` commands need a running Studio Desktop instance — they have UI s
 When (and only when) you need to run one of these, ensure Studio Desktop is up:
 
 ```bash
-uip rpa list-instances --output json   # hidden diagnostic — confirms a Studio Desktop instance is running
-uip rpa start-studio --project-dir "{projectRoot}" --output json   # launches Studio Desktop if none is running
+uip rpa instances list --output json   # hidden diagnostic — confirms a Studio Desktop instance is running
+uip rpa studio start --project-dir "{projectRoot}" --output json   # launches Studio Desktop if none is running
 ```
 
-If `start-studio` cannot resolve Studio's install directory from the registry, pass `--studio-dir` pointing to the Studio installation root.
+If `studio start` cannot resolve Studio's install directory from the registry, pass `--studio-dir` pointing to the Studio installation root.
 
 You can also force Studio Desktop for any other command by setting `UIPATH_RPA_TOOL_USE_STUDIO=1`, but this is not needed for the standard authoring loop and gives up the headless benefits.

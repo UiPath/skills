@@ -65,6 +65,6 @@ Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations 
 - time-cycle: R/PT1H              # optional (overrides above)
 - isRequired: true
 - order: after T<m>
-- lane: <n>  # FE layout coordinate; increment per task within the stage
+- lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
 - verify: Confirm Result: Success, capture TaskId
 ```

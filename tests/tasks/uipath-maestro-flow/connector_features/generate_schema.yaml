@@ -17,10 +17,7 @@ agent:
 sandbox:
   driver: tempdir
   python: {}
-  node:
-    # Pin shared across all connector_features tasks — bump in lockstep.
-    env_packages:
-      - "@uipath/cli"
+  node: {}
 initial_prompt: |
   Create a new Flow project called "GenerateSchemaTest" with a manual trigger
   that runs the Atlassian Jira "Create Issue" connector activity

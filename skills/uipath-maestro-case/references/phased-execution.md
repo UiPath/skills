@@ -19,7 +19,7 @@ Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, 
 
 ## Why phased
 
-After `tasks.md` is approved, skill does **not** build full case in one pass. It builds **skeleton** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
+After `tasks.md` is approved, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
 
 Each hard stop gives user review checkpoint before agent commits to costly downstream work.
 
@@ -27,7 +27,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` emitted; skeleton-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
+| **2 — Prototyping** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
@@ -49,8 +49,8 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 | Task class | Resolved resources | Phase 2 shape |
 |---|---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs populated per plugin. |
-| Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data` contains `type-id` and `connection-id` only. `data.inputs` omitted or empty. **No `is resources describe` / `is triggers describe` call in Phase 2** — schema discovery is deferred to Phase 3. |
-| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Skeleton task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [skeleton-tasks.md](skeleton-tasks.md). |
+| Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
+| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
 
 ### What does NOT get written in Phase 2
 
@@ -61,7 +61,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 ### Phase 2 informational validate
 
-End of Phase 2 mutations, run skeleton-profile validate:
+End of Phase 2 mutations, run placeholder-profile validate:
 
 ```bash
 uip maestro case validate "<caseplan.json path>" --skeleton --output json
@@ -79,8 +79,8 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 Print before prompt:
 
-1. Counts: stages / primary stages / exception stages / edges / triggers / tasks total / skeleton tasks / unresolved resources.
-2. Validate result (skeleton-profile): `<N> errors, <M> warnings` — remaining errors are structural (dangling edge, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
+1. Counts: stages / primary stages / exception stages / edges / triggers / tasks total / placeholder tasks / unresolved resources.
+2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (dangling edge, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
@@ -138,7 +138,7 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 After re-entry:
 
-1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `is resources describe` (or `is triggers describe`), write `data.inputs[]` / `data.outputs[]` schema + resolved values.
+1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
 2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<var>`) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
 3. **Conditions** — per-scope plugin `impl-json.md`:
    - Stage entry conditions
@@ -201,7 +201,7 @@ After debug completes, return to Phase 5 prompt so user can re-run or move on. P
 1. File path of `caseplan.json`.
 2. What was built — summary of stages, edges, tasks, conditions, SLA.
 3. Validation status — `validate` pass / remaining warnings.
-4. Skeleton tasks + unresolved resources — list every skeleton (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [skeleton-tasks.md](skeleton-tasks.md).
+4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [placeholder-tasks.md](placeholder-tasks.md).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
 
 ### Debug notes
@@ -230,15 +230,15 @@ After Phase 5 (whether debugged or skipped), prompt via **AskUserQuestion**:
 
 For further authoring changes (add task, tweak condition, etc.), user updates `sdd.md` and re-runs skill from Phase 1 — skill does not offer in-place incremental edits.
 
-## Skeleton tasks — unchanged semantics
+## Placeholder tasks — unchanged semantics
 
-Skeleton tasks (empty `data: {}` for unresolved resources) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [skeleton-tasks.md](skeleton-tasks.md).
+Placeholder tasks (empty `data: {}` for unresolved resources) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [placeholder-tasks.md](placeholder-tasks.md).
 
-Phase 3 still wires skeleton TaskIds into:
-- Task-entry conditions that reference the skeleton.
-- Stage-exit `selected-tasks-completed` rules that include the skeleton.
+Phase 3 still wires placeholder TaskIds into:
+- Task-entry conditions that reference the placeholder.
+- Stage-exit `selected-tasks-completed` rules that include the placeholder.
 
-It does **not** write `data.inputs` / `data.outputs` for skeletons. Input binding deferred to user's post-build upgrade pass.
+It does **not** write `data.inputs` / `data.outputs` for placeholders. Input binding deferred to user's post-build upgrade pass.
 
 ## Abort semantics
 
@@ -258,5 +258,5 @@ No artifact deletion. No rollback. User owns partial state.
 
 ## Out of scope
 
-- **Re-ingesting Studio Web edits.** If user edits published skeleton in Studio Web during review, edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; Phase 6 re-publish overwrites Studio Web with completed local build.
+- **Re-ingesting Studio Web edits.** If user edits published placeholder in Studio Web during review, edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; Phase 6 re-publish overwrites Studio Web with completed local build.
 - **Resuming aborted session.** Re-running skill regenerates `tasks.md` from scratch (Rule 6) and re-executes Phase 2 onwards.

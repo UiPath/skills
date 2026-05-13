@@ -142,7 +142,7 @@ For every task, trigger, and condition in the sdd.md:
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` skeleton instead.
+> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
 
 | sdd.md `Type:` / caseplan.json `type` | Plugin folder |
 |---|---|
@@ -178,11 +178,11 @@ For every task, trigger, and condition in the sdd.md:
 When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:
 
 1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `typeId` / `connectionId` slot.
-2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [skeleton-tasks.md § `tasks.md` Planning-Entry Shape](skeleton-tasks.md).
+2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](placeholder-tasks.md).
 3. Keep every other structural field (display-name, isRequired, runOnlyOnce, order). Task-entry conditions still emit normally.
 4. **Continue planning — do not halt.**
 
-At execution time, unresolved tasks become **skeleton tasks** in `caseplan.json` (display-name + type only, no task-type-id, no bindings). The workflow graph is still reviewable end-to-end, and the user attaches real resources + bindings externally before runtime. See [skeleton-tasks.md](skeleton-tasks.md).
+At execution time, unresolved tasks become **placeholder tasks** in `caseplan.json` (display-name + type only, no task-type-id, no bindings). The workflow graph is still reviewable end-to-end, and the user attaches real resources + bindings externally before runtime. See [placeholder-tasks.md](placeholder-tasks.md).
 
 ## Step 4 — Generate tasks.md and registry-resolved.json
 
@@ -322,16 +322,16 @@ Every task entry includes at least:
 - **runOnlyOnce** — from sdd.md (default `true` if not specified)
 - **isRequired** — from sdd.md (default `true` if not specified)
 - **order** — dependency on previous tasks (`after T05`, etc.)
-- **lane** — FE layout coordinate (integer, increments per task within the stage starting at 0)
+- **lane** — integer, default increments per task within the stage starting at 0 (FE layout). **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (semantic — same lane = parallel siblings inside the sequential group). Solo runs-sequentially tasks still get their own lane.
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
 
 > **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 
-> **Record `lane: <n>` per task** (incrementing within each stage, starting at 0). Lane is a FE layout coordinate with no execution semantics — task ordering and parallelism are expressed via task-entry conditions, not lanes.
+> **Record `lane: <n>` per task.** Default: increment within each stage starting at 0 — lane is FE layout only, task ordering comes from task-entry conditions. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
 
-> **Skeleton shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [skeleton-tasks.md](skeleton-tasks.md) for the full pattern and upgrade path.
+> **Placeholder shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [placeholder-tasks.md](placeholder-tasks.md) for the full pattern and upgrade path.
 
 ### 4.7 Configure conditions
 
