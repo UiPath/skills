@@ -33,6 +33,7 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 - **Integration Service**: connectors, connections (OAuth flow), activities, IS triggers, agent-workflow reference resolution
 - **Solutions**: `solution new/pack/publish/deploy run/deploy activate/deploy status/deploy uninstall/upload/resource list/refresh/get`, deploy config
 - **Traces**: `uip traces spans get [trace-id]` (LLM/agentic execution observability)
+- **Platform licensing**: tenant license allocations, user/group bundle assignments, consumables reporting (`uip platform tenants licenses`, `users licenses`, `groups rules`, `licenses consumables`)
 - **CI/CD**: pipeline that builds, publishes, and deploys UiPath solutions
 - **CLI tooling itself**: `uip tools list/search/install`, `uip mcp serve`
 
@@ -117,6 +118,10 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
 | **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
 | **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
+| **Allocate licenses to tenants** | [references/licensing/tenant-allocations.md](references/licensing/tenant-allocations.md) |
+| **Assign user/group license bundles** | [references/licensing/user-licenses-allocations.md](references/licensing/user-licenses-allocations.md) |
+| **Report on license consumption** | [references/licensing/consumables-report.md](references/licensing/consumables-report.md) |
+| **Understand licensing concepts** | [references/licensing/licensing.md](references/licensing/licensing.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
@@ -285,6 +290,7 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
 - **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources
+- **[Licensing](references/licensing/licensing.md)** — Tenant allocations, user/group bundles, consumables reporting
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.
