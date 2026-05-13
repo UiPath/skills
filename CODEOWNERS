@@ -33,6 +33,16 @@
 
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
+/tests/tasks/uipath-planner/ @RaduAna-Maria
+
+# Skill catalog
+/scripts/generate-skill-catalog.mjs @RaduAna-Maria @AlvinStanescu
+/docs/design/skill-discovery-catalog.md @RaduAna-Maria @AlvinStanescu
+/skills/README.md @RaduAna-Maria @AlvinStanescu
+/skills/INDEX.md @RaduAna-Maria @AlvinStanescu
+/skills/skills.catalog.json @RaduAna-Maria @AlvinStanescu
+/skills/uipath-skill-catalog/ @RaduAna-Maria @AlvinStanescu
+/tests/tasks/uipath-skill-catalog/ @RaduAna-Maria @AlvinStanescu
 
 # Solution Design skill
 /skills/uipath-solution-design/ @RaduAna-Maria

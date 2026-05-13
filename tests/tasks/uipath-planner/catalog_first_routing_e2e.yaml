@@ -1,0 +1,62 @@
+task_id: skill-planner-catalog-routing-e2e
+description: >
+  E2E planning evaluation: planner consults the generated compact skill catalog
+  before producing a handoff plan for a realistic Orchestrator deployment
+  request, then stops before executing live platform changes.
+tags: [uipath-planner, e2e]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A user asks: "I need a plan for creating an Orchestrator queue, publishing an
+  existing package, deploying the process, and knowing where to stop before any
+  tenant mutation happens."
+
+  Use the UiPath planner skill. Consult the compact skills catalog before the
+  static capability map when it is available. Do not run login and do not
+  execute deployment commands. Save the plan to plan.json:
+    {
+      "catalog_used": true,
+      "primary_skill": "<single specialist skill to open first>",
+      "specialist_sequence": ["<ordered specialist skills>"],
+      "execution_outline": ["<next steps for the main agent>"],
+      "stop_conditions": ["<conditions that pause execution before mutation>"]
+    }
+
+success_criteria:
+  - type: file_exists
+    description: "plan.json was created"
+    path: "plan.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "plan.json records catalog-first routing through the planner"
+    path: "plan.json"
+    assertions:
+      - expression: "catalog_used"
+        operator: equals
+        expected: true
+      - expression: "primary_skill"
+        operator: equals
+        expected: "uipath-platform"
+      - expression: "specialist_sequence"
+        operator: contains
+        expected: "uipath-platform"
+      - expression: "length(stop_conditions)"
+        operator: gte
+        expected: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "plan includes the Orchestrator deployment owner and stop guidance"
+    path: "plan.json"
+    includes:
+      - "uipath-platform"
+      - "Orchestrator"
+      - "stop"
+    weight: 2.0
+    pass_threshold: 1.0
