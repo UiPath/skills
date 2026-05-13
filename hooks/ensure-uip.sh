@@ -65,25 +65,94 @@ ensure_npm() {
   fi
 }
 
-# Force the `@uipath` scope to public npm. If a user's `~/.npmrc` maps
-# `@uipath` to GitHub Packages (the internal feed), `latest` resolves
-# to a `1.0.0-alpha.*` prerelease instead of the public stable line.
-# `--registry=` does NOT bypass scope mappings — only the scope-specific
-# override does. Apply to `outdated` (registry lookup) and `install`;
-# `ls` reads disk and doesn't need it.
+# Force `@uipath` to public npm. Narrowly guards users who set a custom
+# default `registry=...` in `~/.npmrc` (e.g., a corporate proxy/mirror)
+# but no `@uipath:registry=...` scope override — without this flag,
+# `outdated`, `view`, and `install` route through their default mirror,
+# which may not host `@uipath` or may serve a different `latest`.
+# `--registry=` does NOT bypass scope mappings; only the scope-specific
+# override does. Apply to `outdated` / `view` (registry lookup) and
+# `install`; `ls` reads disk and doesn't need it.
+#
+# Users WITH a non-public `@uipath:registry=...` scope mapping (UiPath
+# devs on the GitHub Packages prerelease line, private mirrors aliasing
+# the scope) are skipped earlier by `is_from_other_feed`, so this flag
+# never clobbers a deliberate non-public install — it only protects the
+# narrow "custom default registry, no scope mapping" path.
 UIPATH_REGISTRY_FLAG="--@uipath:registry=https://registry.npmjs.org/"
 
+# True if $1 is a POSIX symlink, a Windows directory symlink, OR a
+# Windows directory junction. bash `[ -L ]` catches POSIX symlinks but
+# NOT Windows junctions — and junctions are the default fallback
+# `npm link` uses on Windows when run without developer mode or admin
+# rights, so a pure `[ -L ]` check silently misses the most common
+# Windows local-link layout.
+#
+# Windows: delegate to `fsutil reparsepoint query`. Purpose-built,
+# ships with every Windows install since XP, exits 0 iff the path is
+# a reparse point (covers symlinks AND junctions), locale-independent,
+# and `query` doesn't require admin. Reachable from git-bash / MSYS /
+# Cygwin via Windows PATH lookup, and from WSL via interop (`.exe`).
+# POSIX (Linux/macOS): fall back to `[ -L ]` — junctions don't exist.
+is_symlink_or_junction() {
+  local input="$1" posix_p win_p
+  # Compute both forms: POSIX (for bash `[ -e ]`) and Windows (for fsutil).
+  # The caller may hand us either form — npm on Windows returns `C:\...`
+  # even when invoked from WSL/Cygwin/MSYS bash, while `$HOME` is POSIX.
+  # IMPORTANT: wslpath and cygpath misbehave when given the form they
+  # output (`wslpath -u /home/foo` prepends /mnt/c/, `wslpath -w C:\foo`
+  # strips backslashes). Detect input form and convert in one direction
+  # only.
+  if [[ "$input" =~ ^[A-Za-z]: ]]; then
+    win_p="$input"
+    if command -v wslpath &>/dev/null; then
+      posix_p="$(wslpath -u "$input" 2>/dev/null || echo "$input")"
+    elif command -v cygpath &>/dev/null; then
+      posix_p="$(cygpath -u "$input" 2>/dev/null || echo "$input")"
+    else
+      posix_p="$input"
+    fi
+  else
+    posix_p="$input"
+    if command -v wslpath &>/dev/null; then
+      win_p="$(wslpath -w "$input" 2>/dev/null || echo "$input")"
+    elif command -v cygpath &>/dev/null; then
+      win_p="$(cygpath -w "$input" 2>/dev/null || echo "$input")"
+    else
+      win_p="$input"
+    fi
+  fi
+  [ -e "$posix_p" ] || return 1
+  # Windows: `fsutil reparsepoint query` is purpose-built — exits 0 iff
+  # the path is a reparse point (covers symlinks AND junctions), ships
+  # with every Windows install since XP, no admin needed for query, no
+  # locale-dependent output to parse. Prefer the `.exe` form so WSL
+  # interop resolves it without relying on PATHEXT.
+  if command -v fsutil.exe &>/dev/null; then
+    fsutil.exe reparsepoint query "$win_p" &>/dev/null
+    return $?
+  fi
+  if command -v fsutil &>/dev/null; then
+    fsutil reparsepoint query "$win_p" &>/dev/null
+    return $?
+  fi
+  # POSIX (Linux/macOS): `[ -L ]` covers symbolic links; junctions don't
+  # exist on these platforms.
+  [ -L "$posix_p" ]
+}
+
 # Detect a local-source install via `npm link` / `bun link` (see the CLI
-# repo README, "Building from Source"). Linked installs point at a working
-# tree that is, by definition, ahead of the published `latest` tag —
-# upgrading would clobber the developer's local build with an older
-# registry version. Package directory is a symlink in both cases.
+# repo README, "Building from Source"). Linked installs point at a
+# working tree that is, by definition, ahead of the published `latest`
+# tag — upgrading would clobber the developer's local build with an
+# older registry version. Windows-junction handling lives in
+# `is_symlink_or_junction`.
 is_linked_package() {
   local pkg="$1"
   local npm_root
   npm_root="$(npm root -g 2>/dev/null)"
-  [ -n "$npm_root" ] && [ -L "$npm_root/$pkg" ] && return 0
-  [ -L "$HOME/.bun/install/global/node_modules/$pkg" ] && return 0
+  [ -n "$npm_root" ] && is_symlink_or_junction "$npm_root/$pkg" && return 0
+  is_symlink_or_junction "$HOME/.bun/install/global/node_modules/$pkg" && return 0
   return 1
 }
 
@@ -126,39 +195,6 @@ ensure_npm_package() {
 
   if npm ls -g "$pkg" --depth=0 &>/dev/null \
      && [ -z "$(npm outdated -g "$pkg" $UIPATH_REGISTRY_FLAG 2>/dev/null)" ]; then
-    return
-  fi
-
-  # bun-global mirror of the same gate. On hosts that install @uipath
-  # plugins via bun, the npm install fall-through below is guaranteed
-  # to fail (the prerelease tarball ships `workspace:*` deps that npm
-  # rejects with EUNSUPPORTEDPROTOCOL), so upgrade via bun instead.
-  # Freshness query reuses `npm view` — pure registry read, no install
-  # side-effects, honors $UIPATH_REGISTRY_FLAG.
-  local bun_pkg_json="$HOME/.bun/install/global/node_modules/$pkg/package.json"
-  if [ -f "$bun_pkg_json" ]; then
-    local installed_ver latest_ver
-    installed_ver="$(grep -m1 '"version"' "$bun_pkg_json" 2>/dev/null | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
-    # `|| true` keeps `set -e` from killing the script on registry
-    # errors; the lenient match below treats empty $latest_ver as "skip".
-    latest_ver="$(npm view "$pkg" version $UIPATH_REGISTRY_FLAG 2>/dev/null || true)"
-
-    # Lenient match — mirrors the npm path, which treats empty `npm
-    # outdated` output (including transient registry errors) as "skip".
-    if [ -n "$installed_ver" ] \
-       && { [ -z "$latest_ver" ] || [ "$installed_ver" = "$latest_ver" ]; }; then
-      return
-    fi
-
-    # Outdated → upgrade via bun. On failure, warn and continue: the
-    # existing bun-installed copy still works, so a flaky upgrade
-    # shouldn't break the session (asymmetric vs. the npm path's
-    # exit 2, where install failure means no tool at all).
-    local bun_output
-    if command -v bun &>/dev/null && ! bun_output="$(bun install -g "$pkg" 2>&1)"; then
-      echo "Warning: failed to upgrade $pkg via bun (continuing with installed $installed_ver):" >&2
-      echo "$bun_output" >&2
-    fi
     return
   fi
 
