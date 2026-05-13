@@ -62,6 +62,33 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent did NOT use the retired `uip or users list` path for User UUID resolution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+list'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT use the retired `uip or users current` subcommand"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+current'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT fall back to the REST `orchestrator_/odata/Robots` lookup (retired in favor of `uip admin robot-accounts`)"
+    tool_name: "Bash"
+    command_pattern: 'odata/Robots'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "Command output captured to ./output.txt"
     path: "output.txt"

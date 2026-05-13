@@ -71,6 +71,42 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent did NOT use the retired `--user-name` flag on deployment user configure"
+    tool_name: "Bash"
+    command_pattern: 'deployment\s+user\s+configure\s+.*--user-name'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT use the retired `--group-name` flag on deployment group configure"
+    tool_name: "Bash"
+    command_pattern: 'deployment\s+group\s+configure\s+.*--group-name'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT make a separate `user add` / `add-user` registration call — configure auto-registers"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+(add|add-user)'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT make a separate `group add` / `add-group` registration call — configure auto-registers"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+(add|add-group)'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "Command output captured to ./output.txt"
     path: "output.txt"
