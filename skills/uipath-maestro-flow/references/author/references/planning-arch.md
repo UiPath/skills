@@ -31,15 +31,15 @@ Discovery answers "what can I work with?" before you commit to a topology. This 
 
 ```bash
 # Registry should already be refreshed (greenfield.md Step 3 runs `registry pull`)
-uip maestro flow registry search <keyword> --output json    # search by service, resource name, or category
-uip maestro flow registry search outlook --output json       # example: does an Outlook connector exist?
-uip maestro flow registry search "invoice process" --output json  # example: is an RPA process published?
-uip maestro flow registry search agent --output json         # example: what agents are available?
-uip maestro flow registry list --output json                 # list all available node types
+uip flow registry search <keyword> --output json    # search by service, resource name, or category
+uip flow registry search outlook --output json       # example: does an Outlook connector exist?
+uip flow registry search "invoice process" --output json  # example: is an RPA process published?
+uip flow registry search agent --output json         # example: what agents are available?
+uip flow registry list --output json                 # list all available node types
 
 # OOTB action nodes — fetch full schema during discovery (no --connection-id needed):
-uip maestro flow registry get core.action.http --output json    # full HTTP request schema, headers/auth shape
-uip maestro flow registry get core.action.script --output json  # script node inputs/outputs and language options
+uip flow registry get core.action.http --output json    # full HTTP request schema, headers/auth shape
+uip flow registry get core.action.script --output json  # script node inputs/outputs and language options
 # Repeat for every OOTB action node the flow will use (transform, queue actions, etc.)
 ```
 
@@ -47,7 +47,7 @@ uip maestro flow registry get core.action.script --output json  # script node in
 
 **In-solution discovery (no login required):**
 ```bash
-uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
+uip flow registry list --local --output json     # discover sibling projects in the same .uipx solution
 ```
 Run from inside the flow project directory. If the resource (RPA, agent, flow, API workflow) exists as a sibling project in the same solution, it appears here without needing to be published. Prefer in-solution resources over mock placeholders.
 
@@ -121,7 +121,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 
 ### Connector Nodes
 
-Connector nodes call external services via Integration Service. They are **not** built-in — they come from the registry after `uip login` + `uip maestro flow registry pull`.
+Connector nodes call external services via Integration Service. They are **not** built-in — they come from the registry after `uip login` + `uip flow registry pull`.
 
 | When to Select | Plugin |
 | --- | --- |
@@ -137,13 +137,13 @@ Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks.
 | Node Type Pattern | Plugin | When to Select |
 | --- | --- | --- |
 | `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
-| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent lives as a separate project — either in this solution (sibling of the flow) or as a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
+| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent lives as a separate project — either in this solution (sibling of the flow) or as a **published tenant resource** (appears in the registry after `uip login` + `uip flow registry pull`); reusable across flows, independently versioned |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
 
 ### Resource Nodes (External Automations)
 
-Resource nodes invoke published UiPath automations. They are tenant-specific and appear in the registry after `uip login` + `uip maestro flow registry pull`.
+Resource nodes invoke published UiPath automations. They are tenant-specific and appear in the registry after `uip login` + `uip flow registry pull`.
 
 | Category | Node Type Pattern | Plugin |
 | --- | --- | --- |
@@ -471,7 +471,7 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 ### "I need to call an external service"
 
-1. Is there a connector with a curated activity? Run `uip maestro flow registry list --output json` and check for typed nodes matching `uipath.connector.<key>.<operation>`. If the desired operation appears as a node type, it is a curated activity -> [connector](plugins/connector/planning.md)
+1. Is there a connector with a curated activity? Run `uip flow registry list --output json` and check for typed nodes matching `uipath.connector.<key>.<operation>`. If the desired operation appears as a node type, it is a curated activity -> [connector](plugins/connector/planning.md)
 2. Connector exists but the operation is not listed as a curated node type? -> `core.action.http.v2` connector mode — see [http](plugins/http/planning.md)
 3. No connector exists, but has a REST API? -> `core.action.http.v2` manual mode — see [http](plugins/http/planning.md)
 4. No API at all (desktop app, terminal)? -> [rpa](plugins/rpa/planning.md) or `core.logic.mock` if unpublished
@@ -528,7 +528,7 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 When the architectural plan is approved, Phase 2 ([Planning Phase 2: Implementation](planning-impl.md)) takes over to:
 
-1. Validate all node types via `uip maestro flow registry get` — read each plugin's `impl.md` for registry validation steps
+1. Validate all node types via `uip flow registry get` — read each plugin's `impl.md` for registry validation steps
 2. Resolve connector and resource nodes — see the relevant plugin's `impl.md` ([connector](plugins/connector/impl.md), [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), etc.)
 3. Resolve resource nodes (confirm published, get definitions)
 4. Validate required fields against user-provided values

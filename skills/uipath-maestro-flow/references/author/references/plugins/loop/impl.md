@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get core.logic.loop --output json
+uip flow registry get core.logic.loop --output json
 ```
 
 Confirm: input ports `input` and `loopBack`, output ports `success` and `output`, required input `collection`.

@@ -15,7 +15,7 @@ Pre-populate these via `TodoWrite` when entering this journey. The list is edit-
 - [ ] Re-wire edges affected by the change
 - [ ] Update variables / output mappings if scope changed
 - [ ] Run `flow validate` and fix any errors
-- [ ] Run `flow tidy` to normalize layout
+- [ ] Run `flow format` to normalize layout
 - [ ] Report file path + change summary + remaining mocks/missing connections
 - [ ] Ask "what's next" (publish / debug / deploy)
 
@@ -23,11 +23,11 @@ Pre-populate these via `TodoWrite` when entering this journey. The list is edit-
 
 **[editing-operations.md](editing-operations.md)** — `Edit` / `Write` is required for non-carve-out `.flow` edits — the `Edit` tool for in-place changes, `Write` only when ≥70% of nodes change. Flow CLI is used only for connector activity, connector-trigger, and managed HTTP carve-outs. Read the strategy selection matrix before any modification.
 
-> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
+> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 ## Common edits
 
-For each edit, run `uip maestro flow validate` once after **all** edits are complete, then `uip maestro flow tidy`. Do not validate after each individual change — intermediate states are expected to be invalid.
+For each edit, run `uip flow validate` once after **all** edits are complete, then `uip flow format`. Do not validate after each individual change — intermediate states are expected to be invalid.
 
 | Edit | Description | Guide |
 |------|-------------|-------|
@@ -49,8 +49,8 @@ The table intentionally routes OOTB structural CRUD to Edit/Write only. There is
 
 ## After edits
 
-1. **Validate** — `uip maestro flow validate <ProjectName>.flow --output json`. Fix any errors and re-validate.
-2. **Tidy** — `uip maestro flow tidy <ProjectName>.flow --output json`. Required before publish or debug (see "Always run `flow tidy` after edits" in [the Author capability index](../CAPABILITY.md)) — without tidy, hand-edited or stale `layout` data renders as misshapen rectangles in Studio Web.
+1. **Validate** — `uip flow validate <ProjectName>.flow --output json`. Fix any errors and re-validate.
+2. **Tidy** — `uip flow format <ProjectName>.flow --output json`. Required before publish or debug (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)) — without tidy, hand-edited or stale `layout` data renders as misshapen rectangles in Studio Web.
 
 ## Completion Output
 
@@ -59,7 +59,7 @@ When you finish editing the flow, report to the user:
 1. **File path** of the `.flow` file edited
 2. **What changed** — summary of nodes/edges added, removed, or modified
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
-4. **Tidy status** — confirm `flow tidy` was run
+4. **Tidy status** — confirm `flow format` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced
 6. **Missing connections** — any connector nodes that need connections the user must create
 7. **What's next** — use `AskUserQuestion` to present the dropdown below (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))

@@ -280,7 +280,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 # 5. Hand off to the uipath-maestro-flow skill to add the
 #    uipath.agent.autonomous node (inputs.source = <projectId>),
 #    tool resource nodes, and wire all edges (input/success/tool).
-#    Do NOT run uip maestro flow commands from this skill —
+#    Do NOT run uip flow commands from this skill —
 #    Critical Rule 16.
 
 # 6. Validate the inline agent and propagate tool bindings to flow project.

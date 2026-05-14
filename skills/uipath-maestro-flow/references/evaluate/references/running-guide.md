@@ -1,13 +1,13 @@
 # Running Flow Evaluations
 
-`uip maestro flow eval run *` — start, monitor, inspect, and compare evaluation runs. All run commands require `uip login` and a Flow solution that already exists in Studio Web.
+`uip flow eval run *` — start, monitor, inspect, and compare evaluation runs. All run commands require `uip login` and a Flow solution that already exists in Studio Web.
 
 > **Before running any of these:** read [upload-safety.md](upload-safety.md). The skill must NOT auto-run `uip solution upload` to satisfy the "solution must be in Studio Web" prerequisite. If the solution isn't in Studio Web, ask the user.
 
 ## Start a Run
 
 ```bash
-uip maestro flow eval run start \
+uip flow eval run start \
   --set "<set_name>" \
   --path <flow_project> \
   [--entry-point <entry>] \
@@ -36,7 +36,7 @@ Without `--wait`, the command returns immediately with `EvalSetRunId`. With `--w
 `--timeout` only stops the local CLI from blocking. The server-side run continues regardless. Query progress with:
 
 ```bash
-uip maestro flow eval run status <eval_set_run_id> \
+uip flow eval run status <eval_set_run_id> \
   --set "<set_name>" --path <flow_project> --output json
 ```
 
@@ -63,7 +63,7 @@ The CLI emits a summary plus per-data-point results. Use `run results` for the s
 ## Check Status
 
 ```bash
-uip maestro flow eval run status <eval_set_run_id> \
+uip flow eval run status <eval_set_run_id> \
   --set "<set_name>" \
   --path <flow_project> \
   --output json
@@ -86,7 +86,7 @@ Status values: `Pending`, `Running`, `Completed`, `Failed`. `Completed` and `Fai
 ## Detailed Results
 
 ```bash
-uip maestro flow eval run results <eval_set_run_id> \
+uip flow eval run results <eval_set_run_id> \
   --set "<set_name>" \
   --path <flow_project> \
   [--only-failed] \
@@ -115,12 +115,12 @@ Write results to a file alongside the project (e.g., `eval-results-<timestamp>.j
 
 ```bash
 # Show only data points named "checkout-flow"
-uip maestro flow eval run results <run_id> \
+uip flow eval run results <run_id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json \
   --output-filter 'Data.Results[?DataPoint==`checkout-flow`]'
 
 # Show only score and name per row
-uip maestro flow eval run results <run_id> \
+uip flow eval run results <run_id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json \
   --output-filter 'Data.Results[*].{name: DataPoint, score: Score}'
 ```
@@ -128,7 +128,7 @@ uip maestro flow eval run results <run_id> \
 ## List Past Runs
 
 ```bash
-uip maestro flow eval run list \
+uip flow eval run list \
   --set "<set_name>" \
   --path <flow_project> \
   --output json
@@ -139,7 +139,7 @@ Per-row: `EvalSetRunId`, `Status`, `Score`, `DataPoints`, `Duration`, `CreatedAt
 ## Compare Two Runs
 
 ```bash
-uip maestro flow eval run compare <run_id_a> \
+uip flow eval run compare <run_id_a> \
   --compare-to <run_id_b> \
   --set "<set_name>" \
   --path <flow_project> \
@@ -175,23 +175,23 @@ Use `compare` after each prompt or flow change to verify the change improved sco
 ```bash
 # 1. Verify the solution is in Studio Web (do NOT auto-upload — see upload-safety.md)
 #    If unsure, list runs first; absence of any error here implies the solution exists.
-uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 
 # 2. Start the run, block on completion
-uip maestro flow eval run start \
+uip flow eval run start \
   --set "Smoke Tests" \
   --path ./MySolution/MyFlow \
   --wait --timeout 600 --output json
 
 # 3. Inspect failures with justifications
-uip maestro flow eval run results <run_id> \
+uip flow eval run results <run_id> \
   --set "Smoke Tests" \
   --only-failed --verbose \
   --path ./MySolution/MyFlow --output json
 
 # 4. After fixing the flow, re-run and compare
-uip maestro flow eval run start --set "Smoke Tests" --path ./MySolution/MyFlow --wait --output json
-uip maestro flow eval run compare <new_run_id> --compare-to <old_run_id> \
+uip flow eval run start --set "Smoke Tests" --path ./MySolution/MyFlow --wait --output json
+uip flow eval run compare <new_run_id> --compare-to <old_run_id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
 

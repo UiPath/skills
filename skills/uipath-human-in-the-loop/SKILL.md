@@ -33,11 +33,11 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
 2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
-4. **Validate after every change.** Run `uip maestro flow validate <file> --output json` after writing the node and edges. The `uip` CLI does not accept `--format`; using it produces `error: unknown option '--format'` and exit code 3.
+4. **Validate after every change.** Run `uip flow validate <file> --output json` after writing the node and edges. The `uip` CLI does not accept `--format`; using it produces `error: unknown option '--format'` and exit code 3.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
 6. **The definition entry is added once.** Check `workflow.definitions` — if `uipath.human-in-the-loop` is already there, do not add it again.
 7. **Check existing node IDs before generating a new one.** Read `workflow.nodes[*].id` from the `.flow` file and pick the next available suffix (e.g. `invoiceReview1`, then `invoiceReview2`).
-8. **Never report a failed validation as done.** If `uip maestro flow validate` returns errors, diagnose from the JSON output and fix before reporting to the user.
+8. **Never report a failed validation as done.** If `uip flow validate` returns errors, diagnose from the JSON output and fix before reporting to the user.
 9. **Output fields are accessed by `field.id`, not `field.variable`.** The runtime result object uses field IDs as keys — `$vars.<nodeId>.output.<fieldId>`. The `variable` property creates a separate workflow-global variable (`$vars.{variable}`) but does NOT change the key used in the output object.
 
 ---
@@ -82,11 +82,11 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 
 ```bash
 uip solution new <SolutionName> --output json
-cd <SolutionName> && uip maestro flow init <ProjectName>
+cd <SolutionName> && uip flow init <ProjectName>
 # Creates: <SolutionName>/<ProjectName>/<ProjectName>.flow
 ```
 
-The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Running `uip maestro flow init` without first running `uip solution new` produces a broken single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
+The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Running `uip flow init` without first running `uip solution new` produces a broken single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
 
 ---
 
@@ -201,7 +201,7 @@ Full reference: **[references/hitl-node-quickform.md](references/hitl-node-quick
 **CLI (opt-in):** When the user explicitly requests a CLI command:
 
 ```bash
-uip maestro flow hitl add <path/to/file.flow> \
+uip flow hitl add <path/to/file.flow> \
   --label "<TaskLabel>" \
   --priority <Low|Medium|High> \
   --assignee <email-or-group> \
@@ -214,7 +214,7 @@ The CLI writes the node, adds the definition entry, and updates `variables.nodes
 After writing, validate:
 
 ```bash
-uip maestro flow validate <file> --output json
+uip flow validate <file> --output json
 ```
 
 ### Surface: Flow — Coded Action App (new inline)
@@ -228,7 +228,7 @@ Full reference: **[references/hitl-node-coded-action-app.md](references/hitl-nod
 After writing, validate:
 
 ```bash
-uip maestro flow validate <file> --output json
+uip flow validate <file> --output json
 ```
 
 ### Surface: Flow — AppTask (deployed action app only)
@@ -242,7 +242,7 @@ Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask
 After writing, validate:
 
 ```bash
-uip maestro flow validate <file> --output json
+uip flow validate <file> --output json
 ```
 
 ### Surface: Coded Agent

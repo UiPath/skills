@@ -6,16 +6,16 @@ An eval set is a JSON file that bundles test cases (data points) with the evalua
 
 ```bash
 # Create
-uip maestro flow eval set add "<set_name>" \
+uip flow eval set add "<set_name>" \
   [--evaluators <ref1>,<ref2>] \
   [--entry-point <node_id>] \
   --path <flow_project> --output json
 
 # List
-uip maestro flow eval set list --path <flow_project> --output json
+uip flow eval set list --path <flow_project> --output json
 
 # Remove
-uip maestro flow eval set remove "<id_or_name>" --path <flow_project> --output json
+uip flow eval set remove "<id_or_name>" --path <flow_project> --output json
 ```
 
 ### `--evaluators`
@@ -33,11 +33,11 @@ The eval set's entry point is used by `eval run start` unless `--entry-point` is
 
 ## Data Point Lifecycle
 
-Data points (test cases) live **inline** inside the eval set JSON, not as separate files. CRUD via `uip maestro flow eval add/list/remove`:
+Data points (test cases) live **inline** inside the eval set JSON, not as separate files. CRUD via `uip flow eval add/list/remove`:
 
 ```bash
 # Add a data point
-uip maestro flow eval add "<data_point_name>" \
+uip flow eval add "<data_point_name>" \
   --set "<set_name>" \
   --inputs '{"...":"..."}' \
   [--expected '{"...":"..."}'] \
@@ -47,10 +47,10 @@ uip maestro flow eval add "<data_point_name>" \
   --path <flow_project> --output json
 
 # List
-uip maestro flow eval list --set "<set_name>" --path <flow_project> --output json
+uip flow eval list --set "<set_name>" --path <flow_project> --output json
 
 # Remove
-uip maestro flow eval remove "<id_or_name>" --set "<set_name>" --path <flow_project> --output json
+uip flow eval remove "<id_or_name>" --set "<set_name>" --path <flow_project> --output json
 ```
 
 ### `--inputs`
@@ -60,7 +60,7 @@ JSON object whose keys must match the flow's declared input variables for the ch
 For a simple string input named `name`:
 
 ```bash
-uip maestro flow variable add ./MySolution/MyFlow/MyFlow.flow name \
+uip flow variable add ./MySolution/MyFlow/MyFlow.flow name \
   --direction in --type string --output json
 ```
 
@@ -100,7 +100,7 @@ If `--criteria` is omitted, evaluators fall back to `--expected` (for output eva
 Repeatable. Attach a file as input under the given key. The CLI stages the file alongside the eval set so the runtime can read it during evaluation. Useful when the flow accepts file inputs (PDFs, CSVs, images) rather than JSON only.
 
 ```bash
-uip maestro flow eval add invoice-test \
+uip flow eval add invoice-test \
   --set "Smoke Tests" \
   --inputs '{"orderId":"ORD-123"}' \
   --input-file invoice=./fixtures/invoice-123.pdf \
@@ -116,7 +116,7 @@ The file content is referenced from the eval set; do not delete the source file 
 Convenience flag for `contains` evaluators only. Attaches the search string to the data point so the contains evaluator knows what substring to test for. Equivalent to writing `criteria` for the contains evaluator.
 
 ```bash
-uip maestro flow eval add success-keyword \
+uip flow eval add success-keyword \
   --set "Smoke Tests" \
   --inputs '{"task":"deploy"}' \
   --search-text "deployment succeeded" \
@@ -163,11 +163,11 @@ Key fields:
 The data point's `inputs` JSON must match the flow's input schema at the chosen entry point. Mismatches produce `eval add` errors such as `Input "name" is not declared as an input variable in the flow`. Two ways to verify before adding data points:
 
 1. Inspect `<flow>.flow` in the project for `variables` entries with `direction: "in"`.
-2. Run `uip maestro flow variable list <flow_file> --output json`.
+2. Run `uip flow variable list <flow_file> --output json`.
 
 ## Anti-patterns
 
-- **Don't hand-write `id` UUIDs on data points.** Use `uip maestro flow eval add` so the CLI generates fresh UUIDs and keeps `evalSetId` consistent with the parent set.
+- **Don't hand-write `id` UUIDs on data points.** Use `uip flow eval add` so the CLI generates fresh UUIDs and keeps `evalSetId` consistent with the parent set.
 - **Don't pass `--inputs` keys that aren't in the flow's input schema.** The CLI rejects unknown keys before writing the data point.
 - **Don't set `--expected '{}'` and skip `--criteria` for trajectory evaluators.** Both placeholders end up empty; scoring is meaningless.
 - **Don't delete attached input files before the run completes.** The CLI references them by path until upload to Studio Web finishes.

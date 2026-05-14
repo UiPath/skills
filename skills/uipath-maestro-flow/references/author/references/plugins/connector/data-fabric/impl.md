@@ -77,7 +77,7 @@ Create `resources/solution_folder/connection/uipath-uipath-dataservice/<IS conne
 
 ## Step 6 — Write Connector Nodes
 
-Write nodes directly into the `.flow` JSON using the templates below — `uip maestro flow node add` does not support `uipath.connector.*` types.
+Write nodes directly into the `.flow` JSON using the templates below — `uip flow node add` does not support `uipath.connector.*` types.
 
 For each node, set `connectionId`, `connectionResourceId` (same value), `connectionFolderKey`, `pathParameters.entityName`, and `bodyParameters`/`queryParameters` as needed. Copy the `configuration` string verbatim from the templates, replacing only `<EntityName>`.
 
@@ -90,7 +90,7 @@ For wiring upstream node outputs (`=js:$vars.<sourceNodeId>.output.<field>`), se
 
 ## Step 7 — Run `node configure` and Restore Configuration
 
-Run `uip maestro flow node configure` on each connector node per [parent impl.md § Step 6](../impl.md#step-6--configure-the-node). Use `method` and `endpoint` from the Activity Reference table below; pass `pathParameters.entityName` and any activity-specific `queryParameters`/`bodyParameters` in `--detail`.
+Run `uip flow node configure` on each connector node per [parent impl.md § Step 6](../impl.md#step-6--configure-the-node). Use `method` and `endpoint` from the Activity Reference table below; pass `pathParameters.entityName` and any activity-specific `queryParameters`/`bodyParameters` in `--detail`.
 
 > **Data Fabric quirk — restore `configuration` after configure.** `node configure` resets `customFieldsRequestDetails` to `null` in the `configuration` string. Restore the correct `configuration` string on **every node except Delete** using the exact strings from the Configuration Strings section below. Delete is the only activity where `customFieldsRequestDetails: null` is correct.
 
@@ -158,7 +158,7 @@ For the full set of `inputs.detail` fields populated by `node configure`, see [p
 
 Add one entry per activity type used to `definitions[]` in the `.flow` file (sibling of `nodes`/`edges`/`bindings`). Replace `<cloud_host>/<org_id>` in `display.icon` with your tenant URL prefix. The icon hash is stable across tenants.
 
-> The `assemblyQualifiedName` version (`1.26.0.0`) reflects the IS connector package at time of authoring. If stale, fetch the current value: `uip maestro flow registry get uipath.connector.uipath-uipath-dataservice.query-entity-records --connection-id <connectionId> --output json` and read `Data.Node.form.sections[0].fields[0].componentProps.connectorDetail.assemblyQualifiedName`.
+> The `assemblyQualifiedName` version (`1.26.0.0`) reflects the IS connector package at time of authoring. If stale, fetch the current value: `uip flow registry get uipath.connector.uipath-uipath-dataservice.query-entity-records --connection-id <connectionId> --output json` and read `Data.Node.form.sections[0].fields[0].componentProps.connectorDetail.assemblyQualifiedName`.
 
 > `definitions[]` must be present before running `node configure` — without it, configure fails with `No instanceParameters found in definition`.
 

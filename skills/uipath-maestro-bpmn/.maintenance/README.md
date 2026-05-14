@@ -185,9 +185,9 @@ Returns `commands_checked=N unknown=M`. Exits non-zero if any referenced command
 The checker:
 
 - Scans `SKILL.md` and `references/**/*.md`. Skips `.maintenance/` and root-level scratch files (`PLAN.md`, `PR_BODY.md`).
-- Scans both **fenced code blocks** tagged `bash`, `sh`, `shell`, `zsh`, `console`, or unlabelled, **and inline backtick spans** like `` `uip maestro flow init` ``. Inline scanning catches doc-narrative drift that fenced-only scanning misses.
-- Stops the path at the first flag, placeholder (`<...>`), shell metachar, comment (`#`), path-literal, or non-kebab-case token — so positional args like `uip maestro flow registry search outlook` don't get mistreated as subcommands.
-- Treats trailing tokens after a leaf-with-positional-args (e.g. `uip maestro flow registry search <keyword>`) as arguments, not missing subcommands.
+- Scans both **fenced code blocks** tagged `bash`, `sh`, `shell`, `zsh`, `console`, or unlabelled, **and inline backtick spans** like `` `uip flow init` ``. Inline scanning catches doc-narrative drift that fenced-only scanning misses.
+- Stops the path at the first flag, placeholder (`<...>`), shell metachar, comment (`#`), path-literal, or non-kebab-case token — so positional args like `uip flow registry search outlook` don't get mistreated as subcommands.
+- Treats trailing tokens after a leaf-with-positional-args (e.g. `uip flow registry search <keyword>`) as arguments, not missing subcommands.
 - Falls back gracefully if `uip` is not installed: warns and exits 0. Pass `--strict` to fail in CI.
 
 Pass specific files to scan only those (e.g. for pre-commit on staged files):
@@ -198,10 +198,10 @@ bash .maintenance/check-uip-commands.sh references/shared/cli-commands.md
 
 ### Skipping intentional historical references
 
-Some docs reference removed commands on purpose — for example, a CLI version-comparison table that documents a pre-restructure prefix. Add `<!-- uip-check-skip -->` anywhere on the line to suppress checking for that line:
+Some docs reference removed commands on purpose — for example, a historical-context note that names a renamed verb. Add `<!-- uip-check-skip -->` anywhere on the line to suppress checking for that line:
 
 ```markdown
-> Replace `uip maestro flow` with `uip flow` if version < 0.3.4. <!-- uip-check-skip -->
+> The `flow tidy` verb was renamed to `flow format` in CLI#1941. <!-- uip-check-skip -->
 ```
 
 For table rows, place the marker **inside a cell** so it doesn't break table structure (HTML comments render as nothing):

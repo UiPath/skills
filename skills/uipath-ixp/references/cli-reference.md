@@ -38,4 +38,4 @@ For working with runtime (deployed) IXP models — separate from the training wo
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp deployments get-taxonomy <model-name> --folder-key <key> --output json` | Get the taxonomy (field names) of a deployed model. Pairs with `uip maestro flow registry get` — use `inputDefaults.modelName` and `inputDefaults.folderKey` from that output. |
+| `uip ixp deployments get-taxonomy <model-name> --folder-key <key> --output json` | Get the taxonomy (field names) of a deployed model. Pairs with `uip flow registry get` — use `inputDefaults.modelName` and `inputDefaults.folderKey` from that output. |

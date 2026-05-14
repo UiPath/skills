@@ -20,15 +20,15 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-**Top-level `version`** = workflow file-format version, currently `"1.1"` — what `uip maestro flow init` scaffolds and what Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. Not a semver string; schema gates on a literal (`z.literal("1.1")`). Do not use `"1.0.0"`, `"1.0"`, or other values for new flows; older values exist only for legacy parser compatibility.
+**Top-level `version`** = workflow file-format version, currently `"1.1"` — what `uip flow init` scaffolds and what Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. Not a semver string; schema gates on a literal (`z.literal("1.1")`). Do not use `"1.0.0"`, `"1.0"`, or other values for new flows; older values exist only for legacy parser compatibility.
 
 > **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) use a strict semver schema (`versionSchema`, `/^\d+\.\d+\.\d+$/`) — a different Zod schema. Mixing them up produces `Schema validation failed: Version must be in semver format` at `(root)` — workflow-version layer's error, but the actual offender may be a stale top-level value. Audit the top-level `version` first.
 
-`solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
+`solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip flow init` and packaging. Do not add them manually.
 
 > **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../author/references/plugins/connector/impl.md) for the connector-binding shape.
 
-## Project structure (from `uip maestro flow init`)
+## Project structure (from `uip flow init`)
 
 ```
 <ProjectName>/
@@ -160,7 +160,7 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 ## Layout
 
-Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow tidy` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-tidy)) — you should not need to hand-write it.
+Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip flow format` (see [cli-commands.md](cli-commands.md#uip-flow-format)) — you should not need to hand-write it.
 
 ```json
 "layout": {
@@ -184,7 +184,7 @@ Node positioning is stored in a **top-level `layout` object**, keyed by node `id
 }
 ```
 
-Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for every node and populates `position` + `size`.
+Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for every node and populates `position` + `size`.
 
 **What tidy does:**
 - Arranges nodes horizontally (left-to-right) with `nodeSpacing: 96`, anchored to the leftmost node's original position
@@ -215,7 +215,7 @@ Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for ever
 Every node type appearing in `nodes` must have a matching entry in `definitions`. Get the correct definition from:
 
 ```bash
-uip maestro flow registry get core.action.script --output json
+uip flow registry get core.action.script --output json
 ```
 
 Copy the returned node definition object into your `definitions` array. Depending on CLI/plugin version, that object may appear at `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
@@ -236,14 +236,14 @@ Copy the returned node definition object into your `definitions` array. Dependin
 | `core.control.end` | Graceful end | — |
 | `core.logic.terminate` | Abort workflow | — |
 
-> The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip maestro flow registry get`. Instances do not carry the BPMN type.
+> The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip flow registry get`. Instances do not carry the BPMN type.
 
 For full details on each node (ports, inputs, outputs, when to use), see the [Author planning architecture guide](../author/references/planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see the [Author planning implementation guide](../author/references/planning-impl.md).
 
 Discover all available types:
 ```bash
-uip maestro flow registry list --output json
-uip maestro flow registry search <keyword>
+uip flow registry list --output json
+uip flow registry search <keyword>
 ```
 
 ## Standard ports by node type
@@ -265,7 +265,7 @@ Connector activities, agent nodes, and RPA nodes follow the same pattern as the 
 
 Verify exact ports for any node type:
 ```bash
-uip maestro flow registry get <nodeType> --output json
+uip flow registry get <nodeType> --output json
 # Look at Data.Node.handleConfiguration[].handles[].id
 # Also check Data.Node.supportsErrorHandling — see "Implicit error port" below
 ```
@@ -291,11 +291,11 @@ Without a wired error edge, any of these fails the whole flow with `finalStatus:
 
 ```bash
 # Confirm the node supports error handling
-uip maestro flow registry get <nodeType> --output json \
+uip flow registry get <nodeType> --output json \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['Data']['Node'].get('supportsErrorHandling'))"
 
 # Add an outgoing edge with sourcePort: "error"
-uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
+uip flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
   --source-port error --target-port input --output json
 ```
 
@@ -418,9 +418,9 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 Run one command per node type used in `nodes`. Copy the returned node definition object from each response into the `definitions` array, and set each matching node instance's `typeVersion` to the copied definition's exact `version`.
 
 ```bash
-uip maestro flow registry get core.trigger.manual --output json
-uip maestro flow registry get core.action.script --output json
-uip maestro flow registry get core.logic.terminate --output json
+uip flow registry get core.trigger.manual --output json
+uip flow registry get core.action.script --output json
+uip flow registry get core.logic.terminate --output json
 ```
 
 The `definitions` array must contain exactly one entry per unique `type:typeVersion` used — not one per node instance. If two nodes share the same type and version, one definition covers both.
@@ -429,7 +429,7 @@ The `definitions` array must contain exactly one entry per unique `type:typeVers
 
 ## entry-points.json — auto-generated, do not edit
 
-`entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). **Do not edit this file directly** — it is auto-generated by `uip maestro flow init` and regenerated by `uip maestro flow debug` before upload. Manual edits will be overwritten.
+`entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). **Do not edit this file directly** — it is auto-generated by `uip flow init` and regenerated by `uip flow debug` before upload. Manual edits will be overwritten.
 
 Flow input and output parameters are declared through **variables** in the `.flow` file:
 - **Flow inputs**: Add entries to `variables.nodes[]` whose `binding.nodeId` is the start node and whose `binding.outputId` names each input value — the start node "outputs" input values to downstream nodes
@@ -478,7 +478,7 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 - `resourceKey` must exactly match the definition's `model.bindings.resourceKey` (verbatim from the registry). The runtime uses this key to scope placeholder resolution so that binding names like `name` / `folderPath` (shared across resource kinds) don't cross-alias.
 - `resourceSubType` mirrors the definition's `model.bindings.resourceSubType`: `Process` (rpa), `Agent` (agent), `Flow` (flow), `ProcessOrchestration` (agentic-process), `Api` (api-workflow), or the app type for HITL.
 
-**Why this is required.** The definition's `model.context[].value` fields are placeholders of the form `<bindings.{name}>` — deliberately invalid as runtime expressions, so they can't be confused with one. Before the BPMN is emitted, the runtime rewrites each placeholder to `=bindings.<id>` by finding a workflow-level binding with `(resourceKey, name)` matching the node's manifest `model.bindings.resourceKey` + the placeholder name. Without matching entries in top-level `bindings[]`, `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder" even though `uip maestro flow validate` passes.
+**Why this is required.** The definition's `model.context[].value` fields are placeholders of the form `<bindings.{name}>` — deliberately invalid as runtime expressions, so they can't be confused with one. Before the BPMN is emitted, the runtime rewrites each placeholder to `=bindings.<id>` by finding a workflow-level binding with `(resourceKey, name)` matching the node's manifest `model.bindings.resourceKey` + the placeholder name. Without matching entries in top-level `bindings[]`, `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder" even though `uip flow validate` passes.
 
 **Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. See "Every node type needs a `definitions` entry" in [author/CAPABILITY.md](../author/CAPABILITY.md).
 

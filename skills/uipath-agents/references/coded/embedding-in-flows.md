@@ -1,6 +1,6 @@
 # Coded Agents in Flow Projects (Sibling Folder)
 
-A coded agent can live as a sibling folder to a flow project inside the same solution. The flow references it via `uipath.core.agent.<resourceKey>` with `section: "In this solution"`. The flow's `uip maestro flow registry list --local` discovers the agent by reading `resources/solution_folder/process/agent/<CodedAgentProject>.json`, written by `uip solution project add`.
+A coded agent can live as a sibling folder to a flow project inside the same solution. The flow references it via `uipath.core.agent.<resourceKey>` with `section: "In this solution"`. The flow's `uip flow registry list --local` discovers the agent by reading `resources/solution_folder/process/agent/<CodedAgentProject>.json`, written by `uip solution project add`.
 
 For the published-agent path (deployed standalone via `uip codedagent deploy`), see [coded/flow-integration.md § Pattern 2](flow-integration.md#pattern-2-published-coded-agent).
 
@@ -78,10 +78,10 @@ From inside the flow project directory, the agent is discoverable via the in-sol
 
 ```bash
 # list every in-solution node type (all sibling projects)
-uip maestro flow registry list --local --output json
+uip flow registry list --local --output json
 
 # fetch the full manifest for the coded agent
-uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json
+uip flow registry get "uipath.core.agent.<resourceKey>" --local --output json
 ```
 
 The second command's `Data.Node` object is what the flow skill pastes into the flow's `definitions[]`. For the node instance shape and top-level `bindings[]` entries, see [agent/impl.md § In-solution variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--in-solution-variant).

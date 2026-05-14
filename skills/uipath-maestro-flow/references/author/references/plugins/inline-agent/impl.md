@@ -139,7 +139,7 @@ Some upstream nodes (notably connector triggers like email-received) only expose
 Even though `uipath.agent.autonomous` is OOTB, validate it against the registry during Phase 2 to confirm the current product state:
 
 ```bash
-uip maestro flow registry get uipath.agent.autonomous --output json
+uip flow registry get uipath.agent.autonomous --output json
 ```
 
 Confirm:
@@ -193,9 +193,9 @@ Use `Edit` to add a node instance to `nodes[]`. The instance carries only per-in
 
 Also add:
 
-- A `definitions[]` entry copied verbatim from `uip maestro flow registry get uipath.agent.autonomous --output json` (`Data.Node` or the top-level node object, depending on CLI/plugin version). Set `typeVersion` to the copied definition's exact `version`.
+- A `definitions[]` entry copied verbatim from `uip flow registry get uipath.agent.autonomous --output json` (`Data.Node` or the top-level node object, depending on CLI/plugin version). Set `typeVersion` to the copied definition's exact `version`.
 - `variables.nodes[]` entries for `autonomousAgent1.output` and `autonomousAgent1.error` with `binding.nodeId = "autonomousAgent1"` and matching `binding.outputId` values.
-- A placeholder `layout.nodes.<agentNodeId>` entry; `flow tidy` owns the final position.
+- A placeholder `layout.nodes.<agentNodeId>` entry; `flow format` owns the final position.
 
 ### Wire edges with Edit / Write
 
@@ -241,7 +241,7 @@ Discover the tool via the flow registry, then add the tool resource node directl
 
 ```bash
 # 1. Search for the process tool
-uip maestro flow registry search "uipath.agent.resource.tool.process" --output json
+uip flow registry search "uipath.agent.resource.tool.process" --output json
 
 # 2. Generate a resource UUID
 RES=$(uuidgen)
@@ -360,10 +360,10 @@ uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 #   --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
 
 # 2. Validate the flow
-uip maestro flow validate <FlowName>.flow --output json
+uip flow validate <FlowName>.flow --output json
 ```
 
-> Current validator requirement: `uip maestro flow validate` rejects flows whose `uipath.agent.autonomous` node lacks non-empty `inputs.systemPrompt` / `inputs.userPrompt`. Include placeholder values on the flow node, but keep the canonical prompts in the inline agent's `agent.json`.
+> Current validator requirement: `uip flow validate` rejects flows whose `uipath.agent.autonomous` node lacks non-empty `inputs.systemPrompt` / `inputs.userPrompt`. Include placeholder values on the flow node, but keep the canonical prompts in the inline agent's `agent.json`.
 
 ## Debug
 
@@ -385,14 +385,14 @@ uip maestro flow validate <FlowName>.flow --output json
 
 ## Repair Recipes
 
-Use direct JSON edits for inline-agent graph repairs. `uip maestro flow node update` does not exist, and the inline-agent graph is not a Flow CLI carve-out. If a bulk scripted rewrite is explicitly approved, use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); otherwise apply the same transformations through `Edit` / `Write`.
+Use direct JSON edits for inline-agent graph repairs. `uip flow node update` does not exist, and the inline-agent graph is not a Flow CLI carve-out. If a bulk scripted rewrite is explicitly approved, use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); otherwise apply the same transformations through `Edit` / `Write`.
 
 ### Replace a definition entry
 
 Use when the `definitions[]` entry for a node type is wrong, stale, or hand-written. The fix is always: re-fetch from the registry, splice into `definitions[]` matching on `nodeType`, then keep the node instance minimal.
 
 ```bash
-uip maestro flow registry get uipath.agent.autonomous --output json > /tmp/registry_response.json
+uip flow registry get uipath.agent.autonomous --output json > /tmp/registry_response.json
 python3 - <<'PY'
 import json
 new_def = json.load(open("/tmp/registry_response.json"))["Data"]["Node"]
@@ -408,7 +408,7 @@ for node in flow["nodes"]:
             node.setdefault("inputs", {})["source"] = model["source"]
 json.dump(flow, open("<FILE>.flow", "w"), indent=2)
 PY
-uip maestro flow validate <FILE>.flow --output json
+uip flow validate <FILE>.flow --output json
 ```
 
 Same pattern works for any node type — substitute the `nodeType` string in both the `registry get` command and the loop guard.

@@ -9,17 +9,17 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 ## When to use this capability
 
 - Push a flow to Studio Web (`uip solution upload`)
-- Deploy a flow to Orchestrator (`uip maestro flow pack` + `uip solution publish`)
-- Run a flow end-to-end via `uip maestro flow debug` (cloud round-trip with real side effects)
-- Trigger a deployed process via `uip maestro flow process run`
-- Check job status or stream traces with `uip maestro flow job status` / `job traces`
+- Deploy a flow to Orchestrator (`uip flow pack` + `uip solution publish`)
+- Run a flow end-to-end via `uip flow debug` (cloud round-trip with real side effects)
+- Trigger a deployed process via `uip flow process run`
+- Check job status or stream traces with `uip flow job status` / `job traces`
 - Manage a running instance — pause, resume, cancel, or retry
 - Refresh solution resources after binding changes (`uip solution resource refresh`)
 
 ## Critical rules
 
 1. **Always run `uip solution resource refresh <SolutionDir>` before `solution upload` or `flow debug`.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct. The refresh syncs connection and process resource declarations from the project's `bindings_v2.json` files into the solution.
-2. **Default to Studio Web when the user says "publish" without specifier.** "Publish" → `uip solution upload <SolutionDir>`. Only run `uip maestro flow pack` + `uip solution publish` when the user explicitly asks to deploy to Orchestrator. The Orchestrator path bypasses Studio Web — the user cannot visualize or edit the flow there.
+2. **Default to Studio Web when the user says "publish" without specifier.** "Publish" → `uip solution upload <SolutionDir>`. Only run `uip flow pack` + `uip solution publish` when the user explicitly asks to deploy to Orchestrator. The Orchestrator path bypasses Studio Web — the user cannot visualize or edit the flow there.
 3. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip or folders list --output json` or from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#5---folder-key-requirement).
 4. **Always report Studio Web URL and Instance ID as the first two lines of any debug summary.** Parse `Data.studioWebUrl` and `Data.instanceId` from the JSON output. Use `<not returned by CLI>` if missing — never omit the line. Users need these immediately, not buried below status text.
 
@@ -54,7 +54,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 - **Never run `solution upload` without `solution resource refresh` first.** Stale resource declarations cause runtime binding failures.
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" → Studio Web upload. Confirm explicitly before running `flow pack` + `solution publish`.
-- **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution against real systems.
+- **Never run `flow debug` as a validation step.** Use `uip flow validate` for correctness checking; debug is for end-to-end execution against real systems.
 - **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
 - **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
 

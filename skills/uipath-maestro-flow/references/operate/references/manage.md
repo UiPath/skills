@@ -26,10 +26,10 @@ Pre-populate these via `TodoWrite` when entering this journey. See [shared/ux-na
 ## Lifecycle commands
 
 ```bash
-uip maestro flow instance pause <INSTANCE_ID> -f <FOLDER_KEY> --output json    # pause a running instance
-uip maestro flow instance resume <INSTANCE_ID> -f <FOLDER_KEY> --output json   # resume a paused instance
-uip maestro flow instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json   # cancel an instance
-uip maestro flow instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json    # retry a faulted instance
+uip flow instance pause <INSTANCE_ID> -f <FOLDER_KEY> --output json    # pause a running instance
+uip flow instance resume <INSTANCE_ID> -f <FOLDER_KEY> --output json   # resume a paused instance
+uip flow instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json   # cancel an instance
+uip flow instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json    # retry a faulted instance
 ```
 
 | Command | What it does |
@@ -39,7 +39,7 @@ uip maestro flow instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json    #
 | `cancel` | Cancel an instance. |
 | `retry` | Retry a faulted instance. Use after fixing the underlying issue. |
 
-> **Runtime semantics** (when each takes effect, recoverability, partial-flow behavior) are not documented in this skill. Run `uip maestro flow instance <subcommand> --help` for any options the CLI exposes; consult Orchestrator docs for the underlying lifecycle model.
+> **Runtime semantics** (when each takes effect, recoverability, partial-flow behavior) are not documented in this skill. Run `uip flow instance <subcommand> --help` for any options the CLI exposes; consult Orchestrator docs for the underlying lifecycle model.
 
 ## What's next
 

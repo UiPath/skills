@@ -8,7 +8,7 @@ Publish journey for a Flow project. Two paths: **Studio Web upload** (default) a
 
 Pre-populate these via `TodoWrite` when entering this journey. Drop the Orchestrator rows when the user is doing Studio Web upload (the default). See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
 
-- [ ] Confirm authoring complete (`flow validate` + `flow tidy` ran)
+- [ ] Confirm authoring complete (`flow validate` + `flow format` ran)
 - [ ] Confirm logged in (`uip login status`)
 - [ ] Refresh solution resources (`solution resource refresh`)
 - [ ] Choose path (Studio Web upload — default — or Orchestrator deploy)
@@ -20,7 +20,7 @@ Pre-populate these via `TodoWrite` when entering this journey. Drop the Orchestr
 
 Before either publish path, ensure:
 
-1. **Authoring is complete.** `uip maestro flow validate` passes and `uip maestro flow tidy` was run. If not, send the user back to [author/CAPABILITY.md](../../author/CAPABILITY.md).
+1. **Authoring is complete.** `uip flow validate` passes and `uip flow format` was run. If not, send the user back to [author/CAPABILITY.md](../../author/CAPABILITY.md).
 2. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#4-login-state).
 3. **Solution resources are refreshed.** Always run this before `solution upload` or `solution publish` so that connection and process resource declarations are in sync with the project bindings:
 
@@ -38,7 +38,7 @@ After `solution resource refresh`, upload the solution to Studio Web:
 uip solution upload <SolutionDir> --output json
 ```
 
-`uip solution upload` accepts the solution directory directly — no intermediate bundling step required. If the project was created with `uip maestro flow init`, it already lives inside a solution directory. The command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser.
+`uip solution upload` accepts the solution directory directly — no intermediate bundling step required. If the project was created with `uip flow init`, it already lives inside a solution directory. The command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser.
 
 **Share the Studio Web URL with the user** when the upload succeeds.
 
@@ -53,16 +53,16 @@ Pack the flow project into a `.nupkg` then publish via the platform skill:
 uip solution resource refresh <SolutionDir> --output json
 
 # 2. Pack
-uip maestro flow pack <ProjectDir> <OutputDir>
+uip flow pack <ProjectDir> <OutputDir>
 ```
 
-For `uip solution publish` and the rest of the deployment workflow, see [/uipath:uipath-platform](/uipath:uipath-platform). See [shared/cli-commands.md — uip maestro flow pack](../../shared/cli-commands.md#uip-maestro-flow-pack) for `pack` flags.
+For `uip solution publish` and the rest of the deployment workflow, see [/uipath:uipath-platform](/uipath:uipath-platform). See [shared/cli-commands.md — uip flow pack](../../shared/cli-commands.md#uip-flow-pack) for `pack` flags.
 
 ## Anti-patterns
 
 - **Never run `solution upload` without `solution resource refresh` first.** Stale resource declarations cause runtime binding failures (the deployed flow can't find its connections).
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" without specifier means Studio Web. When the target is ambiguous, confirm via `AskUserQuestion` with **Studio Web upload** / **Orchestrator deploy** / **Something else** as options before running `flow pack` + `solution publish`. See the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md).
-- **Never publish a flow that hasn't been validated and tidied.** `flow validate` catches schema errors; `flow tidy` ensures Studio Web renders nodes correctly. Both are author-side gates — see [author/CAPABILITY.md](../../author/CAPABILITY.md).
+- **Never publish a flow that hasn't been validated and tidied.** `flow validate` catches schema errors; `flow format` ensures Studio Web renders nodes correctly. Both are author-side gates — see [author/CAPABILITY.md](../../author/CAPABILITY.md).
 
 ## What's next
 

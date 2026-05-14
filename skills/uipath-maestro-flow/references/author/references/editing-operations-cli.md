@@ -13,7 +13,7 @@ The primitive commands below are support commands for carve-out workflows only. 
 ### Add a node
 
 ```bash
-uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
+uip flow node add <ProjectName>.flow <nodeType> --output json \
   --input '<INPUT_JSON>' \
   --label "<LABEL>" \
   --position <X>,<Y>
@@ -30,7 +30,7 @@ uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
 |------|----------|-------------|
 | `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
 | `--label` | No | Display label shown on the canvas |
-| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow tidy` rewrites positions on save. |
+| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow format` rewrites positions on save. |
 | `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file and pass `--input "$(cat /tmp/input.json)"`.
@@ -38,8 +38,8 @@ uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
 ### Delete a node
 
 ```bash
-uip maestro flow node delete <ProjectName>.flow <NODE_ID>
-uip maestro flow node delete <ProjectName>.flow <NODE_ID> --output json
+uip flow node remove <ProjectName>.flow <NODE_ID>
+uip flow node remove <ProjectName>.flow <NODE_ID> --output json
 ```
 
 **What the CLI handles automatically:**
@@ -52,7 +52,7 @@ uip maestro flow node delete <ProjectName>.flow <NODE_ID> --output json
 ### List nodes
 
 ```bash
-uip maestro flow node list <ProjectName>.flow --output json
+uip flow node list <ProjectName>.flow --output json
 ```
 
 Returns all nodes with their `id`, `type`, and `display.label`. Use this to discover node IDs before wiring edges or deleting nodes.
@@ -60,7 +60,7 @@ Returns all nodes with their `id`, `type`, and `display.label`. Use this to disc
 ### Add an edge
 
 ```bash
-uip maestro flow edge add <ProjectName>.flow <SOURCE_NODE_ID> <TARGET_NODE_ID> --output json \
+uip flow edge add <ProjectName>.flow <SOURCE_NODE_ID> <TARGET_NODE_ID> --output json \
   --source-port <PORT> \
   --target-port <PORT>
 ```
@@ -74,14 +74,14 @@ See each plugin's `planning.md` or [file-format.md — Standard ports](../../sha
 ### Delete an edge
 
 ```bash
-uip maestro flow edge delete <ProjectName>.flow <EDGE_ID>
-uip maestro flow edge delete <ProjectName>.flow <EDGE_ID> --output json
+uip flow edge remove <ProjectName>.flow <EDGE_ID>
+uip flow edge remove <ProjectName>.flow <EDGE_ID> --output json
 ```
 
 ### List edges
 
 ```bash
-uip maestro flow edge list <ProjectName>.flow --output json
+uip flow edge list <ProjectName>.flow --output json
 ```
 
 Returns all edges with `id`, `sourceNodeId`, `sourcePort`, `targetNodeId`, `targetPort`.
@@ -91,7 +91,7 @@ Returns all edges with `id`, `sourceNodeId`, `sourcePort`, `targetNodeId`, `targ
 After adding a connector node with `node add`, configure it with connection details:
 
 ```bash
-uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
+uip flow node configure <ProjectName>.flow <NODE_ID> \
   --detail '<DETAIL_JSON>'
 ```
 
@@ -105,7 +105,7 @@ The `--detail` JSON schema differs between connector activity nodes, connector t
 **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file:
 
 ```bash
-uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json
+uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json
 ```
 
 ### Configure a managed HTTP node
@@ -113,7 +113,7 @@ uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json
 After adding a `core.action.http.v2` node, configure it with target connector and connection details:
 
 ```bash
-uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
+uip flow node configure <ProjectName>.flow <NODE_ID> \
   --detail '{
     "authentication": "connector",
     "targetConnector": "<TARGET_CONNECTOR_KEY>",
@@ -135,7 +135,7 @@ See [http/impl.md](plugins/http/impl.md) for the full configuration workflow and
 ### Validate
 
 ```bash
-uip maestro flow validate <ProjectName>.flow --output json
+uip flow validate <ProjectName>.flow --output json
 ```
 
 Run **once** after all nodes, edges, and configuration are complete. Do not validate after each individual edit — intermediate states are expected to be invalid.
@@ -150,21 +150,21 @@ These combine primitives only for workflows that are themselves carve-outs. Do n
 
 1. Delete the manual trigger (also removes its edges and orphaned definition):
    ```bash
-   uip maestro flow node delete <ProjectName>.flow start --output json
+   uip flow node remove <ProjectName>.flow start --output json
    ```
 2. Add the connector trigger node:
    ```bash
-   uip maestro flow node add <ProjectName>.flow <TRIGGER_NODE_TYPE> \
+   uip flow node add <ProjectName>.flow <TRIGGER_NODE_TYPE> \
      --label "<LABEL>" --position 200,144 --output json
    ```
 3. Re-wire edge from the new trigger to the next node:
    ```bash
-   uip maestro flow edge add <ProjectName>.flow <NEW_TRIGGER_ID> <NEXT_NODE_ID> \
+   uip flow edge add <ProjectName>.flow <NEW_TRIGGER_ID> <NEXT_NODE_ID> \
      --source-port output --target-port input --output json
    ```
 4. Configure the trigger with connection and event parameters:
    ```bash
-   uip maestro flow node configure <ProjectName>.flow <NEW_TRIGGER_ID> --detail '<TRIGGER_DETAIL_JSON>'
+   uip flow node configure <ProjectName>.flow <NEW_TRIGGER_ID> --detail '<TRIGGER_DETAIL_JSON>'
    ```
 
 See [connector-trigger/impl.md](plugins/connector-trigger/impl.md) for the full `--detail` schema.

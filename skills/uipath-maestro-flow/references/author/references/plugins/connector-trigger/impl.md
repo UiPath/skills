@@ -52,7 +52,7 @@ uip is connections ping "<connection-id>" --output json
 `--connection-id` is **required** for trigger nodes. Without it, the command fails.
 
 ```bash
-uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+uip flow registry get <triggerNodeType> --connection-id <connection-id> --output json
 ```
 
 The response contains three trigger-specific sections:
@@ -152,7 +152,7 @@ Follow the [CLI: Replace manual trigger with connector trigger](../../editing-op
 Use `node configure` with trigger-specific `--detail` fields:
 
 ```bash
-uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detail '{
+uip flow node configure <PROJECT>.flow <triggerId> --output json --detail '{
   "connectionId": "<CONNECTION_ID>",
   "folderKey": "<FOLDER_KEY>",
   "eventMode": "<EVENT_MODE>",
@@ -184,7 +184,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 The CLI computes the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration. **Do not pass `filterExpression` directly — the validator rejects it.**
 The command populates `inputs.detail` (including the internal `configuration` blob with the `filter` tree and combined `filterExpression`) and creates workflow-level connection bindings.
 
-> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
+> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
 
 ### Step 6b — Retrieve and display webhook URL (webhooks only)
 
@@ -330,16 +330,16 @@ You do **not** need to manually create or edit `bindings_v2.json` for trigger no
 
 ```bash
 # Discovery
-uip maestro flow registry search trigger --output json               # find trigger node types
-uip maestro flow registry pull --force                                # refresh registry (requires login)
+uip flow registry search trigger --output json               # find trigger node types
+uip flow registry pull --force                                # refresh registry (requires login)
 
 # Enriched trigger metadata (--connection-id REQUIRED)
-uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+uip flow registry get <triggerNodeType> --connection-id <connection-id> --output json
 
 # Node lifecycle
-uip maestro flow node delete <PROJECT>.flow start --output json       # remove manual trigger
-uip maestro flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
-uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
+uip flow node remove <PROJECT>.flow start --output json       # remove manual trigger
+uip flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
+uip flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
 
 # Trigger object metadata (MANDATORY — Step 1b)
 uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" --output json
@@ -364,7 +364,7 @@ uip is webhooks config "<connector-key>" \
 
 ## Testing Trigger Flows
 
-`uip maestro flow debug` works with trigger-based flows. Debug does **not** wait for a live event — it **pulls the most recent matching event** from the connector's lookback window and executes immediately.
+`uip flow debug` works with trigger-based flows. Debug does **not** wait for a live event — it **pulls the most recent matching event** from the connector's lookback window and executes immediately.
 
 ### How debug works for triggers
 
@@ -375,7 +375,7 @@ uip is webhooks config "<connector-key>" \
 5. If **no matching events** exist in the lookback window, debug fails with error code `3005` (TriggerNoMatches)
 
 ```bash
-uip maestro flow debug . --output json
+uip flow debug . --output json
 # → Fetches most recent matching event from the past ~1 hour
 # → Flow executes immediately with that event data
 ```
@@ -412,14 +412,14 @@ uip maestro flow debug . --output json
 | Error | Cause | Fix |
 |---|---|---|
 | `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |
-| No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip maestro flow registry pull --force` |
+| No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip flow registry pull --force` |
 | Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
 | Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
 | `filterExpression is derived from the filter tree and cannot be provided directly` | Passed `filterExpression` string instead of a `filter` tree | Build a structured `filter` tree — see [Filter Trees](#filter-trees) |
 | `Filter references field '<name>' which is not present in trigger metadata` | Leaf `id` does not match any `filterFields.fields[].name` | Re-run `registry get` and use a valid field name |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources run list` |
 | Trigger faults immediately with no visible error after a clean build | Event parameter uses a reference ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a `parentFolderId` for mailbox A pasted into a trigger bound to mailbox B's connection) | Re-run `uip is resources run list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `eventParameters` in `--detail`, re-run `node configure`, re-debug. See Step 3 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../../../SKILL.md). |
-| Definition's `model.context` missing operation | Definition not copied correctly, or node added before registry pull | Re-run `uip maestro flow registry pull --force`, then verify the `definitions[]` entry contains `model.context` with `connectorKey`/`operation`/`objectName` as returned by `registry get` |
+| Definition's `model.context` missing operation | Definition not copied correctly, or node added before registry pull | Re-run `uip flow registry pull --force`, then verify the `definitions[]` entry contains `model.context` with `connectorKey`/`operation`/`objectName` as returned by `registry get` |
 | Trigger faults at runtime with webhook-related error | Standard (non-BYOA) connection used for a trigger that requires `byoaConnection: true` | Run `uip is triggers objects` (Step 1b) to check `byoaConnection` flag, then switch to a BYOA connection with `uip is connections list "<connector-key>" --byoa --output json`. If no BYOA connections exist, user must create one. |
 | `connections list` returns empty but connections exist in the IS portal | CLI is using cached connection data that is stale | Retry with `--refresh` flag: `uip is connections list "<connector-key>" --refresh --output json` |
 | `ElementInstanceId` is empty on the selected connection | Connection is not a BYOA connection, or connector does not support webhooks on this connection type | Verify the trigger requires BYOA (Step 1b `byoaConnection` flag). If `true`, switch to a BYOA connection. |
@@ -431,6 +431,6 @@ uip maestro flow debug . --output json
 3. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields
 4. **Filters are optional** — omit `filter` from `--detail` if the user wants all events to trigger the flow. Do not invent an "empty" expression.
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
-6. **Use `uip maestro flow node delete` to remove the manual trigger** — do NOT use `Edit` to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Hand-editing skips these cleanup steps and can leave orphaned references.
+6. **Use `uip flow node remove` to remove the manual trigger** — do NOT use `Edit` to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Hand-editing skips these cleanup steps and can leave orphaned references.
 7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
 8. **Validate filter field names against `filterFields`** — only field names returned in `filterFields.fields[].name` are valid leaf `id`s in the filter tree. The CLI rejects trees that reference unknown fields at configure time, so guessing will surface as an `InvalidDetailError` rather than a silent runtime no-match.

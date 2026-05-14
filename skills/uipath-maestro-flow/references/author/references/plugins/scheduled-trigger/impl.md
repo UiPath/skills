@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get core.trigger.scheduled --output json
+uip flow registry get core.trigger.scheduled --output json
 ```
 
 Confirm: no input port, output port `output`, required inputs `timerType` and `timerPreset`.
@@ -75,5 +75,5 @@ For the step-by-step procedure, use [Edit/Write: Replace manual trigger with sch
 | --- | --- | --- |
 | Invalid timer value | Malformed ISO 8601 repeating interval | Check format: `R/P[duration]` (e.g., `R/PT1H`) |
 | Missing `timerValue` | `timerPreset: "custom"` but no `timerValue` | Add `timerValue` with ISO 8601 repeating interval |
-| BPMN timer event not emitted | `core.trigger.scheduled` definition wrong or missing | Re-copy from `uip maestro flow registry get core.trigger.scheduled --output json` — the definition carries `model.eventDefinition: "bpmn:TimerEventDefinition"` |
+| BPMN timer event not emitted | `core.trigger.scheduled` definition wrong or missing | Re-copy from `uip flow registry get core.trigger.scheduled --output json` — the definition carries `model.eventDefinition: "bpmn:TimerEventDefinition"` |
 | Two triggers in flow | Both manual and scheduled triggers exist | Remove one — flows must have exactly one trigger |

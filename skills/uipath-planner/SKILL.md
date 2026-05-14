@@ -199,7 +199,7 @@ Flow references components that exist as standalone Orchestrator tenant resource
 ### Flow deploy to Orchestrator
 
 ```
-1. uipath-maestro-flow → validate, `uip maestro flow pack`
+1. uipath-maestro-flow → validate, `uip flow pack`
 2. uipath-platform     → publish and deploy to Orchestrator
 ```
 

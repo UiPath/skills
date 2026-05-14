@@ -1,11 +1,11 @@
-# `uip maestro flow eval` Command Reference
+# `uip flow eval` Command Reference
 
-Complete syntax reference for every subcommand under `uip maestro flow eval`. All commands accept the global flags `--output <table|json|yaml|plain>` (default `json`), `--output-filter <jmespath>`, `--log-level <debug|info|warn|error>`, and `--log-file <path>`. Repeated reminders below: always pass `--output json` when an agent will parse the result.
+Complete syntax reference for every subcommand under `uip flow eval`. All commands accept the global flags `--output <table|json|yaml|plain>` (default `json`), `--output-filter <jmespath>`, `--log-level <debug|info|warn|error>`, and `--log-file <path>`. Repeated reminders below: always pass `--output json` when an agent will parse the result.
 
 ## Command Tree
 
 ```
-uip maestro flow eval
+uip flow eval
 ├── add        — Add a data point to an evaluation set
 ├── list       — List data points in an evaluation set
 ├── remove     — Remove a data point from an evaluation set
@@ -39,7 +39,7 @@ Every subcommand accepts:
 
 ## Data Points (Test Cases)
 
-### `uip maestro flow eval add <name>`
+### `uip flow eval add <name>`
 
 Add a data point to an eval set.
 
@@ -56,28 +56,28 @@ Add a data point to an eval set.
 Example:
 
 ```bash
-uip maestro flow eval add greeting-test \
+uip flow eval add greeting-test \
   --set "Smoke Tests" \
   --inputs '{"name":"Alice"}' \
   --expected '{"greeting":"Hello, Alice!"}' \
   --path ./MySolution/MyFlow --output json
 ```
 
-### `uip maestro flow eval list`
+### `uip flow eval list`
 
 List data points in an eval set.
 
 ```bash
-uip maestro flow eval list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip flow eval list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
 
-### `uip maestro flow eval remove <id>`
+### `uip flow eval remove <id>`
 
 Remove a data point. `<id>` accepts the data point's UUID or its `name`.
 
 ## Evaluation Sets
 
-### `uip maestro flow eval set add <name>`
+### `uip flow eval set add <name>`
 
 Create an evaluation set.
 
@@ -89,17 +89,17 @@ Create an evaluation set.
 
 When `--evaluators` is omitted, the new eval set references **all** evaluators present in the project at creation time.
 
-### `uip maestro flow eval set list`
+### `uip flow eval set list`
 
 List eval sets in the project.
 
-### `uip maestro flow eval set remove <id>`
+### `uip flow eval set remove <id>`
 
 Remove an eval set. `<id>` accepts the eval set's UUID, `name`, or file base name.
 
 ## Evaluators
 
-### `uip maestro flow eval evaluator add <name>`
+### `uip flow eval evaluator add <name>`
 
 Create an evaluator file in the project's evaluators directory.
 
@@ -116,17 +116,17 @@ Only kebab-case `--type` values are accepted; PascalCase fails with an error.
 
 For LLM-judge evaluators, `--model` is effectively required — the cloud worker rejects an empty `model` before sending to the LLM gateway. See [evaluators-guide.md](evaluators-guide.md) for the seven types in detail.
 
-### `uip maestro flow eval evaluator list`
+### `uip flow eval evaluator list`
 
 List evaluators in the project.
 
-### `uip maestro flow eval evaluator remove <id>`
+### `uip flow eval evaluator remove <id>`
 
 Remove an evaluator. `<id>` accepts UUID, name, or file base name. Removing an evaluator does not auto-clean `evaluatorRefs` in eval sets — verify after removing.
 
 ## Run
 
-### `uip maestro flow eval run start`
+### `uip flow eval run start`
 
 Start a Studio Web evaluation run. The Flow solution **must already exist in Studio Web** — see [upload-safety.md](upload-safety.md).
 
@@ -144,7 +144,7 @@ Start a Studio Web evaluation run. The Flow solution **must already exist in Stu
 
 Without `--wait`, returns immediately with `EvalSetRunId`. With `--wait`, the CLI polls until `Completed` or `Failed`, or `--timeout` elapses (the server-side run continues regardless).
 
-### `uip maestro flow eval run status <evalSetRunId>`
+### `uip flow eval run status <evalSetRunId>`
 
 Get current status. Terminal states: `Completed`, `Failed`.
 
@@ -155,7 +155,7 @@ Get current status. Terminal states: `Completed`, `Failed`.
 | `--project-id <id>` | No | Override project ID |
 | `--path <path>` | No | (see Common Options) |
 
-### `uip maestro flow eval run results <evalSetRunId>`
+### `uip flow eval run results <evalSetRunId>`
 
 Per-data-point results.
 
@@ -169,15 +169,15 @@ Per-data-point results.
 
 Per-row output fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, `Error` (plus `Justifications` when `--verbose`).
 
-### `uip maestro flow eval run list`
+### `uip flow eval run list`
 
 List runs for an eval set.
 
 ```bash
-uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
 
-### `uip maestro flow eval run compare <evalSetRunId>`
+### `uip flow eval run compare <evalSetRunId>`
 
 Compare two runs side-by-side.
 

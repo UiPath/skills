@@ -23,7 +23,7 @@ Pre-populate these via `TodoWrite` when entering this journey. Adapt to the user
 - [ ] Add End node and map output variables
 - [ ] Resolve connection bindings (`solution resource refresh`)
 - [ ] Run `flow validate` and fix any errors
-- [ ] Run `flow tidy` to normalize layout
+- [ ] Run `flow format` to normalize layout
 - [ ] Report file path + change summary
 - [ ] Ask "what's next" (publish / debug / deploy)
 
@@ -52,9 +52,9 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 **Judgment call:** "Build me a flow that processes invoices."
 → Ambiguous requirements. Ask clarifying questions; plan if answers reveal complexity.
 
-## Step 0 — Resolve the `uip` binary and detect command prefix
+## Step 0 — Resolve the `uip` binary
 
-See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary resolution, version detection, and the `uip maestro flow` vs `uip flow` command prefix rule. All commands below are written in the `uip maestro flow` form. <!-- uip-check-skip -->
+See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary resolution and the `uip flow` command prefix. All commands below use the top-level `uip flow ...` form.
 
 ## Step 1 — Check login status
 
@@ -73,7 +73,7 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 
 ## Step 2 — Create a solution, THEN a Flow project inside it
 
-> **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
+> **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Scaffold or select a solution (Step 2a) BEFORE running `uip flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
 
 Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md).
 
@@ -93,10 +93,10 @@ Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution
 ### 2b. Create the Flow project inside the solution folder
 
 ```bash
-cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
+cd <directory>/<SolutionName> && uip flow init <ProjectName> --output json
 ```
 
-The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
+The `cd` is required. Running `uip flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
 
 > **Bash session state persists across tool calls.** This `cd` is **not scoped to one Bash invocation** — your cwd remains inside `<SolutionName>/` for every subsequent `Bash` call until you `cd` somewhere else. Plan the rest of Step 2 (and Steps 3–6) accordingly: either keep using paths relative to the solution dir, or anchor with `$(pwd)` / the absolute `Data.Path` returned by `flow init`. Do NOT prefix later commands with the original `<directory>/<SolutionName>/...` — that would resolve as `<SolutionName>/<directory>/<SolutionName>/...` and look like a layout bug when it isn't.
 
@@ -104,7 +104,7 @@ The `cd` is required. Running `uip maestro flow init` from outside the solution 
 
 ### 2c. Verify the project is registered in the solution
 
-When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. The success envelope reports this in `Data.SolutionRegistration`:
+When `uip flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. The success envelope reports this in `Data.SolutionRegistration`:
 
 ```json
 {
@@ -141,7 +141,7 @@ If the registration was skipped because of single-nesting, **delete the partial 
 <cwd>/
 └── <SolutionName>/                    ← from `uip solution new`
     ├── <SolutionName>.uipx
-    └── <ProjectName>/                 ← from `uip maestro flow init` (run from inside <SolutionName>/)
+    └── <ProjectName>/                 ← from `uip flow init` (run from inside <SolutionName>/)
         ├── <ProjectName>.flow         ← the file you edit
         ├── project.uiproj
         ├── bindings_v2.json
@@ -169,7 +169,7 @@ See [shared/file-format.md](../../shared/file-format.md) for the full project st
 ## Step 3 — Refresh the registry
 
 ```bash
-uip maestro flow registry pull                          # refresh local cache (expires after 30 min)
+uip flow registry pull                          # refresh local cache (expires after 30 min)
 ```
 
 > **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. **In-solution sibling projects** are always available via `--local` without login — see below.
@@ -177,8 +177,8 @@ uip maestro flow registry pull                          # refresh local cache (e
 **In-solution discovery (no login required):**
 
 ```bash
-uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
-uip maestro flow registry get "<nodeType>" --local --output json  # get full manifest for a local node
+uip flow registry list --local --output json     # discover sibling projects in the same .uipx solution
+uip flow registry get "<nodeType>" --local --output json  # get full manifest for a local node
 ```
 
 Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first.
@@ -187,11 +187,11 @@ Run from inside the flow project directory. Returns the same manifest format as 
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-> **Required tool outside carve-outs: `Edit` / `Write`.** Use `Edit` for in-place changes, `Write` only when ≥70% of nodes change. The `uip maestro flow node` / `edge` / `variable` CLI is a **carve-out** — use it only for connector activity, connector-trigger, and managed HTTP workflows documented by their plugin `impl.md`. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON.
+> **Required tool outside carve-outs: `Edit` / `Write`.** Use `Edit` for in-place changes, `Write` only when ≥70% of nodes change. The `uip flow node` / `edge` / `variable` CLI is a **carve-out** — use it only for connector activity, connector-trigger, and managed HTTP workflows documented by their plugin `impl.md`. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON.
 
 Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
 
-> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
+> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 
@@ -200,11 +200,11 @@ For each node type, follow the relevant plugin's `impl.md` for node-specific inp
 Run validation and fix errors iteratively until the flow is clean.
 
 ```bash
-uip maestro flow validate <ProjectName>.flow --output json
+uip flow validate <ProjectName>.flow --output json
 ```
 
 **Validation loop:**
-1. Run `uip maestro flow validate`
+1. Run `uip flow validate`
 2. If valid → done, move to Step 6 (tidy layout)
 3. If errors → read the error messages, fix the `.flow` file
 4. Go to 1
@@ -217,7 +217,7 @@ Common error categories:
 
 ## Step 6 — Tidy node layout
 
-After validation passes, **always** run tidy before publishing or debugging — this is the canonical layout step (see "Always run `flow tidy` after edits" in [the Author capability index](../CAPABILITY.md)). Tidy:
+After validation passes, **always** run tidy before publishing or debugging — this is the canonical layout step (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)). Tidy:
 
 - Arranges nodes horizontally (left-to-right) using ELK with `nodeSpacing: 96`, anchored to the leftmost node's original position
 - Sets every non-stickyNote node's `size` to `{ "width": 96, "height": 96 }` so Studio Web renders square nodes (skipping this leaves any non-96 dimensions intact and produces misshapen rectangles — the MST-9061 failure mode)
@@ -225,7 +225,7 @@ After validation passes, **always** run tidy before publishing or debugging — 
 - Backfills missing `position`/`size` entries
 
 ```bash
-uip maestro flow tidy <ProjectName>.flow --output json
+uip flow format <ProjectName>.flow --output json
 ```
 
 ## Completion Output
@@ -235,7 +235,7 @@ When you finish building the flow, report to the user:
 1. **File path** of the `.flow` file created
 2. **What was built** — summary of nodes added, edges wired, and logic implemented
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
-4. **Tidy status** — confirm `flow tidy` was run
+4. **Tidy status** — confirm `flow format` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
 7. **What's next** — use `AskUserQuestion` to present the dropdown below (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))

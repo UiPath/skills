@@ -3,7 +3,7 @@
 Agentic orchestration platform built on top of Orchestrator. Maestro supports three process authoring styles, each with its own CLI subcommand:
 
 - **BPMN** (`uip maestro bpmn`) — formal BPMN 2.0 process design with swimlanes, gateways, boundary events, service tasks, and multi-instance markers. Authored in Studio Web's BPMN editor (`.bpmn` files). Best for orchestrating long-running, multi-actor business processes with rich exception flow.
-- **Flow** (`uip maestro flow`) — lightweight node-and-edge process design (`.flow` files). Lower ceremony than BPMN; emphasizes connectors, scripts, sub-flows, and human-in-the-loop nodes. Best for connector-heavy automations and quick agent-orchestrated flows.
+- **Flow** (`uip flow`) — lightweight node-and-edge process design (`.flow` files). Lower ceremony than BPMN; emphasizes connectors, scripts, sub-flows, and human-in-the-loop nodes. Best for connector-heavy automations and quick agent-orchestrated flows.
 - **Case Management** (`uip maestro case`) — case-centric workflows with stages, tasks, SLAs, escalations, triggers, and edges (Case definition JSON). Best for human-driven, evolving work where progress is tracked per case rather than per linear process run.
 
 Processes are designed in Studio Web, deployed as solutions to Orchestrator, and managed through the Maestro Instance Management UI.
@@ -54,7 +54,7 @@ Maestro CLI commands are namespaced by process type. Pick the subcommand that ma
 | Process type | Subcommand | Source artifacts | One-liner |
 |--------------|------------|------------------|-----------|
 | BPMN | `uip maestro bpmn ...` | `.bpmn` files (Studio Web BPMN editor) | Formal BPMN 2.0 with swimlanes, gateways, boundary events, service/human/agent tasks |
-| Flow | `uip maestro flow ...` | `.flow` files | Lightweight node-and-edge orchestration; connector-heavy, lower ceremony than BPMN |
+| Flow | `uip flow ...` | `.flow` files | Lightweight node-and-edge orchestration; connector-heavy, lower ceremony than BPMN |
 | Case | `uip maestro case ...` | Case definition JSON | Case-centric work with stages, tasks, SLAs, escalations, and triggers |
 
 **Identify the process type first** — check the source artifact, the `processType` field on incidents/instances, or ask the user. Running `uip maestro bpmn instance get <id>` against a Flow instance returns no data. Substitute `<type>` below with `bpmn`, `flow`, or `case`.

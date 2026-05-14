@@ -70,7 +70,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 Two top-level build paths. Pick one before starting — the lifecycle and publish mechanism differ.
 
 - **Scenario 1 — Standalone Coded Agent** — the agent is its own tenant resource, published via `uip codedagent deploy`. Use when the agent runs on its own, is called from multiple flows, or needs independent versioning.
-- **Scenario 2 — In-Solution Coded Agent in a Flow** — the agent lives as a **sibling folder** to a flow project, registered into the solution via `uip solution project add`. The flow references it as an in-solution `uipath.core.agent.<resourceKey>` node, where `<resourceKey>` is the local UUID minted by `uip solution project add` and discoverable via `uip maestro flow registry list --local`. Use when the agent is tightly coupled to one flow.
+- **Scenario 2 — In-Solution Coded Agent in a Flow** — the agent lives as a **sibling folder** to a flow project, registered into the solution via `uip solution project add`. The flow references it as an in-solution `uipath.core.agent.<resourceKey>` node, where `<resourceKey>` is the local UUID minted by `uip solution project add` and discoverable via `uip flow registry list --local`. Use when the agent is tightly coupled to one flow.
 
 ## Quick Start: Scenario 1 — Standalone Coded Agent
 
@@ -217,7 +217,7 @@ Read the relevant reference file at each step — do not guess.
 
 Use when the coded agent is tightly coupled to one flow and lives as a sibling folder inside the same solution. The agent is wired to the flow via `--local` registry discovery — no separate Orchestrator deployment for the agent.
 
-See [embedding-in-flows.md](embedding-in-flows.md) for the agent-side steps: scaffold the sibling folder, register it with `uip solution project add` to mint the `resource.key`, and verify discoverability via `uip maestro flow registry list --local`. Flow node JSON shape is in [flow-integration.md — Pattern 1](flow-integration.md#pattern-1-in-solution-coded-agent).
+See [embedding-in-flows.md](embedding-in-flows.md) for the agent-side steps: scaffold the sibling folder, register it with `uip solution project add` to mint the `resource.key`, and verify discoverability via `uip flow registry list --local`. Flow node JSON shape is in [flow-integration.md — Pattern 1](flow-integration.md#pattern-1-in-solution-coded-agent).
 
 ## Framework Selection
 

@@ -1,6 +1,6 @@
 # Flow Evaluators Guide
 
-The seven evaluator types for `uip maestro flow eval evaluator add --type <type>`. Flow uses the same `uipath-*` evaluator type IDs as the coded evaluator engine (NOT the legacy IDs the low-code `uipath-agents` skill uses). Each `--type` kebab-case value maps to a `uipath-*` evaluator under the hood:
+The seven evaluator types for `uip flow eval evaluator add --type <type>`. Flow uses the same `uipath-*` evaluator type IDs as the coded evaluator engine (NOT the legacy IDs the low-code `uipath-agents` skill uses). Each `--type` kebab-case value maps to a `uipath-*` evaluator under the hood:
 
 | `--type` flag | Internal `evaluatorTypeId` | LLM-based | Score scale |
 |---------------|---------------------------|-----------|-------------|
@@ -12,7 +12,7 @@ The seven evaluator types for `uip maestro flow eval evaluator add --type <type>
 | `llm-judge-trajectory` | `uipath-llm-judge-trajectory-similarity` | Yes | Continuous (0–1) |
 | `llm-judge-trajectory-simulation` | `uipath-llm-judge-trajectory-simulation` | Yes | Continuous (0–1) |
 
-The four classification and tool-call evaluators (`uipath-binary-classification`, `uipath-multiclass-classification`, `uipath-tool-call-*`) that exist in the coded SDK are **not** exposed by `uip maestro flow eval evaluator add`. Use the seven listed above.
+The four classification and tool-call evaluators (`uipath-binary-classification`, `uipath-multiclass-classification`, `uipath-tool-call-*`) that exist in the coded SDK are **not** exposed by `uip flow eval evaluator add`. Use the seven listed above.
 
 ## When to Pick Each Type
 
@@ -30,13 +30,13 @@ The four classification and tool-call evaluators (`uipath-binary-classification`
 
 ```bash
 # Deterministic — no model needed
-uip maestro flow eval evaluator add exact-greeting \
+uip flow eval evaluator add exact-greeting \
   --type exact-match \
   --target-key "greeting" \
   --path ./MySolution/MyFlow --output json
 
 # LLM-judge — model is effectively required
-uip maestro flow eval evaluator add greeting-quality \
+uip flow eval evaluator add greeting-quality \
   --type llm-judge-output \
   --model gpt-4.1-2025-04-14 \
   --description "Score greeting tone and completeness" \
@@ -111,7 +111,7 @@ When `--prompt` is omitted, the CLI inserts a built-in default for each type. Ov
 ## Custom Prompts
 
 ```bash
-uip maestro flow eval evaluator add strict-match \
+uip flow eval evaluator add strict-match \
   --type llm-judge-output \
   --model gpt-4.1-2025-04-14 \
   --prompt 'Score 0-1 how closely {{ActualOutput}} matches {{ExpectedOutput}}. Return JSON {"score": N, "reason": "..."}.' \
@@ -123,14 +123,14 @@ Unknown placeholders are passed through to the LLM as literal text — they are 
 ## Removing an Evaluator
 
 ```bash
-uip maestro flow eval evaluator remove greeting-quality \
+uip flow eval evaluator remove greeting-quality \
   --path ./MySolution/MyFlow --output json
 ```
 
 Removing an evaluator does NOT auto-clean `evaluatorRefs` arrays in eval sets that reference it. After removing, re-list eval sets and reconcile any stale refs:
 
 ```bash
-uip maestro flow eval set list --path ./MySolution/MyFlow --output json
+uip flow eval set list --path ./MySolution/MyFlow --output json
 ```
 
 ## Anti-patterns

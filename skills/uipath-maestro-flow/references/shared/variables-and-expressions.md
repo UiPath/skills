@@ -157,7 +157,7 @@ Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is 
 
 Node variables represent outputs produced by nodes during execution. They are read-only and referenced via `$vars.{nodeId}.{outputId}`.
 
-When you add a node via `uip maestro flow node add`, node variables are created automatically. When using `Edit` against the `.flow` file, add them manually.
+When you add a node via `uip flow node add`, node variables are created automatically. When using `Edit` against the `.flow` file, add them manually.
 
 ### Schema
 
@@ -532,7 +532,7 @@ There are **no CLI commands** for adding or removing variables. Manage variables
 
 1. Open `<ProjectName>.flow`
 2. Add the variable object to `variables.globals`
-3. Run `uip maestro flow validate` to check for errors
+3. Run `uip flow validate` to check for errors
 
 ### Adding node variables after manual node insertion
 
@@ -551,7 +551,7 @@ When adding nodes via `Edit` (not CLI), you must also add corresponding entries 
 }
 ```
 
-> **When using `uip maestro flow node add`**, node variables are handled automatically. Only add them manually when using `Edit` against the `.flow` file.
+> **When using `uip flow node add`**, node variables are handled automatically. Only add them manually when using `Edit` against the `.flow` file.
 
 ### Mapping outputs on End nodes
 

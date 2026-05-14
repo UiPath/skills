@@ -31,7 +31,7 @@ Pre-populate these via `TodoWrite` when entering this journey. Adapt to the mode
 > **Confirm consent first.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. See the consent-before-debug rule in [SKILL.md](../../../SKILL.md). Do not run without explicit user authorization.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir.
@@ -39,7 +39,7 @@ The argument is the **project directory path** (the folder containing `project.u
 Pass input arguments when the flow has input parameters:
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
 
@@ -56,24 +56,24 @@ Instance ID: <instanceId>
 
 If either value is missing from the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.
 
-See [shared/cli-commands.md — uip maestro flow debug](../../shared/cli-commands.md#uip-maestro-flow-debug) for additional options.
+See [shared/cli-commands.md — uip flow debug](../../shared/cli-commands.md#uip-flow-debug) for additional options.
 
 ## Process run — trigger a deployed process
 
 For flows already deployed to Orchestrator (via [ship.md](ship.md) → Orchestrator path):
 
 ```bash
-uip maestro flow process list --output json                           # discover deployed processes
-uip maestro flow process run <process-key> <folder-key> --output json # trigger a run
+uip flow process list --output json                           # discover deployed processes
+uip flow process run <process-key> <folder-key> --output json # trigger a run
 ```
 
-Run `uip maestro flow process --help` for all subcommands and options.
+Run `uip flow process --help` for all subcommands and options.
 
 ## Job inspection — status and traces
 
 ```bash
-uip maestro flow job status <job-key> --output json   # check status of a running or completed job
-uip maestro flow job traces <job-key> --output json   # stream the verbose execution timeline
+uip flow job status <job-key> --output json   # check status of a running or completed job
+uip flow job traces <job-key> --output json   # stream the verbose execution timeline
 ```
 
 > **Traces are verbose** and contain the full execution timeline. Use them only when needed for diagnosis — start from incidents first via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md).
@@ -85,6 +85,6 @@ uip maestro flow job traces <job-key> --output json   # stream the verbose execu
 
 ## Anti-patterns
 
-- **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
+- **Never run `flow debug` as a validation step.** Use `uip flow validate` for correctness checking; debug is for end-to-end execution.
 - **Never skip `solution resource refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
 - **Never start diagnosis from `job traces`.** Traces are last-resort — see [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) for the priority ladder.

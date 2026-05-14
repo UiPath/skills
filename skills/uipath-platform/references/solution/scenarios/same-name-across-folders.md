@@ -52,6 +52,6 @@ The `_1` suffix is **expected and stable** — re-running refresh does not bump 
 uip solution resource list --kind Process --solution-folder ./MySolution --source local --output json
 ```
 
-You should see two `process`/`api` entries with **different keys** but matching the cloud GUIDs you wanted (compare against `uip maestro flow registry search "API Workflow"`).
+You should see two `process`/`api` entries with **different keys** but matching the cloud GUIDs you wanted (compare against `uip flow registry search "API Workflow"`).
 
 > See: [develop-solution.md — Step 7: Refresh Resources](../develop-solution.md#step-7-refresh-resources).

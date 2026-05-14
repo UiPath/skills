@@ -20,7 +20,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 1. **Investigate in priority order — incidents → variables → flow correlation → traces.** Each step adds context; stop when you have enough to identify the root cause. Skipping ahead to traces is the most common mistake — they are verbose and last-resort. See [troubleshooting-guide.md](references/troubleshooting-guide.md).
 2. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` and `incident get` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip or folders list --output json` or from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#5---folder-key-requirement).
 3. **Never call the underlying APIs directly — always use `uip` CLI commands.** The `instance` and `incident` subcommands are the supported diagnostic surface; direct API calls are not.
-4. **When the local `.flow` may differ from the deployed BPMN, fetch the deployed asset.** Use `uip maestro flow instance asset <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json` to see what actually ran. Do not assume your local file matches.
+4. **When the local `.flow` may differ from the deployed BPMN, fetch the deployed asset.** Use `uip flow instance asset <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json` to see what actually ran. Do not assume your local file matches.
 
 ## Workflow
 
@@ -50,7 +50,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 ## Anti-patterns
 
 - **Never start with traces.** They are verbose and contain the full execution timeline — useful only when incidents and variables are insufficient. Start with incidents (Step 2 of the priority ladder).
-- **Never call the underlying APIs directly.** Always use `uip maestro flow instance` / `incident` / `job` subcommands. Direct API calls bypass the supported diagnostic surface.
+- **Never call the underlying APIs directly.** Always use `uip flow instance` / `incident` / `job` subcommands. Direct API calls bypass the supported diagnostic surface.
 - **Never assume the local `.flow` matches the deployed BPMN.** If there's any chance the deployed flow differs (a republish since the local edit, a different branch, a different solution version), fetch `instance asset` to see what actually ran. Otherwise your correlation between faulting element and `.flow` node will mislead you.
 - **Never skip the `--folder-key` flag** on `instance` or `incident get` commands. The command rejects the request before reaching the API; the failure looks like a CLI error but is really a missing argument.
 

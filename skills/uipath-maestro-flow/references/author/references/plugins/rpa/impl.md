@@ -7,15 +7,15 @@ RPA nodes invoke RPA processes. Pattern: `uipath.core.rpa-workflow.{key}`.
 **Published (tenant registry):**
 
 ```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.rpa-workflow" --output json
+uip flow registry pull --force
+uip flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
 **In-solution (local, no login required):**
 
 ```bash
-uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip flow registry list --local --output json
+uip flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling RPA projects in the same `.uipx` solution.
@@ -23,8 +23,8 @@ Run from inside the flow project directory. Discovers sibling RPA projects in th
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --output json
-uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --local --output json
+uip flow registry get "uipath.core.rpa-workflow.{key}" --output json
+uip flow registry get "uipath.core.rpa-workflow.{key}" --local --output json
 ```
 
 Confirm:
@@ -108,13 +108,13 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 ## If the RPA Process Does Not Exist Yet
 
-Tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip maestro flow registry list --local --output json` and wire it directly — no publish required.
+Tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip flow registry list --local --output json` and wire it directly — no publish required.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Process not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
+| Node type not found in registry | Process not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip flow registry pull --force` |
 | Input schema mismatch | Inputs don't match `inputDefinition` | Run `registry get` and check required inputs in `inputDefinition.properties` |
 | Process execution failed | Underlying RPA process errored | Check `$vars.{nodeId}.error` for details |
 | Mock placeholder still in flow | Process not yet replaced | Follow the mock replacement workflow above |

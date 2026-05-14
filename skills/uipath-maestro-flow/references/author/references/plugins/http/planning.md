@@ -69,7 +69,7 @@ IS activity input fields (`url`, `headers`, `body`, `query` under `bodyParameter
 
 ## Key Inputs (`--detail` for `node configure`)
 
-Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the full `inputs.detail` payload, `bindings_v2.json`, and connection resource files automatically. **Do not hand-write `inputs.detail`.**
+Run `uip flow node configure` with a `--detail` JSON. The CLI builds the full `inputs.detail` payload, `bindings_v2.json`, and connection resource files automatically. **Do not hand-write `inputs.detail`.**
 
 **Connector mode** (IS connection auth):
 
@@ -100,7 +100,7 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 
 - `uip login` required (for both modes — node type comes from registry)
 - For connector mode: a healthy IS connection must exist for the **target connector**. **If none exists, STOP** — surface in **Open Questions**. See [impl.md Step 2](impl.md#step-2--identify-target-connector-and-connection-connector-mode-only) for connection recovery.
-- `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
+- `uip flow registry pull` to cache the `core.action.http.v2` definition
 
 ## Planning Annotation
 

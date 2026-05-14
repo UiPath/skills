@@ -1,6 +1,6 @@
 # Connector Activity Nodes — Planning
 
-Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
+Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip flow registry pull`.
 
 ## When to Use
 
@@ -21,7 +21,7 @@ Prefer higher tiers when connecting to external services:
 
 - `uip login` required — connector nodes only appear in the registry after authentication
 - A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
-- `uip maestro flow registry pull` must be run to cache connector node types locally
+- `uip flow registry pull` must be run to cache connector node types locally
 
 ### When NOT to Use
 
@@ -41,7 +41,7 @@ Examples:
 ## Discovery
 
 ```bash
-uip maestro flow registry search <service> --output json
+uip flow registry search <service> --output json
 ```
 
 Confirm `category: "connector"` in the results. If the connector key fails, list all connectors:
@@ -59,8 +59,8 @@ A `registry search <service>` that returns **only `uipath.connector.trigger.*`**
 When `registry search` returns triggers but **no activities** for a service whose connector you've already confirmed exists (`uip is connectors list`), or returns nothing at all for a well-known connector, **force a fresh pull before falling back**:
 
 ```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search <service> --output json
+uip flow registry pull --force
+uip flow registry search <service> --output json
 ```
 
 If the second search still returns no activities for that connector, the fallback to managed HTTP (Tier 2 below) is legitimate. If the second search now lists activities, the cache was stale — proceed with the connector activity node as Tier 1.
@@ -69,7 +69,7 @@ If the second search still returns no activities for that connector, the fallbac
 
 ### Disambiguation — when search returns multiple connectors for the same intent
 
-`uip maestro flow registry search <keyword>` routinely returns multiple connectors for the same user intent (e.g. searching `databricks` returns both the native AI-serving connector and the JDBC gateway). **Never silently pick the first match.**
+`uip flow registry search <keyword>` routinely returns multiple connectors for the same user intent (e.g. searching `databricks` returns both the native AI-serving connector and the JDBC gateway). **Never silently pick the first match.**
 
 Apply the canonical disambiguation ladder owned by Integration Service:
 
@@ -110,7 +110,7 @@ When a connector exists but lacks the specific curated activity, use `core.actio
 
 > **Do NOT use `core.action.http` (v1) with `authenticationType: "connection"` for this.** The v1 node does not pass IS credentials at runtime. Always use `core.action.http.v2`.
 
-See [http/planning.md](../http/planning.md) for full selection heuristics and [http/impl.md](../http/impl.md) for configuration via `uip maestro flow node configure`.
+See [http/planning.md](../http/planning.md) for full selection heuristics and [http/impl.md](../http/impl.md) for configuration via `uip flow node configure`.
 
 Note as `managed-http: <service> — <operation>` during planning.
 

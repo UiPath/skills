@@ -29,7 +29,7 @@ Use an inline agent node when the reasoning/judgment task is tightly scoped to t
 
 Do not inline an agent you intend to reuse. Inline agents are private to the flow project — if you later need to call the same agent from another flow, you must re-scaffold and re-configure it, diverging over time. Use a published agent for shared logic.
 
-**Do NOT scaffold an inline agent to satisfy a prompt that names an existing agent.** If the prompt says "use the X agent" / "call the Y agent" / "invoke the Z coded agent" / "use the W low-code agent", the user is referring to a published agent. Search the tenant registry by name first: `uip maestro flow registry search "<name>" --output json`. Only scaffold inline when the user explicitly asks to **embed / inline / include / create** an agent inside this flow. The words "coded" and "low-code" describe the implementation style of a published agent — they are NOT synonyms for "inline".
+**Do NOT scaffold an inline agent to satisfy a prompt that names an existing agent.** If the prompt says "use the X agent" / "call the Y agent" / "invoke the Z coded agent" / "use the W low-code agent", the user is referring to a published agent. Search the tenant registry by name first: `uip flow registry search "<name>" --output json`. Only scaffold inline when the user explicitly asks to **embed / inline / include / create** an agent inside this flow. The words "coded" and "low-code" describe the implementation style of a published agent — they are NOT synonyms for "inline".
 
 ### When NOT to Use
 
@@ -70,13 +70,13 @@ For agent.json configuration (prompts, model, schemas) and resource file authori
 The autonomous agent's `tool` artifact port accepts inline tool resource nodes. **External RPA process tools** are the primary supported case. Discovery uses the flow registry:
 
 ```bash
-uip maestro flow registry search "uipath.agent.resource.tool.process" --output json
+uip flow registry search "uipath.agent.resource.tool.process" --output json
 ```
 
 Filter rows where `NodeType` starts with `uipath.agent.resource.tool.process.` and `DisplayName` matches. The `Description` field disambiguates same-named processes by folder. Fetch the full manifest:
 
 ```bash
-uip maestro flow registry get "<NodeType>" --output json
+uip flow registry get "<NodeType>" --output json
 ```
 
 For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/TestRPA)` → `"Shared/TestRPA"`) or from `uip solution resource get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resource refresh` from resolving the process at runtime.

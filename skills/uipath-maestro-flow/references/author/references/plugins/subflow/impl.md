@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get core.subflow --output json
+uip flow registry get core.subflow --output json
 ```
 
 Confirm: input port `input`, output ports `output` and `error`.

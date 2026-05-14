@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get core.logic.delay --output json
+uip flow registry get core.logic.delay --output json
 ```
 
 Confirm: input port `input`, output port `output`, required inputs `timerType` and `timerPreset`.
@@ -72,4 +72,4 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
 | Invalid timer value | Malformed ISO 8601 string | Check format: `P[n]Y[n]M[n]W[n]DT[n]H[n]M[n]S` |
 | Missing `timerValue` | `timerPreset: "custom"` but no `timerValue` | Add `timerValue` with ISO 8601 duration |
 | Missing `timerDate` | `timerType: "timeDate"` but no `timerDate` | Add `timerDate` with ISO 8601 datetime or `=js:` expression |
-| BPMN timer event not emitted | Wrong `core.logic.delay` definition in `definitions[]` | Re-copy from `uip maestro flow registry get core.logic.delay --output json` — the definition carries `model.eventDefinition: "bpmn:TimerEventDefinition"` |
+| BPMN timer event not emitted | Wrong `core.logic.delay` definition in `definitions[]` | Re-copy from `uip flow registry get core.logic.delay --output json` — the definition carries `model.eventDefinition: "bpmn:TimerEventDefinition"` |

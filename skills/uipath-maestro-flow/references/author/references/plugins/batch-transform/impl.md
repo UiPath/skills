@@ -5,7 +5,7 @@ Batch Transform runs an LLM row-by-row over an attached CSV and appends LLM-gene
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get uipath.pattern.batch-transform --output json
+uip flow registry get uipath.pattern.batch-transform --output json
 ```
 
 Confirm:
@@ -18,11 +18,11 @@ Confirm:
 - `outputDefinition.output.type` — `"file"`; `outputDefinition.output.source` — `"=response"` (the BPMN engine wraps the result under that key — same convention as every other ServiceTask)
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
-If the command errors with **"Node type not found: uipath.pattern.batch-transform"**, the CLI build predates Batch Transform support or the tenant's `canvas.nodes.batch-transform` server flag is off. Run `uip cli update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that the `canvas.nodes.batch-transform` flag is enabled on the tenant.
+If the command errors with **"Node type not found: uipath.pattern.batch-transform"**, the CLI build predates Batch Transform support or the tenant's `canvas.nodes.batch-transform` server flag is off. Run `uip cli update` and `uip flow registry pull --force`; if it still errors, confirm with your UiPath admin that the `canvas.nodes.batch-transform` flag is enabled on the tenant.
 
 ## Adding / Editing
 
-Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [author/CAPABILITY.md rule 2](../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the BT node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Batch Transform.
+Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [author/CAPABILITY.md rule 2](../../CAPABILITY.md): the `uip flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the BT node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Batch Transform.
 
 ## Wiring `attachment` — file variable bound to the trigger
 
@@ -50,7 +50,7 @@ Then on the BT node:
 }
 ```
 
-`uip maestro flow debug --file csvFile=./path/to/data.csv` populates that variable as a `{ FullName, Id, Metadata, MimeType }` Attachment object at runtime. Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.csvFile` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
+`uip flow debug --file csvFile=./path/to/data.csv` populates that variable as a `{ FullName, Id, Metadata, MimeType }` Attachment object at runtime. Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.csvFile` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
 
 ## JSON Structure
 
@@ -87,7 +87,7 @@ Then on the BT node:
 
 Notes:
 
-- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.BatchTransform"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.batch-transform --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
+- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.BatchTransform"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip flow registry get uipath.pattern.batch-transform --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
 - **`typeVersion` must match `definitions[<batch-transform>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
 - `inputs.outputColumns` is an **array of objects** with exactly the keys `name` and `description`. Do not flatten to a map (`{ Category: "...", Summary: "..." }`) — the canvas editor and the BPMN serializer expect the array shape.
 - `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows; the engine wraps its result under that key). Do not rewrite to `=batchTransformResult`, `=result.output`, or similar.
@@ -112,10 +112,10 @@ Without `=js:`, the runtime stores the literal string `"$vars.categorizeRows.out
 
 ## Add via CLI (opt-in, not preferred)
 
-The `uip maestro flow node add` / `edge add` CLI is **not** the canonical authoring path for OOTB pattern nodes (see rule 2 above). Reach for it only when scripting in a context where Edit/Write isn't available. The shape:
+The `uip flow node add` / `edge add` CLI is **not** the canonical authoring path for OOTB pattern nodes (see rule 2 above). Reach for it only when scripting in a context where Edit/Write isn't available. The shape:
 
 ```bash
-uip maestro flow node add <FlowName>.flow uipath.pattern.batch-transform \
+uip flow node add <FlowName>.flow uipath.pattern.batch-transform \
   --label "<LABEL>" \
   --input '{
     "attachment": "=js:$vars.<triggerId>.output.<fileVarId>",
@@ -147,7 +147,7 @@ If you need the rows as JSON inside the flow, add a downstream step that fetches
 ## Validate
 
 ```bash
-uip maestro flow validate <FlowName>.flow --output json
+uip flow validate <FlowName>.flow --output json
 ```
 
 The validator checks that required inputs (`attachment`, `prompt`, `outputColumns`) are present and non-empty, and that `outputColumns` entries each have `name` and `description`.
@@ -156,7 +156,7 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `Node type not found: uipath.pattern.batch-transform` | CLI predates Batch Transform support, or tenant flag `canvas.nodes.batch-transform` is off | `uip cli update`, `uip maestro flow registry pull --force`; check with admin that `canvas.nodes.batch-transform` is enabled if still missing |
+| `Node type not found: uipath.pattern.batch-transform` | CLI predates Batch Transform support, or tenant flag `canvas.nodes.batch-transform` is off | `uip cli update`, `uip flow registry pull --force`; check with admin that `canvas.nodes.batch-transform` is enabled if still missing |
 | Validate rejects `outputColumns` | Wrong shape — e.g., passed a map `{ name: description }` or string array | Rewrite to `[{ "name": "...", "description": "..." }, ...]` |
 | Runtime error `exceeded maxColumns` | More than 10 output columns | Reduce to ≤10 or split into two Batch Transform nodes chained on the output file |
 | All rows produce blank values for a column | `description` is too vague or references fields not in the source CSV | Tighten the `description` — name the source column(s) the LLM should read from; test with a small sample first |
@@ -166,7 +166,7 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 ## What NOT to Do
 
 - **Do not hand-author `model.bindings`** on the node — Batch Transform has no process or connector binding. Adding a `bindings` block will be stripped or cause validate errors.
-- **Do not pass `--source` on `uip maestro flow node add`** — `--source` is only for inline agent nodes (`uipath.agent.autonomous`). Batch Transform has no agent project behind it.
+- **Do not pass `--source` on `uip flow node add`** — `--source` is only for inline agent nodes (`uipath.agent.autonomous`). Batch Transform has no agent project behind it.
 - **Do not reshape `outputColumns` to a map** — the array-of-`{name, description}` shape is contractual with the canvas property panel and the BPMN `ECS.BatchTransform` serializer.
 - **Do not reference downstream rows inside the prompt** — each row is processed independently; there is no way to see sibling rows. Pre-aggregate or use [Summarize](../summarize/impl.md) on a synthesized document instead.
 - **Do not chain a Batch Transform's `$vars.{nodeId}.output` directly into a Script expecting rows** — it is a file handle, not a row array.

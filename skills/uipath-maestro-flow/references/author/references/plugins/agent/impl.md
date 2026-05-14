@@ -5,7 +5,7 @@ Agent nodes invoke UiPath AI agents via node type `uipath.core.agent.{key}`. Cod
 The agent lives in one of two places:
 
 - **In this solution** — sibling project inside the current solution. `{key}` is the local `resource.key` minted by `uip solution project add` (written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`). The runtime resolves the node via the Studio Web projects API after `uip solution upload`. The manifest in `definitions[]` carries `model.section: "In this solution"`.
-- **Published** — deployed to Orchestrator as a tenant resource. `{key}` is the Orchestrator-assigned resource key. Discoverable via `uip maestro flow registry search`. The manifest in `definitions[]` carries `model.section: "Published"`.
+- **Published** — deployed to Orchestrator as a tenant resource. `{key}` is the Orchestrator-assigned resource key. Discoverable via `uip flow registry search`. The manifest in `definitions[]` carries `model.section: "Published"`.
 
 The node-instance shape (in `nodes[]`) is identical across the two variants — only the manifest in `definitions[]` differs (`{key}` and `model.section`).
 
@@ -14,8 +14,8 @@ The node-instance shape (in `nodes[]`) is identical across the two variants — 
 **Published (tenant registry):**
 
 ```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.agent" --output json
+uip flow registry pull --force
+uip flow registry search "uipath.core.agent" --output json
 ```
 
 Requires `uip login`. Only published agents from your tenant appear.
@@ -23,8 +23,8 @@ Requires `uip login`. Only published agents from your tenant appear.
 **In-solution (local, no login required):**
 
 ```bash
-uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip flow registry list --local --output json
+uip flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.
@@ -32,8 +32,8 @@ Run from inside the flow project directory. Discovers sibling agent projects in 
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get "uipath.core.agent.{key}" --output json
-uip maestro flow registry get "uipath.core.agent.{key}" --local --output json
+uip flow registry get "uipath.core.agent.{key}" --output json
+uip flow registry get "uipath.core.agent.{key}" --local --output json
 ```
 
 Requires `uip login`. Only published agents from the tenant appear in the registry.
@@ -83,11 +83,11 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-The `model` block (BPMN type, `serviceType`, `bindings`, `context` template) lives on the manifest entry in `definitions[]`, not on the instance. The manifest is auto-populated by `uip maestro flow registry pull` — never hand-author it.
+The `model` block (BPMN type, `serviceType`, `bindings`, `context` template) lives on the manifest entry in `definitions[]`, not on the instance. The manifest is auto-populated by `uip flow registry pull` — never hand-author it.
 
 Three values to discover — never invent:
-- **`type` suffix** — Orchestrator-assigned UUID for this agent. Per-ring and per-agent — never copy across environments. Read from `uip maestro flow registry search "uipath.core.agent"` / `registry get` as `nodeType`.
-- **`typeVersion`** — the manifest's `version` field. Read from `uip maestro flow registry get <nodeType> --output json` (`.version`).
+- **`type` suffix** — Orchestrator-assigned UUID for this agent. Per-ring and per-agent — never copy across environments. Read from `uip flow registry search "uipath.core.agent"` / `registry get` as `nodeType`.
+- **`typeVersion`** — the manifest's `version` field. Read from `uip flow registry get <nodeType> --output json` (`.version`).
 - **`resourceKey`** — composite `<FolderPath>.<AgentName>` (e.g. `Shared.Apple Genius Agent`). Appears on each top-level `bindings[]` entry tied to this agent. Read from `registry get` (`model.bindings.resourceKey` on the manifest).
 
 Confirm all three from `registry get` before wiring.
@@ -108,13 +108,13 @@ Confirm all three from `registry get` before wiring.
 }
 ```
 
-`<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip maestro flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
+`<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
 
 Same shape as the published variant — no `model` on the instance.
 
-**Never hand-author the `definitions[]` entry.** Run `uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json`, extract the `Data.Node` object, and paste it verbatim into `definitions[]`. Constructing it by hand risks missing required validator fields (`model.section`, `runtimeConstraints`, `supportsErrorHandling`, etc.).
+**Never hand-author the `definitions[]` entry.** Run `uip flow registry get "uipath.core.agent.<resourceKey>" --local --output json`, extract the `Data.Node` object, and paste it verbatim into `definitions[]`. Constructing it by hand risks missing required validator fields (`model.section`, `runtimeConstraints`, `supportsErrorHandling`, etc.).
 
-`<resourceKey>` is the local `resource.key` written by `uip solution project add` to `resources/solution_folder/process/agent/<CodedAgentProject>.json` — read it from that file or from `uip maestro flow registry list --local --output json`. Read `<DEFINITION_VERSION>` from `uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json` (`.version`).
+`<resourceKey>` is the local `resource.key` written by `uip solution project add` to `resources/solution_folder/process/agent/<CodedAgentProject>.json` — read it from that file or from `uip flow registry list --local --output json`. Read `<DEFINITION_VERSION>` from `uip flow registry get "uipath.core.agent.<resourceKey>" --local --output json` (`.version`).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
@@ -166,9 +166,9 @@ return { classification: response };
 
 Create the agent first, then wire it. Three paths:
 
-- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution project add` to mint the local `resource.key`, then discover via `uip maestro flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../uipath-agents/references/coded/embedding-in-flows.md).
-- **Published coded agent** — `uip codedagent deploy`, then `uip maestro flow registry pull --force`.
-- **Published low-code agent** — `uip solution deploy`, then `uip maestro flow registry pull --force`.
+- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution project add` to mint the local `resource.key`, then discover via `uip flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../uipath-agents/references/coded/embedding-in-flows.md).
+- **Published coded agent** — `uip codedagent deploy`, then `uip flow registry pull --force`.
+- **Published low-code agent** — `uip solution deploy`, then `uip flow registry pull --force`.
 
 ## Using an Agent as a Tool Resource
 
@@ -182,8 +182,8 @@ For the resource file format and wiring details, see the `uipath-agents` skill:
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Agent not published, or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force`. For coded agents, ensure `uip codedagent deploy` completed successfully |
-| In-solution node doesn't resolve | `resourceKey` was hand-invented rather than read from the resource file, or `uip solution project add` was never run for the agent project | Run `uip maestro flow registry list --local` and use the returned `resourceKey` (same value as `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`) |
+| Node type not found in registry | Agent not published, or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip flow registry pull --force`. For coded agents, ensure `uip codedagent deploy` completed successfully |
+| In-solution node doesn't resolve | `resourceKey` was hand-invented rather than read from the resource file, or `uip solution project add` was never run for the agent project | Run `uip flow registry list --local` and use the returned `resourceKey` (same value as `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`) |
 | Agent execution failed | Underlying agent errored | Check `$vars.{nodeId}.error` for details. For coded agents, test locally first with `uip codedagent run` |
 | Empty `output.content` | Agent returned no response | Verify the agent is configured correctly (published: in Orchestrator; in-solution: in Studio Web) |
 | `inputDefinition` is empty | Expected — agents accept input via flow wiring, not typed fields | Wire upstream data to the agent via `$vars` expressions |

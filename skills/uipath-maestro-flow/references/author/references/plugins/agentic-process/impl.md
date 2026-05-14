@@ -7,25 +7,25 @@ Agentic process nodes invoke orchestration processes. Pattern: `uipath.core.agen
 ### Published (tenant registry)
 
 ```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.agentic-process" --output json
+uip flow registry pull --force
+uip flow registry search "uipath.core.agentic-process" --output json
 ```
 
 ### In-solution (sibling projects)
 
 ```bash
-uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip flow registry list --local --output json
+uip flow registry get "<nodeType>" --local --output json
 ```
 
 ## Registry Validation
 
 ```bash
 # Published
-uip maestro flow registry get "uipath.core.agentic-process.{key}" --output json
+uip flow registry get "uipath.core.agentic-process.{key}" --output json
 
 # In-solution
-uip maestro flow registry get "uipath.core.agentic-process.{key}" --local --output json
+uip flow registry get "uipath.core.agentic-process.{key}" --local --output json
 ```
 
 Confirm:
@@ -107,5 +107,5 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution processes use `--local` |
+| Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip flow registry pull --force`; for in-solution processes use `--local` |
 | Process execution failed | Underlying orchestration errored | Check `$vars.{nodeId}.error` for details |

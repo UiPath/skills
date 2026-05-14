@@ -133,4 +133,4 @@ When debugging a flow whose output is the literal string `vars.X.output.Y` (or `
 1. Open the `.flow` file
 2. Search for the literal token in the failed field — `grep '"vars\.' <project>.flow` or `grep '"\$vars\.' <project>.flow`
 3. For each match in `bodyParameters`, `queryParameters`, `pathParameters`, end-node `source`, or any value field, prepend `=js:`
-4. Re-run `uip maestro flow validate` and re-debug
+4. Re-run `uip flow validate` and re-debug

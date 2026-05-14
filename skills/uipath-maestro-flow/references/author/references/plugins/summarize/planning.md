@@ -8,7 +8,7 @@ The Summarize node runs comprehensive document synthesis over an attached file (
 
 (The wire type still reads `deep-rag` even though the canvas display name is "Summarize" — the node type is contractual with the runtime serializer and was not renamed.)
 
-Fixed OOTB node type — no registry suffix, one version. It does not appear in `uip maestro flow registry list` unless the tenant has the platform-side `canvas.nodes.summarize` feature flag enabled. The uip CLI unconditionally requests this flag in its manifest fetch, so the node will appear once the server rolls it out to your tenant.
+Fixed OOTB node type — no registry suffix, one version. It does not appear in `uip flow registry list` unless the tenant has the platform-side `canvas.nodes.summarize` feature flag enabled. The uip CLI unconditionally requests this flag in its manifest fetch, so the node will appear once the server rolls it out to your tenant.
 
 ## When to Use
 
@@ -59,7 +59,7 @@ Note the **PascalCase** field names (`Text`, `Citations`, `Ordinal`, `PageNumber
 
 | Input | Required | Type | Description |
 | --- | --- | --- | --- |
-| `attachment` | Yes | full Flow Attachment | The runtime engine wants the **full Flow Attachment object** (`{ FullName, Id, Metadata, MimeType }`). Source it as a flow-level `in` variable of `type: "file"` bound to the trigger via `triggerNodeId: "<triggerId>"`. The variable's payload is populated by `uip maestro flow debug --file <fileVarId>=<path>`. Reference it on the Summarize node as `=js:$vars.<triggerId>.output.<fileVarId>` — that path resolves to the whole Attachment object at runtime. The OOTB `inputDefinition.attachment` declares `type: "string"` because Studio Web's file-picker form serializes the object into that string slot at save time; the engine deserializes it back. **Never** wire a bare GUID, URL, byte stream, file path, or `.Id`/`.FullName` subfield. |
+| `attachment` | Yes | full Flow Attachment | The runtime engine wants the **full Flow Attachment object** (`{ FullName, Id, Metadata, MimeType }`). Source it as a flow-level `in` variable of `type: "file"` bound to the trigger via `triggerNodeId: "<triggerId>"`. The variable's payload is populated by `uip flow debug --file <fileVarId>=<path>`. Reference it on the Summarize node as `=js:$vars.<triggerId>.output.<fileVarId>` — that path resolves to the whole Attachment object at runtime. The OOTB `inputDefinition.attachment` declares `type: "string"` because Studio Web's file-picker form serializes the object into that string slot at save time; the engine deserializes it back. **Never** wire a bare GUID, URL, byte stream, file path, or `.Id`/`.FullName` subfield. |
 | `prompt` | Yes | string | The task instruction — e.g., "Write a 3-paragraph executive summary", "List every SLA penalty clause", "Answer: what is the termination notice period?". |
 | `returnCitations` | No | boolean | When `true`, the `content.Citations` array is populated with per-claim page references. Default `false`. |
 

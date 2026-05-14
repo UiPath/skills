@@ -238,12 +238,12 @@ initial_prompt: |
   The correct flow-file path is:
     WeatherAlert/WeatherAlert/WeatherAlert.flow
 
-  The task is NOT complete until `uip maestro flow validate` has passed for
+  The task is NOT complete until `uip flow validate` has passed for
   that exact file path.
 
   Important:
   - The `uip` CLI is already available in the environment.
-  - Do not run `uip maestro flow debug` — just validate locally.
+  - Do not run `uip flow debug` — just validate locally.
 
 success_criteria:
   - type: command_executed
@@ -255,7 +255,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent initialized a Flow project with uip maestro flow init"
+    description: "Agent initialized a Flow project with uip flow init"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
     min_count: 1
@@ -413,7 +413,7 @@ Score is binary: 1.0 when matches ≤ `max_count` (default `0`), else 0.0. Empty
 | `1.0` | Supporting checks | `--output json` flag used, presence of an auxiliary file |
 | `1.5` | Core behavior | `uip solution new` executed, `.flow` file created |
 | `2.0` | Important artifact content | `.flow` file contains the expected node type or handle wiring |
-| `3.0` | Primary artifact validity | `uip maestro flow validate` passes on the generated flow file |
+| `3.0` | Primary artifact validity | `uip flow validate` passes on the generated flow file |
 | `5.0–6.0` | End-to-end execution | Check script runs `flow debug` and verifies output correctness |
 
 **`pass_threshold`** is the fraction of the criterion that must pass. For `json_check` with multiple assertions, `0.75` means 75% of assertions must pass. For most criteria, use `1.0` (all-or-nothing).

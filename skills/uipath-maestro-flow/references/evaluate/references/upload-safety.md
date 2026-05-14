@@ -8,7 +8,7 @@ The eval run requires the Flow solution to exist in Studio Web. The temptation, 
 
 This applies regardless of whether:
 
-- The local project was created via `uip maestro flow init` and never uploaded.
+- The local project was created via `uip flow init` and never uploaded.
 - The local project was downloaded from Studio Web via `uip agent pull` and edited locally.
 - The user is working in a VS Code-authored solution / personal workspace and the project may not match what is on Studio Web.
 - The CLI errors with `solution-id could not be resolved` or any variant.
@@ -50,7 +50,7 @@ If ANY of these signals is true, skip auto-upload entirely and ask.
 The cheapest check is to attempt a read-only run command before doing anything else:
 
 ```bash
-uip maestro flow eval run list --set "<set_name>" --path <flow_project> --output json
+uip flow eval run list --set "<set_name>" --path <flow_project> --output json
 ```
 
 If this returns successfully (even with zero past runs), the solution is in Studio Web. If it errors with a missing-solution or auth error, treat the solution as not-yet-uploaded — and follow the rule above.

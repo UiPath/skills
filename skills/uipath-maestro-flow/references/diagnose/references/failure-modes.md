@@ -9,10 +9,10 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | Pattern | Symptom | Cause |
 |---|---|---|
 | [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
-| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow tidy` not run before publish |
+| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
-| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
+| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip flow init` was run outside a solution directory |
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
@@ -61,14 +61,14 @@ After publish or debug upload, Studio Web renders nodes as oblong rectangles (e.
 
 ### Cause
 
-`uip maestro flow tidy` was not run before publishing or debugging. Hand-written or stale `layout` data with non-96 dimensions remains in the `.flow` file and Studio Web renders it as-is.
+`uip flow format` was not run before publishing or debugging. Hand-written or stale `layout` data with non-96 dimensions remains in the `.flow` file and Studio Web renders it as-is.
 
 ### Fix
 
 Run tidy before any publish or debug operation:
 
 ```bash
-uip maestro flow tidy <ProjectName>.flow --output json
+uip flow format <ProjectName>.flow --output json
 ```
 
 Tidy:
@@ -80,7 +80,7 @@ Tidy:
 
 ### Reference
 
-[author capability](../../author/CAPABILITY.md) — see "Always run `flow tidy` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow tidy](../../shared/cli-commands.md#uip-maestro-flow-tidy).
+[author capability](../../author/CAPABILITY.md) — see "Always run `flow format` after edits" in critical rules; [shared/cli-commands.md — uip flow format](../../shared/cli-commands.md#uip-flow-format).
 
 ---
 
@@ -96,7 +96,7 @@ The HITL node's `completed` output handle has no outgoing edge — there is no c
 
 ### Fix
 
-Add an edge from the HITL node's `completed` port to the next node in the flow. After running `uip maestro flow hitl add`, always wire the `completed` port before validating.
+Add an edge from the HITL node's `completed` port to the next node in the flow. After running `uip flow hitl add`, always wire the `completed` port before validating.
 
 ### Reference
 
@@ -145,7 +145,7 @@ The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of 
 
 ### Cause
 
-`uip maestro flow init` was run from outside a solution directory — from a bare cwd, from the user's home directory, or from the parent of the solution.
+`uip flow init` was run from outside a solution directory — from a bare cwd, from the user's home directory, or from the parent of the solution.
 
 ### Fix
 
@@ -154,7 +154,7 @@ Delete the partial scaffold. Restart in the correct order — `flow init` from i
 ```bash
 uip solution new "<SolutionName>" --output json
 cd <SolutionName>
-uip maestro flow init <ProjectName> --output json
+uip flow init <ProjectName> --output json
 # Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
 # Only if Status is "Skipped" / "Failed" do you need:
 #   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
@@ -180,7 +180,7 @@ If the absolute path doesn't exist, the `init` step was wrong — do not try to 
 
 ### Symptom
 
-`uip maestro flow validate` passes locally. At `uip maestro flow debug` (or in deployed runs), the resource node faults with:
+`uip flow validate` passes locally. At `uip flow debug` (or in deployed runs), the resource node faults with:
 
 ```text
 Folder does not exist or the user does not have access to the folder.
@@ -208,7 +208,7 @@ Add two entries to the top-level `bindings[]` array per resource node — `name`
 
 ### Symptom
 
-Local `uip maestro flow validate` returns `Result: Success`. The same flow fails at `uip maestro flow debug` with a runtime error.
+Local `uip flow validate` returns `Result: Success`. The same flow fails at `uip flow debug` with a runtime error.
 
 ### Cause
 
@@ -221,7 +221,7 @@ Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expr
 - References to unknown variable IDs or node IDs in `=js:` expressions (`EXPR_UNRESOLVED_REF`) — flow-schema `expression-ref` rule
 - Output-path walks that descend into a declared primitive (`type: "string"` etc.) or a schema closed with `additionalProperties: false` (`EXPR_INVALID_OUTPUT_PATH`) — flow-schema `expression-ref` rule
 - Missing End-node output mappings for declared `out` variables (`MISSING_OUTPUT_MAPPING`, **warning** severity) — flow-schema `output-mapping` rule
-- Connector `inputs.detail.configuration` missing, empty, missing the `essentialConfiguration` envelope, or containing invalid JSON inside the `=jsonString:` prefix — emitted with a shape hint pointing at `uip maestro flow node configure`. Re-run that command rather than hand-editing.
+- Connector `inputs.detail.configuration` missing, empty, missing the `essentialConfiguration` envelope, or containing invalid JSON inside the `=jsonString:` prefix — emitted with a shape hint pointing at `uip flow node configure`. Re-run that command rather than hand-editing.
 
 **Not caught** — these still surface only at `flow debug` or in deployed runs:
 
