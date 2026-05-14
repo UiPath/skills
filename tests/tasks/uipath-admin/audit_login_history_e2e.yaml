@@ -1,0 +1,71 @@
+task_id: skill-admin-audit-login-history-e2e
+description: >
+  End-to-end test: agent runs Investigation 2 from
+  audit-workflow-guide.md ("login history for user X, failed attempts
+  only"). Sequence is: list `sources` to find the User Login type GUID
+  (Identity → Authentication → User Login), then query `events` with
+  `--user-id`, `--type`, and `--status Failure` inside a bounded
+  window. Validates the agent uses server-side filters instead of
+  pulling everything and post-filtering.
+
+  Command-construction only — no live tenant available for
+  side-effect verification.
+tags: [uipath-admin, e2e, mode:diagnose, audit, investigation, login-history]
+max_iterations: 2
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 40
+  turn_timeout: 600
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Show me failed login attempts for jane.doe@example.com on the
+  active tenant during April 2026.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant sources` to discover the User Login type GUID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant events` with --status Failure"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--status\s+(?i:Failure|1)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --user-id (or --search to resolve the user) on the events call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*(?:--user-id\s+\S+|--search\s+\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent kept a bounded time window via --from-date/--to-date covering April 2026"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

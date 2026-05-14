@@ -8,13 +8,13 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 
 | Pattern | Symptom | Cause |
 |---|---|---|
-| [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference |
-| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow tidy` not run before publish |
+| [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
+| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
-| [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — see entry for triage path |
+| [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
 ---
 
@@ -22,7 +22,9 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 
 ### Symptom
 
-A connector, HTTP, or end node receives the literal string `"vars.X.output.Y"` as its input value at runtime instead of the resolved value. `flow validate` passes locally; the failure manifests only at `flow debug` or in deployed runs.
+A connector, HTTP, or end node receives the literal string `"vars.X.output.Y"` as its input value at runtime instead of the resolved value.
+
+`flow validate` flags this as an error today (cli-side `expression-prefix-validator`, emitted with a remediation hint pointing at the `=js:`-prefixed form). Pre-validator cli versions miss it and the failure surfaces only at `flow debug` or in deployed runs — if you see the symptom without a corresponding validate error, your cli is older than the fix.
 
 Example: input field set to literal `"vars.createEntityRecord1.output.Id"` instead of the entity's actual ID.
 
@@ -30,7 +32,7 @@ Example: input field set to literal `"vars.createEntityRecord1.output.Id"` inste
 
 The `=js:` prefix was omitted on a `$vars` / `$metadata` / `$self` reference inside a value field. The serializer rewrites `$vars` → `vars` whether or not the prefix is present, so a missing `=js:` yields a string that **looks like** an unevaluated expression but is actually a literal.
 
-There is also no `nodes.X.output.Y` syntax — that is an invented form that silently ships as a literal string.
+There is also no `nodes.X.output.Y` syntax — that is an invented form that silently ships as a literal string. `flow validate` flags this same way (rewriting the suggested fix to the `=js:$vars.X.output.Y` form).
 
 ### Fix
 
@@ -59,17 +61,17 @@ After publish or debug upload, Studio Web renders nodes as oblong rectangles (e.
 
 ### Cause
 
-`uip maestro flow tidy` was not run before publishing or debugging. Hand-written or stale `layout` data with non-96 dimensions remains in the `.flow` file and Studio Web renders it as-is.
+`uip maestro flow format` was not run before publishing or debugging. Hand-written or stale `layout` data with non-96 dimensions remains in the `.flow` file and Studio Web renders it as-is.
 
 ### Fix
 
-Run tidy before any publish or debug operation:
+Run format before any publish or debug operation:
 
 ```bash
-uip maestro flow tidy <ProjectName>.flow --output json
+uip maestro flow format <ProjectName>.flow --output json
 ```
 
-Tidy:
+Format:
 
 - Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }`
 - Arranges nodes horizontally with ELK at `nodeSpacing: 96`
@@ -78,7 +80,7 @@ Tidy:
 
 ### Reference
 
-[author capability](../../author/CAPABILITY.md) — see "Always run `flow tidy` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow tidy](../../shared/cli-commands.md#uip-maestro-flow-tidy).
+[author capability](../../author/CAPABILITY.md) — see "Always run `flow format` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow format](../../shared/cli-commands.md#uip-maestro-flow-format).
 
 ---
 
@@ -150,7 +152,7 @@ The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of 
 Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution project add` step is no longer needed.
 
 ```bash
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 cd <SolutionName>
 uip maestro flow init <ProjectName> --output json
 # Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
@@ -210,21 +212,25 @@ Local `uip maestro flow validate` returns `Result: Success`. The same flow fails
 
 ### Cause
 
-Multiple. `flow validate` is a JSON schema + cross-reference check plus a small set of structural rules; it does not catch:
+Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expression-reference linting, and a small set of structural rules.
 
-- Missing `=js:` prefix → see [MST-9107](#mst-9107--js-prefix-missing)
+**Caught** (validate exits non-zero, with a precise field path and remediation hint):
+
+- Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107) — emitted by cli-side `expression-prefix-validator`
+- Invented `nodes.<id>.output.<...>` syntax (MST-9107 variant) — same validator, suggests `=js:$vars.<id>.output.<...>` as the fix
+- References to unknown variable IDs or node IDs in `=js:` expressions (`EXPR_UNRESOLVED_REF`) — flow-schema `expression-ref` rule
+- Output-path walks that descend into a declared primitive (`type: "string"` etc.) or a schema closed with `additionalProperties: false` (`EXPR_INVALID_OUTPUT_PATH`) — flow-schema `expression-ref` rule
+- Missing End-node output mappings for declared `out` variables (`MISSING_OUTPUT_MAPPING`, **warning** severity) — flow-schema `output-mapping` rule
+- Connector `inputs.detail.configuration` missing, empty, missing the `essentialConfiguration` envelope, or containing invalid JSON inside the `=jsonString:` prefix — emitted with a shape hint pointing at `uip maestro flow node configure`. Re-run that command rather than hand-editing.
+
+**Not caught** — these still surface only at `flow debug` or in deployed runs:
+
 - Reused reference IDs → see [Reused reference ID](#reused-reference-id--cross-connection-id-leakage)
 - Missing top-level `bindings[]` entries on resource nodes → see [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node)
 - HITL `completed` port unwired → see [HITL `completed` port unwired](#hitl-completed-port-unwired)
 - Stale `layout` data → see [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) (cosmetic, not faulting)
-
-The structural rules **do** catch (validate exits non-zero, with a shape hint pointing at `uip maestro flow node configure` as the canonical authoring path):
-
-- Connector `inputs.detail.configuration` missing or empty
-- Connector `inputs.detail.configuration` decoded but lacking the `essentialConfiguration` envelope
-- Connector `inputs.detail.configuration` containing invalid JSON inside the `=jsonString:` prefix
-
-If you see one of those error titles, re-run `uip maestro flow node configure` rather than hand-editing.
+- Output-path walks against **open** output schemas — HTTP response bodies, script returns, free-text agent output. The deep-path walker is permissive by design: it skips when the producer's schema doesn't authoritatively declare the field's structure, so e.g. `=js:$vars.fetchWeather.output.body.current_weather` against an HTTP node that declares only `output: { type: "object" }` passes validate and faults only when the runtime response doesn't have that path.
+- Wrong-direction reads (reading an `out`-only variable) — currently a runtime concern; the direction discriminator isn't yet threaded into the validator context.
 
 ### Fix
 

@@ -97,7 +97,7 @@ UNTIL: 0 errors OR all remaining errors require user action
 If a deployable `.nupkg` artifact is needed, package the project after validation passes:
 
 ```bash
-uip rpa-legacy package "{projectRoot}" -o "{outputDir}" --output json
+uip rpa-legacy pack "{projectRoot}" -o "{outputDir}" --output json
 ```
 
 Not required for debugging — legacy RPA can be debugged directly without packaging.

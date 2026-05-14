@@ -3,12 +3,13 @@ description: >
   Author a Maestro BPMN API workflow invocation, covering the
   Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval.
 tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:service-task", "feature:api-workflow"]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

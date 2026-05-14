@@ -77,4 +77,4 @@ Alternative: rename the Orchestrator asset from `myHiddenAsset` to `myHiddenAset
 
 ---
 
-Would you like help applying the fix — updating `Main.xaml` to reference `myHiddenAsset` and republishing the package? I can also clean up the `.investigation/` folder if you no longer need it.
+Would you like help applying the fix — updating `Main.xaml` to reference `myHiddenAsset` and republishing the package? I can also clean up the `.local/investigations/` folder if you no longer need it.

@@ -85,4 +85,4 @@ Alternative: create a folder named `OldDevFolder` in Orchestrator and assign the
 
 ---
 
-Would you like help applying the fix — updating `Main.xaml` to reference `Remote Debugging` and republishing the package? I can also clean up the `.investigation/` folder if you no longer need it.
+Would you like help applying the fix — updating `Main.xaml` to reference `Remote Debugging` and republishing the package? I can also clean up the `.local/investigations/` folder if you no longer need it.

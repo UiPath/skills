@@ -102,7 +102,7 @@ When migration was applied, `Status` becomes `"Valid — migrated to 50.0.0"` an
 ### Create Solution
 
 ```bash
-uip solution new "<SOLUTION_NAME>" --output json
+uip solution init "<SOLUTION_NAME>" --output json
 ```
 
 ### Register Project with Solution
@@ -148,7 +148,7 @@ uip solution deploy run \
   --package-name "<SOLUTION_NAME>" \
   --package-version "<VERSION>" \
   --folder-name "<FOLDER_NAME>" \
-  --folder-path "<ORCHESTRATOR_FOLDER>" \
+  --parent-folder-path "<ORCHESTRATOR_FOLDER>" \
   --output json
 ```
 
@@ -250,7 +250,7 @@ If not logged in, prompt the user to run `uip login`.
 All commands run from the same working directory — no `cd` needed. Pass paths explicitly.
 
 ```bash
-uip solution new "<SOLUTION_NAME>" --output json
+uip solution init "<SOLUTION_NAME>" --output json
 # `agent init` auto-registers the project in the parent `.uipx` because
 # the agent path lives inside the solution directory. Confirm via
 # `Data.SolutionRegistration.Status` in the response (`Registered` or
@@ -330,7 +330,7 @@ uip solution deploy run \
   --package-name "MySolution" \
   --package-version "2.0.0" \
   --folder-name "MySolution" \
-  --folder-path "Production" \
+  --parent-folder-path "Production" \
   --output json
 ```
 
@@ -341,7 +341,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Task | Command | Run From | Terminal states |
 |------|---------|----------|-----------------|
 | Login check | `uip login status --output json` | Any directory | — |
-| Create solution | `uip solution new "<NAME>" --output json` | Any directory | — |
+| Create solution | `uip solution init "<NAME>" --output json` | Any directory | — |
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done) | Solution directory | — |

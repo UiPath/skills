@@ -7,14 +7,15 @@ description: >
   The agent must validate the action schema and reject the app with the
   error message instead of writing the guardrail.
 tags: [uipath-agents, e2e, low-code]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
+
+run_limits:
   max_turns: 40
+  turn_timeout: 1200
 
 sandbox:
   driver: tempdir

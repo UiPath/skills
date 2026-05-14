@@ -1,0 +1,69 @@
+task_id: skill-admin-audit-who-did-x-e2e
+description: >
+  End-to-end test: agent runs Investigation 1 from audit-workflow-guide.md
+  ("who did X to resource Y"). Sequence is: discover the source/target
+  GUIDs via `sources`, then narrow `events` by --source AND --target
+  inside a bounded time window. Validates the agent uses the skill's
+  documented workflow rather than scanning everything client-side.
+
+  Command-construction only — no live tenant available for
+  side-effect verification.
+tags: [uipath-admin, e2e, mode:diagnose, audit, investigation]
+max_iterations: 2
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 40
+  turn_timeout: 600
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Find out who deleted the `Sales-Reports` folder on the active tenant
+  in the last 7 days.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before any audit call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant sources` (discovery before query)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant events` with a bounded window AND at least one of --source/--target/--type"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+.*--(?:source|target|type)\s+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent consistently used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0

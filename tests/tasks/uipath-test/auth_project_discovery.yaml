@@ -13,7 +13,6 @@ sandbox:
   python: {}
   node:
     env_packages:
-      - "@uipath/cli"
       - "@uipath/test-manager-tool"
 
 initial_prompt: |

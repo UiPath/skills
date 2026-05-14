@@ -195,7 +195,7 @@ Also add:
 
 - A `definitions[]` entry copied verbatim from `uip maestro flow registry get uipath.agent.autonomous --output json` (`Data.Node` or the top-level node object, depending on CLI/plugin version). Set `typeVersion` to the copied definition's exact `version`.
 - `variables.nodes[]` entries for `autonomousAgent1.output` and `autonomousAgent1.error` with `binding.nodeId = "autonomousAgent1"` and matching `binding.outputId` values.
-- A placeholder `layout.nodes.<agentNodeId>` entry; `flow tidy` owns the final position.
+- A placeholder `layout.nodes.<agentNodeId>` entry; `flow format` owns the final position.
 
 ### Wire edges with Edit / Write
 

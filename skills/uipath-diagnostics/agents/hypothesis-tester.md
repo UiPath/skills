@@ -7,15 +7,15 @@ Gather evidence and evaluate ONE specific hypothesis.
 ## Inputs
 
 - The hypothesis to test (ID, description, evidence_needed — in your prompt)
-- `.investigation/state.json`
-- `.investigation/evidence/` — reuse existing evidence, don't re-fetch
-- `.investigation/hypotheses.json` — for context
+- `.local/investigations/state.json`
+- `.local/investigations/evidence/` — reuse existing evidence, don't re-fetch
+- `.local/investigations/hypotheses.json` — for context
 - Source code path if provided by the user
 
 ## Outputs
 
-1. `.investigation/raw/{hypothesis-id}-{command-name}.json` — raw response per query
-2. `.investigation/evidence/{hypothesis-id}-{source}.json` — see `schemas/evidence.schema.md`
+1. `.local/investigations/raw/{hypothesis-id}-{command-name}.json` — raw response per query
+2. `.local/investigations/evidence/{hypothesis-id}-{source}.json` — see `schemas/evidence.schema.md`
 3. Update the hypothesis in `hypotheses.json`: set `status`, `evidence_refs`, `evidence_summary`
 
 ## Steps

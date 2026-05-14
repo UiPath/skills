@@ -8,6 +8,8 @@ tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:package"]
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 30
   turn_timeout: 900
 

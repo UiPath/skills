@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures hand-authored from the get-asset-permission-denied playbook signature. Replace with verbatim captures from a real .investigation/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "_doc": "Synthetic fixtures hand-authored from the get-asset-permission-denied playbook signature. Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
   "rules": [
     {
       "match": "or folders list-current-user --output json",

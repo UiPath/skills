@@ -10,6 +10,8 @@ tags: [uipath-data-fabric, smoke, entities, records]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 30
 
 sandbox:

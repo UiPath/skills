@@ -86,6 +86,21 @@ Create, pack, publish, and deploy solutions. See [`uipath-solution`](solution/so
 
 ---
 
+## Platform Tool (`uip platform`)
+
+Manage organization-level licensing — tenant allocations, user/group bundle assignments, and consumables reporting. See [`licensing/licensing.md`](licensing/licensing.md).
+
+| Group | Key Commands | Workflow Guide |
+|---|---|---|
+| **Tenants Licenses** | `tenants licenses get <tenant-key>`, `tenants licenses set <tenant-key> --input <path>` | [Tenant Allocations](licensing/tenant-allocations.md) |
+| **Users Licenses** | `users licenses available`, `users licenses get <user>`, `users licenses set <user> --input <path>` | [User & Group Licenses](licensing/user-licenses-allocations.md) |
+| **Groups Rules** | `groups rules get [--limit --offset --sort-by --sort-order]`, `groups rules details <group>`, `groups rules set <group> --input <path>` | [User & Group Licenses](licensing/user-licenses-allocations.md) |
+| **Consumables** | `licenses consumables get --mode {summary\|daily\|folders} [--tenant --unit --start-date --end-date]` | [Consumables Report](licensing/consumables-report.md) |
+
+All `uip platform` commands accept `--organization <account-id>` to override the org from the current login.
+
+---
+
 ## Traces (`uip traces`)
 
 LLM execution trace observability and feedback annotation. See [traces/traces.md](traces/traces.md) (spans) and [traces/feedback.md](traces/feedback.md) (feedback).
@@ -113,3 +128,10 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |
 | **Coded Agents** | `uip codedagent --help` | Python agent development |
 | **Tools** | `uip tools list/search/install` | CLI tool management |
+
+---
+
+## Naming gotchas
+
+- Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never singular, never `queueitems`/`bucketfiles`.
+- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist).

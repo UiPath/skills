@@ -87,4 +87,4 @@ Alternative: if multiple robots run this process, grant the permission at the gr
 
 ---
 
-Would you like help applying the fix — assigning a role with `Assets.View` to the robot account, or showing the exact Orchestrator UI path? I can also clean up the `.investigation/` folder if you no longer need it.
+Would you like help applying the fix — assigning a role with `Assets.View` to the robot account, or showing the exact Orchestrator UI path? I can also clean up the `.local/investigations/` folder if you no longer need it.
