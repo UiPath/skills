@@ -81,7 +81,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
    > 3. **Provide names manually** — name libraries to include even if not yet deployed; flag as `[VERIFY DEPLOYMENT]`
    > 4. **Pause and re-authenticate to a different tenant** — if libraries live elsewhere
 
-6. **Record the user's selection.** For SDD usage: write each selected library into every sub-project's §14 Packages table and into §16 → "Shared libraries referenced". For RPA usage: pass to `install-or-update-packages` after project scaffold.
+6. **Record the user's selection.** Write each selected library into every sub-project's §14 Packages table and into §16 → "Shared libraries referenced". Implementation skills handle the install step downstream.
 
 ## Manual fallback (auth preflight failed)
 

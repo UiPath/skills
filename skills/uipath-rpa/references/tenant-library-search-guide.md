@@ -81,7 +81,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
    > 3. **Provide names manually** — name libraries to install even if not yet deployed; flag as `[VERIFY DEPLOYMENT]`
    > 4. **Pause and re-authenticate to a different tenant** — if libraries live elsewhere
 
-6. **Record the user's selection.** For each accepted library, run `uip rpa install-or-update-packages --project-dir "<PROJECT_DIR>" --packages "<PackageId>:<Version>" --output json` to add it to `project.json`. Verify after install with `uip rpa get-errors`.
+6. **Record the user's selection.** For each accepted library, run `uip rpa packages install --packages '[{"id": "<PackageId>", "version": "<Version>"}]' --output json` to add it to `project.json`. Verify after install with `uip rpa validate --output json`.
 
 ## Skip when
 
@@ -107,5 +107,5 @@ If `uip` is unauthenticated, ask the legacy question:
 3. **Using `--feed-id`.** That flag does not exist on `uip resource libraries list` (it does on `uip or packages list` — different command). The libraries command always targets the default tenant feed.
 4. **Calling `contains(Title, ...)` without `Title != null` guard.** Tenants commonly hold packages with null Title — the call fails fast with `Invalid type: contains() expected ... received type null`.
 5. **Listing all libraries with no `--limit` bump, or paginating past the end.** Default 50 truncates large tenants and silently misses candidates. Use `--limit 500` for a one-shot scan; paginate via `--offset` only if `Data.length == 500`. If `Data.length < --limit` on a paginated call, you have seen the entire feed — stop searching, do not run more filtered queries hoping for hidden matches.
-6. **Auto-installing a candidate.** Library installation modifies `project.json` and project compilability — always confirm via `AskUserQuestion` before invoking `install-or-update-packages`.
+6. **Auto-installing a candidate.** Library installation modifies `project.json` and project compilability — always confirm via `AskUserQuestion` before invoking `packages install`.
 7. **One CLI call per keyword, or running more keyword permutations after a zero-result filtered call.** Combine keywords into one OR-filtered call. On zero results, escalate to step 5b — do not loop back with new keyword sets hoping for hidden matches.

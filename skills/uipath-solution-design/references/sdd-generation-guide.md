@@ -90,45 +90,7 @@ The org's deployed libraries cannot be inferred from any PDD. Query the tenant f
 
 Skip this step for non-RPA primaries (Agents, Coded Apps, Flow, Case, API Workflows) — shared RPA libraries do not apply to those products' package models.
 
-Follow the [Tenant Library Search Guide](tenant-library-search-guide.md) for the full procedure (CLI surface, JMESPath filter recipe, ranking rules, anti-patterns). The summary:
-
-1. **Auth preflight** — one `uip resource libraries list --limit 1 --output json` call. If it fails on auth, jump to the manual fallback below.
-2. **Extract up to 6 keywords** from the PDD's Application Inventory + org-prefix terms (`Common`, `Shared`, `<Company>` if mentioned in the PDD).
-3. **Run one filtered call** combining all keywords with `||` in `--output-filter`. Always guard `Title != null`.
-4. **Rank candidates** (org-prefix match first, then capability/domain match, then Authors-org boost; de-duplicate by Title keeping latest Version).
-5. **Branch on the result.** Do not loop back to step 2 with new keyword permutations.
-   - **≥1 candidate after ranking — present the top 5 via `AskUserQuestion` with `multiSelect: true`.** Phrase:
-
-     > The tenant feed contains the following libraries that may apply to this project. Select any that should be referenced in §14 Packages — leave all unchecked to skip:
-     >
-     > - `<PackageId>` `<Version>` — `<Title>`
-     > - …
-
-   - **0 candidates — present a single-select numbered fallback.**
-
-     > No org-published libraries matched the search. How would you like to proceed?
-     >
-     > 1. **Proceed without shared libraries** *(recommended)* — §14 will list only public NuGet dependencies; the reuse mandate becomes a forward note in §16
-     > 2. **Search a specific name or prefix** — re-run with the team's actual library naming convention
-     > 3. **Provide names manually** — name libraries to include even if not yet deployed; flag as `[VERIFY DEPLOYMENT]`
-     > 4. **Pause and re-authenticate to a different tenant** — if libraries live elsewhere
-
-6. **Record the selection.** For each selected library:
-   - Add a row to every sub-project's §14 Packages table.
-   - Add the package ID to §16 Deployment Environment → "Shared libraries referenced".
-
-#### Manual fallback — auth preflight failed
-
-If the preflight call returns `Result: "Failure"` with an auth-related message, surface that and use the legacy numbered-choice question:
-
-> Tenant library search is unavailable (not authenticated to a UiPath tenant). Provide shared libraries manually?
->
-> 1. **Skip — no shared libraries** *(recommended)*
-> 2. **Yes — `CommonLibrary`** (the conventional default)
-> 3. **Yes — other** — you will name the libraries
-> 4. **Authenticate first** — run `uip auth login`, then re-invoke the skill
-
-Propagate the user's named libraries to §14 / §16 as in step 6 above.
+Run the procedure in [tenant-library-search-guide.md](tenant-library-search-guide.md). Keyword source for step 2: PDD Application Inventory + org-prefix terms (`Common`, `Shared`, `<Company>` if mentioned in the PDD). Output mapping: every selected library → one row in every sub-project's §14 Packages table, and its package ID into §16 Deployment Environment → "Shared libraries referenced". If the auth preflight fails, use the guide's manual fallback and propagate the user's named libraries to §14 / §16 the same way.
 
 ### Step 3: Detect Gaps
 
