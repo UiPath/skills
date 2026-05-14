@@ -1,6 +1,6 @@
 ---
 name: uipath-troubleshoot
-description: "UiPath cross-platform troubleshooting — failed or stuck Orchestrator jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems. For .flow run troubleshooting→uipath-maestro-flow. For .bpmn run troubleshooting→uipath-maestro-bpmn. For .xaml/.cs workflow debug→uipath-rpa. For platform ops→uipath-platform."
+description: "UiPath cross-platform troubleshooting — investigate, debug, figure out, or find-and-fix failed, stuck, faulted, hung, or broken UiPath automations: Orchestrator jobs, queue items, selector failures, Healing Agent issues, publish errors, permission denials, auto-disabled triggers, 'worked yesterday, broken today' situations. Triggers on 'something's broken,' 'stopped working,' 'why is X failing,' 'take a look at this job,' or any job ID / error message. For .flow run troubleshooting→uipath-maestro-flow. For .bpmn run troubleshooting→uipath-maestro-bpmn. For .xaml/.cs workflow debug→uipath-rpa. For platform ops→uipath-platform."
 ---
 
 # UiPath Troubleshooting Agent
