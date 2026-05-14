@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "ProcessVersionHistory",
+  "Data": [
+    {
+      "Version": "1.0.2",
+      "CreatedAt": "2026-05-12T07:22:11.803Z",
+      "ReleaseName": "ERN",
+      "ReleaseId": 39405,
+      "Id": 53407
+    },
+    {
+      "Version": "1.0.3",
+      "CreatedAt": "2026-05-12T08:11:25.957Z",
+      "ReleaseName": "ERN",
+      "ReleaseId": 39405,
+      "Id": 53408
+    },
+    {
+      "Version": "1.0.4",
+      "CreatedAt": "2026-05-12T08:12:33.020Z",
+      "ReleaseName": "ERN",
+      "ReleaseId": 39405,
+      "Id": 53409
+    },
+    {
+      "Version": "1.0.5",
+      "CreatedAt": "2026-05-13T07:31:43.177Z",
+      "ReleaseName": "ERN",
+      "ReleaseId": 39405,
+      "Id": 53410
+    },
+    {
+      "Version": "1.0.6",
+      "CreatedAt": "2026-05-13T11:50:57.550Z",
+      "ReleaseName": "ERN",
+      "ReleaseId": 39405,
+      "Id": 53411
+    }
+  ]
+}

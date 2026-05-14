@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "PackageDownloaded",
+  "Data": {
+    "Key": "ERN:1.0.6",
+    "SavedTo": "",
+    "Size": "271053 bytes"
+  }
+}

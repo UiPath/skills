@@ -1,0 +1,129 @@
+task_id: skill-troubleshoot-timeout-issue
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay, rpa, ui-automation]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  ❯ Why did my last job from Shared folder has failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent reached the same root cause as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      The user's request was:
+        "Why did my last job from Shared folder has failed?"
+
+      The originating fault is NodeNotFoundException on the NClick
+      "Click 'Creating a Doodle'" inside the NApplicationCard "Edge
+      Google" of TO.xaml. The defect is an AUTHORING DEFECT in the
+      Application Card scope — not a selector problem and not an HA-
+      infrastructure problem. Healing Agent's `NoSuggestion` /
+      `RecoverySuccessful=false` / `OrchestratorEnableHeal=false` are
+      DOWNSTREAM signals; naming them as the primary cause is wrong.
+
+      Grade ONLY on what the agent presented to the user (its final
+      response) and the tool-call summary. Do NOT grade on the shape or
+      content of files under `.local/investigations/` — those are
+      bookkeeping, not the deliverable.
+
+      The reference root cause names ALL of:
+        (a) The NApplicationCard "Edge Google" (or its scope) is the
+            defect locus, NOT the NClick selector — the selector
+            itself is fine for its intended page.
+        (b) The card attached to an existing Edge tab on the wrong
+            page (google.ro / google.com / Romanian Google homepage)
+            instead of doodles.google.
+        (c) The mechanism is the Application Card's Open property
+            defaulting to IfNotOpen (or equivalently: AttachMode
+            ByInstance + permissive title selector + no Navigate
+            Browser before the click). Naming any one of these
+            equivalent framings counts.
+        (d) The fix involves either forcing the card to navigate to
+            doodles.google (Open=Always + TargetApp.Url, or insert
+            Navigate Browser activity) OR re-recording the click on
+            the page the card actually attaches to.
+
+      SCORING RUBRIC (grade the presented conclusion):
+
+        1.0  Response names ALL of (a)+(b)+(c)+(d).
+        0.8  Response names (a)+(b) plus one of (c)/(d).
+        0.5  Response identifies wrong page / wrong scope but misses
+             the Application Card framing, OR conclusion stops at
+             "selector failed" without scope diagnosis.
+        0.2  Response recognizes NodeNotFoundException surface but
+             blames the selector strictness / aaname padding / dynamic
+             parentid as the root cause (latent secondary defects, not
+             the originating fault).
+        0.0  Misdiagnosed (blamed HA infrastructure, asset, permissions,
+             connection) or got blocked.
+
+      Penalize fabrication: invented assets, configs, or activities
+      that do not appear in the evidence.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator, runtime-exceptions), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered. EXCEPTION: if the missing data is the project source code path, fall back to the rule above (`.` / current working directory) before suggesting best-effort."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (see rules above)."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "ProcessList",
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "B16092A1-0C68-436C-BF3A-147AB53B6762",
+      "Name": "ERN",
+      "ProcessKey": "ERN",
+      "ProcessVersion": "1.0.6",
+      "Description": "Blank Process",
+      "IsLatestVersion": true,
+      "RetentionPeriod": 30,
+      "RetentionAction": "Delete",
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "FolderPath": "Shared"
+    },
+    {
+      "Key": "EEAD4A4E-A3D9-44E5-A8EA-644B5B4BC2B6",
+      "Name": "BlankProcess",
+      "ProcessKey": "BlankProcess",
+      "ProcessVersion": "1.0.3",
+      "Description": "Blank Process",
+      "IsLatestVersion": true,
+      "RetentionPeriod": 30,
+      "RetentionAction": "Delete",
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "FolderPath": "Shared"
+    }
+  ]
+}

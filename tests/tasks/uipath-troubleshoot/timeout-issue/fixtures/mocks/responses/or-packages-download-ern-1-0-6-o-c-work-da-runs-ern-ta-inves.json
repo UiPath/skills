@@ -1,0 +1,5 @@
+{
+  "Result": "ValidationError",
+  "Message": "error: required option '-d, --destination <file>' not specified",
+  "Instructions": "Check command arguments and options. Use --help for usage information."
+}
