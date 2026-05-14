@@ -166,6 +166,15 @@ def _passthrough(args: str, original_argv: list[str], rule: dict) -> int:
 
 
 def main(argv: list[str]) -> int:
+    # Force stdout/stderr to UTF-8 so non-ASCII fixture content (e.g. Romanian,
+    # Cyrillic) doesn't crash on Windows where the default console encoding is
+    # cp1252. The agent reads stdout via a file redirect, so encoding it as
+    # UTF-8 is always correct.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     args = " ".join(argv[1:])
 
     if not MANIFEST_PATH.is_file():
