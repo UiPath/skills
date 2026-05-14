@@ -296,6 +296,10 @@ Show 1-2 representative code skeletons that demonstrate how to write new code in
 - **Run**: `uip rpa run-file --file-path "{{MAIN_FILE}}" --project-dir "{{PROJECT_DIR}}"`
 - **Validate**: `uip rpa get-errors --project-dir "{{PROJECT_DIR}}"`
 - **Key files to read first**: {{TOP_3_FILES}}
+
+## Skill Availability (Autopilot)
+
+The `uipath-rpa` skill is a **Claude Code plugin skill**, loaded by its host (Claude Code, Autopilot, or other agent runtime) from the plugin registry — NOT from this project. It is NOT installed at `<PROJECT_ROOT>\.local\autopilot\skills\uipath-rpa\` or any other path under this project. Do not attempt to read its `SKILL.md` or reference files from `.local\autopilot\skills\` — those paths will not exist. Rely on the skill content already loaded by the host.
 ````
 
 ### Metadata Line
@@ -318,6 +322,7 @@ Example: `<!-- discovery-metadata: cs=47 xaml=0 deps=3 -->`
 6. **Conventions section**: Only include patterns that were actually observed in sampled code. If a convention couldn't be determined, omit that bullet.
 7. **Code Patterns section**: Pick the most representative patterns. For test projects, show the test skeleton. For process projects, show the main workflow pattern. Max 2 skeletons.
 8. **Base class infrastructure**: If the project uses a custom base class beyond CodedWorkflow, document its key fields, methods, and services — this is critical context for writing new code.
+9. **Always include the `Skill Availability (Autopilot)` section verbatim.** This is a static notice, not data-dependent — emit it on every regeneration. It tells Autopilot's runtime not to probe `.local/autopilot/skills/uipath-rpa/`, which does not exist.
 
 ---
 

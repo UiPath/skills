@@ -333,13 +333,36 @@ uip rpa packages install --packages '[{"id":"<PackageId>","version":"<LATEST_VER
 
 ## UI Automation References
 
-**MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) before any UI automation work** — mode-specific UIA patterns (coded vs XAML).
+UIA references live in two locations. Always cite by location so the reader knows which tree to open:
 
-Additional UIA procedures and guides:
-- [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements
+- **This skill** (`skills/uipath-rpa/references/`) — policy, decision logic, target-capture orchestration, debug/recovery flows.
+- **UIA activity pack** (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`, installed via `uip rpa packages install`) — concrete `uip rpa uia` CLI syntax, per-activity property surfaces, coded API surface, and the UIA skill internal procedures. Co-versioned with the package, so always source-of-truth over anything in this skill when they diverge.
+
+### In this skill (`skills/uipath-rpa/references/`)
+
+**MUST read [ui-automation-guide.md](references/ui-automation-guide.md) before any UI automation work** — mode-specific UIA patterns (coded vs XAML), prohibited-tool list, exploration-tool boundaries.
+
+- [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements, upgrade-consent rules
+- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target-capture orchestration, multi-step UI flows, indication-fallback routing
 - [uia-debug-workflow.md](references/uia-debug-workflow.md) — Running and debugging UI automation workflows
 - [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
-- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow, multi-step UI flows, and indication fallback
+
+### In the UIA activity pack (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`)
+
+- `overview.md` — Package overview and entry point
+- `references/cli-reference.md` — Full `uip rpa uia` CLI: subcommands, flags, accepted values, artifact filenames
+- `references/object-repository.md` — Object Repository concepts and CLI flows
+- `references/selector-variables.md` — Selector variable substitution
+- `references/uia-target-attachment-guide.md` — Attaching OR targets to XAML activities (TargetApp / TargetAnchorable)
+- `references/indication-fallback-workflow.md` — Indication-mode capture when `uia-configure-target` is unavailable
+- `coded/coded-api.md` — Coded API surface for `uiAutomation.*` service calls
+- `activities/<Activity>.md` — Per-activity property surface (`NClick`, `NTypeInto`, `NApplicationCard`, …)
+- `activities/common/<Type>.md` — Shared enums and types (`NHealingAgentBehavior`, `Target`, `NClickType`, …)
+- `skills/uia-configure-target/{SKILL.md,USAGE.md}` — Target-configuration skill: procedure + invocation modes
+- `skills/uia-improve-selector/{SKILL.md,USAGE.md}` — Selector recovery / improvement skill
+- `skills/uia-interact/SKILL.md` + `references/special-keys.md` — Live UI interaction skill
+
+Pack docs are reference material to read and follow — NOT invocable as slash commands.
 
 ## Completion Output
 
