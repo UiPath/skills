@@ -1,0 +1,153 @@
+task_id: skill-diagnostics-queue-items-failing-test
+description: >
+  Faithful replay of a real UiPath diagnostic investigation. The agent
+  runs the uipath-diagnostics skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-diagnostics, e2e, faithful-replay]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ItemsQueue has 4 failed items today, please investigate.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-diagnostics skill"
+    skill_name: "uipath-diagnostics"
+    expected_skill: "uipath-diagnostics"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the queue-items-failing playbook AND identified BOTH failure modes (Country='ZZ' and empty Amount) as upstream-dispatcher input data defects"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      The user's request was:
+        "My ItemsQueue has 4 failed items today, please investigate."
+
+      You must grade BOTH dimensions in a single score.
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/products/orchestrator/playbooks/queue-items-failing.md
+        because the symptom (multiple queue items in Failed status with
+        BusinessException reasons) is the verbatim signature of that
+        playbook.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             queue-items-failing playbook should appear (absolute or
+             relative path).
+          2. The agent's tool-call summary -- a Read on
+             references/products/orchestrator/playbooks/queue-items-failing.md.
+          3. state.json's `scope.domain` -- should include the
+             orchestrator domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        orchestrator playbooks (faulted-jobs, stuck-jobs, etc.) while
+        ruling them out. Exploration is normal.
+
+      DIMENSION B -- Both failure modes identified as upstream input data defects
+        The reference root cause is **upstream dispatcher / source
+        system enqueued items with invalid SpecificContent**, producing
+        TWO distinct BusinessException patterns:
+          (a) 2 items with `Country='ZZ'` → "Unsupported country: ZZ"
+          (b) 2 items with empty `Amount` → "Transaction amount is null"
+
+        Both modes must be identified. The performer process is correctly
+        raising BusinessExceptions for invalid input — this is NOT a
+        performer regression, NOT a robot/machine issue, and NOT an
+        asset/configuration drift.
+
+        Evidence sources (in priority order):
+          1. state.json's `triage_summary` and `requirements.failure_categories`
+             -- should name BOTH "Unsupported country: ZZ" AND "Transaction
+             amount is null".
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` (or co-equal roots) should attribute
+             the failure to upstream input data, covering both bad-field
+             patterns.
+          3. The agent's last text response -- recommends fixing the
+             dispatcher / source data, not patching the performer.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched queue-items-failing.md AND identified BOTH
+             failure modes (Country='ZZ' and empty Amount) AND attributed
+             both to upstream-dispatcher input data defects, recommending
+             a fix at the dispatcher / source.
+        0.8  Correct playbook AND correct upstream-data attribution, but
+             named only ONE of the two failure modes (e.g., focused on
+             Country and missed Amount, or vice versa).
+        0.5  Only one dimension correct -- e.g., right playbook but
+             attributed the failure to a performer regression / robot /
+             asset (any of H2/H3/H4 in the original investigation), OR
+             correct upstream-data attribution but matched the wrong
+             playbook.
+        0.2  Recognized the surface (queue items failed) but neither
+             matched the playbook nor reached the upstream-data conclusion.
+        0.0  Misdiagnosed entirely (e.g., concluded performer regression,
+             machine misconfiguration, or asset drift) or got blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and both failure modes>"}
+
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the diagnostic flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
