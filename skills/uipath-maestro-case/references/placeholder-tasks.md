@@ -1,8 +1,8 @@
-# Skeleton Tasks Reference
+# Placeholder Tasks Reference
 
-How the skill handles unresolved task resources — what a skeleton task is, when one is created, what it preserves, what it leaves out, and how the user upgrades it to a fully wired task later.
+How the skill handles unresolved task resources — what a placeholder task is, when one is created, what it preserves, what it leaves out, and how the user upgrades it to a fully wired task later.
 
-## Why Skeletons Exist
+## Why Placeholders Exist
 
 Registry pulls are often incomplete during early authoring:
 
@@ -10,13 +10,13 @@ Registry pulls are often incomplete during early authoring:
 - Custom Integration Service connectors have not been registered.
 - IS connections for registered connectors are not yet provisioned.
 
-If the skill halted on every unresolved resource, the generated `caseplan.json` would be a small fragment — not reviewable, not validatable, not useful. Skeletons solve that: the full **workflow structure** (stages, edges, conditions, SLA, ordering, task names + types) lands in `caseplan.json`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
+If the skill halted on every unresolved resource, the generated `caseplan.json` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, edges, conditions, SLA, ordering, task names + types) lands in `caseplan.json`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
 
 The user reviews structure first, then attaches real resources once they exist.
 
-## What a Skeleton Is (vs a Mock)
+## What a Placeholder Is (vs a Mock)
 
-| Field | Full task | Skeleton task | Mock (forbidden) |
+| Field | Full task | Placeholder task | Mock (forbidden) |
 |-------|-----------|---------------|------------------|
 | `type` | ✓ | ✓ | ✓ |
 | `displayName` | ✓ | ✓ | ✓ |
@@ -28,22 +28,22 @@ The user reviews structure first, then attaches real resources once they exist.
 | Task-entry conditions | ✓ | ✓ | ✓ |
 | Referenced by stage-exit `selected-tasks-completed` | ✓ | ✓ | ✓ |
 
-**Mocks are forbidden** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A skeleton sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, explicit upgrade path.
+**Mocks are forbidden** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, explicit upgrade path.
 
-## When a Skeleton Is Created
+## When a Placeholder Is Created
 
 During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
 
-1. Skip the schema fetch (`uip maestro case tasks describe` / `is resources describe`).
+1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
 2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).
-3. Skip the `io-binding` plugin entirely for that task (see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md) — skeleton tasks log a `SKIPPED` severity entry and move on, because there is no `data.inputs[]` schema to write into).
+3. Skip the `io-binding` plugin entirely for that task (see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md) — placeholder tasks log a `SKIPPED` severity entry and move on, because there is no `data.inputs[]` schema to write into).
 4. Generate and capture the `TaskId` normally — task-entry conditions and stage-exit rules still reference it.
 
 ## JSON Shape
 
-Skeletons occupy their own `laneIndex` in `stageNode.data.tasks[laneIndex][]`, the same way full tasks do — one task per lane for FE readability. Lane is layout only; it carries no execution semantics.
+Placeholders occupy a `laneIndex` in `stageNode.data.tasks[laneIndex][]`, the same way full tasks do — default one task per lane for FE readability, lane is layout-only. **Exception:** when a placeholder participates in a `runs-sequentially` group and is meant to run in parallel with sibling tasks in that group, it shares the same `laneIndex` as those siblings (shared lane = parallel siblings inside the sequential group, semantic).
 
-A skeleton task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
+A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 
 ```json
 {
@@ -65,21 +65,19 @@ A skeleton task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 }
 ```
 
-Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. Connector skeletons follow the same shape with `type` set to `connector-activity` or `connector-trigger` and no `data.typeId` / `data.connectionId` keys.
-
-> **`action` skeletons MUST include `data.taskTitle`** — validator rejects empty per [`plugins/tasks/action/impl-json.md`](plugins/tasks/action/impl-json.md). Source from sdd.md's task-title hint or fall back to `displayName`. Include `data.priority` and `data.recipient` if known from planning; otherwise omit those keys. Other skeleton fields (`data.context`, `data.inputs`, `data.outputs`, `data.actionCatalogName`) stay omitted until the action-app is attached.
+Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. The shape is uniform across classes: connector placeholders use `type` `connector-activity` / `connector-trigger`; action placeholders too — no exception for `data.taskTitle` or other action-specific keys.
 
 ### In-stage timer
 
-Timers are a built-in type — they are never skeletons because they have no registry dependency. Use [`plugins/tasks/wait-for-timer/impl-json.md`](plugins/tasks/wait-for-timer/impl-json.md).
+Timers are a built-in type — they are never placeholders because they have no registry dependency. Use [`plugins/tasks/wait-for-timer/impl-json.md`](plugins/tasks/wait-for-timer/impl-json.md).
 
 ### Case-level event triggers
 
-Case-level event triggers (`type: "case-management:Trigger"` with `serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.label` / `description` / `parentElement` to render at all, so the skeleton keeps those plus `data.uipath: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Skeleton fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never skeletons (no registry dependency).
+Case-level event triggers (`type: "case-management:Trigger"` with `serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.label` / `description` / `parentElement` to render at all, so the placeholder keeps those plus `data.uipath: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never placeholders (no registry dependency).
 
 ## `tasks.md` Planning-Entry Shape
 
-A skeleton-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:
+A placeholder-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:
 
 ````markdown
 ## T20: Add process task "Validate Submission Completeness" to "Submission Review"
@@ -88,7 +86,7 @@ A skeleton-bound entry keeps every structural field and moves the lost wiring in
 - runOnlyOnce: false
 - isRequired: true
 - order: after T19
-- verify: Confirm Result: Success, capture TaskId (skeleton — user to attach process + bindings)
+- verify: Confirm Result: Success, capture TaskId (placeholder — user to attach process + bindings)
 ```text
 wiring notes (user must attach after publishing the process):
   lob = =metadata.lob
@@ -104,14 +102,14 @@ Rules:
 
 ## What Validation Catches
 
-`uip maestro case validate` on a caseplan with skeletons emits warnings, not errors:
+`uip maestro case validate` on a caseplan with placeholders emits warnings, not errors:
 
-- `Stage "<name>" has a task with no configuration` — one per skeleton.
-- `Stage "<name>" has no tasks` — if every task in a stage is absent (not even a skeleton).
+- `Stage "<name>" has a task with no configuration` — one per placeholder.
+- `Stage "<name>" has no tasks` — if every task in a stage is absent (not even a placeholder).
 
 These are **expected** and do not block the build. Errors only appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids mocks.
 
-## Upgrade Procedure — Skeleton → Full Task
+## Upgrade Procedure — Placeholder → Full Task
 
 When the user has registered the real resource:
 
@@ -129,11 +127,11 @@ Read the relevant cache file directly per [registry-discovery.md](registry-disco
 
 ### 3. Fetch the schema
 
-Run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` to get the per-resource input/output schema. For connector tasks, run `is resources describe` (activity) or `is triggers describe` (trigger) instead, and run `uip maestro case registry get-connection` to obtain the `connectionId`.
+For non-connector tasks, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` to get the per-resource input/output schema. For connector tasks, run `uip maestro case registry get-connection` to obtain the `connectionId`, then `uip maestro case spec --type <activity|trigger> --activity-type-id <typeId> --connection-id <connId>` to get the unified spec output (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` when `--input-details` is supplied).
 
-### 4. Edit the skeleton in place
+### 4. Edit the placeholder in place
 
-Read `caseplan.json`, locate the skeleton task by `id`, and mutate its `data` field in place. Keep the task's `id` and `elementId` unchanged — any conditions or `selected-tasks-completed` rules referencing the TaskId stay valid.
+Read `caseplan.json`, locate the placeholder task by `id`, and mutate its `data` field in place. Keep the task's `id` and `elementId` unchanged — any conditions or `selected-tasks-completed` rules referencing the TaskId stay valid.
 
 | Task class | `data` mutation |
 |---|---|
@@ -143,7 +141,7 @@ Read `caseplan.json`, locate the skeleton task by `id`, and mutate its `data` fi
 
 Per-class JSON shape lives in `plugins/tasks/<type>/impl-json.md` — match those exactly.
 
-> **Tip:** If the user has many skeletons to upgrade, a cleaner workflow is to update `sdd.md` with whatever context was missing (e.g., the now-registered process name) and re-invoke the skill from Phase 1. The regeneration path preserves the declarative intent.
+> **Tip:** If the user has many placeholders to upgrade, a cleaner workflow is to update `sdd.md` with whatever context was missing (e.g., the now-registered process name) and re-invoke the skill from Phase 1. The regeneration path preserves the declarative intent.
 
 ### 5. Bind inputs and outputs
 
@@ -164,10 +162,10 @@ The "task with no configuration" warning disappears once `data` is populated.
 
 ## Completion-Report Shape
 
-When the build finishes with skeletons, the skill's completion report must list them explicitly:
+When the build finishes with placeholders, the skill's completion report must list them explicitly:
 
 ```
-### Skeleton tasks (N)
+### Placeholder tasks (N)
 
 | Stage | Task | Type | TaskId | Attach |
 |-------|------|------|--------|--------|
@@ -175,7 +173,7 @@ When the build finishes with skeletons, the skill's completion report must list 
 | Submission Review | Review Submission | action | ty5UcykfU | action-apps-index.json — "Review Submission" |
 | … | … | … | … | … |
 
-### External resources to register before upgrading skeletons
+### External resources to register before upgrading placeholders
 
 - **Processes** (N): Validate Submission Completeness, Route Submission Decision, Finalize Case Closure
 - **Agents** (N): Classify Documents, Generate Carrier Emails, …
@@ -188,6 +186,6 @@ The user uses this list to drive external resource creation, then runs the upgra
 ## Anti-Patterns
 
 - **Do NOT fabricate a task-type-id to silence the warning.** Validation will pass but runtime will fail with binding errors.
-- **Do NOT partially bind inputs on a skeleton.** A skeleton has no `data.inputs[]` to edit — the io-binding plugin logs a `SKIPPED` entry and moves on. Half-bound skeletons are harder to upgrade than bare ones.
-- **Do NOT skip task-entry conditions on skeletons.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
-- **Do NOT create skeletons for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
+- **Do NOT partially bind inputs on a placeholder.** A placeholder has no `data.inputs[]` to edit — the io-binding plugin logs a `SKIPPED` entry and moves on. Half-bound placeholders are harder to upgrade than bare ones.
+- **Do NOT skip task-entry conditions on placeholders.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
+- **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.

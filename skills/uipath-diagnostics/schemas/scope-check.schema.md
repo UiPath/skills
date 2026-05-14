@@ -1,6 +1,6 @@
 # Scope Check Schema
 
-File: `.investigation/scope-check.json`
+File: `.local/investigations/scope-check.json`
 
 Created by: Scope Checker sub-agent
 Read by: Orchestrator

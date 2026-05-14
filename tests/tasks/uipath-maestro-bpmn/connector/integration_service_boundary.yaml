@@ -3,11 +3,13 @@ description: >
   Integration Service boundary eval: agent creates BPMN source shape and an
   explicit CLI-enrichment handoff without hand-authoring connector-owned
   connection metadata or running cloud-side commands.
-tags: [uipath-maestro-bpmn, integration, lifecycle:generate, connector, feature:connections]
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, connector, feature:connections]
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 80
   turn_timeout: 900
 

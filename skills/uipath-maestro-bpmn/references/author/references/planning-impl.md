@@ -47,9 +47,9 @@ Root bindings describe resources that packaging turns into `bindings_v2.json`.
 
 ## Expressions
 
-- Use a leading `=` where the frontend/runtime expects an expression.
+- Use a leading `=` where Maestro expects an expression.
 - Treat strings without `=` as literals.
-- Avoid assignment operators in condition, skip, and mapping expressions where canvas validation forbids assignments.
+- Avoid assignment operators in condition, skip, and mapping expressions where fields require read-only expression evaluation.
 - Keep gateway condition expressions on sequence flows, not on the gateway itself.
 - Keep script source in BPMN `script` CDATA with `scriptFormat="JavaScript"`.
 

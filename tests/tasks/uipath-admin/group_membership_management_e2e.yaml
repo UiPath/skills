@@ -7,14 +7,15 @@ description: >
   Command-construction only — no live tenant available for
   side-effect verification.
 tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
-max_iterations: 2
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   max_turns: 40
   turn_timeout: 600
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 sandbox:
   driver: tempdir

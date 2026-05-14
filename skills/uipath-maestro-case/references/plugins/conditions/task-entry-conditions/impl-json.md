@@ -88,6 +88,14 @@ Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings
 ]]
 ```
 
+### runs-sequentially — sequential group with optional parallel siblings
+
+```json
+"rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
+```
+
+**Lane semantics for this rule type:** Among tasks sharing a `runs-sequentially` task-entry condition, group members meant to run in **parallel** with each other MUST share the same `lane` in `stageNode.data.tasks[lane][index]` (shared lane = parallel siblings inside the sequential group, semantic — not just FE layout). Solo members of the group get their own lane. Tasks outside any `runs-sequentially` group still follow the default one-task-per-lane rule with layout-only semantics.
+
 ## Rule-Type Catalog
 
 | `rule` | Required extra field |

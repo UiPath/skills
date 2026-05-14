@@ -3,15 +3,30 @@
   "resources": [
     {
       "id": "Binding_EventConnection",
-      "type": "connection",
+      "kind": "connection",
       "name": "Synthetic Event Connection",
-      "resourceKey": "synthetic-event-connection"
+      "resourceKey": "synthetic-event-connection",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Event Connection",
+        "SolutionsSupport": "Required",
+        "SubType": "connection",
+        "Connector": "synthetic-events"
+      }
     },
     {
       "id": "Binding_EventTrigger",
-      "type": "eventTrigger",
+      "kind": "eventTrigger",
       "name": "Synthetic Event Trigger",
-      "resourceKey": "synthetic-event-trigger"
+      "resourceKey": "synthetic-event-trigger",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Event Trigger",
+        "SolutionsSupport": "Required",
+        "SubType": "eventTrigger",
+        "Connector": "synthetic-events",
+        "EventName": "external-signal"
+      }
     }
   ]
 }

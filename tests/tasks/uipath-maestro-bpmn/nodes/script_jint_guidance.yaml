@@ -2,11 +2,13 @@ task_id: skill-bpmn-script-jint-guidance
 description: >
   Script task eval: agent authors a BPMN script task that follows the Jint
   runtime boundary instead of Node.js, browser, filesystem, or network APIs.
-tags: [uipath-maestro-bpmn, smoke, lifecycle:generate, shape:single-node, node:script]
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:single-node, node:script]
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 60
   turn_timeout: 900
 
@@ -27,7 +29,8 @@ initial_prompt: |
     `http://uipath.org/schema/bpmn`; do not use workflow-activities
     namespaces for BPMN extension XML.
   - Declare root `uipath:variables version="v1"` entries for `amount`,
-    `daysOverdue`, and `riskScore`.
+    `daysOverdue`, and `riskScore` inside `bpmn:process` /
+    `bpmn:extensionElements`.
   - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`.
   - Include the UiPath script version metadata and prefer version `v3`.
   - Map script inputs through `uipath:input name="args"`, but write the script
@@ -35,7 +38,9 @@ initial_prompt: |
     `args.amount` or `args.daysOverdue`.
   - Use UiPath variable-id expressions in input mappings, for example
     `=vars.<amount variable id>`, not bare expressions such as `=amount`.
-  - Map the script result back to the declared `riskScore` output variable.
+  - Map the script result back to the declared `riskScore` output variable with
+    a `uipath:output` mapping whose `var` attribute is the declared `riskScore`
+    variable id. Do not put the target variable id in the output `name`.
   - Write script content that is compatible with the Jint runtime. Do not use
     Node.js modules, filesystem APIs, network APIs, browser globals, packages,
     timers, or long-running async behavior.

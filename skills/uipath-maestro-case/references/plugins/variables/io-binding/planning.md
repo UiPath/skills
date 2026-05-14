@@ -10,7 +10,7 @@ Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.js
    - inputs:
      - in_Amount = "=vars.amount"   # SDD calls this "amount", process arg is "in_Amount"
    ```
-3. **Unresolved taskTypeId** — `tasks describe` unavailable. Follow [skeleton-tasks](../../../skeleton-tasks.md) — omit `inputs:`/`outputs:`, capture wiring intent in a fenced code block.
+3. **Unresolved taskTypeId** — `tasks describe` unavailable. Follow [placeholder-tasks](../../../placeholder-tasks.md) — omit `inputs:`/`outputs:`, capture wiring intent in a fenced code block.
 
 Do not fabricate names not in the SDD or `tasks describe`. Do not validate variable existence or scoping — those checks belong in implementation.
 

@@ -128,7 +128,7 @@ Reads all characters from a specified XPS (XML Paper Specification) file and sto
 
 - This activity requires an OCR engine to be placed inside the `OCREngine` scope. Without an OCR engine, a validation error is raised: the activity will not work without one.
 - The `OCREngine` child element is an `ActivityFunc` delegate — it must contain exactly one OCR engine activity. **The OCR engine must set `Image="[Image]"` to bind to the delegate argument** — without this binding the engine receives no input.
-- **OCR engine packages must be installed separately.** The most common package is `UiPath.OCR.Activities` (namespace `xmlns:ocr="http://schemas.uipath.com/workflow/activities/ocr"`), which provides UiPath Document OCR, Google Cloud Vision OCR, and Microsoft OCR. Use `uip rpa find-activities --query "OCR engine"` to discover available engines and `uip rpa install-or-update-packages` to install the required package.
+- **OCR engine packages must be installed separately.** The most common package is `UiPath.OCR.Activities` (namespace `xmlns:ocr="http://schemas.uipath.com/workflow/activities/ocr"`), which provides UiPath Document OCR, Google Cloud Vision OCR, and Microsoft OCR. Use `uip rpa activities find --query "OCR engine"` to discover available engines and `uip rpa packages install` to install the required package.
 - Unlike `ReadPDFWithOCR`, there is no `ImageDpi` configuration property — the XPS reader uses a fixed internal rendering DPI.
 - The `Range` property accepts formats such as `"All"`, `"1"`, `"2-5"`, or comma-separated page numbers. An invalid format raises an exception at runtime.
 - This activity is only available on Windows (`#if !NETPORTABLE_UIPATH`). It uses the Windows-native XPS reader and cannot be used in cross-platform workflows.

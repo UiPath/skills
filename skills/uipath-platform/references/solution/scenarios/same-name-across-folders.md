@@ -49,7 +49,7 @@ The `_1` suffix is **expected and stable** — re-running refresh does not bump 
 ## Verify
 
 ```bash
-uip solution resource list --solution-folder ./MySolution --source local --output json
+uip solution resource list --kind Process --solution-folder ./MySolution --source local --output json
 ```
 
 You should see two `process`/`api` entries with **different keys** but matching the cloud GUIDs you wanted (compare against `uip maestro flow registry search "API Workflow"`).

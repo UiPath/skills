@@ -88,6 +88,21 @@ uip resource queues get-folders <queue-key> --output json
 uip resource queues unshare <queue-key> --folder-path "Production" --output json
 ```
 
+### Queue Processing Stats
+
+```bash
+# Stats for a specific queue (item counts, exception counts, processing times)
+uip resource queues get-stats --folder-path "Finance" --key <queue-key> --output json
+
+# Stats across queues in a folder, narrowed by name and a processing-window
+uip resource queues get-stats --folder-path "Finance" \
+  --name "Invoice" \
+  --from "2026-04-01T00:00:00Z" --to "2026-04-30T23:59:59Z" \
+  --output json
+```
+
+`get-stats` returns aggregate metrics (totals, successes, failures, average handling time) — useful for dashboards or capacity planning. Without `--key` or `--name` it stats every queue in the folder. `--from` / `--to` filter on last-processed date in ISO 8601.
+
 ---
 
 ## Queue Item Lifecycle

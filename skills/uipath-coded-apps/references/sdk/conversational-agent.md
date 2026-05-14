@@ -14,6 +14,7 @@ Combined scopes needed: `OR.Execution` `OR.Folders` `OR.Jobs` `ConversationalAge
 - Conversations (create): `OR.Execution`, `OR.Folders`, `OR.Jobs`
 - Conversations (read): `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read`
 - Conversations (update/delete): `OR.Execution`, `OR.Jobs`
+- Conversations (uploadAttachment / getAttachmentUploadUri): `OR.Execution`, `OR.Jobs`
 - startSession: `OR.Execution`, `OR.Jobs`, `ConversationalAgents`
 - Exchanges (read): `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read`
 - Feedback: `OR.Execution`, `OR.Jobs`, `Traces.Api`
@@ -43,6 +44,7 @@ import type {
   ConversationUpdateOptions,
   ConversationSessionOptions,
   ConversationAttachmentUploadResponse,
+  ConversationAttachmentCreateResponse,
 } from '@uipath/uipath-typescript/conversational-agent';
 
 // Exchange types
@@ -164,6 +166,23 @@ Returns `Promise<ConversationDeleteResponse>`.
 ### uploadAttachment(id: string, file: File)
 
 Returns `Promise<ConversationAttachmentUploadResponse>` with `{ uri, name, mimeType }`. Handles the two-step upload (create attachment entry, then upload to blob storage).
+
+### getAttachmentUploadUri(conversationId: string, fileName: string)
+
+Returns `Promise<ConversationAttachmentCreateResponse>` with `{ uri, name, fileUploadAccess }`. Lower-level alternative to `uploadAttachment` — registers the attachment and returns a pre-signed upload URL but does NOT upload bytes. Use this when you need to stream large files yourself or upload from a non-`File` source. Service-level only (no conversation-attached shorthand).
+
+```typescript
+const { uri, fileUploadAccess } = await conversationalAgent.conversations
+  .getAttachmentUploadUri(conversationId, file.name);
+
+await fetch(fileUploadAccess.url, {
+  method: fileUploadAccess.verb,
+  body: file,
+  headers: { 'Content-Type': file.type },
+});
+
+// Reference `uri` in subsequent messages
+```
 
 ### startSession(conversationId: string, options?: ConversationSessionOptions)
 

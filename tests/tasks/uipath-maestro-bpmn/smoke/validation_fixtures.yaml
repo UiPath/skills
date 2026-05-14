@@ -9,6 +9,8 @@ tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:validate", connector
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 20
 
 sandbox:
@@ -80,6 +82,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
+    description: "Imported brownfield preservation BPMN fixture is available"
+    path: "fixtures/validation/imported-brownfield-preservation/imported-brownfield-preservation.bpmn"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
     description: "Integration Service package bindings fixture is available"
     path: "fixtures/validation/integration-service-enriched/bindings_v2.json"
     weight: 0.5
@@ -100,6 +108,12 @@ success_criteria:
   - type: file_exists
     description: "Contract variants BPMN fixture is available"
     path: "fixtures/validation/contract-variants/contract-variants.bpmn"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Wrapper family contract BPMN fixture is available"
+    path: "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn"
     weight: 0.5
     pass_threshold: 1.0
 
@@ -126,6 +140,22 @@ success_criteria:
       - "uipath:Activity"
       - "scriptVersion value=\"v2\""
       - "migrationVersion version=\"11.5\""
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Wrapper family contract fixture covers Maestro BPMN wrapper and enrichment families"
+    path: "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn"
+    includes:
+      - "A2A.AgentExecution"
+      - "Orchestrator.ExecuteApiWorkflowAsync"
+      - "Orchestrator.BusinessRules"
+      - "Orchestrator.CreateAndWaitForQueueItem"
+      - "Orchestrator.StartCaseMgmtProcess"
+      - "Intsvc.WaitForEvent"
+      - "<bpmn:businessRuleTask"
+      - "<bpmn:callActivity"
+      - "<bpmn:receiveTask"
     weight: 1.0
     pass_threshold: 1.0
 

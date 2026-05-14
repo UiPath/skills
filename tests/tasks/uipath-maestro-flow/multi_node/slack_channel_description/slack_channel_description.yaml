@@ -5,12 +5,13 @@ description: >
   end-to-end test that exercises connector discovery, connection binding,
   reference resolution, node configuration, and cloud debug execution.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, connector]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

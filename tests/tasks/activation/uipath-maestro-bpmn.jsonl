@@ -1,0 +1,50 @@
+{"id": "uipath-maestro-bpmn-001", "prompt": "Create a new Maestro BPMN Process Orchestration project", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-002", "prompt": "Scaffold a BPMN project skeleton in this directory", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-003", "prompt": "Edit my .bpmn file to add a parallel gateway between the validation step and the two downstream service tasks", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-004", "prompt": "Add an exclusive gateway with three outgoing branches based on the order amount in my BPMN", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-005", "prompt": "Wrap the \"approve invoice\" service task in my BPMN with a boundary timer that escalates after 24 hours", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-006", "prompt": "Add an error boundary event to the RPA service task and route the error path to a HITL user task", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-007", "prompt": "Replace this user task in my .bpmn with a call activity that invokes an Action Center work item", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-008", "prompt": "Convert this subprocess to an event subprocess so it triggers on a message rather than a flow", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-009", "prompt": "Does Maestro BPMN support an Agentic Process design with multiple start events that the process listens on?", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-010", "prompt": "Add a script task that computes a risk score from the input variables and writes it to a process variable", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-011", "prompt": "Define a process input variable \"orderId\" of type string and an output variable \"status\" of type object in my BPMN", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-012", "prompt": "Open my .bpmn and walk me through the process end-to-end", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-013", "prompt": "Validate my Maestro BPMN project before I upload it", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-014", "prompt": "uip maestro bpmn validate is failing on entry-points.json — what's wrong?", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-015", "prompt": "Package my BPMN Process Orchestration project", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-016", "prompt": "Upload my BPMN project to Studio Web", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-017", "prompt": "Publish this BPMN process to Orchestrator", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-018", "prompt": "Run a debug instance of my BPMN process in folder Finance", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-019", "prompt": "List the running instances of my Maestro BPMN process and show their statuses", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-020", "prompt": "Get the incident details for instance a55de8c4-96b1-4a70-82e3-fd7890da0d99", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-021", "prompt": "My BPMN run faulted at the \"New Claim\" trigger element with IntSvcArgumentsError — help me figure out why", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-022", "prompt": "Pause this Maestro BPMN instance, then resume after I fix the connection", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-023", "prompt": "Cancel a stuck BPMN instance and tell me what to do before I retry", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-024", "prompt": "Migrate this faulted instance to the new BPMN version that fixes the bad task and move the cursor back one element", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-025", "prompt": "Fetch the deployed BPMN asset for this process and diff it against my local .bpmn", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-026", "prompt": "Inspect the runtime variables of this BPMN instance — I want to see what was passed into the third RPA call", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-027", "prompt": "Show me element executions for this Maestro BPMN run so I can see what completed and what's stuck", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-028", "prompt": "Add a Salesforce Integration Service trigger as the start event of my BPMN", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-029", "prompt": "I need an Integration Service connector activity in my BPMN that calls the Slack send-message endpoint", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-030", "prompt": "Fix bindings_v2.json — it looks stale relative to my current .bpmn file", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-031", "prompt": "Regenerate operate.json and package-descriptor.json from my BPMN source", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-032", "prompt": "Why does Studio Web fail to import my BPMN — error says no diagram for the process?", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-033", "prompt": "Add diagram coordinates for the new exclusive gateway and re-route the waypoints around it", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-034", "prompt": "Build a BPMN process that starts on a queue item, runs an RPA invocation, branches on RPA output, and ends with an Action Center HITL approval", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-035", "prompt": "Build a Maestro BPMN that triggers when an Outlook email with an attachment arrives, downloads the attachment to a storage bucket, then sends it to an IXP agent for extraction and a HITL validator", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-036", "prompt": "Implement a personal-injury claims process in BPMN with intake, routing, RPA-driven verification, exception path to HITL, and a final business-rule decision", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-037", "prompt": "Split this monolithic .bpmn into a parent process and three subprocesses (intake, processing, notification) with scoped variable mappings", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-038", "prompt": "Add a multi-instance parallel marker to the \"process line items\" task so it runs once per item in the collection", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-039", "prompt": "Rename the variable on the user task and update every downstream mapping that referenced the old name", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-040", "prompt": "Add a non-interrupting timer event that sends a reminder after 4 hours but doesn't kill the user task", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-041", "prompt": "Insert a business rule task that decides whether to escalate based on the customer tier", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-042", "prompt": "Add a signal throw event so a downstream subprocess can react when the approval comes in", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-043", "prompt": "I want to invoke a UiPath agent as a service task in my BPMN — wire the inputs and outputs", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-044", "prompt": "Replace the placeholder service task with a real RPA process invocation and bind the input arguments", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-045", "prompt": "Add an API workflow service task to my BPMN that calls our internal pricing endpoint", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-046", "prompt": "Wire up a BPMN send task that pushes a record to a UiPath queue", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-047", "prompt": "Why is my BPMN HTTP request being wrapped in a subProcess instead of a sendTask?", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-048", "prompt": "Configure error retry metadata on this service task — 3 attempts with exponential backoff", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-049", "prompt": "What's the supported list of BPMN elements I can author in a Maestro BPMN project?", "expected_skill": "uipath-maestro-bpmn"}
+{"id": "uipath-maestro-bpmn-050", "prompt": "Show me what files a Maestro BPMN project contains — what's source vs generated?", "expected_skill": "uipath-maestro-bpmn"}

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Real responses captured from the original session's .investigation/raw/. First-match-wins: list specific patterns before generic ones. `expected_calls` declares the minimum-coverage patterns the test expects the agent to exercise (compared against .calls.jsonl by tmp/coverage_report.py after the run).",
+  "_doc": "Real responses captured from the original session's .local/investigations/raw/. First-match-wins: list specific patterns before generic ones. `expected_calls` declares the minimum-coverage patterns the test expects the agent to exercise (compared against .calls.jsonl by tmp/coverage_report.py after the run).",
   "rules": [
     {
       "match": "or jobs get 3033bce6-5585-4455-aaec-db7a9f791126",

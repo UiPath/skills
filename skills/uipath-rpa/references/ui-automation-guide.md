@@ -160,7 +160,7 @@ Each method on `UiTargetApp` accepts targets in multiple forms:
 Read `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs`. This file contains a `Descriptors` class with the hierarchy `Descriptors.<App>.<Screen>.<Element>`.
 
 > **Generation requires Studio Desktop.** `ObjectRepository.cs` is regenerated only when Studio Desktop detects a coded workflow file (`.cs` with `[Workflow]` / `[TestCase]`) and reconciles it against the OR — `uip rpa build` alone does NOT regenerate it. If the file is missing or stale after registering elements:
-> 1. Confirm Studio Desktop is running against the project (start it with `uip rpa start-studio --project-dir "<PROJECT_DIR>"` if needed).
+> 1. Confirm Studio Desktop is running against the project (start it with `uip rpa studio start --project-dir "<PROJECT_DIR>"` if needed).
 > 2. Ensure at least one `.cs` coded workflow exists in the project — Studio only triggers regeneration when it sees a coded surface that needs descriptors.
 > 3. Save / re-open the project in Studio Desktop to force a regen pass.
 >
@@ -173,7 +173,7 @@ using <ProjectNamespace>.ObjectRepository;
 
 #### Step 2 — Check UILibrary NuGet packages
 
-Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa inspect-package`.
+Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa packages inspect`.
 
 For UILibrary packages, use the **package** namespace, not the project namespace:
 ```csharp
@@ -205,7 +205,7 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 > "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uip rpa uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
-For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `get-errors` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
+For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
 
 ### Key Concepts
 

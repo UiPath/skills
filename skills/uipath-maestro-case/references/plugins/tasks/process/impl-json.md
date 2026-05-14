@@ -32,7 +32,7 @@
 uip maestro case tasks describe --type process --id "<entityKey>" --output json
 ```
 
-Fallback: planning-captured schema from tasks.md. If unavailable, skeleton per [skeleton-tasks.md](../../../skeleton-tasks.md).
+Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 **Step 1 — Root-level bindings:**
 
@@ -59,5 +59,5 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 - `type: "process"`
 - `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "process"`, `resourceSubType: "ProcessOrchestration"`, `propertyAttribute` = `name` / `folderPath`
-- `data.inputs` and `data.outputs` populated (unless skeleton)
+- `data.inputs` and `data.outputs` populated (unless placeholder)
 - `id` captured in `id-map.json`

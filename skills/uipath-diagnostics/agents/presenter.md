@@ -5,10 +5,10 @@ Produce the final user-facing resolution from investigation results. You own all
 ## Inputs
 
 - Confirmed hypothesis IDs (in your prompt)
-- `.investigation/state.json` — domains, matched playbooks
-- `.investigation/hypotheses.json` — all hypotheses and their status
-- `.investigation/evidence/` — interpreted summaries
-- `.investigation/raw/` — authoritative field values (follow `raw_data_ref` from evidence)
+- `.local/investigations/state.json` — domains, matched playbooks
+- `.local/investigations/hypotheses.json` — all hypotheses and their status
+- `.local/investigations/evidence/` — interpreted summaries
+- `.local/investigations/raw/` — authoritative field values (follow `raw_data_ref` from evidence)
 
 ## Output
 
@@ -113,6 +113,44 @@ Check every entity name in the formatted text against the presentation guides an
 
 | # | Hypothesis | Confidence | Status | Root Cause? | Key Evidence | Resolution |
 |---|------------|------------|--------|-------------|--------------|------------|
+
+### 7. Emit Post-presentation actions block
+
+If any matched playbook in `state.json.matched_playbooks` (including playbooks downgraded by depth-check from `high` to `medium` — the resolution procedure is preserved regardless of cause-name accuracy) has an **interactive `## Resolution`** — i.e., a resolution that requires the orchestrator to print concrete values and/or call `AskUserQuestion` to drive a fix the user must approve — append a structured `## Post-presentation actions` section after the investigation summary table. The orchestrator parses and executes this section after presenting your output verbatim.
+
+Recognize an interactive resolution when the playbook (or a doc it links to, e.g. `interpretations/healing-agent-data.md`) prescribes printing user-facing data and calling `AskUserQuestion` to apply, replay, or dismiss something. The Healing Agent apply-fix flow is the canonical example.
+
+Format:
+
+```
+## Post-presentation actions
+
+The matched playbook's resolution is interactive. Orchestrator: execute the steps below in order; do not skip.
+
+### Action 1 — {short label, e.g. "Apply Healing Agent recovered selector"}
+- Source: {playbook path + linked procedure section, e.g. `selector-failure-healing-fix.md` → `interpretations/healing-agent-data.md` § "Applying Fixes — MUST Ask the User"}
+- Print as plain text (NOT inside AskUserQuestion options or previews):
+  ```
+  Failed selector:
+  {failed_selector_xml from evidence}
+
+  Recovered Partial selector:
+  {recovered_partial_selector_xml from evidence — or "(not available)" if empty}
+
+  Recovered Fuzzy selector:
+  {recovered_fuzzy_partial_selector_xml from evidence — or "(not available)" if empty}
+  ```
+- Warning to include verbatim: {empty string OR "Healing Agent was running in recommendation-only mode (OrchestratorEnableHeal=false) — the recovered selector was inferred from the UI tree after the failure but was not validated at runtime. There is no guarantee it will work." OR analogous warning for RecoverySuccessful=false}
+- AskUserQuestion: {exact question + options the orchestrator should ask, including the "I'll provide the project path" follow-up question if the project path is not already known from prior context}
+- On user accept: {procedure to follow — e.g., "follow `interpretations/healing-agent-data.md` § Applying `update-target` Fixes: check for `uia-improve-selector` skill at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`; if present, use it; otherwise edit the XAML activity matched by `ActivityRefId` directly, applying XML encoding per the playbook's XAML Selector Encoding rules; then validate with `uip rpa get-errors --file-path "<WORKFLOW_FILE>" --output json --use-studio`."}
+- On user decline: stop; do not modify files.
+
+### Action 2 — ...
+```
+
+Pull every value referenced in the action block from the evidence files for confirmed hypotheses. If a required value (e.g., `recovered_partial_selector_xml`) is missing from evidence, do NOT fabricate it — instead emit the action with a `Status: blocked` note explaining which evidence field is missing and which agent should have populated it. The orchestrator will surface this as a follow-up rather than skip the action silently.
+
+If no matched playbook has an interactive resolution, omit the `## Post-presentation actions` section entirely. Do not emit an empty section.
 
 ## Boundaries
 

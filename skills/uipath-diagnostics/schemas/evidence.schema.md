@@ -4,21 +4,21 @@
 
 | Directory | Purpose | Contents |
 |-----------|---------|----------|
-| `.investigation/evidence/` | Interpreted evidence summaries | JSON files with analysis and interpretation |
-| `.investigation/raw/` | Raw data dumps | Unprocessed CLI responses, file contents |
+| `.local/investigations/evidence/` | Interpreted evidence summaries | JSON files with analysis and interpretation |
+| `.local/investigations/raw/` | Raw data dumps | Unprocessed CLI responses, file contents |
 
 Created by: Triage sub-agent, Hypothesis Tester sub-agent
 Read by: All sub-agents, orchestrator
 
 ## File naming
 
-### Evidence files (`.investigation/evidence/`)
+### Evidence files (`.local/investigations/evidence/`)
 
 - `triage-initial.json` — initial data from triage (job info, error, etc.)
 - `{hypothesis-id}-{source}.json` — evidence for a specific hypothesis
   - e.g., `H1-cli-data.json`, `H1-docsai-results.json`, `H2a-source-analysis.json`
 
-### Raw data files (`.investigation/raw/`)
+### Raw data files (`.local/investigations/raw/`)
 
 - `triage-{command-name}.json` — raw triage CLI response
 - `{hypothesis-id}-{command-name}.json` — raw CLI response for a hypothesis
@@ -61,7 +61,7 @@ Each evidence file:
 
 ## Rules
 
-- **Raw data MUST be written to `.investigation/raw/` immediately** — write the full response to a raw file BEFORE summarizing
+- **Raw data MUST be written to `.local/investigations/raw/` immediately** — write the full response to a raw file BEFORE summarizing
 - **Never keep raw data in context** — write it to a raw file, then read it back only if needed for analysis. Do not hold CLI responses or log dumps in the agent's working memory.
 - Evidence files contain summaries and interpretation only; they reference raw files via `raw_data_ref`
 - If a sub-agent needs user input, set `needs_user_input: true` and `user_question` to the question

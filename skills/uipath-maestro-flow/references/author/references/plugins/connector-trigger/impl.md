@@ -116,15 +116,15 @@ Check `eventParameters.fields` for fields with a `reference` object — these re
 
 ```bash
 # Example: resolve Outlook mail folder "Inbox" to its ID
-uip is resources execute list "<connector-key>" "<reference.objectName>" \
+uip is resources run list "<connector-key>" "<reference.objectName>" \
   --connection-id "<id>" --output json
 ```
 
-The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the final connection from Step 1c), not any other connection you've used in another flow. Use the resolved IDs — from this very `execute list` call — in the trigger's event parameter configuration.
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the final connection from Step 1c), not any other connection you've used in another flow. Use the resolved IDs — from this very `run list` call — in the trigger's event parameter configuration.
 
-> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
+> **Paginate when looking up by name.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).
 
-**Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full reference resolution workflow**, including pagination, describe failures, and fallback strategies.
+**Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full reference-resolution workflow** (pagination, describe failures, fallbacks).
 
 ### Step 4 — Validate required event parameters
 
@@ -351,7 +351,7 @@ uip is connections list "<connector-key>" --byoa --output json        # BYOA onl
 uip is connections ping "<connection-id>" --output json               # verify health
 
 # Reference resolution (same as IS activity)
-uip is resources execute list "<connector-key>" "<resource>" \
+uip is resources run list "<connector-key>" "<resource>" \
   --connection-id "<id>" --output json
 
 # Webhook URL retrieval — see /uipath:uipath-platform — triggers.md (Step 6b, webhooks only)
@@ -417,8 +417,8 @@ uip maestro flow debug . --output json
 | Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
 | `filterExpression is derived from the filter tree and cannot be provided directly` | Passed `filterExpression` string instead of a `filter` tree | Build a structured `filter` tree — see [Filter Trees](#filter-trees) |
 | `Filter references field '<name>' which is not present in trigger metadata` | Leaf `id` does not match any `filterFields.fields[].name` | Re-run `registry get` and use a valid field name |
-| Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources execute list` |
-| Trigger faults immediately with no visible error after a clean build | Event parameter uses a reference ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a `parentFolderId` for mailbox A pasted into a trigger bound to mailbox B's connection) | Re-run `uip is resources execute list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `eventParameters` in `--detail`, re-run `node configure`, re-debug. See Step 3 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../../../SKILL.md). |
+| Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources run list` |
+| Trigger faults immediately with no visible error after a clean build | Event parameter uses a reference ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a `parentFolderId` for mailbox A pasted into a trigger bound to mailbox B's connection) | Re-run `uip is resources run list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `eventParameters` in `--detail`, re-run `node configure`, re-debug. See Step 3 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../../../SKILL.md). |
 | Definition's `model.context` missing operation | Definition not copied correctly, or node added before registry pull | Re-run `uip maestro flow registry pull --force`, then verify the `definitions[]` entry contains `model.context` with `connectorKey`/`operation`/`objectName` as returned by `registry get` |
 | Trigger faults at runtime with webhook-related error | Standard (non-BYOA) connection used for a trigger that requires `byoaConnection: true` | Run `uip is triggers objects` (Step 1b) to check `byoaConnection` flag, then switch to a BYOA connection with `uip is connections list "<connector-key>" --byoa --output json`. If no BYOA connections exist, user must create one. |
 | `connections list` returns empty but connections exist in the IS portal | CLI is using cached connection data that is stale | Retry with `--refresh` flag: `uip is connections list "<connector-key>" --refresh --output json` |

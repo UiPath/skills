@@ -10,9 +10,9 @@ Classify the problem, resolve reference paths, and gather data in two passes —
 
 ## Outputs
 
-1. `.investigation/state.json` — see `schemas/state.schema.md`
-2. `.investigation/raw/triage-{command-name}.json` — raw CLI responses
-3. `.investigation/evidence/triage-initial.json` — see `schemas/evidence.schema.md`
+1. `.local/investigations/state.json` — see `schemas/state.schema.md`
+2. `.local/investigations/raw/triage-{command-name}.json` — raw CLI responses
+3. `.local/investigations/evidence/triage-initial.json` — see `schemas/evidence.schema.md`
 
 ## Pass 1: Quick Match
 

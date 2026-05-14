@@ -96,7 +96,7 @@ If the user asks to deploy (for example) an Assistant policy to the `Unattended 
 
 Run `uip gov aops-policy deployment user list --output json` (see [commands reference](./aops-policy-commands.md#deployment-usergrouptenant-list)).
 
-Parse `Data` (an array). Each entry has `identifier`, `name`, and `source` — the identity-provider source (e.g. `cloud`, `local`, `aad`). Display as a numbered list:
+Parse `Data.result[]` (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Display as a numbered list:
 
 ```text
 Governance users:
@@ -105,12 +105,17 @@ Governance users:
 ```
 
 - If only one user exists, use it automatically and inform the user.
-- If one entry's `name` matches the current login (from `uip login status`), suggest it as the default.
-- The list contains only users the governance service has already seen — it is not a full IdP roster. If the target user is missing, ask the caller to supply the user GUID and display name directly.
+- If one entry's `name` or `email` matches the current login (from `uip login status`), suggest it as the default.
+- The list contains only users the governance service has already seen — it is not a full IdP roster. If the target user is missing, fall back to the IdP:
 
-Store the chosen user's `identifier` as `$USER_ID`, its `name` as `$USER_DISPLAY_NAME`, and its `source` as `$USER_SOURCE`. Both `$USER_DISPLAY_NAME` and `$USER_SOURCE` are passed to `configure` in the next step.
+  1. Run `uip admin users list --search "<NAME_OR_EMAIL>" --output json` (see [/uipath:uipath-admin — user-management.md](../../../uipath-admin/references/user-management.md)).
+  2. From the matched record, take `id` as `$USER_ID`, `displayName` (or `userName`) as `$USER_DISPLAY_NAME`, and `email` as `$USER_EMAIL`. Set `$USER_SOURCE` from the IdP origin (`cloud`, `local`, `aad`).
+  3. `configure` auto-registers the user via the `AddUser` endpoint on first call — no separate registration step is needed.
+  4. If the IdP search also returns nothing, ask the caller to supply the GUID, display name, and email directly.
 
-### Step 2 — Pick policies per product (prompt only for missing information)
+Store the chosen user's `identifier` as `$USER_ID`, its `name` as `$USER_DISPLAY_NAME`, its `email` as `$USER_EMAIL`, and its `source` as `$USER_SOURCE`. `$USER_DISPLAY_NAME`, `$USER_EMAIL`, and `$USER_SOURCE` are all passed to `configure` in the next step.
+
+### Step 2 — Pick policies per product (pre-fill defaults; prompt only on ambiguity)
 
 **Skip rule:** if the user's original request already named the product(s) and policy(s) to assign, use those directly — do not re-ask.
 
@@ -153,12 +158,13 @@ Do NOT proceed without an explicit `yes`.
 ```bash
 uip gov aops-policy deployment user configure "$USER_ID" \
   --user "$USER_DISPLAY_NAME" \
+  --email "$USER_EMAIL" \
   --source "$USER_SOURCE" \
   --input "$SESSION_DIR/user-policies.json" \
   --output json
 ```
 
-The flag is `--user`, **not** `--user-name`. `--source` defaults to `local`; pass the identity-provider source from the `list` entry (e.g. `cloud`, `aad`) so the stored override stays consistent with the upstream identity record.
+The flag is `--user`, **not** `--user-name`. `--source` defaults to `local`; pass the identity-provider source from the `list` entry (e.g. `cloud`, `aad`) so the stored override stays consistent with the upstream identity record. `--email` is used only when governance auto-registers a brand-new user on this call (`AddUser` path); for already-registered users it is ignored. When omitted, it defaults to `--user`. Pass it explicitly whenever the IdP supplied a distinct email so the audit record carries the right address.
 
 ### Step 6 — Verify
 
@@ -174,13 +180,18 @@ uip gov aops-policy deployment user get "$USER_ID" --output json
 
 ### Step 1 — Identify the group
 
-Run `uip gov aops-policy deployment group list --output json`. Parse `Data` (an array). Each entry has `identifier`, `name`, and `source` (the IdP source). Display as a numbered list and let the user pick. Store the chosen group's `identifier` as `$GROUP_ID`, its `name` as `$GROUP_DISPLAY_NAME`, and its `source` as `$GROUP_SOURCE`.
+Run `uip gov aops-policy deployment group list --output json`. Parse `Data.result[]` (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Display as a numbered list and let the user pick. Store the chosen group's `identifier` as `$GROUP_ID`, its `name` as `$GROUP_DISPLAY_NAME`, and its `source` as `$GROUP_SOURCE`.
 
-> If the group is not yet registered in the governance system, it will not appear in `deployment group list`. Ask the user to supply the group identifier and name directly from their organization directory, and store those values as `$GROUP_ID` and `$GROUP_DISPLAY_NAME` (with `$GROUP_SOURCE` set from the IdP) before proceeding.
+If the group is not yet known to the governance service, fall back to the IdP:
 
-### Step 2 — Pick policies per product (prompt only for missing information)
+1. Run `uip admin groups list --output json` and filter client-side: `--output-filter "Data[?contains(displayName, '<NAME>')]"`. `uip admin groups list` has **no** `--search` flag (see [/uipath:uipath-admin — group-management.md](../../../uipath-admin/references/group-management.md)).
+2. From the matched record, take `id` as `$GROUP_ID` and `displayName` as `$GROUP_DISPLAY_NAME`. Set `$GROUP_SOURCE` from the IdP origin.
+3. `configure` auto-registers the group via the `AddGroup` endpoint on first call — no separate registration step is needed.
+4. If the IdP lookup also returns nothing, ask the caller to supply the GUID and display name directly.
 
-Same as [3.1 Step 2](#step-2--pick-policies-per-product-prompt-only-for-missing-information): enumerate products, list candidate policies per product, auto-match to intent, fetch current assignments via `deployment group get "$GROUP_ID"` for the diff.
+### Step 2 — Pick policies per product (pre-fill defaults; prompt only on ambiguity)
+
+Same as [3.1 Step 2](#step-2--pick-policies-per-product-pre-fill-defaults-prompt-only-on-ambiguity): enumerate products, list candidate policies per product, auto-match to intent, fetch current assignments via `deployment group get "$GROUP_ID"` for the diff.
 
 ### Step 3 — Write the assignment file
 
@@ -248,7 +259,9 @@ uip gov aops-policy deployment tenant list --output json
 
 Optional flags: `--product-name <PRODUCT_NAME>`, `--limit <N>`, `--offset <N>`.
 
-Parse `Data` (an array). Each tenant entry has `identifier`, `name`, and `tenantPolicies[]` — the current assignments, each keyed by `(productIdentifier, licenseTypeIdentifier, policyIdentifier)`. Let the user pick, then store the chosen tenant's `identifier` as `$TENANT_ID` and `name` as `$TENANT_NAME`.
+> `tenant list` triggers an upstream OMS sync before returning, so freshly created or recently re-enabled tenants show up here without a separate registration step. The first call after a tenant change may take longer.
+
+Parse `Data.result[]` (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Each tenant entry carries `tenantPolicies[]` — the current assignments, each keyed by `(productIdentifier, licenseTypeIdentifier, policyIdentifier)`. Let the user pick, then store the chosen tenant's `identifier` as `$TENANT_ID` and `name` as `$TENANT_NAME`.
 
 ### Step 3 — Pick policies per `(product, licenseType)`
 
@@ -345,7 +358,7 @@ Confirmation prompt (verbatim): `Remove <PRODUCT_LABEL> assignment from <TENANT_
 | `configure rejects the JSON` | Any of the above + malformed array | Validate with `jq type` and `jq '.[0] | keys'` before resubmitting |
 | `unknown flag --user-name` / `--group-name` | Flag renamed | Use `--user` (user configure) or `--group` (group configure). Only `tenant configure` uses `--tenant-name`. |
 | Existing assignments disappear after `configure` | Treated `configure` as merge | `configure` is FULL-REPLACE — seed the input file from `deployment <subject> get` before adding/modifying entries |
-| `deployment user list` / `group list` returns no results | Subject not onboarded to the governance system | Instruct the user to onboard the subject first; for groups, fall back to supplying the GUID directly from the organization directory |
+| `deployment user list` / `group list` returns no results | Subject not yet seen by the governance service (governance only lists subjects with prior overrides) | Resolve from the IdP via the Step 1 fallback (`uip admin users list --search` for users, `uip admin groups list` for groups). `configure` auto-registers the subject on first call via `AddUser` / `AddGroup` — no separate onboarding step needed. |
 | User cannot provide a tenant identifier | Tenant GUID unknown | Retrieve from Orchestrator or UiPath Cloud portal |
 | `null` assignment still inherited at a higher scope | User assumed `null` removed the mapping | `null` means explicit "No Policy" (overrides inheritance); use `tenant remove` (or omit the entry) to restore inheritance |
 

@@ -20,7 +20,7 @@ The same recipe covers add / edit / remove — direct JSON writes state declarat
 |---|---|---|
 | `source` | yes | Trigger ID (e.g., `trigger_1`) or Stage ID. Resolved from `id-map.json`. |
 | `target` | yes | Stage ID. Resolved from `id-map.json`. Never an ExceptionStage — see Guardrails. |
-| `label` | yes | Display label on the connector (Studio Web "Name"). Always present — planning auto-derives when sdd.md does not state one. See [`planning.md` § Labels](planning.md#labels). |
+| `label` | no | Display label on the connector (Studio Web "Name"). Optional — emit when sdd.md states one or planning's inference rules apply; otherwise emit `data.label: ""`. See [`planning.md` § Labels](planning.md#labels). |
 | `sourceHandle` direction | no | `right` (default) \| `left` \| `top` \| `bottom` |
 | `targetHandle` direction | no | `left` (default) \| `right` \| `top` \| `bottom` |
 | `zIndex` | no | Integer. Omit the key entirely when unset. |
@@ -118,7 +118,7 @@ Find the edge by `id` in `schema.edges` and mutate in place:
 | `source` | no | Immutable. To rewire, remove + re-add. |
 | `target` | no | Immutable. To rewire, remove + re-add. |
 | `type` | no | Derived from `source`. Immutable. |
-| `data.label` | yes | Mutable but never absent — must always carry a non-empty string. Replace with new value; do not delete. |
+| `data.label` | yes | Mutable; may be `""` when no rule applies. Always emit the key so the JSON shape stays consistent — write `""` to clear. |
 | `sourceHandle` | yes | Re-construct with new direction, keep same `source` ID. |
 | `targetHandle` | yes | Re-construct with new direction, keep same `target` ID. |
 | `zIndex` | yes | Set or `delete` to clear. |
@@ -145,7 +145,7 @@ After writing, confirm:
 - `edges[].type` matches the inference (`TriggerEdge` iff source is a Trigger)
 - `edges[].sourceHandle` and `edges[].targetHandle` use exactly 4 underscores each side
 - `edges[].source` and `edges[].target` resolve to existing `schema.nodes` entries
-- `edges[].data.label` is present and non-empty (planning guarantees every edge has a label)
+- `edges[].data.label` key is present (value may be `""` when no rule applies — see [`planning.md` § Labels](planning.md#labels))
 - `edges[].zIndex` is present iff the T-entry declared one
 
 Run `uip maestro case validate <file> --output json` after all edges for this plugin's batch are added.

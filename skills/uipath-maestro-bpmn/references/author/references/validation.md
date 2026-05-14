@@ -24,9 +24,21 @@ Validate these before Operate:
 - Event subprocesses have exactly one start event.
 - Boundary error events and error event subprocesses reference valid error definitions.
 - Multi-instance collection and item bindings reference declared variables and use explicit sequential/parallel metadata.
-- Expressions avoid assignment operators where frontend validation forbids assignment.
+- Expressions avoid assignment operators in fields that require read-only expression evaluation.
 - Output mappings target declared variables.
 - CLI-owned Integration Service fields have been enriched or are clearly marked as blockers.
+
+For local-only authoring, always execute at least one validation command before
+packaging. Prefer `uip maestro bpmn validate <ProjectDir> --output json` when
+the installed CLI exposes it. If the installed CLI does not expose validation,
+run an explicit XML parse command against the BPMN source, for example:
+
+```bash
+python3 -c "import xml.etree.ElementTree as ET; ET.parse('ProjectName/ProjectName.bpmn')"
+```
+
+Do not treat reading the file or visually inspecting generated metadata as a
+validation step; the validation command must run and succeed before `pack`.
 
 ## Package checks
 
@@ -36,6 +48,8 @@ When generated package files exist, verify that:
 - `entry-points.json` matches root start events, entry point IDs, and variable schemas.
 - `operate.json` points at the intended main BPMN file and content type.
 - `package-descriptor.json` includes the BPMN and generated JSON files under content.
+
+Use [shared/local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) when a mismatch requires local regeneration or Integration Service enrichment.
 
 ## Result handling
 

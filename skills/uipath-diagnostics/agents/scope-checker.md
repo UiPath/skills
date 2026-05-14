@@ -6,13 +6,13 @@ Determine whether the investigation scope covers all relevant product domains.
 
 ## Inputs
 
-- `.investigation/state.json` — current scope and domain list
-- `.investigation/evidence/` — all evidence collected so far
-- `.investigation/hypotheses.json` — if it exists (may not exist yet during triage)
+- `.local/investigations/state.json` — current scope and domain list
+- `.local/investigations/evidence/` — all evidence collected so far
+- `.local/investigations/hypotheses.json` — if it exists (may not exist yet during triage)
 
 ## Output
 
-Write: `.investigation/scope-check.json`
+Write: `.local/investigations/scope-check.json`
 
 ```json
 {
@@ -28,7 +28,7 @@ Write: `.investigation/scope-check.json`
 
 1. **Read `references/summary.md`** — understand what product domains exist and what types of issues each covers. Follow links to product summaries, overviews, playbooks, and investigation guides as needed to understand domain boundaries.
 2. **Read `state.json`** — note the current `scope.domain` array.
-3. **Read all evidence files** in `.investigation/evidence/` and `hypotheses.json` if it exists.
+3. **Read all evidence files** in `.local/investigations/evidence/` and `hypotheses.json` if it exists.
 4. **Check for missing domains** — compare the investigation data against each product domain described in `references/summary.md`:
    - Do any job properties, error codes, entity types, error messages, or behavioral patterns in the evidence match a product domain not currently in `state.json.scope.domain`?
    - Do any hypotheses, playbook references, or CLI commands reference capabilities or concepts described under a different product domain?

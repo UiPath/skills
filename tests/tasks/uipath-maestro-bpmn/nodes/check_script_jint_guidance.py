@@ -101,7 +101,7 @@ def strip_js_comments(script: str) -> str:
 
 
 def main() -> None:
-    path, root = parse_bpmn("RiskScoreScriptBpmn")
+    path, root = parse_bpmn()
     scripts = elements(root, "scriptTask")
     if not scripts:
         fail("missing bpmn:scriptTask")

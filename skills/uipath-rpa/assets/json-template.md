@@ -1,10 +1,10 @@
 # project.json Snippets
 
-Hand-editable snippets for the sections of `project.json` the agent legitimately modifies after `uip rpa create-project` has scaffolded the project.
+Hand-editable snippets for the sections of `project.json` the agent legitimately modifies after `uip rpa init` has scaffolded the project.
 
-> **DO NOT use these snippets to write `project.json` from scratch.** Always run `uip rpa create-project` first — it generates correct schema versions, metadata directories, default dependencies, and version-matched configuration. Use these snippets only to add entries to an existing scaffolded `project.json`.
+> **DO NOT use these snippets to write `project.json` from scratch.** Always run `uip rpa init` first — it generates correct schema versions, metadata directories, default dependencies, and version-matched configuration. Use these snippets only to add entries to an existing scaffolded `project.json`.
 
-> **Sections NOT shown here** (`runtimeOptions`, `designOptions.processOptions`, `schemaVersion`, `studioVersion`, `expressionLanguage`, `targetFramework`, etc.) are written by `create-project` and should not be hand-edited unless the user explicitly asks.
+> **Sections NOT shown here** (`runtimeOptions`, `designOptions.processOptions`, `schemaVersion`, `studioVersion`, `expressionLanguage`, `targetFramework`, etc.) are written by `init` and should not be hand-edited unless the user explicitly asks.
 
 ---
 

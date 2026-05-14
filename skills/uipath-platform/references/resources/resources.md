@@ -94,7 +94,7 @@ uip resource libraries delete "UiPath.System.Activities:24.4.0" --output json
 
 ## Output Behavior
 
-Resource tool commands return **full API responses** (all fields) by default. There is no `--all-fields` flag — the convention in `resource-tool` is raw camelCase DTO. (This differs from `orchestrator-tool`, which curates by default and exposes `--all-fields` for the raw view; see [orchestrator.md](../orchestrator/orchestrator.md).)
+Resource tool commands return **full API responses** (all fields) by default. There is no `--all-fields` flag — the convention in `resource-tool` is raw camelCase DTO. (This differs from `orchestrator-tool`, which curates by default and exposes `--all-fields` for the raw view; see [`uipath-orchestrator`](../orchestrator/orchestrator.md).)
 
 List responses include a `Pagination` block:
 
@@ -111,6 +111,6 @@ When `HasMore` is `true`, increment `--offset` by `--limit` and fetch again. Con
 
 ## Related
 
-- **Orchestrator** (`uip or`) -- Folders, jobs, processes, packages, users, machines. See [orchestrator.md](../orchestrator/orchestrator.md).
-- **Solutions** (`uip solution`) -- Pack, publish, and deploy solution packages. See [solution.md](../solution/solution.md).
-- **Setup Environment** -- Folder creation and user assignment required before using folder-scoped resources. See [setup-environment.md](../orchestrator/setup-environment.md).
+- **Orchestrator** (`uip or`) — folders, jobs, processes, packages, users, machines → [`uipath-orchestrator`](../orchestrator/orchestrator.md)
+- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](../solution/solution.md)
+- **Folder/user setup** — required before folder-scoped resources can be used → [`uipath-orchestrator/setup-environment`](../orchestrator/setup-environment.md)

@@ -27,6 +27,7 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
         matches = [p for p in paths if name_hint.lower() in os.path.basename(p).lower()]
         if matches:
             return matches[0]
+        fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
     fail(f"multiple BPMN files found; expected one or hint match: {paths}")

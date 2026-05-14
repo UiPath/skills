@@ -90,16 +90,16 @@ uip solution project list --solution-folder ./InvoiceAutomation --output json
 
 ## Step 6: List Resources
 
-Show resources declared in the solution, available in Orchestrator, or both. Run from inside the solution directory (default), or pass `--solution-folder <path>` to target another location.
+Show resources declared in the solution, available in Orchestrator, or both. Pass `--kind` to narrow to one resource kind. Run from inside the solution directory (default), or pass `--solution-folder <path>` to target another location.
 
 ```bash
 # from inside the solution dir
-uip solution resource list --output json
-uip solution resource list --source local --output json
+uip solution resource list --kind Queue --output json
+uip solution resource list --kind Process --source local --output json
 uip solution resource list --kind Queue --search "Invoice" --output json
 
 # explicit folder
-uip solution resource list --solution-folder ./InvoiceAutomation --output json
+uip solution resource list --kind App --solution-folder ./InvoiceAutomation --output json
 ```
 
 | Option | Values | Default |
@@ -244,8 +244,9 @@ cd ./InvoiceAutomation
 # 4. Sync resource declarations from project bindings
 uip solution resource refresh --output json
 
-# 5. Verify resources are tracked
-uip solution resource list --source local --output json
+# 5. Verify resources are tracked (per kind)
+uip solution resource list --kind Process --source local --output json
+uip solution resource list --kind Queue --source local --output json
 
 # 6. Inspect one resource's full configuration (local + RCS fallback)
 uip solution resource get <resource-key> --output json
@@ -350,7 +351,7 @@ When `[solutionFile]` is omitted, the CLI walks up from the project path looking
 
 ### `resource get` for cross-folder inspection
 
-Because `get` falls back to RCS + FPS export when the key isn't local, it works as a quick way to fetch the full server spec for any resource your tenant exposes — even ones that aren't yet bound to this solution. Pair with `solution resource list --source remote` to discover keys.
+Because `get` falls back to RCS + FPS export when the key isn't local, it works as a quick way to fetch the full server spec for any resource your tenant exposes — even ones that aren't yet bound to this solution. Pair with `solution resource list --kind <kind> --source remote` to discover keys.
 
 ---
 
@@ -363,7 +364,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
 | Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
 | Remove a project | `uip solution project remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
-| List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation |
+| List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; add `--kind <kind>` to narrow to one resource kind |
 | Pack | `uip solution pack <solution-dir> <output-dir>` | See [pack-and-deploy.md](pack-and-deploy.md) for full pack/publish/deploy flow |
 
 ---

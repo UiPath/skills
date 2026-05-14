@@ -1,0 +1,59 @@
+task_id: skill-bpmn-api-workflow-task
+description: >
+  Author a Maestro BPMN API workflow invocation, covering the
+  Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval.
+tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:service-task", "feature:api-workflow"]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a UiPath Maestro BPMN Process Orchestration project at:
+    ApiWorkflowDispatch/ApiWorkflowDispatch
+
+  The main BPMN file must be:
+    ApiWorkflowDispatch/ApiWorkflowDispatch/ApiWorkflowDispatch.bpmn
+
+  Model a public-safe customer sync request:
+  - Manual start with customerId and requestedBy inputs.
+  - A `bpmn:serviceTask` named "Run Customer Sync API Workflow".
+  - The service task must use a `uipath:activity` shell with type
+    `Orchestrator.ExecuteApiWorkflowAsync`.
+  - Map a request object input and map invocation/status/result outputs to
+    declared variables.
+  - Add a boundary error path to a failure end event and a success end event.
+  - Include BPMN DI for visible elements.
+
+  Also create the standard local package files next to the BPMN:
+    project.uiproj, operate.json, entry-points.json, bindings_v2.json,
+    package-descriptor.json
+
+  Do not model the API workflow as a business rule, call activity, script task,
+  or generic task. Do not upload, publish, deploy, debug, run, or call
+  cloud-side UiPath commands. Do not ask for approval or pause for feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "API workflow BPMN file was created"
+    path: "ApiWorkflowDispatch/ApiWorkflowDispatch/ApiWorkflowDispatch.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "API workflow uses bpmn:serviceTask with Orchestrator.ExecuteApiWorkflowAsync"
+    command: "python3 $TASK_DIR/check_api_workflow_task.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

@@ -1,6 +1,6 @@
 ---
 name: uipath-diagnostics
-description: Use when diagnosing, investigating, or troubleshooting UiPath platform & process issues - failed or stuck jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
+description: "UiPath cross-platform diagnostics — failed or stuck Orchestrator jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems. For .flow run diagnosis→uipath-maestro-flow. For .bpmn run diagnosis→uipath-maestro-bpmn. For .xaml/.cs workflow debug→uipath-rpa. For platform ops→uipath-platform."
 ---
 
 # UiPath Diagnostic Agent
@@ -20,7 +20,7 @@ All agents (including you) follow the invariants and confidence-level behavior d
 
 ## 2. Investigation State
 
-All state lives in `.investigation/` (relative to working directory). Schemas in `schemas/`.
+All state lives in `.local/investigations/` (relative to working directory). Schemas in `schemas/`.
 
 | File | Purpose | Writers |
 |------|---------|---------|
@@ -95,7 +95,7 @@ Spawn the depth-verifier sub-agent (`agents/depth-verifier.md`). Pass it the
 confirmed hypothesis ID(s), `state.json` path, and the matched playbook path.
 The verifier reads `hypotheses.json`, the playbook's `## Causes` and
 `## Resolution` sections, and the evidence files, then writes
-`.investigation/depth-check.json` with one of:
+`.local/investigations/depth-check.json` with one of:
 
 - `verdict: "verified"` — the confirmed hypothesis names a specific cause
   from the playbook, has cause-specific evidence (not just symptom-level),
@@ -147,14 +147,30 @@ The presenter:
 
 Present the presenter's output verbatim to the user. After presenting:
 
-**If root cause found** — offer to help implement the fix or clean up `.investigation/`.
+**Execute Post-presentation actions FIRST.** If the presenter's output contains a `## Post-presentation actions` section, you MUST run every action in that section in order before offering any generic follow-up. For each action:
+
+1. Print the "Print as plain text" block exactly as written (raw selectors and other XML/HTML render poorly inside `AskUserQuestion` options or previews — always print as plain text first, separate from the question).
+2. Print the warning string verbatim if non-empty.
+3. Call `AskUserQuestion` with the question and options the action specifies. Ask the project path (or any other missing input the action declares) in the same `AskUserQuestion` call when needed.
+4. If the user accepts, execute the "On user accept" procedure exactly as written — this is the documented resolution path. Do not improvise an alternative. If the procedure references a sub-skill (e.g., `uia-improve-selector`), check for it and follow its USAGE.md. Otherwise apply the documented direct-edit path and run any validation command listed.
+5. If the user declines, stop the action; do not modify files. Move to the next action.
+6. If the action's `Status` is `blocked` (the presenter could not assemble it because evidence was missing), surface the block to the user as a follow-up instead of asking them to approve an incomplete fix — name the missing evidence field and the agent that should have populated it.
+
+Do NOT skip the Post-presentation actions block when:
+- The matched playbook was downgraded from `high` to `medium` by depth-check (the resolution procedure is preserved across confidence downgrades — see `agents/depth-verifier.md` on textual gaps).
+- The depth-verifier flagged a cause-name mismatch (textual gap). A reclassified cause does NOT invalidate the playbook's interactive resolution; both can be reported together.
+- The recovered/recommended data was produced in a recommendation-only or unproven mode (`InferredRecoveryInfo`, `RecoverySuccessful: false`). The action carries a warning string for exactly this case — present it and let the user decide.
+
+Only after all actions are complete (accepted, declined, or surfaced as blocked) proceed to the generic follow-up:
+
+**If root cause found** — offer to help implement any further changes or clean up `.local/investigations/`.
 
 **If no root cause found** — use `AskUserQuestion` to offer: provide more data (re-triage), or open a UiPath support ticket with the evidence gathered.
 
 ## 7. Operational Details
 
-**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions, context, working directory path, and the absolute path to `.investigation/` in the prompt.
+**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions, context, working directory path, and the absolute path to `.local/investigations/` in the prompt.
 
 **Progress:** Use `TaskCreate`/`TaskUpdate` for each phase. Tailor subjects to the user's problem.
 
-**Cleanup:** After investigation completes, offer to delete or preserve `.investigation/`.
+**Cleanup:** After investigation completes, offer to delete or preserve `.local/investigations/`.

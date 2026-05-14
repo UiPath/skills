@@ -15,7 +15,11 @@ import { Attachments } from '@uipath/uipath-typescript/attachments';
 
 Assets, Queues, Buckets, and Processes are folder-scoped. Many methods require a `folderId` parameter.
 
-**No bound methods**: These are read-only response objects. Unlike Entities, Tasks, or Maestro instances, the responses from Orchestrator services do not have attached methods. Use the service directly for all operations.
+**Bound methods**: `Jobs.getById()` and `Jobs.getAll()` items return response objects with attached methods (`getOutput()`, `stop()`, `resume()`, `restart()`). Assets, Queues, Buckets, Processes, and Attachments responses do **not** have attached methods — use the service directly.
+
+## `getByName` folder identifiers
+
+`Assets.getByName` and `Processes.getByName` accept `FolderScopedOptions` — supply one of `folderId`, `folderKey`, or `folderPath` (e.g., `'Shared/Finance'`). If multiple are supplied, server precedence is `folderPath` > `folderKey` > `folderId`.
 
 ## Types to Import
 
@@ -25,6 +29,7 @@ import type {
   AssetGetResponse,
   AssetGetAllOptions,
   AssetGetByIdOptions,
+  AssetGetByNameOptions,
   CustomKeyValuePair,
 } from '@uipath/uipath-typescript/assets';
 
@@ -54,6 +59,7 @@ import type {
   ProcessGetResponse,
   ProcessGetAllOptions,
   ProcessGetByIdOptions,
+  ProcessGetByNameOptions,
   ProcessStartRequest,
   ProcessStartResponse,
 } from '@uipath/uipath-typescript/processes';
@@ -63,6 +69,9 @@ import type {
   JobGetResponse,
   JobGetAllOptions,
   JobGetByIdOptions,
+  JobStopOptions,
+  JobResumeOptions,
+  JobMethods,
 } from '@uipath/uipath-typescript/jobs';
 
 // Attachments
@@ -107,6 +116,16 @@ Returns `NonPaginatedResponse<AssetGetResponse>` or `PaginatedResponse<AssetGetR
 ### getById(id: number, folderId: number, options?: AssetGetByIdOptions)
 
 Returns `Promise<AssetGetResponse>`. The `folderId` is required.
+
+### getByName(name: string, options: AssetGetByNameOptions)
+
+Returns `Promise<AssetGetResponse>`. Resolves an asset by display name within a folder. Supply one of `folderId` (number), `folderKey` (GUID string), or `folderPath` (e.g., `'Shared/Finance'`). Throws `NotFoundError` if no asset matches.
+
+```typescript
+await assets.getByName('ApiKey', { folderId: 123 });
+await assets.getByName('ApiKey', { folderKey: '5f6dadf1-3677-49dc-8aca-c2999dd4b3ba' });
+await assets.getByName('ApiKey', { folderPath: 'Shared/Finance', expand: 'keyValueList' });
+```
 
 `AssetGetResponse` fields: `key`, `name`, `id`, `canBeDeleted`, `valueScope`, `valueType`, `value`, `credentialStoreId`, `keyValueList`, `hasDefaultValue`, `description`, `foldersCount`, `lastModifiedTime`, `createdTime`, `creatorUserId`. **Note:** Additional fields may be available. Check the TypeScript types for the complete list.
 
@@ -156,6 +175,14 @@ Returns `NonPaginatedResponse<ProcessGetResponse>` or `PaginatedResponse<Process
 
 Returns `Promise<ProcessGetResponse>`.
 
+### getByName(name: string, options: ProcessGetByNameOptions)
+
+Returns `Promise<ProcessGetResponse>`. Resolves a process release by name within a folder. Supply one of `folderId`, `folderKey`, or `folderPath`. Throws `NotFoundError` if no process matches.
+
+```typescript
+await processes.getByName('MyProcess', { folderPath: 'Shared/Finance', expand: 'entryPoints' });
+```
+
 `ProcessGetResponse` fields: `key`, `packageKey`, `packageVersion`, `isLatestVersion`, `description`, `name`, `packageType`, `targetFramework`, `robotSize`, `autoUpdate`, `id`, `folderId`, `folderName`, `folderKey`, `createdTime`, `lastModifiedTime`.
 
 ### start(request: ProcessStartRequest, folderId: number, options?: RequestOptions)
@@ -178,7 +205,39 @@ Returns `Promise<JobGetResponse>`. The `folderId` is required. **Note:** `id` is
 
 Returns `Promise<Record<string, unknown> | null>` — the job's parsed output arguments, or `null` if unavailable. Use after a job has finished; output is not populated while the job is still running.
 
+### stop(jobKeys: string[], folderId: number, options?: JobStopOptions)
+
+Returns `Promise<void>`. Stops one or more jobs (pass an array even for a single job). Throws if any keys cannot be resolved. `JobStopOptions`: `{ strategy?: StopStrategy }` — `StopStrategy.SoftStop` (default, graceful) or `StopStrategy.Kill` (immediate).
+
+### resume(jobKey: string, folderId: number, options?: JobResumeOptions)
+
+Returns `Promise<void>`. Resumes a job currently in `Suspended` state. `JobResumeOptions`: `{ inputArguments?: Record<string, unknown> }`.
+
+### restart(jobKey: string, folderId: number)
+
+Returns `Promise<JobGetResponse>` — a **new** job with a new `key`, in `Pending` state. The original job must be in a final state (`Successful`, `Faulted`, or `Stopped`). Inputs are inherited from the original.
+
 `JobGetResponse` fields: `key`, `id`, `state`, `createdTime`, `startTime`, `endTime`, `lastModifiedTime`, `resumeTime`, `processName`, `entryPointPath`, `processVersionId`, `hostMachineName`, `inputArguments`, `outputArguments`, `environmentVariables`, `type`, `packageType`, `runtimeType`, `serverlessJobType`, `jobPriority`, `specificPriorityValue`, `stopStrategy`, `remoteControlAccess`, `batchExecutionKey`, `parentJobKey`, `traceId`, `parentSpanId`, `errorCode`, `jobError`, `subState`, `machine`, `robot`, `process`. The `machine`, `robot`, and `process` fields are populated only when requested via `expand`.
+
+## Job-Attached Methods (JobMethods)
+
+Returned by `getById()` and `getAll()` items on each `JobGetResponse`. These are bound to the job's `key` and `folderId`, so you don't need to pass them again:
+
+- `job.getOutput()` -> `Promise<Record<string, unknown> | null>`
+- `job.stop(options?)` -> `Promise<void>`
+- `job.resume(options?)` -> `Promise<void>`
+- `job.restart()` -> `Promise<JobGetResponse>` (new job)
+
+```typescript
+const all = await jobs.getAll({ folderId, pageSize: 20 });
+const running = all.items.find(j => j.state === 'Running');
+if (running) await running.stop();             // bound — no folderId needed
+const completed = all.items.find(j => j.state === 'Successful');
+if (completed) {
+  const output = await completed.getOutput();   // bound
+  const newJob = await completed.restart();     // bound
+}
+```
 
 ## Attachments Service (Scopes: `OR.Folders` or `OR.Folders.Read`)
 

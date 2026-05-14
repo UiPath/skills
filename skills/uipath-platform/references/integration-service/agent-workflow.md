@@ -166,7 +166,7 @@ See [reference-resolution.md — Validate Required Fields Before Executing](refe
 ## Step 6: Execute
 
 ```bash
-uip is resources execute <verb> "<connector-key>" "<object>" \
+uip is resources run <verb> "<connector-key>" "<object>" \
   --connection-id "<id>" --body '{"field": "value"}' --output json
 ```
 
@@ -174,21 +174,7 @@ See [resources.md — Execute Operations](resources.md#execute-operations) for t
 
 ### Pagination (list operations)
 
-`execute list` may not return all results. **Always check `Data.Pagination`** in the response:
-
-```bash
-# First page
-uip is resources execute list "<connector-key>" "<object>" \
-  --connection-id "<id>" --output json
-# → Check Data.Pagination.HasMore and Data.Pagination.NextPageToken
-
-# Next page — use nextPage (NOT nextPageToken) as the query param name
-uip is resources execute list "<connector-key>" "<object>" \
-  --connection-id "<id>" --query "nextPage=<value-from-NextPageToken>" --output json
-# → Continue until HasMore is "false" or target item is found
-```
-
-**Stop early** if you find the target item. See [resources.md — Pagination](resources.md#pagination) for full details.
+`execute list` may not return all results. Check `Data.Pagination.HasMore` / `NextPageToken`, paginate with `--query "nextPage=<token>"`, stop early on match. See [resources.md#pagination](resources.md#pagination) for the full protocol, anti-patterns, and offset/limit fallback.
 
 ---
 
@@ -207,7 +193,7 @@ Step 6a: Read the failure response
   ↓
 Step 6b: Diagnose using discovery
   - Field not found → run `is resources describe --operation <op>` to get valid field names
-  - Invalid value → run `is resources execute list` on the referenced object to get valid values
+  - Invalid value → run `is resources run list` on the referenced object to get valid values
   - Auth error → run `is connections edit <id>` to re-authenticate, then ping again
   - Scope error → inform user, connection needs broader permissions
   - Read-only field → remove the field from --body and retry
@@ -261,7 +247,7 @@ uip is resources describe "uipath-salesforce-sfdc" "Contact" \
 # 5a. All required fields (LastName) have values → proceed
 
 # 6. Execute
-uip is resources execute create "uipath-salesforce-sfdc" "Contact" \
+uip is resources run create "uipath-salesforce-sfdc" "Contact" \
   --connection-id "abc-123" --body '{"LastName": "Doe", "FirstName": "Jane"}' --output json
 ```
 

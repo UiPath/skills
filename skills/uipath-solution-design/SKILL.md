@@ -1,6 +1,6 @@
 ---
 name: uipath-solution-design
-description: "UiPath PDD→SDD: analyze PDDs (PDF/docx/md), pick scope (single product or multi-project Solution: RPA/Flow/Case/Agents/Apps/API Workflows), generate implementation-ready SDD. For project setup→uipath-platform."
+description: "Always invoke for `sdd.md`, `pdd.md`, or PDD/SDD documents. UiPath PDD→SDD: analyze PDDs (PDF/docx/md), pick scope (single product or multi-project Solution: RPA/Flow/Case/Agents/Apps/API Workflows), generate implementation-ready SDD. For project setup→uipath-platform. For caseplan→uipath-maestro-case."
 ---
 
 # UiPath Solution Design

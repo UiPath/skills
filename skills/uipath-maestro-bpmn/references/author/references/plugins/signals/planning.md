@@ -17,6 +17,14 @@ Use this reference when planning BPMN signal throw/catch behavior.
 4. Add timeout or fallback paths for waits.
 5. Use signal events where broadcast semantics are intended; use message events for directed correlation.
 
+## Executable boundary
+
+Standard BPMN signal XML is the only confirmed model-owned signal contract. Treat executable cross-process signaling as unresolved unless the operator or CLI provides the runtime subscription contract.
+
+- Model-owned: `bpmn:signal` definitions, signal event references, local throw/catch topology, public-safe labels, variables, mappings, and diagram geometry.
+- Operator or CLI-owned: runtime subscription registration, cross-process correlation, payload schema versioning, tenant/folder/resource/channel identifiers, and any non-BPMN binding needed for deployed execution.
+- Brownfield rule: preserve imported signal extension payloads or annotations that appear to carry runtime contracts. Do not rewrite them into generated guidance without a fixture-backed validator.
+
 ## Model may draft
 
 - `bpmn:signal` definitions.

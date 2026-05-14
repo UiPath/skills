@@ -18,7 +18,9 @@ Before upload, publish, deploy, or debug:
    If enrichment tooling is unavailable, keep the project as a draft and do not operate it as executable.
 4. Regenerate or refresh package metadata with the supported CLI path.
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
-   CLI contract says otherwise.
+   CLI contract says otherwise. Use
+   [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for the local drift
+   checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
 5. Confirm login for cloud actions:
 
    ```bash

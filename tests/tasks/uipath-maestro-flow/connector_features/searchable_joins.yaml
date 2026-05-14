@@ -4,21 +4,20 @@ description: >
   a join on a related object on the Salesforce connector.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
 
-task_timeout: 1500
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
 sandbox:
   driver: tempdir
   python: {}
-  node:
-    # Pin shared across all connector_features tasks — bump in lockstep.
-    env_packages:
-      - "@uipath/cli@0.1.21"
+  node: {}
 initial_prompt: |
   Create a new Flow project called "SearchableJoinsTest" with a manual trigger.
   You need a flow that queries Salesforce accounts and returns each account
@@ -62,4 +61,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-max_iterations: 1

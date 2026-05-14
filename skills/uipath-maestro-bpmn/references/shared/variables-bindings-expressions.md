@@ -19,7 +19,7 @@ Variables may include:
 
 Entry point inputs use `elementId` to scope an input variable to the corresponding root-level start event. Root output variables become entry point output schema properties. JSON schema variables carry the schema body in CDATA; generated entry-point schema should strip `$schema`.
 
-Canvas exports commonly model trigger-bound values as `uipath:inputOutput`
+Maestro exports commonly model trigger-bound values as `uipath:inputOutput`
 variables scoped with `elementId`. Prefer that shape for new runtime-oriented
 examples unless preserving imported `uipath:input` XML.
 
@@ -59,9 +59,9 @@ When changing a task ID, subprocess ID, or entry start event, recheck every mapp
 
 ## Expressions
 
-Conditions, scripts, variable mappings, and skip conditions are expression-normalized during import. Author expressions in the frontend-compatible form and avoid assignment operators where canvas validation forbids assignment.
+Conditions, scripts, variable mappings, and skip conditions are expression-normalized during import. Author expressions in the Maestro-compatible form and avoid assignment operators in fields that require read-only expression evaluation.
 
-Use a leading `=` for expressions where the frontend/runtime expects expression content. Treat plain strings as literals.
+Use a leading `=` for expressions where Maestro expects expression content. Treat plain strings as literals.
 
 When a UiPath extension expression reads a BPMN variable, reference the
 variable by its XML variable id through the runtime `vars` object, for example
@@ -77,4 +77,23 @@ script inputs are declared in a single JSON `uipath:input name="args"` body
 with an `inputSchema` in context, but the Jint script body receives the mapped
 fields as top-level identifiers. For example, a mapped `caseId` field is read
 as `caseId` in script source, not `args.caseId`. Script outputs must map back
-to declared variable ids, usually with sources such as `=result.response`.
+to declared variable ids through the `var` attribute, usually with sources such
+as `=result.response`:
+
+```xml
+<uipath:mapping version="v1">
+  <uipath:input name="args"><![CDATA[
+    {"caseId":"=vars.Var_CaseId"}
+  ]]></uipath:input>
+  <uipath:output name="status" type="string" var="Var_Status" source="=result.response" />
+</uipath:mapping>
+```
+
+Do not use `name="Var_Status"` as a substitute for `var="Var_Status"`. The
+`name` field identifies the output field; `var` identifies the target BPMN
+variable.
+
+For the exact required XML shape — including `uipath:input name="args"` with
+`=vars.<variableId>` mapping bodies and a Jint-safe top-level identifier
+script — see [../author/references/plugins/script/impl.md](../author/references/plugins/script/impl.md#minimal-jint-script-task-shell)
+and [wrapper-shells.md](wrapper-shells.md).

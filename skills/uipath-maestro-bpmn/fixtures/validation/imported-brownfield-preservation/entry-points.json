@@ -1,0 +1,25 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_ImportedBrownfieldPreservation",
+      "name": "Imported Start",
+      "filePath": "/content/imported-brownfield-preservation.bpmn#Start_Imported",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "legacyPayload": {
+            "type": "object"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "normalizedStatus": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}
