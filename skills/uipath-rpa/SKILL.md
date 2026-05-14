@@ -360,9 +360,6 @@ UIA references live in two locations. Always cite by location so the reader know
 - `activities/common/<Type>.md` — Shared enums and types (`NHealingAgentBehavior`, `Target`, `NClickType`, …)
 - `skills/uia-configure-target/{SKILL.md,USAGE.md}` — Target-configuration skill: procedure + invocation modes
 - `skills/uia-improve-selector/{SKILL.md,USAGE.md}` — Selector recovery / improvement skill
-- `skills/uia-interact/SKILL.md` + `references/special-keys.md` — Live UI interaction skill
-
-Pack docs are reference material to read and follow — NOT invocable as slash commands.
 
 ## Completion Output
 
