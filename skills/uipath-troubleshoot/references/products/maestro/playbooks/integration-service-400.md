@@ -25,9 +25,12 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json` — capture upstream connector error body
-2. Identify the failing connector activity and connection: `uip maestro instance element-executions <instance-id> -f <folder-key> --output json`
-3. Pull the activity inputs: `uip maestro instance variables <instance-id> -f <folder-key> --parent-element-id <element-id> --output json` — look for empty strings where nulls are expected, missing required fields, or wrong types
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — capture upstream connector error body
+2. Identify the failing connector activity and connection: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
+3. Pull the activity inputs: `uip maestro <type> instance variables <instance-id> -f <folder-key> --parent-element-id <element-id> --output json` — look for empty strings where nulls are expected, missing required fields, or wrong types
 4. Check the connection's health in Orchestrator UI → **Integration Service > Connections** — re-authenticate if expired
 5. Look up the connector version and compare against the version when the workflow was last published
 

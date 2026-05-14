@@ -24,8 +24,11 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json`
-2. Inspect the BPMN to confirm the Message Start Event configuration: `uip maestro instance asset <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
+2. Inspect the BPMN to confirm the Message Start Event configuration: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
 3. Check the Integration Service connection's health in Orchestrator UI → **Integration Service > Connections**
 4. Trigger a test event from the external system that meets the configured filter; confirm via the connector's event log
 5. If user is in debug, ask whether the same trigger works in the published flow

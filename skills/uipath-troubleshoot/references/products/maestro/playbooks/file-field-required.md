@@ -24,9 +24,12 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json` — incident `elementId` identifies the failing activity
-2. Pull the variables for that element: `uip maestro instance variables <instance-id> -f <folder-key> --parent-element-id <element-id> --output json` — confirm the file variable is null
-3. Trace upstream element executions to see where the file should have been produced: `uip maestro instance element-executions <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — incident `elementId` identifies the failing activity
+2. Pull the variables for that element: `uip maestro <type> instance variables <instance-id> -f <folder-key> --parent-element-id <element-id> --output json` — confirm the file variable is null
+3. Trace upstream element executions to see where the file should have been produced: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
 4. If the file came from a previous job, check whether job retention has elapsed (see [attachment-not-found](attachment-not-found.md))
 
 ## Resolution

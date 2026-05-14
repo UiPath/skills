@@ -24,8 +24,11 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json`
-2. Find the failing service task in element executions: `uip maestro instance element-executions <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
+2. Find the failing service task in element executions: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
 3. Pull the binding for the failing task — request `bindings_v2.json` (deployed) or `debug_overwrites.json` (debug) from the user
 4. Look up the `ReleaseKey` in Orchestrator: `uip or releases get <release-key> --folder-key <folder-key> --output json`
 5. Verify the folder key in the binding matches the folder the instance is actually running in

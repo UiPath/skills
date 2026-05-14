@@ -23,7 +23,10 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
 2. Extract `folderKey` from `errorDetails`
 3. List users assigned to that folder: `uip or folders users list <folder-key> --output json`
 4. Inspect license assignments: Orchestrator UI → **Tenant > Manage Access > Users** for the relevant user

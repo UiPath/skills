@@ -21,8 +21,11 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json` — confirm `InvalidCastException` and `ExpressionList`
-2. Check the marker's "Items" expression language in the BPMN: `uip maestro instance asset <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — confirm `InvalidCastException` and `ExpressionList`
+2. Check the marker's "Items" expression language in the BPMN: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
 
 ## Resolution
 

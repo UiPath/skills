@@ -25,8 +25,11 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json`
-2. Pull the actual inputs and the schema: `uip maestro instance variables <instance-id> -f <folder-key> --output json` — compare values vs `inputDefinitions`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
+2. Pull the actual inputs and the schema: `uip maestro <type> instance variables <instance-id> -f <folder-key> --output json` — compare values vs `inputDefinitions`
 3. Identify the failing parameter from `errorDetails` — the schema validator names the offending field/type
 4. Check the package version that introduced the breaking change — list releases and diff schemas
 
