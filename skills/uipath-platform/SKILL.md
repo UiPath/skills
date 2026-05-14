@@ -226,7 +226,9 @@ Every `uip` command accepts:
 
 > **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
 >
-> **Use `--output-filter` to extract specific fields** instead of piping output to `python3`, `jq`, or other post-processing tools. The filter uses [JMESPath](https://jmespath.org/) syntax. Example: `--output json --output-filter "Data[].{id: id, name: name}"`
+> **To narrow `list` results, use the noun's own filter flag** (`--state Faulted`, `--type Text`, `--status New`, `--name`, `--process-name`, `--search`). The backend filters before sending; pagination stays correct. Per-noun flags: [references/uip-commands.md](references/uip-commands.md). Never list-everything-then-filter-mentally.
+>
+> **Use `--output-filter` (JMESPath) for output reshaping** or for fields with no server-side flag — e.g., `--output-filter "Data[].{id: id, name: name}"`, or filtering by a derived/computed value. Don't reach for it when the server already has a filter for that attribute.
 
 ## Deployment Lifecycle
 

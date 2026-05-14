@@ -113,3 +113,10 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |
 | **Coded Agents** | `uip codedagent --help` | Python agent development |
 | **Tools** | `uip tools list/search/install` | CLI tool management |
+
+---
+
+## Naming gotchas
+
+- Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never singular, never `queueitems`/`bucketfiles`.
+- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist).
