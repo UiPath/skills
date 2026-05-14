@@ -30,7 +30,7 @@ uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
 |------|----------|-------------|
 | `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
 | `--label` | No | Display label shown on the canvas |
-| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow tidy` rewrites positions on save. |
+| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow format` rewrites positions on save. |
 | `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file and pass `--input "$(cat /tmp/input.json)"`.
@@ -38,8 +38,8 @@ uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
 ### Delete a node
 
 ```bash
-uip maestro flow node delete <ProjectName>.flow <NODE_ID>
-uip maestro flow node delete <ProjectName>.flow <NODE_ID> --output json
+uip maestro flow node remove <ProjectName>.flow <NODE_ID>
+uip maestro flow node remove <ProjectName>.flow <NODE_ID> --output json
 ```
 
 **What the CLI handles automatically:**
@@ -74,8 +74,8 @@ See each plugin's `planning.md` or [file-format.md — Standard ports](../../sha
 ### Delete an edge
 
 ```bash
-uip maestro flow edge delete <ProjectName>.flow <EDGE_ID>
-uip maestro flow edge delete <ProjectName>.flow <EDGE_ID> --output json
+uip maestro flow edge remove <ProjectName>.flow <EDGE_ID>
+uip maestro flow edge remove <ProjectName>.flow <EDGE_ID> --output json
 ```
 
 ### List edges
@@ -150,7 +150,7 @@ These combine primitives only for workflows that are themselves carve-outs. Do n
 
 1. Delete the manual trigger (also removes its edges and orphaned definition):
    ```bash
-   uip maestro flow node delete <ProjectName>.flow start --output json
+   uip maestro flow node remove <ProjectName>.flow start --output json
    ```
 2. Add the connector trigger node:
    ```bash

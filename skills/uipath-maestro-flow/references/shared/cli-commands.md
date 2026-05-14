@@ -56,16 +56,16 @@ Exit code 0 = valid, 1 = invalid.
 
 Validates agent nodes against organization governance policies fetched from the platform. Requires `uip login`. When governance data cannot be fetched (no login, platform unreachable), the command exits with a failure. Omit `--governance` to run local-only schema validation without auth.
 
-## uip maestro flow tidy
+## uip maestro flow format
 
-Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without tidy, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
+Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without format, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
 
 ```bash
-uip maestro flow tidy <path/to/file.flow>
-uip maestro flow tidy <path/to/file.flow> --output json
+uip maestro flow format <path/to/file.flow>
+uip maestro flow format <path/to/file.flow> --output json
 ```
 
-Tidy:
+Format:
 - Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved
 - Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }` — preserving sticky-note custom sizes
 - Recurses into subflows and rewrites `subflows[<id>].layout` for each

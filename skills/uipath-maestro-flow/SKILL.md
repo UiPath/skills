@@ -15,7 +15,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, di
 - Create a new Flow project (`uip maestro flow init`)
 - Edit a `.flow` file — add nodes, edges, variables, subflows, transforms, triggers
 - Explore available node types via the registry
-- Validate or tidy a Flow file locally
+- Validate or format a Flow file locally
 - Apply required Edit / Write authoring and CLI carve-outs
 - Configure connector, connector-trigger, or managed HTTP nodes; scaffold inline-agent projects
 - Plan a complex flow before building

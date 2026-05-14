@@ -69,7 +69,7 @@ PY
 uip maestro flow validate <FILE>.flow --output json
 ```
 
-`json.dump(..., indent=2)` matches the file's existing 2-space indent — `flow tidy` normalizes layout but does not re-indent unrelated structure, so preserve the canonical 2-space indent on writes.
+`json.dump(..., indent=2)` matches the file's existing 2-space indent — `flow format` normalizes layout but does not re-indent unrelated structure, so preserve the canonical 2-space indent on writes.
 
 ### `jq` for extracting CLI JSON
 
@@ -165,7 +165,7 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 ]
 ```
 
-5. Add a placeholder layout entry for the node in the top-level `layout.nodes` object — `flow tidy` rewrites both `position` and `size` on save:
+5. Add a placeholder layout entry for the node in the top-level `layout.nodes` object — `flow format` rewrites both `position` and `size` on save:
 
 ```json
 "layout": {
@@ -179,7 +179,7 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 }
 ```
 
-**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow tidy <ProjectName>.flow` after edits. Tidy arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
+**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow format <ProjectName>.flow` after edits. Format arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
 
 ### Delete a node
 
