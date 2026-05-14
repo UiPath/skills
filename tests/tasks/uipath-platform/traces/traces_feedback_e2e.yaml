@@ -86,5 +86,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup_traces_feedback_e2e.py"
+  - command: "python3 $TASK_DIR/cleanup_traces_feedback_e2e.py"
     timeout: 60
