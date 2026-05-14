@@ -4,7 +4,7 @@ description: >
   explore available case task resources via the registry. Tests whether the
   skill teaches the correct discovery workflow (pull + direct cache-file
   inspection at ~/.uip/case-resources/, not relying on registry search).
-tags: [uipath-maestro-case, smoke, registry]
+tags: [uipath-maestro-case, registry]
 
 agent:
   type: claude-code
