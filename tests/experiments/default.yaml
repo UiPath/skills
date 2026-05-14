@@ -2,14 +2,7 @@ experiment_id: skill-tests-default
 description: "Default experiment for smoke tests — loads the full UiPath skills plugin"
 
 defaults:
-  # task_timeout: total task wall-clock limit (top-level TaskDefinition field)
-  task_timeout: 900
-
-  agent:
-    type: claude-code
-    permission_mode: acceptEdits
-    model: claude-sonnet-4-6
-    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  run_limits:
     # Coded RPA tasks (hooks setup + test case + project.json edits +
     # `uip rpa` calls) routinely take 25-30 turns end-to-end. 20 was
     # cutting before/after-hooks and coded-test-case off mid-task.
@@ -17,7 +10,14 @@ defaults:
     # Helm-backed `uip rpa` ops (install-or-update-packages, get-analyzer-rules,
     # build) regularly take 30-90s each on a cold runner. The before/after-hooks
     # task chains several such calls, so the agent's single turn needs headroom.
+    task_timeout: 900
     turn_timeout: 900
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
       You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
     plugins:
