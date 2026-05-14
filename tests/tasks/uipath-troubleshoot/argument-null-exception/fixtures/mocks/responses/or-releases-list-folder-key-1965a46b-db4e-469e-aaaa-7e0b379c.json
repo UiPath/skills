@@ -1,0 +1,5 @@
+{
+  "Result": "ValidationError",
+  "Message": "error: unknown command 'releases'",
+  "Instructions": "Check command arguments and options. Use --help for usage information."
+}
