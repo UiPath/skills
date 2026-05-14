@@ -1,0 +1,33 @@
+task_id: skill-platform-licensing-tenant-allocation-get
+description: >
+  Smoke test: agent uses the uipath-platform skill to inspect a tenant's
+  current license unit allocation. Verifies the agent calls
+  `uip platform tenants licenses get <tenant-key> --output json`. CLI auth
+  failure is expected in this offline environment.
+tags: [uipath-platform, smoke, licensing, tenants]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Show me the current license unit allocation for tenant
+  `c0ffee00-0000-0000-0000-000000000001`.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran `uip platform tenants licenses get` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+platform\s+tenants\s+licenses\s+get\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
