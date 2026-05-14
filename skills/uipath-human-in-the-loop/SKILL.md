@@ -81,6 +81,11 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 **If no `.flow` file exists and surface is Flow**, scaffold solution-first — Flow projects MUST live inside a solution:
 
 ```bash
+# Probe the solution verb once per session before scaffolding:
+#   uip solution init --help --output json
+# Success → use `solution init` (post-rename, default).
+# `unknown command` → CLI predates the rename; substitute `uip solution new <SolutionName>` below.
+
 uip solution init <SolutionName> --output json
 cd <SolutionName> && uip maestro flow init <ProjectName>
 # Creates: <SolutionName>/<ProjectName>/<ProjectName>.flow

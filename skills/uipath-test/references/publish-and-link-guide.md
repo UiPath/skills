@@ -17,6 +17,7 @@ uip tm wait              → block until terminal
 ## Prerequisites
 
 - Logged in: `uip login status --output json`. If not, `uip login`.
+- CLI surface probed (see [/uipath:uipath-test § Critical Rules #2](../SKILL.md#critical-rules)). Commands below use the post-rename shape; on a pre-rename CLI, translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table (`testcases` → `testcase`, `run` → `execute`, etc.) before each call.
 - Project builds clean: `uip rpa build "<PROJECT_DIR>" --output json` returns `Result: "Success"`.
 - Test case exists in Test Manager: `uip tm testcases list --project-key <PROJECT_KEY> --output json`. Capture the `ObjKey` (e.g. `DEMO:1`) — it is the `--test-case-key` value.
 

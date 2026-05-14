@@ -5,6 +5,7 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
 ## Prerequisites
 
 - Authenticated session
+- CLI surface probed (see [/uipath:uipath-test § Critical Rules #2](../SKILL.md#critical-rules)). Commands below use the post-rename shape; translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table on a pre-rename CLI.
 - A test manager project id
 - A test manager testset id
 

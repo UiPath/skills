@@ -125,12 +125,30 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 ## Critical Rules
 
 1. **Always check login first** — run `uip login status --output json` before any Test Manager operation. Use `uip login`.
-2. **Always pass `--output json`** to every `uip` command — no exceptions. Structured JSON output is what you need to reason about results reliably, even when you only plan to summarize them back to the user.
-3. **Cap retries at 3** for any failing API call. After 3 failures, stop and report the error to the user.
-4. **Handle empty results** — if a list command returns an empty array, stop and inform the user rather than proceeding with a null key.
-5. **Confirm before delete** — always confirm the target resource key with the user before running any `delete` command.
-6. **For operations requiring folder key** — use `uip or folders list-current-user --output json` (run `/uipath-platform` for folder management details).
-7. **Discover before assuming** — never guess automation names, folder keys, project IDs, or test case keys. Always run the matching `list` command first (e.g., `uip tm testcases list-automations`, `uip or folders list-current-user`).
+2. **Probe the CLI surface once per session, before the first `uip tm` command.** Run `uip tm testcases --help --output json` (any flags accepted). Result `Success` → post-rename CLI; use the command tables above as-is. `unknown command` / non-zero exit → pre-rename CLI; translate via the [Pre-rename fallbacks](#pre-rename-fallbacks) table before each call. Re-probe on any later `unknown command` error.
+3. **Always pass `--output json`** to every `uip` command — no exceptions. Structured JSON output is what you need to reason about results reliably, even when you only plan to summarize them back to the user.
+4. **Cap retries at 3** for any failing API call. After 3 failures, stop and report the error to the user.
+5. **Handle empty results** — if a list command returns an empty array, stop and inform the user rather than proceeding with a null key.
+6. **Confirm before delete** — always confirm the target resource key with the user before running any `delete` command.
+7. **For operations requiring folder key** — use `uip or folders list-current-user --output json` (run `/uipath-platform` for folder management details).
+8. **Discover before assuming** — never guess automation names, folder keys, project IDs, or test case keys. Always run the matching `list` command first (e.g., `uip tm testcases list-automations`, `uip or folders list-current-user`).
+
+### Pre-rename fallbacks
+
+If the probe in Rule #2 shows singular subjects, the CLI predates the closed-verb-set renames. Translate before running:
+
+| Post-rename (tables above) | Pre-rename equivalent |
+|---|---|
+| `uip tm testcases <verb>` | `uip tm testcase <verb>` |
+| `uip tm testsets <verb>` | `uip tm testset <verb>` |
+| `uip tm executions <verb>` | `uip tm execution <verb>` |
+| `uip tm testcases run` | `uip tm testcase execute` |
+| `uip tm testsets run` | `uip tm testset execute` |
+| `uip tm testcases add --test-set-key … --test-case-keys …` | `uip tm testset add-testcases --test-set-key … --test-case-keys …` |
+| `uip tm testcases remove --test-set-key … --test-case-keys …` | `uip tm testset remove-testcases …` |
+| `uip tm executions testcaselogs list` | `uip tm execution list-testcaselogs` |
+
+`uip tm wait`, `tm testcaselog`, `tm report`, `tm result`, `tm attachment`, `tm project`, `tm user`, `tm requirement` are unchanged on both surfaces.
 
 ## Quick Start
 
@@ -188,20 +206,8 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 ## Anti-patterns
 
 - **Do NOT proceed if authentication fails** — all Test Manager API calls require a valid bearer token. Fail fast rather than surfacing confusing 401 errors later.
-- **Resource subjects are plural for testcases / testsets / executions.** Recent renames; the old singulars no longer resolve. Always run `uip tm <resource> --help` to confirm.
-  - `uip tm testcase ...` ❌ → `uip tm testcases ...` ✓
-  - `uip tm testset ...` ❌ → `uip tm testsets ...` ✓
-  - `uip tm execution ...` ❌ → `uip tm executions ...` ✓
-  - `testcaselog`, `teststeplog`, `report`, `result`, `attachment`, `user`, `requirement`, `wait` stay singular.
-- **Run, not execute.** Both `testcases` and `testsets` use `run`; `execute` no longer exists.
-  - `uip tm testcases execute` ❌ → `uip tm testcases run` ✓
-  - `uip tm testsets execute` ❌ → `uip tm testsets run` ✓
-- **Add/remove testcases lives under `testcases`, not `testsets`.**
-  - `uip tm testsets add-testcases` ❌ → `uip tm testcases add` ✓
-  - `uip tm testsets remove-testcases` ❌ → `uip tm testcases remove` ✓
-- **Testcase logs of an execution are nested under `executions`.**
-  - `uip tm executions list-testcaselogs` ❌ → `uip tm executions testcaselogs list` ✓
-- **Do NOT guess command names — verb-noun composites are required.** The CLI uses explicit verb-noun forms; bare verbs do not exist. Always run `uip tm <resource> --help` to confirm. Common landmines:
+- **Do NOT skip the surface probe** (Critical Rule #2). On a pre-rename CLI, post-rename commands fail with `unknown command`; on a post-rename CLI, pre-rename commands fail the same way. The skill targets the post-rename surface and falls back per the [Pre-rename fallbacks](#pre-rename-fallbacks) table. Picking the wrong shape without probing burns a retry on every call.
+- **Do NOT guess command names — verb-noun composites are required.** The CLI uses explicit verb-noun forms; bare verbs do not exist. Confirm with `uip tm <resource> --help --output json`. Common landmines:
   - `uip tm testcases link` ❌ → `uip tm testcases link-automation` ✓
   - `uip tm testcases unlink` ❌ → `uip tm testcases unlink-automation` ✓
   - `uip tm executions wait` ❌ → `uip tm wait` ✓ (top-level under `tm`, not `executions`)

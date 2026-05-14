@@ -21,6 +21,7 @@ Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic ac
 8. **Never use modern assemblies** — use `assembly=mscorlib` (not `System.Private.CoreLib`). Use `[bracket]` expressions in VB.NET projects, `<mca:CSharpValue>` in C# projects.
 9. **Never generate Flowchart/StateMachine without ViewState** — Studio stacks all nodes at (0,0) without it.
 10. **Never retry failing CLI commands blindly** — diagnose the root cause before retrying.
+11. **Probe the `rpa-legacy` packaging verb once per session, before the first pack.** Run `uip rpa-legacy pack --help --output json`. Result `Success` → use `pack` (post-rename, default). `unknown command` / non-zero exit → CLI predates the closed-verb-set rename; use `uip rpa-legacy package` instead with the same arguments and flags. Both surfaces produce the same `.nupkg`.
 
 ---
 
