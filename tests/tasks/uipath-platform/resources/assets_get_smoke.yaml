@@ -1,12 +1,13 @@
 task_id: skill-platform-resources-assets-get
 description: >
-  Smoke test: agent uses the uipath-platform skill to fetch a single asset by
-  key via `uip resource assets get <key> --output json` (cross-folder — no
-  `--folder-path` required). A 404 response is an acceptable outcome — the goal
-  is correct command shape, not tenant state. Prompt passes a placeholder GUID
-  rather than a name because the smoke checks the `assets get` CLI shape;
-  a realistic by-name flow (list → resolve → get) is closer to integration
-  scope and depends on a known asset existing in the tenant.
+  Smoke test: agent uses the uipath-platform skill to fetch full configuration
+  of an Orchestrator asset. The realistic and documented flow is
+  `assets list` → resolve key → `assets get <key>` (the get help text
+  literally says "Use 'assets list' to retrieve the key"). Verifies both
+  steps fire. Empty/404 results acceptable — the goal is correct command
+  shape, not tenant state. The prompt is intentionally generic ("any asset")
+  so the test works against any tenant with at least one asset; no specific
+  asset name needs to exist.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
 sandbox:
@@ -14,12 +15,20 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Fetch the metadata for the Orchestrator asset with key
-  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
+  Show me the full configuration of any one Orchestrator asset in the
+  current UiPath tenant.
 
 success_criteria:
   - type: command_executed
-    description: "Agent fetched the asset via uip resource assets get"
+    description: "Agent listed assets (to discover one) via uip resource assets list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+assets\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the resolved asset by key via uip resource assets get"
     tool_name: "Bash"
     command_pattern: 'uip\s+resource\s+assets\s+get\s+\S'
     min_count: 1
