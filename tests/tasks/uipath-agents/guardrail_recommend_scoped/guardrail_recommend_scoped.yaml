@@ -27,12 +27,23 @@ initial_prompt: |
   a guardrail that blocks the "Send message to channel" tool when the message contains
   the word CONFIDENTIAL? Use the guardrail catalog to figure out the right guardrail type
   and configuration, then validate when done.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
     description: "Agent fetched the guardrail catalog"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the guardrails list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

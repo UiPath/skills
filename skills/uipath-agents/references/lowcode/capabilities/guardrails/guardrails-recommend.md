@@ -33,7 +33,7 @@ else:
   uip agent guardrails catalog --output json > .guardrails-catalog-cache.json
   ```
 
-Inspect the saved JSON. If the output contains `"Code": "GuardrailCatalogUnavailable"`, surface the message to the user and **stop** — do not fall back to guessing. This means the catalog endpoint is not yet available for this tenant.
+Inspect the saved JSON. If the output contains `"Code": "GuardrailCatalogUnavailable"`, surface the message to the user and **stop** — do not fall back to guessing. This means the catalog endpoint is not yet available for this tenant. Note: the CLI writes all structured output (both success and error JSON) to stdout, so the redirect captures error responses correctly — do not add `2>&1`.
 
 The cache file is `.guardrails-catalog-cache.json` in the current working directory. Add it to `.gitignore` if one exists.
 
@@ -92,7 +92,7 @@ If the user asks for recommendations for a **specific scope** (e.g., "only for L
 
 If the user asks for recommendations for a **specific tool** (e.g., "for the SendEmail tool"):
 - Tool scope only. Confirm the tool exists in `resources/` before writing.
-- Set `selector.matchNames: ["<ToolName>"]`.
+- Set `selector.matchNames: ["<name>"]` where `<name>` is the `name` field from the tool's `resource.json` — **not** the folder name under `resources/`.
 - Note: custom guardrails (type `"Custom"` in catalog) also only support Tool scope.
 
 ### Step 4 — Generate Config Blocks
@@ -162,7 +162,7 @@ Check that every parameter object has a `$parameterType` discriminator. Missing 
 Report per guardrail:
 - **OK** — no issues found
 - **Correctness issue** — describe the problem (e.g., "entityThresholds has key 'Sexual' but 'Sexual' is not in entities list — KeySource says keys must match the entities parameter's values") and the fix
-- **Actionability issue** — describe the problem (e.g., "'Llm' is in selector.scopes but AllowedScopes for this validator is ['Llm', 'Tool'] — wait, that's valid; or 'Agent' is not in AllowedScopes") and the fix
+- **Actionability issue** — describe the problem (e.g., "'Agent' is in selector.scopes but AllowedScopes for this validator is ['Llm', 'Tool'] — 'Agent' is not allowed; change scope to 'Llm' or 'Tool'") and the fix
 - **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
 
 If the user asks to fix identified issues: apply corrections to `agent.json` and run `uip agent validate` again to confirm.
