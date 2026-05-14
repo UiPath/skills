@@ -34,6 +34,9 @@ Do not use `=js:` on transform `collection`, and do not put inline arrays there:
 
 ```json
 "collection": "=js:$vars.orders.output.items"
+```
+
+```json
 "collection": "=js:[{\"title\":\"Example\"}]"
 ```
 
