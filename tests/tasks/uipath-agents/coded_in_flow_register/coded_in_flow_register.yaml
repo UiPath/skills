@@ -1,24 +1,21 @@
 task_id: skill-agent-coded-in-flow-register
 description: >
   Smoke test: scaffold a UiPath solution containing a Flow project and a
-  sibling Coded Agent project, then confirm the agent is discoverable via
-  the local in-solution registry. Verifies `uip solution project add`
-  registers the coded agent (writing
-  `resources/solution_folder/process/agent/<CodedAgentProject>.json`
-  with a `resource.key` UUID) and that
-  `uip maestro flow registry list --local` surfaces the agent as a
-  `uipath.core.agent.<resourceKey>` node type.
+  sibling Coded Function agent project, then confirm the agent is registered
+  as a local resource in the solution. Verifies `uip solution project add`
+  registers the project and writes a process resource file with a `resource.key`
+  UUID under `resources/solution_folder/process/`, and that
+  `uip solution resource list` surfaces it as a Local resource.
 tags: [uipath-agents, smoke, mode:build, lifecycle:generate, resource, feature:registry]
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
-run_limits:
-  task_timeout: 1200
   max_turns: 60
   turn_timeout: 1200
+
+task_timeout: 1200
 
 sandbox:
   driver: tempdir
@@ -26,10 +23,14 @@ sandbox:
 
 initial_prompt: |
   Create a UiPath solution "ClaimsSol" containing a Flow project
-  "ClaimsFlow" and a sibling LangGraph coded agent "ClassifierAgent"
-  (Python, simple stub — no LLM call needed). Register the coded agent
-  in the solution and confirm it is discoverable from the flow project
-  via the local in-solution registry.
+  "ClaimsFlow" and a sibling Coded Function agent "ClassifierAgent"
+  (Python, simple stub — no LLM call needed, just Input/Output Pydantic
+  models). Register the coded agent in the solution and confirm it is
+  registered as a local resource using `uip solution resource list`.
+
+  Use the Coded Function framework (package: `uipath`) — NOT LangGraph,
+  LlamaIndex, or OpenAI Agents. This keeps setup minimal: one lightweight
+  pip install, no graph wiring needed for the stub.
 
   Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
   ask for approval, confirmation, or feedback. Do NOT pause between
@@ -38,9 +39,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent created the solution with uip solution new"
+    description: "Agent created the solution with uip solution new or uip solution init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
+    command_pattern: 'uip\s+solution\s+(new|init)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -70,9 +71,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent confirmed local discovery with uip maestro flow registry list --local"
+    description: "Agent confirmed local registration with uip solution resource list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+list\s+.*--local'
+    command_pattern: 'uip\s+solution\s+resource\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -97,9 +98,30 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Local resource file (resource.key) was minted by `uip solution project add`"
-    path: "ClaimsSol/resources/solution_folder/process/agent/ClassifierAgent.json"
+  - type: run_command
+    description: "Local resource file (resource.key) was minted by `uip solution project add` (accepts agent/ or function/ subdirectory)"
+    command: |
+      python3 -c "
+      import os, json, sys
+      base = 'ClaimsSol/resources/solution_folder/process'
+      for root, dirs, files in os.walk(base):
+          for f in files:
+              if f.endswith('.json'):
+                  path = os.path.join(root, f)
+                  try:
+                      with open(path) as fp:
+                          data = json.load(fp)
+                      r = data.get('resource', {})
+                      if r.get('kind') == 'process' and r.get('key'):
+                          print('Found:', path)
+                          sys.exit(0)
+                  except Exception:
+                      pass
+      print('No process resource file with key found under', base)
+      sys.exit(1)
+      "
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
