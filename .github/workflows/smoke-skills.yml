@@ -217,7 +217,7 @@ jobs:
             @uipath/cli@latest \
             @uipath/admin-tool@latest
           uip --version
-          uip admin --help || echo "admin tool not available"
+          uip admin --help
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
       # smoke tasks (orchestrator / integration-service / data-fabric / ...)
