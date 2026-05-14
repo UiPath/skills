@@ -28,7 +28,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 Standard workflow for any low-code agent task:
 
-1. **Scaffold** — `uip solution new` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
+1. **Scaffold** — `uip solution init` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
 2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md).
 3. **Add capabilities** — pick from the Capability Registry below. Each adds its own `resources/{Name}/resource.json`.
 4. **Validate** — `uip agent validate --output json`. Confirm `MigrationApplied`, `StorageVersion`, `Validated`.

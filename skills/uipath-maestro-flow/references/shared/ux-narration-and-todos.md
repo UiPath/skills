@@ -62,7 +62,7 @@ Reference table — adapt to context. Add subject (what's being acted on) when s
 | Script body update | "Updating the script body in the `<nodeId>` node." |
 | Resource refresh | "Syncing connection and resource declarations into the solution before upload…" |
 | Validate | "Running validate. This catches missing edges, bad expressions, and wiring mistakes." |
-| Tidy | "Tidying the layout. Studio Web renders nodes correctly only after tidy normalizes their sizes." |
+| Format | "Formatting the layout. Studio Web renders nodes correctly only after format normalizes their sizes." |
 | Studio Web upload | "Pushing to Studio Web. This is the safe path — no execution, just the visual editor." |
 | Pack for Orchestrator | "Packing the solution for Orchestrator deploy…" |
 | Orchestrator publish | "Publishing the package to Orchestrator…" |
@@ -99,7 +99,7 @@ A todo is a **state-changing outcome the user cares about**. One logical step �
 - Edges connected
 - Variables defined and mapped
 - Validate green
-- Tidy applied
+- Format applied
 - Resources refreshed
 - Uploaded to Studio Web
 - Incident fetched and read

@@ -13,7 +13,7 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
-Solution setup (`uip solution new`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution init`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
@@ -36,7 +36,7 @@ Runs before § Write caseplan.json. Writes 5 static JSON files directly. All sub
 
 ### Pre-flight
 
-1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution new` — Step 6.0).
+1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution init` — Step 6.0).
 2. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```
    <SolutionDir>/<ProjectName>/<file> already exists. Remove <SolutionDir>/<ProjectName>/ before re-scaffolding. No --force equivalent in the JSON path.

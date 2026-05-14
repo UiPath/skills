@@ -19,7 +19,7 @@ Create a solution, add automation projects, and sync resource declarations.
 
 ```mermaid
 graph LR
-    A[solution new] --> B[project add / import]
+    A[solution init] --> B[project add / import]
     B --> C[resource refresh]
     C --> D[resource list]
     D --> G[resource get]
@@ -32,12 +32,12 @@ graph LR
 ## Step 1: Create a New Solution
 
 ```bash
-uip solution new "InvoiceAutomation" --output json
+uip solution init "InvoiceAutomation" --output json
 ```
 
 Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live inside this directory (or be imported into it).
 
-> If the target folder already exists and is empty, `solution new` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
+> If the target folder already exists and is empty, `solution init` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
 
 ## Step 2: Add Existing Projects
 
@@ -232,7 +232,7 @@ Create a solution with two projects, sync resources, and verify:
 
 ```bash
 # 1. Create the solution
-uip solution new "InvoiceAutomation" --output json
+uip solution init "InvoiceAutomation" --output json
 
 # 2. Add projects (already inside the solution directory)
 uip solution project add ./InvoiceAutomation/Processor --output json
@@ -359,7 +359,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 
 | Want to... | Command | Watch for |
 |---|---|---|
-| Create a fresh solution | `uip solution new <name>` | Accepts an existing empty directory; drops `.uipx` inside |
+| Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
 | Add a project already in the solution dir | `uip solution project add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
 | Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
 | Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
