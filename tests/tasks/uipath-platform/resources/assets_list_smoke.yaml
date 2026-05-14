@@ -12,7 +12,7 @@ sandbox:
 
 initial_prompt: |
   Discover the Orchestrator folders available in the current UiPath tenant and
-  list the Text-type assets defined in any one of those folders.
+  list the assets defined in any one of those folders.
 
 success_criteria:
   - type: command_executed
@@ -27,14 +27,6 @@ success_criteria:
     description: "Agent scoped the list to a folder via --folder-key or --folder-path"
     tool_name: "Bash"
     command_pattern: 'uip\s+resource\s+assets\s+list.*--folder-(key|path)'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent filtered server-side with --type Text (server-side filter — server has a flag for type, so client-side --output-filter is the wrong tool here)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+list.*--type\s+Text'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
