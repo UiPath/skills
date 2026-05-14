@@ -98,8 +98,16 @@ REDIRECT_TARGET_RE = re.compile(
 
 
 def _extract_uip_args(command: str) -> str:
-    """Strip cd/env prelude and trailing redirects from a Bash command."""
-    stripped = LEADING_PRELUDE_RE.sub("", command)
+    """Strip leading shell preamble and trailing redirects.
+
+    The preamble may contain any chain of statements joined by `&&` or `;`
+    (e.g. `mkdir -p X && cd Y && ENV=val uip ...`). We locate the bare
+    `uip` token via UIP_INVOCATION_RE — which already excludes paths like
+    `./uip`, `mocks/uip`, and prefixes like `uipath` — and take everything
+    after it.
+    """
+    m = UIP_INVOCATION_RE.search(command)
+    stripped = command[m.end():] if m else command
     stripped = TRAILING_REDIRECT_RE.sub("", stripped)
     return stripped.strip()
 
@@ -251,7 +259,7 @@ def _parse_one(path: Path) -> dict:
                 for block in content:
                     if not isinstance(block, dict):
                         continue
-                    if block.get("type") == "tool_use" and block.get("name") == "Bash":
+                    if block.get("type") == "tool_use" and block.get("name") in ("Bash", "PowerShell"):
                         cmd = (block.get("input") or {}).get("command", "")
                         if _is_uip_call(cmd):
                             pending_tool_uses[block["id"]] = {
@@ -336,6 +344,8 @@ def main(argv: list[str]) -> int:
         print(f"transcript not found: {path}", file=sys.stderr)
         return 2
     result = parse_transcript(path)
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     json.dump(result, sys.stdout, indent=2, ensure_ascii=False)
     sys.stdout.write("\n")
     return 0

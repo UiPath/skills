@@ -41,12 +41,24 @@ def _find_repo_root() -> Path:
         p = p.parent
     raise RuntimeError("Could not locate repo root (no .git ancestor found)")
 
+
 REPO_ROOT = _find_repo_root()
 EXTRACT_SCRIPT = Path(__file__).with_name("extract_session.py")
 DEFAULT_OUTPUT_BASE = REPO_ROOT / "tests" / "tasks" / "uipath-diagnostics"
 
 EMAIL_RE = re.compile(r"\b([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b")
-WIN_PATH_RE = re.compile(r"\b[A-Z]:[\\/](?:[^\s\"'<>|]*)", re.IGNORECASE)
+# Drive-letter Windows path. Exclude backtick so we don't drag markdown fence chars in.
+WIN_PATH_RE = re.compile(r"\b[A-Z]:[\\/](?:[^\s\"'<>|`]*)", re.IGNORECASE)
+# Git-bash translated path (/c/Users/<name>/...).
+GITBASH_PATH_RE = re.compile(r"/[a-z]/Users/[^\s\"'<>|`]+", re.IGNORECASE)
+# Windows domain account (DOMAIN\USER). Allow one or more backslashes so we
+# also match JSON-escaped occurrences like "UIPATH\\DAN.MOROSANU".
+WIN_DOMAIN_USER_RE = re.compile(r"\b([A-Z][A-Z0-9_]{1,})\\+([A-Z][A-Z0-9._-]+)\b")
+# Common Windows hostname prefixes — conservative to avoid false positives
+# on things like RFC-1234 or HTTP-200. Length-bounded suffix with mixed alnum.
+HOSTNAME_RE = re.compile(r"\b(?:DESKTOP|LAPTOP|UIP|WIN|PC|HOST)-[A-Z0-9]{6,}\b")
+# Username extracted from a Users/<name>/ path segment.
+USER_FROM_PATH_RE = re.compile(r"[\\/]Users[\\/]([A-Za-z0-9._-]+)", re.IGNORECASE)
 
 # Stdout from a redirect-captured call is just bash trailer noise: the
 # tool returns "(Bash completed with no output)" or "EXIT_CODE=N" or
@@ -55,10 +67,16 @@ EMPTY_STDOUT_PATTERNS = (
     r"^\s*$",
     r"^\(Bash completed with no output\)\s*$",
     r"^EXIT_CODE=\d+\s*$",
+    r"^[A-Z][A-Z0-9_]*=\d+\s*$",       # generic `EXIT=N`, `TRACES=N`, `RC=N`
     r"^Exit:\s*\d+\s*$",
     r"^Exit\s+code\s+\d+\s*$",
+    r"^FAILED\s*$",
+    r"^OK\s*$",
+    r"^exit=(?:True|False)\s*$",
+    r"^[A-Za-z_]+:\d+\s*$",            # PowerShell `get:0`, `logs:0` trailers
 )
 EMPTY_STDOUT_RE = re.compile("|".join(EMPTY_STDOUT_PATTERNS), re.IGNORECASE)
+
 
 # ---------- text artifact templates ----------
 
@@ -74,9 +92,6 @@ tags: [uipath-diagnostics, e2e, faithful-replay]
 agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
-
-run_limits:
-  task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
 
@@ -140,6 +155,9 @@ success_criteria:
 
       Return JSON: {{"score": <float>, "rationale": "<one sentence>"}}
 
+max_iterations: 1
+task_timeout: 2400
+
 # Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
 # end-to-end without a human. The simulator always picks the recommended /
 # affirmative option, and never invents data — keeps the diagnostic flow
@@ -162,7 +180,11 @@ simulation:
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
+
+llm_reviewer:
+  enabled: false
 """
+
 
 README_TEMPLATE = """\
 # {scenario_title} — Faithful Replay
@@ -202,6 +224,7 @@ python tests/tasks/uipath-diagnostics/_shared/scripts/generate_scenario.py \\
 ```
 """
 
+
 # ---------- ignore patterns for project snapshot ----------
 
 PROJECT_SNAPSHOT_IGNORE_DIRS = {
@@ -226,11 +249,14 @@ PROJECT_SNAPSHOT_IGNORE_DIRS = {
 }
 PROJECT_SNAPSHOT_IGNORE_SUFFIXES = {".pyc", ".pdb"}
 
+
 # ---------- helpers ----------
+
 
 def _slugify(text: str) -> str:
     out = re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-").lower()
     return out or "diagnostic-scenario"
+
 
 def _backfill_redirect_stdouts(uip_calls: list[dict], investigation: Path) -> dict:
     """For calls with empty stdout and a redirect target, load the file.
@@ -279,6 +305,7 @@ def _backfill_redirect_stdouts(uip_calls: list[dict], investigation: Path) -> di
             missing += 1
     return {"backfilled": backfilled, "missing": missing, "skipped": skipped}
 
+
 def _is_empty_stdout(stdout: str) -> bool:
     """True if `stdout` is just bash-trailer noise (no real content)."""
     if not stdout.strip():
@@ -288,6 +315,7 @@ def _is_empty_stdout(stdout: str) -> bool:
     if not lines:
         return True
     return all(EMPTY_STDOUT_RE.fullmatch(l.strip()) for l in lines)
+
 
 def _run_extract(transcript: Path) -> dict:
     """Invoke extract_session.py as a subprocess and return its parsed JSON."""
@@ -300,6 +328,7 @@ def _run_extract(transcript: Path) -> dict:
     if proc.returncode != 0:
         raise RuntimeError(f"extract_session.py failed: {proc.stderr.strip()}")
     return json.loads(proc.stdout)
+
 
 def _detect_scrub_map(samples: list[str]) -> "OrderedDict[str, str]":
     """Auto-detect emails and personal Windows paths across all sampled text.
@@ -337,11 +366,53 @@ def _detect_scrub_map(samples: list[str]) -> "OrderedDict[str, str]":
                 seen_names.add(local)
                 mapping[local] = f"user{idx + 1}"
         for m in WIN_PATH_RE.finditer(text):
-            raw = m.group(0).rstrip("\\/")
+            raw = m.group(0).rstrip("\\/.,;:`'\")]")
             if raw and raw not in mapping:
                 mapping[raw] = ""
+        for m in GITBASH_PATH_RE.finditer(text):
+            raw = m.group(0).rstrip("\\/.,;:`'\")]")
+            if raw and raw not in mapping:
+                mapping[raw] = ""
+        for m in HOSTNAME_RE.finditer(text):
+            host = m.group(0)
+            if host and host not in mapping:
+                mapping[host] = "MOCK-HOST"
+
+    # Second pass: derive username placeholders from any path-like matches.
+    user_placeholders: dict[str, str] = {}
+    for text in samples:
+        if not isinstance(text, str):
+            continue
+        for m in USER_FROM_PATH_RE.finditer(text):
+            name = m.group(1)
+            if not name or "." not in name and "_" not in name and "-" not in name:
+                continue
+            lower = name.lower()
+            if lower in {"public", "default", "all users"}:
+                continue
+            if lower not in user_placeholders:
+                idx = len(user_placeholders) + 1
+                placeholder = "replacement_user" if idx == 1 else f"replacement_user{idx}"
+                user_placeholders[lower] = placeholder
+        for m in WIN_DOMAIN_USER_RE.finditer(text):
+            domain, user = m.group(1), m.group(2)
+            if user.upper() in {"SYSTEM", "ADMINISTRATOR", "NETWORKSERVICE", "LOCALSERVICE"}:
+                continue
+            lower = user.lower()
+            if lower not in user_placeholders:
+                idx = len(user_placeholders) + 1
+                placeholder = "replacement_user" if idx == 1 else f"replacement_user{idx}"
+                user_placeholders[lower] = placeholder
+
+    for lower, placeholder in user_placeholders.items():
+        if lower not in mapping:
+            mapping[lower] = placeholder
+        upper = lower.upper()
+        if upper != lower and upper not in mapping:
+            mapping[upper] = placeholder.upper()
 
     return mapping
+
 
 def _apply_scrub(text: str, mapping: "OrderedDict[str, str]") -> str:
     if not isinstance(text, str):
@@ -352,11 +423,13 @@ def _apply_scrub(text: str, mapping: "OrderedDict[str, str]") -> str:
         out = out.replace(key, mapping[key])
     return out
 
+
 def _scrub_path(path: Path, mapping: "OrderedDict[str, str]") -> Path:
     """Apply scrub mapping to each path component (filenames containing real emails)."""
     parts = list(path.parts)
     new_parts = [_apply_scrub(p, mapping) for p in parts]
     return Path(*new_parts) if new_parts else path
+
 
 def _build_manifest_rules(uip_calls: list[dict]) -> tuple[list[dict], dict[str, str]]:
     """One rule per unique `args`. Returns (rules, fixture_filename_by_args).
@@ -385,6 +458,7 @@ def _build_manifest_rules(uip_calls: list[dict]) -> tuple[list[dict], dict[str, 
             rule["exit_code"] = call["exit_code"]
         rules.append(rule)
     return rules, fixture_by_args
+
 
 def _snapshot_project(
     src: Path, dst: Path, mapping: "OrderedDict[str, str] | None" = None
@@ -437,6 +511,7 @@ def _snapshot_project(
             plan.append((scrubbed_rel, p.read_bytes()))
     return plan
 
+
 def _format_initial_prompt(extracted: dict, scenario_name: str) -> str:
     """Indented YAML block for task.yaml's initial_prompt field.
 
@@ -450,6 +525,7 @@ def _format_initial_prompt(extracted: dict, scenario_name: str) -> str:
             f"(Generated for scenario {scenario_name} — review and customize.)"
         )
     return "\n".join("  " + line for line in body.splitlines())
+
 
 def _build_resolution_md(extracted: dict, resolution_arg: Path | None) -> str:
     if resolution_arg is not None:
@@ -465,12 +541,14 @@ def _build_resolution_md(extracted: dict, resolution_arg: Path | None) -> str:
         text = "# Final Resolution\n\n" + text.lstrip()
     return text.rstrip() + "\n"
 
+
 def _build_readme_md(scenario_name: str, summary: str) -> str:
     return README_TEMPLATE.format(
         scenario_title=scenario_name.replace("-", " ").title(),
         slug=scenario_name,
         summary=summary or "_Add a 1–3 sentence summary of the original investigation here._",
     )
+
 
 def _build_task_yaml(
     scenario_name: str, initial_prompt_indented: str, has_project: bool
@@ -484,7 +562,9 @@ def _build_task_yaml(
         process_source_block=process_source_block,
     )
 
+
 # ---------- main pipeline ----------
+
 
 def plan_scenario(args: argparse.Namespace) -> dict:
     """Build the in-memory plan. Pure: no file writes."""
@@ -592,6 +672,7 @@ def plan_scenario(args: argparse.Namespace) -> dict:
         "project_files": project_plan_scrubbed,
     }
 
+
 def render_dry_run(plan: dict) -> str:
     out: list[str] = []
     out.append(f"Scenario: {plan['scenario_name']}")
@@ -635,6 +716,7 @@ def render_dry_run(plan: dict) -> str:
     out.append("(dry-run — no files written. Pass --apply to write.)")
     return "\n".join(out)
 
+
 def apply_plan(plan: dict) -> None:
     base: Path = plan["output_dir"]
     if base.exists() and any(base.iterdir()):
@@ -663,6 +745,7 @@ def apply_plan(plan: dict) -> None:
             target.write_text(content, encoding="utf-8")
         else:
             target.write_bytes(content)
+
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -698,6 +781,7 @@ def main(argv: list[str]) -> int:
 
     print(render_dry_run(plan))
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
