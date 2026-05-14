@@ -15,9 +15,9 @@ Confluence spec for the Billing Dispute Resolution golden scenario:
   5. The user-message template inlines every input field via
      {{input.<field>}} with a matching variable contentTokens entry
      (Critical Rules 5 and 6).
-  6. The system prompt covers all three adjustment-type variations
-     (credit memo / revised invoice / both or multiple) so the drafter
-     adapts its output to the adjustment type.
+
+System-prompt quality is judged separately by the task's
+`type: llm_judge` success criterion.
 """
 
 import json
@@ -142,31 +142,6 @@ def assert_user_message_inlines(agent: dict) -> None:
     print(f"OK: user message inlines all 4 inputs with matching contentTokens")
 
 
-def assert_system_prompt_three_way(agent: dict) -> None:
-    messages = agent.get("messages", [])
-    system = next(
-        (m for m in messages if isinstance(m, dict) and m.get("role") == "system"),
-        None,
-    )
-    if system is None:
-        sys.exit("FAIL: agent.json.messages has no entry with role == 'system'")
-    content = (system.get("content") or "").lower()
-
-    if "credit memo" not in content:
-        sys.exit("FAIL: system prompt does not mention 'credit memo'")
-    if "revised invoice" not in content:
-        sys.exit("FAIL: system prompt does not mention 'revised invoice'")
-    if "both" not in content and "multiple" not in content:
-        sys.exit(
-            "FAIL: system prompt does not handle the combined case "
-            "(neither 'both' nor 'multiple' present)"
-        )
-    print(
-        "OK: system prompt covers all three adjustment types "
-        "(credit memo, revised invoice, both/multiple)"
-    )
-
-
 def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
@@ -176,7 +151,6 @@ def main() -> None:
     assert_input_shape(in_schema)
     assert_output_shape(out_schema)
     assert_user_message_inlines(agent)
-    assert_system_prompt_three_way(agent)
 
 
 if __name__ == "__main__":

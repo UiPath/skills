@@ -5,8 +5,9 @@ description: >
   invoice, adjustment, disputeAnalysis. Outputs: subject and body.
   The system prompt must cover the three adjustment-type variations
   (credit memo, revised invoice, both). Verifies schema sync,
-  input/output field presence, contentTokens for every input, and
-  domain coverage in the system prompt.
+  input/output field presence, contentTokens for every input, and uses
+  an LLM judge to score the system prompt's three-way adjustment
+  coverage.
 tags: [uipath-agents, e2e, low-code]
 
 agent:
@@ -119,9 +120,46 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Schema sync, input/output field presence, contentTokens for all 4 inputs, and three-way adjustment coverage in system prompt"
+    description: "Schema sync, input/output field presence, and contentTokens for all 4 inputs"
     command: "python3 $TASK_DIR/check_resolution_drafter_agent.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    weight: 4.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt covers all three adjustment-type variations (credit memo, revised invoice, both)"
+    files: ["ResolutionSol/ResolutionDrafterAgent/agent.json"]
+    weight: 1.0
+    pass_threshold: 0.8
+    prompt: |
+      You are grading the `messages[]` entry with `role == "system"` inside
+      `ResolutionSol/ResolutionDrafterAgent/agent.json`. Ignore every other
+      field (schemas, projectId, tools, the user message). Only the system
+      prompt's `content` string is under review.
+
+      Score the system prompt on three rubric items, each worth 1/3 of
+      the final score:
+
+        R1. Credit memo variation — does it tell the drafter how to
+            handle the `credit_memo` adjustment type? Clear coverage
+            references the credit memo (id/number), the credit amount,
+            and the adjusted invoice balance. Paraphrase is fine;
+            literal field names are not required if the meaning is
+            clear.
+
+        R2. Revised invoice variation — does it tell the drafter how to
+            handle the `revised_invoice` adjustment type? Clear coverage
+            explains that the original invoice was cancelled and a
+            corrected invoice issued (so the customer can claim ITC or
+            equivalent tax-input-credit reasoning).
+
+        R3. Combined variation — does it tell the drafter how to handle
+            the `both` adjustment type (credit memo AND revised
+            invoice)? The prompt must address the combined case
+            explicitly, not only the two single-type cases.
+
+      Award 1.0 for clear and specific coverage of an item, 0.5 for
+      partial/ambiguous coverage, 0.0 for missing. The final `score` is
+      the average of R1, R2, R3 rounded to two decimals. If `agent.json`
+      is missing or has no system message, score 0.0.
