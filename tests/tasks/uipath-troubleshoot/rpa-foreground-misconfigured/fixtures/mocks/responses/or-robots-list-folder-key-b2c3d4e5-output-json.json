@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "RobotList",
+  "_doc": "One unattended Robot in ComputeJobs. Same as sibling scenario — RunOnlyOneJobAtATime is OFF. Note: this setting is NOT the right fix for this case; the correct fix is to flip MisconfiguredForeground to background.",
+  "Data": [
+    {
+      "Key": "f6b17e22-d3c4-4f9a-9b2c-3d4e5f6a7b8c",
+      "Name": "RobotUser1",
+      "MachineName": "MOCK-HOST",
+      "Username": "UIPATH\\USER1",
+      "Type": "Unattended",
+      "ExecutionSettings": {
+        "RunOnlyOneJobAtATime": false,
+        "LoginToConsole": true
+      },
+      "Description": "Unattended Robot bound to MOCK-HOST."
+    }
+  ]
+}
