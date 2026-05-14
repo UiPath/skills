@@ -1,0 +1,186 @@
+task_id: skill-test-e2e-compliance-manager-healthcare-audit
+description: >
+  E2E test: comprehensive compliance audit scenario. Compliance Manager
+  has healthcare audit in 48 hours and needs proof that (1) all
+  patient-data-masking requirements were tested, (2) linked test cases
+  executed successfully in current release, (3) workflows modified AFTER
+  UAT approval (compliance violation), (4) failed tests linked to
+  unresolved defects (release risk), (5) exportable traceability matrix.
+  Exercises full data layer: requirements discovery, test case linking,
+  execution verification, workflow audit, defect correlation, report
+  generation. High-complexity end-to-end workflow with multi-step logic
+  and artifact generation.
+tags: [uipath-test, e2e, mode:diagnose, lifecycle:generate, feature:test-case, feature:compliance]
+
+# Project Reference
+# Use HEALTH project (Healthcare Patient Data) for this test.
+# Fixture: 8 compliance-tagged requirements; 10 test cases linked to
+# requirements; execution history with pass/fail/blocked status;
+# workflow modification tracking with timestamps; UAT approval workflow;
+# 2 linked Jira defects for failed tests; compliance evidence artifacts.
+# Agent generates: requirement-to-test traceability matrix (markdown + JSON),
+# compliance audit report, go/no-go sign-off recommendation.
+
+agent:
+  type: claude-code
+  max_turns: 60
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  **Project Context: HEALTH (Healthcare Patient Data)** — use this
+  specific project for all queries.
+
+  I'm the compliance manager for a US-based HIPAA-regulated healthcare
+  SaaS platform. We have an external HIPAA audit in **48 hours** covering
+  our patient-data-masking and PHI-handling controls. Our Test Manager
+  project is **HEALTH (Healthcare Patient Data)** — it owns the
+  validation evidence for every PHI-handling workflow in the current
+  release.
+
+  The auditors will ask for evidence across five compliance categories.
+  I need a complete audit packet generated from Test Manager, NOT a
+  hand-curated narrative. Please query the **HEALTH** project and
+  produce:
+
+  1. **Requirement-to-Test Traceability**
+     - Enumerate every test case (each represents a verification of a
+       compliance requirement — masking, encryption-at-rest, audit
+       logging, access control, retention policy).
+     - For each, show the test set membership and current verification
+       state.
+     - Flag any test case that exists but has never been executed in
+       the current release — those are evidence gaps.
+
+  2. **Execution Evidence (current release)**
+     - For each test set, pull the latest execution and every testcase
+       log inside it.
+     - Capture: result (Passed / Failed / Restricted / None), execution
+       timestamp, and any captured evidence reference.
+     - Compute totals: total covered, total passed, total failed, total
+       skipped or never-run.
+
+  3. **Post-Approval Change Detection** *(critical compliance signal)*
+     - Identify any test case or test set whose `last-modified-on`
+       timestamp is **after** the release/UAT approval cutoff. Changes
+       to validation assets after sign-off must be disclosed to auditors.
+     - If you cannot find a reliable approval timestamp, surface that
+       limitation explicitly — do not invent one.
+
+  4. **Open-Defect Correlation**
+     - For every Failed testcase log, surface any linked defect /
+       Jira reference visible in the log payload.
+     - Highlight failures that are NOT linked to a defect — those are
+       silently-tolerated risks and the auditors will flag them.
+
+  5. **Go / No-Go Compliance Sign-Off**
+     - Produce a recommendation: **GO** (audit-ready), **CONDITIONAL GO**
+       (audit-ready with caveats listed), or **NO-GO** (must resolve
+       before audit).
+     - Justify the recommendation with the evidence above.
+
+  **Deliverables — save into the current working directory:**
+   - `compliance-audit-report.md` — the human-readable audit packet
+     containing all five sections plus the go/no-go verdict
+   - `compliance-traceability-matrix.json` — structured requirement →
+     test case → latest execution status mapping the auditors can
+     import into their tooling
+
+  Both files must reference the **HEALTH** project explicitly so the
+  auditor can re-run your queries.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rule #1 + #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered Healthcare project (`project list --filter` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+tm\s+project\s+list\s+.*--filter\s+\S*health.*--output\s+json|uip\s+tm\s+project\s+list\s+.*--output\s+json.*--filter\s+\S*health'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed all project requirements (`testcases list --project-key` for requirement discovery + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testcases\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test sets to understand test organization (`testsets list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved execution history for current release (`executions list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test case logs from executions to gather evidence (`executions testcaselogs list` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+testcaselogs\s+list\s+.*--execution-id.*--output\s+json|uip\s+tm\s+executions\s+testcaselogs\s+list\s+.*--output\s+json.*--execution-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Traceability matrix generated (compliance report file exists with audit-ready format)"
+    command: |
+      ls compliance-audit-*.md compliance-traceability-*.json audit-report-*.md 2>/dev/null | wc -l | grep -qE '[1-9]'
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Compliance audit report body contains all required sections (requirements, test mapping, execution evidence, post-approval changes, defect correlation, go/no-go verdict)"
+    command: |
+      python3 -c "
+      import glob, re, sys
+      # Look for audit report or compliance document
+      reports = glob.glob('compliance-*.md') + glob.glob('audit-*.md')
+      if not reports:
+          sys.exit(2)
+      body = open(reports[0], encoding='utf-8', errors='replace').read()
+      lower = body.lower()
+      checks = {
+          'markdown structure': re.search(r'(?m)^#{1,4}\s+\S', body) is not None,
+          'requirement-to-test mapping': any(t in lower for t in ['requirement', 'test case', 'mapped', 'link', 'coverage']),
+          'execution evidence': any(t in lower for t in ['passed', 'failed', 'execution', 'evidence', 'result']),
+          'post-approval workflow changes': any(t in lower for t in ['workflow', 'approval', 'modified', 'change', 'post']),
+          'defect correlation': any(t in lower for t in ['defect', 'jira', 'linked', 'open issue']),
+          'go/no-go verdict': re.search(r'(?i)go[- /]?no[- /]?go|sign[- ]?off|recommend|ready', body) is not None,
+      }
+      missing = [k for k, ok in checks.items() if not ok]
+      if missing:
+          sys.stderr.write('missing: ' + ', '.join(missing) + chr(10))
+          sys.exit(1)
+      sys.exit(0)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
