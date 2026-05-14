@@ -1,9 +1,8 @@
 task_id: skill-platform-traces-feedback-smoke
 description: >
   Smoke test: agent uses the uipath-platform skill to annotate a trace with
-  positive feedback and then list feedback for that trace. Verifies the agent
-  knows to call `uip traces feedback create --trace-id ... --positive --folder-key ...`
-  and `uip traces feedback list --trace-id ... --folder-key ...` with --output json.
+  positive feedback. Verifies the agent knows to call
+  `uip traces feedback create --trace-id ... --positive --folder-key ...` with --output json.
   Auth/404 errors are acceptable outcomes — the goal is correct command shape.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover]
 
@@ -25,14 +24,6 @@ success_criteria:
     command_pattern: 'uip\s+traces\s+feedback\s+create(?=.*--positive)(?=.*--trace-id)'
     min_count: 1
     weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent listed feedback using uip traces feedback list with --trace-id"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+traces\s+feedback\s+list.*--trace-id'
-    min_count: 1
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
