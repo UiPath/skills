@@ -607,7 +607,7 @@ uip admin smtp update \
 
 ### `smtp delete`
 
-Delete all SMTP settings. Platform emails will stop working.
+Delete all SMTP settings. Reverts to platform defaults.
 
 ```bash
 uip admin smtp delete --output json
