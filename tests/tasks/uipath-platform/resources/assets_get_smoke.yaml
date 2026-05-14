@@ -3,7 +3,10 @@ description: >
   Smoke test: agent uses the uipath-platform skill to fetch a single asset by
   key via `uip resource assets get <key> --output json` (cross-folder — no
   `--folder-path` required). A 404 response is an acceptable outcome — the goal
-  is correct command shape, not tenant state.
+  is correct command shape, not tenant state. Prompt passes a placeholder GUID
+  rather than a name because the smoke checks the `assets get` CLI shape;
+  a realistic by-name flow (list → resolve → get) is closer to integration
+  scope and depends on a known asset existing in the tenant.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
 sandbox:
@@ -30,4 +33,3 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-

@@ -1,8 +1,9 @@
 task_id: skill-platform-solution-new-init
 description: >
   Smoke test: agent uses the uipath-platform skill to scaffold a new UiPath
-  solution via `uip solution new` and produces the `.uipx` manifest on disk.
-  Runs entirely in the sandbox tempdir — no tenant interaction.
+  solution via `uip solution new`. Verifies the agent runs the scaffold command
+  AND the resulting `.uipx` manifest is present on disk (`file_exists` on the
+  expected path). Runs entirely in the sandbox tempdir — no tenant interaction.
 tags: [uipath-platform, smoke, mode:build, lifecycle:generate]
 
 sandbox:
@@ -10,8 +11,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a new empty UiPath solution called "MySolution" and confirm the
-  solution manifest was created correctly.
+  Create a new empty UiPath solution called "MySolution" in the current
+  directory.
 
 success_criteria:
   - type: command_executed
