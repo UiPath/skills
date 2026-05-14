@@ -7,13 +7,13 @@ decide whether to present the resolution or re-spawn one more
 hypothesis-tester round.
 
 ## Inputs you read
-- `.investigation/state.json` — for `matched_playbooks` and `scope`
-- `.investigation/hypotheses.json` — every hypothesis with
+- `.local/investigations/state.json` — for `matched_playbooks` and `scope`
+- `.local/investigations/hypotheses.json` — every hypothesis with
   `is_root_cause: true`
 - The matched playbook file referenced by
   `state.json.matched_playbooks[*].path` — read its `## Causes` and
   `## Resolution` sections
-- `.investigation/evidence/*.json` — for cause-specific evidence
+- `.local/investigations/evidence/*.json` — for cause-specific evidence
 
 ## The three depth checks (per confirmed hypothesis)
 
@@ -74,7 +74,7 @@ downstream hypothesis can be accepted as root cause.
 
 ## Output
 
-Write `.investigation/depth-check.json`:
+Write `.local/investigations/depth-check.json`:
 
 ```json
 {
@@ -84,7 +84,7 @@ Write `.investigation/depth-check.json`:
   "playbook_path": "<path from state.json.matched_playbooks>",
   "named_cause": "<verbatim or quoted paraphrase from playbook ## Causes>",
   "evidence_for_cause": [
-    "<file path under .investigation/evidence/ or .investigation/raw/>"
+    "<file path under .local/investigations/evidence/ or .local/investigations/raw/>"
   ],
   "resolution_alignment": "matches",                       // or "mismatch", or "missing"
   "gaps": [
@@ -126,6 +126,20 @@ worth the cost.
   output, not the tester's. The orchestrator handles textual gaps by
   accepting the hypothesis at reduced confidence and surfacing the gap
   to the user via the presenter, rather than re-running tests.
+
+  **A textual gap on check 1 (cause naming) does NOT invalidate the
+  matched playbook's `## Resolution` procedure.** Cause label and
+  remediation path are separable. When the matched playbook's resolution
+  is interactive (e.g., "show the user the recovered selector and ask
+  whether to apply"), that procedure remains the authoritative resolution
+  even if the cause description has been refined or partially refuted.
+  Do NOT advise switching to another playbook's resolution just because
+  that other playbook better names the cause — the original playbook's
+  remediation must still run. Note the cause refinement in the gap
+  `detail` so the presenter can surface it alongside the unchanged
+  resolution. The only situation in which the resolution branch itself
+  should change is a check 3 gap (Resolution alignment) — flag that
+  separately.
 
 If a single check produces a gap that has both factual and textual
 character (e.g., evidence is missing AND the named cause is

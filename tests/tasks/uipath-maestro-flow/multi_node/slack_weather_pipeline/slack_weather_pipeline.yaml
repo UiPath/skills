@@ -4,13 +4,14 @@ description: >
   fetch weather for that city via HTTP, decide warm/cold. Exercises chaining
   Slack connector → Script → HTTP → Decision → End with data flowing between nodes.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
-max_iterations: 1
-task_timeout: 2400 # this is a harder test.
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 2400
   turn_timeout: 1200
 
 sandbox:

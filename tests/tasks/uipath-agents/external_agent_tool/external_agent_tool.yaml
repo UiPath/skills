@@ -7,12 +7,13 @@ description: >
   real `folderPath` (not "solution_folder"). Distinct from
   `solution_agent_tool` which uses `location: "solution"`.
 tags: [uipath-agents, e2e, low-code]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

@@ -17,12 +17,12 @@ Only these two — they do not work headless:
 
 | Command | Why |
 |---------|-----|
-| `uip rpa diff` | Opens an interactive diff window in Studio's UI |
-| `uip rpa focus-activity` | Highlights an activity in Studio's active workflow designer |
+| `uip rpa files diff` | Opens an interactive diff window in Studio's UI |
+| `uip rpa focus-activity` | Highlights an activity in Studio's active workflow designer (hidden from `--help` — agent → user UI cue) |
 
-For these, run `uip rpa start-studio --project-dir "<PROJECT_DIR>"` first if Studio Desktop is not already up.
+For these, run `uip rpa studio start --project-dir "<PROJECT_DIR>"` first if Studio Desktop is not already up.
 
-Everything else — `create-project`, `open-project`, `close-project`, `run-file`, `stop-execution`, `get-errors`, `build`, `get-analyzer-rules`, `find-activities`, `get-default-activity-xaml`, `get-versions`, `inspect-package`, `install-or-update-packages`, `list-data-fabric-entities`, `install-data-fabric-entities`, `search-templates`, `indicate-application`, `indicate-element`, all `uia` subcommands, all `uip is` subcommands — runs headless with no Studio Desktop required.
+Everything else — `init`, `run`, `debug start`, `execution cancel`, `validate`, `build`, `analyzer-rules list`, `activities find`, `activities get-default-xaml`, `packages versions`, `packages inspect`, `packages install`, `data-fabric-entities list`, `data-fabric-entities install`, `templates search`, `workflow-examples list`, `workflow-examples get`, `indicate-application`, `indicate-element`, all `uia` subcommands, all `uip is` subcommands — runs headless with no Studio Desktop required.
 
 To force Studio Desktop for any command, set `UIPATH_RPA_TOOL_USE_STUDIO=1`. Not recommended for the standard authoring loop.
 
@@ -30,8 +30,9 @@ To force Studio Desktop for any command, set `UIPATH_RPA_TOOL_USE_STUDIO=1`. Not
 
 ```bash
 uip --help                              # top-level command groups
-uip rpa --help                          # all rpa subcommands
-uip rpa get-errors --help               # parameters for a specific command
+uip rpa --help                          # all rpa subcommands (canonical, grouped)
+uip rpa packages --help                 # verbs inside a group
+uip rpa validate --help                 # parameters for a specific command
 ```
 
 > **Run `--help` standalone — never combine it with other flags.** `uip rpa <subcommand> --help --project-dir "<path>"` parses `--project-dir` as a positional command and exits with `unknown command '<path>'`. Drop every other flag when probing help.
@@ -54,7 +55,7 @@ Every `uip rpa` invocation accepts these flags:
 
 ### STUDIO_DIR Resolution
 
-`--studio-dir` is **only consulted when Studio Desktop is in use** (i.e. you ran `start-studio`, called `diff`/`focus-activity`, or set `UIPATH_RPA_TOOL_USE_STUDIO=1`). Headless Studio (Helm) ignores it. When Studio Desktop is needed and auto-detection fails, the resolution waterfall is:
+`--studio-dir` is **only consulted when Studio Desktop is in use** (i.e. you ran `studio start`, called `files diff`/`focus-activity`, or set `UIPATH_RPA_TOOL_USE_STUDIO=1`). Headless Studio (Helm) ignores it. When Studio Desktop is needed and auto-detection fails, the resolution waterfall is:
 
 1. Environment variable `UIPATH_STUDIO_DIR` if set.
 2. Default install: `C:\Program Files\UiPath\Studio` (or `x86` variant) if `UiPathStudio.exe` exists there.
@@ -87,46 +88,49 @@ Located at `{projectRoot}/.local/docs/packages/{PackageId}/`.
 
 > Skip this section unless you need to invoke `diff` or `focus-activity`. Every other command auto-launches headless Studio (Helm) when needed.
 
-### list-instances
+### instances list
 
 List running Studio Desktop instances and their IPC status. Hidden diagnostic command — does **not** report the auto-launched headless Studio (Helm) instances.
 
 ```bash
-uip rpa list-instances --output json```
+uip rpa instances list --output json
+```
 
 No command-specific options. An empty `Data` array does NOT mean `uip rpa` won't work — headless Studio starts on demand.
 
 ---
 
-### start-studio
+### studio start
 
-Ensure a **Studio Desktop** instance is running. Only required before invoking `diff` or `focus-activity`, or when forcing Studio Desktop with `UIPATH_RPA_TOOL_USE_STUDIO=1`. Resolution waterfall:
+Ensure a **Studio Desktop** instance is running. Only required before invoking `files diff` or `focus-activity`, or when forcing Studio Desktop with `UIPATH_RPA_TOOL_USE_STUDIO=1`. Resolution waterfall:
 1. Match by `--project-dir` -- reuse if available, wait if busy
 2. Use an idle instance (no project loaded)
 3. Start a new instance via `--studio-dir` -- poll until available
 
 ```bash
-uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json```
+uip rpa studio start --project-dir "<PROJECT_DIR>" --output json
+```
 
 ---
 
 ## Commands -- Project Lifecycle
 
-### create-project
+### init
 
 Create a new UiPath project from a template.
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
+uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --output json
+```
 
-> **Flag names are non-standard.** Most `uip rpa` commands take `--project-dir` to identify the project. `create-project` instead uses `--name` (project name) + `--location` (parent directory). Do NOT use `--project-name` or `--project-dir` here — both fail with `error: required option '--name <string>' not specified`.
+> **Flag names are non-standard.** Most `uip rpa` commands take `--project-dir` to identify the project. `init` instead uses `--name` (project name) + `--location` (parent directory). Do NOT use `--project-name` or `--project-dir` here — both fail with `error: required option '--name <string>' not specified`.
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `--name` | Yes | -- | Name of the project |
 | `--location` | Yes | -- | Parent directory where the project folder will be created |
 | `--template-id` | No | `BlankTemplate` | `BlankTemplate`, `LibraryProcessTemplate`, `TestAutomationProjectTemplate` |
-| `--template-package-id` | No | -- | NuGet template package ID from `search-templates`. Overrides `--template-id` when set |
+| `--template-package-id` | No | -- | NuGet template package ID from `templates search`. Overrides `--template-id` when set |
 | `--template-package-version` | No | (latest) | Version of the template package |
 | `--allow-prerelease-packages` | No | false | Allow prerelease activity package versions |
 | `--description` | No | -- | Project description |
@@ -137,12 +141,12 @@ For template selection logic (when to use `--template-package-id` vs `--template
 
 ---
 
-### search-templates
+### templates search
 
-Search NuGet feeds for available project templates. Use before `create-project` when the user names a template or asks for a domain-specific starter.
+Search NuGet feeds for available project templates. Use before `init` when the user names a template or asks for a domain-specific starter.
 
 ```bash
-uip rpa search-templates --query "<TERM>" --output json
+uip rpa templates search --query "<TERM>" --output json
 ```
 
 | Parameter | Required | Default | Description |
@@ -151,42 +155,47 @@ uip rpa search-templates --query "<TERM>" --output json
 | `--limit` | No | 20 | Maximum results |
 | `--include-prerelease` | No | false | Include prerelease template versions |
 
-Returns `Data[*]` with `packageId`, `version`, `title`, `description`, `authors`, `source` (`"Official"` / `"Marketplace"` / feed URL), `tags`. Pass `packageId` and `version` to `create-project --template-package-id` / `--template-package-version`.
+Returns `Data[*]` with `packageId`, `version`, `title`, `description`, `authors`, `source` (`"Official"` / `"Marketplace"` / feed URL), `tags`. Pass `packageId` and `version` to `init --template-package-id` / `--template-package-version`.
 
 ---
 
-### open-project
+### project open / project close (hidden)
 
-Open an existing project in Studio. Only needed when explicitly loading a project that isn't already open (e.g. after `create-project`, or when switching projects). Most commands (`validate`, `run-file`) auto-resolve a Studio instance and open the project automatically, so this is rarely required.
+Open or close a project explicitly in Studio. The `project` group and both verbs are hidden from `--help` because the standard authoring loop (`validate`, `run`, etc.) auto-resolves a Studio instance and opens the project on its own. Use only when you need to force open/close (e.g. immediately after `init` before any other command, or when releasing a project lock).
 
 ```bash
-uip rpa open-project --project-dir "<PROJECT_DIR>" --output json```
-
-No command-specific options.
+uip rpa project open  --project-dir "<PROJECT_DIR>" --output json
+uip rpa project close --output json
+```
 
 ---
 
 ## Commands -- Validation and Execution
 
-### run-file
+### run
 
-Run or debug a workflow file using Studio.
+Run a workflow file via Studio (no debugging — closes app on completion or error).
 
 ```bash
-# Run (default -- closes app on completion or error):
-uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
-# Debug (pauses on error -- keeps app open for inspection/repair):
-uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json```
+uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--file-path` | Yes | Path to the workflow file to run |
-| `--command` | No | `StartExecution` (default) or `StartDebugging`. **Use `StartDebugging` for UI automation workflows** -- it pauses on error instead of tearing down the app, preserving the UI state for selector repair. Other debug commands: `Stop`, `StepInto`, `StepOver`, `StepOut`, `Continue`, `Break`, `ToggleBreakpoint`. |
 | `--input-arguments` | No | JSON string of input arguments |
 | `--log-level` | No | Logging verbosity level |
+| `--skip-build` | No | Skip the pre-run build step (use only when you have just built) |
 | `--profiling` | No | Collect per-activity timings and runtime screenshots for the run — verifies UI automation correctness and workflow performance. Only effective on start commands (`StartExecution`, `StartDebugging`, `TestActivity`, `StartDebuggingFromHere`) — silently ignored on stepping/breakpoint commands. Response carries `Profiling.OutputDirectory` when collection succeeds. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance). |
 
-The response is a standard CLI envelope: `{Result: "Success"|"Failure", Code, Data: {runResult: "<json-string>"}, Message?, Instructions?}`. `Data.runResult` is a **JSON string** (not an object) — parse it separately to read the run result:
+For debugging — breakpoints, stepping, exception-handling lifecycle — use the `debug` group (see [debugging.md](debugging.md)). For UI automation workflows in particular, prefer `debug start` over `run` so the app is preserved for selector repair on error.
+
+```bash
+uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa execution cancel --project-dir "<PROJECT_DIR>" --output json
+```
+
+Both `run` and `debug start` return the same envelope: `{Result: "Success"|"Failure", Code, Data: {runResult: "<json-string>"}, Message?, Instructions?}`. `Data.runResult` is a **JSON string** (not an object) — parse it separately to read the run result, which has exactly three fields:
 
 - `Output` — the workflow's own serialized output arguments JSON (`""` for non-`Start*` commands and on debug-command responses). **`Output` carries the workflow's data, not a verdict.**
 - `HasErrors` — `true` iff execution did not complete successfully (compile failure, validation failure, unhandled exception, cancellation, or timeout); `false` otherwise.
@@ -199,12 +208,13 @@ Workflow log output (`Log Message` activity, system traces) does NOT appear in `
 
 ---
 
-### get-errors
+### validate
 
 Return validation errors for a file or project. By default, forces Studio to re-validate before returning errors.
 
 ```bash
-uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
+uip rpa validate [--file-path "<FILE>"] [--skip-validation] --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -217,7 +227,7 @@ uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
 
 ### build
 
-Build (compile) a UiPath project. Compiles all XAML expressions — catches runtime-compile failures that `get-errors` misses. Required before returning a project to the user (see [validation-guide.md § Project Build Verification](validation-guide.md#project-build-verification-required-before-returning-a-project)). Runs independently of Studio IPC; takes the project directory as a positional argument.
+Build (compile) a UiPath project. Compiles all XAML expressions — catches runtime-compile failures that `validate` misses. Required before returning a project to the user (see [validation-guide.md § Project Build Verification](validation-guide.md#project-build-verification-required-before-returning-a-project)). Runs independently of Studio IPC; takes the project directory as a positional argument.
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
@@ -233,16 +243,16 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
 | `--governance-file-type` | No | Type of the governance file |
 | `--detailed-log-path` | No | Path to write a detailed log file |
 
-**Relationship to `run-file`:** `run-file` compiles internally, so a successful smoke test implies `build` would pass. When no smoke test is run (side effects, interactive workflow, no test input), `build` is the required end-goal check for compilability — including attribute-form expression failures (`JIT compilation is disabled for non-Legacy projects`) in XAML projects with `expressionLanguage: CSharp` that don't surface during static `get-errors`.
+**Relationship to `run`:** `run` (and `debug start`) compile internally, so a successful smoke test implies `build` would pass. When no smoke test is run (side effects, interactive workflow, no test input), `build` is the required end-goal check for compilability — including attribute-form expression failures (`JIT compilation is disabled for non-Legacy projects`) in XAML projects with `expressionLanguage: CSharp` that don't surface during static `validate`.
 
 ---
 
-### get-analyzer-rules
+### analyzer-rules list
 
-List the Workflow Analyzer rules currently **enabled** for the project — the best-practice rules that `get-errors` and `uip rpa build` will enforce. Reports rules only, not violations.
+List the Workflow Analyzer rules currently **enabled** for the project — the best-practice rules that `validate` and `uip rpa build` will enforce. Reports rules only, not violations.
 
 ```bash
-uip rpa get-analyzer-rules --project-dir "<PROJECT_DIR>" --output json
+uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -258,12 +268,13 @@ Each rule returns `severity` (`error` / `warning` / `info`), rule ID (e.g. `ST-D
 
 ## Commands -- Package Management
 
-### install-or-update-packages
+### packages install
 
 Install or update NuGet packages in the project.
 
 ```bash
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --output json```
+uip rpa packages install --packages '[{"id": "UiPath.Excel.Activities"}]' --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -277,12 +288,12 @@ Omit `version` to automatically resolve the latest compatible version (preferred
 
 ---
 
-### get-versions
+### packages versions
 
 Get available versions for a NuGet package.
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
+uip rpa packages versions --package-id <PackageId> --include-prerelease --output json
 ```
 
 | Parameter | Required | Description |
@@ -296,19 +307,19 @@ uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
 
 ## Commands -- Data Fabric Entities
 
-UiPath Data Fabric entities live in the Orchestrator tenant's Data Service. To use them in an RPA project -- as typed arguments (e.g. `UiPath.DataService.Activities`, `add-test-data-entity`) or anywhere else that binds to generated entity types -- they must first be **installed** into the project. Installation writes a manifest at `.entities/EntitiesStore.json` and compiles a strongly-typed assembly; all entity-aware activities, coded service calls, and test-data bindings resolve against it.
+UiPath Data Fabric entities live in the Orchestrator tenant's Data Service. To use them in an RPA project -- as typed arguments (e.g. `UiPath.DataService.Activities`, `test-data add-entity`) or anywhere else that binds to generated entity types -- they must first be **installed** into the project. Installation writes a manifest at `.entities/EntitiesStore.json` and compiles a strongly-typed assembly; all entity-aware activities, coded service calls, and test-data bindings resolve against it.
 
-Typical flow: `list-data-fabric-entities` (discover) → `install-data-fabric-entities --add ...` (install) → reference the generated entity types from your workflow or test case.
+Typical flow: `data-fabric-entities list` (discover) → `data-fabric-entities install --add ...` (install) → reference the generated entity types from your workflow or test case.
 
 ---
 
-### list-data-fabric-entities
+### data-fabric-entities list
 
 List Data Fabric entities relevant to the active project. Returns a unified view of entities currently installed in the project **and** entities available in the connected tenant, each tagged with an `installed` flag.
 
 ```bash
-uip rpa list-data-fabric-entities --project-dir "<PROJECT_DIR>" --output json
-uip rpa list-data-fabric-entities --service-document "<PATH>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa data-fabric-entities list --project-dir "<PROJECT_DIR>" --output json
+uip rpa data-fabric-entities list --service-document "<PATH>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -317,18 +328,18 @@ uip rpa list-data-fabric-entities --service-document "<PATH>" --project-dir "<PR
 
 Each returned entry includes: `name`, `displayName`, `namespace` (if installed), `serviceDocument` (if installed), `storeUrl` (if cloud-available), and `installed: true | false`.
 
-Use this before `install-data-fabric-entities` to pick names from the tenant, or to verify what is already bound to the project.
+Use this before `data-fabric-entities install` to pick names from the tenant, or to verify what is already bound to the project.
 
 ---
 
-### install-data-fabric-entities
+### data-fabric-entities install
 
 Install, update, or remove Data Fabric entity bindings by applying an add/remove delta to the project's currently installed set. Dependency expansion is automatic -- adding `E1` pulls in any entity `E1` references.
 
 ```bash
-uip rpa install-data-fabric-entities --add "Invoice" --add "Customer" --project-dir "<PROJECT_DIR>" --output json
-uip rpa install-data-fabric-entities --remove "LegacyOrder" --project-dir "<PROJECT_DIR>" --output json
-uip rpa install-data-fabric-entities --add "Invoice" --remove "LegacyOrder" --namespace "My.App.Entities" --project-dir "<PROJECT_DIR>" --output json
+uip rpa data-fabric-entities install --add "Invoice" --add "Customer" --project-dir "<PROJECT_DIR>" --output json
+uip rpa data-fabric-entities install --remove "LegacyOrder" --project-dir "<PROJECT_DIR>" --output json
+uip rpa data-fabric-entities install --add "Invoice" --remove "LegacyOrder" --namespace "My.App.Entities" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -351,33 +362,13 @@ Returns JSON:
 { "serviceDocument": ".entities/EntitiesStore.json", "namespace": "My.App.Entities", "entities": ["Invoice", "Customer", "Address"] }
 ```
 
-**Use this before** invoking any workflow or test case that references the entity types, and before `add-test-data-entity` -- the test-data command requires its target entity to already be managed in the project.
+**Use this before** invoking any workflow or test case that references the entity types, and before `test-data add-entity` -- the test-data command requires its target entity to already be managed in the project.
 
 ---
 
 ## Commands -- Test Manager
 
-### get-manual-test-cases
-
-Get unautomated test case IDs from Test Manager.
-
-```bash
-uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --output json```
-
-No command-specific options.
-
----
-
-### get-manual-test-steps
-
-Get steps for specific test cases from Test Manager.
-
-```bash
-uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --output json```
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `--test-case-ids` | Yes | Comma-separated test case IDs |
+Test Manager integration has moved to the dedicated `uip tm` tool — see `uip tm --help`. The two read-only verbs previously exposed under `uip rpa` (`get-manual-test-cases`, `get-manual-test-steps`) are no longer documented here and should not appear in new skill content.
 
 ---
 
@@ -523,12 +514,12 @@ uip is resources describe <CONNECTOR_KEY> <OBJECT_NAME> --operation Create --out
 
 ---
 
-### resources execute
+### resources run
 
-Execute a CRUD operation on a connector resource.
+Run a CRUD operation on a connector resource.
 
 ```bash
-uip is resources execute <OPERATION> <CONNECTOR_KEY> <OBJECT_NAME> --output json
+uip is resources run <OPERATION> <CONNECTOR_KEY> <OBJECT_NAME> --output json
 ```
 
 | Parameter | Required | Description |
@@ -545,12 +536,12 @@ When `uip` commands fail, diagnose by error category:
 
 | Error Pattern | Cause | Recovery |
 |---------------|-------|----------|
-| `"connection refused"`, `"EPIPE"`, `"pipe not found"` | Studio IPC not available. Headless Studio (Helm): NuGet restore failed or process exited. Studio Desktop: not running. | Re-run the command — headless Studio relaunches automatically. If it persists, raise `--timeout` and check the Helm restore output for NuGet errors. Only run `uip rpa start-studio` if the failing command is `diff`/`focus-activity` or `UIPATH_RPA_TOOL_USE_STUDIO=1` is set. |
-| `"timeout"`, `"ETIMEDOUT"` | Command took too long. Cold Helm NuGet restore can take 30–90 s. | Raise the timeout: `uip rpa --timeout 600 <command>`. For `get-errors`, also try `--skip-validation`. |
+| `"connection refused"`, `"EPIPE"`, `"pipe not found"` | Studio IPC not available. Headless Studio (Helm): NuGet restore failed or process exited. Studio Desktop: not running. | Re-run the command — headless Studio relaunches automatically. If it persists, raise `--timeout` and check the Helm restore output for NuGet errors. Only run `uip rpa studio start` if the failing command is `files diff`/`focus-activity` or `UIPATH_RPA_TOOL_USE_STUDIO=1` is set. |
+| `"timeout"`, `"ETIMEDOUT"` | Command took too long. Cold Helm NuGet restore can take 30–90 s. | Raise the timeout: `uip rpa --timeout 600 <command>`. For `validate`, also try `--skip-validation`. |
 | `"not authenticated"`, `401`, `403` | Auth required for cloud features | Run `uip login` and re-try |
-| `"package not found"`, `"version not available"` | Wrong package ID or version | Verify package name via `uip rpa find-activities`; omit `version` to auto-resolve latest |
-| `"project not found"`, `"no project open"` | Wrong project-dir or project not open in Studio | Verify `--project-dir` path, run `uip rpa open-project` |
-| `"file not found"` in `get-errors` | Wrong `--file-path` (must be relative to project) | Use path relative to project root, not absolute |
+| `"package not found"`, `"version not available"` | Wrong package ID or version | Verify package name via `uip rpa activities find`; omit `version` to auto-resolve latest |
+| `"project not found"`, `"no project open"` | Wrong project-dir or project not open in Studio | Verify `--project-dir` path, run `uip rpa project open` |
+| `"file not found"` in `validate` | Wrong `--file-path` (must be relative to project) | Use path relative to project root, not absolute |
 | `"Studio is busy"`, `"operation in progress"` | Studio is processing a previous request | Wait a few seconds and retry the command |
 | Any unrecognized error | Unknown | Check `--verbose` flag: `uip rpa --verbose <command>` for debug details, inform the user |
 
@@ -560,12 +551,14 @@ When `uip` commands fail, diagnose by error category:
 
 ## RPA-Specific Commands
 
-### find-activities
+### activities find
 
 Search for activities by keyword. Global search -- not limited to installed packages.
 
 ```bash
-uip rpa find-activities --query "<KEYWORD>" --output jsonuip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json```
+uip rpa activities find --query "<KEYWORD>" --output json
+uip rpa activities find --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -575,15 +568,16 @@ uip rpa find-activities --query "<KEYWORD>" --output jsonuip rpa find-activities
 
 ---
 
-### get-default-activity-xaml
+### activities get-default-xaml
 
 Get the default XAML template for an activity. Two modes depending on whether the activity is dynamic (connector-backed) or not.
 
 ```bash
 # Non-dynamic activity:
-uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
+uip rpa activities get-default-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
 # Dynamic activity (connector-backed):
-uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
+uip rpa activities get-default-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -593,12 +587,14 @@ uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id
 
 ---
 
-### list-workflow-examples
+### workflow-examples list
 
 Search example workflows by service tags.
 
 ```bash
-uip rpa list-workflow-examples --tags "service1,service2" --output jsonuip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json```
+uip rpa workflow-examples list --tags "service1,service2" --output json
+uip rpa workflow-examples list --tags "service1" --prefix "<PREFIX>" --limit 20 --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -608,63 +604,34 @@ uip rpa list-workflow-examples --tags "service1,service2" --output jsonuip rpa l
 
 ---
 
-### get-workflow-example
+### workflow-examples get
 
 Retrieve the full XAML content of an example workflow.
 
 ```bash
-uip rpa get-workflow-example --key "<BLOB_PATH>" --output json```
+uip rpa workflow-examples get --key "<BLOB_PATH>" --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--key` | Yes | Blob path from `list-workflow-examples` results |
+| `--key` | Yes | Blob path from `workflow-examples list` results |
 
 ---
 
-### focus-activity
+### focus-activity (hidden)
 
-Focus an activity in the Studio Desktop designer view. **Requires a running Studio Desktop instance** — does not work against headless Studio. Run `uip rpa start-studio --project-dir "<PROJECT_DIR>"` first if Studio Desktop is not already up.
+Focus an activity in the Studio Desktop designer view. **Requires a running Studio Desktop instance** — does not work against headless Studio. Hidden from `--help` (agent → user UI cue), but reachable directly by name. Run `uip rpa studio start --project-dir "<PROJECT_DIR>"` first if Studio Desktop is not already up.
 
 ```bash
-uip rpa focus-activity --activity-id "<IDREF>" --output jsonuip rpa focus-activity --output json```
+uip rpa focus-activity --activity-id "<IDREF>" --output json
+uip rpa focus-activity --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--activity-id` | No | Activity IdRef. Omit to focus all activities sequentially. |
 
 ---
-
-### search-templates
-
-Search for project templates on configured NuGet feeds. Does not require a project to be open.
-
-```bash
-uip rpa search-templates --query "<SEARCH_TERM>" --output json
-uip rpa search-templates --limit 10 --include-prerelease --output json
-```
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `--query` | No | Filter by name or description. Omit to list all available templates |
-| `--limit` | No | Max results (default 20) |
-| `--include-prerelease` | No | Include prerelease versions (default false) |
-
-Returns a JSON array with fields: `packageId`, `version`, `title`, `description`, `authors`, `source`, `tags`.
-
-Use the `packageId` and `version` from results with `uip rpa create-project --template-package-id` to create a project from that template.
-
----
-
-### close-project
-
-Close the current project in Studio.
-
-```bash
-uip rpa close-project --output json```
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `--project-dir` | No | Project directory (defaults to current working directory) |
 
 ### RPA Discovery Tools
 
@@ -676,9 +643,9 @@ uip rpa close-project --output json```
 | **Get JIT type definitions** | `Read` `{projectRoot}/.project/JitCustomTypesSchema.json` |
 | **Activity docs** | See the Installed Package Activity Documentation section above |
 
-## Debugging with `run-file`
+## Debugging — the `debug` group
 
-The `uip rpa run-file` command supports full interactive debugging beyond simple execution: breakpoints, step-by-step execution, isolated activity testing, exception handling, and runtime state inspection. For the complete debug command reference and common debugging workflows, see **[debugging.md](debugging.md)**.
+The `uip rpa debug` group exposes full interactive debugging: breakpoints, step-by-step execution, isolated activity testing, exception handling, and runtime state inspection. Cancel a run or debug session with `uip rpa execution cancel`. For the complete debug verb reference and common debugging workflows, see **[debugging.md](debugging.md)**.
 
 ### Connector Capabilities
 
@@ -688,7 +655,7 @@ For RPA-specific connector workflow patterns (activity/resource discovery, conne
 
 ## Coded-Specific Commands
 
-### inspect-package
+### packages inspect
 
 Inspect a NuGet package to discover its API surface (classes, methods, properties). See [coded/inspect-package-guide.md](coded/inspect-package-guide.md) for full usage.
 

@@ -8,12 +8,13 @@ description: >
   subdirectory layout (no entry-points.json, no project.uiproj,
   empty flow-layout.json).
 tags: [uipath-agents, e2e, low-code, inline-flow]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

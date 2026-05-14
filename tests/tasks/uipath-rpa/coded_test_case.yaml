@@ -17,7 +17,7 @@ initial_prompt: |
   a first coded test case that uses them.
 
   The working directory starts empty. Scaffold the project with
-  `uip rpa create-project --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
+  `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
   Studio Desktop is NOT available — skip any CLI commands that require
   --use-studio. Focus on generating the correct files and project.json updates.
 

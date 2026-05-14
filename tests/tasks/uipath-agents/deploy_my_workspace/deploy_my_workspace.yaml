@@ -7,12 +7,13 @@ description: >
   job and surface the monitoring URL. Exercises the entire production
   packaging path the existing test suite never reaches.
 tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

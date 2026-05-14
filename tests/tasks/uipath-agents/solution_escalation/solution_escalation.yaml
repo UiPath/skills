@@ -9,12 +9,13 @@ description: >
   `.agent-builder/`. Distinct from `external_escalation` which targets
   an ActionCenter app that lives externally in Orchestrator.
 tags: [uipath-agents, e2e, low-code]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

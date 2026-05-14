@@ -70,7 +70,7 @@ From tools list, extract tool `name` and `version` from each row.
 | Skill context | What to capture | Limits |
 |---|---|---|
 | **Flow** | `uip maestro flow validate <file> --output json`, `.flow` file content, directory listing | `.flow`: first 150 lines; directory: max 30 entries |
-| **RPA** (`.cs` or `.xaml`) | `project.json` dependencies, `uip rpa get-errors --output json --use-studio`, list of workflow files (`.cs` and/or `.xaml`) | File list: max 20 files; `project.json`: dependencies section only; failing workflow: first 150 lines |
+| **RPA** (`.cs` or `.xaml`) | `project.json` dependencies, `uip rpa validate --output json --use-studio`, list of workflow files (`.cs` and/or `.xaml`) | File list: max 20 files; `project.json`: dependencies section only; failing workflow: first 150 lines |
 | **Agents** | `pyproject.toml`, `bindings.json` (redact connection values), directory listing | `bindings.json`: redact all values; directory: max 30 entries |
 | **Apps** | `package.json` (name, version, dependencies only), `.uipath/` listing | `package.json`: name + version + dependencies only |
 | **Platform** | `uip login status --output json` output only | Strip tokens from output |

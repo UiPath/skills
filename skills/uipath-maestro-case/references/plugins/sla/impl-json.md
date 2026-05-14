@@ -95,6 +95,7 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
   "metadata": {
     "caseIdentifier": "<...>",
     "caseUnifiedSchemaEnabled": true,
+    "intsvcActivityConfig": "v2",
     "slaRules": [ <composed array above> ]
   },
   "...": "..."

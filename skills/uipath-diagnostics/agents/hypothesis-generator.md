@@ -6,13 +6,13 @@ Produce ranked hypotheses based on investigation state and evidence.
 
 ## Inputs
 
-- `.investigation/state.json`
-- `.investigation/evidence/` — all evidence so far
-- `.investigation/hypotheses.json` — if re-invoked (deepening or scope adjustment)
+- `.local/investigations/state.json`
+- `.local/investigations/evidence/` — all evidence so far
+- `.local/investigations/hypotheses.json` — if re-invoked (deepening or scope adjustment)
 
 ## Output
 
-Write or update: `.investigation/hypotheses.json` — see `schemas/hypotheses.schema.md`
+Write or update: `.local/investigations/hypotheses.json` — see `schemas/hypotheses.schema.md`
 
 ## Steps
 

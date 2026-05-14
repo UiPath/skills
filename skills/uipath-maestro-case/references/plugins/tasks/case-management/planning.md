@@ -47,6 +47,6 @@ Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagemen
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>
-- lane: <n>  # FE layout coordinate; increment per task within the stage
+- lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
 - verify: Confirm Result: Success, capture TaskId
 ```

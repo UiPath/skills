@@ -81,4 +81,4 @@
 
 ---
 
-Would you like help implementing the selector fix in Main.xaml, or would you like to clean up the `.investigation/` folder?
+Would you like help implementing the selector fix in Main.xaml, or would you like to clean up the `.local/investigations/` folder?

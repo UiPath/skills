@@ -45,7 +45,7 @@ The test scores the **conclusion**, not the trajectory:
 - `diagnosis.md` exists (the agent reached *some* terminal state)
 - It mentions `personal` and `folder` (correctly identified the locus)
 - It mentions `GUID` (correctly identified what's needed)
-- `.investigation/state.json` exists (the diagnostic skill actually ran)
+- `.local/investigations/state.json` exists (the diagnostic skill actually ran)
 - The agent invoked the `uipath-diagnostics` skill
 
 ## Re-running the extraction

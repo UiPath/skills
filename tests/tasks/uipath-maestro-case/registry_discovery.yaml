@@ -8,6 +8,8 @@ tags: [uipath-maestro-case, smoke, registry]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 65
 
 sandbox:

@@ -8,6 +8,8 @@ tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, connect
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 80
   turn_timeout: 900
 
