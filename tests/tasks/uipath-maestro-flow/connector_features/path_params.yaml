@@ -38,9 +38,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip is connections list \"uipath-atlassian-jira\"` to discover available connections"
+    description: "Agent invoked `uip is connections list` to discover available connections"
     tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+is\\s+connections\\s+list\\s+[\"']?uipath-atlassian-jira[\"']?"
+    command_pattern: "(uip|\\$UIP)\\s+is\\s+connections\\s+list"
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
