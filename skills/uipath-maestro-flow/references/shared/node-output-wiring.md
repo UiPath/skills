@@ -106,12 +106,14 @@ For connector nodes (`uipath.connector.*`), the most common wiring patterns:
 - **Variable references** (`$vars.X.output.Y`) — **always** wrap with `=js:`.
 - **Mixed strings** (template literals) — wrap the whole expression in `=js:` and use JS template literal syntax with `${ }`.
 
+Plugin-specific path fields are not value fields. Follow the plugin reference when it says a field stores a path string. Notable exception: Transform `inputs.collection` must be a path such as `"$vars.orders.output.items"`, without `=js:`.
+
 ---
 
 ## Anti-Patterns (Never Write These)
 
 1. **Never invent a `nodes.X.output.Y` syntax.** It does not exist. All variable references use `$vars`.
-2. **Never write `$vars.X.output.Y` without `=js:`** in any value field. The `$vars→vars` rewrite happens regardless of prefix, leaving you with a literal string `"vars.X.output.Y"` at runtime — looks like an expression, isn't one.
+2. **Never write `$vars.X.output.Y` without `=js:`** in an expression value field. The `$vars→vars` rewrite happens regardless of prefix, leaving you with a literal string `"vars.X.output.Y"` at runtime — looks like an expression, isn't one. For plugin path fields such as Transform `inputs.collection`, use the plugin-specific path format instead.
 3. **Never wrap conditions** (Decision, Switch, HTTP branch) in `=js:`. Those are parsed as JS automatically.
 4. **Never use `{ }` template interpolation in connector or HTTP activity inputs.** The flow-layer template runner skips these fields. The `$` is stripped and `{vars.X}` ships literally to the IS runtime. Use `=js:` and JS template literals (`` `…${$vars.X}…` ``) instead.
 5. **Never quote `=js:` itself in an expression.** `"=js:$vars.X"` is correct. `"\"=js:$vars.X\""` is a string containing the prefix.

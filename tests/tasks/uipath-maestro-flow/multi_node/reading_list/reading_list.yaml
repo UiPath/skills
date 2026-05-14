@@ -22,7 +22,8 @@ initial_prompt: |
   Create a UiPath Flow project named "ReadingList" that curates a reading list
   from a catalog of math and data science books.
 
-  The catalog is this inline JSON array (hardcode it in the flow, no input variables):
+  The catalog is this JSON array. Hardcode it in the flow as static data; do not
+  require the user to provide it as a runtime input.
 
   [
     {"title": "Linear Algebra Done Right", "author": "Axler", "field": "math", "difficulty": 6, "pages": 340},
@@ -41,6 +42,11 @@ initial_prompt: |
   3. Output the curated reading list as a result variable
 
   Use transform nodes for the data operations, not script nodes.
+  Transform node collection inputs must point to a collection path, such as
+  $vars.catalog or $vars.loadCatalog.output.catalog. Do not set a transform
+  collection to an inline =js:[...] array or to =js:$vars.<path>. If you use a
+  script/static-data node to load the hardcoded catalog, use it only for loading
+  the static catalog; filtering and mapping must be done by transform nodes.
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.

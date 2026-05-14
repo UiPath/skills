@@ -22,6 +22,25 @@ Confirm: input port `input`, output ports `output` and `error`, required inputs 
 
 For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structures below for the node-specific `inputs` and `model` fields.
 
+## Collection Input Contract
+
+`inputs.collection` is a transform-specific path field, not a general `=js:` value field. Set it to the variable path that contains the array:
+
+```json
+"collection": "$vars.orders.output.items"
+```
+
+Do not use `=js:` on transform `collection`, and do not put inline arrays there:
+
+```json
+"collection": "=js:$vars.orders.output.items"
+"collection": "=js:[{\"title\":\"Example\"}]"
+```
+
+The transform runtime turns the path string into a lookup such as `vars.orders.output.items`. If the string starts with `=js:` or contains an inline JSON/JS literal, that lookup resolves to an empty collection.
+
+For static data, store the array in a workflow variable `defaultValue` or emit it from an upstream static-data/script node, then point `collection` at that variable or node output. Filtering, mapping, and grouping still belong in transform nodes.
+
 ---
 
 ## Generic Transform (`core.action.transform`)
@@ -247,6 +266,6 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 | --- | --- | --- |
 | Filter passes all items through | Wrong condition name (e.g. `greater` instead of `greater_than`) | Use exact names: `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null` |
 | Filter silently returns empty array | Filter `value` holds an unresolved expression (`"$vars.x"`, `"=js:..."`, `"{$vars.x}"`) — Transform compares each item against that string literal | Replace with a literal scalar (`"value": 500`); expressions are not evaluated in filter `value`. If the threshold must be dynamic, do the filter in a Script node |
-| Collection is null/empty | `$vars` reference evaluates to null | Check collection expression and upstream output |
+| Collection is null/empty | `collection` is not a path to an array, or it was written as an inline `=js:` expression | Use a path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; keep static arrays in a variable default or upstream node |
 | Map output missing fields | `keepOriginalFields: false` and field not in mappings | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match the group field | Check `groupByField` matches actual field names in the data |
