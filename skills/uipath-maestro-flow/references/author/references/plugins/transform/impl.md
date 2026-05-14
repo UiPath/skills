@@ -30,7 +30,7 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
 "collection": "$vars.orders.output.items"
 ```
 
-Do not use `=js:` on transform `collection`, and do not put inline arrays there:
+**NEVER** wrap transform `collection` in `=js:`. **NEVER** set it to an inline array literal. Both forms below are wrong:
 
 ```json
 "collection": "=js:$vars.orders.output.items"
@@ -269,6 +269,6 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 | --- | --- | --- |
 | Filter passes all items through | Wrong condition name (e.g. `greater` instead of `greater_than`) | Use exact names: `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null` |
 | Filter silently returns empty array | Filter `value` holds an unresolved expression (`"$vars.x"`, `"=js:..."`, `"{$vars.x}"`) — Transform compares each item against that string literal | Replace with a literal scalar (`"value": 500`); expressions are not evaluated in filter `value`. If the threshold must be dynamic, do the filter in a Script node |
-| Collection is null/empty | `collection` is not a path to an array, or it was written as an inline `=js:` expression | Use a path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; keep static arrays in a variable default or upstream node |
+| Collection is null/empty | `collection` was wrapped in `=js:` or set to an inline array literal instead of a plain variable path | Use a path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; keep static arrays in a variable default or upstream node |
 | Map output missing fields | `keepOriginalFields: false` and field not in mappings | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match the group field | Check `groupByField` matches actual field names in the data |

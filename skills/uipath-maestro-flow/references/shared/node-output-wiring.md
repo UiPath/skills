@@ -106,7 +106,7 @@ For connector nodes (`uipath.connector.*`), the most common wiring patterns:
 - **Variable references** (`$vars.X.output.Y`) — **always** wrap with `=js:`.
 - **Mixed strings** (template literals) — wrap the whole expression in `=js:` and use JS template literal syntax with `${ }`.
 
-Plugin-specific path fields are not value fields. Follow the plugin reference when it says a field stores a path string. Notable exception: Transform `inputs.collection` must be a path such as `"$vars.orders.output.items"`, without `=js:`.
+Plugin-specific path fields are not value fields. **Always** follow the plugin reference when it says a field stores a path string. Notable exception: Transform `inputs.collection` must be a path such as `"$vars.orders.output.items"`, without `=js:`.
 
 ---
 
