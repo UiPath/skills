@@ -35,7 +35,7 @@ uip rpa run-file --file-path <relative-path> --command <Command> [--input-argume
 | `--input-arguments` | JSON object with project-level input arguments. Only for `StartExecution`, `StartDebugging`, `TestActivity`, and `StartDebuggingFromHere` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--input-variables` | JSON object with workflow-level variable values. Only for `TestActivity` and `StartDebuggingFromHere` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--log-level` | Minimum log level: `Verbose`, `Trace`, `Information` (default), `Warning`, `Error`, `Critical` |
-| `--profiling` | Collect per-activity timings. Only effective on start commands (`StartExecution`, `StartDebugging`, `TestActivity`, `StartDebuggingFromHere`); ignored on stepping / breakpoint commands. Defaults to `false`. See [Profiling Workflow Performance](#profiling-workflow-performance). |
+| `--profiling` | Collect per-activity timings and runtime screenshots — verifies UI automation correctness and workflow performance. Only effective on start commands (`StartExecution`, `StartDebugging`, `TestActivity`, `StartDebuggingFromHere`); ignored on stepping / breakpoint commands. Defaults to `false`. See [Profiling Workflow Performance](#profiling-workflow-performance). |
 | `--output` | Output format: `json` (recommended), `table`, `yaml`, `plain` |
 
 ### Debug Commands
@@ -142,7 +142,7 @@ Inside `runResult`:
 | `Output` | `string` | Workflow's serialized output arguments JSON. `""` for non-`Start*` commands and on debug-command responses (`StepOver`, `Continue`, etc.). **Carries the workflow's data, not a verdict.** |
 | `HasErrors` | `bool` | `true` iff execution did not complete with `Succeeded` (compile failure, validation failure, unhandled exception, cancellation, timeout). `false` otherwise. |
 | `ErrorMessage` | `string?` | Formatted error chain when `HasErrors: true`; `null` otherwise. |
-| `Profiling` | `object?` | Present only when `--profiling` was passed on a start command and collection succeeded. Single field `OutputDirectory` — absolute path to the run's `*.uistat` folder. `null` / omitted otherwise. See [Profiling Workflow Performance](#profiling-workflow-performance). |
+| `Profiling` | `object?` | Present only when `--profiling` was passed on a start command and collection succeeded. Single field `OutputDirectory` — absolute path to the run's `*.uistat` and screenshot folder (verifies UI automation correctness and workflow performance). `null` / omitted otherwise. See [Profiling Workflow Performance](#profiling-workflow-performance). |
 
 Workflow log output (`Log Message` activity, system traces) is **streamed in real time** during execution on a separate channel. It is NOT embedded in `runResult`.
 
@@ -315,7 +315,7 @@ uip rpa run-file --file-path "ProcessOrder.xaml" \
 
 ## Profiling Workflow Performance
 
-Use `--profiling` on a start command to collect per-activity timings — the same data Studio's **Profile Execution** tool surfaces. The executor writes `*.uistat` files into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `runResult.Profiling.OutputDirectory`. Same folder layout as Studio's own profiling history, so agent-triggered and Studio-triggered runs land side by side.
+Use `--profiling` on a start command to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `runResult.Profiling.OutputDirectory`. Same folder layout as Studio's own profiling history, so agent-triggered and Studio-triggered runs land side by side.
 
 ### When to enable profiling
 
@@ -325,8 +325,10 @@ Use `--profiling` on a start command to collect per-activity timings — the sam
 | Choosing between two implementations of the same logic | Compare cumulative time across the activities each version uses |
 | A loop body looks expensive but the cost is not obvious | `*.uistat` reports execution count + min/max/avg per activity — flags hot iterations |
 | Pre-production sanity check on a long-running automation | Catches an activity whose individual time looks fine but whose cumulative share is dominant |
+| Verifying a UI automation ran correctly without re-running it interactively | Captured screenshots show what the workflow actually saw at each UI activity — confirms clicks landed, forms filled, screens transitioned |
+| Diagnosing "the workflow succeeded but the wrong thing happened" | Cross-check screenshots against expected screens; cheaper than rerunning with a debugger attached |
 
-Do **not** enable profiling by default. It is opt-in for performance investigations — a normal smoke test (`uip rpa run-file --command StartExecution`) is faster and produces no `.uistat` files to clean up.
+Do **not** enable profiling by default. It is opt-in for performance investigations and UI correctness checks — a normal smoke test (`uip rpa run-file --command StartExecution`) is faster and produces no `.uistat` files or screenshots to clean up.
 
 ### Where the flag is effective
 
@@ -359,11 +361,12 @@ Parse `Data.runResult` then inspect:
 }
 ```
 
-The directory contains `*.uistat` files — one per workflow file executed in the run (top-level entry point plus every invoked workflow). Each row reports an activity with execution count, min / max / average / cumulative duration, and the cumulative percentage of total run time. Focus on:
+The directory contains `*.uistat` files — one per workflow file executed in the run (top-level entry point plus every invoked workflow) — alongside runtime screenshots captured at UI activity boundaries. Each `*.uistat` row reports an activity with execution count, min / max / average / cumulative duration, and the cumulative percentage of total run time. Focus on:
 
 1. **Activities with the largest cumulative percentage** — the dominant time sinks. Optimize these first.
 2. **High execution count × moderate average duration** — typically loop bodies. Consider batching, caching, or hoisting work out of the loop.
-3. **Wide min/max spread on a UI activity** — flaky selectors or variable target-element resolution; cross-check with the healing-agent log.
+3. **Wide min/max spread on a UI activity** — flaky selectors or variable target-element resolution; cross-check with the healing-agent log and the screenshot for that activity to confirm the element actually rendered.
+4. **Screenshots for UI correctness** — open the screenshot folder to verify each UI interaction targeted the expected screen / element. Useful when the workflow reports `Success` but downstream data looks wrong.
 
 ### Caveats
 
@@ -411,4 +414,4 @@ A practical example — a workflow makes an HTTP request and tries to deserializ
 - **Stop the session when done** — always issue a `Stop` command to cleanly end the debug session. If `Stop` doesn't respond, use `ForceSessionEnded` as a fallback.
 - **Use `--log-level Verbose`** when you need maximum detail about what the workflow is doing between steps.
 - **Remember expression syntax for variables** — when using `TestActivity` or `StartDebuggingFromHere`, string values need VB/C# string literal quotes inside the JSON value (e.g., `"\"hello\""` not `"hello"`).
-- **Reach for `--profiling true` only when investigating performance** — pair it with `StartExecution` for production-like numbers (the debugger adds overhead). Read the response's `Profiling.OutputDirectory`, open the `*.uistat` files, and start with activities holding the largest cumulative percentage. See [Profiling Workflow Performance](#profiling-workflow-performance).
+- **Reach for `--profiling true` when investigating performance or verifying UI automation correctness** — pair it with `StartExecution` for production-like numbers (the debugger adds overhead). Read the response's `Profiling.OutputDirectory`: open the `*.uistat` files starting with activities holding the largest cumulative percentage, and inspect the captured screenshots to confirm each UI interaction landed on the expected screen / element. See [Profiling Workflow Performance](#profiling-workflow-performance).
