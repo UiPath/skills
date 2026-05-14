@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-searchable-joins
 description: >
   Tests the searchable joins IS feature — configures a connector node with
   a join on a related object on the Salesforce connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce, ipe]
 
 agent:
   type: claude-code
