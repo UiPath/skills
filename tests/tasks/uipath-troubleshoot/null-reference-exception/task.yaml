@@ -1,0 +1,176 @@
+﻿task_id: skill-troubleshoot-null-reference-exception
+description: >
+  Faithful replay of a real UiPath diagnostic investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my job 77dc53dd-5c45-4a77-b39f-a52e9e7ef163 from Shared folder has failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the null-reference-exception playbook AND identified the explicit Assign-to-null of myVar dereferenced by CopyFile.Path"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "why did my job 77dc53dd-5c45-4a77-b39f-a52e9e7ef163 from Shared
+         folder has failed?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/runtime-exceptions/playbooks/null-reference-exception.md
+        because the runtime error
+          "System.NullReferenceException: Object reference not set to an
+           instance of an object."
+        with the location chain
+          "in ERN.xaml at CopyFile 'Copy File' at Sequence 'ERN'"
+        is the verbatim signature of that playbook.
+
+        Within that playbook, the correct branch is the
+        "uninitialized variable" branch (variable declared with no
+        default, or explicitly set to null upstream, then dereferenced).
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             null-reference-exception playbook should appear (absolute or
+             relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/runtime-exceptions/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             runtime-exceptions domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        runtime-exception playbooks while ruling them out. Exploration
+        is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - In Main entry point ERN.xaml, a top-level Sequence does two
+            things in order:
+              1. Assign activity: `myVar = null` (variable `myVar` is
+                 declared as x:Object with no default, then explicitly
+                 overwritten with the literal null).
+              2. CopyFile activity: `Path = myVar.ToString()`.
+          - When CopyFile evaluates Path, `myVar.ToString()` (compiled
+            as `__Expr2Get` in `ERN_Expressions`) is called on a null
+            reference and throws System.NullReferenceException.
+          - No If/Switch/While gates the CopyFile activity, so the
+            failure is deterministic.
+        The reference fix:
+          - Delete or correct the `Assign myVar = null` activity, OR
+          - Give `myVar` a meaningful default in the Variables panel, OR
+          - Add a null guard before the CopyFile activity.
+
+        Evidence sources (in priority order):
+          1. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should explicitly name BOTH:
+               (a) the `myVar` variable being null / set to null by the
+                   upstream Assign, AND
+               (b) the CopyFile activity dereferencing it via
+                   `myVar.ToString()` (or the `__Expr2Get` /
+                   `ERN_Expressions` stack frame).
+          2. state.json -- `requirements.error_message`,
+             `triage_summary`, scope/domain.
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched null-reference-exception (uninitialized-
+             variable branch) AND named BOTH the explicit `Assign myVar
+             = null` upstream AND the CopyFile.Path = myVar.ToString()
+             dereference.
+        0.8  Both partial: correct playbook but conclusion says
+             "myVar was null at CopyFile" without identifying the
+             upstream Assign that set it; OR identifies both Assign and
+             CopyFile but matched a generic runtime-exceptions
+             investigation_guide rather than the specific
+             null-reference-exception playbook.
+        0.5  Only one dimension correct (e.g., right playbook but
+             generic "something was null" conclusion; or correct
+             Assign+CopyFile naming but wrong playbook match).
+        0.2  Recognized the surface (NullReferenceException at CopyFile)
+             but neither matched the playbook nor named the upstream
+             Assign-to-null on myVar.
+        0.0  Misdiagnosed (e.g., blamed selector, asset, connection,
+             permissions) or got blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the diagnostic flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -1,0 +1,6 @@
+Exit code 3
+{
+  "Result": "ValidationError",
+  "Message": "error: unknown option '--folder-key'",
+  "Instructions": "Check command arguments and options. Use --help for usage information."
+}
