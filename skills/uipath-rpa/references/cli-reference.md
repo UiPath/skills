@@ -186,7 +186,7 @@ uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
 | `--input-arguments` | No | JSON string of input arguments |
 | `--log-level` | No | Logging verbosity level |
 | `--skip-build` | No | Skip the pre-run build step (use only when you have just built) |
-| `--profiling` | No | Collect per-activity timings and runtime screenshots for the run — verifies UI automation correctness and workflow performance. Only effective on start commands (`StartExecution`, `StartDebugging`, `TestActivity`, `StartDebuggingFromHere`) — silently ignored on stepping/breakpoint commands. Response carries `Profiling.OutputDirectory` when collection succeeds. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance). |
+| `--profiling` | No | Collect per-activity timings and runtime screenshots for the run — verifies UI automation correctness and workflow performance. Boolean flag (no value needed). Also accepted on `debug start`, `debug test-activity`, `debug start-from-here`; silently ignored on stepping/breakpoint verbs. Response carries `Profiling.OutputDirectory` when collection succeeds. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance). |
 
 For debugging — breakpoints, stepping, exception-handling lifecycle — use the `debug` group (see [debugging.md](debugging.md)). For UI automation workflows in particular, prefer `debug start` over `run` so the app is preserved for selector repair on error.
 
@@ -200,7 +200,7 @@ Both `run` and `debug start` return the same envelope: `{Result: "Success"|"Fail
 - `Output` — the workflow's own serialized output arguments JSON (`""` for non-`Start*` commands and on debug-command responses). **`Output` carries the workflow's data, not a verdict.**
 - `HasErrors` — `true` iff execution did not complete successfully (compile failure, validation failure, unhandled exception, cancellation, or timeout); `false` otherwise.
 - `ErrorMessage` — formatted error chain when `HasErrors: true`; `null` otherwise.
-- `Profiling` — present only when `--profiling` was passed on a start command **and** profiling collection succeeded. Single field `OutputDirectory` is the absolute path to `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` containing the `*.uistat` files and runtime screenshots for that run — used to verify UI automation correctness and workflow performance. `null` / omitted otherwise (profiling not requested, run did not reach the executor, or the Studio profile is missing the `EnableProfiling` flag).
+- `Profiling` — present only when `--profiling` was passed on a start verb **and** profiling collection succeeded. Single field `OutputDirectory` is the absolute path to `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` containing the `*.uistat` files and runtime screenshots for that run — used to verify UI automation correctness and workflow performance. `null` / omitted otherwise (profiling not requested, run did not reach the executor, or the active Studio profile does not support profiling).
 
 Workflow log output (`Log Message` activity, system traces) does NOT appear in `runResult`. Logs are streamed in real time during execution on a separate channel; the result envelope only carries the verdict and the workflow's output data.
 

@@ -46,7 +46,7 @@ All other `debug` verbs (`break`, `continue`, `resume`, `continue-retry`, `conti
 | `--log-level` | Minimum log level: `Verbose`, `Trace`, `Information` (default), `Warning`, `Error`, `Critical` |
 | `--skip-build` | Skip the pre-run build step (use only when you've just built) |
 | `--output` | Output format: `json` (recommended), `table`, `yaml`, `plain` |
-| `--profiling` | Collect per-activity timings and runtime screenshots — verifies UI automation correctness and workflow performance. Only effective on start commands (`StartExecution`, `StartDebugging`, `TestActivity`, `StartDebuggingFromHere`); ignored on stepping / breakpoint commands. Defaults to `false`. See [Profiling Workflow Performance](#profiling-workflow-performance). |
+| `--profiling` | Collect per-activity timings and runtime screenshots — verifies UI automation correctness and workflow performance. Only effective on start verbs (`run`, `debug start`, `debug test-activity`, `debug start-from-here`); ignored on stepping / breakpoint verbs. Boolean flag (no value needed). See [Profiling Workflow Performance](#profiling-workflow-performance). |
 
 ### Debug Verbs
 
@@ -321,7 +321,7 @@ uip rpa debug start --file-path "ProcessOrder.xaml" \
 
 ## Profiling Workflow Performance
 
-Use `--profiling` on a start command to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `runResult.Profiling.OutputDirectory`. Same folder layout as Studio's own profiling history, so agent-triggered and Studio-triggered runs land side by side.
+Use `--profiling` on a start verb to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `runResult.Profiling.OutputDirectory`.
 
 ### When to enable profiling
 
@@ -334,35 +334,35 @@ Use `--profiling` on a start command to collect per-activity timings **and runti
 | Verifying a UI automation ran correctly without re-running it interactively | Captured screenshots show what the workflow actually saw at each UI activity — confirms clicks landed, forms filled, screens transitioned |
 | Diagnosing "the workflow succeeded but the wrong thing happened" | Cross-check screenshots against expected screens; cheaper than rerunning with a debugger attached |
 
-Do **not** enable profiling by default. It is opt-in for performance investigations and UI correctness checks — a normal smoke test (`uip rpa run-file --command StartExecution`) is faster and produces no `.uistat` files or screenshots to clean up.
+Do **not** enable profiling by default. It is opt-in for performance investigations and UI correctness checks — a normal smoke test (`uip rpa run`) is faster and produces no `.uistat` files or screenshots to clean up.
 
 ### Where the flag is effective
 
-Only start commands collect profiling — `--profiling true` is silently ignored on stepping/breakpoint commands:
+Only start verbs collect profiling — `--profiling` is silently ignored on stepping/breakpoint verbs:
 
-| Command | `--profiling` effect |
-|---------|---------------------|
-| `StartExecution` | Collects |
-| `StartDebugging` | Collects |
-| `TestActivity` | Collects (single-activity scope; useful for tuning one activity) |
-| `StartDebuggingFromHere` | Collects (partial workflow from the focused activity onward) |
-| `StepOver` / `StepInto` / `StepOut` / `Continue` / `Break` / `Stop` / `ContinueRetry` / `ContinueIgnore` / `RestartFromTop` / `ToggleBreakpoint` / `ForceSessionEnded` / `Resume` | No-op |
+| Verb | `--profiling` effect |
+|------|---------------------|
+| `run` | Collects |
+| `debug start` | Collects |
+| `debug test-activity` | Collects (single-activity scope; useful for tuning one activity). Studio Desktop required (depends on `focus-activity`). |
+| `debug start-from-here` | Collects (partial workflow from the focused activity onward). Studio Desktop required (depends on `focus-activity`). |
+| `debug step-over` / `step-into` / `step-out` / `continue` / `break` / `resume` / `continue-retry` / `continue-ignore` / `restart-from-top` / `toggle-breakpoint` / `execution cancel` | No-op |
 
 ### Reading the result
 
 ```bash
-uip rpa run-file --file-path "ProcessOrders.xaml" --command StartExecution --profiling true --output json
+uip rpa run --file-path "ProcessOrders.xaml" --profiling --output json
 ```
 
 Parse `Data.runResult` then inspect:
 
 ```jsonc
 {
-  "Output": "{\"orderCount\":42}",
-  "HasErrors": false,
-  "ErrorMessage": null,
-  "Profiling": {
-    "OutputDirectory": "C:\\Users\\<user>\\AppData\\Local\\UiPath\\ProfiledRuns\\142305_2026-05-12_Main.xaml_ProcessOrders"
+  "output": "{\"orderCount\":42}",
+  "hasErrors": false,
+  "errorMessage": null,
+  "profiling": {
+    "outputDirectory": "C:\\Users\\<user>\\AppData\\Local\\UiPath\\ProfiledRuns\\142305_2026-05-12_Main.xaml_ProcessOrders"
   }
 }
 ```
@@ -376,12 +376,13 @@ The directory contains `*.uistat` files — one per workflow file executed in th
 
 ### Caveats
 
-- `Profiling` field is **absent** if the run did not reach the executor (compile failure surfaces in `ErrorMessage` instead) or if the Studio profile is missing the `EnableProfiling` flag. Treat the field as optional — never assume it is populated.
-- Numbers from a `StartDebugging` profile run differ from `StartExecution` — the debugger adds tracking overhead. For perf comparisons, always use `StartExecution`.
+- `Profiling` field is **absent** if the run did not reach the executor (compile failure surfaces in `ErrorMessage` instead) or if the active Studio profile does not support profiling (non-Develop profiles register a no-op profiling service). Treat the field as optional — never assume it is populated.
+- Numbers from a `debug start` profile run differ from a `run` profile run — the debugger adds tracking overhead. For perf comparisons, always use `run`.
 - Files are not auto-cleaned. After an investigation, manually clear `%LOCALAPPDATA%\UiPath\ProfiledRuns\` if disk usage matters.
-- Profiling is per run, not aggregated across runs. To compare two implementations, run each with `--profiling true` separately and diff the `*.uistat` reports.
+- Profiling is per run, not aggregated across runs. To compare two implementations, run each with `--profiling` separately and diff the `*.uistat` reports.
+- Studio's profiling tool window does **not** auto-focus on agent-triggered runs (intentional — profiling panel and Autopilot pane share a dock slot). Direct the user to `Profiling.OutputDirectory` on disk; do not tell them "open the profiling panel".
 
-> **Activity-targeted profiling needs Studio Desktop.** `TestActivity` and `StartDebuggingFromHere` collect profiling fine, but they depend on `focus-activity` — which only runs against Studio Desktop. See [Studio Desktop vs headless](#studio-desktop-vs-headless).
+> **Activity-targeted profiling needs Studio Desktop.** `debug test-activity` and `debug start-from-here` collect profiling fine, but they depend on `focus-activity` — which only runs against Studio Desktop. `run` and `debug start` profile on both Studio Desktop and headless (Helm). See [Studio Desktop vs headless](#studio-desktop-vs-headless).
 
 ---
 
@@ -420,4 +421,4 @@ A practical example — a workflow makes an HTTP request and tries to deserializ
 - **Cancel the session when done** — always issue `execution cancel` to cleanly end the run or debug session.
 - **Use `--log-level Verbose`** when you need maximum detail about what the workflow is doing between steps.
 - **Remember expression syntax for variables** — when using `debug test-activity` or `debug start-from-here`, string values need VB/C# string literal quotes inside the JSON value (e.g., `"\"hello\""` not `"hello"`).
-- **Reach for `--profiling true` when investigating performance or verifying UI automation correctness** — pair it with `StartExecution` for production-like numbers (the debugger adds overhead). Read the response's `Profiling.OutputDirectory`: open the `*.uistat` files starting with activities holding the largest cumulative percentage, and inspect the captured screenshots to confirm each UI interaction landed on the expected screen / element. See [Profiling Workflow Performance](#profiling-workflow-performance).
+- **Reach for `--profiling` when investigating performance or verifying UI automation correctness** — pair it with `run` for production-like numbers (the debugger adds overhead). Read the response's `Profiling.OutputDirectory`: open the `*.uistat` files starting with activities holding the largest cumulative percentage, and inspect the captured screenshots to confirm each UI interaction landed on the expected screen / element. See [Profiling Workflow Performance](#profiling-workflow-performance).
