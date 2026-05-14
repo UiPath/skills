@@ -3,7 +3,8 @@ description: >
   Build a Case Management definition from an sdd.md whose only task is an
   RPA workflow. Exercises planning, RPA-task plugin, registry resolution
   via process-index.json, and direct caseplan.json write of a `type: "rpa"`
-  task. Validates the resulting case file.
+  task. Validates the resulting case file and runs `uip maestro case debug`
+  end-to-end, asserting the RPA task returns the expected problem title.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
@@ -23,25 +24,92 @@ initial_prompt: |
   sdd.md to disk first, then build from it.
 
   ```
-  # RpaSingleCase
+  # SDD — RpaSingleCase
 
-  ## Trigger
-  - Manual trigger — user-initiated start of the case.
+  Single-stage, single-task case exercising the rpa task plugin end-to-end.
 
-  ## Stages
-  - Run RPA (regular stage) — receives the case after the manual trigger.
+  ## Section 1: Case Definition
 
-  ## Tasks
-  - Run ProjectEuler (RPA) — placed in the "Run RPA" stage.
-    - Process Reference: Name "ProjectEuler", Folder "Shared".
-    - Component type: RPA.
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | RpaSingleCase |
+  | Case Description | Single-node case that runs the ProjectEuler RPA workflow on a fixed problem number. |
+  | Case Identifier | Prefix: RSC, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  |---|---|---|---|---|---|---|
+  | in_ProblemNumber | input | number | 123 | Project Euler problem number to solve | trigger:Manual | runRpa.runProjectEuler |
+  | problemTitle | implementation | string | - | Problem title returned by the ProjectEuler RPA workflow | runRpa.runProjectEuler | - |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Run RPA (`runRpa`)
+  **Type:** Stage
+  **Description:** Execute the ProjectEuler RPA workflow on the input problem number.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `runRpa.runProjectEuler` | Run ProjectEuler RPA workflow | rpa | System |
+
+  ##### Task 1.1: Run ProjectEuler RPA workflow (`runRpa.runProjectEuler`)
+
+  **Type:** rpa
+  **Description:** Run the ProjectEuler RPA workflow to fetch the problem title for the given problem number.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Process Reference | Name "ProjectEuler", Folder "Shared" |
+  | Component Type | RPA |
+
+  **Inputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | in_ProblemNumber | number | 123 |
+
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | problemTitle | string | -> problemTitle |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
-  in a single pass and finish with `uip maestro case validate` passing on the
-  resulting caseplan.json.
+  debug` yourself — the test harness runs it. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting caseplan.json.
   Before starting, load the uipath-maestro-case skill. Read and follow its
   workflow steps exactly.
 
@@ -55,9 +123,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan contains a task with type=\"rpa\""
+    description: "Caseplan has an rpa task and debug returns the problem 123 title"
     command: "python3 $TASK_DIR/check_rpa_case.py"
-    timeout: 30
+    timeout: 900
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

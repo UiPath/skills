@@ -3,7 +3,9 @@ description: >
   Build a Case Management definition from an sdd.md whose only task is an
   AGENT. Exercises the agent plugin, registry resolution via
   agent-index.json, and direct caseplan.json write of a `type: "agent"`
-  task. Validates the resulting case file.
+  task. Validates the resulting case file and runs `uip maestro case debug`
+  end-to-end, asserting the CountLetters agent returns the expected 'r'
+  letter count.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
@@ -23,25 +25,92 @@ initial_prompt: |
   sdd.md to disk first, then build from it.
 
   ```
-  # AgentSingleCase
+  # SDD — AgentSingleCase
 
-  ## Trigger
-  - Manual trigger — user-initiated start of the case.
+  Single-stage, single-task case exercising the agent task plugin end-to-end.
 
-  ## Stages
-  - Classify (regular stage) — receives the case after the manual trigger.
+  ## Section 1: Case Definition
 
-  ## Tasks
-  - Run CountLetters (AGENT) — placed in the "Classify" stage.
-    - Agent Reference: Name "CountLetters", Folder "Shared".
-    - Component type: AGENT.
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | AgentSingleCase |
+  | Case Description | Single-node case that runs the CountLetters agent on a fixed input word. |
+  | Case Identifier | Prefix: ASC, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  |---|---|---|---|---|---|---|
+  | word | input | string | arrow | Input word the CountLetters agent counts | trigger:Manual | classify.runCountLetters |
+  | letterCount | implementation | number | - | Count of the letter 'r' returned by CountLetters | classify.runCountLetters | - |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Classify (`classify`)
+  **Type:** Stage
+  **Description:** Invoke the CountLetters agent on the input word.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `classify.runCountLetters` | Run CountLetters agent | agent | System |
+
+  ##### Task 1.1: Run CountLetters agent (`classify.runCountLetters`)
+
+  **Type:** agent
+  **Description:** Invoke the CountLetters agent to count occurrences of the letter 'r' in the input word.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Agent Reference | Name "CountLetters", Folder "Shared" |
+  | Component Type | AGENT |
+
+  **Input Schema**
+  | Field | Type | Binding | Required |
+  |---|---|---|---|
+  | word | string | "arrow" | Yes |
+
+  **Output Schema**
+  | Field | Type | Binding |
+  |---|---|---|
+  | letterCount | number | -> count |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
-  in a single pass and finish with `uip maestro case validate` passing on the
-  resulting caseplan.json.
+  debug` yourself — the test harness runs it. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting caseplan.json.
   Before starting, load the uipath-maestro-case skill. Read and follow its
   workflow steps exactly.
 
@@ -55,9 +124,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan contains a task with type=\"agent\""
+    description: "Caseplan has an agent task and debug returns the 'r' letter count for 'arrow'"
     command: "python3 $TASK_DIR/check_agent_case.py"
-    timeout: 30
+    timeout: 900
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

@@ -2,8 +2,10 @@ task_id: skill-case-single-process
 description: >
   Build a Case Management definition from an sdd.md whose only task is a
   PROCESS. Exercises the process plugin, registry resolution via
-  process-index.json, and direct caseplan.json write of a `type: "process"`
-  task. Validates the resulting case file.
+  processOrchestration-index.json, and direct caseplan.json write of a
+  `type: "process"` task. Validates the resulting case file and runs
+  `uip maestro case debug` end-to-end, asserting only that the case
+  finalStatus is `Completed`.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
@@ -23,27 +25,81 @@ initial_prompt: |
   sdd.md to disk first, then build from it.
 
   ```
-  # ProcessSingleCase
+  # SDD — ProcessSingleCase
 
-  ## Trigger
-  - Manual trigger — user-initiated start of the case.
+  Single-stage, single-task case exercising the process task plugin end-to-end.
 
-  ## Stages
-  - Run Process (regular stage) — receives the case after the manual trigger.
+  ## Section 1: Case Definition
 
-  ## Tasks
-  - Run InvoiceApproval (PROCESS) — placed in the "Run Process" stage.
-    - Process Reference: Name "InvoiceApproval", Folder "Shared".
-    - Component type: PROCESS.
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | ProcessSingleCase |
+  | Case Description | Single-node case that runs the ProcurementProcess process. |
+  | Case Identifier | Prefix: PSC, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  |---|---|---|---|---|---|---|
+  | procurementCompleted | implementation | boolean | false | ProcurementProcess completion flag | runProcess.runProcurementProcess | - |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Run Process (`runProcess`)
+  **Type:** Stage
+  **Description:** Execute the ProcurementProcess process.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `runProcess.runProcurementProcess` | Run ProcurementProcess process | process | System |
+
+  ##### Task 1.1: Run ProcurementProcess process (`runProcess.runProcurementProcess`)
+
+  **Type:** process
+  **Description:** Run the ProcurementProcess process.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Process Reference | Name "ProcurementProcess", Folder "Shared/uipath-agents" |
+  | Component Type | PROCESS |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
-  in a single pass and finish with `uip maestro case validate` passing on the
-  resulting caseplan.json. If the process is not in the registry, leave it
-  as a skeleton task (`<UNRESOLVED>`) per the skill's rules — do not fabricate
-  a taskTypeId.
+  debug` yourself — the test harness runs it. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting caseplan.json.
   Before starting, load the uipath-maestro-case skill. Read and follow its
   workflow steps exactly.
 
@@ -57,9 +113,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan contains a task with type=\"process\""
+    description: "Caseplan has a process task and debug completes successfully"
     command: "python3 $TASK_DIR/check_process_case.py"
-    timeout: 30
+    timeout: 900
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

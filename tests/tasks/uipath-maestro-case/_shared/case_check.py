@@ -5,6 +5,13 @@ and asserts that a task of the expected ``type`` exists somewhere in the
 case definition. ``case-management`` tasks are allowed to land as skeletons
 (empty ``data``) when the referenced sub-case isn't published on the tenant
 — the test only cares that the task ``type`` was written correctly.
+
+For tasks whose referenced resource is published on the tenant (e.g. the
+RPA / Agent / API-workflow single-node tests), this module also provides
+``run_debug``: runs ``uip solution resource refresh`` then
+``uip maestro case debug`` and returns the parsed JSON payload so callers
+can assert on declared output values. Mirrors the uipath-maestro-flow
+``flow_check.run_debug`` shape.
 """
 
 from __future__ import annotations
@@ -12,9 +19,10 @@ from __future__ import annotations
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
-from typing import Any
+from typing import Any, Iterable, Sequence
 
 
 def find_caseplan(pattern: str = "**/caseplan.json") -> str:
@@ -87,3 +95,237 @@ def _stringify(v: Any) -> str:
 
 def _fail(msg: str):
     sys.exit(f"FAIL: {msg}")
+
+
+# ── Debug helpers ───────────────────────────────────────────────────────────
+
+
+def find_project_dir(pattern: str = "**/project.uiproj") -> str:
+    """Return the directory holding the Case `project.uiproj`. Filters by
+    ``ProjectType`` so a sibling Agent / RPA / Coded project in the same
+    solution does not collide with the Case project we want to debug.
+    """
+    candidates = sorted(
+        p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
+    )
+    if not candidates:
+        _fail(f"No project.uiproj found matching {pattern}")
+    case_projects = [p for p in candidates if _is_case_project(p)]
+    if not case_projects:
+        joined = "\n  - ".join(candidates)
+        _fail(
+            f"No Case project.uiproj found matching {pattern} — "
+            f"candidates exist but none declare ProjectType=\"CaseManagement\":"
+            f"\n  - {joined}"
+        )
+    if len(case_projects) > 1:
+        joined = "\n  - ".join(case_projects)
+        _fail(
+            f"Multiple Case projects match {pattern!r} — refusing to guess:"
+            f"\n  - {joined}"
+        )
+    return os.path.dirname(case_projects[0])
+
+
+def find_solution_dir(pattern: str = "**/*.uipx") -> str:
+    """Return the directory holding the ``*.uipx`` solution manifest.
+    Used as ``--solution-folder`` for ``uip solution resource refresh``.
+    """
+    matches = sorted(
+        p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
+    )
+    if not matches:
+        _fail(f"No solution manifest found matching {pattern}")
+    if len(matches) > 1:
+        joined = "\n  - ".join(matches)
+        _fail(f"Multiple solution manifests match {pattern!r}:\n  - {joined}")
+    return os.path.dirname(matches[0])
+
+
+def run_debug(
+    *,
+    timeout: int = 540,
+    project_glob: str = "**/project.uiproj",
+    solution_glob: str = "**/*.uipx",
+    refresh_timeout: int = 120,
+) -> dict:
+    """Locate the case project, refresh solution resources, run
+    ``uip maestro case debug --output json``, and return the parsed
+    ``Data`` payload. Exits on any step failing or ``finalStatus`` not
+    being ``Completed``.
+
+    Resource refresh is mandatory per the maestro-case skill: without it
+    Studio Web cannot resolve connector resources and the debug call
+    surfaces a "Resource is not configured" warning instead of running.
+    """
+    project_dir = find_project_dir(project_glob)
+    solution_dir = find_solution_dir(solution_glob)
+
+    refresh_cmd = [
+        "uip", "solution", "resource", "refresh",
+        "--solution-folder", solution_dir,
+        "--output", "json",
+    ]
+    r = subprocess.run(refresh_cmd, capture_output=True, text=True, timeout=refresh_timeout)
+    if r.returncode != 0:
+        _fail(
+            f"solution resource refresh exit {r.returncode}\n"
+            f"stdout: {r.stdout}\nstderr: {r.stderr}"
+        )
+
+    debug_cmd = [
+        "uip", "maestro", "case", "debug", project_dir,
+        "--log-level", "debug", "--output", "json",
+    ]
+    r = subprocess.run(debug_cmd, capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        _fail(
+            f"case debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}"
+        )
+    data = _parse_json(r.stdout)
+    if data is None:
+        _fail(f"Could not parse JSON from case debug\n{r.stdout}")
+    payload = data.get("Data") if isinstance(data, dict) and "Data" in data else data
+    status = (payload or {}).get("finalStatus")
+    if status != "Completed":
+        _fail(f"Case did not complete (finalStatus={status})\n{r.stdout}")
+    return payload
+
+
+# Keys that hold runtime metadata, not task outputs. Excluded from
+# output extraction so GUID / timestamp / status digits do not falsely
+# match small expected values (e.g. an integer in [0, 120] would match
+# any 1-3 digit chunk of an instanceId UUID).
+_METADATA_KEYS = frozenset({
+    "jobKey", "instanceId", "runId", "solutionId", "finalStatus",
+    "status", "studioWebUrl", "createdAt", "startedAt", "endedAt",
+    "elementId", "id", "uniqueId", "projectId", "tenantId", "folderId",
+    "uipathActivityTypeId", "taskTypeId", "elementInstanceId",
+    "timestamp", "occurredAt",
+})
+
+
+def collect_outputs(payload: dict) -> list[Any]:
+    """Return the declared output values from a case debug payload.
+
+    The case runtime exposes outputs under a few paths depending on
+    schema version — we walk all of them and ignore well-known metadata
+    keys. Nested dicts/lists are flattened to leaf values.
+    """
+    out: list[Any] = []
+
+    variables = payload.get("variables") or {}
+    for val in (variables.get("globals") or {}).values():
+        out.extend(_leaves(val))
+    for v in variables.get("globalVariables") or []:
+        if isinstance(v, dict) and "value" in v:
+            out.extend(_leaves(v.get("value")))
+    for section in ("outputs", "inputOutputs"):
+        for v in variables.get(section) or []:
+            if isinstance(v, dict) and "value" in v:
+                out.extend(_leaves(v.get("value")))
+
+    for task in _iter_runtime_tasks(payload):
+        for out_var in task.get("outputs") or []:
+            if isinstance(out_var, dict) and "value" in out_var:
+                out.extend(_leaves(out_var.get("value")))
+
+    return out
+
+
+def _iter_runtime_tasks(payload: dict):
+    """Yield runtime task execution dicts from anywhere in the payload.
+
+    Case debug nests task executions under stage / lane structures. We
+    walk defensively so changes to the runtime shape don't silently
+    break the output extraction.
+    """
+    seen_ids: set[int] = set()
+    stack: list[Any] = [payload]
+    while stack:
+        node = stack.pop()
+        if id(node) in seen_ids:
+            continue
+        seen_ids.add(id(node))
+        if isinstance(node, dict):
+            if "outputs" in node and (
+                "displayName" in node or "taskTypeId" in node or "type" in node
+            ):
+                yield node
+            stack.extend(node.values())
+        elif isinstance(node, (list, tuple)):
+            stack.extend(node)
+
+
+def _leaves(v: Any):
+    if isinstance(v, dict):
+        for k, nested in v.items():
+            if k in _METADATA_KEYS:
+                continue
+            yield from _leaves(nested)
+    elif isinstance(v, (list, tuple)):
+        for item in v:
+            yield from _leaves(item)
+    else:
+        yield v
+
+
+def assert_outputs_contain(
+    payload: dict, needles: str | Sequence[str], *, require_all: bool = True
+) -> None:
+    """Assert the stringified outputs contain the given needle(s)."""
+    if isinstance(needles, str):
+        needles = [needles]
+    haystack = _stringify_leaves(collect_outputs(payload))
+    present = [n for n in needles if n.lower() in haystack]
+    missing = [n for n in needles if n.lower() not in haystack]
+    ok = len(missing) == 0 if require_all else len(present) > 0
+    if not ok:
+        mode = "all of" if require_all else "any of"
+        _fail(
+            f"Outputs missing {mode} {list(needles)}; present={present}; "
+            f"missing={missing}\nOutputs: {haystack[:1000]}"
+        )
+
+
+def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
+    """Assert at least one integer in [lo, hi] appears in the outputs.
+
+    Pulls integers from output values only (metadata keys excluded by
+    ``collect_outputs``), so GUIDs in jobKey / instanceId can't satisfy
+    the range.
+    """
+    haystack = _stringify_leaves(collect_outputs(payload))
+    hits = [int(m) for m in re.findall(r"-?\d+", haystack) if lo <= int(m) <= hi]
+    if not hits:
+        _fail(
+            f"No integer in [{lo}, {hi}] found in outputs\n"
+            f"Outputs: {haystack[:1000]}"
+        )
+    return hits[0]
+
+
+def _stringify_leaves(values: Iterable[Any]) -> str:
+    return json.dumps(list(values), default=str).lower()
+
+
+def _parse_json(stdout: str) -> dict | None:
+    try:
+        return json.loads(stdout)
+    except json.JSONDecodeError:
+        for i, line in enumerate(stdout.split("\n")):
+            if line.strip().startswith("{"):
+                try:
+                    return json.loads("\n".join(stdout.split("\n")[i:]))
+                except json.JSONDecodeError:
+                    continue
+    return None
+
+
+def _is_case_project(path: str) -> bool:
+    try:
+        with open(path, encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return False
+    return manifest.get("ProjectType") == "CaseManagement"
