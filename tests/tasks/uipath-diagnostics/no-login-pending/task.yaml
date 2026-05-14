@@ -1,0 +1,208 @@
+task_id: skill-diagnostics-no-login-pending
+description: >
+  UiPath diagnostic agent must diagnose a job that is stuck in
+  `Pending` state in Orchestrator. The dispatch-time PendingReasons
+  (TemplateNoHostsAvailable + DynamicJobConnectedMachinesInvalid +
+  DynamicJobConnectedMachinesWindowsRobotVersionInvalid) are stale —
+  a host is now connected, the robot account has Windows credentials,
+  the Assistant is in Service Mode, and the tenant Unattended slot is
+  free. The agent must recognize the `job-pending-no-host` playbook
+  and recommend stopping & re-triggering the job so Orchestrator
+  re-evaluates eligibility.
+tags: [uipath-diagnostics, e2e, faithful-replay, orchestrator, pending-job, no-host]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  max_turns: 60
+  turn_timeout: 3600
+
+run_limits:
+  task_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  Why doesn't my job 0f9d854e-221e-487d-bb2b-fcc76a7d7461 from the Shared
+  folder start? It's been stuck in Pending for over an hour.
+
+  Context I can already confirm from the Orchestrator UI:
+    - The danVM machine template has an Unattended runtime connected
+      and signed in (robot version 26.0.193).
+    - The Assistant on danVM is in Machine Key / Service Mode
+      (Unattended), not Attended.
+    - The robot account assigned to the danVM template has a Windows
+      credential configured.
+    - The tenant Licenses page shows Unattended slots Used=0 / Allowed=1
+      — the slot is free.
+
+  Please use the uipath-diagnostics skill to investigate.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-diagnostics skill"
+    skill_name: "uipath-diagnostics"
+    expected_skill: "uipath-diagnostics"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was: a Pending job
+      `0f9d854e-221e-487d-bb2b-fcc76a7d7461` in the Shared folder, with
+      the user confirming up-front that danVM has an Unattended runtime
+      connected (robot v26.0.193), Service Mode is set, a Windows
+      credential is on the robot account, and the Unattended license
+      slot is free (0/1 used).
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/products/orchestrator/playbooks/job-pending-no-host.md
+        because the job is stuck Pending with
+        `TemplateNoHostsAvailable` (plus
+        `DynamicJobConnectedMachinesInvalid` and
+        `DynamicJobConnectedMachinesWindowsRobotVersionInvalid`) in its
+        `PendingReasons.Errors`.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             job-pending-no-host playbook should appear (absolute or
+             relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/products/orchestrator/playbooks/.
+          3. state.json's `scope.domain` -- should include
+             `orchestrator`.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        playbooks (robot-credentials, license-exhausted, attended-vs-
+        unattended) while ruling them out. Exploration is normal.
+
+      DIMENSION B -- Same job-dispatch failure family as RESOLUTION.md
+        (flexible — the `job-pending-no-host` playbook is low-
+        confidence with multiple sub-causes)
+
+        The reference root cause is **at the job-dispatch layer:** the
+        job is Pending with `TemplateNoHostsAvailable` (plus
+        `DynamicJobConnectedMachinesInvalid` /
+        `DynamicJobConnectedMachinesWindowsRobotVersionInvalid`) and the
+        remediation lives in the host/template-binding family. Any of
+        these sub-causes counts as a correct conclusion as long as the
+        agent (a) recognizes the failure is at the host-availability /
+        template-binding layer (not credential / mode / license /
+        per-robot-no-value), and (b) recommends a fix in the same
+        family:
+          - Stop and re-trigger the job so Orchestrator performs a
+            fresh eligibility check against the now-connected runtime
+            (reference's preferred fix — H5 stale-PendingReasons path).
+          - Assign / re-attach the `danVM` machine template to the
+            Shared folder so the dispatcher sees an eligible host
+            (alternate sub-cause: template not bound to folder).
+          - Ensure an Unattended runtime is connected to the danVM
+            template and visible to Orchestrator at dispatch time
+            (alternate sub-cause: no host at dispatch).
+
+        Penalize conclusions that:
+          - Claim the robot is missing a credential.
+          - Claim the connection is Attended/User Mode.
+          - Claim the Unattended license slot is exhausted as the
+            primary root cause (license is free in the reference).
+          - Recommend re-installing the robot, re-licensing, or other
+            unrelated remediations.
+
+        Evidence sources (in priority order):
+          1. state.json -- `identifiers` (should include
+             `job_key=0f9d854e-...`, `process_name=ERN`,
+             `runtime_type=Unattended`), `matched_playbooks`,
+             scope/domain.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe stale PendingReasons
+             / no host at dispatch time (NOT credential, mode, or
+             license issues).
+          3. The agent's last text response -- must include the
+             re-trigger recommendation.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched job-pending-no-host AND named the
+             stale-PendingReasons / re-trigger sub-cause exactly AND
+             recommended stop + re-trigger.
+        0.8  Agent matched job-pending-no-host AND identified a valid
+             sub-cause within the host/template-binding family
+             (template-not-assigned, no-host-at-dispatch, stale
+             PendingReasons) AND recommended a fix in that family
+             (re-trigger, assign template, ensure host connected).
+             This is the expected outcome when the agent does not have
+             a multi-turn dialog to drill into stale-state evidence.
+        0.5  Only one dimension correct (playbook OR conclusion).
+        0.2  Recognized the surface (job is Pending) but neither
+             matched the playbook nor identified the dispatch layer.
+        0.0  Misdiagnosed (concluded credential / mode / license-
+             exhaustion as primary root cause) or got blocked on the
+             identifier resolution.
+
+      Be substance-focused, not schema-focused. This playbook has broad
+      sub-cause coverage; reward pattern recognition (right playbook +
+      dispatch-layer remediation) over exact sub-cause matching.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the diagnostic flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent reports that job 75b781fd-0d8f-4844-a3e8-3f74a4ac6f46 cannot be found (HTTP 404) or asks whether the job key has a typo, answer: 'My mistake — the actual job key is 0f9d854e-221e-487d-bb2b-fcc76a7d7461 (process ERN in the Shared folder). The value I gave you (75b781fd…) is actually the LicenseKey of the danVM machine template.'"
+    - "If the agent asks whether the Assistant on danVM is connected in Service Mode (Machine Key) vs Attended/User Mode, answer: Service Mode / Unattended."
+    - "If the agent asks whether the danVM template robot account has a Windows credential assigned, answer: Yes."
+    - "If the agent asks for the tenant Licenses page state for Unattended slots, answer: 0/1 used."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data beyond the prerequisites above and the initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 10

@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "649667e9-311b-4bd2-b8fd-f75fc7dc4f8d",
+    "text": "No. Simply signing in to UiPath Assistant does **not** turn that machine into an Unattended robot or make it able to run unattended manual jobs.\n\nFrom the docs:\n\n- **Attended robots / Assistant**\n  - The **User Mode Robot** is “best suited in attended automation scenarios” and runs under the user that starts it, with that user’s rights.  \n  - It is started at user sign‑in or when opening **UiPath Assistant**.[^1]  \n  - Assistant is “used to assist users with attended automations”.[^^2]\n\n- **Unattended robots**\n  - “Autonomous robots that don't require human supervision to execute jobs”, intended for batch, rule‑based, often privileged operations.[^^2]\n  - Should run under **robot accounts**, not personal user accounts.[^^2]\n  - Orchestrator is the “central hub for unattended automation” and launches unattended jobs via triggers or on demand.[^^2]\n  - Assistant in unattended scenarios is “used solely for debugging purposes” when a user logs into the unattended machine.[^^2]\n\nSo:\n- Signing into Assistant = enables **attended** use on that user session.\n- To run **unattended** jobs, you must configure an unattended robot (robot account, machine, Orchestrator configuration, triggers/manual start in Orchestrator). Assistant sign‑in alone is not sufficient.\n\n[^1]: “The User Mode Robot Service” section  \n[^2]: “Unattended Robots” and “Where Does the Assistant Come Into Play” sections\n\n---\n",
+    "sources": [
+      "https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/about-robots"
+    ],
+    "disclaimers": [],
+    "followups": [
+      "How do I correctly configure a machine and robot account for unattended execution in Orchestrator?",
+      "What licenses and permissions are required to run both attended and unattended robots on the same machine?",
+      "How can I verify whether a specific machine is configured as attended or unattended in my Orchestrator tenant?"
+    ]
+  }
+}
