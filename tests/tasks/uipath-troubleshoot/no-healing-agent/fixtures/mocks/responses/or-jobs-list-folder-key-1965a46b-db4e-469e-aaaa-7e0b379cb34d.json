@@ -1,0 +1,110 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "bad89b79-48c4-49ef-9de3-513df72ab69f",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-14T07:51:41.157Z",
+      "EndTime": "2026-05-14T07:52:15.300Z",
+      "CreationTime": "2026-05-14T07:51:41.157Z"
+    },
+    {
+      "Key": "43e192cf-00d5-47f2-a6da-bac84beacfc8",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T11:52:13.243Z",
+      "EndTime": "2026-05-13T11:52:54.410Z",
+      "CreationTime": "2026-05-13T11:52:13.243Z"
+    },
+    {
+      "Key": "27c4c11d-c04d-4705-8203-86e1a346dac3",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T11:51:17.757Z",
+      "EndTime": "2026-05-13T11:51:18.447Z",
+      "CreationTime": "2026-05-13T11:51:17.757Z"
+    },
+    {
+      "Key": "0686cab1-35c6-4d92-aed2-c91d9c275524",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T08:42:11.170Z",
+      "EndTime": "2026-05-13T08:42:12.977Z",
+      "CreationTime": "2026-05-13T08:42:11.170Z"
+    },
+    {
+      "Key": "77dc53dd-5c45-4a77-b39f-a52e9e7ef163",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T07:32:22.603Z",
+      "EndTime": "2026-05-13T07:32:23.463Z",
+      "CreationTime": "2026-05-13T07:32:22.603Z"
+    },
+    {
+      "Key": "d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T08:13:00.720Z",
+      "EndTime": "2026-05-12T08:14:11.487Z",
+      "CreationTime": "2026-05-12T08:13:00.720Z"
+    },
+    {
+      "Key": "8d7828fe-941f-4e53-8f9c-beea54a05346",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T07:22:23.770Z",
+      "EndTime": "2026-05-12T07:22:24.613Z",
+      "CreationTime": "2026-05-12T07:22:23.770Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 7,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

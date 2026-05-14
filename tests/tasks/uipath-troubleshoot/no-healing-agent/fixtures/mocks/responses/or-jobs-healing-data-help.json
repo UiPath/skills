@@ -1,0 +1,68 @@
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "healing-data",
+    "Description": "Download healing agent (Autopilot for Robots) recovery data as a ZIP file. Contains screenshots, UI element data, and recovery logs. Only available for jobs where the healing agent was active. Triggers an async export, polls until complete, then downloads the ZIP.",
+    "Usage": "uip or jobs healing-data [options] <job-key>",
+    "Arguments": [
+      {
+        "Name": "job-key",
+        "Description": "Job key (GUID)",
+        "Required": true
+      }
+    ],
+    "Options": [
+      {
+        "Flags": "-t, --tenant <tenant-name>",
+        "Description": "Tenant (optional, defaults to value selected during auth)"
+      },
+      {
+        "Flags": "--directory-prefix <prefix>",
+        "Description": "Path prefix to filter exported files"
+      },
+      {
+        "Flags": "-o, --output <path>",
+        "Description": "Output file path (defaults to healing-agent-data-<job-key>.zip)"
+      },
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Examples": [
+      {
+        "Description": "Download healing agent data for a job",
+        "Command": "uip or jobs healing-data b2c3d4e5-0000-0000-0000-000000000001",
+        "Output": {
+          "Code": "JobHealingData",
+          "Data": {
+            "JobKey": "b2c3d4e5-0000-0000-0000-000000000001",
+            "FileName": "healing-agent-data-b2c3d4e5-0000-0000-0000-000000000001.zip",
+            "Size": 254318,
+            "ExportId": 4711
+          }
+        }
+      }
+    ],
+    "Subcommands": [],
+    "GlobalOptions": [
+      {
+        "Flags": "--output <table|json|yaml|plain>",
+        "Description": "Output format (default: json)"
+      },
+      {
+        "Flags": "--output-filter <expression>",
+        "Description": "JMESPath expression to filter output"
+      },
+      {
+        "Flags": "--log-level <debug|info|warn|error>",
+        "Description": "Log level threshold (default: info)"
+      },
+      {
+        "Flags": "--log-file <path>",
+        "Description": "Write logs to file instead of stderr"
+      }
+    ]
+  }
+}
