@@ -166,6 +166,15 @@ def _passthrough(args: str, original_argv: list[str], rule: dict) -> int:
 
 
 def main(argv: list[str]) -> int:
+    # Force stdout/stderr to UTF-8 so non-ASCII fixture content (e.g. Romanian,
+    # Cyrillic) doesn't crash on Windows where the default console encoding is
+    # cp1252. The agent reads stdout via a file redirect, so encoding it as
+    # UTF-8 is always correct.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     args = " ".join(argv[1:])
 
     if not MANIFEST_PATH.is_file():
@@ -185,7 +194,13 @@ def main(argv: list[str]) -> int:
         if not response_file.is_file():
             _log_call(args, rule, 2, error="fixture_missing")
             return _err({"error": "response file missing", "path": str(response_file)}, 2)
-        sys.stdout.write(response_file.read_text(encoding="utf-8"))
+        # Tolerate fixtures written by PowerShell (UTF-16 LE BOM) or UTF-8.
+        raw = response_file.read_bytes()
+        if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"):
+            text = raw.decode("utf-16")
+        else:
+            text = raw.decode("utf-8-sig", errors="replace")
+        sys.stdout.write(text)
         exit_code = int(rule.get("exit_code", 0))
         _log_call(args, rule, exit_code)
         return exit_code
