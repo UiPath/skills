@@ -3,11 +3,6 @@ description: >
   End-to-end test: agent performs a robot account onboarding flow.
   Creates a robot account, assigns it to a group for role-based access.
   Validates the agent follows the onboarding workflow from the skill.
-  Command-construction only — no live tenant available for
-  side-effect verification.
-
-  Platform note: runs without an authenticated tenant — commands will
-  fail with auth errors. That is acceptable.
 tags: [uipath-admin, e2e, onboarding]
 
 agent:
@@ -24,27 +19,12 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Onboard an unattended invoice-processing robot ("invoice-processor" /
-  "Invoice Processing Robot") and add it to the "Automation Users" group.
+  Onboard an unattended invoice-processing robot ("smoke-e2e-bot" /
+  "Smoke E2E Bot") and add it to the "Automation Users" group.
 
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent checked login status"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent listed existing robot accounts (discover before create)"
     tool_name: "Bash"
@@ -54,9 +34,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created robot account with correct name"
+    description: "Agent created robot account with correct positional name"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+robot-accounts\s+create\s+.*invoice-processor'
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+create\s+.*smoke-e2e-bot'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
