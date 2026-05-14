@@ -277,8 +277,8 @@ Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (
 >
 > | Expression resolves to | Authoring shape | Example |
 > |---|---|---|
-> | The whole array | `"<field>": "=<expr>"` | `"fields.labels": "=vars.allTags"` |
-> | A single element to wrap | `"<field>": ["=<expr>"]` | `"fields.labels": ["=vars.priorityTag"]` |
+> | The whole array | `"<field>": "=<expr>"` | `"fields.labels": "=js:$vars.allTags"` |
+> | A single element to wrap | `"<field>": ["=<expr>"]` | `"fields.labels": ["=js:$vars.priorityTag"]` |
 
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 
