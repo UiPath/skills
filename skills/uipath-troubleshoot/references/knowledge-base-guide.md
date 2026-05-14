@@ -79,7 +79,7 @@ All playbooks use the same three headers:
 | `## Investigation` | Steps to troubleshoot or verify. Can be absent for low-confidence playbooks. | Tester (follows steps if present, reasons freely if absent). |
 | `## Resolution` | Known fixes. Can be absent if the fix depends on what the investigation finds. | Presenter (assembles fixes for the user). |
 
-Template: `templates/playbook.md`
+Template: `templates/playbook-template.md`
 
 > **Note:** The canonical confidence-level behavior table (how each agent acts per confidence level) is in `agents/shared.md`. Keep this guide aligned with that table.
 
@@ -107,4 +107,4 @@ The investigation guide (generic + product-specific) tells agents how to verify 
 
 ## Creating New Content
 
-Template is in `references/templates/playbook.md`. Copy it, set the `confidence` field in the frontmatter (high, medium, or low), fill in the sections, and add the entry to the product's `summary.md`. The summary's Confidence column must match the playbook's frontmatter.
+Template is in `references/templates/playbook-template.md`. Copy it, set the `confidence` field in the frontmatter (high, medium, or low), fill in the sections, and add the entry to the product's `summary.md`. The summary's Confidence column must match the playbook's frontmatter.
