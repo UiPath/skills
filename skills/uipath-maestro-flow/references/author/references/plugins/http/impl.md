@@ -22,9 +22,32 @@ Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `b
 
 ### Step 1 — Add the node
 
-```bash
-uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
-  --label "<Label>" --output json
+Use `Edit` / `Write` to add the `core.action.http.v2` node directly to the `.flow` file. Follow [Edit/Write: Add a node](../../editing-operations-json.md#add-a-node): copy the registry definition into `definitions[]`, add the node instance to `nodes[]`, add `variables.nodes`, and add a placeholder `layout.nodes` entry. Save the node ID for Step 3.
+
+Minimum node instance shape:
+
+```json
+{
+  "id": "<nodeId>",
+  "type": "core.action.http.v2",
+  "typeVersion": "2.0",
+  "display": { "label": "<Label>" },
+  "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the HTTP request.",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the HTTP request fails.",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  }
+}
 ```
 
 ### Step 2 — Identify target connector and connection (connector mode only)
@@ -39,7 +62,15 @@ uip is connections list "<target-connector-key>" --output json
 uip is connections ping "<connection-id>" --output json
 ```
 
+If the list is empty, retry once with `--refresh` to bypass the CLI cache:
+
+```bash
+uip is connections list "<target-connector-key>" --refresh --output json
+```
+
 Record the `Id` and `FolderKey` from the connection.
+
+> **A healthy connection is required for connector mode.** If `uip is connections list` returns empty, retry once with `--refresh`. If still empty, **STOP** — the node cannot be configured without a real connection ID. Use `AskUserQuestion` to present the path forward: **Create a new connection now** (`uip is connections create "<target-connector-key>"` starts the OAuth flow — user completes browser auth themselves, then re-run `uip is connections list` to pick up the new connection) / **Switch this node to manual mode** / **Skip this node** / **Something else**. Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node without explicit user selection. See [/uipath:uipath-platform — connections.md — For Native Connectors](../../../../../../uipath-platform/references/integration-service/connections.md#for-native-connectors) and the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md).
 
 ### Step 3 — Configure the node
 
@@ -71,6 +102,7 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
 ```
 
 **What the CLI handles automatically:**
+
 - Builds the full `inputs.detail` structure (connector, connectionId, bodyParameters, essentialConfiguration)
 - For connector mode: generates `bindings_v2.json` and creates a connection resource file under `resources/solution_folder/connection/`
 - For manual mode: uses `ImplicitConnection` (no bindings needed)
@@ -133,22 +165,46 @@ The managed HTTP node's target port is `input`. Its source ports are:
 - `error` — fires when the HTTP call fails (network error, timeout, non-2xx not caught by a branch); wire this to an error handler to keep the flow from faulting
 - `branch-{id}` — one per entry in `inputs.branches` (Step 4); use the exact `id` you set
 
-```bash
-# Edge into the HTTP node
-uip maestro flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
-  --source-port <port> --target-port input --output json
+Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge add` for this structural wiring. Examples:
 
-# Simple: single outgoing edge on "default"
-uip maestro flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
-  --source-port default --target-port input --output json
+```json
+{
+  "id": "e-<upstreamNodeId>-<nodeId>",
+  "sourceNodeId": "<upstreamNodeId>",
+  "sourcePort": "<port>",
+  "targetNodeId": "<nodeId>",
+  "targetPort": "input"
+}
+```
 
-# With error handler: wire the implicit "error" port
-uip maestro flow edge add <ProjectName>.flow <nodeId> <errorHandlerId> \
-  --source-port error --target-port input --output json
+```json
+{
+  "id": "e-<nodeId>-<downstreamNodeId>",
+  "sourceNodeId": "<nodeId>",
+  "sourcePort": "default",
+  "targetNodeId": "<downstreamNodeId>",
+  "targetPort": "input"
+}
+```
 
-# With conditional branches: one edge per configured branch (default/error still apply)
-uip maestro flow edge add <ProjectName>.flow <nodeId> <hasItemsDownstream> \
-  --source-port branch-hasItems --target-port input --output json
+```json
+{
+  "id": "e-<nodeId>-<errorHandlerId>",
+  "sourceNodeId": "<nodeId>",
+  "sourcePort": "error",
+  "targetNodeId": "<errorHandlerId>",
+  "targetPort": "input"
+}
+```
+
+```json
+{
+  "id": "e-<nodeId>-<hasItemsDownstream>",
+  "sourceNodeId": "<nodeId>",
+  "sourcePort": "branch-hasItems",
+  "targetNodeId": "<hasItemsDownstream>",
+  "targetPort": "input"
+}
 ```
 
 ## Debug

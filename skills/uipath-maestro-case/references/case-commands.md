@@ -10,19 +10,19 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
-| `solution new`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution init`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
 
 ---
 
-## uip solution new
+## uip solution init
 
 Create a new solution directory + `.uipx` file.
 
 ```bash
-uip solution new <SolutionName>
+uip solution init <SolutionName>
 ```
 
 | Flag | Description |
@@ -33,9 +33,28 @@ Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's
 
 ---
 
+## uip maestro case init
+
+Scaffold a basic Case project with the 5 boilerplate files and a starter `caseplan.json`. Use this for a blank case scaffold without an `sdd.md` (the SDD-driven JSON path writes the same files in a single plugin invocation — see [plugins/case/impl-json.md](plugins/case/impl-json.md)).
+
+```bash
+cd <SolutionDir> && uip maestro case init <ProjectName>
+```
+
+| Flag | Description |
+|------|-------------|
+| `<ProjectName>` | **(required)** Project directory name. Created inside the current directory |
+
+Run from inside the solution directory so the resulting layout is `<SolutionDir>/<ProjectName>/`. When run from inside a solution directory, `case init` **auto-registers** the project with the parent `.uipx` — confirm via `Data.SolutionRegistration.Status` in the response (`Registered` or `AlreadyRegistered`). Use `uip solution project add ./<ProjectName>` only as a fallback when `Status` is `Skipped` or `Failed`. Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution project add` step — see `implementation.md` § Step 6.
+
+---
+
 ## uip solution project add
 
-Register a project with an existing solution.
+Register a project with an existing solution. Used in two scenarios in this skill:
+
+1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
+2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered`, this command is redundant.
 
 ```bash
 uip solution project add <ProjectName> <SolutionName>.uipx
@@ -46,7 +65,7 @@ uip solution project add <ProjectName> <SolutionName>.uipx
 | `<ProjectName>` | **(required)** Project directory name (must already exist with `project.uiproj`) |
 | `<SolutionName>.uipx` | **(required)** Path to the solution `.uipx` |
 
-Adds the project to `.uipx.Projects[]`. Run after the case plugin has scaffolded `project.uiproj`.
+Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
 
 ---
 
@@ -55,8 +74,10 @@ Adds the project to `.uipx.Projects[]`. Run after the case plugin has scaffolded
 Re-scan all projects in the solution and sync resource declarations from `bindings_v2.json`. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists.
 
 ```bash
-uip solution resource refresh <SolutionDir> --output json
+uip solution resource refresh --solution-folder <SolutionDir> --output json
 ```
+
+> `--solution-folder` is required when invoking from outside the solution directory. Omit the flag (and run from inside the solution dir) only for ad-hoc local use; the skill always passes it explicitly so the cwd doesn't matter.
 
 **Always run before `uip solution upload` or `uip maestro case debug`.** Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
 
@@ -69,7 +90,7 @@ uip solution resource refresh <SolutionDir> --output json
 Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
-uip solution resource refresh <SolutionDir> --output json
+uip solution resource refresh --solution-folder <SolutionDir> --output json
 uip solution upload <SolutionDir> --output json
 ```
 
@@ -105,11 +126,13 @@ Validate a case management JSON file against case management rules.
 
 ```bash
 uip maestro case validate <file> --output json
+uip maestro case validate <file> --skeleton --output json
 ```
 
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
+| `--skeleton` | Skeleton profile — runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules. Use during skeleton-phase authoring before tasks/conditions/SLA are wired. |
 
 Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported inline.
 
@@ -120,7 +143,7 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
 
 ```bash
-uip solution resource refresh <SolutionDir> --output json
+uip solution resource refresh --solution-folder <SolutionDir> --output json
 uip maestro case debug <projectDirectory> --log-level debug --output json
 ```
 
@@ -136,9 +159,40 @@ uip maestro case debug <projectDirectory> --log-level debug --output json
 
 ---
 
+## uip maestro case spec
+
+Read-only unified metadata + scaffold endpoint for connector activities and triggers. **The preferred command for connector tasks** — replaces the legacy `case tasks describe` + `is resources describe` two-call dance with a single normalized response (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` ready for `caseplan.json`).
+
+```bash
+# Planning phase — lean response (no caseShape payload)
+uip maestro case spec --type <activity|trigger> \
+  --activity-type-id <uiPathActivityTypeId> \
+  --connection-id <uuid> \
+  --skip-case-shape --output json
+
+# Phase 3 (implementation) — populated caseShape from --input-details
+uip maestro case spec --type <activity|trigger> \
+  --activity-type-id <uiPathActivityTypeId> \
+  --connection-id <uuid> \
+  --input-details '<json>' --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--type <activity\|trigger>` | **(required)** Whether the typeId is an activity or trigger TypeCache entry. |
+| `--activity-type-id <uuid>` | **(required)** Studio Web `uiPathActivityTypeId` from the relevant TypeCache index. |
+| `--connection-id <uuid>` | **(required)** IS connection UUID. Pick from `case registry get-connection` first. |
+| `--object-name <name>` | Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (`activityType === "Generic"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI fails fast when missing in case (2). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-common.md`](connector-trigger-common.md). |
+| `--skip-case-shape` | Omit `caseShape` from the response. Use during planning for a leaner payload. Mutually exclusive with `--input-details`. |
+| `--input-details <json>` | Pre-fill values into the generated `caseShape`. Activity accepts `{bodyParameters?, queryParameters?, pathParameters?, filter?}`; trigger accepts `{eventParameters?, filter?}`. Connection identity is NOT in input — derived from `--connection-id` and TypeCache. Mutually exclusive with `--skip-case-shape`. Full contract: [`case-spec-input-details.md`](case-spec-input-details.md). |
+
+Returns a `ConnectorTaskSpec` with `identity`, `operation`, `connection`, `inputs`, `outputs`, optional `filter`, `essentialConfiguration`, `references[]` (with pre-built `discoverCommand` strings), `diagnostics`, and (when `--skip-case-shape` is NOT set) `caseShape` with FE-canonical inputs/outputs/context arrays. Webhook URL is intentionally NOT in the output (deterministic from `connectionId` + `elementInstanceId` + `connectorKey` + `eventOperation`); fetch via `getWebhookConfig` for the rare flow that needs it. Filter trees inside `--input-details.filter` compile to CEQL (activity) or JMESPath (trigger) per [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+
+---
+
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution to discover the per-resource schema.
+Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json
@@ -153,7 +207,7 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 
-Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.json`.
+Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.json`. The `connector-activity` / `connector-trigger` flags still work but `case spec` returns a richer, FE-canonical `caseShape` for connector tasks.
 
 ---
 
@@ -161,7 +215,7 @@ Returns input/output schema with names, types, and IDs. The schema is the source
 
 Manage the local resource cache. Requires `uip login` for tenant-specific resources.
 
-> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 30-min cache, is network-heavy, and may be slow.
+> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 24-hour cache, is network-heavy, and may be slow.
 
 ```bash
 # Refresh cache from all resource types
@@ -189,7 +243,7 @@ Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManageme
 Options for `pull`:
 | Flag | Description |
 |------|-------------|
-| `-f, --force` | Force refresh, ignore 30-min cache TTL |
+| `-f, --force` | Force refresh, ignore 24-hour cache TTL |
 | `-s, --solution-id <id>` | Include the registry of the specified solution |
 
 Options for `search`:
@@ -210,7 +264,7 @@ Options for `get`:
 
 Output: `{ MatchCount, Resources: [{ ResourceType, Resource }] }`.
 
-Cache lives at `~/.uipcli/case-resources/` and expires after 30 minutes.
+Cache lives at `~/.uip/case-resources/` and expires after 24 hours.
 
 ### uip maestro case registry get-connector
 

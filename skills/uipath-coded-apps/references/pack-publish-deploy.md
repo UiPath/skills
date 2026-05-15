@@ -29,7 +29,7 @@ Package the app build output into a `.nupkg` file with UiPath metadata.
 uip codedapp pack dist
 
 # Pack with all options specified
-uip codedapp pack dist -n my-webapp -v 1.0.0 -a "My Team" --description "Production app"
+uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "Production app"
 ```
 
 ### Options
@@ -104,7 +104,7 @@ Upload the `.nupkg` to UiPath Orchestrator and register the coded app with the A
 uip codedapp publish
 
 # Select specific package
-uip codedapp publish -n my-webapp -v 1.0.0
+uip codedapp publish -n my-webapp --version 1.0.0
 ```
 
 ### Options
@@ -114,7 +114,7 @@ uip codedapp publish -n my-webapp -v 1.0.0
 | `-n, --name <name>` | Package name (skip interactive selection) | Auto or prompted |
 | `-v, --version <version>` | Package version (requires `--name`) | Latest |
 | `-t, --type <type>` | App type: `Web` or `Action` | `Web` |
-| `--uipathDir <dir>` | Directory containing `.nupkg` files | `./.uipath` |
+| `--uipath-dir <dir>` | Directory containing `.nupkg` files | `./.uipath` |
 
 ### App Types
 
@@ -158,7 +158,7 @@ If multiple `.nupkg` files exist in `.uipath/`, the command will prompt for sele
 uip codedapp publish -n my-webapp
 
 # Select specific version
-uip codedapp publish -n my-webapp -v 2.0.0
+uip codedapp publish -n my-webapp --version 2.0.0
 ```
 
 ---
@@ -182,8 +182,9 @@ uip codedapp deploy -n my-webapp
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-n, --name <name>` | App name | From `app.config.json` or prompted |
-| `--folderKey <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
-| `--orgName <name>` | Organization name (for app URL) | From `.env` |
+| `-v, --version <version>` | Target a **specific published version** to deploy (different semantic from `pack`/`publish`'s `-v`, which is the package version) | Latest |
+| `--folder-key <key>` | UiPath folder **key** (GUID, not the name). **Always pass explicitly** — see below. | From `UIPATH_FOLDER_KEY` env var, else interactive (avoid) |
+| `--org-name <name>` | Organization name (for app URL) | From `.env` |
 
 ### Fresh Deploy vs. Upgrade
 
@@ -199,18 +200,52 @@ The command resolves the app name from:
 
 ### Folder Key
 
-The `deploy` command requires a folder key, resolved from:
-1. `--folderKey` flag
-2. `UIPATH_FOLDER_KEY` environment variable
-3. Interactive folder selection (if neither is set)
+The `deploy` command requires a folder **key** (GUID), not a folder name. Users typically know the folder name only — resolve the key via `uip or folders list` before calling `deploy`.
 
-Set it during auth or manually:
+Resolution order:
+1. `--folder-key <key>` flag — explicit, idiomatic
+2. `UIPATH_FOLDER_KEY=<key>` env-var prefix — equivalent to the flag, useful in CI/CD where the value is already in env
+3. Interactive folder selection (**must avoid** — see warning below)
+
+> **Pass the folder key explicitly via the flag or env var.** Running `uip codedapp deploy` with neither drops the command into an interactive folder picker that fails in non-TTY contexts (CI, agent shells, IDE terminals piped to a runner). When invoked from an agent, you MUST resolve the key up-front and pass it.
+
+#### Resolving folder name → folder key
+
+When the user provides a folder **name** (e.g., `"Shared"`), resolve it to a key with `uip or folders list --output json` and match on the `Name` field (or `Path` for nested paths).
+
+> **Prerequisite:** `uip or ...` commands require the Orchestrator tool. Run `uip tools list` first; if `orchestrator-tool` is missing, install it once: `uip tools install @uipath/orchestrator-tool`.
+
 ```bash
-# Set in .env
-echo "UIPATH_FOLDER_KEY=my-folder-key" >> .env
+# 0. Ensure the Orchestrator tool is installed (idempotent — skip if already present)
+uip tools list --output json | grep -q '"orchestrator-tool"' || uip tools install @uipath/orchestrator-tool
 
-# Or pass directly
-uip codedapp deploy --folderKey my-folder-key
+# 1. List folders the current user has access to (includes Personal, Solution, Standard)
+uip or folders list --output json > /tmp/folders.json
+
+# 2. Resolve "Shared" → key (GUID)
+FOLDER_KEY=$(python3 -c "
+import json
+with open('/tmp/folders.json') as f:
+    d = json.load(f)
+match = next((x for x in d['Data'] if x['Name'] == 'Shared'), None)
+print(match['Key'] if match else '')
+")
+
+# 3. Deploy with the resolved key
+uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
+```
+
+If the name is ambiguous (multiple matches) or not found, surface an error to the user — do NOT fall through to interactive selection.
+
+`uip or folders list` returns folders the **current user** has access to (personal workspaces, solution folders, and standard folders). Add `--all` if you need every folder in the tenant — but for `deploy` resolution, the default view is what you want.
+
+Each folder JSON object includes: `Key` (GUID — pass this to `--folder-key`), `Name`, `Path`, `Description`, `Type` (`Personal` / `Solution` / `Standard`), `ParentKey`.
+
+#### Storing the resolved key
+
+```bash
+# Persist for re-use across deploys
+echo "UIPATH_FOLDER_KEY=$FOLDER_KEY" >> .env
 ```
 
 ### Output
@@ -259,7 +294,7 @@ uip codedapp deploy
 npm run build
 
 # 2. Pack with bumped version
-uip codedapp pack dist -n my-webapp -v 2.0.0
+uip codedapp pack dist -n my-webapp --version 2.0.0
 
 # 3. Publish new version
 uip codedapp publish
@@ -271,12 +306,25 @@ uip codedapp deploy
 ### CI/CD Pipeline
 
 ```bash
-# Non-interactive flow with explicit options
-uip login --clientId $CLIENT_ID --clientSecret $CLIENT_SECRET
+# Non-interactive flow with explicit options — every flag passed, no prompts
+uip login --client-id $CLIENT_ID --client-secret $CLIENT_SECRET
 npm run build
-uip codedapp pack dist -n my-webapp -v $VERSION
-uip codedapp publish -n my-webapp -v $VERSION
-uip codedapp deploy -n my-webapp --folderKey $FOLDER_KEY
+uip codedapp pack dist -n my-webapp --version $VERSION
+uip codedapp publish -n my-webapp --version $VERSION
+uip codedapp deploy -n my-webapp --folder-key $FOLDER_KEY
+```
+
+### Agent flow (user provides folder name only)
+
+```bash
+# 1. Resolve folder name → key
+FOLDER_KEY=$(uip or folders list --output json \
+  | python3 -c "import json,sys;d=json.load(sys.stdin);m=next((x for x in d['Data'] if x['Name']=='$USER_FOLDER_NAME'),None);print(m['Key'] if m else '')")
+
+[ -z "$FOLDER_KEY" ] && { echo "Folder '$USER_FOLDER_NAME' not found"; exit 1; }
+
+# 2. Deploy non-interactively with the resolved key
+uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 ```
 
 ---
@@ -288,7 +336,7 @@ uip codedapp deploy -n my-webapp --folderKey $FOLDER_KEY
 | `No packages found` | Missing `.nupkg` | Run `uip codedapp pack` first |
 | `Version already exists` | Same version published | Bump version: `-v 2.0.0` |
 | `App not found` on deploy | App not published | Run `uip codedapp publish` first |
-| `Folder key required` | Missing `UIPATH_FOLDER_KEY` | Set in `.env` or pass `--folderKey` |
-| `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenantName` |
+| `Folder key required` / deploy hangs on prompt | Missing folder key | Resolve via `uip or folders list --output json`, then run `uip codedapp deploy --folder-key <key> ...` (or `UIPATH_FOLDER_KEY=<key>` env-var prefix). |
+| `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
 | `dist/ not found` | App not built | Run `npm run build` |
 | Pack shows wrong clientId | Stale `uipath.json` | Use `--reuse-client` or delete `uipath.json` |

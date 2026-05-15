@@ -15,7 +15,7 @@ Pre-populate these via `TodoWrite` when entering this journey. The list mirrors 
 - [ ] Correlate faulting element ID to a node in the `.flow` file
 - [ ] Pull traces (only if previous steps insufficient)
 - [ ] Classify root cause (known failure mode? new pattern?)
-- [ ] Recommend next action (re-author, retry, cancel, escalate)
+- [ ] Recommend next action via `AskUserQuestion` — **Re-author the flow** / **Retry the instance** / **Cancel the instance** / **Escalate** / **Something else** (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))
 
 ## Diagnostic priority
 

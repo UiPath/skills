@@ -18,6 +18,7 @@ Read this when writing TypeScript code that imports classes, types, or options f
 | `@uipath/uipath-typescript/jobs` | `Jobs` |
 | `@uipath/uipath-typescript/attachments` | `Attachments` |
 | `@uipath/uipath-typescript/conversational-agent` | `ConversationalAgent`, `Exchanges`, `Messages` |
+| `@uipath/uipath-typescript/feedback` | `Feedback` |
 
 ## Type Imports
 

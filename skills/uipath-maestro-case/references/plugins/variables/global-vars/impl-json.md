@@ -4,12 +4,27 @@ No CLI command exists for variable declaration. Edit `caseplan.json` directly (r
 
 ## Target Paths
 
+Read `Schema:` header from `tasks.md` per Rule 18. Trigger output mappings are identical across schemas (node internals untouched by v20).
+
+### v19
+
 | What | JSON path |
 |---|---|
 | In argument inputs | `root.data.uipath.variables.inputs[]` |
 | Out argument outputs | `root.data.uipath.variables.outputs[]` |
 | All internal variables | `root.data.uipath.variables.inputOutputs[]` |
 | Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` |
+
+### v20
+
+| What | JSON path |
+|---|---|
+| In argument inputs | `variables.inputs[]` *(top level — no `root` wrapper, no `data.uipath`)* |
+| Out argument outputs | `variables.outputs[]` *(top level)* |
+| All internal variables | `variables.inputOutputs[]` *(top level)* |
+| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` *(unchanged from v19)* |
+
+> v20 hoists `root.data.uipath.variables` to top-level `variables`. Field shape inside is identical — only the destination path changes.
 
 Process In arguments first, then Out, then plain variables.
 
@@ -58,7 +73,7 @@ The `source` and `name` fields keep the original value — only `var` / `id` / `
 
 The trigger mapping bridges `inputs[]` to `inputOutputs[]` at runtime. Without it, `=vars.expenseId` would be empty.
 
-> **Skeleton trigger interaction:** if the producing trigger is a skeleton event trigger (per [`plugins/triggers/event/impl-json.md` § Skeleton fallback](../../triggers/event/impl-json.md)), write entries 1 + 2 referencing the skeleton's `trigger_xxxxxx` ID normally but **skip entry 3** — the skeleton has no `data.uipath.outputs` array. At runtime the trigger never fires, so the In arg falls back to its `default`.
+> **Placeholder trigger interaction:** if the producing trigger is a placeholder event trigger (per [`plugins/triggers/event/impl-json.md` § Placeholder fallback](../../triggers/event/impl-json.md)), write entries 1 + 2 referencing the placeholder's `trigger_xxxxxx` ID normally but **skip entry 3** — the placeholder has no `data.uipath.outputs` array. At runtime the trigger never fires, so the In arg falls back to its `default`.
 
 ## Out Argument — 2 entries
 
@@ -79,7 +94,7 @@ Combines In + Out. Creates input + **one** shared companion IO + trigger mapping
 
 ## Task Output → inputOutputs Wiring
 
-The FE's `CaseManagementVariablesProvider` collects task outputs directly from `task.data.outputs[]` and makes them referenceable via `=vars.<var>`. A separate `root.data.uipath.variables.inputOutputs[]` entry is **not required** for cross-task variable resolution — the FE resolves from task outputs directly.
+The FE's `CaseManagementVariablesProvider` collects task outputs directly from `task.data.outputs[]` and makes them referenceable via `=vars.<var>`. A separate `inputOutputs[]` entry (under `root.data.uipath.variables` in v19, top-level `variables` in v20) is **not required** for cross-task variable resolution — the FE resolves from task outputs directly.
 
 Write the companion entry to match FE behavior. Safe to omit — resolution works without it:
 

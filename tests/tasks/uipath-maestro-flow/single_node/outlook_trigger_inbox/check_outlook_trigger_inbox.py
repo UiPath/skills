@@ -24,13 +24,10 @@ import sys
 
 CONNECTOR_KEY = "uipath-microsoft-outlook365"
 TRIGGER_TYPE_MARKER = "uipath.connector.trigger.uipath-microsoft-outlook365.email-received"
-SHARED_FOLDER_PATH = "Shared"
+TEST_FOLDER_PATH = "Shared/uipath-maestro-flow"
 
 
-def _uip_json(args: list[str]) -> dict:
-    """Run a uip CLI command and return parsed JSON. Fails the test on
-    non-zero exit or invalid JSON."""
-    result = subprocess.run(args, capture_output=True, text=True, timeout=120)
+def _parse_uip_stdout(args: list[str], result: subprocess.CompletedProcess) -> dict:
     if result.returncode != 0:
         sys.exit(
             f"FAIL: {' '.join(args)} exit={result.returncode}\n"
@@ -47,6 +44,36 @@ def _uip_json(args: list[str]) -> dict:
         sys.exit(f"FAIL: JSON parse error on {' '.join(args)}: {e}\n{out}")
 
 
+def _uip_json(args: list[str]) -> dict:
+    """Run a uip CLI command and return parsed JSON. Fails the test on
+    non-zero exit or invalid JSON."""
+    return _parse_uip_stdout(args, subprocess.run(args, capture_output=True, text=True, timeout=120))
+
+
+def _uip_resources_run(tail_args: list[str]) -> dict:
+    """Invoke ``uip is resources <verb> <tail...>`` tolerating both the
+    post-rename verb (``run``, current) and the legacy verb (``execute``).
+
+    Sandboxes can carry either CLI version depending on which
+    @uipath/integrationservice-tool install ranks first in Node's
+    parent-walking module resolution. The fallback on
+    ``unknown command 'run'`` keeps the checker green across both shapes
+    until the sandbox PATH is fully isolated (see coder_eval companion
+    PR).
+    """
+    primary = ["uip", "is", "resources", "run", *tail_args]
+    result = subprocess.run(primary, capture_output=True, text=True, timeout=120)
+    needs_fallback = (
+        result.returncode != 0
+        and "unknown command 'run'" in (result.stdout + result.stderr)
+    )
+    if needs_fallback:
+        legacy = ["uip", "is", "resources", "execute", *tail_args]
+        result = subprocess.run(legacy, capture_output=True, text=True, timeout=120)
+        return _parse_uip_stdout(legacy, result)
+    return _parse_uip_stdout(primary, result)
+
+
 def _read_flow() -> tuple[dict, str]:
     flows = glob.glob("**/OutlookTriggerInbox*.flow", recursive=True)
     if not flows:
@@ -55,18 +82,18 @@ def _read_flow() -> tuple[dict, str]:
         return json.load(f), flows[0]
 
 
-def _find_shared_folder_key() -> str:
-    folders = _uip_json(["uip", "or", "folders", "list", "--output", "json"]).get("Data", [])
-    for f in folders:
-        if f.get("Path") == SHARED_FOLDER_PATH:
-            return f["Key"]
-    sys.exit(f"FAIL: no '{SHARED_FOLDER_PATH}' folder in Orchestrator")
+def _find_test_folder_key() -> str:
+    resp = _uip_json(["uip", "or", "folders", "get", TEST_FOLDER_PATH, "--output", "json"])
+    key = resp.get("Data", {}).get("Key")
+    if not key:
+        sys.exit(f"FAIL: no '{TEST_FOLDER_PATH}' folder in Orchestrator")
+    return key
 
 
 def _find_default_outlook_connection() -> tuple[str, str, str]:
     """Return (connection_id, folder_key, connection_name) for the default
-    enabled Outlook connection in Shared."""
-    folder_key = _find_shared_folder_key()
+    enabled Outlook connection in the test folder."""
+    folder_key = _find_test_folder_key()
     conns_raw = _uip_json(
         [
             "uip", "is", "connections", "list", CONNECTOR_KEY,
@@ -75,7 +102,7 @@ def _find_default_outlook_connection() -> tuple[str, str, str]:
     ).get("Data", [])
     if not isinstance(conns_raw, list) or not conns_raw:
         sys.exit(
-            f"FAIL: no {CONNECTOR_KEY} connection in folder {SHARED_FOLDER_PATH}. "
+            f"FAIL: no {CONNECTOR_KEY} connection in folder {TEST_FOLDER_PATH}. "
             f"Provision an Outlook connection in the test tenant first."
         )
     defaults = [c for c in conns_raw if c.get("IsDefault") == "Yes" and c.get("State") == "Enabled"]
@@ -94,7 +121,7 @@ def _find_trigger_node(flow: dict) -> dict:
 
 
 def _extract_list_items(resp: dict) -> list[dict]:
-    """execute list returns Data shaped as either {items: [...], Pagination: ...}
+    """resources run list returns Data shaped as either {items: [...], Pagination: ...}
     or a plain list. Handle both."""
     data = resp.get("Data", [])
     if isinstance(data, list):
@@ -124,15 +151,14 @@ def check_folder_id_fresh():
         )
 
     conn_id, _folder_key, _conn_name = _find_default_outlook_connection()
-    live = _uip_json(
-        [
-            "uip", "is", "resources", "execute", "list", CONNECTOR_KEY, "MailFolder",
-            "--connection-id", conn_id, "--output", "json",
-        ]
+    live = _uip_resources_run(
+        ["list", CONNECTOR_KEY, "MailFolder", "--connection-id", conn_id, "--output", "json"]
     )
     live_ids = {f.get("id") for f in _extract_list_items(live)}
     if not live_ids:
-        sys.exit("FAIL: execute list MailFolder returned no folders on the bound connection")
+        sys.exit(
+            "FAIL: resources run/execute list MailFolder returned no folders on the bound connection"
+        )
 
     if flow_folder_id not in live_ids:
         # Truncate the IDs in the error to avoid leaking full Exchange IDs while

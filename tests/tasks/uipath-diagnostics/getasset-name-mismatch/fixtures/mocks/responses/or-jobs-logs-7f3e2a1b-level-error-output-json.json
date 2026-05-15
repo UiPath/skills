@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-10T14:32:13.371Z",
+      "Message": "[Get Credential] Status code: 404 (Not Found). Orchestrator response: \r\nCould not find the asset 'myHiddenAset'. Error code: 1002"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-10T14:32:13.412Z",
+      "Message": "Could not find the asset 'myHiddenAset'. Error code: 1002\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "Result": "Success",
+  "Code": "Message",
+  "Data": {
+    "Message": "No connections found for connector 'uipath-microsoft-outlook365'."
+  }
+}

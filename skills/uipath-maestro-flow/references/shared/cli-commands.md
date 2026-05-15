@@ -2,7 +2,7 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
 ## uip maestro flow init
 
@@ -10,12 +10,18 @@ Scaffold a new Flow project directory. **Always create a solution first** (see t
 
 ```bash
 # 1. Create solution first
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 
-# 2. Init the flow project inside the solution folder
-cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
+# 2. Init the flow project inside the solution folder.
+#    When run from inside a solution directory, `flow init` auto-registers
+#    the project with the parent `.uipx` — no manual `solution project add`
+#    is required. Confirm via `Data.SolutionRegistration.Status` in the
+#    response (`Registered` or `AlreadyRegistered`).
+cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
-# 3. Register the project with the solution
+# 3. (Fallback only) Wire the project manually if auto-registration was
+#    `Skipped` or `Failed` — typically because init was run outside the
+#    solution dir and produced a single-nested layout.
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
@@ -50,16 +56,16 @@ Exit code 0 = valid, 1 = invalid.
 
 Validates agent nodes against organization governance policies fetched from the platform. Requires `uip login`. When governance data cannot be fetched (no login, platform unreachable), the command exits with a failure. Omit `--governance` to run local-only schema validation without auth.
 
-## uip maestro flow tidy
+## uip maestro flow format
 
-Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without tidy, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
+Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without format, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
 
 ```bash
-uip maestro flow tidy <path/to/file.flow>
-uip maestro flow tidy <path/to/file.flow> --output json
+uip maestro flow format <path/to/file.flow>
+uip maestro flow format <path/to/file.flow> --output json
 ```
 
-Tidy:
+Format:
 - Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved
 - Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }` — preserving sticky-note custom sizes
 - Recurses into subflows and rewrites `subflows[<id>].layout` for each
@@ -183,7 +189,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --label "Invoice Review" \
   --priority High \
   --assignee finance-approvers \
-  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.result.invoiceId"},{"name":"amount","type":"number","binding":"fetchInvoice.result.amount"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
+  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.output.invoiceId"},{"name":"amount","type":"number","binding":"fetchInvoice.output.amount"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
   --position 474,144 \
   --output json
 ```
@@ -200,8 +206,8 @@ uip maestro flow hitl add <path/to/file.flow> \
 
 ```json
 {
-  "inputs":  [{ "name": "invoiceId", "binding": "fetchInvoice.result.invoiceId" },
-              { "name": "amount", "type": "number", "binding": "fetchInvoice.result.amount" }],
+  "inputs":  [{ "name": "invoiceId", "binding": "fetchInvoice.output.invoiceId" },
+              { "name": "amount", "type": "number", "binding": "fetchInvoice.output.amount" }],
   "outputs": [{ "name": "decision", "required": true },
               { "name": "notes" }],
   "inOuts":  [{ "name": "emailBody" }],
@@ -209,7 +215,7 @@ uip maestro flow hitl add <path/to/file.flow> \
 }
 ```
 
-- `inputs` — read-only context fields shown to the reviewer; `binding` is the full `$vars` path (e.g. `fetchInvoice.result.invoiceId`)
+- `inputs` — read-only context fields shown to the reviewer; `binding` is the full `$vars` path (e.g. `fetchInvoice.output.invoiceId`)
 - `outputs` — fields the human fills in; `variable` defaults to the field name
 - `inOuts` — pre-filled editable fields (human can modify before submitting)
 - `outcomes` — button labels; first is primary (Approve path); subsequent ones end the flow unless you re-wire them
@@ -228,7 +234,37 @@ See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-
 
 ## uip maestro flow node / uip maestro flow edge
 
-See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
+See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/remove/list/configure` and `edge add/remove/list` syntax, flags, and auto-managed behaviors.
+
+## uip maestro flow eval
+
+Evaluation surface — evaluator CRUD, eval set CRUD, data point CRUD, Studio Web run start/status/results/list/compare. Local CRUD requires no login; `eval run *` requires `uip login` and a Flow solution that already exists in Studio Web. **Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/references/upload-safety.md](../evaluate/references/upload-safety.md).
+
+```bash
+# Data points (test cases) — inline inside eval set JSON
+uip maestro flow eval add <name>    --set <set> [flags]  --output json
+uip maestro flow eval list          --set <set> --path <flow_project> --output json
+uip maestro flow eval remove <id>   --set <set> --path <flow_project> --output json
+
+# Eval sets
+uip maestro flow eval set add <name> [--evaluators <refs>] [--entry-point <id>] --path <flow_project> --output json
+uip maestro flow eval set list      --path <flow_project> --output json
+uip maestro flow eval set remove <id> --path <flow_project> --output json
+
+# Evaluators (7 types: exact-match, json-similarity, contains, llm-judge-output|strict-json|trajectory|trajectory-simulation)
+uip maestro flow eval evaluator add <name> --type <type> [--model <m>] [--target-key <k>] [--prompt <p>] --path <flow_project> --output json
+uip maestro flow eval evaluator list      --path <flow_project> --output json
+uip maestro flow eval evaluator remove <id> --path <flow_project> --output json
+
+# Runs (require uip login + solution in Studio Web)
+uip maestro flow eval run start <name>   --set <set> [--entry-point <e>] [--wait [--timeout <s>]] --path <flow_project> --output json
+uip maestro flow eval run status <run_id> --set <set> --path <flow_project> --output json
+uip maestro flow eval run results <run_id> --set <set> [--only-failed] [--verbose] [--export-format json|csv] --path <flow_project> --output json
+uip maestro flow eval run list           --set <set> --path <flow_project> --output json
+uip maestro flow eval run compare <run_a> --compare-to <run_b> --set <set> --path <flow_project> --output json
+```
+
+For full flag tables, evaluator type details, eval set JSON shape, and the run-safety rule, see the [Evaluate capability](../evaluate/CAPABILITY.md).
 
 ## uip maestro flow registry
 

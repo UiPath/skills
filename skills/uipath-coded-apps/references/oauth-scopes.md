@@ -8,6 +8,8 @@ Use this reference to:
 
 **Note:** Broader scopes cover granular ones (e.g., `OR.Assets` covers `OR.Assets.Read`). Use the most specific scope that satisfies the operations the app performs.
 
+> **Update scopes WHEN you add the feature.** Any new service call — a write op (`insertRecordById`, `updateRecordById`, `deleteRecordById`), an action-causing method (`Jobs.stop`/`resume`/`restart`, `Tasks.complete`/`assign`, `ProcessInstances.cancel`, `Exchanges.createFeedback`, etc.), or a call to a service the app hasn't used before — may need a scope broader than what the current `VITE_UIPATH_SCOPE` in `.env` carries. Check the tables below before shipping the feature. The External Application registration must also allow the scope; if not, the token request is rejected entirely (see [oauth-client-setup.md](oauth-client-setup.md)).
+
 ---
 
 ## Assets
@@ -16,6 +18,7 @@ Use this reference to:
 |--------|----------------|
 | `getAll()` | `OR.Assets` or `OR.Assets.Read` |
 | `getById()` | `OR.Assets` or `OR.Assets.Read` |
+| `getByName()` | `OR.Assets` or `OR.Assets.Read` |
 
 ---
 
@@ -26,6 +29,9 @@ Use this reference to:
 | `getAll()` | `OR.Jobs` or `OR.Jobs.Read` |
 | `getById()` | `OR.Jobs` or `OR.Jobs.Read` |
 | `getOutput()` | `OR.Jobs` or `OR.Jobs.Read` **plus** `OR.Folders` or `OR.Folders.Read` (required because `getOutput` internally calls the Attachments API to resolve file-type output arguments) |
+| `stop()` | `OR.Jobs` |
+| `resume()` | `OR.Jobs` or `OR.Jobs.Write` |
+| `restart()` | `OR.Jobs` |
 
 ---
 
@@ -60,8 +66,10 @@ Use this reference to:
 | `insertRecordById()` / `insertRecord()` | `DataFabric.Data.Write` |
 | `insertRecordsById()` / `insertRecords()` | `DataFabric.Data.Write` |
 | `deleteRecordsById()` / `deleteRecords()` | `DataFabric.Data.Write` |
+| `deleteRecordById()` / `deleteRecord()` | `DataFabric.Data.Write` |
 | `updateRecordById()` / `updateRecord()` | `DataFabric.Data.Write` |
 | `updateRecordsById()` / `updateRecords()` | `DataFabric.Data.Write` |
+| `queryRecordsById()` / `queryRecords()` | `DataFabric.Data.Read` |
 | `downloadAttachment()` | `DataFabric.Data.Read` |
 | `uploadAttachment()` | `DataFabric.Data.Write` |
 | `deleteAttachment()` | `DataFabric.Data.Write` |
@@ -83,6 +91,7 @@ Use this reference to:
 |--------|----------------|
 | `getAll()` | `OR.Execution` or `OR.Execution.Read` |
 | `getById()` | `OR.Execution` or `OR.Execution.Read` |
+| `getByName()` | `OR.Execution` or `OR.Execution.Read` |
 | `start()` | `OR.Jobs` or `OR.Jobs.Write` |
 
 ---
@@ -174,7 +183,7 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 | `getAll()` / `getById()` | `OR.Execution.Read`, `OR.Jobs.Read` |
 | `updateById()` / `deleteById()` | `OR.Execution`, `OR.Jobs` |
 | `startSession()` | `OR.Execution`, `OR.Jobs`, `ConversationalAgents` |
-| `uploadAttachment()` | `OR.Execution`, `OR.Jobs` |
+| `uploadAttachment()` / `getAttachmentUploadUri()` | `OR.Execution`, `OR.Jobs` |
 
 ### Exchanges
 
@@ -188,6 +197,15 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 | Method | Required Scope |
 |--------|----------------|
 | `getById()` / `getContentPartById()` | `OR.Execution.Read`, `OR.Jobs.Read` |
+
+---
+
+## Agent Feedback
+
+| Method | Required Scope |
+|--------|----------------|
+| `getAll()` | `Traces.Api` |
+| `getById()` | `Traces.Api` |
 
 ---
 

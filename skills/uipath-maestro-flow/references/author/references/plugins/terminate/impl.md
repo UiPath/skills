@@ -18,7 +18,7 @@ Confirm: input port `input`, no output ports.
 {
   "id": "abortOnError",
   "type": "core.logic.terminate",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Abort" },
   "inputs": {}
 }

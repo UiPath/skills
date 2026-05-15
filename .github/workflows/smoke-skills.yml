@@ -5,11 +5,13 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  # No `paths:` filter on purpose. This workflow is a required status
+  # check; if `paths:` excluded a PR the workflow wouldn't run, no
+  # check would be reported, and merge would block forever. Instead we
+  # always trigger and let the `detect` job short-circuit via
+  # `skip=true` — the gated job is then reported as skipped, which
+  # GitHub counts as a pass for required checks.
   pull_request:
-    paths:
-      - 'skills/*/SKILL.md'
-      - 'skills/*/references/**'
-      - 'tests/**'
   workflow_dispatch:
 
 jobs:
@@ -36,15 +38,34 @@ jobs:
           # what's being exercised — so we skip those tasks here.
           WINDOWS_SKILLS="uipath-rpa uipath-rpa-legacy"
 
+          # Opt-in benchmarks live alongside skill tests but are NOT smoke
+          # tests — they're large/expensive and run via the dashboard
+          # (`dashboard run --suite <name>`). Skip here so smoke stays cheap.
+          BENCHMARK_DIRS="activation"
+
+          # Single source of truth for "skill dirs not smoke-eligible".
+          # Used by both the test-infra fan-out and the per-skill loop below.
+          is_excluded_path() {
+            local dir="$1"
+            for skill in $WINDOWS_SKILLS $BENCHMARK_DIRS; do
+              [[ "$dir" == "tests/tasks/$skill/"* ]] && return 0
+            done
+            return 1
+          }
+
           # If test infrastructure changed, run all smoke tests except
-          # the Windows-only ones.
-          if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$'; then
+          # the Windows-only ones and opt-in benchmarks.
+          #
+          # We only fan out for the smoke config (default.yaml) — other
+          # experiment files (integration.yaml, e2e.yaml, activation.yaml,
+          # ...) drive their own jobs/dashboards and don't change smoke
+          # behavior, so editing them shouldn't trigger a 30-min full-suite
+          # run on every PR.
+          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
-              case "$f" in
-                tests/tasks/uipath-rpa/*|tests/tasks/uipath-rpa-legacy/*) continue ;;
-              esac
+              is_excluded_path "$f" && continue
               GLOBS="$GLOBS ${f#tests/}"
             done
             GLOBS=$(echo "$GLOBS" | xargs)
@@ -78,6 +99,10 @@ jobs:
           for skill in $SKILLS; do
             if echo "$WINDOWS_SKILLS" | grep -qw "$skill"; then
               echo "Skipping $skill (runs on Windows — see smoke-rpa-skills.yml)"
+              continue
+            fi
+            if echo "$BENCHMARK_DIRS" | grep -qw "$skill"; then
+              echo "Skipping $skill (opt-in benchmark — runs via dashboard --suite $skill)"
               continue
             fi
             if [ -d "tests/tasks/$skill" ]; then
@@ -185,6 +210,8 @@ jobs:
       # `.npmrc` scope mapping (e.g., to the internal GitHub Packages
       # feed, which carries divergent 1.0.0-alpha.* prereleases). See
       # smoke-rpa-skills.yml for the full rationale.
+      # NOTE: @uipath/admin-tool is not yet in a stable CLI release;
+      # uipath-admin smoke tests tolerate "unknown command 'admin'".
       - name: Install uip CLI (public npm @latest)
         run: |
           npm install -g \
@@ -210,7 +237,7 @@ jobs:
             -d "grant_type=client_credentials" \
             -d "client_id=$UIPATH_CLIENT_ID" \
             -d "client_secret=$UIPATH_CLIENT_SECRET" \
-            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read" \
+            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments" \
             | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
           echo "::add-mask::$TOKEN"
           {
@@ -220,6 +247,7 @@ jobs:
             echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
             echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
             echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
+            echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
           } >> "$GITHUB_ENV"
           UIPATH_CLI_ENABLE_ENV_AUTH=true \
           UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
@@ -247,12 +275,13 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
         working-directory: tests
         id: smoke
         run: |
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke"
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml --tags smoke -j 1 -v
+            -e experiments/default.yaml --tags smoke -j "$TASK_PARALLELISM" -v
         continue-on-error: true
 
       - name: Summarize results

@@ -46,7 +46,7 @@ The **Operation** field on trigger activities indicates the trigger type:
 
 - **Activities** = named actions (e.g., "Send Email"). Discovered via `is activities list`.
 - **Triggers** = event listeners (e.g., "Record Created"). Discovered via `is activities list --triggers`. Metadata via `is triggers objects` / `is triggers describe`. See [triggers.md](triggers.md).
-- **Resources** = data objects with CRUD (e.g., "Account"). Discovered via `is resources list`. Executed via `is resources execute <verb>`.
+- **Resources** = data objects with CRUD (e.g., "Account"). Discovered via `is resources list`. Executed via `is resources run <verb>`.
 
 > After listing activities, present the available actions to the user. Activities provide context for what a connector can do — use this to guide which resource operations, triggers, or workflow actions to pursue.
 
@@ -194,3 +194,20 @@ Logical operators between siblings:
 | `{ "id": "<field without searchable: true>", ... }` | The CLI checks `searchable` on the IS metadata entry; non-searchable fields are rejected even if their type looks filterable. | Pick a field where `searchable: true`. |
 | `"queryParameters": { "where": "..." }` alongside `filter` | Hardcoding `where` assumes that's the FilterBuilder param name — it isn't always (Salesforce uses `q`, etc.). | Pass `filter` only; the CLI discovers the right param name from `design.component === "FilterBuilder"`. |
 | `In` operator with a single value not in a list | `In` expects an array `value`. | Use `Equals`, or pass `value: ["one"]`. |
+
+## Custom Fields (`objectActions[ActionType=Api]`)
+
+Connectors with extensible/custom fields (Jira project+issuetype → custom Jira fields, Mailchimp list_id → audience merge fields, Salesforce custom objects) expose `Api`-type entries under `objectActions[]`. Each entry's `apiConfiguration.url`/`body` carries `{token}` placeholders naming the parent fields. The runtime replays the ObjectAction with cached parent values to fetch the connector-specific custom-field schema.
+
+**For Maestro flows**, this lives on the activity node as `essentialConfiguration.customFieldsRequestDetails`. Authoring contract → [uipath-maestro-flow connector/impl.md Step 6c](../../../uipath-maestro-flow/references/author/references/plugins/connector/impl.md).
+
+Shape:
+
+```json
+"customFieldsRequestDetails": {
+  "objectActionName": "GenerateSchema",
+  "parameterValues": [["fields_sub_project_sub_key", "ENGCE"], ...]
+}
+```
+
+camelCase inner keys, `parameterValues` as `[key, value]` tuples (Studio Web emits `Map<string,string|null>` via `Array.from(entries())`). Object-map form rejected by the CLI.

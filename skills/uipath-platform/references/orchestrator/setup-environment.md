@@ -23,9 +23,9 @@ Create folders, assign users with roles, provision machines, and configure licen
 
 ```mermaid
 graph LR
-    A[folders create] --> B[roles create-role]
-    B --> C[roles edit-role<br/>add permissions]
-    C --> D[users create]
+    A[folders create] --> B[roles create]
+    B --> C[roles edit<br/>add permissions]
+    C --> D[users import]
     D --> E[users assign<br/>to folder + role]
     E --> F[machines create]
     F --> G[machines assign<br/>to folder]
@@ -78,9 +78,19 @@ uip or folders get <folder-key-guid> --output json
 
 # Check runtime capacity in a folder
 uip or folders runtimes "Finance" --output json
+
+# Move a folder under a different parent (or to root)
+uip or folders move "Finance/Invoicing" --parent "Operations" --output json
+uip or folders move <folder-key-guid> --root --output json   # promote to top level
+
+# Delete an empty folder (recursive removal must be explicit)
+uip or folders delete "Finance/Invoicing" --output json
+uip or folders delete <folder-key-guid> --output json
 ```
 
 The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`). Without `--all`, only folders the current user is assigned to are returned.
+
+`folders move` and `folders delete` require admin permissions and accept either a path or a GUID. `delete` errors if the folder still contains processes, queues, assets, or sub-folders — clean those out first or move them with `folders move`.
 
 ### Step 3: Create Roles
 
@@ -88,35 +98,98 @@ Roles group permissions and are scoped to either the tenant or a folder. Create 
 
 ```bash
 # Create a folder-scoped role
-uip or roles create-role --name "FinanceOperator" --type Folder --output json
+uip or roles create --name "FinanceOperator" --type Folder --output json
 
 # Add permissions to the role
-uip or roles edit-role <role-key> \
+uip or roles edit <role-key> \
   --add-permissions "Assets.View,Assets.Edit,Queues.View,Jobs.Create,Jobs.View" \
   --output json
 ```
 
-Use `uip or roles list-permissions` to discover all grantable permission names. Use `uip or roles get-role <key>` to inspect a role's current grants.
+Use `uip or roles permissions` to discover all grantable permission names. Use `uip or roles get <key>` to inspect a role's current grants.
 
 Role types:
-- **Tenant** -- Applies across the entire tenant. Assigned via `uip or users assign-roles`.
-- **Folder** -- Applies only within specific folders. Assigned via `uip or users assign` or `uip or roles assign`.
 
-### Step 4: Create Users
+- **Tenant** — Applies across the entire tenant. Assigned via `uip or users assign-roles`.
+- **Folder** — Applies only within specific folders. Assigned via `uip or users assign` or `uip or roles assign`.
 
-Create users at the tenant level. They exist tenant-wide but have no folder access until explicitly assigned.
+#### Inspect / Audit / Delete Roles
 
 ```bash
-uip or users create --username "jane.doe@example.com" --output json
+# List all roles in the tenant
+uip or roles list --output json
+
+# Full grantable-permissions catalogue (large — use --output-filter)
+uip or roles permissions --output json
+
+# Effective permissions for one user (tenant + folder roles merged)
+uip or roles user-permissions <user-key-guid> --folder-path "Finance" --output json
+
+# Roles assigned to a user (tenant + folder)
+uip or roles user-roles <user-key-guid> --output json
+
+# Manage user assignments on a single role (add/remove users at the role level)
+uip or roles users <role-key> --add-users <user-key-1>,<user-key-2> --output json
+uip or roles users <role-key> --remove-users <user-key-1> --output json
+
+# Delete a role. Static built-in roles (Folder Administrator etc.) cannot be deleted.
+uip or roles delete <role-key> --output json
+```
+
+`roles user-permissions` is the right command for "what can this user actually do here" debugging; it accounts for inherited folder roles and tenant overrides. `roles user-roles` is the inverse — given a user, which role assignments exist.
+
+### Step 4: Import Users from Identity Service
+
+Principals are managed in Identity Service (IS), not in Orchestrator. `users import` references an existing IS principal so the tenant can grant it folder access. (The legacy `users create` / `users delete` commands are gone — they called endpoints reserved for `ProvisionType=Manual`, which is not how cloud or IS-backed users are managed.)
+
+```bash
+uip or users import --username "jane.doe@example.com" --output json
 ```
 
 Key options:
-- `--role-keys <keys>` -- Comma-separated role GUIDs for tenant-level role assignment at creation time.
-- `--allow-unattended` -- Enable unattended job execution capability.
-- `--unattended-username <user>` / `--unattended-password <pass>` -- Windows credentials for unattended execution.
-- `--name <first>` / `--surname <last>` / `--email <email>` -- Profile fields.
 
-Save the `Key` from the response for the next step.
+- `--directory-id <id>` — Use the IS directory identifier (OIDC subject) instead of `--username`. Pass exactly one of the two.
+- `--domain <domain>` — IS directory domain. Defaults to `default`. List configured domains via `GET /api/DirectoryService/GetDomains` if your tenant uses on-prem AD or a non-default IS realm.
+- `--type <type>` — IS principal type. Four supported:
+  - `DirectoryUser` (default) — a real human user.
+  - `DirectoryGroup` — a directory group; folder grants apply to every member.
+  - `DirectoryRobot` — a **robot account** in IS. This is the standard way to give a folder an unattended robot identity. The robot account is created in IS first (separate flow); `users import --type DirectoryRobot` brings it into the tenant so it can be assigned to a folder and licensed for unattended execution. Without an imported `DirectoryRobot` (or a `DirectoryUser` with unattended permissions), `jobs start` returns `HTTP 409: Couldn't find any user with unattended robot permissions in the current folder.`
+  - `DirectoryExternalApplication` — an IS-registered external app (client credentials principal). Used for service-to-service tenants; folder grants apply to whoever holds the client secret.
+- `--folder-path <path>` / `--folder-key <key>` + `--role-keys <guids>` — Optional one-shot. Imports the principal **and** assigns folder roles in a single call. Both must be present together; pass neither for an import-only call. The next step covers folder assignment as a separate flow.
+
+Save the `UserName` from the response and look up the `Key` via `users list` for the next step.
+
+### Step 4b: Inspect / Edit / Unassign / Remove Users
+
+```bash
+# Whoami — current authenticated principal
+uip or users current --output json
+
+# Get one user by key (or numeric id)
+uip or users get <user-key-guid> --output json
+
+# Filter the assignable set for a folder (not yet assigned, can be added with `users assign`)
+uip or users list-available --folder-path "Finance" --search "jane" --output json
+
+# Edit principal-level flags (this is the only place to grant unattended on a DirectoryUser)
+uip or users edit <user-key-guid> \
+  --allow-unattended \
+  --license-type Unattended \
+  --unattended-username "DOMAIN\\jane.doe" --unattended-password "<secret-or-cred-store-name>" \
+  --output json
+
+# Remove from a single folder (does NOT delete the principal in IS)
+uip or users unassign <user-key-guid> --folder-path "Finance" --output json
+```
+
+Key flags on `users edit`:
+
+- **License toggles** (mutually exclusive pairs): `--allow-unattended`/`--deny-unattended`, `--allow-attended`/`--deny-attended`, `--allow-login`/`--deny-login`, `--allow-personal-workspace`/`--deny-personal-workspace`, `--active`/`--inactive`.
+- `--license-type <Attended|Unattended|...>` — assigned license profile.
+- `--unattended-username <user>` and `--unattended-password <pass>` — Windows account + secret used for unattended execution. Required by the API as a pair when first toggling `--allow-unattended` on a `DirectoryUser`. Username typically `DOMAIN\\name` format. Password may be a literal secret or the name of an entry in a credential store (paired with `--credential-store-key <guid>`).
+- `--credential-store-key <guid>` — credential store backing `--unattended-password` when the secret is stored externally.
+
+`DirectoryRobot` principals don't need `--unattended-username` / `--unattended-password` on import — the robot identity already carries its own credentials in IS. Use `users edit --license-type Unattended` on the robot key to set the license profile.
 
 ### Step 5: Assign Users to Folders
 
@@ -144,11 +217,13 @@ uip or machines create --name "finance-runner-01" --output json
 ```
 
 Key options:
-- `--serverless` -- Create a serverless (cloud-hosted) machine instead of a standard template.
-- `--unattended-slots <n>` -- Number of unattended runtime slots.
-- `--headless-slots <n>` -- Number of headless runtime slots.
-- `--non-production-slots <n>` -- Non-production slots for testing.
-- `-d, --description <text>` -- Machine description.
+
+- `--serverless` — Create a serverless (cloud-hosted) machine instead of a standard template.
+- `--unattended-slots <n>` — Number of unattended runtime slots.
+- `--headless-slots <n>` — Number of headless runtime slots.
+- `--non-production-slots <n>` — Non-production slots for testing.
+- `--testing-slots <n>` — Test automation runtime slots.
+- `-d, --description <text>` — Machine description.
 
 ### Step 7: Assign Machines to Folders
 
@@ -162,6 +237,33 @@ uip or machines assign <key1> <key2> <key3> --folder-path "Finance" --output jso
 ```
 
 Verify: `uip or machines list --folder-path "Finance" --output json`.
+
+### Step 7b: Inspect / Edit / Unassign / Delete Machines
+
+```bash
+# Get one machine
+uip or machines get <machine-key-guid> --output json
+
+# Edit slots, name, description (PATCH semantics — only provided fields change)
+uip or machines edit <machine-key-guid> \
+  --unattended-slots 4 --headless-slots 2 \
+  --name "finance-runner-01-renamed" --output json
+
+# Remove a machine from a folder (machine still exists at tenant level)
+uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
+
+# Delete the machine template entirely (tenant-level)
+uip or machines delete <machine-key-guid> --output json
+
+# Bulk delete
+uip or machines delete <key1> <key2> --output json
+```
+
+Notes:
+
+- `machines edit` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed.
+- Each folder accepts **one** Cloud Robots / Serverless machine. Trying to assign a second serverless to the same folder returns `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.`
+- `machines list` defaults to all machines visible to the user. With `--folder-path` it lists only machines assigned to that folder. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.).
 
 ### Step 8: Configure Licenses
 
@@ -196,18 +298,16 @@ uip or folders create "Finance" -d "Finance department automations" --output jso
 # Response: { "Data": { "Key": "a1b2c3d4-...", "Path": "Finance" } }
 
 # 3. Create a folder role and add permissions
-uip or roles create-role --name "FinanceOperator" --type Folder --output json
+uip or roles create --name "FinanceOperator" --type Folder --output json
 # Response: { "Data": { "Key": "r1r2r3r4-..." } }
 
-uip or roles edit-role r1r2r3r4-... \
+uip or roles edit r1r2r3r4-... \
   --add-permissions "Assets.View,Assets.Edit,Queues.View,Jobs.Create,Jobs.View,Processes.View" \
   --output json
 
-# 4. Create a user
-uip or users create --username "jane.doe@example.com" \
-  --name "Jane" --surname "Doe" --email "jane.doe@example.com" \
-  --allow-unattended --output json
-# Response: { "Data": { "Key": "u1u2u3u4-..." } }
+# 4. Import a user from Identity Service
+uip or users import --username "jane.doe@example.com" --output json
+# (Look up the assigned Key with: uip or users list --search "jane.doe")
 
 # 5. Assign user to folder with role
 uip or users assign \
@@ -275,5 +375,5 @@ Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`) on
 
 ## Related
 
-- [Run Jobs](run-jobs.md) -- After setup, deploy packages and start jobs in the folder.
-- [Resources](../resources/resources.md) -- Create assets, queues, and buckets in the folder.
+- [Run Jobs](run-jobs.md) — After setup, deploy packages and start jobs in the folder.
+- Create assets, queues, and buckets in the folder → [`uipath-resources`](../resources/resources.md)

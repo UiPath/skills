@@ -10,7 +10,9 @@ During sdd.md → task.md interpretation, when you need to determine:
 
 ## Prerequisites
 
-Run `uip maestro case registry pull` before any lookups. This populates the local cache at `~/.uipcli/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
+Run `uip maestro case registry pull` before any lookups. This populates the local cache at `~/.uip/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
+
+> **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). The Rule 17 / § MUST-Confirm-Before-Placeholder-Fallback gate only applies to **empty matches inside an existing cache**; a missing file is a precondition failure, not a 0-result lookup. If the file is still absent after a successful pull, the tenant has no resources of that type — proceed to placeholder.
 
 ## CLI Search Gaps
 
@@ -22,9 +24,31 @@ The `uip maestro case registry search` command has known gaps. In particular, it
 
 Direct cache-file inspection is the authoritative discovery method for this skill.
 
+## MUST Confirm Before Placeholder Fallback
+
+> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any placeholder T-entry.
+
+Required prompt shape:
+
+```
+Question: <N> registry lookup(s) returned 0 matches: <comma-list of <name> in <folder>>.
+          Run `uip maestro case registry pull --force` to bypass the cache and re-resolve?
+Header:   Force pull
+Options:
+  - Yes, force pull and re-resolve
+      → run `uip maestro case registry pull --force`, re-search caches, update registry-resolved.json with the second-pass results.
+        Any STILL-empty lookups go to placeholder ONLY after this round.
+  - Skip and use placeholders
+      → proceed to per-plugin Unresolved Fallback paths for the unmatched lookups.
+```
+
+**Apply once per planning batch, not per-task.** A single prompt covers every empty in that batch.
+
+**Do NOT pre-judge.** Resource-name heuristics ("looks vendor-specific, won't be in registry anyway", "this is an obvious custom connector") are the user's call to make, not the agent's. Always ask. SKILL.md Rule 17.
+
 ## Cache File Index
 
-Each resource type has a `<type>-index.json` file at `~/.uipcli/case-resources/`:
+Each resource type has a `<type>-index.json` file at `~/.uip/case-resources/`:
 
 | File | Identifier field | Name field | Folder field |
 |------|-----------------|------------|--------------|
@@ -68,7 +92,7 @@ For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache look
 For each task in the sdd.md, extract the **name** and **folder path** from the Process References table, then filter the cache file:
 
 ```bash
-cat ~/.uipcli/case-resources/<type>-index.json | python3 -c "
+cat ~/.uip/case-resources/<type>-index.json | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 for item in data:
@@ -92,13 +116,16 @@ for item in data:
 
 ### 3. Handle Empty Results
 
+> **Required precondition.** Before reaching this step, the [§ MUST: Confirm Before Placeholder Fallback](#must-confirm-before-placeholder-fallback) gate above MUST have been satisfied. If you have not yet run AskUserQuestion for the empty-result batch, do that first. Force pull and per-plugin Unresolved Fallback both flow through that gate.
+
 If no match is found across all relevant cache files:
 
-1. Force-refresh the cache and retry. **Confirm with the user via the `AskUserQuestion` tool before running** — force pull bypasses the cache, is network-heavy, and may be slow:
+1. **Already gated above.** AskUserQuestion confirmation already ran. If the user picked `Yes, force pull and re-resolve`, the force pull has already executed; this step is reached for lookups that remained empty after the second-pass search.
    ```bash
+   # already executed during the gate's "Yes" branch:
    uip maestro case registry pull --force
    ```
-2. If still no match, mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]`
+2. If still no match (or user picked `Skip`), mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
 
 ### 4. Return All Matches
 
@@ -128,7 +155,9 @@ Additional `type` values not discoverable through cache: `rpa`, `external-agent`
 
 ## Connector Tasks
 
-For entries in `typecache-activities-index.json` or `typecache-triggers-index.json`, the full resolution pipeline (get-connector → get-connection → pick connection → describe) lives in [connector-integration.md](connector-integration.md). Registry discovery provides only the `uiPathActivityTypeId`; everything else is handled there.
+For entries in `typecache-activities-index.json` or `typecache-triggers-index.json`, the resolution pipeline (get-connection + `case spec`) lives in [connector-integration.md](connector-integration.md). Registry discovery provides only the `uiPathActivityTypeId`; everything else is handled there.
+
+After registry pull, `uip maestro case spec` is the unified metadata endpoint for connector tasks — it returns identity, connection details, inputs/outputs/filter contract, references with pre-built discoverCommand, and (in Phase 3) a populated `caseShape` ready to drop into `caseplan.json`. This replaces the legacy `case tasks describe` + `is resources describe` dance for connector activities and triggers. See [connector-integration.md § Step 3](connector-integration.md) for the call shape.
 
 - **Only use entries that have a `uiPathActivityTypeId` field.** Skip entries without it — these are non-connector activities and are not supported as case tasks at this time.
 

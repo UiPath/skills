@@ -4,7 +4,8 @@ Discover available capabilities, then design the flow topology — select node t
 
 > **Registry rules for this phase:**
 > - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
-> - **`registry get` is NOT allowed** — detailed metadata, connection binding, and reference field resolution are handled in [Planning Phase 2: Implementation](planning-impl.md).
+> - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get <nodeType> --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+> - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](planning-impl.md).
 
 ---
 
@@ -35,6 +36,11 @@ uip maestro flow registry search outlook --output json       # example: does an 
 uip maestro flow registry search "invoice process" --output json  # example: is an RPA process published?
 uip maestro flow registry search agent --output json         # example: what agents are available?
 uip maestro flow registry list --output json                 # list all available node types
+
+# OOTB action nodes — fetch full schema during discovery (no --connection-id needed):
+uip maestro flow registry get core.action.http --output json    # full HTTP request schema, headers/auth shape
+uip maestro flow registry get core.action.script --output json  # script node inputs/outputs and language options
+# Repeat for every OOTB action node the flow will use (transform, queue actions, etc.)
 ```
 
 > **Auth note:** Without `uip login`, the registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. If the flow requires connectors or resources, verify login status first: `uip login status --output json`.
@@ -65,7 +71,7 @@ uip is connections list "<connector-key>" --output json
 
 Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http` or note it as a gap in Open Questions.
 
-> **Do NOT run `registry get` during discovery.** Search results give you node type names — enough to know what connectors and operations exist. `is connections list` confirms connection availability. Detailed field metadata (required fields, types, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2.
+> **Run `registry get` for OOTB action nodes during discovery; defer for connector and resource nodes.** OOTB nodes (HTTP, Script, Transform, queue actions, etc.) have no `--connection-id` dependency — fetch their full schemas now so the planned topology references real ports and fields. Connector field metadata (required fields, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2; resource schemas (RPA, agent, flow, API workflow) require `--local` or published resolution and also belong to Phase 2. `is connections list` is enough to confirm connector connection availability in this phase.
 
 ---
 
@@ -94,6 +100,8 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.action.script` | [script](plugins/script/planning.md) | Custom logic, data transformation, computation, formatting |
 | `core.action.http.v2` | [http](plugins/http/planning.md) | Call a REST API — connector mode (IS auth) or manual mode (raw URL). Replaces deprecated `core.action.http` |
 | `core.action.transform` | [transform](plugins/transform/planning.md) | Declarative map, filter, or group-by on a collection |
+| `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns (category, summary, extracted entities) to every row of an attached CSV. Gated by tenant flag `canvas.nodes.batch-transform` |
+| `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Comprehensive synthesis / Q&A over one attached document, with optional per-claim citations. Gated by tenant flag `canvas.nodes.summarize` |
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
@@ -118,6 +126,7 @@ Connector nodes call external services via Integration Service. They are **not**
 | When to Select | Plugin |
 | --- | --- |
 | A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | [connector](plugins/connector/planning.md) |
+| The flow needs to read/write UiPath Data Fabric entities (Query / Create / Update / Delete / Get by ID) | [connector/data-fabric](plugins/connector/data-fabric/planning.md) |
 
 **In this phase:** Use [Capability Discovery](#capability-discovery) to confirm the connector exists and note it as `connector: <service-name>` with the intended operation. Phase 2 resolves the exact type, connection, and fields via [connector/impl.md](plugins/connector/impl.md).
 
@@ -127,8 +136,8 @@ Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks.
 
 | Node Type Pattern | Plugin | When to Select |
 | --- | --- | --- |
-| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
-| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent is a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
+| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
+| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent lives as a separate project — either in this solution (sibling of the flow) or as a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
 
@@ -138,7 +147,7 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 
 | Category | Node Type Pattern | Plugin |
 | --- | --- | --- |
-| RPA Process | `uipath.core.rpa.{key}` | [rpa](plugins/rpa/planning.md) |
+| RPA Process | `uipath.core.rpa-workflow.{key}` | [rpa](plugins/rpa/planning.md) |
 | Agent | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) |
 | Agentic Process | `uipath.core.agentic-process.{key}` | [agentic-process](plugins/agentic-process/planning.md) |
 | Flow | `uipath.core.flow.{key}` | [flow](plugins/flow/planning.md) |
@@ -175,6 +184,8 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.action.script` | `input` | `success`, `error` |
 | `core.action.http.v2` | `input` | `default`, `error`, `branch-{id}` (dynamic per `inputs.branches` entry) |
 | `core.action.transform` | `input` | `output`, `error` |
+| `uipath.pattern.batch-transform` | `input` | `output`, `error` |
+| `uipath.pattern.deep-rag` | `input` | `output`, `error` |
 | `core.logic.delay` | `input` | `output` |
 | `core.logic.decision` | `input` | `true`, `false` |
 | `core.logic.switch` | `input` | `case-{id}` (dynamic per case), `default` |
@@ -186,8 +197,8 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.logic.mock` | `input` | `output` |
 | `uipath.agent.autonomous` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
 | `uipath.core.agent.*` | `input` | `output`, `error` |
-| `uipath.core.rpa.*` | `input` | `output`, `error` |
-| `uipath.core.hitl.*` | `input` | `output`, `error` |
+| `uipath.core.rpa-workflow.*` | `input` | `output`, `error` |
+| `uipath.core.human-task.*` | `input` | `output`, `error` |
 | `uipath.core.flow.*` | `input` | `output`, `error` |
 | `uipath.core.agentic-process.*` | `input` | `output`, `error` |
 | `uipath.core.api-workflow.*` | `input` | `output`, `error` |
@@ -493,8 +504,15 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 ### "I need an AI agent"
 
-- Agent is tightly coupled to this flow, not reused -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
-- Agent is a published tenant resource, reused across flows -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
+- Low-code agent tightly coupled to this flow, bundled inside the flow project -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
+- Coded (Python) agent, or any agent that lives as a separate project (in this solution or published to Orchestrator) -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
+
+### "I need an LLM to process rows of a CSV or summarize a document"
+
+- Add LLM-generated columns to every row of a CSV (classify, summarize, extract) -> [batch-transform](plugins/batch-transform/planning.md) (`uipath.pattern.batch-transform`)
+- Synthesize or answer questions over one attached document, with optional citations -> [summarize](plugins/summarize/planning.md) (`uipath.pattern.deep-rag`)
+- Small ad-hoc reshaping (map/filter/groupBy) without an LLM -> [transform](plugins/transform/planning.md)
+- Multi-step reasoning with tool use -> [inline-agent](plugins/inline-agent/planning.md) or [agent](plugins/agent/planning.md)
 
 ### "The flow needs something outside flow capabilities"
 

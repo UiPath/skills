@@ -252,6 +252,7 @@ make test-uipath-maestro-flow  # run all tests for a specific skill
 3. Use minimal prompts — the goal is to test the skill's guidance quality, not hand-hold the agent
 4. Tag every task appropriately: `smoke`, `integration`, or `e2e`
 5. Follow the task ID pattern: `skill-<domain>-<capability>`
+6. **Do not score self-reports.** Don't ask the agent to write a `report.json` / `recommendation.json` summary and then have `success_criteria` read that file back — the agent can write any value. Score real artifacts (`.flow` content, generated CSVs), real operations (`run_command` re-executes a validation), or behavior signals (`command_executed`, `command_not_executed`, `skill_triggered`).
 
 See `tests/README.md` for the full task YAML template, success criteria reference, and examples from existing tests.
 
@@ -266,16 +267,17 @@ Use the `/test-coverage` slash command to see what a skill's tests cover and whe
 
 This produces a markdown report in `tests/reports/` with component coverage, rule coverage, priority-ranked gaps, and concrete recommendations for new tests to write. Run this before and after adding tests to measure your progress.
 
-### Scaffolding Tests with `/generate-tasks`
+### Scaffolding a Test with `/generate-task`
 
-Use the `/generate-tasks` command to scaffold task YAML files from coverage gaps:
+Use the `/generate-task` command to scaffold a single task YAML from a free-form description. The command always infers the target skill from the description — do not pass a skill name.
 
 ```bash
-/generate-tasks uipath-platform              # generate tasks for highest-priority gaps
-/generate-tasks uipath-platform authentication  # target a specific area
+/generate-task smoke test for folder listing via uip orchestrator
+/generate-task e2e flow that uses HITL with an approval gate and write-back
+/generate-task cover the new uip flow registry get subcommand
 ```
 
-Generated tasks are **starting points for reference only** — review and improve them before relying on them for CI. Verify that CLI commands, success criteria, and prompts match the skill's actual behavior, and adjust weights and thresholds based on what matters most for your skill.
+Generated tasks are **unverified scaffolds**. Before merging, run the task end-to-end with `coder-eval` and add a passing-run claim to the PR description (the lint workflow flags missing claims as High severity). Verify that CLI commands, success criteria, and prompts match the skill's actual behavior, and adjust weights and thresholds based on what matters most for your skill.
 
 ## Quality Checklist
 

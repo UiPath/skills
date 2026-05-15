@@ -28,7 +28,7 @@ Every agent must follow this table. Do not redefine confidence behavior locally.
 
 ## Startup
 
-1. Create `.investigation/`, `.investigation/evidence/`, `.investigation/raw/` if they don't exist
+1. Create `.local/investigations/`, `.local/investigations/evidence/`, `.local/investigations/raw/` if they don't exist
 
 ## Available Tools
 
@@ -56,14 +56,14 @@ Read files from paths in `state.json`:
 
 ## Raw Data Rule
 
-- **Redirect CLI output directly to file.** Use `uip ... --output json > .investigation/raw/{filename}.json` or `uip ... -o .investigation/raw/` so raw responses never enter agent context. Then read back only the specific fields you need.
+- **Redirect CLI output directly to file.** Use `uip ... --output json > .local/investigations/raw/{filename}.json` or `uip ... -o .local/investigations/raw/` so raw responses never enter agent context. Then read back only the specific fields you need.
 - Do NOT capture full CLI responses in context. The raw file is the record — read from it selectively.
 - Evidence files reference raw files via `raw_data_ref`
 - Before fetching data, check `raw/` and `evidence/` for existing files — reuse if the same entity was already queried
 
 ## Requesting User Input
 
-When you need user input, write a file `.investigation/needs_input.json` and then stop:
+When you need user input, write a file `.local/investigations/needs_input.json` and then stop:
 
 ```json
 {

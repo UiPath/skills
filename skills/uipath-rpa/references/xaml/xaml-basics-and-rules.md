@@ -229,31 +229,56 @@ Mixing expression languages causes build failures.
 Never construct activity XAML from memory. Two sources, in this order:
 
 1. **`<Activity>.md`** — authoritative property surface: which properties exist, types, defaults, descriptions, required-scope rules.
-2. **`uip rpa get-default-activity-xaml --activity-class-name "<FullClassName>"`** — starter element with correct namespaces, assembly references, and any properties whose values differ from the type default.
+2. **`uip rpa activities get-default-xaml --activity-class-name "<FullClassName>"`** — starter element with correct namespaces, assembly references, and any properties whose values differ from the type default.
 
 **Where `<Activity>.md` lives — try in this order:**
 
 1. **Primary:** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md` — auto-generated when the package is installed; co-versioned with the runtime. Use `Glob` + `Read` (not `Grep` — `.local/` is gitignored).
 2. **Fallback:** `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` — bundled reference set covering the major UiPath packages. Use this when `.local/docs` is empty for that package (older versions don't ship per-activity docs) or when no project directory is in scope yet. Pick the version folder closest to the installed version.
-3. **Neither exists:** the package is third-party or unusual. Document this in your output, fall back to `find-activities` + `get-default-activity-xaml` alone, and warn the user that the property surface may be incomplete.
+3. **Neither exists:** the package is third-party or unusual. Document this in your output, fall back to `activities find` + `activities get-default-xaml` alone, and warn the user that the property surface may be incomplete.
 
-> **Skip-tax.** `get-default-activity-xaml` omits any property whose value equals the type default (`null`, `0`, `false`, unset). For `NTypeInto`: 2 of 20 properties. For `NClick`: ~3 of ~15. The starter looks complete; it isn't. The MD read is the only way you learn which optional properties matter for your use case (`ClickType`, `KeyModifiers`, `WaitForReady`, `EmptyFieldMode`, etc.).
+> **Skip-tax.** `activities get-default-xaml` omits any property whose value equals the type default (`null`, `0`, `false`, unset). For `NTypeInto`: 2 of 20 properties. For `NClick`: ~3 of ~15. For `NGetText`: every output property — the starter is literally `<uix:NGetText HealingAgentBehavior="SameAsCard" />`, with no `Text` property visible. Authoring from this starter alone is how `NGetText.Value="..."` gets written — `Value` does not exist on that activity (the output is `Text`), `validate` accepts it as static-clean, and `build` finally rejects it as an unknown member. The starter looks complete; it isn't. The MD read is the only way you learn which properties actually exist (`Text`, `ClickType`, `KeyModifiers`, `WaitForReady`, `EmptyFieldMode`, etc.).
 
 **Workflow — each step depends on the previous step's output:**
 
-1. `uip rpa find-activities --query "<keyword>" --output json` → fully qualified class name, type ID, `isDynamicActivity` flag.
+1. `uip rpa activities find --query "<keyword>" --output json` → fully qualified class name, type ID, `isDynamicActivity` flag.
 2. **Locate `<Activity>.md` (primary → fallback per the lookup order above) and write an explicit property checklist** — required properties for the activity to function, plus optional properties relevant to your use case. If neither doc location has the file, record that explicitly and proceed to step 3 with a flag in your output. If you cannot name at least the required properties from the doc you found, you read the wrong file.
-3. `uip rpa get-default-activity-xaml` → starter element with namespaces and assembly references.
+3. `uip rpa activities get-default-xaml` → starter element with namespaces and assembly references.
 4. **Diff your step-2 checklist against the step-3 starter.** Add every checklist property that isn't already in the starter. An empty checklist with no third-party flag from step 2 means step 2 was skipped — go back to step 2; do NOT author from the starter alone.
-5. Validate with `uip rpa get-errors`.
+5. Validate with `uip rpa validate`.
 
 **The rule binds for every activity, not just complex ones.** "This activity is simple — `LogMessage`, `Delay`, `StartProcess` — I can author from the starter alone" is the failure mode. Self-exemption is the bug; the procedure is the only check.
 
-**Anti-pattern.** Treating `get-default-activity-xaml` output as the complete property surface. The CLI runs XAML serialization on a default-constructed instance; type-default values are omitted by design.
+**Anti-pattern.** Treating `activities get-default-xaml` output as the complete property surface. The CLI runs XAML serialization on a default-constructed instance; type-default values are omitted by design.
 
-**Property-name drift.** When `get-errors` reports `Cannot set unknown member '<Class>.<Prop>'`, the property name is wrong for the installed package version. Check `<Activity>.md` — property names drift between package versions (e.g. UIA `26.4.1-preview` renamed `InputMode` → `InteractionMode`, `EmptyField` → `EmptyFieldMode`).
+**Property-name drift.** When `validate` reports `Cannot set unknown member '<Class>.<Prop>'`, the property name is wrong for the installed package version. Check `<Activity>.md` — property names drift between package versions (e.g. UIA `26.4.1-preview` renamed `InputMode` → `InteractionMode`, `EmptyField` → `EmptyFieldMode`).
 
-Use `uip rpa list-workflow-examples` and `uip rpa get-workflow-example` for usage examples, in addition to searching existing local `.xaml` files.
+Use `uip rpa workflow-examples list` and `uip rpa workflow-examples get` for usage examples, in addition to searching existing local `.xaml` files.
+
+### Container Activity Bodies — Wrap in Sequence
+
+Container activities have body or branch slots typed `Activity` or `ActivityAction<T>`. Studio's designer expects each slot to hold a `<Sequence>` drop zone; Studio's serializer emits the wrapped form. **Wrap even single-activity bodies.**
+
+| Activity | Slot(s) | Wrapper |
+|----------|---------|---------|
+| `If` | `If.Then`, `If.Else` | `<Sequence DisplayName="Then">` / `<Sequence DisplayName="Else">` |
+| `While`, `DoWhile` | direct child of the activity | `<Sequence DisplayName="Body">` |
+| `ForEach<T>` | `ForEach.Body` → `ActivityAction<T>` body | `<Sequence DisplayName="Body">` |
+| `TryCatch` | `TryCatch.Try` | `<Sequence DisplayName="Try">` |
+| `TryCatch` | each `Catch` → `ActivityAction<T>` body | `<Sequence DisplayName="Catch">` |
+| `TryCatch` | `TryCatch.Finally` | `<Sequence DisplayName="Finally">` |
+| `Switch<T>` | `Switch.Default`, each `<x:String x:Key="...">` case | `<Sequence>` per case |
+| `Pick` | each `PickBranch.Trigger`, `PickBranch.Action` | `<Sequence>` per slot |
+| `NApplicationCard` | `Body` → `ActivityAction<...>` body | `<Sequence DisplayName="Do">` |
+| Any activity with `Body` typed `Activity` | the body slot | `<Sequence>` |
+
+**Validators do not catch this.** `validate` and `build` both accept any single `Activity` in a body slot — `<If.Then><Throw /></If.Then>` is structurally legal. The wrap is a Studio-idiomatic convention (drop-zone ergonomics + canonical emission), not a static-analysis requirement.
+
+**Cheapest enforcement.** Run `uip rpa activities get-default-xaml --activity-class-name "<FullClassName>"` for every container activity emitted, including `System.Activities.Statements.*` (`If`, `While`, `DoWhile`, `TryCatch`, `Switch`, `ForEach<T>`, `Pick`). Starter comes back wrapped — copy the shape. See SKILL.md Rules 21, 21a, 24.
+
+**Worked example.** [§ Example 1: Basic Activities (LogMessage, If/Else, Assign)](#example-1-basic-activities-logmessage-ifelse-assign) below — `If.Then` and `If.Else` each carry a `<Sequence>`.
+
+**Editing existing files.** When inserting an activity into an empty or bare `If.Then` / `Catch` / `Body` slot, add the `<Sequence>` wrapper in the same edit.
 
 ### Preserve Existing Structure
 When editing XAML:
@@ -262,7 +287,7 @@ When editing XAML:
 - Use the `Edit` tool for targeted replacements (match exact `old_string`, replace with `new_string`)
 
 ### Validate After Every Change
-Run `uip rpa get-errors` after every XAML modification. Do not batch multiple edits without validation — catching errors early is much easier than debugging compound issues.
+Run `uip rpa validate` after every XAML modification. Do not batch multiple edits without validation — catching errors early is much easier than debugging compound issues.
 
 ## Common Editing Operations
 
@@ -476,7 +501,7 @@ VB project with core workflow activities. Shows If/Then/Else branching and Assig
 **Key patterns:**
 - `ui:LogMessage` uses `xmlns:ui="http://schemas.uipath.com/workflow/activities"`
 - VB expressions: `OrElse` instead of `||`, no brackets on simple values
-- `If.Then` and `If.Else` each wrap content in a `Sequence`
+- `If.Then` and `If.Else` each wrap content in a `Sequence` — required, not optional. See [§ Container Activity Bodies — Wrap in Sequence](#container-activity-bodies--wrap-in-sequence) for the full slot list
 - `Assign` uses `Assign.To` (OutArgument) and `Assign.Value` (InArgument) with explicit `x:TypeArguments`
 
 ### Example 2: Package Connector Activity (Office 365 Get Newest Email)
@@ -647,12 +672,12 @@ Shows the generic `ConnectorActivity` pattern used for Integration Service conne
 
 **Key patterns:**
 - `isactr:ConnectorActivity` is the generic IS activity type (`xmlns:isactr="http://schemas.uipath.com/workflow/integration-service-activities/isactr"`)
-- `Configuration` holds a base64-encoded GZip-compressed blob — **never construct this manually**, it comes from `uip rpa get-default-activity-xaml`
+- `Configuration` holds a base64-encoded GZip-compressed blob — **never construct this manually**, it comes from `uip rpa activities get-default-xaml`
 - `ConnectionId` is the Integration Service connection GUID
 - `UiPathActivityTypeId` identifies the specific connector operation
 - `FieldObjects` define input/output fields with `isactr:FieldObject` elements
 - Output types reference a JIT-generated assembly (e.g., `CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3`)
-- The generated assembly name and namespace imports are connector-specific — always use `uip rpa get-default-activity-xaml` output
+- The generated assembly name and namespace imports are connector-specific — always use `uip rpa activities get-default-xaml` output
 
 ## Property Binding: Attributes vs Child Elements
 
@@ -685,10 +710,10 @@ DisplayName="My Activity" Message="[variable]" Level="Info"
 
 ### Version-Sensitive Properties
 
-Properties may exist in one package version but not another. If `get-errors` reports "Could not find member 'PropertyName'":
+Properties may exist in one package version but not another. If `validate` reports "Could not find member 'PropertyName'":
 1. The property may not exist in the installed package version — remove it
 2. The property may have been renamed between versions — check examples from the same package version
-3. Use `uip rpa get-default-activity-xaml` output as the authoritative set of properties for the installed version
+3. Use `uip rpa activities get-default-xaml` output as the authoritative set of properties for the installed version
 
 ## ConnectorActivity Internals
 
@@ -698,9 +723,9 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 
 | Property | Editable? | Description |
 |----------|-----------|-------------|
-| `Configuration` | **NEVER** | ZIP-compressed, Base64-encoded JSON blob containing the full activity schema (fields, types, connector metadata). This is obtained and computed for you using the `uip rpa get-default-activity-xaml` command. Do not parse, modify, or construct manually. |
+| `Configuration` | **NEVER** | ZIP-compressed, Base64-encoded JSON blob containing the full activity schema (fields, types, connector metadata). This is obtained and computed for you using the `uip rpa activities get-default-xaml` command. Do not parse, modify, or construct manually. |
 | `ConnectionId` | Yes (replace GUID) | Integration Service connection GUID. Use `uip is connections list [connector-key]` to discover available connections and their IDs. |
-| `UiPathActivityTypeId` | **NEVER** | Identifies the specific connector operation. Obtain using `uip rpa get-default-activity-xaml` or `uip rpa find-activities`. |
+| `UiPathActivityTypeId` | **NEVER** | Identifies the specific connector operation. Obtain using `uip rpa activities get-default-xaml` or `uip rpa activities find`. |
 | `DisplayName` | Yes | Human-readable activity name for the designer. |
 
 ### FieldObjects (Input/Output Interface)
@@ -709,7 +734,7 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 
 | Attribute | Description |
 |-----------|-------------|
-| `Name` | Field identifier (maps to the connector API parameter). Must match exactly what `uip rpa get-default-activity-xaml` returns. |
+| `Name` | Field identifier (maps to the connector API parameter). Must match exactly what `uip rpa activities get-default-xaml` returns. |
 | `Type` | One of: `FieldArgument` (contains an Activity Argument), `FieldLiteral` (contains a literal value), `FilterTreeValue` (filter builder criteria), `None` (empty). |
 
 **What you CAN edit in FieldObjects:**
@@ -720,7 +745,7 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 - Field `Name` values — these must match the connector API schema exactly.
 - Field `Type` values — these are determined by the connector metadata.
 - Output field structure — the `OutArgument` types reference JIT-generated assemblies.
-- Adding/removing FieldObjects — the set of fields comes from `uip rpa get-default-activity-xaml`.
+- Adding/removing FieldObjects — the set of fields comes from `uip rpa activities get-default-xaml`.
 
 ### JIT-Generated Assemblies
 
@@ -733,13 +758,13 @@ CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3
 These assembly names are:
 - **Unpredictable** — derived from SHA-512 hashes of the type schema
 - **Connection-specific** — different connections produce different hashes
-- **Generated by the runtime** — you cannot create or reference them without `uip rpa get-default-activity-xaml`
+- **Generated by the runtime** — you cannot create or reference them without `uip rpa activities get-default-xaml`
 
-The corresponding namespace imports and assembly references MUST come from `uip rpa get-default-activity-xaml` output. Never construct them.
+The corresponding namespace imports and assembly references MUST come from `uip rpa activities get-default-xaml` output. Never construct them.
 
-### What `uip rpa get-default-activity-xaml` Returns for Dynamic Activities
+### What `uip rpa activities get-default-xaml` Returns for Dynamic Activities
 
-When you call `uip rpa get-default-activity-xaml` with `isDynamicActivity: true`, it returns everything needed:
+When you call `uip rpa activities get-default-xaml` with `isDynamicActivity: true`, it returns everything needed:
 1. The complete `<isactr:ConnectorActivity>` XAML element with `Configuration` blob, `UiPathActivityTypeId`, and `FieldObjects`
 2. All required `xmlns` declarations for the root `<Activity>` element
 3. All required namespace imports and references

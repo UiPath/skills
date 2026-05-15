@@ -1,10 +1,21 @@
 # Resource Bindings — Implementation
 
-Root-level binding creation for `root.data.uipath.bindings[]`. Referenced by **all** task plugins — non-connector tasks for name + folderPath bindings, connector tasks for ConnectionId + folderKey bindings. Every task type MUST create root bindings; see each task plugin's §Root-level bindings section.
+Top-level binding creation. Referenced by **all** task plugins — non-connector tasks for name + folderPath bindings, connector tasks for ConnectionId + folderKey bindings. Every task type MUST create bindings; see each task plugin's §Root-level bindings section.
+
+## Schema-dependent destination
+
+Read `Schema:` header from `tasks.md` per Rule 18.
+
+| Schema | Bindings array path |
+|---|---|
+| **v19** | `root.data.uipath.bindings[]` |
+| **v20** | `bindings[]` *(top level — no `root` wrapper, no `data.uipath`)* |
+
+Field shape inside the array is **identical** across schemas. Only the destination path differs.
 
 ## What Bindings Are
 
-`root.data.uipath.bindings[]` stores resource metadata for tasks — process names, folder paths, connection IDs. Tasks reference these indirectly via `=bindings.<id>` instead of storing literal values.
+The bindings array stores resource metadata for tasks — process names, folder paths, connection IDs. Tasks reference these indirectly via `=bindings.<id>` instead of storing literal values.
 
 ## Per Task Type
 
@@ -20,11 +31,13 @@ Root-level binding creation for `root.data.uipath.bindings[]`. Referenced by **a
 
 ## Binding Creation
 
-For every task, create **two** binding entries in `root.data.uipath.bindings[]`. Both bindings share the same `resourceKey`. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
+For every task, create **two** binding entries in the bindings array (path per § Schema-dependent destination above). Both bindings share the same `resourceKey`. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
 
 **Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case.
 
-### Full binding shape (two entries per task)
+### Full binding shape — non-connector tasks
+
+For non-connector tasks (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`), `name` and `propertyAttribute` carry the same value (`"name"` / `"folderPath"`):
 
 ```json
 [
@@ -51,7 +64,38 @@ For every task, create **two** binding entries in `root.data.uipath.bindings[]`.
 ]
 ```
 
-> The `name` field mirrors `propertyAttribute` — for non-connector tasks the values are `"name"` and `"folderPath"`, for connector tasks `"ConnectionId"` and `"folderKey"`.
+### Full binding shape — connector tasks (activity / trigger)
+
+> **`name` and `propertyAttribute` deliberately differ** for connector bindings — the CLI's `binding-builder.ts` (in `uipcli-case-validate/packages/case-tool/src/utils/`) is the source of truth. Authoring with mirror-cased values may render in Studio Web but diverges from canonical CLI output.
+
+ConnectionBinding `name` is **templated** with the connector key (`` `${connectorKey} connection` ``); FolderKey binding `name` is `"FolderKey"` (PascalCase) while its `propertyAttribute` is `"folderKey"` (camelCase). Both bindings share the same `resourceKey` (the connection UUID):
+
+```json
+[
+  {
+    "id": "<b + 8 alphanumeric chars>",
+    "name": "<connectorKey> connection",
+    "type": "string",
+    "resource": "Connection",
+    "resourceKey": "<connection-id>",
+    "default": "<connection-id>",
+    "propertyAttribute": "ConnectionId"
+  },
+  {
+    "id": "<b + 8 alphanumeric chars>",
+    "name": "FolderKey",
+    "type": "string",
+    "resource": "Connection",
+    "resourceKey": "<connection-id>",
+    "default": "<folderKey>",
+    "propertyAttribute": "folderKey"
+  }
+]
+```
+
+Concrete example for Microsoft Outlook 365: `name: "uipath-microsoft-outlook365 connection"` on the ConnectionBinding.
+
+The FolderKey binding is **omitted entirely** when `spec.connection.folderKey` is `null` (see `binding-builder.ts:73-83`).
 
 ### Data sources — non-connector tasks
 
@@ -73,12 +117,10 @@ Examples:
 
 ### Data sources — connector tasks
 
-| Field | Source |
-|---|---|
-| `name` / `propertyAttribute` | First binding: `"ConnectionId"`. Second binding: `"folderKey"`. |
-| `default` (ConnectionId) | `connection-id` from `tasks.md` |
-| `default` (folderKey) | `folderKey` from `get-connection` (Step 1) |
-| `resourceKey` | `connection-id` from `tasks.md` |
+| Binding | `name` | `propertyAttribute` | `default` | `resourceKey` |
+|---|---|---|---|---|
+| ConnectionBinding | `` `${connectorKey} connection` `` (templated, e.g. `"uipath-microsoft-outlook365 connection"`) | `"ConnectionId"` | `connection-id` from `tasks.md` | `connection-id` from `tasks.md` |
+| FolderKey binding (omit when `spec.connection.folderKey === null`) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — different from `name`) | `folderKey` from `get-connection` (Step 1) | `connection-id` from `tasks.md` (same as ConnectionBinding) |
 
 ### Task references
 
@@ -88,7 +130,7 @@ Do NOT use literal strings.
 
 ## Deduplication
 
-Multiple tasks referencing the same resource share one binding pair. Deduped by `default + resource + resourceKey`. Before creating a new binding, check if an existing entry in `root.data.uipath.bindings[]` matches on all three fields. If found, reuse the existing binding's `id` instead of creating a new one.
+Multiple tasks referencing the same resource share one binding pair. Deduped by `default + resource + resourceKey`. Before creating a new binding, check if an existing entry in the bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) matches on all three fields. If found, reuse the existing binding's `id` instead of creating a new one.
 
 ## Binding ID Generation
 
@@ -96,4 +138,4 @@ IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`).
 
 ## bindings_v2.json Sync
 
-`bindings_v2.json` must mirror `root.data.uipath.bindings[]` in SDK format. Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).
+`bindings_v2.json` must mirror the bindings array in SDK format (source path: `root.data.uipath.bindings[]` in v19, top-level `bindings[]` in v20). Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).

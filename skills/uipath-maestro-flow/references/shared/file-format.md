@@ -7,7 +7,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```json
 {
   "id": "<uuid>",
-  "version": "1.0.0",
+  "version": "1.1",
   "name": "MyFlow",
   "nodes": [],
   "edges": [],
@@ -19,6 +19,10 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
   }
 }
 ```
+
+**Top-level `version`** = workflow file-format version, currently `"1.1"` — what `uip maestro flow init` scaffolds and what Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. Not a semver string; schema gates on a literal (`z.literal("1.1")`). Do not use `"1.0.0"`, `"1.0"`, or other values for new flows; older values exist only for legacy parser compatibility.
+
+> **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) use a strict semver schema (`versionSchema`, `/^\d+\.\d+\.\d+$/`) — a different Zod schema. Mixing them up produces `Schema validation failed: Version must be in semver format` at `(root)` — workflow-version layer's error, but the actual offender may be a stale top-level value. Audit the top-level `version` first.
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
 
@@ -42,7 +46,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 {
   "id": "rollDice",
   "type": "core.action.script",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Roll Dice" },
   "inputs": {
     "script": "return { roll: Math.floor(Math.random() * 6) + 1 };"
@@ -64,21 +68,32 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-**Required fields**: `id`, `type`, `typeVersion`
+**Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that "feel" trivial.
 
-> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`).
+`typeVersion` must match the corresponding `definitions[].version` exactly. The registry often returns versions such as `"1.0"` while older examples or scaffolded files may show `"1.0.0"`. If a node uses `typeVersion: "1.0.0"` but the copied definition is `"version": "1.0"`, validation reports "Node type `<type>:1.0.0` has no matching definition." When direct-authoring a new node from `registry get`, set `typeVersion` to the copied definition's `version`; when preserving an existing node, preserve its existing node/definition pair unless you intentionally update both together.
+
+> **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
+>
+> ```
+> [error] [(root)] Schema validation failed: Invalid input: expected object, received undefined
+> ```
+>
+> The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else. (Improving the validator's path specificity is tracked in [MST-9368](https://uipath.atlassian.net/browse/MST-9368).)
+
+> **No full `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). Attached inline-agent resource nodes that still require a source use the minimal instance block `"model": { "source": "<resourceId>" }`; do not copy `serviceType`, `version`, or `context` into the instance. `uipath.agent.autonomous` is the inline-agent exception: flow-core hoists the manifest-declared source identity onto `inputs.source`, so the node instance has no `model` block.
 >
 > **No `ui` block on nodes.** Position and size are stored in the top-level `layout` object, not on individual nodes. See [Layout](#layout) below.
 
-### Instance-specific fields that live in `inputs`
+### Instance-specific identity fields
 
-A few per-instance identity fields live in `inputs`:
+A few per-instance identity fields live on the node instance:
 
 | Field | Used by | Purpose |
 |-------|---------|---------|
 | `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
 | `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
-| `inputs.source` | Inline agent nodes (`uipath.agent.autonomous`) | The inline agent's `projectId` (must match the subdirectory name and `agent.json.projectId`) |
+| `inputs.source` | Inline-agent node (`uipath.agent.autonomous`) | The inline agent's `projectId`. flow-core hoists the manifest-declared source identity here. |
+| `model.source` | Attached inline-agent resource nodes whose definition declares `model.source: true` | The attached resource UUID. This is the only allowed instance `model` field for those resource nodes. |
 | `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
 
 Example — manual start trigger:
@@ -87,7 +102,8 @@ Example — manual start trigger:
 {
   "id": "start",
   "type": "core.trigger.manual",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
+  "display": { "label": "Manual trigger" },
   "inputs": {
     "entryPointId": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5"
   },
@@ -144,7 +160,7 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 ## Layout
 
-Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow tidy` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-tidy)) — you should not need to hand-write it.
+Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow format` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-format)) — you should not need to hand-write it.
 
 ```json
 "layout": {
@@ -168,15 +184,15 @@ Node positioning is stored in a **top-level `layout` object**, keyed by node `id
 }
 ```
 
-Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for every node and populates `position` + `size`.
+Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for every node and populates `position` + `size`.
 
-**What tidy does:**
+**What format does:**
 - Arranges nodes horizontally (left-to-right) with `nodeSpacing: 96`, anchored to the leftmost node's original position
 - Sets `size` to `{ "width": 96, "height": 96 }` on every non-`stickyNote` node — non-96 sizes render as rectangles in Studio Web
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Format handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
@@ -190,7 +206,9 @@ Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for ever
 }
 ```
 
-> **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges.N.targetPort] expected string, received undefined` at validate time.
+> **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges[N].targetPort] Invalid input: expected string, received undefined` at validate time.
+>
+> **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
 
 ## Definition entry
 
@@ -200,7 +218,7 @@ Every node type appearing in `nodes` must have a matching entry in `definitions`
 uip maestro flow registry get core.action.script --output json
 ```
 
-Copy the object at `Data.Node` into your `definitions` array. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
+Copy the returned node definition object into your `definitions` array. Depending on CLI/plugin version, that object may appear at `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
 
 ## Common node types
 
@@ -209,7 +227,7 @@ Copy the object at `Data.Node` into your `definitions` array. Do not write defin
 | `core.trigger.manual` | Entry point | `entryPointId` |
 | `core.trigger.scheduled` | Recurring schedule trigger | `entryPointId`, `timerType`, `timerPreset` |
 | `core.action.script` | Run JavaScript | `script` |
-| `core.action.http` | HTTP request | `method`, `url`, `headers`, `body` |
+| `core.action.http.v2` | HTTP request | `method`, `url`, `headers`, `body` |
 | `core.action.transform` | Map/filter/group data | `collection`, `operations` |
 | `core.logic.decision` | If/else branch | `expression` |
 | `core.logic.switch` | Multi-way branch | `cases` |
@@ -234,7 +252,7 @@ uip maestro flow registry search <keyword>
 |-----------|------------------------|------------------------|
 | `core.trigger.manual` | `output` | — |
 | `core.action.script` | `success`, `error` | `input` |
-| `core.action.http` | `default`, `error`, `branch-{id}` (dynamic) | `input` |
+| `core.action.http.v2` | `default`, `error`, `branch-{id}` (dynamic) | `input` |
 | `core.action.transform` | `output`, `error` | `input` |
 | `core.logic.decision` | `true`, `false` | `input` |
 | `core.logic.switch` | `case-{id}` (dynamic), `default` | `input` |
@@ -303,13 +321,14 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
-  "version": "1.0.0",
+  "version": "1.1",
   "name": "DiceRoller",
   "nodes": [
     {
       "id": "start",
       "type": "core.trigger.manual",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
+      "display": { "label": "Manual trigger" },
       "inputs": {
         "entryPointId": "<uuid>"
       },
@@ -325,7 +344,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
     {
       "id": "rollDice",
       "type": "core.action.script",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
       "display": { "label": "Roll Dice" },
       "inputs": {
         "script": "return { roll: Math.floor(Math.random() * 6) + 1 };"
@@ -348,7 +367,8 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
     {
       "id": "end",
       "type": "core.logic.terminate",
-      "typeVersion": "1.0.0",
+      "typeVersion": "1.0",
+      "display": { "label": "End" },
       "inputs": {}
     }
   ],
@@ -395,7 +415,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 
 ### Step 2 — Populate definitions from the registry
 
-Run one command per node type used in `nodes`. Copy the `Data.Node` object from each response into the `definitions` array.
+Run one command per node type used in `nodes`. Copy the returned node definition object from each response into the `definitions` array, and set each matching node instance's `typeVersion` to the copied definition's exact `version`.
 
 ```bash
 uip maestro flow registry get core.trigger.manual --output json
@@ -403,7 +423,7 @@ uip maestro flow registry get core.action.script --output json
 uip maestro flow registry get core.logic.terminate --output json
 ```
 
-The `definitions` array must contain exactly one entry per unique `type` used — not one per node instance. If two nodes share the same type, one definition covers both.
+The `definitions` array must contain exactly one entry per unique `type:typeVersion` used — not one per node instance. If two nodes share the same type and version, one definition covers both.
 
 > **Never write definitions by hand.** The registry is the authoritative source; hand-written definitions will fail validation or cause runtime errors.
 
@@ -412,7 +432,7 @@ The `definitions` array must contain exactly one entry per unique `type` used �
 `entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). **Do not edit this file directly** — it is auto-generated by `uip maestro flow init` and regenerated by `uip maestro flow debug` before upload. Manual edits will be overwritten.
 
 Flow input and output parameters are declared through **variables** in the `.flow` file:
-- **Flow inputs**: Add output variables to the start node (`variables.nodes.start.outputs`) — the start node "outputs" input values to downstream nodes
+- **Flow inputs**: Add entries to `variables.nodes[]` whose `binding.nodeId` is the start node and whose `binding.outputId` names each input value — the start node "outputs" input values to downstream nodes
 - **Flow outputs**: Add output variables to the end/terminate node
 - Downstream nodes reference inputs via `$vars.start.output.<paramName>`
 

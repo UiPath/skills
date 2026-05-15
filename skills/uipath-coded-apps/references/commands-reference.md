@@ -21,12 +21,12 @@ uip codedapp push [project-id] [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `[project-id]` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var |
-| `--buildDir <dir>` | Build output directory | `dist` |
-| `--ignoreResources` | Skip importing referenced resources | `false` |
-| `--baseUrl <url>` | UiPath base URL | From `.env` |
-| `--orgId <id>` | Organization ID | From `.env` |
-| `--tenantId <id>` | Tenant ID | From `.env` |
-| `--accessToken <token>` | Access token | From `.env` |
+| `--build-dir <dir>` | Build output directory | `dist` |
+| `--ignore-resources` | Skip importing referenced resources | `false` |
+| `--base-url <url>` | UiPath base URL | From `.env` |
+| `--org-id <id>` | Organization ID | From `.env` |
+| `--tenant-id <id>` | Tenant ID | From `.env` |
+| `--access-token <token>` | Access token | From `.env` |
 
 **Examples:**
 
@@ -38,10 +38,10 @@ uip codedapp push
 uip codedapp push my-project-id
 
 # Push a custom build directory
-uip codedapp push my-project-id --buildDir build
+uip codedapp push my-project-id --build-dir build
 
 # Push without importing resources
-uip codedapp push --ignoreResources
+uip codedapp push --ignore-resources
 ```
 
 **Auto-create project flow:**
@@ -70,11 +70,11 @@ uip codedapp pull [project-id] [options]
 |--------|-------------|---------|
 | `[project-id]` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var |
 | `--overwrite` | Allow overwriting existing local files without prompting | `false` |
-| `--targetDir <dir>` | Local directory to write pulled files | Current directory |
-| `--baseUrl <url>` | UiPath base URL | From `.env` |
-| `--orgId <id>` | Organization ID | From `.env` |
-| `--tenantId <id>` | Tenant ID | From `.env` |
-| `--accessToken <token>` | Access token | From `.env` |
+| `--target-dir <dir>` | Local directory to write pulled files | Current directory |
+| `--base-url <url>` | UiPath base URL | From `.env` |
+| `--org-id <id>` | Organization ID | From `.env` |
+| `--tenant-id <id>` | Tenant ID | From `.env` |
+| `--access-token <token>` | Access token | From `.env` |
 
 **Examples:**
 
@@ -86,7 +86,7 @@ uip codedapp pull
 uip codedapp pull my-project-id
 
 # Pull to a specific directory
-uip codedapp pull my-project-id --targetDir ./my-app
+uip codedapp pull my-project-id --target-dir ./my-app
 
 # Pull and overwrite without prompting
 uip codedapp pull --overwrite
@@ -116,10 +116,10 @@ uip codedapp pack <dist> [options]
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
 | `--dry-run` | Preview packaging without creating the file | `false` |
 | `--reuse-client` | Reuse existing clientId from uipath.json | `false` |
-| `--baseUrl <url>` | UiPath base URL | From `.env` |
-| `--orgId <id>` | Organization ID | From `.env` |
-| `--tenantId <id>` | Tenant ID | From `.env` |
-| `--accessToken <token>` | Access token | From `.env` |
+| `--base-url <url>` | UiPath base URL | From `.env` |
+| `--org-id <id>` | Organization ID | From `.env` |
+| `--tenant-id <id>` | Tenant ID | From `.env` |
+| `--access-token <token>` | Access token | From `.env` |
 
 **Examples:**
 
@@ -128,7 +128,7 @@ uip codedapp pack <dist> [options]
 uip codedapp pack dist
 
 # Pack with explicit name and version
-uip codedapp pack dist -n my-webapp -v 2.0.0
+uip codedapp pack dist -n my-webapp --version 2.0.0
 
 # Pack to a custom output directory
 uip codedapp pack dist -o ./packages
@@ -137,7 +137,7 @@ uip codedapp pack dist -o ./packages
 uip codedapp pack dist --dry-run
 
 # Pack with all options
-uip codedapp pack dist -n my-webapp -v 1.0.0 -a "My Team" --description "Production app" --main-file app.html
+uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "Production app" --main-file app.html
 ```
 
 **Output:**
@@ -170,12 +170,12 @@ uip codedapp publish [options]
 | `-n, --name <name>` | Package name (non-interactive selection) | Auto-select or prompted |
 | `-v, --version <version>` | Package version (requires `--name`) | Latest |
 | `-t, --type <type>` | App type: `Web` or `Action` | `Web` |
-| `--uipathDir <dir>` | Directory containing `.nupkg` files | `./.uipath` |
-| `--baseUrl <url>` | UiPath base URL | From `.env` |
-| `--orgId <id>` | Organization ID | From `.env` |
-| `--tenantId <id>` | Tenant ID | From `.env` |
-| `--tenantName <name>` | Tenant name (required for registration) | From `.env` |
-| `--accessToken <token>` | Access token | From `.env` |
+| `--uipath-dir <dir>` | Directory containing `.nupkg` files | `./.uipath` |
+| `--base-url <url>` | UiPath base URL | From `.env` |
+| `--org-id <id>` | Organization ID | From `.env` |
+| `--tenant-id <id>` | Tenant ID | From `.env` |
+| `--tenant-name <name>` | Tenant name (required for registration) | From `.env` |
+| `--access-token <token>` | Access token | From `.env` |
 
 **Examples:**
 
@@ -187,13 +187,13 @@ uip codedapp publish
 uip codedapp publish -n my-webapp
 
 # Publish a specific version
-uip codedapp publish -n my-webapp -v 2.0.0
+uip codedapp publish -n my-webapp --version 2.0.0
 
 # Publish as an Action app type
 uip codedapp publish -t Action
 
 # Publish from a custom directory
-uip codedapp publish --uipathDir ./packages
+uip codedapp publish --uipath-dir ./packages
 ```
 
 **Output:**
@@ -231,12 +231,13 @@ uip codedapp deploy [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-n, --name <name>` | App name | From `.uipath/app.config.json` or prompted |
-| `--baseUrl <url>` | UiPath base URL | From `.env` |
-| `--orgId <id>` | Organization ID | From `.env` |
-| `--orgName <name>` | Organization name (used for app URL) | From `.env` |
-| `--tenantId <id>` | Tenant ID | From `.env` |
-| `--folderKey <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
-| `--accessToken <token>` | Access token | From `.env` |
+| `-v, --version <version>` | Target a specific **published** version (different semantic from `pack`/`publish` `-v`, which is the package version) | Latest |
+| `--base-url <url>` | UiPath base URL | From `.env` |
+| `--org-id <id>` | Organization ID | From `.env` |
+| `--org-name <name>` | Organization name (used for app URL) | From `.env` |
+| `--tenant-id <id>` | Tenant ID | From `.env` |
+| `--folder-key <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
+| `--access-token <token>` | Access token | From `.env` |
 
 **Examples:**
 
@@ -248,7 +249,7 @@ uip codedapp deploy
 uip codedapp deploy -n my-webapp
 
 # Deploy with folder key
-uip codedapp deploy -n my-webapp --folderKey my-folder-key
+uip codedapp deploy -n my-webapp --folder-key my-folder-key
 ```
 
 **Fresh deploy output:**
@@ -277,7 +278,7 @@ All cloud commands accept these override options (values default to `.env` file)
 
 | Option | Description |
 |--------|-------------|
-| `--baseUrl <url>` | UiPath base URL |
-| `--orgId <id>` | Organization ID |
-| `--tenantId <id>` | Tenant ID |
-| `--accessToken <token>` | Access token |
+| `--base-url <url>` | UiPath base URL |
+| `--org-id <id>` | Organization ID |
+| `--tenant-id <id>` | Tenant ID |
+| `--access-token <token>` | Access token |

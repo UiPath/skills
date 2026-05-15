@@ -1,0 +1,155 @@
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "start",
+    "Description": "Start a job for a process. Returns the created job(s) with keys. The <process-key> is the GUID from 'processes list' (not 'packages list'). Folder is optional — if not provided, it is inferred from the process. Use 'packages entry-points' to see input/output argument schemas for the process.",
+    "Usage": "uip or jobs start [options] <process-key>",
+    "Arguments": [
+      {
+        "Name": "process-key",
+        "Description": "Process key (GUID) from 'processes list'. Identifies which process to run.",
+        "Required": true
+      }
+    ],
+    "Options": [
+      {
+        "Flags": "-t, --tenant <tenant-name>",
+        "Description": "Tenant (optional, defaults to value selected during auth)"
+      },
+      {
+        "Flags": "--folder-path <path>",
+        "Description": "Folder path (optional — inferred from process if not provided)"
+      },
+      {
+        "Flags": "--folder-key <key>",
+        "Description": "Folder key (optional — inferred from process if not provided)"
+      },
+      {
+        "Flags": "--strategy <strategy>",
+        "Description": "Execution strategy (ModernJobsCount, All, Specific, JobsCount)",
+        "Default": "ModernJobsCount"
+      },
+      {
+        "Flags": "--jobs-count <number>",
+        "Description": "Number of jobs to create (for JobsCount/ModernJobsCount strategy)",
+        "Default": "1"
+      },
+      {
+        "Flags": "--input-arguments <json>",
+        "Description": "Input arguments as JSON string (mutually exclusive with --input-file). Auto-offloads to InputFile if >10K chars. Use 'packages entry-points' to see the expected schema."
+      },
+      {
+        "Flags": "--input-file <path>",
+        "Description": "Upload a file as the job's InputFile (mutually exclusive with --input-arguments). The file is uploaded as an attachment and its ID is set on the InputFile field."
+      },
+      {
+        "Flags": "--attachment <[name=]path>",
+        "Description": "Upload a file and attach it to the job (repeatable). Format: path (auto-names from filename) or name=path (explicit name). Example: --attachment ./doc.pdf --attachment invoice=./report.pdf"
+      },
+      {
+        "Flags": "--attachment-id <guid>",
+        "Description": "Attach an existing attachment by ID (repeatable). Use 'attachments list --job-key <key>' to find IDs from a previous job."
+      },
+      {
+        "Flags": "--runtime-type <type>",
+        "Description": "Execution runtime (Unattended, Headless, Serverless, NonProduction, Development, TestAutomation). Defaults to folder configuration."
+      },
+      {
+        "Flags": "--user-keys <keys>",
+        "Description": "Comma-separated user keys (GUIDs) to run as. Use 'users list' to find keys."
+      },
+      {
+        "Flags": "--machine-keys <keys>",
+        "Description": "Comma-separated machine keys (GUIDs) to target. Use 'machines list' to find keys."
+      },
+      {
+        "Flags": "--environment-variables <json>",
+        "Description": "Environment variables as JSON string"
+      },
+      {
+        "Flags": "--run-as-me",
+        "Description": "Run job under the caller's identity"
+      },
+      {
+        "Flags": "--job-priority <priority>",
+        "Description": "Job priority (Low, Normal, High)"
+      },
+      {
+        "Flags": "--reference <reference>",
+        "Description": "User-specified reference for the job"
+      },
+      {
+        "Flags": "--wait-for-completion",
+        "Description": "Poll until the job reaches a terminal state (Successful, Faulted, Stopped) and return its output"
+      },
+      {
+        "Flags": "--timeout <seconds>",
+        "Description": "Maximum time to wait for completion in seconds (default: 300)",
+        "Default": "300"
+      },
+      {
+        "Flags": "--poll-interval <seconds>",
+        "Description": "Seconds between status checks (default: 5)",
+        "Default": "5"
+      },
+      {
+        "Flags": "--output-dir <path>",
+        "Description": "Directory for downloading OutputFile (default: current directory). Only with --wait-for-completion."
+      },
+      {
+        "Flags": "--no-download",
+        "Description": "Skip automatic OutputFile download. Only with --wait-for-completion."
+      },
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Examples": [
+      {
+        "Description": "Start a process by its key",
+        "Command": "uip or jobs start c3d4e5f6-0000-0000-0000-000000000001 --jobs-count 1",
+        "Output": {
+          "Code": "JobStarted",
+          "Data": {
+            "Jobs": [
+              {
+                "Key": "b2c3d4e5-0000-0000-0000-000000000099",
+                "State": "Pending",
+                "ProcessName": "InvoiceProcessing",
+                "Source": "Manual",
+                "Type": "Unattended",
+                "Priority": "Normal",
+                "Machine": "",
+                "StartTime": "",
+                "EndTime": "",
+                "CreationTime": "2025-04-15T10:29:55Z",
+                "Id": 1099
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "Subcommands": [],
+    "GlobalOptions": [
+      {
+        "Flags": "--output <table|json|yaml|plain>",
+        "Description": "Output format (default: json)"
+      },
+      {
+        "Flags": "--output-filter <expression>",
+        "Description": "JMESPath expression to filter output"
+      },
+      {
+        "Flags": "--log-level <debug|info|warn|error>",
+        "Description": "Log level threshold (default: info)"
+      },
+      {
+        "Flags": "--log-file <path>",
+        "Description": "Write logs to file instead of stderr"
+      }
+    ]
+  }
+}

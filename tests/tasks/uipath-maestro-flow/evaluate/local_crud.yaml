@@ -1,0 +1,128 @@
+task_id: skill-flow-eval-local-crud
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-flow skill's evaluate
+  capability to scaffold a Flow project and exercise local eval CRUD —
+  evaluator add (exact-match), eval set add, data point add, list. No login,
+  no upload, no run. Tests whether the skill teaches the correct local-CRUD
+  workflow and `--output json` discipline on every `uip maestro flow eval`
+  command.
+tags: [uipath-maestro-flow, smoke-blocked, mode:build, lifecycle:generate]
+skip: true
+# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
+# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
+# under `maestro flow`). Re-enable once a release exposes the Flow eval
+# surface to the public registry used by CI. See MST-9675.
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 60
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Scaffold a UiPath Flow project called "SmokeEval" inside a solution of the
+  same name, then build the eval scaffolding for it — purely local, no Studio
+  Web round-trip.
+
+  Steps:
+  1. Create the solution and the Flow project. The flow file MUST live at
+     `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested layout) and be linked
+     via `uip solution project add`.
+
+  2. Declare a string input variable named `name` on
+     `SmokeEval/SmokeEval/SmokeEval.flow` before adding data points. The
+     eval data point below uses `{"name":"Alice"}`, and `eval add` rejects
+     input keys that are not declared in the flow.
+
+  3. Add an evaluator named `greeting-match` of type `exact-match`, scoped to
+     the Flow project at `SmokeEval/SmokeEval`. Use kebab-case for `--type`.
+
+  4. Create an eval set named `Smoke Set` in the same project. (No
+     `--entry-point`, no `--evaluators` — defaults are fine.)
+
+  5. Add one data point named `hello` to that eval set with inputs
+     `{"name":"Alice"}` and expected `{"greeting":"Hello, Alice!"}`.
+
+  6. List evaluators and eval sets to confirm both were created.
+
+  Important:
+  - Use `--output json` on every `uip maestro flow eval ...` command.
+  - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call
+    `uip maestro flow eval run *` — this task tests local CRUD only.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this
+    is not a flow-authoring test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created at the double-nested path"
+    path: "SmokeEval/SmokeEval/SmokeEval.flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added an evaluator with kebab-case --type exact-match"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+exact-match'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created an eval set"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a data point with --inputs and --expected"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed evaluators or eval sets to verify"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+(evaluator\s+list|set\s+list)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on every eval command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+.*--output\s+json'
+    min_count: 4
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Evaluator + eval-set JSON files exist on disk with correct shape"
+    command: "python3 $TASK_DIR/check_local_crud.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

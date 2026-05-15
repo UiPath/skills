@@ -7,15 +7,18 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
+    assert_flow_uses_connector_target,
     assert_outputs_contain,
     run_debug,
 )
 
 
 def main():
-    # Must have both a Slack connector and an HTTP node — proves the pipeline
-    # isn't shortcutting by hardcoding the city or skipping the Slack read
-    assert_flow_has_node_type(["uipath.connector", "core.action.http"])
+    # Must have a real Slack-backed connector call and an HTTP node — proves
+    # the pipeline isn't shortcutting by hardcoding the city or skipping the
+    # Slack read. The Slack call may be represented as an HTTP v2 proxy node.
+    assert_flow_uses_connector_target("uipath-salesforce-slack")
+    assert_flow_has_node_type(["core.action.http"])
 
     payload = run_debug(timeout=240)
 
@@ -23,7 +26,7 @@ def main():
     assert_outputs_contain(
         payload, ["warm office today", "cold office today"], require_all=False
     )
-    print("OK: Slack connector + HTTP + decision all executed, verdict present")
+    print("OK: Slack connector target + HTTP + decision all executed, verdict present")
 
 
 if __name__ == "__main__":

@@ -22,6 +22,8 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
    npm install -g @uipath/cli
    ```
 
+   > **Do not add `@uipath/cli` to `sandbox.node.env_packages` in task YAMLs.** The GH smoke runner installs it globally before any task runs. Listing it in `env_packages` is redundant and, when pinned to a version, causes skew against the runner's `@latest` install.
+
 4. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for environment setup (`.env`, API keys, etc.).
 
 ## Running Tests
@@ -57,6 +59,19 @@ SKILLS_REPO_PATH=$(cd .. && pwd) \
 
 The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`.
 
+### Parallelism
+
+All `make` targets run tasks serially by default (`-j 1`). Override with `TASK_PARALLELISM`:
+
+```bash
+# Run smoke tests with 4 tasks in parallel
+TASK_PARALLELISM=4 make smoke
+
+# Or export once for the shell session
+export TASK_PARALLELISM=4
+make all
+```
+
 ## Evaluation Framework
 
 Tests are organized into three types, distinguished by **tags** (not directories). All tests for a skill live together in `tests/tasks/<skill-name>/`.
@@ -75,7 +90,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 |---|---|---|---|
 | **skill** | flat, required | Skill under test | `uipath-<name>` — must match the skill folder (e.g. `uipath-maestro-flow`) |
 | **tier** | flat, required | Test depth / cost | `smoke`, `integration`, `e2e` |
-| **lifecycle** | `lifecycle:X`, required | What the agent is asked to do | `generate`, `edit`, `validate`, `discover`, `activate`, `execute`, `deploy` |
+| **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
 | **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
@@ -84,8 +99,8 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 
 ### Rules
 
-1. **Required on every task: `skill` + `tier` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
-2. **One value per singular dimension** (`tier`, `lifecycle`, `shape`). A task doesn't have two tiers.
+1. **Required on every task: `skill` + `tier` + `mode:*`.** These drive `make` targets, coverage, and evalboard dashboards.
+2. **One value per singular dimension** (`tier`, `mode`, `shape`). A task doesn't have two tiers.
 3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
 4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
 5. **Use only the vocabularies above.** Propose new values in the PR — do not invent tags inline. New values should apply to at least two tasks in practice.
@@ -94,15 +109,15 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 ### Example
 
 ```yaml
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
+tags: [uipath-maestro-flow, e2e, mode:build, shape:multi-node, node:decision, connector, feature:http]
 ```
 
 ### Useful slices this enables
 
 - `make tags TAGS="smoke"` → every skill's entry-gate checks.
 - `make tags TAGS="integration connector"` → connector coverage across skills.
-- `make tags TAGS="e2e lifecycle:generate"` → end-to-end authoring from scratch, across skills.
-- `make tags TAGS="lifecycle:edit"` → modification-on-existing-project behavior.
+- `make tags TAGS="e2e mode:build"` → end-to-end build tasks across skills.
+- `make tags TAGS="mode:diagnose"` → diagnosis-mode coverage across skills.
 - Evalboard: `where tag == "connector"` → pass-rate across all connector-using tasks.
 - Evalboard: `where tag == "shape:multi-node"` → composite-flow reliability.
 
@@ -122,7 +137,7 @@ tests/
 │       ├── smoke/                # Tier: smoke
 │       ├── single_node/          # Tests isolating a single node type (optional)
 │       ├── multi_node/           # Composite-flow tests (optional)
-│       ├── edit/                 # lifecycle:edit tests (optional)
+│       ├── edit/                 # Tests that modify an existing artifact (optional)
 │       └── <other>/              # Skill-specific groupings (e.g. hitl/, connector_features/)
 └── reports/                      # Generated by /test-coverage command
     ├── <skill-name>.md           # Per-skill coverage report
@@ -135,11 +150,16 @@ Groupings under a skill are advisory — pick the ones that map to how the skill
 
 Experiment files define shared agent defaults per test type. Tasks inherit these defaults and should only override what differs.
 
-| Experiment | Used by | max_iterations | max_turns | task_timeout | turn_timeout |
-|------------|---------|----------------|-----------|--------------|--------------|
-| `default.yaml` | Smoke | 1 | 20 | 600s | 300s |
-| `integration.yaml` | Integration | 2 | 30 | 900s | 300s |
-| `e2e.yaml` | E2E | 2 | 40 | 1200s | 300s |
+Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
+
+| Experiment | Used by | max_turns | task_timeout | turn_timeout |
+|------------|---------|-----------|--------------|--------------|
+| `default.yaml` | Smoke | 40 | 900s | 900s |
+| `integration.yaml` | Integration | 30 | 900s | 300s |
+| `e2e.yaml` | E2E | 200 | 1200s | 300s |
+| `activation.yaml` | Skill activation classifier | 1 | 120s | 120s |
+
+`activation.yaml` is a different shape from the tiered configs above — it runs the agent for exactly one turn against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
@@ -148,7 +168,7 @@ Task files should **not** duplicate the full `agent:` block — the experiment p
 ```yaml
 # Good — no agent block needed when everything matches the experiment defaults
 task_id: skill-flow-init-validate
-tags: [uipath-maestro-flow, smoke, init, validate]
+tags: [uipath-maestro-flow, smoke, mode:build]
 
 sandbox:
   driver: tempdir
@@ -159,7 +179,7 @@ initial_prompt: |
 
 # Good — only override what differs (max_turns: 14 instead of the default 20)
 task_id: skill-flow-registry-discovery
-tags: [uipath-maestro-flow, smoke, registry]
+tags: [uipath-maestro-flow, smoke, mode:build, feature:registry]
 
 agent:
   type: claude-code
@@ -178,7 +198,7 @@ initial_prompt: |
 1. Create `tests/tasks/<skill-name>/` matching the skill folder name under `skills/`.
 2. Add at minimum **1 smoke test** and **1 e2e test** (required for every new skill PR).
 3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
-4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier`, plus `lifecycle`, `scenario`, and `feature` where applicable.
+4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier` + `mode:*`, plus optional `shape`, `node`, `resource`, `connector`, and `feature` where applicable.
 5. Stick to the closed-vocabulary values. Propose new tags in the PR — do not invent them inline.
 
 ### Task ID Convention
@@ -199,7 +219,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
   a new UiPath Flow project inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
-tags: [uipath-maestro-flow, smoke, init, validate]
+tags: [uipath-maestro-flow, smoke, mode:build]
 
 sandbox:
   driver: tempdir
@@ -209,12 +229,17 @@ initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.
 
-  Save a summary of what you did to report.json with at minimum:
-    {
-      "project_name": "WeatherAlert",
-      "commands_used": ["<list of uip commands you ran>"],
-      "validation_passed": true
-    }
+  Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
+  inside a solution:
+  1. Create the solution first.
+  2. Create the Flow project inside that solution.
+  3. Link the project to the solution.
+
+  The correct flow-file path is:
+    WeatherAlert/WeatherAlert/WeatherAlert.flow
+
+  The task is NOT complete until `uip maestro flow validate` has passed for
+  that exact file path.
 
   Important:
   - The `uip` CLI is already available in the environment.
@@ -224,7 +249,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a solution with uip solution new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -232,7 +257,7 @@ success_criteria:
   - type: command_executed
     description: "Agent initialized a Flow project with uip maestro flow init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+init'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -240,7 +265,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the .flow file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -248,7 +273,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json on uip commands"
     tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -256,7 +281,7 @@ success_criteria:
   - type: command_executed
     description: "Agent linked flow project to solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+add'
+    command_pattern: '(uip|\$UIP)\s+solution\s+project\s+add'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -266,32 +291,14 @@ success_criteria:
     path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "WeatherAlert"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 3
-    weight: 2.0
-    pass_threshold: 0.75
 ```
 
 Key patterns to note:
 - **No `agent:` block** — inherits everything from `experiments/default.yaml`
-- **No `max_iterations` or `llm_reviewer`** — inherited from the experiment config
+- **No `run_limits:` block** — inherits turn / timeout caps from the experiment config
 - **Minimal prompt** — describes the goal ("create and validate"), not the steps
-- **Multiple criteria types** — `command_executed`, `file_exists`, `json_check` cover different aspects
+- **Behavior-only criteria** — `command_executed` and `file_exists` verify real operations, not agent self-reports
 - **Weighted scoring** — core commands (`weight: 1.5`) matter more than supporting checks (`weight: 1.0`)
-
-For another example using `file_contains` and `run_command` criteria, see `tasks/uipath-maestro-flow/smoke/registry_discovery.yaml`. That test also demonstrates overriding a single field (`agent: max_turns: 14`) from the experiment defaults.
 
 ## Success Criteria Reference
 
@@ -325,58 +332,77 @@ Verify a file was created in the sandbox. From `init_validate.yaml`:
 
 ### `file_contains`
 
-Verify a file contains expected strings. From `registry_discovery.yaml`:
+Verify a file contains (or excludes) expected strings. From `uipath-maestro-flow/hitl/smoke_01_hitl_node_placed.yaml`:
 
 ```yaml
 - type: file_contains
-  description: "Report contains expected fields"
-  path: "registry_report.json"
+  description: "Flow contains the inline HITL node type"
+  path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
   includes:
-    - "node_types_found"
-    - "commands_used"
-    - "http_node_type"
-    - "script_node_type"
-  weight: 1.5
+    - '"uipath.human-in-the-loop"'
+  weight: 3.0
   pass_threshold: 1.0
 ```
+
+`excludes:` is also supported — useful for asserting a file does not contain a deprecated flag or forbidden value.
 
 ### `json_check`
 
-Validate JSON file structure and values using JSONPath assertions. From `init_validate.yaml`:
-
-```yaml
-- type: json_check
-  description: "report.json has correct structure and values"
-  path: "report.json"
-  assertions:
-    - expression: "project_name"
-      operator: equals
-      expected: "WeatherAlert"
-    - expression: "validation_passed"
-      operator: equals
-      expected: true
-    - expression: "length(commands_used)"
-      operator: gte
-      expected: 3
-  weight: 2.0
-  pass_threshold: 0.75   # at least 75% of assertions must pass
-```
-
-Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
+Validate JSON file structure and values using JMESPath assertions. Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
 
 ### `run_command`
 
-Execute an arbitrary shell command and check the exit code. From `registry_discovery.yaml`:
+Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-data-fabric/integration_csv_import.yaml`:
 
 ```yaml
 - type: run_command
-  description: "registry_report.json is valid JSON"
-  command: "python -c \"import json; json.load(open('registry_report.json'))\""
-  timeout: 10
+  description: "inventory.csv has at least 4 data rows (header + 4)"
+  command: "awk 'END { exit (NR >= 5 ? 0 : 1) }' inventory.csv"
+  timeout: 5
   expected_exit_code: 0
-  weight: 1.0
+  weight: 2.0
   pass_threshold: 1.0
 ```
+
+Or byte-equality for upload/download round-trips:
+
+```yaml
+- type: run_command
+  description: "Downloaded file is byte-identical to the original"
+  command: "cmp -s original.txt downloaded.txt"
+  timeout: 5
+  expected_exit_code: 0
+```
+
+### `skill_triggered`
+
+Verify the agent invoked a Claude Code Skill tool. Useful for "did the agent recognize this scenario calls for skill X?" Supports positive (`expected: "yes"`) and negative (`expected: "no"`) assertions:
+
+```yaml
+- type: skill_triggered
+  description: "Agent invoked the uipath-human-in-the-loop skill"
+  skill_name: "uipath-human-in-the-loop"
+  expected: "yes"
+  weight: 3.0
+  pass_threshold: 1.0
+```
+
+Un-fakeable — the criterion inspects `turn_records.commands` directly. The negative form (`expected: "no"`) is the right primitive for smoke tests where the agent should NOT trigger a particular skill.
+
+### `command_not_executed`
+
+Counterpart to `command_executed`. Verifies the agent did NOT run a prohibited command. Use for refusal / negative-guard tests:
+
+```yaml
+- type: command_not_executed
+  description: "Agent must not delete an entity"
+  tool_name: "Bash"
+  command_pattern: 'uip\s+df\s+entities\s+delete'
+  weight: 3.0
+  pass_threshold: 1.0
+```
+
+Score is binary: 1.0 when matches ≤ `max_count` (default `0`), else 0.0. Empty `turn_records` → trivially passes.
 
 ## Weight and Threshold Guidance
 
@@ -384,11 +410,11 @@ Execute an arbitrary shell command and check the exit code. From `registry_disco
 
 | Weight | When to use | Example from existing tests |
 |--------|-------------|---------------------------|
-| `1.0` | Supporting checks | `--output json` flag used, file is valid JSON |
+| `1.0` | Supporting checks | `--output json` flag used, presence of an auxiliary file |
 | `1.5` | Core behavior | `uip solution new` executed, `.flow` file created |
-| `2.0` | Critical validation | `report.json` has correct structure and values |
+| `2.0` | Important artifact content | `.flow` file contains the expected node type or handle wiring |
 | `3.0` | Primary artifact validity | `uip maestro flow validate` passes on the generated flow file |
-| `5.0–6.0` | End-to-end execution | Check script runs flow debug and verifies output correctness |
+| `5.0–6.0` | End-to-end execution | Check script runs `flow debug` and verifies output correctness |
 
 **`pass_threshold`** is the fraction of the criterion that must pass. For `json_check` with multiple assertions, `0.75` means 75% of assertions must pass. For most criteria, use `1.0` (all-or-nothing).
 
@@ -452,19 +478,19 @@ Reports are written to `tests/reports/<skill-name>.md` and include:
 
 The command is defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
 
-### Generating Test Tasks
+### Generating a Test Task
 
-Use the `/generate-tasks` slash command to scaffold new test tasks based on coverage gaps:
+Use the `/generate-task` slash command to scaffold a single task YAML from a free-form description of the scenario to cover. The command always infers the target skill from the description — do not pass a skill name.
 
 ```bash
-/generate-tasks uipath-platform                      # highest-priority gaps
-/generate-tasks uipath-platform authentication        # specific focus area
-/generate-tasks uipath-maestro-flow smoke             # specific test tier
+/generate-task smoke test for folder listing via uip orchestrator
+/generate-task e2e flow that uses HITL with an approval gate and write-back
+/generate-task cover the new uip flow registry get subcommand
 ```
 
-This generates task YAML files (and optional check scripts) in `tests/tasks/<skill-name>/`. Generated tasks are **starting points for reference only** — review and improve them before relying on them for CI. In particular, verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
+This generates one task YAML (and optional check script) in `tests/tasks/<skill-name>/`. Generated tasks are **unverified scaffolds** — before merging, run the task end-to-end with `coder-eval` and add a passing-run claim to the PR description (the lint workflow flags missing claims as High severity). Verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
 
-The command is defined in [`.claude/commands/generate-tasks.md`](../.claude/commands/generate-tasks.md).
+The command is defined in [`.claude/commands/generate-task.md`](../.claude/commands/generate-task.md).
 
 ## Further Reading
 

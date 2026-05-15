@@ -4,14 +4,15 @@ description: >
   a new low-code agent inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
 tags: [uipath-agents, smoke, low-code]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
+
+run_limits:
   max_turns: 30
+  turn_timeout: 1200
 
 sandbox:
   driver: tempdir
@@ -42,11 +43,15 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent linked the project to the solution with uip solution project add"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+add'
-    min_count: 1
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "EchoSol/EchoSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
     weight: 1.5
     pass_threshold: 1.0
 

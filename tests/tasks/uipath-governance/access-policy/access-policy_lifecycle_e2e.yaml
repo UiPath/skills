@@ -1,0 +1,104 @@
+task_id: skill-gov-access-policy-lifecycle
+description: >
+  End-to-end test against the staging tenant: agent walks the full Access
+  ToolUsePolicy lifecycle — create, get, update, delete — driven entirely
+  by the uipath-governance skill. The prompt only states the **goal**;
+  the skill is responsible for teaching the CLI surface, the required
+  `PolicyDefinition` shape (policyType, status, enforcement, selectors,
+  executableRule), identity sourcing (org / tenant from the active login
+  session), and full-replace update semantics.
+
+  The test asserts outcomes via `require_success: true` on every mutating
+  command — if the skill teaches the wrong shape (e.g. emits Deny instead
+  of Allow, or omits a required field like `policyType`), the server
+  rejection makes the criterion fail. Retries are fine — the criterion
+  counts only successful invocations.
+
+  Skill-level shape invariants (Critical Rules #2 / #4 / #13 — Allow-only
+  enforcement, optional actorRule, Simulated-by-default status) are NOT
+  re-checked here. They are the responsibility of the gov skill's own
+  smoke tests; e2e trusts the skill and verifies end-to-end CRUD.
+
+  The trailing delete is the cleanup; the test self-cleans on success.
+  If a run fails mid-flow and leaves a `lifecycle-test-access-policy*`
+  policy behind, delete it manually before the next run.
+tags: [uipath-governance, e2e, access-policy, mode:build]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Walk the full lifecycle of a minimal Simulated Access ToolUsePolicy on
+  the current login tenant.
+
+  1. Create a policy named `lifecycle-test-access-policy` with a minimal
+     configuration:
+       - one resource selector for `Agent` matching all resources
+       - one actor-process rule for `Agent` matching all callers
+       - no actor identity rule
+  2. Fetch the policy to confirm it exists.
+  3. Update it — rename to `lifecycle-test-access-policy-renamed`. Keep
+     every other field as-is.
+  4. Delete the policy.
+
+  The uipath-governance skill knows the required `PolicyDefinition` shape,
+  the default status / enforcement values, how to source org and tenant
+  identity from the active login session, and the full-replace semantics
+  of update. Trust it.
+
+  Important:
+  - Do not prompt the user for confirmation — this is an automated test.
+  - The final delete cleans up the test policy — do not skip it, even if
+    a prior step had warnings.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the test policy AND the server accepted it (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+access-policy\s+create\s+(?=.*--file\s+).*'
+    require_success: true
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the policy by GUID returned from create (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+access-policy\s+get\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated the policy AND the server accepted it (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+access-policy\s+update\s+(?=.*--file\s+).*'
+    require_success: true
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the test policy at end of lifecycle (cleanup, exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+access-policy\s+delete\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on at least 3 access-policy commands (skill convention)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+access-policy\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0

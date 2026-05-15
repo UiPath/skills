@@ -2,7 +2,9 @@
 
 Structural reference for the case definition JSON. Shared across all node types. Per-task-type and per-condition-type field shapes live in each plugin's `impl-json.md`.
 
-## Top-level structure
+> **Bilingual.** Top-level shape differs between v19 (default) and v20 (opt-in per SKILL.md Rule 18). Per-node and per-edge internal shapes are **identical** across schemas — only the wrapper changes. See § Top-level shape (v19) and § Top-level shape (v20) below.
+
+## Top-level shape (v19 — default)
 
 ```json
 {
@@ -11,6 +13,79 @@ Structural reference for the case definition JSON. Shared across all node types.
   "edges": [ ... ]
 }
 ```
+
+## Top-level shape (v20 — opt-in)
+
+```json
+{
+  "id": "case-aBcDeFgHiJ",
+  "version": "20.0.0",
+  "name": "<case name>",
+  "description": "<optional>",
+  "metadata": {
+    "caseIdentifier": "<MORT>",
+    "caseIdentifierType": "constant",
+    "caseAppEnabled": false,
+    "publishVersion": 2,
+    "caseUnifiedSchemaEnabled": true,
+    "intsvcActivityConfig": "v2",
+    "slaRules": [ ... ],
+    "caseExitRules": [ ... ]
+  },
+  "bindings": [ ... ],
+  "variables": { "inputs": [], "outputs": [], "inputOutputs": [] },
+  "nodes": [ ... ],
+  "edges": [ ... ],
+  "layout": {}
+}
+```
+
+### v19 → v20 field mapping
+
+| v19 path | v20 path |
+|---|---|
+| `root.id` (literal `"root"`) | top-level `id` (`case-<10>` generated) |
+| `root.name` | top-level `name` |
+| `root.description` | top-level `description` |
+| `root.caseIdentifier` | `metadata.caseIdentifier` |
+| `root.caseIdentifierType` | `metadata.caseIdentifierType` |
+| `root.caseAppEnabled` | `metadata.caseAppEnabled` |
+| `root.publishVersion` | `metadata.publishVersion` |
+| `root.caseUnifiedSchemaEnabled` | `metadata.caseUnifiedSchemaEnabled` |
+| `root.caseAppConfig` | `metadata.caseAppConfig` |
+| `root.allowAdhocOptionalStageTasks` | `metadata.allowAdhocOptionalStageTasks` |
+| `root.caseExecutionIncludesDebugVariables` | `metadata.caseExecutionIncludesDebugVariables` |
+| `root.caseExecutionUsesSyncCaseTasks` | `metadata.caseExecutionUsesSyncCaseTasks` |
+| `root.caseBpmnUseNewGlobalVariables` | `metadata.caseBpmnUseNewGlobalVariables` |
+| `root.waitForHumanSelectNextStageDFConnector` | `metadata.waitForHumanSelectNextStageDFConnector` |
+| `root.version` (`"v19"`) | top-level `version` (`"20.0.0"`) |
+| `root.data.slaRules` | `metadata.slaRules` |
+| `root.data.uipath.bindings` | top-level `bindings` |
+| `root.data.uipath.variables` | top-level `variables` |
+| `root.caseExitConditions` | `metadata.caseExitRules` *(field renamed)* |
+| `root.data.intsvcActivityConfig` | `metadata.intsvcActivityConfig` |
+| `nodes` | `nodes` *(unchanged shape — see § 2 below)* |
+| `edges` | `edges` *(unchanged shape — see § 3 below)* |
+| — | `layout: {}` *(new top-level — see § 7 below)* |
+
+### v20 layout-strip (Rule 19)
+
+In v20, node-level layout fields move to a top-level `layout` block. The frontend transformer `transformCaseInMemoryJsonToDiskJson.ts` does this stripping when round-tripping through canvas; skill emits clean nodes from the start.
+
+**Stripped from each node** (skill MUST NOT emit in v20):
+- `position`
+- `style`
+- `measured`
+- `width`
+- `height`
+- `zIndex`
+
+**Stripped from each edge** (skill MUST NOT emit in v20):
+- `data.waypoints`
+
+**Lifted to** `layout.nodes[<nodeId>] = { position, style, measured, width, height }` and `layout.edges[<edgeId>] = { waypoints }` — but skill emits empty `layout: {}` because FE auto-layouts on canvas load. Skill is not a layout authority.
+
+**v19 mode preserves all current render-field rules** — see [`case-editing-operations.md`](case-editing-operations.md) Pre-flight Checklist Items 3, 4.
 
 ---
 
@@ -32,9 +107,9 @@ Structural reference for the case definition JSON. Shared across all node types.
 
 ---
 
-## 1. root
+## 1. root (v19) / top-level + metadata (v20)
 
-Metadata and configuration for the case definition.
+Metadata and configuration for the case definition. **v19** wraps everything under `root`; **v20** flattens to top-level + `metadata` block per the field-mapping table above. Field semantics are identical — only locations change.
 
 ```json
 {
@@ -116,7 +191,7 @@ No `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (
 
 `serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
 
-> **Skeleton form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.uipath` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Skeleton fallback](plugins/triggers/event/impl-json.md).
+> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.uipath` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
 
 ### b) Stage Node — `"case-management:Stage"`
 
@@ -166,7 +241,7 @@ Standard workflow stage. Contains tasks.
 | `parentElement` | `{id,type}` | Always `{ id: "root", type: schema.root.type }` |
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
-| `tasks` | Task[][] | 2D array: `tasks[lane][index]`. The skill places one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns. Lane has no execution meaning — sequencing and parallelism live in task-entry conditions. Empty array `[]` when no tasks yet. |
+| `tasks` | Task[][] | 2D array: `tasks[lane][index]`. Default: one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns; lane is layout-only, sequencing comes from task-entry conditions. Exception: tasks in a `runs-sequentially` group that should execute in parallel share the same lane — there, shared lane carries execution semantics (parallel siblings inside the sequential group). Empty array `[]` when no tasks yet. |
 | `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
 | `entryConditions` | EntryCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
@@ -246,7 +321,7 @@ All conditions share the same shape but attach at different levels. Per-level fi
 
 ### CaseExitCondition (case-level)
 
-See `root.caseExitConditions` in §1.
+See `root.caseExitConditions` (v19) / `metadata.caseExitRules` (v20) in §1.
 
 ---
 
@@ -410,7 +485,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |
 | `description` | string? | Task description |
 
-**Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. The skill convention is one task per lane.
+**Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. Default convention: one task per lane. Exception: within a `runs-sequentially` group, tasks that should run in parallel share the same lane (shared lane = parallel siblings, carries execution semantics).
 
 **Task type catalog** (full shape in each plugin's `impl-json.md`):
 
@@ -425,7 +500,6 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
-| `external-agent` | *(reserved — not covered in current milestone)* |
 
 ---
 
@@ -434,7 +508,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "root": {
-    "id": "Case_aBcDeF",
+    "id": "root",
     "name": "Simple Case",
     "type": "case-management:root",
     "caseIdentifier": "Simple Case",

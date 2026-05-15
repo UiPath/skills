@@ -40,7 +40,7 @@ If no match is found across both cache files after `registry pull`:
 - Mark the task line: `<UNRESOLVED: process "<name>" in folder "<folder>" not found in registry>`
 - Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).
 - Continue planning for remaining tasks.
-- Execution creates a skeleton task (no `data.context.taskTypeId`, no bindings). See [skeleton-tasks.md](../../../skeleton-tasks.md).
+- Execution creates a placeholder task (no `data.context.taskTypeId`, no bindings). See [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## tasks.md Entry Format
 
@@ -55,6 +55,6 @@ If no match is found across both cache files after `registry pull`:
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>
-- lane: <n>  # FE layout coordinate; increment per task within the stage
+- lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
 - verify: Confirm Result: Success, capture TaskId
 ```

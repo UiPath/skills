@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c",
+      "State": "Faulted",
+      "ProcessName": "AssetPermissionDenied",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T15:42:18.220Z",
+      "EndTime": "2026-05-12T15:42:20.314Z",
+      "CreationTime": "2026-05-12T15:42:17.985Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

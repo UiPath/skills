@@ -85,23 +85,13 @@ Follow the [PDD Analysis Guide](pdd-analysis-guide.md) to extract data from the 
 
 **Key Contacts go into §1 Delivery Team.** The PDD's Key Contacts section (SA, BA, developers, PM, SME / Process Owner) populates the Delivery Team table in §1 of the RPA template. Include only roles the PDD explicitly names — do not invent or leave rows as `[SME REVIEW]`; omit silent rows instead.
 
-### Step 2.5: Org Context Check
+### Step 2.5: Tenant Library Discovery
 
-One piece of context cannot be inferred from any PDD — whether the organization maintains shared RPA libraries that every new project must reference (e.g., `CommonLibrary`, `<Company>.Activities`). Ask this question in BOTH Autonomous and Interactive modes — it is a hard blocker for correct §14 Packages content.
-
-Use `AskUserQuestion` with the numbered-choice format:
-
-> Does your organization maintain shared RPA libraries (e.g., `CommonLibrary`) that every new project must reference in its §14 Packages?
->
-> 1. **No / none that apply here** *(recommended)* — I will not list any shared library in §14
-> 2. **Yes — CommonLibrary** — I will include `CommonLibrary` in each sub-project's §14 Packages
-> 3. **Yes — other** — you will name the libraries; I will include them in each sub-project's §14
-
-Record the answer and propagate in Phase 2:
-- Add the library names to each sub-project's §14 Packages table (one row per shared library, per sub-project).
-- Add the same list to §16 Deployment Environment → "Shared libraries referenced".
+The org's deployed libraries cannot be inferred from any PDD. Query the tenant feed to discover candidates the new project should reference. Run in BOTH Autonomous and Interactive modes — this drives §14 Packages and §16 "Shared libraries referenced".
 
 Skip this step for non-RPA primaries (Agents, Coded Apps, Flow, Case, API Workflows) — shared RPA libraries do not apply to those products' package models.
+
+Run the procedure in [tenant-library-search-guide.md](tenant-library-search-guide.md). Keyword source for step 2: PDD Application Inventory + org-prefix terms (`Common`, `Shared`, `<Company>` if mentioned in the PDD). Output mapping: every selected library → one row in every sub-project's §14 Packages table, and its package ID into §16 Deployment Environment → "Shared libraries referenced". If the auth preflight fails, use the guide's manual fallback and propagate the user's named libraries to §14 / §16 the same way.
 
 ### Step 3: Detect Gaps
 

@@ -18,7 +18,7 @@ Confirm: input port `input` (accepts multiple connections), output port `output`
 {
   "id": "joinBranches",
   "type": "core.logic.merge",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Join Branches" },
   "inputs": {}
 }

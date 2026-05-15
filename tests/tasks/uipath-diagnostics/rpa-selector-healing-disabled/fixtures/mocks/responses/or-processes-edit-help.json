@@ -1,0 +1,127 @@
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "edit",
+    "Description": "Edit process settings by key (GUID). No folder needed — resolves cross-folder. Only provided fields are updated (PATCH). Use 'processes get' to see current values.",
+    "Usage": "uip or processes edit [options] <process-key>",
+    "Arguments": [
+      {
+        "Name": "process-key",
+        "Description": "Process key (GUID)",
+        "Required": true
+      }
+    ],
+    "Options": [
+      {
+        "Flags": "-t, --tenant <tenant-name>",
+        "Description": "Tenant (optional, defaults to value selected during auth)"
+      },
+      {
+        "Flags": "-n, --name <name>",
+        "Description": "Process display name"
+      },
+      {
+        "Flags": "-d, --description <desc>",
+        "Description": "Process description"
+      },
+      {
+        "Flags": "--entry-point <path>",
+        "Description": "Entry point workflow path (for multi-entry-point packages)"
+      },
+      {
+        "Flags": "--input-arguments <json>",
+        "Description": "Default input arguments as JSON string"
+      },
+      {
+        "Flags": "--job-priority <priority>",
+        "Description": "Default job priority (Low, Normal, High)"
+      },
+      {
+        "Flags": "--specific-priority <value>",
+        "Description": "Specific priority value (1-100). Mutually exclusive with --job-priority."
+      },
+      {
+        "Flags": "--auto-update",
+        "Description": "Enable auto-update to latest package version"
+      },
+      {
+        "Flags": "--no-auto-update",
+        "Description": "Disable auto-update to latest package version"
+      },
+      {
+        "Flags": "--hidden-for-attended",
+        "Description": "Hide from attended robot users"
+      },
+      {
+        "Flags": "--visible-for-attended",
+        "Description": "Show to attended robot users"
+      },
+      {
+        "Flags": "--auto-create-triggers",
+        "Description": "Auto-create connected triggers on deploy"
+      },
+      {
+        "Flags": "--no-auto-create-triggers",
+        "Description": "Disable auto-create connected triggers on deploy"
+      },
+      {
+        "Flags": "--retention-period <days>",
+        "Description": "Job retention period in days (1–180)"
+      },
+      {
+        "Flags": "--retention-action <action>",
+        "Description": "Retention action (Delete, Archive, None)"
+      },
+      {
+        "Flags": "--retention-bucket <id>",
+        "Description": "Storage bucket ID for archived jobs (required when action is Archive)"
+      },
+      {
+        "Flags": "--stale-retention-period <days>",
+        "Description": "Stale job retention period in days"
+      },
+      {
+        "Flags": "--stale-retention-action <action>",
+        "Description": "Stale retention action (Delete, Archive, None)"
+      },
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Examples": [
+      {
+        "Description": "Change a process description",
+        "Command": "uip or processes edit c3d4e5f6-0000-0000-0000-000000000001 --description \"Monthly invoice batch\"",
+        "Output": {
+          "Code": "ProcessEdited",
+          "Data": {
+            "Key": "c3d4e5f6-0000-0000-0000-000000000001",
+            "Name": "InvoiceProcessing",
+            "Status": "Updated successfully"
+          }
+        }
+      }
+    ],
+    "Subcommands": [],
+    "GlobalOptions": [
+      {
+        "Flags": "--output <table|json|yaml|plain>",
+        "Description": "Output format (default: json)"
+      },
+      {
+        "Flags": "--output-filter <expression>",
+        "Description": "JMESPath expression to filter output"
+      },
+      {
+        "Flags": "--log-level <debug|info|warn|error>",
+        "Description": "Log level threshold (default: info)"
+      },
+      {
+        "Flags": "--log-file <path>",
+        "Description": "Write logs to file instead of stderr"
+      }
+    ]
+  }
+}

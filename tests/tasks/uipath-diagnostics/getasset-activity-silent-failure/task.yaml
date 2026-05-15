@@ -1,0 +1,211 @@
+task_id: skill-diagnostics-getasset-activity-silent-failure
+description: >
+  UiPath diagnostic agent must diagnose a Get Credential failure where
+  the activity itself completes without an exception, but its output
+  variables remain null because the project targets the buggy
+  UiPath.System.Activities 22.10.x package version. A downstream
+  LogMessage activity then throws NullReferenceException trying to
+  consume the null outputs. The agent must trace BACKWARD from the
+  downstream NRE to discover that Get Credential silently failed to
+  populate its outputs, then connect that to the documented package-
+  version bug.
+
+tags: [uipath-diagnostics, e2e, faulted-jobs, orchestrator, system-activities, get-asset, activity-bug-silent-failure]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  max_turns: 60
+  turn_timeout: 3600
+
+run_limits:
+  task_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My AssetSilentFailure process is faulting in Orchestrator on every
+  run. Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-diagnostics skill"
+    skill_name: "uipath-diagnostics"
+    expected_skill: "uipath-diagnostics"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the get-asset-activity-bug-silent-failure playbook AND identified the UiPath.System.Activities 22.10.x package version bug as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My AssetSilentFailure process is faulting in Orchestrator on
+         every run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/system-activities/playbooks/get-asset-activity-bug-silent-failure.md
+        because the runtime symptoms are:
+          (a) Get Credential activity completed WITHOUT throwing an
+              exception (no error log entry referencing GetRobotCredential)
+          (b) Downstream LogMessage threw NullReferenceException
+              consuming the activity's outputs
+          (c) Project targets UiPath.System.Activities 22.10.x — the
+              version with the documented Ctrl+K output-binding bug.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             get-asset-activity-bug-silent-failure playbook should
+             appear (absolute or relative path).
+          2. The agent's tool-call summary -- a Read on the playbook
+             file under references/activity-packages/system-activities/
+             playbooks/ AND a Read on `project.json` (the
+             package-version anchor).
+          3. state.json's `scope.domain` -- should include the
+             system-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        get-asset-* playbooks (not-found, folder-scope-mismatch,
+        permission-denied, wrong-activity-type, per-robot-no-value,
+        robot-not-authenticated, external-vault-failure) while ruling
+        them out. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The job's error log shows a NullReferenceException at
+            the LogMessage activity — NOT at Get Credential.
+          - Get Credential completed silently with no entry in the
+            error log; the activity ran but its outputs were never
+            populated.
+          - The project's `project.json` shows
+            `UiPath.System.Activities: [22.10.5]` — a package
+            version with the documented bug where Get Credential /
+            Get Asset / Get Orchestrator Asset output variables
+            created via Ctrl+K do not receive output values.
+          - The asset itself (`myHiddenAsset`, Credential, Global,
+            in Remote Debugging) is correctly configured; the robot
+            has the right roles and license.
+        The reference fix:
+          - Either: upgrade `UiPath.System.Activities` to a version
+            that includes the fix (current LTS or any post-22.10.x
+            release), then rebuild and republish.
+          - Or (workaround): pre-create the output variables in the
+            Variables panel BEFORE configuring the activity. Avoid
+            Ctrl+K inside the activity's property grid.
+
+        **Important playbook ambiguity that affects scoring:** the
+        playbook lists the trigger as "variables created via Ctrl+K",
+        but Studio emits IDENTICAL XAML whether a variable is
+        created via Ctrl+K or pre-declared in the Variables panel.
+        An agent that strictly applies the trigger condition will
+        observe the `<Sequence.Variables>` block in Main.xaml and
+        correctly note that the Ctrl+K precondition cannot be
+        confirmed from static analysis alone. **That is
+        epistemically correct behavior, not a diagnostic gap.**
+        Reward agents that flag the package version as suspect and
+        recommend the upgrade fix even if they hedge about which
+        exact sub-cause variant (Ctrl+K vs copy-pasted vs general
+        package regression) applies. The actionable fix is the
+        same either way: upgrade the package.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.package_version` (22.10.5),
+             `requirements.downstream_error`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json -- a hypothesis (need not be flagged
+             `is_root_cause: true`) should name BOTH the package
+             version 22.10.x AND the silent-failure pattern
+             (Get Credential ran but produced no error AND null
+             output). The agent may legitimately leave the
+             root-cause flag conservative if they cannot verify
+             the Ctrl+K trigger from static XAML.
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched get-asset-activity-bug-silent-failure AND
+             (a) recognized Get Credential completed silently (no
+             error from it in logs), (b) named the package version
+             22.10.x as suspect, AND (c) recommended upgrading
+             `UiPath.System.Activities` as a fix. Full root-cause
+             commitment AND well-hedged "version is suspect, upgrade
+             recommended" stances both score 1.0 — the actionable
+             fix is what matters, not whether the agent declares
+             100% certainty.
+        0.8  Most of the chain is sound but one piece is missing:
+             matched playbook + named version, but didn't recommend
+             the upgrade fix concretely; OR matched playbook +
+             recommended upgrade but didn't tie it to the 22.10.x
+             version explicitly.
+        0.5  Matched playbook but didn't identify the package
+             version at all; OR named the version but never matched
+             the silent-failure playbook (e.g., matched the
+             system-activities investigation_guide instead).
+        0.2  Recognized the surface (NRE / null output) but neither
+             matched the playbook nor named the package version.
+        0.0  Misdiagnosed: concluded one of the other GetAsset
+             failure modes as the root cause; OR invented a
+             hypothesis that isn't in any playbook (e.g.,
+             "GetRobotCredential vs GetOrchestratorCredential
+             activity choice" is a fabrication — there is no such
+             distinction). Blocked / timed-out agents also score 0.0.
+
+      Be substance-focused, not schema-focused. An agent that
+      identifies the package version 22.10.x and recommends an
+      upgrade is diagnostically correct even if it hedges about
+      the exact internal trigger mechanism — that hedging reflects
+      the playbook's own ambiguity, not a diagnostic gap.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
+
+llm_reviewer:
+  enabled: false

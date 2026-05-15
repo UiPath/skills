@@ -1,0 +1,50 @@
+{"id": "uipath-review-001", "prompt": "Review my UiPath project", "expected_skill": "uipath-review"}
+{"id": "uipath-review-002", "prompt": "Audit this solution before we ship it to production", "expected_skill": "uipath-review"}
+{"id": "uipath-review-003", "prompt": "Can you check the quality of this RPA project?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-004", "prompt": "Is this solution any good?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-005", "prompt": "What can be improved in this project?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-006", "prompt": "I inherited this UiPath project from someone who left, can you tell me what state it's in?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-007", "prompt": "Run a pre-deployment quality gate check on the .uipx in this repo", "expected_skill": "uipath-review"}
+{"id": "uipath-review-008", "prompt": "Evaluate this XAML workflow against UiPath best practices", "expected_skill": "uipath-review"}
+{"id": "uipath-review-009", "prompt": "Look at my .flow file and tell me if there are any issues \u2014 don't change anything yet", "expected_skill": "uipath-review"}
+{"id": "uipath-review-010", "prompt": "Audit my coded agent (Python/LangGraph) for structural problems and tool design", "expected_skill": "uipath-review"}
+{"id": "uipath-review-011", "prompt": "Review the agent.json in this folder for best practices", "expected_skill": "uipath-review"}
+{"id": "uipath-review-012", "prompt": "Run Workflow Analyzer on this project and summarize the violations by severity", "expected_skill": "uipath-review"}
+{"id": "uipath-review-013", "prompt": "Check this solution for hardcoded credentials, missing assets, and other security smells", "expected_skill": "uipath-review"}
+{"id": "uipath-review-014", "prompt": "Evaluate the architecture of this multi-project solution \u2014 dispatcher/performer, library reuse, cross-project deps", "expected_skill": "uipath-review"}
+{"id": "uipath-review-015", "prompt": "Are my variable and argument names following UiPath naming conventions?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-016", "prompt": "Quality review on this coded app before we publish", "expected_skill": "uipath-review"}
+{"id": "uipath-review-017", "prompt": "Check selector robustness in my XAML workflows", "expected_skill": "uipath-review"}
+{"id": "uipath-review-018", "prompt": "I want a structural review of my .flow \u2014 node count, depth, gateways, anything weird", "expected_skill": "uipath-review"}
+{"id": "uipath-review-019", "prompt": "Is my transaction granularity right? I'm worried one queue item is doing too much", "expected_skill": "uipath-review"}
+{"id": "uipath-review-020", "prompt": "Read-only audit of this UiPath solution please \u2014 I just want findings, not fixes", "expected_skill": "uipath-review"}
+{"id": "uipath-review-021", "prompt": "Score this RPA project's maintainability", "expected_skill": "uipath-review"}
+{"id": "uipath-review-022", "prompt": "Run uip rpa get-errors and uip rpa analyze on every entry point and give me a report", "expected_skill": "uipath-review"}
+{"id": "uipath-review-023", "prompt": "PDD-aligned review: here's the design doc, check whether the implementation matches", "expected_skill": "uipath-review"}
+{"id": "uipath-review-024", "prompt": "Does my agent's tool design follow best practices? Tool names, descriptions, granularity", "expected_skill": "uipath-review"}
+{"id": "uipath-review-025", "prompt": "Look at the error handling in this workflow \u2014 are TryCatch blocks empty? Are Business Exceptions used right?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-026", "prompt": "Check whether this project should be using queues \u2014 it processes ~500 invoices a day right now in a loop", "expected_skill": "uipath-review"}
+{"id": "uipath-review-027", "prompt": "Review this Document Understanding project \u2014 taxonomy, classifier setup, validation station", "expected_skill": "uipath-review"}
+{"id": "uipath-review-028", "prompt": "Audit my long-running orchestration process: Suspend/Resume usage, persistence boundaries, form tasks", "expected_skill": "uipath-review"}
+{"id": "uipath-review-029", "prompt": "Quick sanity check on this .flow \u2014 anything obviously wrong before I demo it Friday?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-030", "prompt": "Cross-project dependency review on my .uipx solution \u2014 version mismatches, circular deps, orphans", "expected_skill": "uipath-review"}
+{"id": "uipath-review-031", "prompt": "Performance review: are there bulk APIs I should be using instead of loops with single calls?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-032", "prompt": "Check if my coded workflows mix Modern and Classic activities in a way that will cause problems", "expected_skill": "uipath-review"}
+{"id": "uipath-review-033", "prompt": "Evaluate test coverage and test maturity for this RPA project", "expected_skill": "uipath-review"}
+{"id": "uipath-review-034", "prompt": "Audit the HITL setup in my .flow \u2014 review the Action Center task schema, escalation paths, and write-back, don't change anything", "expected_skill": "uipath-review"}
+{"id": "uipath-review-035", "prompt": "Code review on my agent's prompt \u2014 too long? hidden instructions? PII leakage risk?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-036", "prompt": "Find dead code and unused variables across this project", "expected_skill": "uipath-review"}
+{"id": "uipath-review-037", "prompt": "Is this project deploy-ready? Validation, config, secrets, dependencies", "expected_skill": "uipath-review"}
+{"id": "uipath-review-038", "prompt": "Security audit on this solution \u2014 SecureString usage, hardcoded URLs, asset references", "expected_skill": "uipath-review"}
+{"id": "uipath-review-039", "prompt": "Walk me through this inherited automation and tell me what it does and how good it is", "expected_skill": "uipath-review"}
+{"id": "uipath-review-040", "prompt": "Give me a severity-ranked list of issues in my XAML \u2014 Critical / Warning / Info", "expected_skill": "uipath-review"}
+{"id": "uipath-review-041", "prompt": "Check whether retries and idempotency are handled properly in this workflow", "expected_skill": "uipath-review"}
+{"id": "uipath-review-042", "prompt": "Audit my Studio Web project before I sync it to a customer org", "expected_skill": "uipath-review"}
+{"id": "uipath-review-043", "prompt": "Review my coded app's action-schema.json and entry-point setup", "expected_skill": "uipath-review"}
+{"id": "uipath-review-044", "prompt": "Look at the structure of this multi-project repo \u2014 are the projects organized sensibly?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-045", "prompt": "Health check on this UiPath solution \u2014 don't fix anything, just report", "expected_skill": "uipath-review"}
+{"id": "uipath-review-046", "prompt": "Are there any DevOps / source-control hygiene issues in this project? .gitignore, lib commits, build config", "expected_skill": "uipath-review"}
+{"id": "uipath-review-047", "prompt": "Compare what my flow actually does to what the requirements doc says it should do", "expected_skill": "uipath-review"}
+{"id": "uipath-review-048", "prompt": "Review my UiPath project against the SDD I attached", "expected_skill": "uipath-review"}
+{"id": "uipath-review-049", "prompt": "Is my XAML doing too much in Main? Should I split into sub-workflows?", "expected_skill": "uipath-review"}
+{"id": "uipath-review-050", "prompt": "Run the full review checklist on this folder \u2014 RPA, agent, flow, whichever applies", "expected_skill": "uipath-review"}

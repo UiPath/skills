@@ -9,6 +9,7 @@ Resources represent the data objects available through a connector (e.g., Salesf
 - Response Fields
 - Describe Response
 - Describe Failures
+- Parent-Field-Driven Custom Fields (api-type ObjectActions)
 - Execute Operations
 - Pagination
 - Execute Error Handling
@@ -80,6 +81,38 @@ Some resources return an error on describe. This is a **server-side metadata gap
 
 ---
 
+## Parent-Field-Driven Custom Fields (api-type ObjectActions)
+
+For connectors whose required fields depend on parent-field selections (Jira `GenerateSchema` keyed off project + issue type, Salesforce SOQL `GenerateQuerySchema` keyed off the query string, Dataservice V3 `FetchObjectMetadataTenant` keyed off `tenantEntityName`), the base `describe` returns only base fields. To preview the full required-field set the runtime will see, pass parent values via `-f, --field`:
+
+```bash
+# Jira: project + issue type → custom fields (GET, query-param tokens)
+uip is resources describe uipath-atlassian-jira curated_create_issue \
+  --connection-id "<id>" --operation Create \
+  -f fields.project.key=ENGCE \
+  -f fields.issuetype.id=3 \
+  --output json
+
+# Salesforce SOQL: query string → response columns (POST, body token)
+uip is resources describe uipath-salesforce-sfdc query_records \
+  --connection-id "<id>" --operation Create \
+  -f query="SELECT Id, Name FROM Account WHERE Status = 'Active'" \
+  --output json
+```
+
+What it does — runs the matching api-type ObjectAction against the IS Element Service (same path Studio Web's dispatcher uses), then merges the response into `requestFields` per the action's `onSuccess.remapConfiguration`. Use it before validating required fields to catch project- or operation-specific mandatory fields the base describe can't see.
+
+| Flag | Notes |
+|------|-------|
+| `-f, --field <name=value>` | Repeatable. Token names match `apiConfiguration.url` and `apiConfiguration.body` placeholders verbatim — no `_sub_` encoding (encoding only applies when caching parent values for runtime replay; see [activities.md — Custom Fields](activities.md#custom-fields-objectactionsactiontypeapi)). |
+| `--action <name>` | Optional. Disambiguates when more than one api-type action could match the field set. |
+
+Requires `--connection-id` and `--operation`. Cache is bypassed when `--field` is supplied — the action response varies per parent-field combination. The merge mode (`replace` / `append` / `prepend` / `noop`) comes from the action's `remapConfiguration.input`; for Jira `GenerateSchema` it is `replace`.
+
+When no api-type action's `rules[]` are satisfied by the supplied fields, the CLI errors with `No api-type ObjectAction matched for fields [...]`. List the operation's actions from the describe output's `connectorMethodInfo.design.actions[]` (or top-level `objectActions[]` for older shapes) to see which fields each action requires.
+
+---
+
 ## Execute Operations
 
 | Verb | Description | `--body` | `--query` |
@@ -99,7 +132,7 @@ Use the global `--output-filter` flag with a JMESPath expression to extract spec
 
 ```bash
 # Extract only id, name, and email from a user list
-uip is resources execute list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
+uip is resources run list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
   --connection-id "<CONNECTION_ID>" \
   --output json \
   --output-filter "Data[].{id: id, name: name, email: profile.email}"
@@ -119,7 +152,7 @@ Common JMESPath patterns:
 
 ## Pagination
 
-`uip is resources execute list` may not return all results in a single call. **Always check for pagination** when searching for a specific item or listing all items.
+`uip is resources run list` may not return all results in a single call. **Always check for pagination** when searching for a specific item or listing all items.
 
 ### Pagination rules
 
@@ -139,12 +172,12 @@ Most IS connectors use the `elements-*` pagination protocol. The CLI returns pag
 
 ```bash
 # First page (do not pass pageSize unless the user explicitly requests a specific page size)
-uip is resources execute list "<connector-key>" "<resource>" \
+uip is resources run list "<connector-key>" "<resource>" \
   --connection-id "<id>" --output json
 # → Check Data.Pagination.HasMore and Data.Pagination.NextPageToken in the JSON response
 
 # Subsequent pages — use nextPage as the query param name (NOT nextPageToken)
-uip is resources execute list "<connector-key>" "<resource>" \
+uip is resources run list "<connector-key>" "<resource>" \
   --connection-id "<id>" --query "nextPage=<value-from-NextPageToken>" --output json
 # → Continue until Data.Pagination.HasMore is "false" or target item is found
 ```
@@ -175,7 +208,7 @@ Example response:
 Some resources support `offset`/`limit` via `--query`:
 
 ```bash
-uip is resources execute list "<connector-key>" "<object>" \
+uip is resources run list "<connector-key>" "<object>" \
   --connection-id "<id>" --query "limit=50&offset=0" --output json
 # → next page: --query "limit=50&offset=50"
 ```

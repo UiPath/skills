@@ -8,14 +8,15 @@ description: >
   sync), plus `.agent-builder/` regeneration on incremental edits —
   none of which are covered by create-from-scratch tests.
 tags: [uipath-agents, smoke, low-code]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
+
+run_limits:
   max_turns: 30
+  turn_timeout: 1200
 
 sandbox:
   driver: tempdir

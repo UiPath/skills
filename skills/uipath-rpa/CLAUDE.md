@@ -18,7 +18,13 @@ None of these may appear under `skills/uipath-rpa/`:
 - **Artifact filenames:** `Target_Definition.json`, `WindowDefinition.json`, `ApplicationLevelNodeTreeInfo.json`, etc.
 - **Bash blocks invoking `uip rpa uia <subcommand>`**
 
-Non-UIA `uip rpa` commands (`focus-activity`, `add-test-data-queue`, `run-file`, `get-errors`, `get-default-activity-xaml`, `install-or-update-packages`, etc.) are generic and acceptable — they're stable across UIA versions.
+Non-UIA `uip rpa` commands (`focus-activity`, `test-data add-queue`, `run`, `validate`, `activities get-default-xaml`, `packages install`, etc.) are generic and acceptable — they're stable across UIA versions.
+
+## Pitfall-callout exception
+
+A **short pitfall callout** (1–3 lines per item) MAY name a runtime symptom (error string or broken behavior) AND the UIA subcommand category it occurs in, when the callout warns about a known waste-of-calls failure mode. Each callout MUST anchor to `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md` for canonical syntax.
+
+What stays out, even in pitfall callouts: concrete flag names, flag values, artifact filenames, bash blocks, runnable examples, and full flag tables. Name the failure and the fix direction; the package owns the exact syntax. Use this exception sparingly. The default is still the category-pointer pattern below.
 
 ## Correct pattern — category pointers
 

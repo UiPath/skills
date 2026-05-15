@@ -34,9 +34,17 @@ Organization (cloud.uipath.com)
 
 ## Connection Resource File
 
-Projects and solutions store connection references as JSON files in the `connection/` folder (or `resources/solution_folder/connection/` for solutions). Each subfolder is named by connector key, and contains one JSON file per connection.
+Projects and solutions store connection references as JSON files. The location depends on whether the project is standalone or part of a solution — **always check both layouts**:
 
-Path pattern: `connection/<connector-key>/<owner>.json`
+| Layout | Path pattern |
+|--------|--------------|
+| Standalone project | `<project-root>/connection/<connector-key>/<owner>.json` |
+| Solution (single folder) | `<project-root>/resources/solution_folder/connection/<connector-key>/<owner>.json` |
+| Solution (multi-folder) | `<project-root>/resources/<folder-name>/connection/<connector-key>/<owner>.json` |
+
+Each `<connector-key>` subfolder contains one JSON file per connection, named after the connection's `resource.name` (typically the owner's email or username).
+
+**When investigating, glob `**/connection/<connector-key>/*.json` from the project root** — that catches all three layouts in one read. Do NOT assume the standalone path; solutions are common and the resource file may be several directories deep under `resources/`.
 
 Key fields:
 
@@ -55,7 +63,7 @@ Key fields:
 uip is connectors list|get              — browse available connectors
 uip is connections list|create|ping|edit — manage authenticated connections
 uip is activities list <connector-key>   — list connector activities (--triggers for trigger-only)
-uip is resources list|describe|execute   — interact with connector resources
+uip is resources list|describe|run       — interact with connector resources
 uip is triggers objects|describe         — explore trigger metadata
 ```
 

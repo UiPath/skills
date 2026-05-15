@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_ReviewProcess",
+      "name": "Review Process",
+      "kind": "process",
+      "resourceKey": "review-process",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Review Process",
+        "SolutionsSupport": "Required",
+        "SubType": "process"
+      }
+    }
+  ]
+}

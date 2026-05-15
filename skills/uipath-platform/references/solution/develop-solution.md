@@ -19,7 +19,7 @@ Create a solution, add automation projects, and sync resource declarations.
 
 ```mermaid
 graph LR
-    A[solution new] --> B[project add / import]
+    A[solution init] --> B[project add / import]
     B --> C[resource refresh]
     C --> D[resource list]
     D --> G[resource get]
@@ -32,10 +32,12 @@ graph LR
 ## Step 1: Create a New Solution
 
 ```bash
-uip solution new "InvoiceAutomation" --output json
+uip solution init "InvoiceAutomation" --output json
 ```
 
 Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live inside this directory (or be imported into it).
+
+> If the target folder already exists and is empty, `solution init` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
 
 ## Step 2: Add Existing Projects
 
@@ -48,7 +50,9 @@ uip solution project add ./InvoiceAutomation/Processor --output json
 uip solution project add ./InvoiceAutomation/Reporter ./InvoiceAutomation/InvoiceAutomation.uipx --output json
 ```
 
-The `.uipx` is auto-discovered by walking up from the project path if not specified.
+The `.uipx` is auto-discovered by walking up from the project path if not specified. `Type` is auto-detected from `project.uiproj` / `project.json` — do not pass it.
+
+`add` is transactional: on success, both the `.uipx` entry and the matching `resources/solution_folder/{package,process}/<name>.json` files are created together; on failure, nothing is mutated.
 
 ## Step 3: Import External Projects
 
@@ -60,6 +64,8 @@ uip solution project import --source /path/to/ExternalProject --output json
 
 Unlike `add`, `import` copies source files into the solution directory first, then registers the copy.
 
+> **Three names can diverge after `import`.** The destination folder name is the basename of `--source`. The `ProjectRelativePath` in `.uipx` matches the folder. The auto-generated package resource name is taken from the project metadata (e.g., `pyproject.toml [project].name` for Python coded agents) — which may differ from the folder. Rename the source directory to the intended project name **before** importing, or trace the relationship via the `projectKey` UUID inside the resource files.
+
 ## Step 4: Remove a Project
 
 Unregister a project from the `.uipx` manifest. Does NOT delete files from disk.
@@ -68,18 +74,32 @@ Unregister a project from the `.uipx` manifest. Does NOT delete files from disk.
 uip solution project remove ./InvoiceAutomation/OldProject --output json
 ```
 
-## Step 5: List Resources
+## Step 5: List Projects
 
-Show resources declared in the solution, available in Orchestrator, or both. Run from inside the solution directory (default), or pass `--solution-folder <path>` to target another location.
+Enumerate the projects registered in the local `.uipx` manifest. Reads only on-disk metadata — no backend call, so safe to use offline or in CI checks.
 
 ```bash
 # from inside the solution dir
-uip solution resource list --output json
-uip solution resource list --source local --output json
+uip solution project list --output json
+
+# or with an explicit solution folder
+uip solution project list --solution-folder ./InvoiceAutomation --output json
+```
+
+`Name` is read from each project's `project.uiproj`, falling back to the directory basename if the manifest is missing or unreadable. Empty solutions return `Data: []`.
+
+## Step 6: List Resources
+
+Show resources declared in the solution, available in Orchestrator, or both. Pass `--kind` to narrow to one resource kind. Run from inside the solution directory (default), or pass `--solution-folder <path>` to target another location.
+
+```bash
+# from inside the solution dir
+uip solution resource list --kind Queue --output json
+uip solution resource list --kind Process --source local --output json
 uip solution resource list --kind Queue --search "Invoice" --output json
 
 # explicit folder
-uip solution resource list --solution-folder ./InvoiceAutomation --output json
+uip solution resource list --kind App --solution-folder ./InvoiceAutomation --output json
 ```
 
 | Option | Values | Default |
@@ -90,7 +110,7 @@ uip solution resource list --solution-folder ./InvoiceAutomation --output json
 | `--source <source>` | `all`, `local`, `remote` | `all` |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
 
-## Step 6: Refresh Resources
+## Step 7: Refresh Resources
 
 Re-scan all projects and sync resource declarations from their `bindings_v2.json` files. Refresh is the only way to reconcile a solution's local artefacts with cloud entities — run it after adding/importing projects, after editing `bindings_v2.json`, or before any `pack` / `upload`.
 
@@ -111,6 +131,9 @@ uip solution resource refresh --solution-folder ./InvoiceAutomation --output jso
 
 ### What `refresh` actually does
 
+> **`Result: Success` only means the CLI executed — not that the refresh service inside it succeeded.** The underlying service can fail (e.g., schema errors in `bindings_v2.json` logged to stderr as `ERROR [ResourceBuilder:BindingsMetadataSerializer] ...`) while the JSON still returns `Result: Success` with `Created: 0, Imported: 0, Skipped: 0`. Always inspect stderr for `ERROR` lines, and treat `Created==0 && Imported==0 && Skipped==0` while bindings exist on disk as a refresh failure.
+
+## Step 7: Upload to Studio Web
 1. **Discover bindings** — reads `bindings_v2.json` from each project (solution root copy is also read for agent projects).
 2. **Discover cloud GUIDs** — for agent projects, supplements bindings with `<project>/resources/<X>/resource.json` files. These carry a `referenceKey` (GUID) for tools/escalations/contexts that the agent depends on; the GUID is the unambiguous cloud identity (binding names alone aren't unique across folders).
 3. **Reconcile in-solution projects (`.uipx`)** — generates project artefact files (`process/<type>/`, `package/`) from SDK templates. Internal to the solution; no debug overwrite written.
@@ -137,7 +160,7 @@ When a name (e.g. `orders` queue) exists in multiple cloud folders, refresh pref
 
 The placeholder `solution_folder` (and `.`) in a binding's folder field means "no folder" / tenant scope — they're not real cloud folders.
 
-## Step 7: Get a Single Resource Configuration
+## Step 8: Get a Single Resource Configuration
 
 Fetch the full configuration (`spec`, `apiVersion`, `isOverridable`, `resourceOverwrite`) for a specific resource by key. Useful when you need the resolved server state for a binding — e.g., constructing a deploy override, resolving an entry-point ID, inspecting a connection's authentication mode.
 
@@ -181,7 +204,7 @@ If you need the full server spec for a resource that's already in the solution (
 
 `list --source remote` returns entities from RCS that are **visible to your user** — including ones not bound to this solution. `get` is solution-context-aware: it considers anything in your `.uipx`'s solution_folder as "local", and falls back to RCS for everything else. A key shown by `list --source remote` that isn't bound to the solution will resolve via the FPS fallback.
 
-## Step 8: Upload to Studio Web
+## Step 9: Upload to Studio Web
 
 Upload the solution for browser-based editing. Accepts a directory, `.uipx` file, or `.uis` archive.
 
@@ -191,7 +214,7 @@ uip solution upload ./InvoiceAutomation --output json
 
 If the `SolutionId` in `.uipx` matches an existing Studio Web solution, the upload overwrites it.
 
-## Step 9: Delete from Studio Web
+## Step 10: Delete from Studio Web
 
 Remove a solution from Studio Web by its UUID (returned by `upload`).
 
@@ -209,7 +232,7 @@ Create a solution with two projects, sync resources, and verify:
 
 ```bash
 # 1. Create the solution
-uip solution new "InvoiceAutomation" --output json
+uip solution init "InvoiceAutomation" --output json
 
 # 2. Add projects (already inside the solution directory)
 uip solution project add ./InvoiceAutomation/Processor --output json
@@ -221,12 +244,53 @@ cd ./InvoiceAutomation
 # 4. Sync resource declarations from project bindings
 uip solution resource refresh --output json
 
-# 5. Verify resources are tracked
-uip solution resource list --source local --output json
+# 5. Verify resources are tracked (per kind)
+uip solution resource list --kind Process --source local --output json
+uip solution resource list --kind Queue --source local --output json
 
 # 6. Inspect one resource's full configuration (local + RCS fallback)
 uip solution resource get <resource-key> --output json
 ```
+
+---
+
+## Field-tested gotchas
+
+Durable CLI behaviors that have caught agents in practice. Treat each as a hard rule.
+
+### Always verify state after every mutation
+
+`add`, `remove`, and `refresh` can succeed in stdout but fail (or partially fail) on disk. After every mutation:
+
+```bash
+# 1. What does .uipx claim?
+cat ./MySolution/MySolution.uipx | grep -A 2 ProjectRelativePath
+
+# 2. What resource files actually exist?
+ls -1 ./MySolution/resources/solution_folder/package/
+ls -1 ./MySolution/resources/solution_folder/process/
+
+# 3. The two sets MUST agree by name. If not, the solution is corrupt.
+```
+
+If `.uipx` and `resources/solution_folder/` disagree, follow the recovery procedure in the matching gotcha below.
+
+### `bindings.json` vs `bindings_v2.json` — different files, different schemas
+
+| File | Created by | Read by |
+|---|---|---|
+| `bindings.json` | `uipath init` (coded agent) | the agent at runtime |
+| `bindings_v2.json` | `uip maestro flow new`, Maestro Case scaffold, Studio Web (mirrors agent bindings up to solution root) | `uip solution resource refresh` |
+
+Copying `bindings.json` → `bindings_v2.json` does **not** work — the schemas differ, and `resource refresh` will silently fail (see "false success" gotcha above). Naive hand-authoring or copy-paste from `bindings.json` produces the opaque error `TypeError: Cannot read properties of undefined (reading 'toLowerCase')`. When a project's tooling already manages `bindings_v2.json` (Flow / Case / agent solutions), edit through that product's commands rather than the file directly, then run `resource refresh` to reconcile.
+
+### `resource refresh` reports false success on schema errors
+
+See [Step 6](#step-6-refresh-resources). Always capture stderr and grep for `ERROR`. The `Warnings` field stays empty even when the underlying parser throws.
+
+### `project remove` leaves orphan package resources
+
+See [Step 4](#step-4-remove-a-project). After `remove`, manually delete `resources/solution_folder/package/<name>.json` if you plan to re-add with the same name. To fully delete a project, also remove the project folder — `remove` does not touch source files.
 
 ---
 
@@ -283,15 +347,30 @@ When `[solutionFile]` is omitted, the CLI walks up from the project path looking
 
 ### `--solution-folder` defaults to cwd
 
-`resource list / refresh / get` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly. Older docs and examples that pass the path as a positional (`uip solution resource list ./InvoiceAutomation`) are out of date.
+`resource list / refresh / get` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly.
 
 ### `resource get` for cross-folder inspection
 
-Because `get` falls back to RCS + FPS export when the key isn't local, it works as a quick way to fetch the full server spec for any resource your tenant exposes — even ones that aren't yet bound to this solution. Pair with `solution resource list --source remote` to discover keys.
+Because `get` falls back to RCS + FPS export when the key isn't local, it works as a quick way to fetch the full server spec for any resource your tenant exposes — even ones that aren't yet bound to this solution. Pair with `solution resource list --kind <kind> --source remote` to discover keys.
+
+---
+
+## Cheat sheet
+
+| Want to... | Command | Watch for |
+|---|---|---|
+| Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
+| Add a project already in the solution dir | `uip solution project add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
+| Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
+| Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
+| Remove a project | `uip solution project remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
+| List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; add `--kind <kind>` to narrow to one resource kind |
+| Pack | `uip solution pack <solution-dir> <output-dir>` | See [pack-and-deploy.md](pack-and-deploy.md) for full pack/publish/deploy flow |
 
 ---
 
 ## Related
 
 - [Pack & Deploy](pack-and-deploy.md) -- Next step: pack, publish, and deploy the solution
+- [Scenarios](scenarios.md) -- Multi-project recipes: same-name across folders, cross-ref intra-solution, shared cloud resources, virtual assets
 - [solution.md](solution.md) -- Solution tool overview and full command tree

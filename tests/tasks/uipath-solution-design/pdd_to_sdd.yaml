@@ -9,6 +9,8 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:
@@ -20,14 +22,6 @@ initial_prompt: |
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.
 
   For any [SME REVIEW] items, use the defaults and proceed.
-
-  After writing the SDD, save a summary to report.json:
-    {
-      "sdd_filename": "<the filename you wrote>",
-      "primary_product": "<the product you selected>",
-      "section_count": <number of top-level sections>,
-      "process_name": "Invoice Data Entry"
-    }
 
   --- BEGIN PDD ---
 
@@ -128,25 +122,6 @@ success_criteria:
       - "E1"
     weight: 1.0
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json confirms RPA product selection and correct process name"
-    path: "report.json"
-    assertions:
-      - expression: "process_name"
-        operator: equals
-        expected: "Invoice Data Entry"
-      - expression: "section_count"
-        operator: gte
-        expected: 10
-    weight: 1.5
-    pass_threshold: 0.75
 
   - type: file_contains
     description: "SDD has a populated Planner Handoff header pointing at uipath-planner"

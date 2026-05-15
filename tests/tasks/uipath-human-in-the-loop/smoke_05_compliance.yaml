@@ -9,20 +9,37 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Automate GDPR data deletion requests. Each request requires documented
-  sign-off from our data privacy officer before the deletion actually runs —
-  we need an audit trail for every decision.
+  Automate GDPR data deletion requests. These are subject to regulatory
+  compliance requirements: each request needs documented regulatory
+  sign-off from our data privacy officer before the deletion runs, plus
+  an audit trail for every decision (required for compliance with GDPR
+  Article 17 — Right to Erasure).
 
-  Write a recommendation.json file with:
+  Recommend whether HITL is needed and identify which canonical HITL
+  pattern from the `uipath-human-in-the-loop` skill applies. The skill's
+  `references/hitl-patterns.md` enumerates six canonical patterns; pick
+  exactly one and emit its machine name verbatim.
+
+  Write a `recommendation.json` file with this exact shape:
   {
     "hitl_needed": <true or false>,
-    "pattern": "<which business pattern applies>",
+    "pattern": "<one of the canonical pattern names listed below>",
     "proposed_schema": {
       "inputs": ["<what the privacy officer will see>"],
       "outputs": ["<what they fill in>"],
       "outcomes": ["<their decision options>"]
     }
   }
+
+  Use EXACTLY one of these machine names for `pattern` (lowercase,
+  hyphenated, no extra adjectives or prefixes — names mirror the
+  section titles in `references/hitl-patterns.md`):
+    - approval-gate
+    - exception-escalation
+    - data-enrichment
+    - compliance-checkpoint
+    - write-back-validation
+    - agentic-output-review
 
 success_criteria:
   - type: file_exists
@@ -40,20 +57,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent identified a compliance / audit / sign-off / approval pattern (any one, case-tolerant)"
+    description: >
+      Agent picked a canonical HITL pattern that fits a regulatory-sign-off
+      scenario. Compliance-checkpoint is the textbook fit (the doc lists
+      "regulatory sign-off" and "GDPR consent flows" as its examples), but
+      approval-gate is also defensible since "sign off" is a shared signal
+      phrase. Both are accepted.
     path: "recommendation.json"
     assertions:
       - expression: "pattern"
-        operator: contains
-        expected: "udit"
-      - expression: "pattern"
-        operator: contains
-        expected: "omplianc"
-      - expression: "pattern"
-        operator: contains
-        expected: "ign"
-      - expression: "pattern"
-        operator: contains
-        expected: "pprov"
+        operator: regex
+        expected: "^(compliance-checkpoint|approval-gate)$"
     weight: 1.5
-    pass_threshold: 0.25
+    pass_threshold: 1.0

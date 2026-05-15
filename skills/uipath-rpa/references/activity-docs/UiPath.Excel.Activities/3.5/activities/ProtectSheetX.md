@@ -6,4 +6,4 @@
 |---------------|
 | `Sheet="[Excel.Sheet(...)]"`, `Password`, `SecurePassword="{x:Null}"`, `AdditionalPermissions` |
 
-Use `uip rpa get-default-activity-xaml --use-studio` for full XAML.
+Use `uip rpa activities get-default-xaml --use-studio` for full XAML.

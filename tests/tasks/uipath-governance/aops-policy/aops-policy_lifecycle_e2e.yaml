@@ -1,0 +1,94 @@
+task_id: skill-gov-aops-policy-lifecycle
+description: >
+  End-to-end test against the staging tenant: agent walks the full AOps
+  governance policy lifecycle for the AITrustLayer (AITL) product —
+  create, get, update, delete — driven entirely by the uipath-governance
+  skill. The prompt only states the **goal**; the skill is responsible
+  for teaching the CLI surface, full-replace semantics, identity sourcing,
+  and what to re-pass on update.
+
+  The test asserts outcomes via `require_success: true` on every mutating
+  command — if the skill teaches the wrong workflow (e.g. omits a flag
+  that the server requires), the failing exit code makes the criterion
+  fail loudly instead of scoring a false positive. Retries are fine —
+  the criterion counts only successful invocations.
+
+  The trailing delete is the cleanup; the test self-cleans on success.
+  If a run fails mid-flow and leaves a `lifecycle-test-aitl-policy*`
+  policy behind, delete it manually before the next run.
+tags: [uipath-governance, e2e, aops-policy, mode:build]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Walk the full lifecycle of an AOps governance policy on the current
+  login tenant. Use the product `AITrustLayer`.
+
+  1. Create a policy named `lifecycle-test-aitl-policy` using the
+     product's default settings.
+  2. Fetch the policy to confirm it exists.
+  3. Update it — rename to `lifecycle-test-aitl-policy-renamed`. Keep
+     every other field as-is.
+  4. Delete the policy.
+
+  The uipath-governance skill knows the right CLI surface, how to
+  bootstrap product defaults, the full-replace semantics of update, and
+  what to re-pass to preserve fields. Trust it.
+
+  Important:
+  - Do not prompt the user for confirmation — this is an automated test.
+  - The final delete cleans up the test policy — do not skip it, even if
+    a prior step had warnings.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the test policy named `lifecycle-test-aitl-policy` AND the server accepted it (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=.*--name\s+["'']?lifecycle-test-aitl-policy["'']?\s).*'
+    require_success: true
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the policy by GUID returned from create (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+get\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent renamed the policy to `lifecycle-test-aitl-policy-renamed` AND the server accepted it (exit 0) — full-replace update, server-side rejection (e.g. priority out of range) would fail this"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+update\s+(?=.*--identifier\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?=.*--name\s+["'']?lifecycle-test-aitl-policy-renamed).*'
+    require_success: true
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the test policy at end of lifecycle (cleanup, exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+delete\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on at least 3 aops-policy commands (skill convention)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0

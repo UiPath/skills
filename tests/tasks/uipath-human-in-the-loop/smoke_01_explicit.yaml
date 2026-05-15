@@ -13,16 +13,31 @@ initial_prompt: |
   I have a UiPath Flow. Add a Human-in-the-Loop node before the final data
   write step so a manager can review and approve the data before it is posted.
 
-  Write a recommendation.json file with:
+  Recommend whether HITL is needed and identify which canonical HITL
+  pattern from the `uipath-human-in-the-loop` skill applies. The skill's
+  `references/hitl-patterns.md` enumerates six canonical patterns; pick
+  exactly one and emit its machine name verbatim.
+
+  Write a `recommendation.json` file with this exact shape:
   {
     "hitl_needed": <true or false>,
-    "pattern": "<which business pattern applies>",
+    "pattern": "<one of the canonical pattern names listed below>",
     "proposed_schema": {
       "inputs": ["<field names the human will see>"],
       "outputs": ["<field names the human fills in>"],
       "outcomes": ["<action button names>"]
     }
   }
+
+  Use EXACTLY one of these machine names for `pattern` (lowercase,
+  hyphenated, no extra adjectives or prefixes — names mirror the
+  section titles in `references/hitl-patterns.md`):
+    - approval-gate
+    - exception-escalation
+    - data-enrichment
+    - compliance-checkpoint
+    - write-back-validation
+    - agentic-output-review
 
 success_criteria:
   - type: file_exists
@@ -40,20 +55,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent named an approval or write-back pattern (case-tolerant)"
+    description: >
+      Agent picked a canonical HITL pattern that fits an "approve before
+      writing" scenario. Either approval-gate (manager approves the
+      artifact) or write-back-validation (HITL gates a write to a
+      system of record) is documented in `references/hitl-patterns.md`
+      as applicable here; both are accepted.
     path: "recommendation.json"
     assertions:
       - expression: "pattern"
-        operator: contains
-        expected: "pprov"
-      - expression: "pattern"
-        operator: contains
-        expected: "rite"
-      - expression: "pattern"
-        operator: contains
-        expected: "alid"
+        operator: regex
+        expected: "^(approval-gate|write-back-validation)$"
     weight: 1.5
-    pass_threshold: 0.33
+    pass_threshold: 1.0
 
   - type: file_contains
     description: "Agent proposed a schema with outcomes"

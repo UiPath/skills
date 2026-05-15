@@ -1,0 +1,171 @@
+task_id: skill-diagnostics-getasset-permission-denied
+description: >
+  UiPath diagnostic agent must diagnose a Get Credential failure where
+  the activity's target asset and folder both exist correctly, but the
+  robot account lacks Assets.View permission on the folder. Orchestrator
+  returns HTTP 403 / "You are not authorized!" (Error code: 0). The
+  agent must rule out asset-not-found (1002) and folder-scope-mismatch
+  (1100) and converge on the permission-denied root cause.
+
+tags: [uipath-diagnostics, e2e, faulted-jobs, orchestrator, system-activities, get-asset, permission-denied]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    # 1. Shared dispatcher (mocks/uip + mocks/uip.cmd).
+    - type: template_dir
+      path: ../_shared/mock_template
+    # 2. Project source — snapshot of the failing UiPath project.
+    - type: template_dir
+      path: process
+    # 3. Per-scenario fixtures (manifest + canned uip responses).
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My AssetPermissionDenied process is faulting in Orchestrator on every
+  run. Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-diagnostics skill"
+    skill_name: "uipath-diagnostics"
+    expected_skill: "uipath-diagnostics"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the get-asset-permission-denied playbook AND identified the robot's missing Assets.View permission"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My AssetPermissionDenied process is faulting in Orchestrator
+         on every run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/system-activities/playbooks/get-asset-permission-denied.md
+        because the runtime error
+          "Status code: 403 (Forbidden). Orchestrator response: You are
+           not authorized! The robot account does not have the required
+           permissions on Assets in this folder. Error code: 0"
+        is the verbatim signature of that playbook (HTTP 403, error
+        code 0, "not authorized" / "required permissions" language).
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             get-asset-permission-denied playbook should appear
+             (absolute or relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/system-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             system-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        get-asset-* playbooks (not-found, folder-scope-mismatch,
+        wrong-activity-type) while ruling them out. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Get Credential activity (GetRobotCredential) in
+            Main.xaml has both AssetName="myHiddenAsset" (correctly
+            spelled) and FolderPath="Remote Debugging" (a real folder).
+          - The asset 'myHiddenAsset' exists in the 'Remote Debugging'
+            folder (visible in the asset list).
+          - The robot account running the job lacks the required
+            Assets.View permission on the 'Remote Debugging' folder.
+          - Orchestrator therefore returns HTTP 403 / error code 0
+            ("You are not authorized! The robot account does not have
+             the required permissions on Assets in this folder").
+        The reference fix:
+          - Grant the robot account a role that includes the
+            Assets.View permission on the 'Remote Debugging' folder
+            (Orchestrator UI -> Folder -> Manage -> Accounts & Groups
+            -> assign role).
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.error_code`,
+             `requirements.error_message`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the missing
+             Assets.View permission on the robot account (NOT a
+             missing asset, NOT a missing folder).
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched get-asset-permission-denied AND identified
+             the missing Assets.View permission on the robot account
+             explicitly. Conclusion must rule out asset-not-found and
+             folder-not-found (asset is present, folder is present).
+        0.8  Both partial: e.g., correct playbook but conclusion says
+             "permission failed" without naming Assets.View or the
+             robot account; or conclusion names the permission issue
+             but matched the system-activities investigation_guide
+             rather than the specific permission-denied playbook.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (auth/access failure) but neither
+             matched the playbook nor identified the permission issue.
+        0.0  Misdiagnosed (e.g., concluded asset-not-found,
+             folder-scope-mismatch, robot-not-authenticated, or
+             wrong-activity-type) or got blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+# Override experiments/default.yaml's 600s limit -- LLMGW-proxied runs
+# of the diagnostic skill take 25-35 min end-to-end.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

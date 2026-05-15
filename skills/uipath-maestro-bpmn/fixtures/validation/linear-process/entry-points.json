@@ -1,0 +1,25 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_LinearManual",
+      "name": "Start",
+      "filePath": "/content/linear-process.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

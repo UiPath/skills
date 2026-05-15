@@ -18,7 +18,7 @@ How to resolve reference fields — fields whose values must be looked up from a
 
 Every reference ID resolves only within the account authenticated by the connection used to resolve it. A `MailFolder` ID from one Outlook mailbox is invalid in another. A Slack channel ID from one workspace is invalid in another. A Jira project ID from one Atlassian site is invalid in another.
 
-**Never carry a reference ID from one flow, one connection, or one session into another.** Always re-run `uip is resources execute list` against the `--connection-id` bound to the current flow — even if you believe you already know the ID from a prior task or earlier in the same session.
+**Never carry a reference ID from one flow, one connection, or one session into another.** Always re-run `uip is resources run list` against the `--connection-id` bound to the current flow — even if you believe you already know the ID from a prior task or earlier in the same session.
 
 A reused reference ID:
 - Passes `uip is resources describe` / `node configure` / `flow validate` cleanly (no API call checks the value against the connection).
@@ -68,14 +68,14 @@ uip is resources describe "<connector-key>" "<resource>" \
 
 # 2. For each reference field, list the referenced object
 #    Use reference.objectName as the object name (including any query params)
-uip is resources execute list "<connector-key>" "<reference.objectName>" \
+uip is resources run list "<connector-key>" "<reference.objectName>" \
   --connection-id "<id>" --output json
 
 # 3. Match the user's input against reference.lookupNames in the results
 #    Extract reference.lookupValue as the resolved ID
 
 # 4. Execute with resolved IDs (not display names)
-uip is resources execute create "<connector-key>" "<resource>" \
+uip is resources run create "<connector-key>" "<resource>" \
   --connection-id "<id>" --body '{"channel": "<resolved-id>"}' --output json
 ```
 
@@ -86,7 +86,7 @@ User says: "Send a message to #general"
 1. **Describe** returns `channel` field with `reference.objectName: "curated_channels?types=public_channel,private_channel"`
 2. **List** the referenced object:
    ```bash
-   uip is resources execute list "uipath-salesforce-slack" \
+   uip is resources run list "uipath-salesforce-slack" \
      "curated_channels?types=public_channel,private_channel" \
      --connection-id "<id>" --output json
    ```
@@ -132,7 +132,7 @@ If `reference.filterPattern` exists, the reference is a **search endpoint** — 
 ```bash
 # filterPattern: "productCode={filter}"
 # User input: "Widget Pro"
-uip is resources execute list "<connector-key>" "search_products" \
+uip is resources run list "<connector-key>" "search_products" \
   --connection-id "<id>" --query "productCode=Widget Pro" --output json
 ```
 
@@ -145,7 +145,7 @@ User says: "Create a ticket for product Widget Pro"
 1. **Describe** returns `productId` with `reference.filterPattern: "productCode={filter}"`
 2. **Search** with user input:
    ```bash
-   uip is resources execute list "uipath-zoho-desk" "search_products" \
+   uip is resources run list "uipath-zoho-desk" "search_products" \
      --connection-id "<id>" --query "productCode=Widget Pro" --output json
    ```
    → `{ "productCode": "WP-100", "id": "1892000000056007" }`
@@ -180,12 +180,12 @@ Field B → path contains {Field A}          → resolve after A (list scoped by
 
 ```bash
 # Step 1: Resolve Field A (no dependencies)
-uip is resources execute list "<connector-key>" "<resource-a>" \
+uip is resources run list "<connector-key>" "<resource-a>" \
   --connection-id "<id>" --output json
 # → pick value
 
 # Step 2: Resolve Field B scoped to Field A's value
-uip is resources execute list "<connector-key>" "<resource-a>/<resolved-value>/sub-resource" \
+uip is resources run list "<connector-key>" "<resource-a>/<resolved-value>/sub-resource" \
   --connection-id "<id>" --output json
 # → only values valid for this scope
 ```
@@ -207,7 +207,7 @@ This pattern applies across all connectors wherever child fields are scoped by p
 When describe metadata is unavailable (see [resources.md — Describe Failures](resources.md#describe-failures)), infer reference fields from naming conventions:
 
 - Fields ending in **`Id`** (e.g., `PromotionId`, `AccountId`) typically reference the object with the matching base name (`Promotion`, `Account`).
-- List the inferred object to resolve the ID: `is resources execute list "<connector-key>" "<base-name>" --connection-id "<id>" --output json`
+- List the inferred object to resolve the ID: `is resources run list "<connector-key>" "<base-name>" --connection-id "<id>" --output json`
 - Match the user's value by `Name` or `DisplayName` in the results.
 
 ---

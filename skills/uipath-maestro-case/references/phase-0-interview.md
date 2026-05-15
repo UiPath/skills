@@ -6,15 +6,16 @@ Phase 0 generates `sdd.md` interactively when none is provided. Output is approv
 
 ## When Phase 0 runs
 
-Strict binary trigger. **Any `sdd.md` present at the resolved path → no interview.** Phase 1 trusts the file as written (Rule 2).
-
+Strict binary trigger. **Any `.md` candidate (basename contains `sdd`, case-insensitive) present at the resolved path → no interview; if basename ≠ `sdd.md`, copy contents to `./sdd.md` (preserve original) so Round 4 / Phase 1 / output-contract artifacts stay canonical** (Phase 1 trusts the file as written, Rule 2).
 ```
 Step 1. Skill invoked.
-Step 2. If user did not pass an sdd.md path: ask path. Default proposed = ./sdd.md.
+Step 2. Determine SDD candidate path:
+        Step 2a. If user prompt names a `.md` path or filename whose basename contains `sdd` (case-insensitive), treat it as the candidate. Examples that count: `sdd.md`, `loan-sdd.md`, `case_demo_sdd.md`, `./specs/onboarding-sdd.md`. Resolve relative paths against cwd. Plain `.md` references without `sdd` in the name are ignored — they are not SDD candidates.
+        Step 2b. If no qualifying `.md` reference in prompt, default candidate = `./sdd.md`. Ask user to confirm or supply different path before proceeding.
 Step 3. Resolve path. Stat the file.
-Step 4. File exists → exit Phase 0. Hand to Phase 1.
+Step 4. File exists → if basename ≠ `sdd.md`, copy contents to `./sdd.md` (preserve the original file at its path; do not move/rename). Exit Phase 0. Hand to Phase 1, which reads `./sdd.md`.
 Step 5. File absent →
-        Step 5a. Check for sdd.draft.md at same path. If present → resume prompt (§Resumption).
+        Step 5a. Check for `sdd.draft.md` at cwd. If present → resume prompt (§Resumption).
         Step 5b. No draft → entry prompt (§Entry).
 ```
 
@@ -37,7 +38,7 @@ Each round produces or updates `sdd.draft.md`. Final approval renames `sdd.draft
 | Round | Goal | Output | Threshold check |
 |---|---|---|---|
 | 1 — Open describe | Identity + free-text process description + archetype hint + rough counts | In-memory only | Upfront triage (rough counts) |
-| 2 — Skeleton + gap-fill | Drafted `sdd.md` skeleton, blocking gaps resolved | `sdd.draft.md` written | Mid-check (counted from skeleton) |
+| 2 — Placeholder + gap-fill | Drafted `sdd.md` placeholder, blocking gaps resolved | `sdd.draft.md` written | Mid-check (counted from placeholder) |
 | 3 — Registry resolution | Concrete tenant resources picked per task | `sdd.draft.md` updated, `tasks/registry-resolved.json` written | — |
 | 4 — Review + HARD STOP | User approves, edits, restarts, or aborts | `sdd.md` finalized | Re-check on edit |
 
@@ -46,7 +47,7 @@ Each round produces or updates `sdd.draft.md`. Final approval renames `sdd.draft
 Single user-facing message. Three asks bundled:
 
 1. **Free-text description.** "Describe the process. Who starts it? What stages does it go through? Where does it end?"
-2. **Archetype hint** (AskUserQuestion, 4 options — hint only, used to seed stage skeleton). Render each option with its example so the user is not guessing at jargon:
+2. **Archetype hint** (AskUserQuestion, 4 options — hint only, used to seed stage placeholder). Render each option with its example so the user is not guessing at jargon:
    - `Approval` — one decision gate, end-to-end (e.g., expense approval, leave request, PTO)
    - `Intake & Routing` — incoming items get classified, then routed to the right handler (e.g., support ticket triage, lead qualification, IT request routing)
    - `Multi-stage Orchestration` — sequential stages with handoffs across roles or systems (e.g., employee onboarding, candidate interview pipeline, loan origination)
@@ -57,7 +58,7 @@ Single user-facing message. Three asks bundled:
 
 If the rough counts already exceed any threshold (see §Thresholds), trigger soft redirect (§Soft redirect). Do NOT proceed to Round 2 until user picks `Continue lightweight anyway` or `Abort`.
 
-### Round 2 — Skeleton + gap-fill
+### Round 2 — Placeholder + gap-fill
 
 Agent drafts `sdd.draft.md` from Round 1 answers, using `assets/templates/sdd-template.md` as the structural mold. Fill what was provided. Mark the rest:
 
@@ -77,11 +78,11 @@ After writing, inspect blocking gaps. **Required fields (block until answered):*
 
 Ask blocking gaps via AskUserQuestion (multi-choice) or plain-text follow-up (open answer). Update `sdd.draft.md` after each answered gap.
 
-**Stuck-round detector.** If 3 unanswerable / contradictory / off-topic replies accumulate within Round 2, soft prompt (§Soft redirect). User picks `Continue with skeletons` (mark remaining as `<UNRESOLVED>`, proceed) / `Switch to uipath-solution-design` / `Abort`.
+**Stuck-round detector.** If 3 unanswerable / contradictory / off-topic replies accumulate within Round 2, soft prompt (§Soft redirect). User picks `Continue with placeholders` (mark remaining as `<UNRESOLVED>`, proceed) / `Switch to uipath-solution-design` / `Abort`.
 
 #### Mid-check threshold
 
-After the skeleton is written, count from `sdd.draft.md`:
+After the placeholder is written, count from `sdd.draft.md`:
 
 - Stages
 - Tasks total
@@ -94,7 +95,7 @@ If any quantitative threshold breached → §Soft redirect.
 
 ### Round 3 — Registry resolution
 
-For each task in `sdd.draft.md`, search the matching cache file under `~/.uipcli/case-resources/` by name keywords. Filename varies by component type — common cases:
+For each task in `sdd.draft.md`, search the matching cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
 
 - `process-index.json`, `agent-index.json`, `api-index.json`, `processOrchestration-index.json`, `caseManagement-index.json` — `<type>-index.json` shape
 - `action-apps-index.json` — kebab + plural for HITL action apps
@@ -109,7 +110,7 @@ Per-task AskUserQuestion (4 options max):
 |---|---|
 | `<top match — name + version + type>` | Record selection. |
 | `<second match>` (if available) | Record selection. |
-| `Skeleton — resolve later` | Keep `<UNRESOLVED>` marker on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits skeleton task per Rule 8. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` marker on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. |
 | `Something else` | Free-text re-search keyword, retry. |
 
 After all picks, write `tasks/registry-resolved.json` matching the shape Phase 1 produces (search query, all matched results, selected result, rationale per Rule 9). Update `sdd.draft.md` with concrete resource names.
@@ -220,7 +221,7 @@ AskUserQuestion (4 options):
 | User says "skip" / "I don't know" on optional field | Write `—`. |
 | User says "skip" on required field | Write `<UNRESOLVED: <agent's question>>`. Phase 1 + post-build loop will revisit. |
 | 3 unanswerable replies in single round | Trigger §Soft redirect. |
-| Registry pull fails (CLI error, no auth) | Skip Round 3. All tasks marked `<UNRESOLVED>`. Phase 1 emits skeletons. Inform user. |
+| Registry pull fails (CLI error, no auth) | Skip Round 3. All tasks marked `<UNRESOLVED>`. Phase 1 emits placeholders. Inform user. |
 | User edits `sdd.md` to add stages exceeding threshold | Edit-loop validation fires §Soft redirect. |
 | `sdd.md` already exists at path when interview begins | Should not happen — Step 4 exits Phase 0 first. If it does (race), abort with error. Never overwrite. |
 

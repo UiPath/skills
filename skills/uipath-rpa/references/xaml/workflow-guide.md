@@ -7,8 +7,8 @@ Discovery-first approach with iterative error-driven refinement for generating a
 1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. Always check for them first.
 2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
 3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
-4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa get-errors`, fix what breaks, repeat.
-5. **Validate After Every Change** — **MUST** validate with `get-errors` after every change. **NEVER** assume an edit succeeded.
+4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa validate`, fix what breaks, repeat.
+5. **Validate After Every Change** — **MUST** validate with **both** `validate` and `uip rpa build` after every change. **NEVER** assume an edit succeeded. `validate` clean alone is not validated — it does not catch unknown member names or invalid enum values; `build` does.
 6. **Fix Errors by Category** — Triage in order: Package → Structure → Type → Activity Properties → Logic.
 
 ---
@@ -45,9 +45,9 @@ Analyze:
 
 ### Step 1.2: Discover Activity Documentation (Primary Source)
 
-**This is the most important discovery step.** Installed activity packages ship structured markdown at `{projectRoot}/.local/docs/packages/{PackageId}/`.
+**This is the most important discovery step. Read `<Activity>.md` BEFORE `activities get-default-xaml`, every time, even for activities that look simple.** Installed activity packages ship structured markdown at `{projectRoot}/.local/docs/packages/{PackageId}/activities/<Activity>.md`. The doc is the property surface; the CLI starter is not. `activities get-default-xaml` strips every property at its type default — for `NGetText` that means **all** output properties are absent from the starter, and authoring from the starter produces `NGetText.Value="..."` instead of `NGetText.Text="..."`. `validate` does not catch the wrong member name; only `build` does, after a wasted round-trip.
 
-**Availability:** Docs exist only for **installed packages** and typically only for **newer package versions**. When the package is not installed, install it first. When docs are missing, update to the latest version.
+**Availability:** Docs exist only for **installed packages** and typically only for **newer package versions**. When the package is not installed, install it first. When docs are missing, update to the latest version, or fall back to `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/`.
 
 #### Filesystem Structure
 
@@ -71,9 +71,9 @@ Every `activities/{ActivityName}.md` follows: Header → Metadata → Properties
 | **Know package + activity name** | `Read: file_path="{projectRoot}/.local/docs/packages/{PackageId}/activities/{ActivityName}.md"` |
 | **Know package, not activity** | `Read` the `overview.md`, then read the identified activity doc |
 | **Don't know package** | `Glob` with `**/*.md` in `{projectRoot}/.local/docs/packages/`. `.local/` is gitignored — use `Glob` + `Read`, not `Grep` |
-| **Docs exist but activity undocumented** | Use other docs as structural reference, fall back to `get-default-activity-xaml` |
+| **Docs exist but activity undocumented** | Use other docs as structural reference, fall back to `activities get-default-xaml` |
 | **No docs for package** | Update the package first — this often adds docs. **Caution:** major version jumps (e.g., 23.x → 26.x) may deprecate activities — prefer minor/patch updates. If still no docs, fall back to Steps 1.4-1.7 |
-| **Package not installed** | Install it first — both docs and `get-default-activity-xaml` require it |
+| **Package not installed** | Install it first — both docs and `activities get-default-xaml` require it |
 | **No `.local/docs/` at all** | Use fallback flow starting at Step 1.3 |
 
 ### Step 1.3: Search Current Project
@@ -94,7 +94,7 @@ Read: file_path="{projectRoot}/ExistingWorkflow.xaml"
 Use when you need to find which activity implements a user-described action:
 
 ```bash
-uip rpa find-activities --query "send mail" --limit 10 --output json```
+uip rpa activities find --query "send mail" --limit 10 --output json```
 ```
 
 - Results are **global** — not limited to installed packages
@@ -117,22 +117,24 @@ uip rpa find-activities --query "send mail" --limit 10 --output json```
 
 ### Step 1.6: Resolve Activity Properties (Fallback)
 
-Use `uip rpa get-default-activity-xaml` when activity docs are insufficient:
+Use `uip rpa activities get-default-xaml` when activity docs are insufficient:
 
 ```bash
 # Non-dynamic activity:
-uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
+uip rpa activities get-default-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
 # Dynamic activity (connector-backed):
-uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
+uip rpa activities get-default-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
 
 For JIT custom types: `Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"`. See [jit-custom-types-schema.md](jit-custom-types-schema.md).
 
 ### Step 1.7: Search Examples Repository
 
-Use when activity docs, `find-activities`, and `get-default-activity-xaml` don't provide enough context:
+Use when activity docs, `activities find`, and `activities get-default-xaml` don't provide enough context:
 
 ```bash
-uip rpa list-workflow-examples --tags web --limit 10 --output jsonuip rpa get-workflow-example --key "<BLOB_PATH>"```
+uip rpa workflow-examples list --tags web --limit 10 --output json
+uip rpa workflow-examples get --key "<BLOB_PATH>"
+```
 
 **Complete tag list:** `adobe-sign`, `asana`, `box`, `concur`, `confluence`, `database`, `document-understanding`, `docusign`, `dropbox`, `email-generic`, `excel`, `excel-online`, `freshbooks`, `freshdesk`, `github`, `gmail`, `google-calendar`, `google-docs`, `google-drive`, `google-sheets`, `gsuite`, `hubspot`, `intacct`, `jira`, `mailchimp`, `marketo`, `microsoft-365`, `onedrive`, `outlook`, `outlook-calendar`, `pdf`, `powerpoint`, `productivity`, `quickbooks`, `salesforce`, `servicenow`, `sharepoint`, `shopify`, `slack`, `smartsheet`, `stripe`, `teams`, `testing`, `trello`, `web`, `webex`, `word`, `workday`, `zendesk`, `zoom`
 ```
@@ -195,14 +197,18 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 
 ## Phase 3: Validate & Fix Loop
 
-**MUST** repeat until 0-error state or max 5 fix attempts. After 5 attempts, stop and present remaining errors to the user.
+**MUST** repeat until 0-error state from **both** `validate` and `build`, or max 5 fix attempts. After 5 attempts, stop and present remaining errors to the user.
 
 ### Step 3.1: Check for Errors
 
-```bash
-uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json```
+Run both validators per iteration. `validate` catches structural / reference / analyzer issues; `build` catches member-name and enum-value mistakes that `validate` misses (e.g. `NGetText.Value` when the property is `Text`, `Operator="StartsWith"` when the enum has no such member). See [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop) for the canonical loop.
 
-`--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks.
+```bash
+uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --output json
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+```
+
+`--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks. Treat `validate` clean as half-done — `build` clean is the signal to exit the loop.
 
 ### Step 3.2: Categorize and Fix
 
@@ -211,8 +217,8 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json```
 1. **Package Errors** — Install/update the package. After install, activity docs become available.
 2. **Structural Errors** — Fix XML structure. Cross-check against [xaml-basics-and-rules.md](xaml-basics-and-rules.md).
 3. **Type Errors** — Check activity doc for correct types and enum values. For JIT types: [jit-custom-types-schema.md](jit-custom-types-schema.md).
-4. **Activity Properties Errors** — Read activity doc for properties, conditional groups, valid configurations. Fallback: `get-default-activity-xaml`. Watch for OverloadGroup conflicts.
-5. **Logic Errors** — Verify expression syntax matches project language. For UI automation: use `--command StartDebugging`. See [uia-debug-workflow.md](../uia-debug-workflow.md).
+4. **Activity Properties Errors** — Read activity doc for properties, conditional groups, valid configurations. Fallback: `activities get-default-xaml`. Watch for OverloadGroup conflicts.
+5. **Logic Errors** — Verify expression syntax matches project language. For UI automation: use `debug start`. See [uia-debug-workflow.md](../uia-debug-workflow.md).
 
 **When stuck:** Defer to user for minor config details. If failing to resolve an activity, consider InvokeCode as a last resort.
 
@@ -236,14 +242,15 @@ For detailed procedures, see [../validation-guide.md](../validation-guide.md).
 
 - **NEVER** generate large, complex workflows in one go
 - **NEVER** manually craft UI selectors outside of `uia-configure-target` skill flow
-- **NEVER** assume a create/edit succeeded without validating
+- **NEVER** assume a create/edit succeeded without validating with **both** `validate` and `build`
+- **NEVER** treat "no diagnostics found" from `validate` as final — run `build` next; member-name and enum-value errors hide behind a clean `validate`
 - **NEVER** stop the iteration loop before correctly rendering all activities
 - **NEVER** guess properties, types, or configurations without checking docs
-- **NEVER** use incorrect keys with `uip rpa get-workflow-example` (always from list results)
-- **NEVER** pass absolute paths to `--file-path` in `get-errors` (must be relative)
+- **NEVER** use incorrect keys with `uip rpa workflow-examples get` (always from list results)
+- **NEVER** pass absolute paths to `--file-path` in `validate` (must be relative)
 - **NEVER** ask user to choose provider without checking project signals first
 - **NEVER** retry failing CLI commands in a loop without diagnosing root cause
 - **NEVER** skip Phase 0 (Studio readiness)
 - **NEVER** use connector activities without checking connection existence
 - **NEVER** ignore activity doc conditional property groups (OverloadGroup conflicts cause validation errors)
-- **NEVER** generate full XAML from scratch without using `get-default-activity-xaml` as a starting point
+- **NEVER** generate full XAML from scratch without using `activities get-default-xaml` as a starting point

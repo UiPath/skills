@@ -1,0 +1,120 @@
+task_id: skill-agent-coded-in-flow-register
+description: >
+  Smoke test: scaffold a UiPath solution containing a Flow project and a
+  sibling Coded Agent project, then confirm the agent is discoverable via
+  the local in-solution registry. Verifies `uip solution project add`
+  registers the coded agent (writing
+  `resources/solution_folder/process/agent/<CodedAgentProject>.json`
+  with a `resource.key` UUID) and that
+  `uip maestro flow registry list --local` surfaces the agent as a
+  `uipath.core.agent.<resourceKey>` node type.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, resource, feature:registry]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "ClaimsSol" containing a Flow project
+  "ClaimsFlow" and a sibling LangGraph coded agent "ClassifierAgent"
+  (Python, simple stub — no LLM call needed). Register the coded agent
+  in the solution and confirm it is discoverable from the flow project
+  via the local in-solution registry.
+
+  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
+  ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in
+  a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the coded agent project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent generated entry-points.json with uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent registered the coded agent project in the solution with uip solution project add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent confirmed local discovery with uip maestro flow registry list --local"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+list\s+.*--local'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent main.py exists"
+    path: "ClaimsSol/ClassifierAgent/main.py"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent entry-points.json exists"
+    path: "ClaimsSol/ClassifierAgent/entry-points.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Local resource file (resource.key) was minted by `uip solution project add`"
+    path: "ClaimsSol/resources/solution_folder/process/agent/ClassifierAgent.json"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Both projects (flow + coded agent) registered in the parent solution .uipx"
+    path: "ClaimsSol/ClaimsSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "ClaimsSol/ClaimsFlow/ClaimsFlow.flow"
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,6 +1,6 @@
 ---
 name: uipath-tasks
-description: "UiPath Action Center human-in-the-loop tasks via `uip tasks` — list, assign, complete approval/validation tasks. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
+description: "UiPath Action Center human-in-the-loop tasks via `uip tasks` — list, assign, complete approval/validation tasks. For authoring HITL nodes in flows/agents→uipath-human-in-the-loop. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
 when_to_use: "User says 'approve task', 'pending approval', 'pending action item', 'review action', 'list my tasks', 'reassign task' in an Orchestrator/Action Center context. NOT for TaskCreate/TaskUpdate (general session-task tracking) or Document Understanding validation."
 user-invocable: true
 ---
@@ -205,3 +205,4 @@ For deeper guidance, read these files only when needed:
 - `references/task-lifecycle.md` — Listing and getting tasks, type-hint endpoint routing, and the full discover→assign→complete workflow
 - `references/task-completion.md` — Completion endpoint routing, required fields per task type
 - `references/task-assignment.md` — Assign, reassign, unassign patterns and user discovery
+- `references/action-center-urls.md` — Canonical Action Center URL patterns; **read this before constructing or sharing any task deep-link** (the portal-UI misclassifies tenant-less URLs as "Orchestrator not enabled")

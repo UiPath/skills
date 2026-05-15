@@ -51,7 +51,7 @@ src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
 
-After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` resolves to an existing ID in: any task `data.outputs[].var`, `root.data.uipath.variables.inputOutputs[].id`, or `root.data.uipath.variables.inputs[].id`.
+After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` resolves to an existing ID in: any task `data.outputs[].var`, the variables `inputOutputs[].id`, or the variables `inputs[].id`. Variables array path is schema-dependent — `root.data.uipath.variables.{inputOutputs,inputs}[].id` in v19, top-level `variables.{inputOutputs,inputs}[].id` in v20 (Rule 18).
 
 ## Connector Tasks
 
@@ -87,7 +87,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 
 | Check | Severity | Action |
 |---|---|---|
-| Skeleton task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
+| Placeholder task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
 | `=vars.X` not in any task `outputs[]` or root `inputOutputs[]` | `ERROR` | Skip binding |

@@ -188,25 +188,25 @@ uip rpa-legacy validate "C:/Projects/MyLegacyProject" --result-path "C:/output/e
 
 | Action | How | Key Parameters |
 |--------|-----|----------------|
-| **Package project (optional)** | `Bash`: `uip rpa-legacy package <project-path> -o <output-dir>` | `<project-path>` (required), `-o` output dir |
+| **Package project (optional)** | `Bash`: `uip rpa-legacy pack <project-path> -o <output-dir>` | `<project-path>` (required), `-o` output dir |
 | **Debug workflow** | `Bash`: `uip rpa-legacy debug <xaml-path>` | `<xaml-path>` (required), `-i` input args |
 
-### package
+### pack
 
 Packages an RPA project into a deployable `.nupkg` file. **Optional** — not required for debugging (legacy RPA can be debugged directly).
 
 ```bash
-# Basic package
-uip rpa-legacy package "C:/Projects/MyLegacyProject" -o "C:/output"
+# Basic pack
+uip rpa-legacy pack "C:/Projects/MyLegacyProject" -o "C:/output"
 
-# Package with version
-uip rpa-legacy package "C:/Projects/MyLegacyProject" -o "C:/output" --version "1.2.0"
+# Pack with version
+uip rpa-legacy pack "C:/Projects/MyLegacyProject" -o "C:/output" --version "1.2.0"
 
 # Auto-version
-uip rpa-legacy package "C:/Projects/MyLegacyProject" -o "C:/output" --auto-version
+uip rpa-legacy pack "C:/Projects/MyLegacyProject" -o "C:/output" --auto-version
 
 # With release notes
-uip rpa-legacy package "C:/Projects/MyLegacyProject" -o "C:/output" --version "1.2.0" --release-notes "Bug fixes and improvements"
+uip rpa-legacy pack "C:/Projects/MyLegacyProject" -o "C:/output" --version "1.2.0" --release-notes "Bug fixes and improvements"
 ```
 
 | Parameter | Description |

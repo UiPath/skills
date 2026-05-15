@@ -10,6 +10,8 @@ tags: [uipath-human-in-the-loop, e2e, green-field]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 40
   turn_timeout: 1200
 
@@ -26,16 +28,6 @@ initial_prompt: |
   The manager should be able to Approve or Reject.
 
   After adding the HITL node and wiring it, validate the flow.
-
-  Save a summary to report.json with:
-  {
-    "project_name": "InvoiceApproval",
-    "hitl_node_id": "<the ID of the HITL node>",
-    "schema_inputs": ["<field names shown to the human>"],
-    "schema_outcomes": ["<button names>"],
-    "commands_used": ["<list of uip commands run>"],
-    "validation_passed": true
-  }
 
 success_criteria:
   - type: command_executed
@@ -78,27 +70,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was written"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct project name and validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "InvoiceApproval"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "length(schema_inputs)"
-        operator: gte
-        expected: 2
-      - expression: "length(schema_outcomes)"
-        operator: gte
-        expected: 2
-    weight: 2.0
-    pass_threshold: 0.75

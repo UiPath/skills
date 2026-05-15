@@ -7,13 +7,13 @@ decide whether to present the resolution or re-spawn one more
 hypothesis-tester round.
 
 ## Inputs you read
-- `.investigation/state.json` — for `matched_playbooks` and `scope`
-- `.investigation/hypotheses.json` — every hypothesis with
+- `.local/investigations/state.json` — for `matched_playbooks` and `scope`
+- `.local/investigations/hypotheses.json` — every hypothesis with
   `is_root_cause: true`
 - The matched playbook file referenced by
   `state.json.matched_playbooks[*].path` — read its `## Causes` and
   `## Resolution` sections
-- `.investigation/evidence/*.json` — for cause-specific evidence
+- `.local/investigations/evidence/*.json` — for cause-specific evidence
 
 ## The three depth checks (per confirmed hypothesis)
 
@@ -36,9 +36,45 @@ hypothesis-tester round.
    cause. If the playbook offers multiple branches under "If X, then …",
    the chosen branch must correspond to the cause named in check 1.
 
+## Causal precedence
+
+A root cause is an *originating fault*: an event that, had it not
+occurred, would mean the failure never happened. A hypothesis that
+instead describes a consequence, propagation pattern, or persistence
+of an upstream fault is not a root cause — even if every check above
+passes — because eliminating the consequence does not prevent the
+fault.
+
+Apply two precedence checks:
+
+1. **Explicit-event check.** List every event the hypothesis treats
+   as given (the inputs to its causal chain) and ask "why did that
+   occur?". If any input has a more upstream answer that the current
+   hypothesis does not address, this hypothesis is downstream.
+
+2. **Implicit-presupposition check.** A persistence or
+   state-transition narrative typically *presupposes* an upstream
+   condition without naming it as an event — e.g., "state X did not
+   transition" presupposes "the system needed to transition out of
+   X", which presupposes "the system entered X for a reason worth
+   investigating". Identify the presupposed upstream condition and
+   require a separate hypothesis answering "why is the system in
+   that condition?". If `hypotheses.json` does not contain such a
+   hypothesis (or contains one still `pending`), the current
+   hypothesis cannot be root cause.
+
+If either check finds a missing upstream, reject the verdict — emit
+`shallow` with a `gaps` entry of `kind: "textual"` and
+`check: "causal_precedence"` (a string identifier distinct from the
+numbered depth checks 1–3 above; the orchestrator routes on `kind`,
+not on `check`), detail
+`"hypothesis describes consequence/persistence; upstream of <X> not investigated"`.
+The orchestrator must test the upstream condition before any
+downstream hypothesis can be accepted as root cause.
+
 ## Output
 
-Write `.investigation/depth-check.json`:
+Write `.local/investigations/depth-check.json`:
 
 ```json
 {
@@ -48,7 +84,7 @@ Write `.investigation/depth-check.json`:
   "playbook_path": "<path from state.json.matched_playbooks>",
   "named_cause": "<verbatim or quoted paraphrase from playbook ## Causes>",
   "evidence_for_cause": [
-    "<file path under .investigation/evidence/ or .investigation/raw/>"
+    "<file path under .local/investigations/evidence/ or .local/investigations/raw/>"
   ],
   "resolution_alignment": "matches",                       // or "mismatch", or "missing"
   "gaps": [
@@ -90,6 +126,20 @@ worth the cost.
   output, not the tester's. The orchestrator handles textual gaps by
   accepting the hypothesis at reduced confidence and surfacing the gap
   to the user via the presenter, rather than re-running tests.
+
+  **A textual gap on check 1 (cause naming) does NOT invalidate the
+  matched playbook's `## Resolution` procedure.** Cause label and
+  remediation path are separable. When the matched playbook's resolution
+  is interactive (e.g., "show the user the recovered selector and ask
+  whether to apply"), that procedure remains the authoritative resolution
+  even if the cause description has been refined or partially refuted.
+  Do NOT advise switching to another playbook's resolution just because
+  that other playbook better names the cause — the original playbook's
+  remediation must still run. Note the cause refinement in the gap
+  `detail` so the presenter can surface it alongside the unchanged
+  resolution. The only situation in which the resolution branch itself
+  should change is a check 3 gap (Resolution alignment) — flag that
+  separately.
 
 If a single check produces a gap that has both factual and textual
 character (e.g., evidence is missing AND the named cause is

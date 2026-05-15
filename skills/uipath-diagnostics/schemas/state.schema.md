@@ -1,6 +1,6 @@
 # Investigation State Schema
 
-File: `.investigation/state.json`
+File: `.local/investigations/state.json`
 
 Created by: Triage sub-agent
 Read by: All sub-agents, orchestrator

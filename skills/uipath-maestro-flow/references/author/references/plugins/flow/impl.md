@@ -52,7 +52,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 {
   "id": "validateData",
   "type": "uipath.core.flow.629edef0-8ce8-428e-a922-3f8bf19ea682",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Validate Data" },
   "inputs": {},
   "outputs": {

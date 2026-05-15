@@ -19,13 +19,28 @@ A UiPath Solution is a container that groups multiple automation projects (proce
 
 ```
 MySolution/
-├── MySolution.uipx          <- Solution manifest
-├── ProjectA/                <- Automation project
-│   ├── project.json / project.uiproj
-│   └── *.cs / *.xaml
-├── ProjectB/
-└── config.json              <- Optional environment config
+├── MySolution.uipx                       <- Manifest. Source of truth: project list + IDs + StudioMinVersion.
+├── <ProjectName>/
+│   ├── project.uiproj OR project.json    <- Required for add/import. Type auto-detected.
+│   ├── bindings.json                     <- Agent runtime bindings. NOT scanned by refresh.
+│   ├── bindings_v2.json                  <- Solution refresh reads this (if it exists).
+│   └── ...
+├── <AnotherProjectName>/                 <- A solution can host many projects side-by-side.
+│   ├── project.uiproj OR project.json
+│   ├── bindings_v2.json
+│   └── ...
+├── resources/                            <- Auto-generated on add/import. NEVER hand-edit.
+│   └── solution_folder/
+│       ├── package/<name>.json           <- Auto-created on add. NOT cleaned by `project remove`.
+│       └── process/{process,flow}/<name>.json   <- Auto-created on add. Auto-cleaned on remove.
+└── userProfile/<user-uuid>/              <- Appears after first `project remove`.
 ```
+
+> `.uipx` and `resources/solution_folder/` must always agree on the set of projects. Diffing them is the fastest way to detect a corrupted state — see [develop-solution.md - Field-tested gotchas](develop-solution.md#field-tested-gotchas).
+>
+> The `.uipx` also carries a `StudioMinVersion` field (e.g. `2025.10.0`). If users hit a version-mismatch when opening the solution, that's the constraint to check.
+
+> **Coded apps are not registered in `.uipx`.** UiPath Coded Web Apps and Coded Action Apps have no `project.uiproj` / `project.json` — `uip solution project add` does not apply, and they are not packed by `uip solution pack`. They deploy independently via `uip codedapp publish` / `deploy`. A coded app directory can sit alongside a solution but is not part of its manifest. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 
 ---
 
@@ -37,8 +52,8 @@ graph LR
     B --> C[resource refresh]
     C --> D[pack]
     D --> E[publish]
-    E --> F[deploy run]
-    F --> G[activate]
+    E --> F["deploy run<br/>(auto-activate by default)"]
+    F -->|--skip-activate| G[activate]
     C --> H[upload]
 ```
 
@@ -62,16 +77,17 @@ uip solution
   ├── project
   │     ├── add <projectPath> [solutionFile]    Register an existing subfolder in .uipx
   │     ├── remove <projectPath> [solutionFile] Unregister a project from .uipx
-  │     └── import --source <path>              Copy external project into solution and register
+  │     ├── import --source <path>              Copy external project into solution and register
+  │     └── list                                List projects registered in the local .uipx (no backend call)
   ├── resource
   │     ├── list                          List local, remote, or all resources (--solution-folder, default cwd)
   │     ├── refresh                       Sync resource declarations from project bindings (--solution-folder, default cwd)
   │     └── get <resource-key>            Get full configuration for a single resource — local or remote (--solution-folder, default cwd)
   ├── deploy
-  │     ├── run -n <name>                 Deploy a published solution package
+  │     ├── run -n <name>                 Deploy a published solution package (auto-activates by default; pass --skip-activate to opt out)
   │     ├── status <id>                   Check deployment status
   │     ├── list                          List deployments
-  │     ├── activate <name>               Activate a deployment
+  │     ├── activate <name>               Activate a deployment (only needed after --skip-activate or to retry a failed auto-activation)
   │     ├── uninstall <name>              Uninstall a deployment
   │     └── config
   │           ├── get <package-name>      Fetch default deploy config
@@ -94,10 +110,11 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 | Develop a Solution | [develop-solution.md](develop-solution.md) | Create, add projects, manage resources, upload |
 | Pack & Deploy | [pack-and-deploy.md](pack-and-deploy.md) | Pack, publish, deploy run, deploy config |
 | Activate & Manage | [activate-and-manage.md](activate-and-manage.md) | Activate, uninstall, packages list/delete |
+| Scenarios | [scenarios.md](scenarios.md) | Multi-project recipes — same-name across folders, intra-solution cross-refs, shared cloud resources, virtual assets at deploy |
 
 ---
 
 ## Related
 
-- **Orchestrator** (`uip or`) -- Folders, processes, jobs, machines. See [orchestrator.md](../orchestrator/orchestrator.md).
-- **Resources** (`uip resource`) -- Assets, queues, buckets used by solutions. See [resources.md](../resources/resources.md).
+- **Orchestrator** (`uip or`) — folders, processes, jobs, machines → [`uipath-orchestrator`](../orchestrator/orchestrator.md)
+- **Resources** (`uip resource`) — assets, queues, buckets used by solutions → [`uipath-resources`](../resources/resources.md)

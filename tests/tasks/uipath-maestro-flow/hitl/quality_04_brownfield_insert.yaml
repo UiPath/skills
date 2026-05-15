@@ -8,6 +8,8 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, n
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 150
   turn_timeout: 900
 
@@ -35,15 +37,7 @@ initial_prompt: |
   The original extractMeta → End edge must be removed.
   The extractMeta → HITL edge and HITL → End edge must be added.
 
-  Do NOT run flow debug. Validate after building.
-
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id of the new HITL node>",
-    "original_script_id": "extractMeta",
-    "edges_after_insert": ["<list all edge source→target pairs>"],
-    "validation_passed": true
-  }
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command
@@ -86,18 +80,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json confirms HITL node inserted and validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "hitl_node_id"
-        operator: not_equals
-        expected: ""
-      - expression: "length(edges_after_insert)"
-        operator: gte
-        expected: 2
-    weight: 2.0
-    pass_threshold: 0.75

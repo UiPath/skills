@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "UserList",
+  "Data": [
+    {
+      "Id": 1042111,
+      "UserName": "user1",
+      "DisplayName": "user1",
+      "Type": "User",
+      "Roles": ["Administrator"]
+    },
+    {
+      "Id": 1042118,
+      "UserName": "RobotUser1",
+      "DisplayName": "Robot User 1",
+      "Type": "Robot",
+      "Roles": ["Robot"]
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
