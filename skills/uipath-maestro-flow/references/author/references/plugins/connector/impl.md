@@ -54,6 +54,24 @@ When piping `--output json` into `python`, `jq`, or another parser, do not merge
 
 Follow these steps for every connector node.
 
+### Progress Checklist
+
+Copy the items below into `TodoWrite` **verbatim** before starting. Do **not** rewrite them in user-task vocabulary ("find project key", "find issuetype") - the doc-step numbering is the discipline. Collapsing Steps 2 (`registry get`) and 3 (`describe`) into a single "discover X" todo is the most common drift mode: the resulting list maps to user-facing deliverables but silently drops the metadata fetches that ground field names and reference resolvers in real data.
+
+```
+- [ ] Step 1: List + ping connection (is connections list -> ping; confirm State: Enabled)
+- [ ] Step 2: registry get --connection-id - capture connectorMethodInfo.method/.path and enriched inputDefinition.fields
+- [ ] Step 2a (generic activities only): is resources list -> pick objectName
+- [ ] Step 3: is resources describe --operation <Op> -> read the metadataFile (full requestFields + parameters)
+- [ ] Step 3a (api-type ObjectAction activities - Jira Create, Snowflake executeQuery, Dataservice V3, etc.): re-describe with -f field=value to surface parent-field-driven required fields
+- [ ] Step 4: Resolve every requestFields[].reference via is resources run list - fresh against this connection, never paste IDs from another flow
+- [ ] Step 5: Validate every required field has a value - if any is missing, ask the user before continuing
+- [ ] Step 5b: Wire upstream node outputs with =js:$vars.<nodeId>.output.<field> (in bodyParameters / queryParameters / pathParameters)
+- [ ] Step 6: node add -> node configure --detail (Step 6b runs the call; include Step 6a filter tree and Step 6c customFieldsRequestDetails if applicable)
+```
+
+The numbered Step headings below are the source of truth for each item - follow them in order.
+
 ### Step 1 — Fetch and bind a connection
 
 For each connector, extract the connector key from the node type (`uipath.connector.<connector-key>.<activity-name>`) and fetch a connection.
