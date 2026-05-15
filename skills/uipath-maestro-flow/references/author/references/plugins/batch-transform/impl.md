@@ -50,7 +50,7 @@ Then on the BT node:
 }
 ```
 
-`uip maestro flow debug --file csvFile=./path/to/data.csv` populates that variable as a `{ FullName, Id, Metadata, MimeType }` Attachment object at runtime. Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.csvFile` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
+`uip maestro flow debug --attachment csvFile=./path/to/data.csv` populates that variable as a `{ FullName, Id, Metadata, MimeType }` Attachment object at runtime. The flag is repeatable; `csvFile=` is required. **Invariant:** the LHS (`csvFile` here) MUST equal a `variables.globals[]` entry's `id` with `direction:"in"` AND `type:"file"`. Verify with `jq '.variables.globals[] | select(.direction=="in" and .type=="file") | .id' <flow>.flow` — a mismatch is not caught by the CLI today and faults silently at runtime. Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.csvFile` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
 
 ## JSON Structure
 

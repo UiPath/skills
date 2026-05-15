@@ -28,6 +28,16 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
 
+Bind local files to file-typed input variables with `--attachment <name=path>` (repeatable; `name=` required, must match the file-typed input variable's id):
+
+```bash
+UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+  --attachment invoice=./fixtures/invoice-123.pdf \
+  --attachment receipt=./fixtures/receipt-123.png
+```
+
+> **Pre-flight.** Each `<name>` LHS must match a `variables.globals[]` entry with `direction:"in"` and `type:"file"` in the `.flow` file. The CLI does not yet enforce this — see [shared/cli-commands.md — uip maestro flow debug](../../shared/cli-commands.md#uip-maestro-flow-debug) for the `jq` pre-flight check.
+
 ### Reporting debug runs to the user
 
 The CLI response includes a **Studio Web URL** (where the user inspects the run) and an **instanceId** (for log/trace correlation). Parse both from the JSON output — typically `Data.studioWebUrl` and `Data.instanceId` — and **always show them as the first two lines of the summary**:
