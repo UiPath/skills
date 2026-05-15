@@ -2,16 +2,16 @@
 
 ## When to Use
 
-Pick this skill when:
+Pick this when:
 
 - Project has `agent.json` with `"type": "lowCode"` (standalone) **or** the agent is inline inside a Maestro Flow (`uipath.agent.autonomous` node)
 - User is building in Studio Web Agent Builder, no Python
 - Source data is tabular (CSV) — one input row should produce one output row plus extra LLM-filled columns
 - Output destination is an Orchestrator bucket attachment downstream consumers (RPA, agents) can read
 
-Confirm BatchTransform is the right mode first — see [context-grounding-patterns.md](context-grounding-patterns.md).
+Confirm BatchTransform is the right mode first — see [../../../../context-grounding-patterns.md](../../../../context-grounding-patterns.md).
 
-If the user is building a coded agent (Python, LangGraph, etc.), use the `uipath-batch-transform-coded` skill instead.
+For coded agents (Python, LangGraph) → [../../../coded/capabilities/batch-transform/planning.md](../../../coded/capabilities/batch-transform/planning.md).
 
 ## Inputs You Need Before Building
 
@@ -32,13 +32,13 @@ Built-in tools accept these `toolType` values: `analyze-attachments`, `load-atta
 
 ### Tool resource vs context-index resource
 
-There are two valid shapes for enabling BatchTransform on a low-code agent. This skill documents the **built-in tool** shape (the agent invokes BatchTransform through its tool-calling loop). The alternative is a **context-index resource** that wires BatchTransform as a retrieval mode on a pre-built ECS index — `$resourceType: "context"`, `contextType: "index"`, `retrievalMode: "batchtransform"` (lowercase, no hyphen — `uip agent validate` accepts camelCase but Studio Web silently drops the resource on import), with `webSearchGrounding` and `outputColumns` set on the resource. Use the context-index form when the CSV lives in a stable, pre-built index reused across runs and the agent should query it transparently as context; use the tool form (this skill) when the CSV is a runtime attachment and the agent must decide row-by-row when to invoke it.
+Two valid shapes for enabling BatchTransform on a low-code agent. This skill documents the **built-in tool** shape (the agent invokes BatchTransform through its tool-calling loop). The alternative is a **context-index resource** that wires BatchTransform as a retrieval mode on a pre-built ECS index — `$resourceType: "context"`, `contextType: "index"`, `retrievalMode: "batchtransform"` (lowercase, no hyphen — `uip agent validate` accepts camelCase but Studio Web silently drops the resource on import), with `webSearchGrounding` and `outputColumns` set on the resource. Use the context-index form when the CSV lives in a stable, pre-built index reused across runs and the agent should query it transparently as context; use the tool form (this skill) when the CSV is a runtime attachment and the agent must decide row-by-row when to invoke it.
 
 ## Critical Decisions
 
 | Decision | Rule |
 |---|---|
-| `batch-transform` vs `deep-rag` | Pick by input file type: `.csv` → `batch-transform`; `.pdf` / `.txt` → `deep-rag`. Hard rule, no subjective tiebreaker. See [context-grounding-patterns.md](context-grounding-patterns.md). |
+| `batch-transform` vs `deep-rag` | Pick by input file type: `.csv` → `batch-transform`; `.pdf` / `.txt` → `deep-rag`. Hard rule, no subjective tiebreaker. |
 | `batch-transform` vs `analyze-attachments` | `analyze-attachments` does single-file, single-shot extraction. `batch-transform` iterates across all rows of a CSV at scale. |
 | Standalone agent vs inline-in-flow | Same `resource.json` shape for both. The flow wiring differs — inline requires an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md). |
 | Output column names | Must match regex `^[\w\s\.,!?-]+$`. No `/`, `:`, `&`, `(`, `)`, or other special chars. |

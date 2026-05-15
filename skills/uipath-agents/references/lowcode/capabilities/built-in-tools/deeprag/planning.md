@@ -2,16 +2,16 @@
 
 ## When to Use
 
-Pick this skill when:
+Pick this when:
 
 - Project has `agent.json` with `"type": "lowCode"` (standalone) **or** the agent is inline inside a Maestro Flow (`uipath.agent.autonomous` node)
 - User is building in Studio Web Agent Builder, no Python
 - Agent receives runtime attachments (files uploaded in chat) and must research / synthesize across them
-- The expected output is a single grounded narrative answer
+- Expected output is a single grounded narrative answer
 
-Confirm DeepRAG is the right mode first — see [context-grounding-patterns.md](context-grounding-patterns.md).
+Confirm DeepRAG is the right mode first — see [../../../../context-grounding-patterns.md](../../../../context-grounding-patterns.md).
 
-If the user is building a coded agent (Python, LangGraph, etc.), use the `uipath-deeprag-coded` skill instead.
+For coded agents (Python, LangGraph) → [../../../coded/capabilities/deeprag/planning.md](../../../coded/capabilities/deeprag/planning.md).
 
 ## Inputs You Need Before Building
 
@@ -30,13 +30,13 @@ Built-in tools accept these `toolType` values: `analyze-attachments`, `load-atta
 
 ### Tool resource vs context-index resource
 
-There are two valid shapes for enabling DeepRAG on a low-code agent. This skill documents the **built-in tool** shape (the agent invokes DeepRAG through its tool-calling loop on runtime attachments). The alternative is a **context-index resource** that wires DeepRAG as a retrieval mode on a pre-built ECS index — `$resourceType: "context"`, `contextType: "index"`, `retrievalMode: "deeprag"` (lowercase, no hyphen — `uip agent validate` accepts camelCase but Studio Web silently drops the resource on import), with `citationMode` (`"Inline"` or `"Skip"`) set on the resource. Use the context-index form when the documents live in a stable, pre-built index reused across runs and the agent should query it transparently as context; use the tool form (this skill) when the documents are runtime attachments uploaded per conversation.
+Two valid shapes for enabling DeepRAG on a low-code agent. This skill documents the **built-in tool** shape (the agent invokes DeepRAG through its tool-calling loop on runtime attachments). The alternative is a **context-index resource** that wires DeepRAG as a retrieval mode on a pre-built ECS index — `$resourceType: "context"`, `contextType: "index"`, `retrievalMode: "deeprag"` (lowercase, no hyphen — `uip agent validate` accepts camelCase but Studio Web silently drops the resource on import), with `citationMode` (`"Inline"` or `"Skip"`) set on the resource. Use the context-index form when the documents live in a stable, pre-built index reused across runs and the agent should query it transparently as context; use the tool form (this skill) when the documents are runtime attachments uploaded per conversation.
 
 ## Critical Decisions
 
 | Decision | Rule |
 |---|---|
-| `deep-rag` vs `analyze-attachments` | Prefer `deep-rag`. It handles larger files, returns citations (with optional bounding-box anchors), and produces denser output. `analyze-attachments` is one-shot synthesis with lower page limits — reach for it only when the document is small and the task is a single-shot extraction. See [context-grounding-patterns.md](context-grounding-patterns.md) for the BT/DR/index decision matrix. |
+| `deep-rag` vs `analyze-attachments` | Prefer `deep-rag`. It handles larger files, returns citations (with optional bounding-box anchors), and produces denser output. `analyze-attachments` is one-shot synthesis with lower page limits — reach for it only when the document is small and the task is a single-shot extraction. |
 | `deep-rag` vs `load-attachments` | `load-attachments` only makes attachment text available to the agent; `deep-rag` runs an iterative synthesis pass. Use `load-attachments` when the agent will reason directly over short contents; use `deep-rag` for long / multiple docs. |
 | Standalone agent vs inline-in-flow | Same `resource.json` shape for both. The flow wiring differs — inline requires an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md). |
 

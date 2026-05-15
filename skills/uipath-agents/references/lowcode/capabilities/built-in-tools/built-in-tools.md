@@ -58,8 +58,8 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 | Tool | `toolType` | Walkthrough |
 |---|---|---|
 | Analyze Files | `analyze-attachments` | [analyze-attachments.md](analyze-attachments.md) |
-
-> Other built-in tools exist on the platform (e.g. Batch Transform, Deep RAG) but are out of scope for this reference. Add them as siblings here when in scope.
+| Deep RAG | `deep-rag` | [deeprag/impl-json.md](deeprag/impl-json.md) |
+| Batch Transform | `batch-transform` | [batch-transform/impl-json.md](batch-transform/impl-json.md) |
 
 ## Gotchas
 

@@ -1,10 +1,10 @@
-task_id: skill-batch-transform-coded-smoke-trigger
+task_id: skill-agents-batch-transform-coded-smoke-trigger
 description: >
-  Smoke test: agent should trigger the uipath-batch-transform-coded skill
-  when the user asks to add LLM-filled columns to a CSV from a Python
-  coded agent (LangGraph). Verifies the skill fires for the
+  Smoke test: agent should trigger the uipath-agents skill when the
+  user asks to add LLM-filled columns to a CSV from a Python coded
+  agent (LangGraph). Verifies the skill fires for the
   Python-coded-agent + CSV signal pair.
-tags: [uipath-batch-transform-coded, smoke, lifecycle:discover]
+tags: [uipath-agents, smoke, lifecycle:discover]
 
 sandbox:
   driver: tempdir
@@ -19,8 +19,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-batch-transform-coded skill"
-    expected_skill: "uipath-batch-transform-coded"
+    description: "Agent invoked the uipath-agents skill"
+    expected_skill: "uipath-agents"
     expected: "yes"
     weight: 3.0
     pass_threshold: 1.0

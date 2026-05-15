@@ -1,4 +1,4 @@
-task_id: skill-batch-transform-coded-e2e-scaffold-graph
+task_id: skill-agents-batch-transform-coded-e2e-scaffold-graph
 description: >
   E2E: scaffold a Python coded agent that runs BatchTransform on a CSV
   attachment via the durable-interrupt pattern. Verifies the agent
@@ -8,7 +8,7 @@ description: >
   EphemeralIndexUsage from uipath.platform.context_grounding, and
   durable_interrupt — and does NOT instantiate UiPath() at module top
   level.
-tags: [uipath-batch-transform-coded, e2e, lifecycle:generate]
+tags: [uipath-agents, e2e, lifecycle:generate]
 max_iterations: 1
 
 agent:

@@ -2,16 +2,16 @@
 
 ## When to Use
 
-Pick this skill when:
+Pick this when:
 
 - Project has `pyproject.toml` with `uipath` / `uipath-langchain`, plus `langgraph.json` or a graph-style `main.py`
 - User wants Python / programmatic control over the pipeline
 - Agent needs to combine DeepRAG with custom pre/post-processing (download from bucket, validate, route, etc.)
 - Agent must run unattended (scheduled, queue-triggered, or invoked from another agent)
 
-Confirm DeepRAG is the right mode first — see [context-grounding-patterns.md](context-grounding-patterns.md).
+Confirm DeepRAG is the right mode first — see [../../../context-grounding-patterns.md](../../../context-grounding-patterns.md).
 
-If the user is in Studio Web Agent Builder, use the `uipath-deeprag-lowcode` skill instead.
+For Studio Web Agent Builder → [../../lowcode/capabilities/built-in-tools/deeprag/planning.md](../../lowcode/capabilities/built-in-tools/deeprag/planning.md).
 
 ## Inputs You Need Before Building
 

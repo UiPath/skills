@@ -2,16 +2,16 @@
 
 ## When to Use
 
-Pick this skill when:
+Pick this when:
 
 - Project has `pyproject.toml` with `uipath` / `uipath-langchain`, plus `langgraph.json` or a graph-style `main.py`
 - Source data is tabular (CSV) — one input row should produce one output row plus extra LLM-filled columns
 - Workload is throughput-driven (hundreds to thousands of rows per file)
 - User wants Python control over upstream prep (download, reshape, dedupe) or downstream routing (push results to Data Service, Orchestrator queue, follow-up agent, etc.)
 
-Confirm BatchTransform is the right mode first — see [context-grounding-patterns.md](context-grounding-patterns.md).
+Confirm BatchTransform is the right mode first — see [../../../context-grounding-patterns.md](../../../context-grounding-patterns.md).
 
-If the user is in Studio Web Agent Builder, use `uipath-batch-transform-lowcode` instead.
+For Studio Web Agent Builder → [../../lowcode/capabilities/built-in-tools/batch-transform/planning.md](../../lowcode/capabilities/built-in-tools/batch-transform/planning.md).
 
 ## Inputs You Need Before Building
 

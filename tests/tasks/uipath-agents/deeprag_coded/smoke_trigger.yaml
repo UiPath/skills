@@ -1,10 +1,10 @@
-task_id: skill-deeprag-coded-smoke-trigger
+task_id: skill-agents-deeprag-coded-smoke-trigger
 description: >
-  Smoke test: agent should trigger the uipath-deeprag-coded skill when
-  the user asks to summarize / synthesize across PDF or TXT documents
-  from a Python coded agent (LangGraph). Verifies the skill fires for
-  the Python-coded-agent + PDF/TXT signal pair.
-tags: [uipath-deeprag-coded, smoke, lifecycle:discover]
+  Smoke test: agent should trigger the uipath-agents skill when the
+  user asks to summarize / synthesize across PDF or TXT documents from
+  a Python coded agent (LangGraph). Verifies the skill fires for the
+  Python-coded-agent + PDF/TXT signal pair.
+tags: [uipath-agents, smoke, lifecycle:discover]
 
 sandbox:
   driver: tempdir
@@ -19,8 +19,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-deeprag-coded skill"
-    expected_skill: "uipath-deeprag-coded"
+    description: "Agent invoked the uipath-agents skill"
+    expected_skill: "uipath-agents"
     expected: "yes"
     weight: 3.0
     pass_threshold: 1.0

@@ -1,11 +1,11 @@
-task_id: skill-batch-transform-lowcode-e2e-enable-tool
+task_id: skill-agents-deeprag-lowcode-e2e-enable-tool
 description: >
-  E2E: scaffold a low-code agent that enables the built-in
-  batch-transform tool. Verifies that the agent runs the canonical CLI
-  flow (uip solution new, uip agent init, uip solution project add, uip
-  agent validate) and that resource.json uses the exact built-in shape
-  (type=internal, referenceKey=null, properties.toolType=batch-transform).
-tags: [uipath-batch-transform-lowcode, e2e, lifecycle:generate]
+  E2E: scaffold a low-code agent that enables the built-in deep-rag
+  tool. Verifies that the agent runs the canonical CLI flow (uip
+  solution new, uip agent init, uip solution project add, uip agent
+  validate) and that resource.json uses the exact built-in shape
+  (type=internal, referenceKey=null, properties.toolType=deep-rag).
+tags: [uipath-agents, e2e, lifecycle:generate]
 max_iterations: 1
 
 agent:
@@ -19,11 +19,11 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath solution "BatchSol" containing a low-code agent
-  "BatchAgent" that takes a CSV upload and adds two LLM-filled columns:
-  a 4-digit MCC code and a confidence label. Enable the built-in
-  "batch-transform" tool so the agent can produce one augmented row per
-  input row.
+  Create a UiPath solution "DeepSol" containing a low-code agent
+  "DeepAgent" that synthesizes answers across multiple PDF or TXT
+  attachments uploaded in chat. Enable the built-in "deep-rag" tool so
+  the agent can run an iterative research-and-synthesis pass over the
+  attachments.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -71,14 +71,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "BatchAgent/agent.json was created"
-    path: "BatchSol/BatchAgent/agent.json"
+    description: "DeepAgent/agent.json was created"
+    path: "DeepSol/DeepAgent/agent.json"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "batch-transform built-in tool resource shape (type=internal, referenceKey=null, toolType=batch-transform)"
-    command: "python3 $TASK_DIR/check_batch_transform_tool.py"
+    description: "deep-rag built-in tool resource shape (type=internal, referenceKey=null, toolType=deep-rag)"
+    command: "python3 $TASK_DIR/check_deep_rag_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

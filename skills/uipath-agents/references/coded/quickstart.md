@@ -213,7 +213,7 @@ Infer the framework from the user's prompt when possible. If ambiguous, ask them
 3. **LlamaIndex** — Workflow with events and RAG support. Best for knowledge retrieval.
 4. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence.
 
-**Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. RAG or knowledge retrieval → LlamaIndex. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → Coded Function. Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — hand off to `uipath-deeprag-coded`. Per-row CSV extraction → `uipath-batch-transform-coded`. When in doubt, ask.
+**Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. RAG or knowledge retrieval → LlamaIndex. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → Coded Function. Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — see [capabilities/deeprag/planning.md](capabilities/deeprag/planning.md). Per-row CSV extraction → see [capabilities/batch-transform/planning.md](capabilities/batch-transform/planning.md). When in doubt, ask.
 
 **Always tell the user which framework you selected and why** before proceeding to build. Example: "I'll use **LangGraph** for this agent since it involves tool calling and multi-step orchestration."
 

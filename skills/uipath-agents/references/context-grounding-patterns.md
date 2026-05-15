@@ -1,6 +1,6 @@
 # Context Grounding Patterns — When to Use What
 
-Shared decision logic for picking the right context-grounding mode. Pick the mode here, then jump to the surface skill for implementation.
+Shared decision logic for picking the right context-grounding mode and surface.
 
 ## BatchTransform vs DeepRAG — Pick by File Type
 
@@ -9,7 +9,7 @@ Shared decision logic for picking the right context-grounding mode. Pick the mod
 | `.csv` | **BatchTransform** |
 | `.pdf` / `.txt` | **DeepRAG** |
 
-This is a hard rule: BatchTransform accepts CSV only; DeepRAG accepts PDF or TXT only. Pick by file type — there is no subjective tiebreaker.
+Hard rule: BatchTransform accepts CSV only; DeepRAG accepts PDF or TXT only. No subjective tiebreaker.
 
 ## The Three Modes
 
@@ -25,18 +25,18 @@ Route by file type first, signal second:
 
 | File type | User signal | Mode | Where to go |
 |---|---|---|---|
-| `.csv` | "add columns" / "classify every row" / "enrich vendor addresses" / "MCC categorization" / "1000 rows of structured output" | **BatchTransform** | **This skill** (coded surface) — continue with [planning.md](planning.md). For Studio Web Agent Builder, use `uipath-batch-transform-lowcode`. |
-| `.pdf` / `.txt` | "summarize" / "research across these docs" / "one narrative answer" | **DeepRAG** | Out of scope here — see `uipath-deeprag-coded` (or `uipath-deeprag-lowcode`). |
-| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | Use `sdk.context_grounding.unified_search_async` or low-code Context tool — see `uipath-agents`. |
+| `.csv` | "add columns" / "classify every row" / "enrich vendor addresses" / "MCC categorization" / "1000 rows of structured output" | **BatchTransform** | Coded: [coded/capabilities/batch-transform/planning.md](coded/capabilities/batch-transform/planning.md). Low-code: [lowcode/capabilities/built-in-tools/batch-transform/planning.md](lowcode/capabilities/built-in-tools/batch-transform/planning.md). |
+| `.pdf` / `.txt` | "summarize" / "research across these docs" / "one narrative answer" | **DeepRAG** | Coded: [coded/capabilities/deeprag/planning.md](coded/capabilities/deeprag/planning.md). Low-code: [lowcode/capabilities/built-in-tools/deeprag/planning.md](lowcode/capabilities/built-in-tools/deeprag/planning.md). |
+| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | `sdk.context_grounding.unified_search_async` or low-code Context tool — see [coded/capabilities/context-grounding.md](coded/capabilities/context-grounding.md). |
 
 ## Surface Selection
 
 Once the mode is picked, route by execution surface:
 
-| Surface signal | BatchTransform skill | DeepRAG skill |
+| Surface signal | BatchTransform | DeepRAG |
 |---|---|---|
-| Project has `pyproject.toml` + `langgraph.json`, or user wants Python | **`uipath-batch-transform-coded`** (this skill) | `uipath-deeprag-coded` |
-| Project has `agent.json` with `"type": "lowCode"`, or user is building in Studio Web Agent Builder | `uipath-batch-transform-lowcode` | `uipath-deeprag-lowcode` |
+| Project has `pyproject.toml` + `langgraph.json`, or user wants Python | [coded/capabilities/batch-transform/planning.md](coded/capabilities/batch-transform/planning.md) | [coded/capabilities/deeprag/planning.md](coded/capabilities/deeprag/planning.md) |
+| Project has `agent.json` with `"type": "lowCode"`, or user is building in Studio Web Agent Builder | [lowcode/capabilities/built-in-tools/batch-transform/planning.md](lowcode/capabilities/built-in-tools/batch-transform/planning.md) | [lowcode/capabilities/built-in-tools/deeprag/planning.md](lowcode/capabilities/built-in-tools/deeprag/planning.md) |
 
 Both surfaces hit the same backend per mode. The difference is **how** the agent invokes the mode, not what the mode does.
 

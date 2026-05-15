@@ -1,6 +1,6 @@
 # BatchTransform — API Reference (Debug Only)
 
-> **Stop.** In a low-code agent, the runtime calls these endpoints when the built-in `batch-transform` tool is enabled — see [impl-json.md](impl-json.md). Direct API calls are debug-only. The coded surface (Python `@durable_interrupt` + `Create*` resume-trigger models from `uipath.platform.common`) lives in `uipath-batch-transform-coded`.
+> **Stop.** In a low-code agent, the runtime calls these endpoints when the built-in `batch-transform` tool is enabled — see [impl-json.md](impl-json.md). Direct API calls are debug-only.
 
 This file lists endpoints for direct invocation from outside an agent (custom tooling, scripts, debugging). Request body shapes evolve with the SDK — **trust the SDK source, not this file**:
 

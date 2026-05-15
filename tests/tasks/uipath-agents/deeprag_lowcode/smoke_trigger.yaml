@@ -1,10 +1,10 @@
-task_id: skill-deeprag-lowcode-smoke-trigger
+task_id: skill-agents-deeprag-lowcode-smoke-trigger
 description: >
-  Smoke test: agent should trigger the uipath-deeprag-lowcode skill when
-  the user asks to research / synthesize across PDF or TXT documents
-  from a Studio Web Agent Builder / `agent.json` (lowCode) project.
+  Smoke test: agent should trigger the uipath-agents skill when the
+  user asks to research / synthesize across PDF or TXT documents from
+  a Studio Web Agent Builder / `agent.json` (lowCode) project.
   Verifies the skill fires for the low-code + PDF/TXT signal pair.
-tags: [uipath-deeprag-lowcode, smoke, lifecycle:discover]
+tags: [uipath-agents, smoke, lifecycle:discover]
 
 sandbox:
   driver: tempdir
@@ -19,8 +19,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-deeprag-lowcode skill"
-    expected_skill: "uipath-deeprag-lowcode"
+    description: "Agent invoked the uipath-agents skill"
+    expected_skill: "uipath-agents"
     expected: "yes"
     weight: 3.0
     pass_threshold: 1.0

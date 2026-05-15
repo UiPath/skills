@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
+description: "UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. Covers DeepRAG (summarize/research PDF or TXT via CreateDeepRag, @durable_interrupt) and BatchTransform (per-row CSV LLM via CreateBatchTransform). For C# or XAML workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---
@@ -49,6 +49,10 @@ Determine the agent mode before proceeding:
 | Add escalation guardrail (escalate action / Action Center app) | Low-code | [lowcode/capabilities/guardrails/guardrails.md](references/lowcode/capabilities/guardrails/guardrails.md) § escalate — Hand Off to Action Center | Run `uip solution resource list --kind App` to confirm app exists |
 | Embed a low-code agent inline in a flow, or wire a multi-agent solution | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/inline-in-flow/inline-in-flow.md`, `lowcode/capabilities/process/process.md` |
 | Validate, pack, publish, upload, or deploy a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/solution-resources.md` |
+| Summarize / research / synthesize over PDF or TXT (DeepRAG, coded) | Coded | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [coded/capabilities/deeprag/planning.md](references/coded/capabilities/deeprag/planning.md) |
+| Summarize / research / synthesize over PDF or TXT (DeepRAG, low-code) | Low-code | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [lowcode/capabilities/built-in-tools/deeprag/planning.md](references/lowcode/capabilities/built-in-tools/deeprag/planning.md) |
+| Process CSV rows with LLM per row (BatchTransform, coded) | Coded | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [coded/capabilities/batch-transform/planning.md](references/coded/capabilities/batch-transform/planning.md) |
+| Process CSV rows with LLM per row (BatchTransform, low-code) | Low-code | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [lowcode/capabilities/built-in-tools/batch-transform/planning.md](references/lowcode/capabilities/built-in-tools/batch-transform/planning.md) |
 
 ## Resources
 
