@@ -1,0 +1,68 @@
+task_id: skill-test-perf-load-profile-confirm
+description: >
+  Integration test: agent uses the uipath-test skill to drive a full
+  `performanceTesting` execution on an existing scenario. Asserts the
+  skill's two key rules for full runs: (a) the agent calls
+  `uip tm scenario get` before submitting to surface the current load
+  profile to the user, and (b) the agent applies user-supplied
+  load-profile overrides via `uip tm scenario update-loadgroup` BEFORE
+  submitting the full run. This validates the skill's "confirm the load
+  profile with the user BEFORE the full run, NOT before the dry run"
+  rule — server-side defaults like `VirtualUsers=20`,
+  `MaxErrorRate=1.0` have been observed in the wild and silently
+  trusting them on a full run wastes scarce perf runtimes.
+tags: [uipath-test, integration, mode:operate, lifecycle:execute, feature:perf-loadgroup, feature:perf-scenario]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 60
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Run a full performance test on one of my existing perf scenarios with
+  3 virtual users and a 2-minute peak. Confirm the load profile with me
+  before kicking off the full run.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent inspected the scenario's load profile before submitting full run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+get\s+.*--scenario-key\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied user-confirmed load-profile overrides via `update-loadgroup` before the full run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+update-loadgroup\s+.*--load-group-id\s+\S+.*--virtual-users\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent issued a `performanceTesting` execution (the full run)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+execute\s+.*--execution-type\s+performanceTesting'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT update-loadgroup BEFORE the dry run (load profile ignored on dry run; skill rule)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+update-loadgroup\s+.*\n.*uip\s+tm\s+scenario\s+execute\s+.*--execution-type\s+dryRun'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

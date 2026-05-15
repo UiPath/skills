@@ -1,0 +1,84 @@
+task_id: skill-test-perf-report-release-manager
+description: >
+  Integration test: agent uses the uipath-test skill to generate a
+  Release Manager perf report. Asserts that the agent (a) fetches
+  cumulative execution results (without `--full` — the per-second time
+  series is noise for a go/no-go audience, per skill anti-pattern),
+  (b) writes the report at the skill's default filename for today
+  (`test-report-release-<TODAY>.md`), and (c) the report body contains
+  the Release Manager persona's structural sections (a clear go/no-go
+  statement, SLO citation, success-rate reference) without raw
+  time-series dumps.
+tags: [uipath-test, integration, mode:operate, lifecycle:generate, feature:perf-scenario]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 60
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Take one of my existing perf scenarios that already has a completed
+  execution, and write me a Release Manager go/no-go report. Save it in
+  the current working directory using the skill's default filename
+  convention for today's date.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched cumulative execution results"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+execution-results\s+.*--execution-id\s+\S+.*--project-key\s+\S+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT request `--full` for a Release Manager persona (skill anti-pattern)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+execution-results\s+.*--full'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Release Manager report file written using the skill's filename convention with today's date"
+    command: "ls \"test-report-release-$(date -u +%Y-%m-%d).md\" >/dev/null 2>&1"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Report contains Release Manager persona sections (go/no-go + SLO citation + success-rate)"
+    command: |
+      python3 -c "
+      import glob, re, sys
+      paths = sorted(glob.glob('test-report-release-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md'))
+      if not paths: sys.exit(2)
+      body = open(paths[-1], encoding='utf-8', errors='replace').read()
+      lower = body.lower()
+      checks = {
+          'go/no-go decision': re.search(r'(?i)go\s*[/\\\\]?\s*no[- ]?go', body) is not None or ('go' in lower and 'no-go' in lower),
+          'success rate or workflow count': re.search(r'(?i)success(ful)?\s*rate|workflow\s*count|successful\s*workflow', body) is not None,
+          'SLO reference': re.search(r'(?i)slo|service[- ]level', body) is not None,
+      }
+      missing = [k for k,ok in checks.items() if not ok]
+      if missing:
+          sys.stderr.write('missing: ' + ', '.join(missing) + chr(10))
+          sys.exit(1)
+      sys.exit(0)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

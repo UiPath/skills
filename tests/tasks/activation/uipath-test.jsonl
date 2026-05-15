@@ -48,3 +48,13 @@
 {"id": "uipath-test-048", "prompt": "I need to manage test sets and executions in UiPath", "expected_skill": "uipath-test"}
 {"id": "uipath-test-049", "prompt": "Bulk-add 20 test cases from project INV into the new ReleaseCandidate test set", "expected_skill": "uipath-test"}
 {"id": "uipath-test-050", "prompt": "After my test set finishes, download the JUnit results and attachments and write a markdown report", "expected_skill": "uipath-test"}
+{"id": "uipath-test-051", "prompt": "Create a perf scenario for our login test case and run a dry-run", "expected_skill": "uipath-test"}
+{"id": "uipath-test-052", "prompt": "Run a full performance test on SP1:602 with 5 virtual users for 10 minutes", "expected_skill": "uipath-test"}
+{"id": "uipath-test-053", "prompt": "Load-test my checkout flow and tell me which API call is slowest", "expected_skill": "uipath-test"}
+{"id": "uipath-test-054", "prompt": "What's the p95 response time for the perf scenario SP1:1276", "expected_skill": "uipath-test"}
+{"id": "uipath-test-055", "prompt": "Cancel the running performance scenario execution 0bdc02eb-3b36-0000-63cb-0b499f69661e", "expected_skill": "uipath-test"}
+{"id": "uipath-test-056", "prompt": "Update the load group VUs to 20 and re-run as a full execution", "expected_skill": "uipath-test"}
+{"id": "uipath-test-057", "prompt": "Give me a Performance Engineer report with SLO violations for the last perf run", "expected_skill": "uipath-test"}
+{"id": "uipath-test-058", "prompt": "Has a dry-run been completed on scenario SP1:1351", "expected_skill": "uipath-test"}
+{"id": "uipath-test-059", "prompt": "Attach SP1:602 as a load group with ramp-up 2 min and peak 5 min", "expected_skill": "uipath-test"}
+{"id": "uipath-test-060", "prompt": "Generate a release-manager go/no-go from yesterday's perf scenario results", "expected_skill": "uipath-test"}

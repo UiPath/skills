@@ -1,0 +1,83 @@
+task_id: skill-test-perf-report-performance-engineer
+description: >
+  Integration test: agent uses the uipath-test skill to generate a
+  Performance Engineer perf report. Asserts that the agent (a) fetches
+  execution results with `--full` (the skill teaches that percentile +
+  resource time-series data is essential for this persona),
+  (b) attempts `scenario transaction-metrics` for per-API breakdown
+  (and handles AppType=api vs web/desktop correctly), (c) writes the
+  report at the skill's default filename for today
+  (`test-report-perf-<TODAY>.md`), and (d) the report references at
+  least one percentile (p95 / p99) and one SLO violation reason.
+tags: [uipath-test, integration, mode:operate, lifecycle:generate, feature:perf-scenario]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 60
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Generate a Performance Engineer report from one of my completed perf
+  scenario executions. I want the percentile detail (p95/p99) and a
+  per-API breakdown if my scenario is an API one. Save it in the
+  current working directory using the skill's default filename
+  convention for today's date.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched results with --full (Performance Engineer needs the time series)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+(execute|execution-results)\s+.*--full'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted per-API transaction breakdown"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+transaction-metrics\s+.*--load-group-id\s+\S+.*--project-key\s+\S+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Performance Engineer report file written using the skill's filename convention with today's date"
+    command: "ls \"test-report-perf-$(date -u +%Y-%m-%d).md\" >/dev/null 2>&1"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Report contains Performance Engineer persona content (percentile + SLO violation reasons)"
+    command: |
+      python3 -c "
+      import glob, re, sys
+      paths = sorted(glob.glob('test-report-perf-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md'))
+      if not paths: sys.exit(2)
+      body = open(paths[-1], encoding='utf-8', errors='replace').read()
+      checks = {
+          'p95 or p99 mentioned': re.search(r'(?i)\\bp9[59]\\b|p9[59]\\s*response', body) is not None,
+          'SLO violation referenced': re.search(r'(?i)slo|service[- ]level|violat', body) is not None,
+          'response time numeric value': re.search(r'\\d+(?:\\.\\d+)?\\s*ms', body) is not None,
+      }
+      missing = [k for k,ok in checks.items() if not ok]
+      if missing:
+          sys.stderr.write('missing: ' + ', '.join(missing) + chr(10))
+          sys.exit(1)
+      sys.exit(0)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,50 @@
+task_id: skill-test-perf-scenario-create
+description: >
+  Smoke test: agent uses the uipath-test skill to set up a fresh performance
+  scenario. Asserts that the agent (a) runs `uip login status --output json`
+  (Critical Rule #1 + #2), (b) discovers projects via
+  `uip tm project list --output json` (Critical Rule #7 — discover before
+  assuming), and (c) runs `uip tm scenario create --project-key <KEY>
+  --name <NAME> --output json`. The skill — not the prompt — must teach
+  the auth-first ordering, the discovery rule, and the `--output json`
+  flag.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:perf-scenario]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Create a new UiPath Test Manager performance scenario for one of my
+  existing projects. Discover what projects I have, pick a sensible one,
+  and create a scenario named "AgentSmoke-Perf".
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rule #1 + #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered Test Manager projects (Critical Rule #7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+list.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a performance scenario with `--project-key` and `--name` and `--output json`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+create\s+.*--project-key\s+\S+.*--name\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
