@@ -1,0 +1,43 @@
+task_id: skill-coded-apps-auth-no-manual-tokens
+description: >
+  Smoke test: agent uses the uipath-coded-apps skill to avoid manual access-token
+  handling and prefer CLI-managed authentication for coded app sync/deploy.
+tags: [uipath-coded-apps, smoke, "lifecycle:validate"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+  A teammate suggested we source ~/.uipath/.auth, export UIPATH_ACCESS_TOKEN,
+  or pass a JWT to uip codedapp push/publish so a coded app can sync and
+  deploy. I need a safe command plan that avoids manual token handling.
+
+  Do NOT run uip commands because this environment is not authenticated. Write
+  report.json at the sandbox root with this structure:
+  {
+    "auth_strategy": "Use uip login and supported uip codedapp commands; the CLI manages authentication.",
+    "manual_token_policy": "Do not read, print, source, set, or pass cached access tokens.",
+    "commands": ["<safe commands to run later>"]
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json uses CLI-managed auth and rejects manual token handling"
+    path: "report.json"
+    includes:
+      - "uip login"
+      - "uip codedapp"
+      - "Do not read"
+      - "source"
+      - "cached access tokens"
+    weight: 2.0
+    pass_threshold: 1.0
