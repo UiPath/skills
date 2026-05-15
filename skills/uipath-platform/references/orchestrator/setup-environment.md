@@ -117,6 +117,8 @@ Role types:
 - **Tenant** — Applies across the entire tenant. Assigned via `uip or users assign-roles`.
 - **Folder** — Applies only within specific folders. Assigned via `uip or users assign` or `uip or roles assign`.
 
+> **⚠️ All three role-assign commands are destructive.** `users assign-roles`, `users assign`, and `roles assign` each **replace** the user's role list at their respective scope (tenant or per-folder). Roles not in `--role-keys` are removed silently. Always read the current roles first with `uip or roles user-roles list <user-key> --output json` and pass the full desired union. For purely additive *user* membership on a single role, use `uip or roles users <role-key> --add-users <user-key>` — that command does NOT replace the role's other assignees.
+
 #### Inspect / Audit / Delete Roles
 
 ```bash
@@ -216,6 +218,8 @@ Key flags on `users edit`:
 
 `DirectoryRobot` principals don't need `--unattended-username` / `--unattended-password` on import — the robot identity already carries its own credentials in IS. Use `users edit --license-type Unattended` on the robot key to set the license profile.
 
+> **`users edit` does NOT expose role assignments.** It only touches tenant-side flags (license, session flags, unattended credentials). To change roles, use `uip or users assign` (folder roles), `uip or users assign-roles` (tenant roles), or `uip or roles users <role-key> --add-users/--remove-users` (single-role membership). Identity attributes like `--name`, `--surname`, `--email` on directory principals are sourced from Identity Service via sync — editing them via `users edit` only updates the Orchestrator-side cached copy and may be overwritten on the next IS sync.
+
 ### Step 5: Assign Users to Folders
 
 Assign the user to a folder, optionally with folder-level roles. This is what grants them access to the folder's resources.
@@ -232,6 +236,8 @@ Key details:
 - `--role-keys` is optional. Users can be assigned to a folder without roles (the API's `RoleId` is nullable). They will have access to the folder but no specific permissions until roles are added.
 - Use `--folder-path` (e.g., `"Finance"` or `"Finance/Invoicing"`) or `--folder-key` (GUID).
 - To verify: `uip or users list-in-folder --folder-path "Finance" --output json`.
+
+> **⚠️ Destructive — REPLACE semantics.** `users assign` (and the equivalent `roles assign`) **replaces** the user's folder-level role list in the target folder with whatever you pass in `--role-keys`. Roles not in the payload are removed silently. To **add** a role without dropping others, first read the existing folder roles with `uip or roles user-roles list <user-key> --output json`, then pass the full desired union to `--role-keys`. The same applies to `users assign-roles` for tenant-level roles.
 
 ### Step 6: Create Machines
 
