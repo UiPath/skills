@@ -106,14 +106,26 @@ For each trigger in `trigger-spec-cache.json`:
 
 | Spec output state | SDD reference | `triggerNode.outputs[]` write | `root.inputs[]` | `root.outputs[]` | `root.inputOutputs[]` |
 |---|---|---|---|---|---|
-| Not referenced by SDD | (no row) | `{name: <field>, var: <field>, id: <field>, source: "=response.<field>", elementId: <triggerId>}` (plain-name auto-emit per Q5/Alt 1) | — | — | Optional companion — only needed if downstream code targets `=vars.<field>` AND the trigger output alone is insufficient. Default: skip (trigger output with `id` self-declares). |
-| Referenced as `Category=Variable` | row's Name → spec output | `{name: <sdd-name>, var: <sdd-name>, id: <sdd-name>, source: "=response.<sourceField-path>", elementId: <triggerId>}` (Pattern C with id present for self-resolution) | — | — | `{id: <sdd-name>, name: <sdd-name>, type: <type>, elementId: "root"}` — companion with elementId="root" routes variable to Case Variables panel (per audit Finding #6). |
+| Not referenced by SDD | (no row) | `{name: <spec.name>, var: <spec.name>, id: <spec.name>, source: <spec.source>, elementId: <triggerId>}` — copy the spec's own `source` value verbatim (e.g., `"=response"`, `"=Error"`); do NOT synthesize a path. Plain-name auto-emit per Q5/Alt 1. | — | — | Optional companion — only needed if downstream code targets `=vars.<field>` AND the trigger output alone is insufficient. Default: skip (trigger output with `id` self-declares). |
+| Referenced as `Category=Variable` | row's `sourceField` path | `{name: <sdd-name>, var: <sdd-name>, id: <sdd-name>, source: "=<row.sourceField>", elementId: <triggerId>}` (Pattern C with id present for self-resolution; `source` is `=` prepended to the raw `sourceField` value from tasks.md) | — | — | `{id: <sdd-name>, name: <sdd-name>, type: <type>, elementId: "root"}` — companion with elementId="root" routes variable to Case Variables panel (per audit Finding #6). |
 | Referenced as `Category=In` | (only valid for manual/timer triggers — see § In-arg below) | **REJECT for event triggers** (audit Finding #6 misclassification — recategorize to Variable) | — | — | — |
 | Referenced as `Category=Out` | — | **REJECT** (direction mismatch — Out-args flow case→caller) | — | — | — |
 
 **Dedup rule:** if multiple SDD rows reference the same trigger spec output (rare, but possible across multi-trigger cases), each writes its own `triggerNode.outputs[]` entry but they share one `root.inputOutputs[]` declaration (first-write-wins on type / default; Phase 2 validator rejects conflicts).
 
-**Variant A semantics (per Q6a):** when an SDD row's Name matches the camelCased schema field name, the SDD-named entry **replaces** the would-be plain-name auto-emit. Do not write both.
+**Variant A semantics (per Q6a):** matching is by **top-level spec output name only** (i.e., the `name` field of an entry in `caseShape.outputs[]` — `response`, `Error`, etc.). When an SDD row's Name equals the top-level spec name, the SDD-named entry **replaces** the would-be plain-name auto-emit for that exact entry; do not write both.
+
+**Sub-field references DO NOT trigger replacement.** When SDD references a sub-field path (e.g., `sourceField: response.Title`), the Pattern C entry is in ADDITION to — not in place of — the top-level `response` auto-emit. Worked example for SDD `calendarTitle ← response.Title` on a trigger whose spec returns two top-level outputs `response` and `Error`:
+
+```jsonc
+triggerNode.outputs[]: [
+  { name: "Title",    var: "calendarTitle", id: "calendarTitle", source: "=response.Title", elementId: "<triggerId>" },  // Pattern C — SDD
+  { name: "response", var: "response",      id: "response",      source: "=response",       elementId: "<triggerId>" },  // auto-emit — coexists, NOT replaced
+  { name: "Error",    var: "Error",         id: "Error",         source: "=Error",          elementId: "<triggerId>" }   // auto-emit — unreferenced
+]
+```
+
+Three entries total: one Pattern C wire + two auto-emit entries for the un-replaced top-level outputs.
 
 ### Loop B — SDD-only rows (rows with no trigger source)
 
