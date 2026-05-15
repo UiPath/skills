@@ -1,0 +1,85 @@
+task_id: skill-deeprag-lowcode-e2e-enable-tool
+description: >
+  E2E: scaffold a low-code agent that enables the built-in deep-rag
+  tool. Verifies that the agent runs the canonical CLI flow (uip
+  solution new, uip agent init, uip solution project add, uip agent
+  validate) and that resource.json uses the exact built-in shape
+  (type=internal, referenceKey=null, properties.toolType=deep-rag).
+tags: [uipath-deeprag-lowcode, e2e, lifecycle:generate]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "DeepSol" containing a low-code agent
+  "DeepAgent" that synthesizes answers across multiple PDF or TXT
+  attachments uploaded in chat. Enable the built-in "deep-rag" tool so
+  the agent can run an iterative research-and-synthesis pass over the
+  attachments.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked the project to the solution with uip solution project add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "DeepAgent/agent.json was created"
+    path: "DeepSol/DeepAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "deep-rag built-in tool resource shape (type=internal, referenceKey=null, toolType=deep-rag)"
+    command: "python3 $TASK_DIR/check_deep_rag_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

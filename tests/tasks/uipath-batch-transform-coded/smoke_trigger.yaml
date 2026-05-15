@@ -1,0 +1,26 @@
+task_id: skill-batch-transform-coded-smoke-trigger
+description: >
+  Smoke test: agent should trigger the uipath-batch-transform-coded skill
+  when the user asks to add LLM-filled columns to a CSV from a Python
+  coded agent (LangGraph). Verifies the skill fires for the
+  Python-coded-agent + CSV signal pair.
+tags: [uipath-batch-transform-coded, smoke, lifecycle:discover]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a coded agent project with `pyproject.toml` (deps: uipath,
+  uipath-langchain) and `langgraph.json`. I want it to read a CSV of
+  ~1000 vendor rows and add two LLM-filled columns: a 4-digit MCC code
+  and a confidence label. Tell me which skill applies and the high-level
+  pipeline shape. Do NOT scaffold any files.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-batch-transform-coded skill"
+    expected_skill: "uipath-batch-transform-coded"
+    expected: "yes"
+    weight: 3.0
+    pass_threshold: 1.0
