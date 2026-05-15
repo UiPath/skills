@@ -48,7 +48,7 @@ For each target task file:
 
 ## Phase 3 — Apply the Rubric
 
-Evaluate the task against six axes. Each axis can produce zero or more issues, each tagged with a severity. When raising an issue, refer to the axis by its human-readable title (e.g. "Self-report anti-pattern", "Prompt over-specification") — do not use letter labels.
+Evaluate the task against seven axes. Each axis can produce zero or more issues, each tagged with a severity. When raising an issue, refer to the axis by its human-readable title (e.g. "Self-report anti-pattern", "Prompt over-specification") — do not use letter labels.
 
 ### Self-report anti-pattern
 
@@ -157,6 +157,18 @@ Severity:
 - **Medium** — `integration` tier with no `flow debug`. Many integration tasks legitimately run without a live tenant in the sandbox; the gap is real but the constraint is well-understood.
 
 **Description-rationale carve-out.** If the task's `description` field explicitly documents the rationale for skipping `flow debug` (e.g. "validate-only because no live tenant", "skipping debug due to trigger-fired execution unreliability"), downgrade the severity by one level (High → Medium, Medium → Low) and quote the rationale in the issue. Authors who document deliberate trade-offs should not be punished as harshly as silent omissions.
+
+### CLI verb reachability
+
+Run `python3 scripts/check-cli-verbs.py --json <task-path>` and merge its findings into this task's issue list. The script verifies that every `command_executed` criterion's `command_pattern` actually corresponds to a real `uip` verb listed in `assets/uip-catalog-snapshot.json`, with retired-verb suggestions sourced from `.claude/rules/cli-renames.md`.
+
+Severity passthrough from the script's findings:
+
+- **High** — pattern's verb path does not exist in the catalog. The criterion can never match a passing run; the task scores zero on the check. Fix: replace the verb with one that exists in the catalog, or delete the criterion if the test no longer requires that command.
+- **Medium** — pattern matches only retired verbs. Fix: update to the canonical verb listed in `.claude/rules/cli-renames.md`, or use an alternation (`(retired|canonical)`) if both must be accepted during a deprecation window.
+- **Info** — pattern is too dynamic to verify (contains `.*`, a character class, or an unbounded quantifier in a position that prevents literal enumeration). Not reported in the task's verdict — purely advisory.
+
+The catalog is regenerated nightly by `.github/workflows/refresh-uip-catalog.yml`. If the script cannot find the catalog (`assets/uip-catalog-snapshot.json` missing), skip this axis entirely and emit an Info finding telling the user to run `python3 scripts/build-uip-catalog.py` locally.
 
 ### Redundant or pinned uip CLI in sandbox
 

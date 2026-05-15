@@ -1,0 +1,89 @@
+name: Refresh uip CLI catalog
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # daily at 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for existing open refresh PR
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list \
+            --state open \
+            --json number,url,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("auto/refresh-uip-catalog"))] | .[0] // empty')
+
+          if [ -n "$EXISTING" ]; then
+            URL=$(echo "$EXISTING" | jq -r '.url')
+            NUMBER=$(echo "$EXISTING" | jq -r '.number')
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Existing refresh PR still open: #$NUMBER — $URL"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.exists != 'true'
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.exists != 'true'
+        with:
+          python-version: '3.13'
+
+      - name: Install uip CLI
+        if: steps.check.outputs.exists != 'true'
+        run: npm install -g @uipath/cli@latest
+
+      - name: Rebuild catalog
+        if: steps.check.outputs.exists != 'true'
+        run: python3 scripts/build-uip-catalog.py --install-tools
+
+      - name: Check for catalog diff
+        if: steps.check.outputs.exists != 'true'
+        id: diff
+        run: |
+          if git diff --quiet -- assets/uip-catalog-snapshot.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Catalog already current."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- assets/uip-catalog-snapshot.json
+          fi
+
+      - name: Open PR with updated catalog
+        if: steps.check.outputs.exists != 'true' && steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CLI_VERSION=$(jq -r .cli_version assets/uip-catalog-snapshot.json)
+          VERB_COUNT=$(jq '.verbs | length' assets/uip-catalog-snapshot.json)
+          BRANCH="auto/refresh-uip-catalog-${CLI_VERSION//[^a-zA-Z0-9._-]/_}-$(date -u +%Y%m%d)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add assets/uip-catalog-snapshot.json
+          git commit -m "chore: refresh uip CLI catalog ($CLI_VERSION, $VERB_COUNT verbs)"
+          git push -u origin "$BRANCH"
+
+          gh pr create \
+            --title "chore: refresh uip CLI catalog ($CLI_VERSION)" \
+            --body "Automated refresh against \`@uipath/cli@$CLI_VERSION\`. The catalog has $VERB_COUNT reachable verbs after installing all available plugins.
+
+          Review the diff for **removed** verbs — any deletion implies one or more task YAMLs need updating. \`/lint-task\` will surface High findings for unreachable patterns once this merges." \
+            --label "automated"
