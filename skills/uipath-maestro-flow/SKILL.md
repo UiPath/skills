@@ -44,6 +44,8 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, di
 
 ## Capability router
 
+> **For frequent named tasks** (add a script node, validate, diagnose a failure, run an eval, etc.) jump straight to [references/common-tasks.md](references/common-tasks.md) — direct file routing for the most-common journeys. The table below is for tradeoff decisions and exploratory work.
+
 | I want to...                                                 | Read                                                                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | Create a new flow or edit an existing one                    | [references/author/CAPABILITY.md](references/author/CAPABILITY.md)                               |
