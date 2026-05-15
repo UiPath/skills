@@ -40,17 +40,32 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed test sets scoped to a project (`--project-key` + `--output json`)"
+    description: "Agent listed test sets scoped to a project (`testsets list --project-key` + `--output json`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testset\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testset\s+list\s+.*--output\s+json.*--project-key'
+    command_pattern: 'uip\s+tm\s+testsets\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets\s+list\s+.*--output\s+json.*--project-key'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed test cases in a test set (`--test-set-key` + `--output json`)"
+    description: "Agent listed test cases in a test set (`testsets list-testcases --test-set-key` + `--output json`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testset\s+list-testcases\s+.*--test-set-key.*--output\s+json|uip\s+tm\s+testset\s+list-testcases\s+.*--output\s+json.*--test-set-key'
+    command_pattern: 'uip\s+tm\s+testsets\s+list-testcases\s+.*--test-set-key.*--output\s+json|uip\s+tm\s+testsets\s+list-testcases\s+.*--output\s+json.*--test-set-key'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project list returns a non-empty Data array (validates the tenant actually has projects, not just that the agent ran the command)"
+    command: |
+      uip tm project list --output json | python3 -c "
+      import json, sys
+      d = json.load(sys.stdin)
+      assert d.get('Result') == 'Success', f'expected Success, got {d.get(\"Result\")}'
+      data = d.get('Data', [])
+      assert isinstance(data, list) and len(data) > 0, f'expected non-empty list, got {data!r}'
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
