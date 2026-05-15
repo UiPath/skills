@@ -115,3 +115,11 @@ success_criteria:
       - "LangGraph"
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-generation-guide.md Phase 3 Step 3a)"
+    path: "customer-support-agent-sdd.md"
+    includes:
+      - "Decisions Made"
+    weight: 1.0
+    pass_threshold: 1.0

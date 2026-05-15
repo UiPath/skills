@@ -185,6 +185,32 @@ def check_planner_handoff(content: str) -> list[str]:
     return failures
 
 
+def check_decisions_made_when_autonomous(content: str) -> list[str]:
+    """If the Planner Handoff declares Execution autonomy: autonomous, the SDD
+    must carry a ## Decisions Made block (sdd-generation-guide.md Phase 3
+    Step 3a). The block makes the four highest-leverage architectural picks
+    scannable in the SDD's first screenful — a reviewer must be able to spot
+    a wrong autonomous call without reading the whole document.
+    """
+    autonomy_match = re.search(
+        r"\*\*Execution autonomy\*\*\s*\|\s*([a-zA-Z]+)",
+        content,
+    )
+    if not autonomy_match:
+        return []  # planner-handoff check above already covers the missing field
+
+    if autonomy_match.group(1).lower() != "autonomous":
+        return []  # interactive mode legitimately omits the block
+
+    if not re.search(r"^#{1,3}\s+Decisions Made", content, re.MULTILINE):
+        return [
+            "Autonomous-mode SDD missing `## Decisions Made` block "
+            "(sdd-generation-guide.md Phase 3 Step 3a)"
+        ]
+
+    return []
+
+
 def check_content_markers(content: str) -> list[str]:
     """Verify key PDD data carried through to SDD."""
     failures = []
@@ -227,6 +253,7 @@ def main():
     all_failures.extend(check_line_count(content))
     all_failures.extend(check_table_minimums(content))
     all_failures.extend(check_planner_handoff(content))
+    all_failures.extend(check_decisions_made_when_autonomous(content))
     all_failures.extend(check_content_markers(content))
     all_failures.extend(check_no_unfilled_placeholders(content))
     all_failures.extend(check_mermaid_diagram(content))
