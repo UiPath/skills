@@ -71,7 +71,7 @@ Based on the project list, pick the matching pattern from [multi-skill-patterns-
 | RPA Master Project | Pattern 1 per sub-project, integrated via shared queues; cross-project deploy via `uipath-platform` |
 | Flow with §7 Integrated Components that reference unbuilt resources | Pattern 2 |
 | Flow whose §7 integrated components are pre-existing | Pattern 3 |
-| Agent with RPA tools in §3 Tools | Pattern 6 |
+| Agent with RPA tools in §3 Tools | Pattern 7 |
 | Coded App | Coded App build + `uipath-platform` deploy + testing |
 | API Workflow | API Workflow build + `uipath-platform` publish + testing |
 | Solution scope | Compose patterns per project, sequenced by cross-product integration order (dependencies before dependents) |

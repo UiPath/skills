@@ -23,6 +23,7 @@ Both share the same task row schema. The difference is the prelude — `<feature
 **App type:** <web / desktop / citrix / N/A>
 **App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
 **UI targeting:** <agent-builds-you-review / user-indicates / N/A>
+**Solution scope:** <SW | local>  <!-- Flow plans only; omit this line entirely for non-Flow plans -->
 
 ## Understanding
 
@@ -34,6 +35,19 @@ or ambiguities resolved during elicitation.>
 - Why this project type
 - Why specific skills are loaded in this order
 - Trade-offs and risks
+
+## Stop conditions
+
+<Only populate when `Execution autonomy` is `autonomous`. List the concrete hard blockers that MUST interrupt execution — everything else is handled without asking the user. Examples:
+- Authentication fails and cannot be recovered without user credentials
+- The target application is unresponsive after a reasonable retry window
+- A UI element cannot be captured reliably after 3 selector-improvement attempts
+- The plan references a file, package, or resource that does not exist and cannot be created
+- A pre-existing record would block idempotent execution and cleanup is ambiguous
+
+In `interactive` mode this section is optional — the user is available to resolve ambiguity as it arises.
+
+"Scope feels large", "many tool calls used", "natural pause point", and "partial result looks usable" are NOT stop conditions. If it is not in this list, the executor continues.>
 ```
 
 ### PDD-driven lane (`<process>-tasks.md`)
@@ -210,3 +224,5 @@ Both files are valid `EnterPlanMode` payloads.
 7. **Anti-hallucination rule** appended to every Skill prompt.
 8. **Skill order is correct** — RPA before platform deploy; integrated components before consumers; testing before deploy.
 9. **No specialist-internal flow leakage.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (target-configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's own docs own those details.
+10. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode. Populate with hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources); never leave a generic placeholder.
+11. **Solution scope field is Flow-only.** Include `**Solution scope:** <SW | local>` in the plan header only when the plan loads `uipath-maestro-flow`. Omit the line entirely for RPA / AI Agent / Application plans — no other specialist reads it.
