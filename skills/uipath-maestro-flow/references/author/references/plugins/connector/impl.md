@@ -4,6 +4,17 @@ How to configure connector activity nodes: connection binding, enriched metadata
 
 For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
 
+## Table of contents
+
+- [How Connector Nodes Differ from OOTB](#how-connector-nodes-differ-from-ootb)
+- [Generic vs Concrete Activities](#generic-vs-concrete-activities)
+- [Critical: Connector Definition Must Include `form`](#critical-connector-definition-must-include-form)
+- [No-Live-Tenant / Planned Configuration Mode](#no-live-tenant--planned-configuration-mode)
+- [Configuration Workflow](#configuration-workflow)
+- [IS CLI Commands](#is-cli-commands)
+- [Bindings — top-level `.flow` `bindings[]`](#bindings--top-level-flow-bindings)
+- [Debug](#debug)
+
 ## How Connector Nodes Differ from OOTB
 
 1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow's top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
