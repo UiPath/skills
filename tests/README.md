@@ -553,11 +553,25 @@ Defined in [`.claude/commands/generate-task.md`](../.claude/commands/generate-ta
 
 ### 3. `/lint-task <path>` — lint before committing
 
-Lints the generated YAML against repo conventions (sandbox rules, tag taxonomy, criterion shape) before it lands in a PR. Run this before step 4.
+Lints the generated YAML against repo conventions (sandbox rules, tag taxonomy, criterion shape, CLI verb reachability) before it lands in a PR. Run this before step 4.
+
+### 3a. `/audit-verbs` — full CLI-verb sweep (conditional)
+
+When step 3 surfaces **CLI verb reachability** findings, run `/audit-verbs` to see whether the same stale verb appears in other tasks or in skill docs. Writes `tests/reports/cli-verb-audit.md` and `tests/reports/skill-verb-audit.md`, both regenerated from the `uip` catalog at `assets/uip-catalog-snapshot.json`. Skip this step when `/lint-task` reports clean.
+
+Defined in [`.claude/commands/audit-verbs.md`](../.claude/commands/audit-verbs.md).
 
 ### 4. Run with `coder-eval` and attach a passing-run claim
 
 Run the task end-to-end (see [Running Tests](#running-tests)) and add a passing-run claim to the PR description. The lint workflow flags missing claims as High severity.
+
+### Tooling self-tests
+
+Regression tests for the audit pipeline live under `tests/scripts/`. Run them when you modify any of `scripts/build-uip-catalog.py`, `scripts/check-cli-verbs.py`, or `scripts/check-skill-verbs.py`:
+
+```bash
+pytest tests/scripts/
+```
 
 ## Further Reading
 
