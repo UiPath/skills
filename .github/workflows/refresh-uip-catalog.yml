@@ -69,9 +69,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CLI_VERSION=$(jq -r .cli_version assets/uip-catalog-snapshot.json)
+          RAW_VERSION=$(jq -r .cli_version assets/uip-catalog-snapshot.json | tr -d '\r\n')
+          # Sanitize before interpolating into title/body/branch — defense
+          # in depth against unexpected characters in `uip --version` output.
+          CLI_VERSION="${RAW_VERSION//[^a-zA-Z0-9._-]/_}"
           VERB_COUNT=$(jq '.verbs | length' assets/uip-catalog-snapshot.json)
-          BRANCH="auto/refresh-uip-catalog-${CLI_VERSION//[^a-zA-Z0-9._-]/_}-$(date -u +%Y%m%d)"
+          BRANCH="auto/refresh-uip-catalog-${CLI_VERSION}-$(date -u +%Y%m%d)"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

@@ -28,14 +28,25 @@ ARG_SIG = re.compile(r"\s*[<\[].*")
 
 _DECODER = json.JSONDecoder()
 
+# Top-level groups whose JSON help could not be enumerated. Populated by
+# collect_top_level (broken-tool detection) and collect_group (per-group
+# walk errors). Read by the consumer scripts via the snapshot's
+# `unwalkable_groups` field — references under these prefixes are
+# classified as Uncertain rather than Stale.
+UNWALKABLE = set()
+
 
 def run_uip(args):
-    proc = subprocess.run(
-        ["uip", *args, "--output", "json"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            ["uip", *args, "--output", "json"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        sys.exit("uip CLI not found on PATH. "
+                 "Install with: npm install -g @uipath/cli")
     if proc.returncode != 0 or not proc.stdout.strip():
         return None
     text = proc.stdout.lstrip()
@@ -126,9 +137,6 @@ def collect_top_level():
     return verbs, groups
 
 
-UNWALKABLE = set()
-
-
 def collect_group(group_path):
     data = run_uip([*group_path.split(), "--help"])
     if data is None or data.get("Result") == "Failure":
@@ -168,9 +176,12 @@ def expand(verbs, groups, workers=8):
 
 
 def get_cli_version():
-    proc = subprocess.run(
-        ["uip", "--version"], capture_output=True, text=True, check=False
-    )
+    try:
+        proc = subprocess.run(
+            ["uip", "--version"], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        return "unknown"
     return proc.stdout.strip() or "unknown"
 
 

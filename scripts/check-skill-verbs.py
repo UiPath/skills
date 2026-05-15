@@ -118,7 +118,8 @@ def scan_file(path, catalog, unwalkable):
     findings = []
     try:
         text = path.read_text()
-    except (UnicodeDecodeError, OSError):
+    except (UnicodeDecodeError, OSError) as exc:
+        print(f"warning: cannot read {path}: {exc}", file=sys.stderr)
         return findings
     for lineno, line in enumerate(text.splitlines(), start=1):
         for match in UIP_LINE.finditer(line):
@@ -136,8 +137,7 @@ def scan_file(path, catalog, unwalkable):
             # we cannot verify the rest of the path — call it Uncertain.
             severity = "Stale"
             for n in range(len(tokens), 0, -1):
-                prefix = " ".join(tokens[:n])
-                if prefix in unwalkable or tokens[0] in unwalkable:
+                if " ".join(tokens[:n]) in unwalkable:
                     severity = "Uncertain"
                     break
             findings.append({

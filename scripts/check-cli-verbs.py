@@ -86,6 +86,26 @@ def load_renames():
     return renames
 
 
+def _trim_to_word_boundary(paths):
+    """Trim each path to the last whitespace if it ends mid-word.
+
+    Called when the walker bails on a partial match — we must not return a
+    literal that ends inside a token, because the downstream extractor would
+    treat the truncated chunk as a complete verb (e.g. `uip\\s+solution\\w+`
+    accumulates `"uip solution"` and would yield verb `"solution"` even
+    though the regex never matches that literal alone).
+    """
+    out = []
+    for p in paths:
+        if p and not p[-1].isspace():
+            idx = p.rfind(" ")
+            if idx == -1:
+                continue
+            p = p[:idx]
+        out.append(p)
+    return out
+
+
 def enumerate_paths(parsed, allow_partial=True):
     """
     Walk a parsed regex AST and return a list of literal strings that the
@@ -93,8 +113,10 @@ def enumerate_paths(parsed, allow_partial=True):
 
     With ``allow_partial=True`` (default), the walker stops at the first
     dynamic element (`.*`, character class, unbounded quantifier) and returns
-    whatever literal prefix it has accumulated. This lets us still verify the
-    verb portion of patterns like `uip\\s+tm\\s+execution\\s+list\\s+.*--flag`.
+    whatever literal prefix it has accumulated, trimmed back to the last
+    whitespace so we never return a mid-token literal. This lets us still
+    verify the verb portion of patterns like
+    `uip\\s+tm\\s+execution\\s+list\\s+.*--flag`.
 
     With ``allow_partial=False``, any dynamic element causes the walker to
     return ``None`` — useful for callers that need a complete match.
@@ -104,12 +126,12 @@ def enumerate_paths(parsed, allow_partial=True):
         if op == sre_parse.LITERAL:
             paths = [p + chr(args) for p in paths]
         elif op == sre_parse.NOT_LITERAL:
-            return paths if allow_partial else None
+            return _trim_to_word_boundary(paths) if allow_partial else None
         elif op == sre_parse.SUBPATTERN:
             sub = args[3]
             sub_paths = enumerate_paths(sub, allow_partial=False)
             if sub_paths is None:
-                return paths if allow_partial else None
+                return _trim_to_word_boundary(paths) if allow_partial else None
             paths = [p + s for p in paths for s in sub_paths]
         elif op == sre_parse.BRANCH:
             branches = args[1]
@@ -122,7 +144,7 @@ def enumerate_paths(parsed, allow_partial=True):
                     break
                 branch_paths.extend(b_paths)
             if bail:
-                return paths if allow_partial else None
+                return _trim_to_word_boundary(paths) if allow_partial else None
             paths = [p + b for p in paths for b in branch_paths]
         elif op in (sre_parse.MAX_REPEAT, sre_parse.MIN_REPEAT,
                     sre_parse.POSSESSIVE_REPEAT):
@@ -140,7 +162,7 @@ def enumerate_paths(parsed, allow_partial=True):
                            for t, a in inner):
                         paths = [p + " " for p in paths]
                         continue
-                return paths if allow_partial else None
+                return _trim_to_word_boundary(paths) if allow_partial else None
         elif op == sre_parse.AT:
             continue
         elif op == sre_parse.IN:
@@ -149,9 +171,9 @@ def enumerate_paths(parsed, allow_partial=True):
                    for t, a in inner):
                 paths = [p + " " for p in paths]
             else:
-                return paths if allow_partial else None
+                return _trim_to_word_boundary(paths) if allow_partial else None
         else:
-            return paths if allow_partial else None
+            return _trim_to_word_boundary(paths) if allow_partial else None
     return paths
 
 
@@ -181,6 +203,9 @@ def extract_verb_paths(pattern):
         verb = " ".join(tokens[1:])
         if verb:
             verb_paths.append(verb)
+    # Dedup while preserving order — alternations like `(uip|$UIP)` produce
+    # duplicate downstream paths that would otherwise inflate report counts.
+    verb_paths = list(dict.fromkeys(verb_paths))
     return verb_paths or None
 
 
