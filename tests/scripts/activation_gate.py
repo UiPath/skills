@@ -107,16 +107,21 @@ def main() -> int:
             ],
             cwd=repo_root, check=False,
         )
-        if result.returncode != 0:
-            print(
-                f"ERROR: coder-eval exited with code {result.returncode}",
-                file=sys.stderr,
-            )
-            return 2
 
+        # coder-eval returns non-zero whenever any prompt fails its criterion
+        # (a wrong-skill activation, a MAX_TURNS_EXHAUSTED, etc.). That is
+        # exactly the signal the recall threshold is designed to tolerate —
+        # the gate must compute recall from suite.json and compare against
+        # baseline-DROP_PP rather than treating any task-level failure as a
+        # gate failure. Only fall back to "infra failure" exit when no
+        # suite.json was produced (coder-eval crashed before writing it).
         suite_json = run_dir / "default" / f"skill-activation-gate-{skill}" / "suite.json"
         if not suite_json.is_file():
-            print(f"ERROR: {suite_json} missing", file=sys.stderr)
+            print(
+                f"ERROR: coder-eval exited with code {result.returncode} "
+                f"and {suite_json} was not produced",
+                file=sys.stderr,
+            )
             return 2
 
         data = json.loads(suite_json.read_text(encoding="utf-8"))
