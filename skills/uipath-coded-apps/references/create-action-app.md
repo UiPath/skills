@@ -33,7 +33,7 @@ From the user's **request**, determine whether the app needs to call UiPath plat
 
 If services are needed: read [oauth-scopes.md](oauth-scopes.md) to determine the required scopes, then proceed to Q3a.
 
-If no platform services are apparent from the request: skip to Q4. No SDK setup needed beyond `@uipath/uipath-ts-coded-action-apps`.
+If no platform services are apparent from the request: skip to Q4. No SDK setup needed beyond `@uipath/coded-action-app`.
 
 After deducing scopes, present them to the user:
 > "Based on your request, the required OAuth scopes are: `<scopes>`. Reply ok to use these, or tell me what to change."
@@ -111,7 +111,7 @@ After collecting all answers, scaffold the project. Use the file templates in [a
 ```bash
 npm create vite@latest <app-name> -- --template react-ts
 cd <app-name>
-npm install @uipath/uipath-ts-coded-action-apps --@uipath:registry=https://registry.npmjs.org
+npm install @uipath/coded-action-app --@uipath:registry=https://registry.npmjs.org
 npm install
 ```
 
@@ -178,7 +178,7 @@ Write to the project root. All four sections are always present — use `"proper
 
 Without SDK services:
 ```typescript
-import { CodedActionAppsService } from '@uipath/uipath-ts-coded-action-apps';
+import { CodedActionAppsService } from '@uipath/coded-action-app';
 
 export const codedActionAppsService = new CodedActionAppsService();
 ```
@@ -187,7 +187,7 @@ With SDK services:
 ```typescript
 import { UiPath } from '@uipath/uipath-typescript/core';
 import { Entities } from '@uipath/uipath-typescript/entities';  // example
-import { CodedActionAppsService } from '@uipath/uipath-ts-coded-action-apps';
+import { CodedActionAppsService } from '@uipath/coded-action-app';
 
 const sdk = new UiPath();
 export const codedActionAppsService = new CodedActionAppsService();
@@ -228,7 +228,7 @@ Generate based on the collected schema. Key patterns:
 
 ```typescript
 import { useState, useEffect, ChangeEvent } from 'react';
-import { Theme } from '@uipath/uipath-ts-coded-action-apps';
+import { Theme } from '@uipath/coded-action-app';
 import { codedActionAppsService } from '../uipath';
 import './Form.css';
 
