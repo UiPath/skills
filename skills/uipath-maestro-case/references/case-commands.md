@@ -10,19 +10,19 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
-| `solution new`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution init`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
 
 ---
 
-## uip solution new
+## uip solution init
 
 Create a new solution directory + `.uipx` file.
 
 ```bash
-uip solution new <SolutionName>
+uip solution init <SolutionName>
 ```
 
 | Flag | Description |

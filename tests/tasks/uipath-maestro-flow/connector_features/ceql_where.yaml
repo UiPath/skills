@@ -7,7 +7,7 @@ description: >
   uipath-platform skill. The flow must reference the registered connector
   key (`uipath-microsoft-azureactivedirectory`), use Decision + Terminate
   for routing, and pass `uip maestro flow validate`.
-tags: [uipath-maestro-flow, smoke, connector, ceql, filter]
+tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe]
 
 agent:
   type: claude-code

@@ -22,8 +22,10 @@
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma
+/skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
+/tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
@@ -90,9 +92,9 @@
 /skills/uipath-tasks/ @UiPath/ActionCenterDev
 /tests/tasks/uipath-tasks/ @UiPath/ActionCenterDev
 
-# Admin skill (Identity Server management)
-/skills/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge
-/tests/tasks/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge
+# Admin skill (Identity Server + Audit Service management)
+/skills/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge @yadvender-uipath @CalinMPopa @chandhanshanth
+/tests/tasks/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge @yadvender-uipath @CalinMPopa @chandhanshanth
 
 # IXP skill
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath

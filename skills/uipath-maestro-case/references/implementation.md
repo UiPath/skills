@@ -74,7 +74,7 @@ Steps 6 through 9.5 build structural skeleton: solution, project, root case, glo
 
 The case file must live inside a solution + project. The case plugin owns project scaffolding **and** the root caseplan write. Solution setup and project registration are the only CLI calls:
 
-1. **Step 6.0 (CLI)** — `uip solution new <SolutionName>` — creates the solution directory + `.uipx`.
+1. **Step 6.0 (CLI)** — `uip solution init <SolutionName>` — creates the solution directory + `.uipx`.
 2. **T01 (plugin)** — execute [`plugins/case/impl-json.md`](plugins/case/impl-json.md) in full:
    - § Scaffold writes 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly into `<SolutionDir>/<ProjectName>/`.
    - § Write caseplan.json writes the root skeleton (`root` + empty `nodes: []` + empty `edges: []`).

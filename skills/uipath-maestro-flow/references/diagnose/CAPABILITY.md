@@ -13,7 +13,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 - Inspect runtime variable state at the time of failure
 - Map a faulting element ID back to a node in the `.flow` file
 - Stream verbose traces for execution timeline
-- Recognize known failure modes (MST-9107 missing `=js:`, MST-9061 tidy skipped, etc.)
+- Recognize known failure modes (MST-9107 missing `=js:`, MST-9061 format skipped, etc.)
 
 ## Critical rules
 

@@ -1,0 +1,47 @@
+task_id: skill-admin-audit-sources-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to list audit
+  event sources at both org and tenant scopes. Tests whether the skill
+  teaches the correct CLI namespace (`uip admin audit <scope> sources`,
+  not legacy alternatives), the `--output json` convention, and the
+  scope-discipline rule (org vs tenant basePath).
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:diagnose, audit]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  An admin wants to discover what kinds of audit events are visible at
+  each scope (organization-level and tenant-level) before drilling in.
+  Fetch the source catalog at BOTH scopes.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit org sources` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+sources\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant sources` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

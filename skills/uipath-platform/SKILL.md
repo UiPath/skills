@@ -31,8 +31,9 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 - **Orchestrator core**: folders (`list/get/create/edit/move/delete/runtimes`), processes/releases, jobs (`start/stop/logs/traces/healing-data`), packages (`upload/download/versions`), machines, users / roles / sessions (incl. DirectoryUser/DirectoryGroup/DirectoryRobot/DirectoryExternalApplication), licenses, calendars, settings, audit logs, credential stores, feeds, attachments
 - **Resources (Orchestrator-scoped)**: assets (text/integer/bool/credential), queues + queue items, storage buckets + bucket files (`upload/download/get-download-url/get-upload-url`), libraries (`.nupkg`), webhooks (HMAC signing), triggers (time/queue/api)
 - **Integration Service**: connectors, connections (OAuth flow), activities, IS triggers, agent-workflow reference resolution
-- **Solutions**: `solution new/pack/publish/deploy run/deploy activate/deploy status/deploy uninstall/upload/resource list/refresh/get`, deploy config
+- **Solutions**: `solution init/pack/publish/deploy run/deploy activate/deploy status/deploy uninstall/upload/resource list/refresh/get`, deploy config
 - **Traces**: `uip traces spans get [trace-id]` (LLM/agentic execution observability)
+- **Platform licensing**: tenant license allocations, user/group bundle assignments, consumables reporting (`uip platform tenants licenses`, `users licenses`, `groups rules`, `licenses consumables`)
 - **CI/CD**: pipeline that builds, publishes, and deploys UiPath solutions
 - **CLI tooling itself**: `uip tools list/search/install`, `uip mcp serve`
 
@@ -49,6 +50,27 @@ UIPATH_TENANT_ID=...
 ```
 
 This token can be reused for direct Orchestrator REST API calls when CLI commands don't cover a use case.
+
+## CLI Surface Probe
+
+Before the first `uip solution …` command in a session, probe the `solution` surface to detect pre- vs post-rename CLI:
+
+```bash
+uip solution init --help --output json
+```
+
+- Result `Success` → post-rename CLI (default). Use the commands and flags below as-is.
+- `unknown command` / non-zero exit → pre-rename CLI. Translate via the table below before each call. Re-probe on any later `unknown command` error.
+
+### Pre-rename fallbacks
+
+| Post-rename (default) | Pre-rename equivalent |
+|---|---|
+| `uip solution init <NAME>` | `uip solution new <NAME>` |
+| `uip solution deploy run --parent-folder-path <PATH>` | `uip solution deploy run --folder-path <PATH>` |
+| `uip solution deploy run --parent-folder-key <KEY>` | `uip solution deploy run --folder-key <KEY>` |
+
+All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uninstall`, `upload`, `resource …`, `project add/import`) are unchanged on both surfaces.
 
 ## Quick Start
 
@@ -117,6 +139,10 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
 | **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
 | **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
+| **Allocate licenses to tenants** | [references/licensing/tenant-allocations.md](references/licensing/tenant-allocations.md) |
+| **Assign user/group license bundles** | [references/licensing/user-licenses-allocations.md](references/licensing/user-licenses-allocations.md) |
+| **Report on license consumption** | [references/licensing/consumables-report.md](references/licensing/consumables-report.md) |
+| **Understand licensing concepts** | [references/licensing/licensing.md](references/licensing/licensing.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
@@ -287,6 +313,7 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
 - **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources
+- **[Licensing](references/licensing/licensing.md)** — Tenant allocations, user/group bundles, consumables reporting
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

@@ -108,6 +108,29 @@ uip traces feedback delete <feedback-id> \
   --output json
 ```
 
+## Choosing a span
+
+Omitting `--span-id` resolves to the root span of the trace. When an agent runs inside any orchestrating layer (RPA robot job, Maestro case, parent agent, etc.) the root is the **orchestrator's** span — feedback lands on the wrong span and won't surface in the agent review grid.
+
+**Always pass `--span-id` when the agent runs inside any orchestrating layer.**
+
+**Always target the `agentRun` span.**
+
+### Find the agentRun span ID
+
+```bash
+SPAN_ID=$(uip traces spans get --job-key <JOB_KEY> --output json \
+  | jq -r '.Data[] | select(try (.Attributes | fromjson | .type == "agentRun") catch false) | .Id')
+uip traces feedback create \
+  --trace-id <TRACE_ID> \
+  --span-id "$SPAN_ID" \
+  --positive \
+  --folder-key <FOLDER_KEY> \
+  --output json
+```
+
+> **Directly-invoked agents only.** When the agent is the top-level span (no parent orchestrator), the root span is the agent execution — omitting `--span-id` is safe.
+
 ## Mutual exclusion rules
 
 1. `--positive` / `--negative` — mutually exclusive on all commands

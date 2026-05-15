@@ -10,7 +10,7 @@ How to take a built `.nupkg` from `uip rpa pack` and get it onto Orchestrator or
 | Edit / visualize in Studio Web | **Solution upload** | [uipath-platform](../../uipath-platform/SKILL.md) (solution upload) |
 | Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-platform](../../uipath-platform/references/solution/pack-and-deploy.md) |
 
-This file documents the first row only — the legacy Orchestrator package feed flow that `uip tm testcase link-automation` requires.
+This file documents the first row only — the legacy Orchestrator package feed flow that `uip tm testcases link-automation` requires.
 
 ## Pack → Upload (Orchestrator process flow)
 
@@ -48,7 +48,7 @@ uip or packages upload "<NUPKG_PATH>" --output json
 | `--feed-id <UUID>` | No | Target a non-default feed. Defaults to the tenant feed. |
 | `-t, --tenant <NAME>` | No | Override the authenticated tenant. |
 
-Output JSON includes the package `Id` (the package name Orchestrator stores) and `Version`. Hold on to the `Id` — it is the `--package-name` value that `uip tm testcase link-automation` and `uip or processes create` need.
+Output JSON includes the package `Id` (the package name Orchestrator stores) and `Version`. Hold on to the `Id` — it is the `--package-name` value that `uip tm testcases link-automation` and `uip or processes create` need.
 
 > **There is no `uip or packages publish` or `uip rpa publish`.** Agents that try those names get "unknown command". Pack writes a file; upload pushes that file. Two commands, two domains (`rpa`, `or`).
 
