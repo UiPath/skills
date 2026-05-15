@@ -25,9 +25,7 @@ What to look for:
 - Whether the solution was recently imported from another environment
 
 ## Investigation
-
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
-
 
 1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
 2. Verify the folder exists: `uip or folders list --output json` — search by `Key`
