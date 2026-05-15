@@ -50,6 +50,10 @@ Key options:
 - `--parent <key-or-path>` -- Nest inside an existing folder (GUID key or path like `"Shared"`).
 - `--description <text>` -- Human-readable description.
 - `--permission-model <model>` -- `FineGrained` (default, per-folder RBAC) or `InheritFromTenant`.
+- `--feed-type <type>` -- Package feed scope. The names don't describe the behavior, read them as:
+  - `Processes` (default) -- folder shares the **tenant-level** processes feed.
+  - `FolderHierarchy` -- folder has its **own folder-scoped** feed, inherited by sub-folders.
+  - `Libraries` -- folder is backed by the tenant libraries feed (libraries instead of processes).
 
 Save the `Key` from the response -- you will use it as `--folder-path` or `--folder-key` in later steps.
 
