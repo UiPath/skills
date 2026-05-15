@@ -47,9 +47,9 @@ Goal: get the error message and match playbooks as fast as possible.
 
 Goal: collect richer data for medium/low confidence matching and hypothesis generation.
 
-8. **Deep data gathering** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section for additional commands beyond the initial fetch (e.g., logs, traces, Healing Agent data, connection pings, element executions). Write each to raw/, write evidence summaries.
-9. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`.
-10. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
+7. **Deep data gathering** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section for additional commands beyond the initial fetch (e.g., logs, traces, Healing Agent data, connection pings, element executions). Write each to raw/, write evidence summaries.
+8. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`. If Pass 2 surfaces a new `high`-confidence playbook, append it to `matched_playbooks` but do NOT return to Pass 1 — continue to the next step.
+9. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
 
 ## Boundaries
 
