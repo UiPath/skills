@@ -7,7 +7,8 @@ Tests live in `tests/tasks/<skill-name>/` as coder_eval task YAMLs. Authoritativ
 1. **`/test-coverage <skill-name>`** — identify coverage gaps before writing anything. Report lands in `tests/reports/<skill-name>.md` with priority-ranked gaps.
 2. **`/generate-task <description>`** — scaffold a task YAML for the chosen gap. Do not pass a skill name; the command infers it. Output is an unverified scaffold.
 3. **`/lint-task <path>`** — lint the generated YAML before committing.
-4. Run the task with `coder-eval` and add a passing-run claim to the PR (lint flags missing claims as High).
+4. **`/audit-verbs` (conditional)** — run only when `/lint-task` surfaces **CLI verb reachability** findings. Produces `tests/reports/cli-verb-audit.md` and `tests/reports/skill-verb-audit.md` so you can tell whether a stale verb shows up elsewhere. Skip when `/lint-task` is clean.
+5. Run the task with `coder-eval` and add a passing-run claim to the PR (lint flags missing claims as High).
 
 ## Must-Do
 
