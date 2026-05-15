@@ -40,7 +40,7 @@ Land here from a grep on an error message? Pick the matching row.
 
 ## Related
 
-- [solution.md](solution.md) — Overview, lifecycle diagram, command tree
+- [solution-overview.md](solution-overview.md) — Overview, lifecycle diagram, command tree
 - [develop-solution.md](develop-solution.md) — Step-by-step: new, project add, refresh, list
 - [pack-and-deploy.md](pack-and-deploy.md) — Step-by-step: pack, publish, deploy, configuration
 - [activate-and-manage.md](activate-and-manage.md) — Activate, uninstall, manage packages

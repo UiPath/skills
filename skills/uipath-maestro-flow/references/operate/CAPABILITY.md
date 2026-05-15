@@ -36,7 +36,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | I need to... | Read these |
 | --- | --- |
 | **Publish a flow to Studio Web** | [ship.md — Path 1](references/ship.md#path-1--studio-web-upload-default) |
-| **Deploy a flow to Orchestrator** (only if explicitly requested) | [ship.md — Path 2](references/ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-platform](/uipath:uipath-platform) |
+| **Deploy a flow to Orchestrator** (only if explicitly requested) | [ship.md — Path 2](references/ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-solution](/uipath:uipath-solution) |
 | **Sync solution resource declarations** | [ship.md — Pre-flight](references/ship.md#pre-flight) (the `uip solution resource refresh` step) |
 | **Debug a flow end-to-end** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) |
 | **Pass input arguments to `flow debug`** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
@@ -72,4 +72,4 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, FOLDER_KEY, UIPCLI_LOG_LEVEL, JSON output shape
 - [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) — `--inputs` JSON shape for `flow debug`
 
-For Orchestrator deployment via `uip solution publish`, see [/uipath:uipath-platform](/uipath:uipath-platform).
+For Orchestrator deployment via `uip solution publish`, see [/uipath:uipath-solution](/uipath:uipath-solution).

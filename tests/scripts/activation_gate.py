@@ -20,6 +20,8 @@ from pathlib import Path
 # Rounded recall.yes baseline (in %) per skill, from the 2026-05-08 full
 # activation run. Nearest 5%. Skills omitted have no activation test set
 # yet (uipath-admin, uipath-ixp) — the gate SKIPs them.
+# uipath-solution is the merged successor of uipath-solution-design + the
+# `uip solution` slice of uipath-platform; rebaseline after the next full run.
 BASELINES_PCT: dict[str, int] = {
     "uipath-feedback": 90,
     "uipath-data-fabric": 90,
@@ -38,7 +40,6 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-coded-apps": 60,
     "uipath-llm-configuration-byo-connections": 60,
     "uipath-agents": 55,
-    "uipath-solution-design": 50,
     "uipath-maestro-case": 45,
     "uipath-review": 20,
 }

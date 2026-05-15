@@ -37,8 +37,9 @@
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 
-# Solution Design skill
-/skills/uipath-solution-design/ @RaduAna-Maria
+# Solution skill (design + uip solution lifecycle)
+/skills/uipath-solution/ @RaduAna-Maria
+/tests/tasks/uipath-solution/ @RaduAna-Maria
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh

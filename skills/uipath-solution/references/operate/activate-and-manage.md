@@ -179,4 +179,4 @@ Same as `deploy run`: `--poll-interval` is in **milliseconds** (default 5000ms),
 
 - [pack-and-deploy.md](pack-and-deploy.md) -- Pack, publish, and deploy solutions
 - [scenarios.md](scenarios.md) -- Multi-project recipes for resource-handling patterns
-- [solution.md](solution.md) -- Solution overview and lifecycle
+- [solution-overview.md](solution-overview.md) -- Solution overview and lifecycle

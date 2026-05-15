@@ -1,14 +1,14 @@
 # Publishing a UiPath Project
 
-How to take a built `.nupkg` from `uip rpa pack` and get it onto Orchestrator or Studio Web. Covers the standalone-project paths only — solution publish (`.uipx` solutions and `solution publish` deploy lifecycle) lives in [/uipath:uipath-platform](../../uipath-platform/SKILL.md).
+How to take a built `.nupkg` from `uip rpa pack` and get it onto Orchestrator or Studio Web. Covers the standalone-project paths only — solution publish (`.uipx` solutions and `solution publish` deploy lifecycle) lives in [/uipath:uipath-solution](../../uipath-solution/SKILL.md).
 
 ## Pick a path
 
 | Goal | Path | Reference |
 |---|---|---|
 | Run the project as an Orchestrator process / link as a Test Manager automation | **Pack → Orchestrator package upload** | This file § Pack → Upload |
-| Edit / visualize in Studio Web | **Solution upload** | [uipath-platform](../../uipath-platform/SKILL.md) (solution upload) |
-| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-platform](../../uipath-platform/references/solution/pack-and-deploy.md) |
+| Edit / visualize in Studio Web | **Solution upload** | [uipath-solution](../../uipath-solution/SKILL.md) (solution upload) |
+| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-solution](../../uipath-solution/references/operate/pack-and-deploy.md) |
 
 This file documents the first row only — the legacy Orchestrator package feed flow that `uip tm testcases link-automation` requires.
 
@@ -75,6 +75,6 @@ For the full Pack → Upload → Link → Execute pipeline targeted at Test Mana
 ## Common pitfalls
 
 - **`uip solution publish` expects a packed `.zip`, not a project directory.** Solutions: run `uip solution pack` first, then `uip solution publish "<ZIP_PATH>"`. Single projects: use `uip or packages upload` instead.
-- **Confusing `solution upload` and `solution publish`.** `upload` pushes to Studio Web (browser editing). `publish` pushes a packed solution `.zip` to the Orchestrator solution feed for `solution deploy`. They are NOT interchangeable. See [uipath-platform](../../uipath-platform/SKILL.md) for the decision tree.
+- **Confusing `solution upload` and `solution publish`.** `upload` pushes to Studio Web (browser editing). `publish` pushes a packed solution `.zip` to the Orchestrator solution feed for `solution deploy`. They are NOT interchangeable. See [uipath-solution](../../uipath-solution/SKILL.md) for the decision tree.
 - **Re-uploading the same version.** Orchestrator rejects duplicate `<id>:<version>` uploads. Bump `--package-version` (or `project.json` `projectVersion`) before re-packing.
 - **`pack` succeeds but `analyze` ran with errors.** A successful pack with errors in the analyzer log usually means warnings only. Re-run `uip rpa analyze --project-dir "<PROJECT_DIR>"` if you need a clean failure / pass signal.

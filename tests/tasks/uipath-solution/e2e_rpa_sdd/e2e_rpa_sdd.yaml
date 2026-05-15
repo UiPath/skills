@@ -1,10 +1,10 @@
 task_id: skill-sdd-e2e-rpa-process
 description: >
-  End-to-end evaluation: agent uses the uipath-solution-design skill to read a
+  End-to-end evaluation: agent uses the uipath-solution skill to read a
   comprehensive PDD, select RPA Process as the product, and generate a complete
   SDD with all template sections populated. A Python check script validates
   structural completeness and content quality.
-tags: [uipath-solution-design, e2e, lifecycle:generate]
+tags: [uipath-solution, e2e, lifecycle:generate]
 max_iterations: 1
 
 agent:
@@ -28,7 +28,7 @@ initial_prompt: |
   Important:
   - Do NOT attempt to create a UiPath project or run any `uip` commands.
   - Your only deliverable is the SDD markdown file.
-  - Before starting, load the uipath-solution-design skill. Read and follow
+  - Before starting, load the uipath-solution skill. Read and follow
     its workflow steps exactly.
 
   --- BEGIN PDD ---

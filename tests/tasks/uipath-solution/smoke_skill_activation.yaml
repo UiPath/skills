@@ -1,10 +1,10 @@
 task_id: skill-sdd-smoke-skill-activation
 description: >
-  Smoke test: a PDD-design prompt loads the uipath-solution-design skill body.
+  Smoke test: a PDD-design prompt loads the uipath-solution skill body.
   Verifies activation only — no PDD analysis, no SDD generation. The agent
   echoes the three phase names defined in the skill, which appear verbatim in
   SKILL.md and cannot be fabricated without loading the skill.
-tags: [uipath-solution-design, smoke, lifecycle:generate]
+tags: [uipath-solution, smoke, lifecycle:generate]
 
 sandbox:
   driver: tempdir

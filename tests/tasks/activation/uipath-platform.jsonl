@@ -19,16 +19,16 @@
 {"id": "uipath-platform-019", "prompt": "Create a storage bucket for archived invoices and upload a sample PDF to it", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-020", "prompt": "Download a file from a storage bucket", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-021", "prompt": "List all storage buckets in this folder", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-022", "prompt": "Pack my solution into a deployable zip", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-023", "prompt": "uip solution publish .output/myapp_1.0.4.zip", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-024", "prompt": "Deploy the latest version of my solution to the Invoices folder", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-025", "prompt": "Why is my deploy failing with 'Package version for deployment is not ready'?", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-026", "prompt": "Create a new solution project, add my flow to it, then pack publish and deploy", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-022", "prompt": "Pack my solution into a deployable zip", "expected_skill": "uipath-solution"}
+{"id": "uipath-platform-023", "prompt": "uip solution publish .output/myapp_1.0.4.zip", "expected_skill": "uipath-solution"}
+{"id": "uipath-platform-024", "prompt": "Deploy the latest version of my solution to the Invoices folder", "expected_skill": "uipath-solution"}
+{"id": "uipath-platform-025", "prompt": "Why is my deploy failing with 'Package version for deployment is not ready'?", "expected_skill": "uipath-solution"}
+{"id": "uipath-platform-026", "prompt": "Create a new solution project, add my flow to it, then pack publish and deploy", "expected_skill": "uipath-solution"}
 {"id": "uipath-platform-027", "prompt": "Walk me through the full uip CLI publish-and-deploy flow for a coded agent", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-028", "prompt": "Set up a CI/CD pipeline that uses uip CLI with client credentials to publish my UiPath solution", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-029", "prompt": "Activate the deployment I just published", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-030", "prompt": "Uninstall the old solution from my dev tenant", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-031", "prompt": "Upgrade my solution to the latest published version in the Shared folder", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-028", "prompt": "Set up a CI/CD pipeline that uses uip CLI with client credentials to publish my UiPath solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-platform-029", "prompt": "Activate the deployment I just published", "expected_skill": "uipath-solution"}
+{"id": "uipath-platform-030", "prompt": "Uninstall the old solution from my dev tenant", "expected_skill": "uipath-solution"}
+{"id": "uipath-platform-031", "prompt": "Upgrade my solution to the latest published version in the Shared folder", "expected_skill": "uipath-solution"}
 {"id": "uipath-platform-032", "prompt": "List all processes/releases under the Finance folder", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-033", "prompt": "Start a job for the InvoiceProcessing process on an Unattended runtime", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-034", "prompt": "I'm getting error 2818 'no runtimes configured' when starting a job \u2014 how do I fix it?", "expected_skill": "uipath-platform"}
@@ -46,6 +46,6 @@
 {"id": "uipath-platform-046", "prompt": "Search and install a uip CLI tool extension", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-047", "prompt": "Install the latest uip CLI and verify the version", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-048", "prompt": "I want to create Orchestrator resources from scratch \u2014 folder, queue, bucket, and a few assets \u2014 for a new project", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-049", "prompt": "List solution packages in the tenant feed and filter by name", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-049", "prompt": "List solution packages in the tenant feed and filter by name", "expected_skill": "uipath-solution"}
 {"id": "uipath-platform-050", "prompt": "Set up a brand new dev environment: log in, pick a tenant, create a folder, and provision a queue and a credential asset", "expected_skill": "uipath-platform"}
-{"id": "uipath-platform-051", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-051", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates", "expected_skill": "uipath-solution"}

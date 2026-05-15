@@ -1,9 +1,9 @@
 task_id: skill-sdd-integration-pdd-to-sdd
 description: >
-  Skill-guided evaluation: agent uses the uipath-solution-design skill to
+  Skill-guided evaluation: agent uses the uipath-solution skill to
   analyze a small inline PDD and generate an SDD file. Tests whether the
   skill teaches correct PDD extraction, product selection, and SDD structure.
-tags: [uipath-solution-design, integration, lifecycle:generate]
+tags: [uipath-solution, integration, lifecycle:generate]
 
 agent:
   type: claude-code

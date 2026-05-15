@@ -22,7 +22,7 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 
 ## Critical Rules
 
-1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-coded-apps, uipath-platform).
+1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-coded-apps, uipath-platform, uipath-solution).
 2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip flow validate` on flows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
@@ -480,7 +480,8 @@ Route each fix to the appropriate skill:
 | Fix agent (coded or low-code) | `uipath-agents` |
 | Fix flow (.flow) | `uipath-maestro-flow` |
 | Fix coded app | `uipath-coded-apps` |
-| Fix Orchestrator resources (assets, queues, folders, deploy) | `uipath-platform` |
+| Fix Orchestrator resources (assets, queues, folders) | `uipath-platform` |
+| Fix `.uipx` solution / pack / publish / deploy lifecycle | `uipath-solution` |
 
 1. Fix [C-001] using `uipath-rpa` — change argument type to SecureString
 2. ...

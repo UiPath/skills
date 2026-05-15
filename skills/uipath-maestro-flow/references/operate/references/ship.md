@@ -56,7 +56,7 @@ uip solution resource refresh <SolutionDir> --output json
 uip maestro flow pack <ProjectDir> <OutputDir>
 ```
 
-For `uip solution publish` and the rest of the deployment workflow, see [/uipath:uipath-platform](/uipath:uipath-platform). See [shared/cli-commands.md — uip maestro flow pack](../../shared/cli-commands.md#uip-maestro-flow-pack) for `pack` flags.
+For `uip solution publish` and the rest of the deployment workflow, see [/uipath:uipath-solution](/uipath:uipath-solution). See [shared/cli-commands.md — uip maestro flow pack](../../shared/cli-commands.md#uip-maestro-flow-pack) for `pack` flags.
 
 ## Anti-patterns
 

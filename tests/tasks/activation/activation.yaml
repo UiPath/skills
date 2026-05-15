@@ -30,7 +30,7 @@ dataset:
     - uipath-review.jsonl
     - uipath-rpa.jsonl
     - uipath-rpa-legacy.jsonl
-    - uipath-solution-design.jsonl
+    - uipath-solution.jsonl
     - uipath-tasks.jsonl
     - uipath-test.jsonl
     - negative.jsonl
@@ -127,8 +127,8 @@ success_criteria:
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
-    description: "uipath-solution-design activation"
-    skill_name: uipath-solution-design
+    description: "uipath-solution activation"
+    skill_name: uipath-solution
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered

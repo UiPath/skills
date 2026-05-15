@@ -90,7 +90,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 | Field | Required | Notes |
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
-| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-agents`, `uipath-coded-apps`, `uipath-maestro-flow`, `uipath-maestro-case`, `uipath-human-in-the-loop`, `uipath-test`, `uipath-rpa-legacy`, `uipath-interact`. The planner emits this skill in the live `TaskCreate` call. |
+| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-maestro-flow`, `uipath-maestro-case`, `uipath-human-in-the-loop`, `uipath-test`, `uipath-rpa-legacy`, `uipath-interact`. The planner emits this skill in the live `TaskCreate` call. |
 | `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its TaskUpdate flips the checkbox; `human` only when the user manually edits the file. |
@@ -115,7 +115,7 @@ Use values, mappings, and structure exactly as documented in this plan. Do not i
 
 ## Testing task is mandatory
 
-Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-agents`, `uipath-coded-apps`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-platform`).
+Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-agents`, `uipath-coded-apps`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops).
 
 ```markdown
 ## Task T<N> — <generation-skill> — Testing (MANDATORY)

@@ -50,7 +50,8 @@ Components are the specific, testable units the skill teaches. What counts as a 
 |---|---|
 | Flow orchestration (`uipath-maestro-flow`) | Node types: `core.action.script`, `core.logic.decision`, `uipath.connector.*`, etc. Find these in SKILL.md Plugin Index tables and `references/plugins/*/planning.md` files. |
 | RPA workflows (`uipath-rpa`) | Workflow modes (Coded C#, XAML), activity types, project types. Found in section headings like "Coded Workflows Quick Reference", "XAML Workflows Quick Reference". |
-| Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip solution`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
+| Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
+| Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate) and PDD → SDD authoring. Found in the Operate half and Design half of the SKILL.md. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
 | Desktop/browser interaction (`interact`) | Command categories (Discover, Interact, Inspect, Manage), input methods, framework types. Found in "Commands" section hierarchy. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
@@ -213,7 +214,7 @@ Weights reflect what tests actually catch:
 | Workflow-heavy, multi-path (e.g. `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`) | — | Comp 45% / Steps 25% / Rules 15% / Path 15% |
 | Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
 | Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
-| Planning skills (e.g. `uipath-planner`, `uipath-solution-design`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
+| Planning skills (e.g. `uipath-planner`, `uipath-solution`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
 | Agent-orchestration skills (e.g. `uipath-diagnostics`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
 
 Formula: `overall = sum(applicable_weight_i * dimension_pct_i) / sum(applicable_weight_i)`

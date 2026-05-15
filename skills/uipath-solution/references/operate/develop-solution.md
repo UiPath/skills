@@ -373,4 +373,4 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 
 - [Pack & Deploy](pack-and-deploy.md) -- Next step: pack, publish, and deploy the solution
 - [Scenarios](scenarios.md) -- Multi-project recipes: same-name across folders, cross-ref intra-solution, shared cloud resources, virtual assets
-- [solution.md](solution.md) -- Solution tool overview and full command tree
+- [solution-overview.md](solution-overview.md) -- Solution tool overview and full command tree
