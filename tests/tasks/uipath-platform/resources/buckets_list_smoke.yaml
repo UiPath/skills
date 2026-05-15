@@ -1,10 +1,9 @@
 task_id: skill-platform-resources-buckets-list
 description: >
-  Smoke test: agent uses the uipath-platform skill to discover an Orchestrator
-  folder it can access and list its storage buckets via
-  `uip resource buckets list --folder-(key|path) ...`.
-  Empty results are acceptable — the goal is correct command shape, not tenant
-  state.
+  Smoke test: agent uses the uipath-platform skill to list storage buckets in
+  an Orchestrator folder via `uip resource buckets list --folder-(key|path)
+  ...`. Prompt passes a placeholder folder key — CLI returning Auth/404 is
+  acceptable; the goal is correct command shape, not tenant state.
 
   Note: locally requires the `@uipath/resource-tool` plugin installed once via
   `GH_NPM_REGISTRY_TOKEN=$(gh auth token) uip tools install resource-tool`.
@@ -16,8 +15,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Discover the Orchestrator folders available in the current UiPath tenant and
-  list the storage buckets in any one of those folders.
+  List the storage buckets defined in the Orchestrator folder with key
+  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
 
 success_criteria:
   - type: command_executed

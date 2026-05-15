@@ -1,9 +1,9 @@
 task_id: skill-platform-orchestrator-jobs-list
 description: >
-  Smoke test: agent uses the uipath-platform skill to discover an Orchestrator
-  folder it can access and list its jobs via
-  `uip or jobs list --folder-(key|path) ... --output json`.
-  Empty results are acceptable — the goal is correct command shape, not tenant
+  Smoke test: agent uses the uipath-platform skill to list Orchestrator jobs
+  scoped to a folder via `uip or jobs list --folder-(key|path) ... --output
+  json`. Prompt passes a placeholder folder key — the CLI returning Auth/404
+  is an acceptable outcome; the goal is correct command shape, not tenant
   state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
@@ -12,8 +12,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Discover the Orchestrator folders available in the current UiPath tenant and
-  list the recently faulted jobs in any one of those folders.
+  List the recently faulted jobs in the Orchestrator folder with key
+  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
 
 success_criteria:
   - type: command_executed
@@ -47,4 +47,3 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-
