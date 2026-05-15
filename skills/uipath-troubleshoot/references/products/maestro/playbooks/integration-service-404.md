@@ -26,8 +26,11 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json`
-2. Identify the failing connector activity: `uip maestro instance element-executions <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
+2. Identify the failing connector activity: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
 3. Check the IS connection: Orchestrator UI → **Integration Service > Connections** — verify exists, not expired
 4. Confirm IS is enabled on the tenant
 5. For Data Fabric writes, verify the target entity/instance exists in the destination folder and the robot has permission
