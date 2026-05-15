@@ -15,6 +15,23 @@ Complete reference for declaring variables, writing expressions, and managing da
 
 ---
 
+## Table of contents
+
+- [Variables Overview](#variables-overview)
+- [Workflow Variables (`globals`)](#workflow-variables-globals)
+- [Node Variables (`nodes`)](#node-variables-nodes)
+- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+- [Expression System](#expression-system)
+- [Available Globals](#available-globals)
+- [Expression Contexts](#expression-contexts)
+- [Jint Engine Constraints](#jint-engine-constraints)
+- [Scoping Rules](#scoping-rules)
+- [Variable Management via CLI](#variable-management-via-cli)
+- [Complete Example](#complete-example)
+
+---
+
 ## Variables Overview
 
 Every flow has a `variables` object at the top level of the `.flow` file. It contains three sections:
