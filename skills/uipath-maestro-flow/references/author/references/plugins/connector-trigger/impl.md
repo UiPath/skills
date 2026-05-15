@@ -17,7 +17,7 @@ Extract the connector key from the node type (`uipath.connector.trigger.<connect
 uip is connections list "<connector-key>" --output json
 ```
 
-If empty, follow the recovery in [/uipath:uipath-platform — connections.md — For Native Connectors](../../../../../../uipath-platform/references/integration-service/connections.md#for-native-connectors) (`--refresh` retry, then create-or-prompt).
+If the list is empty, follow the standard refresh-retry + STOP-and-ask flow in [Connection Binding — Shared Workflow](../../../../shared/connection-binding.md). Triggers must use a real connection here — `triggers objects` cannot run without one.
 
 **1b. Query trigger objects** — **mandatory** for every trigger node. Do NOT skip:
 
