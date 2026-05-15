@@ -74,7 +74,7 @@ Steps 6 through 9.5 build structural skeleton: solution, project, root case, glo
 
 The case file must live inside a solution + project. The case plugin owns project scaffolding **and** the root caseplan write. Solution setup and project registration are the only CLI calls:
 
-1. **Step 6.0 (CLI)** — `uip solution new <SolutionName>` — creates the solution directory + `.uipx`.
+1. **Step 6.0 (CLI)** — `uip solution init <SolutionName>` — creates the solution directory + `.uipx`.
 2. **T01 (plugin)** — execute [`plugins/case/impl-json.md`](plugins/case/impl-json.md) in full:
    - § Scaffold writes 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly into `<SolutionDir>/<ProjectName>/`.
    - § Write caseplan.json writes the root skeleton (`root` + empty `nodes: []` + empty `edges: []`).
@@ -121,7 +121,7 @@ For each task entry in `tasks.md §4.6`, open matching plugin's `impl-json.md`. 
 
 **Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
 
-**Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field), incrementing per task within a stage (starting at 0). Lane is a FE layout coordinate; it does not affect execution.
+**Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field). Default: increment per task within a stage starting at 0 — lane is FE-layout-only for these tasks. **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
 
 ### Step 9.1 — Placeholder tasks for unresolved resources
 

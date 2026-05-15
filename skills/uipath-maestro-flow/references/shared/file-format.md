@@ -7,7 +7,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```json
 {
   "id": "<uuid>",
-  "version": "1.0.0",
+  "version": "1.1",
   "name": "MyFlow",
   "nodes": [],
   "edges": [],
@@ -19,6 +19,10 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
   }
 }
 ```
+
+**Top-level `version`** = workflow file-format version, currently `"1.1"` — what `uip maestro flow init` scaffolds and what Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. Not a semver string; schema gates on a literal (`z.literal("1.1")`). Do not use `"1.0.0"`, `"1.0"`, or other values for new flows; older values exist only for legacy parser compatibility.
+
+> **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) use a strict semver schema (`versionSchema`, `/^\d+\.\d+\.\d+$/`) — a different Zod schema. Mixing them up produces `Schema validation failed: Version must be in semver format` at `(root)` — workflow-version layer's error, but the actual offender may be a stale top-level value. Audit the top-level `version` first.
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
 
@@ -156,7 +160,7 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 ## Layout
 
-Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow tidy` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-tidy)) — you should not need to hand-write it.
+Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow format` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-format)) — you should not need to hand-write it.
 
 ```json
 "layout": {
@@ -180,15 +184,15 @@ Node positioning is stored in a **top-level `layout` object**, keyed by node `id
 }
 ```
 
-Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for every node and populates `position` + `size`.
+Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for every node and populates `position` + `size`.
 
-**What tidy does:**
+**What format does:**
 - Arranges nodes horizontally (left-to-right) with `nodeSpacing: 96`, anchored to the leftmost node's original position
 - Sets `size` to `{ "width": 96, "height": 96 }` on every non-`stickyNote` node — non-96 sizes render as rectangles in Studio Web
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Format handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
@@ -317,7 +321,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
-  "version": "1.0.0",
+  "version": "1.1",
   "name": "DiceRoller",
   "nodes": [
     {

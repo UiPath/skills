@@ -6,51 +6,26 @@ description: >
   Type Into, and Click UIA activities with pre-known selectors. Validates the
   full XAML surface the skill teaches: project.json with VisualBasic expression
   language, ApplicationCard / TypeInto / Click activity XML, and the
-  `uip rpa get-errors` compile gate.
+  `uip rpa validate` compile gate.
 tags: [uipath-rpa, smoke, uia, xaml]
 
 # Standard XAML + UIA activities. First `uip rpa` call restores packages
-# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `get-errors`
+# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `validate`
 # on a XAML workflow with UIA activities can run another ~45s. Budget
 # accordingly.
-task_timeout: 1800
 agent:
   type: claude-code
   # Bumped from 60 → 80: evalboard runs on Linux atm so some turns are
   # wasted since the UiPath project targets Windows.
+
+run_limits:
+  task_timeout: 1800
   max_turns: 80
   turn_timeout: 1200
 
 sandbox:
   driver: tempdir
   python: {}
-
-llm_reviewer:
-  enabled: true
-  model: claude-sonnet-4-6
-  temperature: 0.0
-  max_tokens: 600
-  prompt: |
-    Evaluate whether the agent built a correct standard (XAML, VB.NET)
-    UiPath RPA project for this CI task using the canonical skill flow.
-
-    Score on:
-    - GoogleSearch/project.json exists with `"expressionLanguage":
-      "VisualBasic"` and UIA activity packages in dependencies.
-    - GoogleSearch/Main.xaml opens chrome.exe at google.com, types
-      "UiPath automation" into the search box, and clicks the search
-      button, using the three known selectors (chrome.exe URL,
-      textarea name='q', input name='btnK'). Use the modern Nx
-      activities (NApplicationCard + NTypeInto + NClick); the classic
-      OpenBrowser + TypeInto + Click triple is not a clean fit.
-      The Object Repository / configure-target
-      pipeline can't run without an interactive Studio session.
-    - The harness runs `uip rpa build` programmatically; the build's
-      exit code is the compile gate.
-
-    Reply terse, developer-style. Score 1.0 if selectors + query are
-    right and the project compiles.
-
 initial_prompt: |
   Build a standard UiPath RPA project named "GoogleSearch" (XAML
   workflow, VisualBasic expression language) under ./GoogleSearch
@@ -79,7 +54,7 @@ initial_prompt: |
   Follow the uipath-rpa skill's normal flow for everything else
   (project scaffolding, validation). The `uip` CLI is authenticated
   against the sandbox tenant, so Helm-backed commands
-  (`create-project`, `get-default-activity-xaml`, `get-errors`)
+  (`init`, `activities get-default-xaml`, `validate`)
   work as documented in the skill.
 
   Use `--output json` on any uip commands you run.
@@ -124,13 +99,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
+  # Skill-fidelity signal: the skill teaches `uip rpa validate` as
   # the canonical validation step. We don't gate on its exit code —
   # the actual compile gate is the `uip rpa build` run_command below.
   - type: command_executed
-    description: "Agent ran uip rpa get-errors on Main.xaml (skill-canonical validation)"
+    description: "Agent ran uip rpa validate on Main.xaml (skill-canonical validation)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rpa\s+get-errors.*Main\.xaml'
+    command_pattern: 'uip\s+rpa\s+validate.*Main\.xaml'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

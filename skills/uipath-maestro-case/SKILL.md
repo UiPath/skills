@@ -8,7 +8,9 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 
 > **Preview** — skill is under active development; surface and behavior may change.
 
-Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, is describe) and solution boundary operations (`uip solution new` / `project add` / `upload`).
+Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, is describe) and solution boundary operations (`uip solution init` / `project add` / `upload`).
+
+> **Probe the `solution` verb once per session before the first scaffold.** Run `uip solution init --help --output json`. Result `Success` → use `solution init` (post-rename, default). `unknown command` / non-zero exit → CLI predates the rename; substitute `uip solution new <Name>` (same arguments) wherever this skill calls `solution init`.
 
 When `sdd.md` is absent, **Phase 0 interview** generates one interactively from a lightweight 4-round Q&A (open describe → placeholder + gap-fill → registry resolution → review). Complex / multi-product cases redirect to `uipath-solution-design` — see [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds) for caps.
 
@@ -178,7 +180,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 - **Do NOT leave stages without an inbound edge.** Orphaned and unreachable. Every stage needs ≥1 inbound edge from Trigger or another stage.
 - **Do NOT validate after each T-entry.** Intermediate states expected invalid. Run `validate` once at end of Phase 2 (informational) and once in Phase 4 (authoritative).
 - **Do NOT batch multiple T-entries into one write — applies to BOTH `tasks.md` (Phase 1) AND `caseplan.json` (Phase 3).** Each T-entry: own Read → mutate → Write/Edit cycle, then re-Read before next. Batching hides intermediate state, breaks reviewability, prevents mid-run interruption, and risks silent omissions. See [planning.md § 4.0a](references/planning.md) and [implementation.md § Per-plugin execution](references/implementation.md).
-- **Do NOT place multiple tasks in same lane.** FE renders same-lane tasks stacked — unreadable. Each task own `lane` index in `stageNode.data.tasks[laneIndex][]`. Lane is layout only, no execution semantics.
+- **One task per lane — except parallel members of a `runs-sequentially` group.** Default: each task own `lane` index in `stageNode.data.tasks[laneIndex][]`, lane is FE layout only. Exception: tasks sharing a `runs-sequentially` task-entry condition that are meant to run in parallel share the same lane (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get their own lane.
 - **Do NOT edit `content/*.bpmn`.** Auto-generated, will be overwritten. Edit `content/*.json` only.
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe condition in natural language; execution phase determines exact form.
 - **Do NOT invoke other skills automatically.** If case needs process/agent/action that doesn't exist, emit placeholder task (Rule 8) and list missing resources in completion report. On-demand resource creation is future milestone.

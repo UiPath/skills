@@ -16,6 +16,8 @@ All commands assume the user is already logged in (`uip login status --output js
 
 ## Common flags (every `uip or ... list` command)
 
+> **Scope.** This flag table applies to the `uip or` commands documented below (§1 Processes, §2 Folders) only. The `uip admin` commands used in §3 (Users, Groups, Robots) and §4 (Resource Catalog tags) follow the `uip admin` flag conventions documented under [/uipath:uipath-admin — identity-commands.md](../../../uipath-admin/references/identity-commands.md) — notably, `uip admin groups list` should not pass `--organization` because it should use current login organization.
+
 `--output json`, `--limit`, `--offset`, `--order-by`, and `--login-validity` are shared with `uip gov access-policy` — see [access-policy-commands.md § Common flags](./access-policy-commands.md#common-flags-shared-across-uip-list-commands) for the canonical descriptions. The `uip or`-only flags below extend that set:
 
 | Flag | Purpose |
@@ -157,39 +159,47 @@ uip or folders list \
 
 ## 3. Users (Actor Identity UUIDs)
 
-For the `actorRule.values[].type: "User"` entry, resolve user names to UUIDs with:
+For the `actorRule.values[].type: "User"` entry, resolve user names / emails to UUIDs with `uip admin users list` (Identity Server — see [/uipath:uipath-admin — user-management.md](../../../uipath-admin/references/user-management.md)):
 
 ```bash
-uip or users list --output json
+uip admin users list --search "<NAME_OR_EMAIL>" --output json
 ```
 
-Parse `.Data[]` for `Key` (UUID), `UserName`, and `Name`. Filter client-side when the tenant is large:
+`--search` matches both `userName` and `email` server-side. Response: `Data` is an array; each entry has camelCase fields `id` (UUID), `userName`, `email`, `name`, `surname`, `displayName`, `groupIds[]`. Take the matching record's `id` as the User UUID for `actorRule.values[]`.
 
-```bash
-uip or users list \
-  --output json \
-  --output-filter "Data[?contains(UserName, 'admin')]"
-```
+When you need to enumerate all users (no name yet), omit `--search` and page through with `--limit`/`--offset`.
 
-For the currently authenticated user (useful when the intent is "only me"):
-
-```bash
-uip or users current --output json
-```
+> **"Only me" intent.** `uip admin users` has no `current`/`me` subcommand. When the user says "only me" / "just my account", ask them to confirm their email or display name, then resolve via `uip admin users list --search "<EMAIL>" --output json`. Do not assume — different IdP profiles may share a name.
 
 ### Robots resolve to `type: User`
 
-A robot is a kind of user in the UiPath identity model (Critical Rule #16). To use a robot in `actorRule`, the policy emits `type: "User"` with the robot's **linked user UUID**, never `type: "Robot"`. Resolve the robot to its user identity in three steps:
+A robot is a kind of user in the UiPath identity model (Critical Rule #16). To use a robot in `actorRule`, the policy emits `type: "User"` with the robot's identity UUID, never `type: "Robot"`. Resolve via Identity Server's robot-accounts list:
 
-1. **Find the robot** via the [REST API fallback](#5-rest-api-fallback-for-robot-lookups) below — read the `Username` field from the matching robot record.
-2. **Resolve the username to a User UUID** with `uip or users list --output json --output-filter "Data[?UserName == '<USERNAME>']"`. The user `Key` is the UUID to use in the policy.
-3. **Emit `type: "User"`** in the policy JSON — see [plugins/actor/impl.md — Example E](./plugins/actor/impl.md#e-robot-only-trigger-resolves-to-user).
+```bash
+uip admin robot-accounts list --search "<ROBOT_NAME>" --output json
+```
 
-If the robot has no linked user (rare for modern Orchestrator deployments), surface this as an Open question on the Phase 1 Spec and stop — do not invent a UUID.
+Response: `Data` is an array; each entry has `id` (UUID), `name`, `displayName`, `creationTime`, `groupIds[]`. Take the matching record's `id` directly — it is the same UUID the access-policy server expects under `type: "User"`. **Emit `type: "User"`** in the policy JSON — see [plugins/actor/impl.md — Example E](./plugins/actor/impl.md#e-robot-only-trigger-resolves-to-user).
 
-### Groups — no `uip or` wrapper
+If `uip admin robot-accounts list --search` returns nothing for the named robot, ask the user to confirm the robot name (or supply the UUID directly from the Admin portal). Never invent a UUID.
 
-`Group` is supported in `actorRule.values[].type` but has no `uip or` wrapper today. Ask the user to paste the Group UUID from the Admin portal and surface it as an **Open question** on the Phase 1 Spec until supplied. Never fabricate.
+### Groups (uip admin fallback)
+
+`Group` is supported in `actorRule.values[].type` but has no `uip or` wrapper today. Resolve via Identity Server instead:
+
+```bash
+uip admin groups list --output json
+```
+
+Response: `Data` is an array; each entry has `id` (UUID), `name`, `displayName`, `type` (numeric — `0` is custom, non-zero is built-in), `creationTime`. The command has **no `--search` flag** — filter client-side:
+
+```bash
+uip admin groups list \
+  --output json \
+  --output-filter "Data[?contains(displayName, 'Ops')]"
+```
+
+Take the matching record's `id` as the Group UUID for `actorRule.values[]`. See [/uipath:uipath-admin — group-management.md](../../../uipath-admin/references/group-management.md) for the broader group workflow. Only surface as an Open question on the Phase 1 Spec when the admin lookup returns nothing and the user cannot supply a GUID. Never fabricate.
 
 ### ExternalApplication — not supported
 
@@ -253,31 +263,7 @@ grep "^UIPATH_TENANT_NAME=" ~/.uipath/.auth | cut -d= -f2
 
 ---
 
-## 5. REST API fallback (for Robot lookups)
-
-`Robot` lookups are not wrapped by `uip or`. Fall back to Orchestrator REST directly to find the robot's `Username`, which then feeds a `uip or users list` call (see [Robots resolve to `type: User`](#robots-resolve-to-type-user) above). **Never `cat ~/.uipath/.auth` into the transcript** — the file contains the bearer token. Instead, source it into environment variables inside a sub-shell so the token stays out of logs:
-
-```bash
-# SECURITY: sources the auth env into a sub-shell only; the token never prints.
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s \
-  "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Robots?\$top=50&\$select=Id,Key,Name,Username,Type" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "Accept: application/json"' \
-  | jq '.value[] | {Key, Name, Username, Type}'
-```
-
-The `Username` field is what you feed to `uip or users list` to get the User UUID for the policy.
-
-| Identity type | Endpoint / source | What to do with it |
-|---------------|------------------|--------------------|
-| **Robot** (intermediate lookup) | `orchestrator_/odata/Robots` — read `Username` | Resolve `Username` → User UUID via `uip or users list`, then emit `type: "User"`. |
-| **Group** | Identity service — ask the user to paste the UUID from Admin portal | Use directly as `type: "Group"`. |
-
-If the call returns `401 Unauthorized`, the token expired — ask the user to `uip login` and retry. Never commit or echo the token.
-
----
-
-## 6. When the lookup still cannot resolve the name
+## 5. When the lookup still cannot resolve the name
 
 1. **Surface the miss** — tell the user exactly which query you ran and what came back empty. Include the folder, `--process-type`, and `--name` values you used.
 2. **Suggest broadening the search** — drop `--process-type`, drop `--name`, try a parent folder.
@@ -285,7 +271,7 @@ If the call returns `401 Unauthorized`, the token expired — ask the user to `u
 
 ---
 
-## 7. Recap — one command per lookup type
+## 6. Recap — one command per lookup type
 
 > Processes are folder-scoped — always run [§ 2 Folders](#2-folders) first if you do not know the folder path. Translate the access-policy type to the Orchestrator `--process-type` using the [mapping table above](#access-policy-type--orchestrator---process-type) before calling `processes list`.
 
@@ -295,9 +281,9 @@ If the call returns `401 Unauthorized`, the token expired — ask the user to `u
 | A process / agent / flow / case-management UUID by name | `uip or processes list --folder-path "<PATH>" --process-type "<ORCHESTRATOR_TYPE>" --name "<SUBSTR>" --output json` — paste the response's `Key` into `values[]`. Do not use `ProcessKey` (dotted string), `ProcessVersion`, or the folder UUID. |
 | All processes of a given access-policy type in a folder | `uip or processes list --folder-path "<PATH>" --process-type "<ORCHESTRATOR_TYPE>" --output json` — paste each row's `Key` into `values[]`. |
 | Details on a specific process UUID | `uip or processes get "<UUID>" --output json` |
-| A user UUID by username / display name | `uip or users list --output json` → filter on `UserName` or `Name` |
-| The currently authenticated user's UUID | `uip or users current --output json` |
+| A user UUID by username / email | `uip admin users list --search "<TERM>" --output json` — paste the matched row's `id` into `actorRule.values[]`. |
+| The currently authenticated user's UUID | Ask the user to confirm their email / display name (no `current` subcommand on `uip admin`), then `uip admin users list --search "<TERM>" --output json`. |
 | A Resource Catalog tag name (for `tags.values[]`) | `uip admin rcs tag list --output json` — paste each row's `displayName` into `tags.values[]`. Do NOT pass `--tenant` when verifying tags for the policy under construction (see [§ 4 Tenant alignment](#tenant-alignment)). |
-| A robot's User UUID (for `actorRule`) | REST `GET /orchestrator_/odata/Robots` to find `Username` (see [§ 5](#5-rest-api-fallback-for-robot-lookups)), then `uip or users list` to resolve `Username` → User UUID |
-| A group UUID | Admin portal — paste into the Phase 1 Spec as an Open question |
+| A robot's identity UUID (for `actorRule`, `type: "User"`) | `uip admin robot-accounts list --search "<NAME>" --output json` — paste the matched row's `id` into `actorRule.values[]`. Same UUID space as `uip admin users`; emit as `type: "User"`. |
+| A group UUID | `uip admin groups list --output json` — filter client-side on `displayName`; paste `id` into `actorRule.values[]` (see [§ 3 Groups](#groups-uip-admin-fallback)). Falls back to an Open question only if the lookup returns nothing. |
 | An external application UUID | **Not supported** by access policies today (Critical Rule #16) — route to a `User` or `Group` workaround |

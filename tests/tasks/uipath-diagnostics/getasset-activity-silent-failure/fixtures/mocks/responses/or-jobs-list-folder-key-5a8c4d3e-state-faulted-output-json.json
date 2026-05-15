@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d",
+      "State": "Faulted",
+      "ProcessName": "AssetSilentFailure",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T18:02:11.040Z",
+      "EndTime": "2026-05-13T18:02:12.318Z",
+      "CreationTime": "2026-05-13T18:02:10.815Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

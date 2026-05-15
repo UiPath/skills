@@ -13,7 +13,7 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
-Solution setup (`uip solution new`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution init`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
@@ -36,7 +36,7 @@ Runs before § Write caseplan.json. Writes 5 static JSON files directly. All sub
 
 ### Pre-flight
 
-1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution new` — Step 6.0).
+1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution init` — Step 6.0).
 2. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```
    <SolutionDir>/<ProjectName>/<file> already exists. Remove <SolutionDir>/<ProjectName>/ before re-scaffolding. No --force equivalent in the JSON path.
@@ -261,7 +261,8 @@ Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empt
         "caseIdentifierType": "<constant|external — defaults to constant>",
         "caseAppEnabled": <true|false — defaults to false>,
         "publishVersion": 2,
-        "caseUnifiedSchemaEnabled": true
+        "caseUnifiedSchemaEnabled": true,
+        "intsvcActivityConfig": "v2"
     },
     "bindings": [],
     "variables": {
@@ -290,7 +291,8 @@ Adds top-level `description` field (NOT inside `metadata`):
         "caseIdentifierType": "<constant|external>",
         "caseAppEnabled": <true|false>,
         "publishVersion": 2,
-        "caseUnifiedSchemaEnabled": true
+        "caseUnifiedSchemaEnabled": true,
+        "intsvcActivityConfig": "v2"
     },
     "bindings": [],
     "variables": {
@@ -304,7 +306,7 @@ Adds top-level `description` field (NOT inside `metadata`):
 }
 ```
 
-> **`intsvcActivityConfig` dropped in v20** — not present in `CaseManagementMetadataSchema`. Do not emit it under `metadata` or anywhere else.
+> **`intsvcActivityConfig` always emitted in v20** — set `metadata.intsvcActivityConfig: "v2"` on every v20 caseplan. Mirrors the v19 `root.data.intsvcActivityConfig` field, relocated under `metadata`.
 
 ## Formatting
 
@@ -342,6 +344,7 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
    - `version === "20.0.0"`
    - `metadata.caseUnifiedSchemaEnabled === true`
    - `metadata.publishVersion === 2`
+   - `metadata.intsvcActivityConfig === "v2"`
    - `bindings` is an array of length 0
    - `variables.inputs`, `variables.outputs`, `variables.inputOutputs` are all arrays of length 0
 3. **Empty node/edge arrays + layout.**
@@ -351,7 +354,7 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 4. **No v19 leakage.**
    - No `root` key at top level
    - No `version === "v19"` anywhere
-   - No `data.intsvcActivityConfig`
+   - No `data.intsvcActivityConfig` (v20 emits it under `metadata`, not `data`)
 
 If any check fails, halt and report — do not proceed to downstream plugins.
 

@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T09:18:44.355Z",
+      "Message": "[Get Credential] Status code: 403 (Forbidden). Orchestrator response: \r\nFolder 'OldDevFolder' does not exist or the user does not have access to the folder. Error code: 1100"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T09:18:44.371Z",
+      "Message": "Folder 'OldDevFolder' does not exist or the user does not have access to the folder. Error code: 1100\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -157,8 +157,8 @@ uip or feeds list --output json
 
 Feed IDs are used with:
 - `uip or packages list --feed-id <id>` -- browse packages in a specific feed
-- `uip resource libraries list --feed-id <id>` -- browse libraries in a specific feed
 - Omit `--feed-id` to use the default tenant feed
+- `uip resource libraries list` does NOT accept `--feed-id` -- it always queries the default tenant feed. Filter results client-side via `--output-filter "<JMESPath>"`.
 
 ---
 
@@ -213,7 +213,7 @@ uip or attachments download "<attachment-id>" -o error-screenshot.png
 - **Calendar timezone affects trigger scheduling.** A trigger using a calendar will skip dates according to the calendar's timezone, which may differ from the trigger's own timezone. Keep them aligned.
 - **Audit log export is async.** The `--export` flag triggers a server-side export job. The CLI polls until the CSV is ready, then downloads it. Large exports may take a few seconds.
 - **Credential store keys are numeric**, not GUIDs. This is an exception to the usual GUID convention in the Orchestrator CLI.
-- **Feed IDs are optional.** Most `packages` and `libraries` commands default to the tenant feed. Only specify `--feed-id` when you have multiple feeds configured.
+- **Feed IDs apply to `packages` only.** `uip or packages` commands accept `--feed-id` for multi-feed tenants; `uip resource libraries` commands do NOT — they always target the default tenant feed.
 - **Attachments are tenant-scoped.** You do not need `--folder-path` or `--folder-key` -- the `list` command resolves the folder from the job key automatically.
 
 ---
@@ -221,5 +221,5 @@ uip or attachments download "<attachment-id>" -o error-screenshot.png
 ## Related
 
 - [setup-environment.md](setup-environment.md) -- Credential stores are used during unattended user setup.
-- [Triggers & Webhooks](../resources/triggers-and-webhooks.md) -- Calendars are referenced by `--calendar-key` when creating time triggers.
+- Triggers & Webhooks (calendars are referenced by `--calendar-key` when creating time triggers) → [`uipath-resources`](../resources/triggers-and-webhooks.md)
 - [orchestrator.md](orchestrator.md) -- Parent reference with common flags and pagination patterns.

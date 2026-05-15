@@ -82,4 +82,4 @@
 
 ---
 
-Would you like help implementing either fix — creating the `PO_PricingTable` asset or setting up the new Outlook 365 connection? I can also clean up the `.investigation/` folder if you no longer need it.
+Would you like help implementing either fix — creating the `PO_PricingTable` asset or setting up the new Outlook 365 connection? I can also clean up the `.local/investigations/` folder if you no longer need it.

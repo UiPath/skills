@@ -100,7 +100,7 @@ Each `inputs.*` entry with a `reference` carries a pre-built `discoverCommand`:
     "objectName": "MailFolder",
     "lookupValue": "id",
     "lookupNames": ["displayName"],
-    "discoverCommand": "uip is resources execute list <connector> <object> --connection-id <id>"
+    "discoverCommand": "uip is resources run list <connector> <object> --connection-id <id>"
 }
 ```
 

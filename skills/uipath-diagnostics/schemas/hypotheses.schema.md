@@ -1,6 +1,6 @@
 # Hypotheses Schema
 
-File: `.investigation/hypotheses.json`
+File: `.local/investigations/hypotheses.json`
 
 Created by: Hypothesis Generator sub-agent
 Read by: Hypothesis Tester sub-agent, orchestrator

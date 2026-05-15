@@ -53,11 +53,11 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 
 ## Libraries
 
-Libraries are tenant-scoped -- no folder context needed. Use `--feed-id` for custom feeds.
+Libraries are tenant-scoped -- no folder context needed.
 
 | Command | Description |
 |---------|-------------|
-| `uip resource libraries list` | List libraries in the tenant feed. Options: `--search`, `--feed-id`. Returns the full API DTO. |
+| `uip resource libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--order-by "<field> <asc\|desc>"`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns `Key`, `Title`, `Version`, `Authors`. |
 | `uip resource libraries get <key>` | Get library details. Key format is `PackageId:Version` (e.g., `MyLib:1.0.0`). Returns the full API DTO. |
 | `uip resource libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). |
 | `uip resource libraries upload --file <path>` | Upload a `.nupkg` library package to the tenant feed. |
@@ -65,8 +65,18 @@ Libraries are tenant-scoped -- no folder context needed. Use `--feed-id` for cus
 | `uip resource libraries delete <key>` | Delete a specific library version. |
 
 ```bash
-# List libraries, search by name
-uip resource libraries list --search "Excel" --output json
+# List libraries (first 500). Default --limit is 50; bump it for tenants with many libraries.
+uip resource libraries list --limit 500 --output json
+
+# Filter by name client-side. Title can be null — guard with `Title != null` or contains() will error.
+uip resource libraries list --limit 500 \
+  --output-filter "[?Title != null && contains(Title, 'Excel')]" \
+  --output json
+
+# Multi-keyword OR filter
+uip resource libraries list --limit 500 \
+  --output-filter "[?Title != null && (contains(Title, 'Common') || contains(Title, 'Shared'))]" \
+  --output json
 
 # Upload a library
 uip resource libraries upload --file ./MyLibrary.1.0.0.nupkg --output json
@@ -84,7 +94,7 @@ uip resource libraries delete "UiPath.System.Activities:24.4.0" --output json
 
 ## Output Behavior
 
-Resource tool commands return **full API responses** (all fields) by default. There is no `--all-fields` flag — the convention in `resource-tool` is raw camelCase DTO. (This differs from `orchestrator-tool`, which curates by default and exposes `--all-fields` for the raw view; see [orchestrator.md](../orchestrator/orchestrator.md).)
+Resource tool commands return **full API responses** (all fields) by default. There is no `--all-fields` flag — the convention in `resource-tool` is raw camelCase DTO. (This differs from `orchestrator-tool`, which curates by default and exposes `--all-fields` for the raw view; see [`uipath-orchestrator`](../orchestrator/orchestrator.md).)
 
 List responses include a `Pagination` block:
 
@@ -101,6 +111,6 @@ When `HasMore` is `true`, increment `--offset` by `--limit` and fetch again. Con
 
 ## Related
 
-- **Orchestrator** (`uip or`) -- Folders, jobs, processes, packages, users, machines. See [orchestrator.md](../orchestrator/orchestrator.md).
-- **Solutions** (`uip solution`) -- Pack, publish, and deploy solution packages. See [solution.md](../solution/solution.md).
-- **Setup Environment** -- Folder creation and user assignment required before using folder-scoped resources. See [setup-environment.md](../orchestrator/setup-environment.md).
+- **Orchestrator** (`uip or`) — folders, jobs, processes, packages, users, machines → [`uipath-orchestrator`](../orchestrator/orchestrator.md)
+- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](../solution/solution.md)
+- **Folder/user setup** — required before folder-scoped resources can be used → [`uipath-orchestrator/setup-environment`](../orchestrator/setup-environment.md)

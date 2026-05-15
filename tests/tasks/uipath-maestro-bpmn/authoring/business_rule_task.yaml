@@ -4,12 +4,13 @@ description: >
   proving the Orchestrator.BusinessRules row is covered by an eval and not
   only by static fixtures.
 tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:business-rule", "feature:orchestrator"]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

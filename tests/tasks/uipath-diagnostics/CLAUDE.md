@@ -22,7 +22,7 @@ A new scenario needs four sources. Three are mandatory; the fourth is optional.
 
 | Input | Required | Source |
 |-------|----------|--------|
-| `--investigation <dir>` | yes | The `.investigation/` directory written by the diagnostics skill: `state.json`, `hypotheses.json`, `evidence/`, `raw/`, `depth-check.json`. |
+| `--investigation <dir>` | yes | The `.local/investigations/` directory written by the diagnostics skill: `state.json`, `hypotheses.json`, `evidence/`, `raw/`, `depth-check.json`. |
 | `--project <dir>` | no | The UiPath project source that was failing. Snapshotted into the new scenario's `process/`. Omit when the diagnosis is purely CLI-driven (no project source available). |
 | `--transcript <path>` | yes | A `.jsonl` file or a directory. Directory mode walks `*.jsonl` recursively and treats files under `subagents/` as sub-agent transcripts (their `uip` calls count, their final text is ignored). Source of truth for `uip` calls + presenter output. |
 | `--resolution <file>` | no | Pre-written `RESOLUTION.md`. If omitted, the generator extracts the presenter's final assistant message from the transcript. |
@@ -130,7 +130,7 @@ Test runs require valid `uip` auth on the host (set via `.env` or environment) f
 ## Anti-patterns
 
 - **Do not** hand-edit a generated scenario's `manifest.json` to "make tests pass." If the agent calls a command not in the manifest, that's a coverage gap — add a rule with the verbatim recorded response.
-- **Do not** include the original `.investigation/` outputs in the committed scenario. The fresh run produces its own.
+- **Do not** include the original `.local/investigations/` outputs in the committed scenario. The fresh run produces its own.
 - **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.
 - **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-diagnostics/<scenario>/`.
 - **Do not** create a scenario without a verified resolution. The LLM judge needs an authoritative ground truth; a half-baked `RESOLUTION.md` produces flaky scores.
@@ -147,7 +147,7 @@ Test runs require valid `uip` auth on the host (set via `.env` or environment) f
 
 If a user says "save this as a regression test" mid-session and provides no flags, infer:
 
-- `--investigation` → `.investigation/` in the cwd
+- `--investigation` → `.local/investigations/` in the cwd
 - `--project` → walk up from cwd looking for the nearest `project.json`
 - `--transcript` → most-recent JSONL under `~/.claude/projects/<slug>/sessions/`
 - `--resolution` → omit, extract from transcript

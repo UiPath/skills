@@ -9,12 +9,13 @@ description: >
   `bindings[]` entry — no duplicates per
   `(resourceKey, propertyAttribute)` pair.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, shape:single-node, resource]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

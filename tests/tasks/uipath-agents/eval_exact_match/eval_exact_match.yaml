@@ -8,12 +8,13 @@ description: >
   deterministic Simple Function agent. All test cases must score 1.0
   and report PASSED in the output file.
 tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

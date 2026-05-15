@@ -20,21 +20,28 @@ description: "One-sentence hypothesis under test"
 # Pass --repeats N at CLI time to override repeats without editing this file.
 # ---------------------------------------------------------------------------
 defaults:
-  max_iterations: 2
-  task_timeout: 1200
-  turn_timeout: 300
+  run_limits:
+    max_turns: 20
+    task_timeout: 1200
+    turn_timeout: 300
   repeats: 1
   agent:
     type: claude-code
     permission_mode: bypassPermissions
     model: claude-sonnet-4-6
-    max_turns: 20
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
       You are a coding agent. Work only inside your current working directory.
       Do NOT read, list, or access any files outside your working directory.
       In particular, do NOT access the plugin directories — those are loaded by
       the skill system and you do not need to read them directly.
+
+  # Drop <sandbox>/{node_modules,.npm-prefix} so preserved artifacts stay slim
+  # and Node module resolution can't leak across concurrent sandboxes
+  # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
+  post_run:
+    - command: "rm -rf node_modules .npm-prefix"
+      timeout: 30
 
 # ---------------------------------------------------------------------------
 # Variants — one entry per condition you're comparing.
