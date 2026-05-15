@@ -133,7 +133,8 @@ uip solution resource refresh --solution-folder ./InvoiceAutomation --output jso
 
 > **`Result: Success` only means the CLI executed — not that the refresh service inside it succeeded.** The underlying service can fail (e.g., schema errors in `bindings_v2.json` logged to stderr as `ERROR [ResourceBuilder:BindingsMetadataSerializer] ...`) while the JSON still returns `Result: Success` with `Created: 0, Imported: 0, Skipped: 0`. Always inspect stderr for `ERROR` lines, and treat `Created==0 && Imported==0 && Skipped==0` while bindings exist on disk as a refresh failure.
 
-## Step 7: Upload to Studio Web
+Steps performed during refresh:
+
 1. **Discover bindings** — reads `bindings_v2.json` from each project (solution root copy is also read for agent projects).
 2. **Discover cloud GUIDs** — for agent projects, supplements bindings with `<project>/resources/<X>/resource.json` files. These carry a `referenceKey` (GUID) for tools/escalations/contexts that the agent depends on; the GUID is the unambiguous cloud identity (binding names alone aren't unique across folders).
 3. **Reconcile in-solution projects (`.uipx`)** — generates project artefact files (`process/<type>/`, `package/`) from SDK templates. Internal to the solution; no debug overwrite written.
@@ -194,7 +195,7 @@ The local file is what `refresh` (and `solution project add`) wrote to disk: a d
 |-------|-------|--------------|
 | `name`, `package`, basic metadata | ✅ | ✅ |
 | `apiVersion` | ✅ | ✅ |
-| `entryPointUniqueId` / `entryPoints` | ❌ usually `null` | ✅ alocate de server la deploy |
+| `entryPointUniqueId` / `entryPoints` | ❌ usually `null` | ✅ assigned by the server at deploy |
 | `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` | ❌ | ✅ |
 | `agentMemory`, `targetRuntime`, `environmentVariables` | ❌ | ✅ runtime defaults |
 
@@ -286,7 +287,7 @@ Copying `bindings.json` → `bindings_v2.json` does **not** work — the schemas
 
 ### `resource refresh` reports false success on schema errors
 
-See [Step 6](#step-6-refresh-resources). Always capture stderr and grep for `ERROR`. The `Warnings` field stays empty even when the underlying parser throws.
+See [Step 7](#step-7-refresh-resources). Always capture stderr and grep for `ERROR`. The `Warnings` field stays empty even when the underlying parser throws.
 
 ### `project remove` leaves orphan package resources
 

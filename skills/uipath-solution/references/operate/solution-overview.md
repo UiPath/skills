@@ -48,7 +48,7 @@ MySolution/
 
 ```mermaid
 graph LR
-    A[new] --> B[project add]
+    A[init] --> B[project add]
     B --> C[resource refresh]
     C --> D[pack]
     D --> E[publish]
@@ -69,7 +69,8 @@ Always run `resource refresh` before either path so the bundled artefact files a
 
 ```
 uip solution
-  ├── new <name>                          Create a new solution directory with .uipx manifest
+  ├── init <name>                         Create a new solution directory with .uipx manifest
+  │                                        (pre-rename CLIs expose this as `new`; see SKILL.md Operate-half "CLI Surface Probe")
   ├── delete <solution-id>                Delete a solution from Studio Web
   ├── upload <path>                       Upload solution to Studio Web
   ├── pack <solution> <output>            Pack into a deployable .zip package

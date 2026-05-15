@@ -275,7 +275,7 @@ public enum <EnumName>
 
 ## 9. Application Inventory
 
-> **List all applications.** For SaaS integrations (Salesforce, Jira, etc.), flag `Integration Service — <CONNECTOR_SLUG>` in the Access Method column (e.g., `Integration Service — salesforce`) — the implementation plan will create a task to configure the connector, and §14 only needs `UiPath.IntegrationService.Activities` for all connectors combined. For email, specify the protocol (IMAP, O365 Graph API, Exchange/EWS, POP3) — do not default to O365. See the [Package Selection Guide](../../references/package-selection-guide.md) for the full Access Method → Package mapping.
+> **List all applications.** For SaaS integrations (Salesforce, Jira, etc.), flag `Integration Service — <CONNECTOR_SLUG>` in the Access Method column (e.g., `Integration Service — salesforce`) — the implementation plan will create a task to configure the connector, and §14 only needs `UiPath.IntegrationService.Activities` for all connectors combined. For email, specify the protocol (IMAP, O365 Graph API, Exchange/EWS, POP3) — do not default to O365. See the [Package Selection Guide](../../references/design/package-selection-guide.md) for the full Access Method → Package mapping.
 
 | # | Application | Interface | Access Method | Role | Interaction Pattern | Session Management |
 |---|---|---|---|---|---|---|
@@ -473,7 +473,7 @@ Sub-type reference:
 
 ## 14. Packages
 
-> **List required NuGet packages only.** For Master Project: one table per sub-project. Infer packages from §9 Application Inventory and the process steps using the [Package Selection Guide](../../references/package-selection-guide.md) — it contains the full Application-Type → Package matrix, Integration Service vs NuGet decision rules, and a selection checklist.
+> **List required NuGet packages only.** For Master Project: one table per sub-project. Infer packages from §9 Application Inventory and the process steps using the [Package Selection Guide](../../references/design/package-selection-guide.md) — it contains the full Application-Type → Package matrix, Integration Service vs NuGet decision rules, and a selection checklist.
 >
 > **Do NOT list Integration Service connectors in this table.** Integration Service connections are declared in §9 Application Inventory (Access Method = `Integration Service — <CONNECTOR_SLUG>`) and run on `UiPath.IntegrationService.Activities` — that package is the only §14 entry needed for them. See the Package Selection Guide's "Integration Service Connectors vs NuGet Packages" section for side-by-side examples.
 

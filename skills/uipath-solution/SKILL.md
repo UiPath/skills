@@ -60,7 +60,7 @@ After the SDD is written, hand off to `uipath-planner`. The planner reads the SD
 12. **Always generate a thorough §17 Testing Strategy.** Cover happy path, edge cases, error scenarios, and (for Master Projects) end-to-end pipeline tests. Test depth is non-negotiable — never offer the user a "happy path only" option. Implementation specialists may scope down at execution time if needed.
 13. **Use AskUserQuestion for Agent/Coded App gaps.** If the primary product is Agents or Coded Apps and the PDD lacks required details (framework, tools, pages, flows), use `AskUserQuestion` to ask if the user wants to proceed with gap-filling or use a different product. Never auto-fallback.
 14. **All user questions use numbered-choice format by default; use `multiSelect: true` only for Solution composition and Tenant Library Discovery.** Every `AskUserQuestion` uses a blockquote with numbered options and a `*(recommended)*` tag on the default choice. This applies to execution mode, language, product gap-filling, fallback selection, SME review resolution, RPA sub-type, and scope confirmation. The exceptions are Level 1.75 Pass A (Solution composition) and Step 2.5 Tenant Library Discovery, which use `multiSelect: true` so the user can check every product / library that applies.
-15. **For "leverage / find shared libraries" requests (Step 2.5 or ad-hoc), search the tenant feed — not the local filesystem, project folder, NuGet.org, or keyword-permutation loops.** Run `uip resource libraries list --limit 500 --output-filter "<JMESPath>" --output json`. On zero results from the filtered call, take the fallback branch — do not re-keyword. See [Tenant Library Search Guide](references/design/tenant-library-search-guide.md) for the full procedure.
+15. **For "leverage / find shared libraries" requests (Step 2.5 or ad-hoc), search the tenant feed — not the local filesystem, project folder, NuGet.org, or keyword-permutation loops.** Run the auth preflight first (`uip resource libraries list --limit 1 --output json`); on `Result: Failure` with an auth message, take the manual fallback from the guide — do NOT retry silently. On success, run the keyword call `uip resource libraries list --limit 500 --output-filter "<JMESPath>" --output json`. On zero results from the filtered call, take the fallback branch — do not re-keyword. See [Tenant Library Search Guide](references/design/tenant-library-search-guide.md) for the full procedure.
 16. **The terminal artefact of an SDD-driven build is a packed `.uipx` solution.** When implementation reports complete, the SDD's §18 Next Steps points the user back to this skill's Operate half: `uip solution init` → `uip solution project add` (one per project in the unified list) → `uip solution resource refresh` → `uip solution pack`. A bare project folder is not the deliverable. The Operate half owns this; the Design half flags it as the final step.
 
 ### Workflow
@@ -89,6 +89,7 @@ uip solution init --help --output json
 
 - Result `Success` → post-rename CLI (default). Use the commands and flags as documented in the references.
 - `unknown command` / non-zero exit → pre-rename CLI. Translate via the table below before each call. Re-probe on any later `unknown command` error.
+- `command not found` / `uip: not found` / `'uip' is not recognized` → CLI not installed. Tell the user to run `npm install -g @uipath/cli`, then `uip login`, and abort the Operate-half work until those succeed.
 
 | Post-rename (default) | Pre-rename equivalent |
 |---|---|
@@ -123,6 +124,8 @@ The typical lifecycle for a UiPath Solution:
 6. deploy run          → Promote to Orchestrator (auto-activates by default)
 7. (optional) activate → Use --skip-activate on deploy, then activate explicitly
 ```
+
+> **Coded apps in the project list deploy in parallel, not through `uip solution`.** Coded-app projects (Coded Web Apps and Coded Action Apps) have no `project.uiproj` / `project.json` and are NOT registered via `uip solution project add`. For each coded-app project in the unified list, run `uip codedapp publish` / `uip codedapp deploy` independently — the rest of the solution still goes through steps 1-7 above. See `uipath-coded-apps` for the coded-app lifecycle.
 
 Two distinct distribution paths from the same source:
 - **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.

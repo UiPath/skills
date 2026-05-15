@@ -42,6 +42,8 @@ Mark each task `in_progress` when starting and `completed` when done.
 
 **Rule G-8 — Task creation is best-effort and never blocks SDD output.** If any `TaskCreate` or `TaskUpdate` call fails (tool unavailable, runtime error, timeout), log a single warning to the user, continue the SDD generation without progress tasks, and do not retry. The SDD file itself is the authoritative deliverable. Progress tasks are a UX convenience only.
 
+> If Step 0.5 `TaskCreate` failed, silently skip every subsequent `Mark "X" as in_progress / as completed` instruction in this guide — the tasks do not exist to update, and a second warning to the user is noise.
+
 These tasks track SDD generation. Implementation tasks are owned by `uipath-planner` and are created when the user loads the planner with this SDD — do NOT create implementation tasks here.
 
 ### Step 1: Read the PDD
@@ -307,7 +309,9 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 
 Before writing the SDD, collect all `[SME REVIEW]` items. If there are any:
 
-1. Batch them into a single `AskUserQuestion` using numbered-choice format:
+> **Batching rule — `AskUserQuestion` 4-option cap.** Each `AskUserQuestion` question accepts at most 4 options. If there are 1-4 items, send one question. If there are 5-8 items, send a single `AskUserQuestion` call with **two questions** (each ≤4 options), grouped by SDD section. If there are more than 8 items, send one `AskUserQuestion` call per batch of up to 8 (two questions each), waiting for answers between batches. **Do not flatten >4 items into one question** — the call will fail validation.
+
+1. Batch them into one or more `AskUserQuestion` calls using numbered-choice format. Example for 1-4 items:
 
 > Before I finalize the SDD, these items need your input:
 >
