@@ -459,16 +459,17 @@ runs/
    - Agent ran out of turns -> increase `max_turns` or simplify the prompt
    - Sandbox issue -> check that `uip` CLI is available in the test environment
 
-## Test Coverage Analysis
+## Authoring Workflow
 
-Use the `/test-coverage` slash command to generate a coverage report that maps what a skill teaches against what its tests verify:
+Author tests in this order. Each step has a dedicated slash command.
+
+### 1. `/test-coverage <skill-name>` — find the gap
+
+Generates a coverage report that maps what a skill teaches against what its tests verify.
 
 ```bash
-# Analyze a single skill
-/test-coverage uipath-maestro-flow
-
-# Analyze all skills
-/test-coverage all
+/test-coverage uipath-maestro-flow   # single skill
+/test-coverage all                   # cross-skill roll-up
 ```
 
 Reports are written to `tests/reports/<skill-name>.md` and include:
@@ -476,11 +477,11 @@ Reports are written to `tests/reports/<skill-name>.md` and include:
 - Weighted overall score
 - Priority-ranked coverage gaps with concrete test recommendations
 
-The command is defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
+Defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
 
-### Generating a Test Task
+### 2. `/generate-task <description>` — scaffold the YAML
 
-Use the `/generate-task` slash command to scaffold a single task YAML from a free-form description of the scenario to cover. The command always infers the target skill from the description — do not pass a skill name.
+Scaffolds a single task YAML from a free-form description of the scenario to cover. The command always infers the target skill from the description — do not pass a skill name.
 
 ```bash
 /generate-task smoke test for folder listing via uip orchestrator
@@ -488,9 +489,17 @@ Use the `/generate-task` slash command to scaffold a single task YAML from a fre
 /generate-task cover the new uip flow registry get subcommand
 ```
 
-This generates one task YAML (and optional check script) in `tests/tasks/<skill-name>/`. Generated tasks are **unverified scaffolds** — before merging, run the task end-to-end with `coder-eval` and add a passing-run claim to the PR description (the lint workflow flags missing claims as High severity). Verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
+Output lands in `tests/tasks/<skill-name>/` as one task YAML (and optional check script). Generated tasks are **unverified scaffolds** — verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
 
-The command is defined in [`.claude/commands/generate-task.md`](../.claude/commands/generate-task.md).
+Defined in [`.claude/commands/generate-task.md`](../.claude/commands/generate-task.md).
+
+### 3. `/lint-task <path>` — lint before committing
+
+Lints the generated YAML against repo conventions (sandbox rules, tag taxonomy, criterion shape) before it lands in a PR. Run this before step 4.
+
+### 4. Run with `coder-eval` and attach a passing-run claim
+
+Run the task end-to-end (see [Running Tests](#running-tests)) and add a passing-run claim to the PR description. The lint workflow flags missing claims as High severity.
 
 ## Further Reading
 
