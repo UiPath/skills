@@ -15,8 +15,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  List the storage buckets defined in the Orchestrator folder with key
-  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
+  List the storage buckets defined in the `Finance` folder of the current
+  UiPath tenant.
 
 success_criteria:
   - type: command_executed

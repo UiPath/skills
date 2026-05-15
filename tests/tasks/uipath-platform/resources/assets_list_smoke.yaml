@@ -11,8 +11,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  List the assets defined in the Orchestrator folder with key
-  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
+  List the assets defined in the `Shared` folder of the current UiPath
+  tenant.
 
 success_criteria:
   - type: command_executed
