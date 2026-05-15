@@ -337,7 +337,7 @@ uip maestro flow registry pull --force                                # refresh 
 uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
 
 # Node lifecycle
-uip maestro flow node delete <PROJECT>.flow start --output json       # remove manual trigger
+uip maestro flow node remove <PROJECT>.flow start --output json       # remove manual trigger
 uip maestro flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
 uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
 
@@ -431,6 +431,6 @@ uip maestro flow debug . --output json
 3. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields
 4. **Filters are optional** — omit `filter` from `--detail` if the user wants all events to trigger the flow. Do not invent an "empty" expression.
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
-6. **Use `uip maestro flow node delete` to remove the manual trigger** — do NOT use `Edit` to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Hand-editing skips these cleanup steps and can leave orphaned references.
+6. **Use `uip maestro flow node remove` to remove the manual trigger** — do NOT use `Edit` to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Hand-editing skips these cleanup steps and can leave orphaned references.
 7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
 8. **Validate filter field names against `filterFields`** — only field names returned in `filterFields.fields[].name` are valid leaf `id`s in the filter tree. The CLI rejects trees that reference unknown fields at configure time, so guessing will surface as an `InvalidDetailError` rather than a silent runtime no-match.

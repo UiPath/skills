@@ -1,0 +1,67 @@
+task_id: skill-platform-licensing-users-licenses-get
+description: >
+  Smoke test: agent uses the uipath-platform skill to inspect the bundles a
+  user currently leases and reports the result using the friendly-name format
+  from the docs. Verifies (1) `uip platform users licenses get <user>
+  --output json` shape, (2) docs page fetch for code resolution, and
+  (3) final reply uses `<Friendly Name> (<CODE>)` format. CLI auth failure
+  is expected in this offline environment.
+tags: [uipath-platform, smoke-blocked, licensing, users]
+skip: true
+# Blocked: `uip platform users licenses` is not in the public
+# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
+# Re-enable when the CLI ships the users surface. See PLT-103133.
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  What license bundles does user `dan.dinu@uipath.com` currently hold? Tell me
+  each bundle and whether it was assigned directly or inherited from a group.
+  When you reply, refer to each bundle using its friendly name AND its code.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - If the CLI fails, still resolve the most common user-bundle name → code
+    mappings from the UiPath docs license-codes page so you can demonstrate
+    the required reporting format.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran `uip platform users licenses get` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+platform\s+users\s+licenses\s+get\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the UiPath docs license-codes page"
+    tool_name: "WebFetch"
+    command_pattern: 'docs\.uipath\.com.*license-codes'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent's final reply uses `<Friendly Name> (<CODE>)` format"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Score 1.0 if it references one
+      or more license bundles in the form `<Friendly Name> (<CODE>)` — e.g.,
+      `Automation Developer Named User (RPADEVPRONU)` or `Attended Named User
+      (ATTUNU)`. Score 0.0 if the reply shows only raw codes without friendly
+      names, or only friendly names without codes. Ignore whether the CLI
+      call succeeded — the rubric is solely about reporting format.
+    weight: 2.0
+    pass_threshold: 1.0

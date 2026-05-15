@@ -27,7 +27,7 @@ When editing the `.flow` file with `Edit` / `Write`, **you** are responsible for
 
 Before editing the `.flow` file, ensure each of the following is handled. These are the concerns the CLI used to manage automatically; under the Edit / Write default, **you** are responsible for them.
 
-1. **Locate the canonical `.flow` file.** Before any `Edit` / `Write`, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution new <Name>` + `uip maestro flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `Edit` / `Write` call to the sibling file. `uip maestro flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
+1. **Locate the canonical `.flow` file.** Before any `Edit` / `Write`, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution init <Name>` + `uip maestro flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `Edit` / `Write` call to the sibling file. `uip maestro flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
 2. **Definitions and versions.** For every new node type, run `uip maestro flow registry get <type> --output json`. Copy the returned node definition object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Depending on CLI/plugin version, the node definition may appear as `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`; copy that node object, not the surrounding `Result` / `Code` envelope. Then set each node instance's `typeVersion` to the exact copied definition `version` value. The validator matches `type:typeVersion` exactly; `typeVersion: "1.0.0"` does not match a registry definition with `"version": "1.0"`. Never hand-write or paraphrase definitions (see "Every node type needs a `definitions` entry" in [the Author capability index](../CAPABILITY.md)).
 3. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
 4. **`sourcePort` and `targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (see "`targetPort` is required on every edge" in [the Author capability index](../CAPABILITY.md)). Use `sourcePort`, never `sourceHandle`; `sourceHandle` is not part of the `.flow` edge schema and produces a precise schema error such as `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` (the path tells you exactly which edge entry is missing the `sourcePort` key). Look up ports in the relevant plugin's `planning.md` or in [file-format.md — Standard ports](../../shared/file-format.md).
@@ -69,7 +69,7 @@ PY
 uip maestro flow validate <FILE>.flow --output json
 ```
 
-`json.dump(..., indent=2)` matches the file's existing 2-space indent — `flow tidy` normalizes layout but does not re-indent unrelated structure, so preserve the canonical 2-space indent on writes.
+`json.dump(..., indent=2)` matches the file's existing 2-space indent — `flow format` normalizes layout but does not re-indent unrelated structure, so preserve the canonical 2-space indent on writes.
 
 ### `jq` for extracting CLI JSON
 
@@ -165,7 +165,7 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 ]
 ```
 
-5. Add a placeholder layout entry for the node in the top-level `layout.nodes` object — `flow tidy` rewrites both `position` and `size` on save:
+5. Add a placeholder layout entry for the node in the top-level `layout.nodes` object — `flow format` rewrites both `position` and `size` on save:
 
 ```json
 "layout": {
@@ -179,7 +179,7 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 }
 ```
 
-**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow tidy <ProjectName>.flow` after edits. Tidy arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
+**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow format <ProjectName>.flow` after edits. Format arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
 
 ### Delete a node
 

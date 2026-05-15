@@ -2,7 +2,7 @@
 
 How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are authored in the flow's top-level `bindings[]` — `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
 
-For generic node/edge add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
 
 ## How Connector Nodes Differ from OOTB
 
@@ -263,6 +263,22 @@ The `objectName` field is required for generic nodes (see "Generic vs Concrete A
 > **`flow validate` cross-checks `method` against the activity's `operation`.** If the value you pass disagrees with the operation baked into the node by `node add` (e.g. `method: "POST"` on a Retrieve activity), validate fails with `HTTP method "<X>" does not match operation "<Y>". Expected "<Z>"`. This catches stale copy-paste — fix by re-reading `operation.method` from `is resources describe` against the right `--operation`.
 
 Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (`registry get`, concrete only) or `requestFields[].name` (`is resources describe`, both).
+
+> **Array fields — `[*]` indicates an array.** `[*]` in `requestFields[].name` (or `inputDefinition.fields[].name`) marks the field as an array; `dataType` identifies the element type. **Supported only when `[*]` is the name suffix.** Any name containing `[*].` (path segments after the `[*]`, e.g. `addresses[*].zipCode`, `contacts[*].emails[*]`) is not authorable — the canvas UI does not emit these shapes. The rule below covers `bodyParameters`, `queryParameters`, and `pathParameters`.
+>
+> | `requestFields[].name` | `dataType` | Authoring shape in `inputs.detail` |
+> |---|---|---|
+> | `fields.labels[*]` | `string` | `"fields.labels": ["shield", "p0"]` |
+> | `fields.components_arrayRemap_name[*]` | `string` | `"fields.components_arrayRemap_name": ["IS Runtime"]` |
+>
+> **Strip `[*]` from the key; pass an array value.** The canvas UI is the source of truth — it omits `[*]` from the key on write, so hand-authored `inputs.detail` must match. The runtime rejects any key containing the literal `[*]` substring as unknown (regardless of value shape). **Distinct from `customFieldsRequestDetails.parameterValues`**, where `[*]` is encoded as `_array` — see Step 6c.
+>
+> **Expression values.** The serializer is purely structural (dot-expansion only; no expression evaluation, no type coercion). Choose the authoring shape based on what the expression returns at runtime:
+>
+> | Expression resolves to | Authoring shape | Example |
+> |---|---|---|
+> | The whole array | `"<field>": "=<expr>"` | `"fields.labels": "=js:$vars.allTags"` |
+> | A single element to wrap | `"<field>": ["=<expr>"]` | `"fields.labels": ["=js:$vars.priorityTag"]` |
 
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 
@@ -633,6 +649,7 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | `node configure` fails with `customFieldsRequestDetails.parameterValues must be an array of [key, value] tuples, not an object map` | Wrote `parameterValues: {key: value}` (object map). Studio Web emits its `Map<string,string\|null>` as `Array.from(entries())` — tuples, not object | Convert to tuples: `[["key", "value"], ...]`. See Step 6c. |
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
 | `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
+| Field rejected at runtime as unknown (e.g. `"unknown field 'fields.labels[*]'"`) after a clean `flow validate` | `[*]` was left in the `bodyParameters` / `queryParameters` / `pathParameters` key. `[*]` is an array marker from `requestFields[].name`, not part of the wire key. | Strip `[*]` from the key and pass an array value matching the field's `dataType`. Fields with `[*].` (segments after the `[*]`) are not authorable. See the array-fields table in Step 6b. |
 
 ### Debug Tips
 

@@ -52,7 +52,7 @@ The case file lives inside a solution + project structure. After T01 completes, 
 ```
 <directory>/
   <SolutionName>/
-    <SolutionName>.uipx            ← created by `uip solution new` (Step 6.0, CLI)
+    <SolutionName>.uipx            ← created by `uip solution init` (Step 6.0, CLI)
     <ProjectName>/                 ← created + populated by T01 (case plugin)
       project.uiproj               ← § Scaffold writes
       operate.json                 ← § Scaffold writes
@@ -62,6 +62,6 @@ The case file lives inside a solution + project structure. After T01 completes, 
       caseplan.json                ← § Write caseplan.json writes
 ```
 
-Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution new` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.0b.
+Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution init` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.0b.
 
 See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.

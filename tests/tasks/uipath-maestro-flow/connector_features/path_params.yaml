@@ -37,6 +37,22 @@ initial_prompt: |
   does not expose.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip is connections list` to discover available connections"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+is\\s+connections\\s+list"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tenant has at least one Jira connection (precondition for `node configure`)"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-atlassian-jira"
+    timeout: 35
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "Flow file exists and is valid JSON"
     command: "python3 -c \"import json,glob; flows=glob.glob('**/PathParamsTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))\""

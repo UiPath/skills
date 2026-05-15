@@ -160,7 +160,7 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 ## Layout
 
-Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow tidy` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-tidy)) — you should not need to hand-write it.
+Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow format` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-format)) — you should not need to hand-write it.
 
 ```json
 "layout": {
@@ -184,15 +184,15 @@ Node positioning is stored in a **top-level `layout` object**, keyed by node `id
 }
 ```
 
-Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for every node and populates `position` + `size`.
+Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for every node and populates `position` + `size`.
 
-**What tidy does:**
+**What format does:**
 - Arranges nodes horizontally (left-to-right) with `nodeSpacing: 96`, anchored to the leftmost node's original position
 - Sets `size` to `{ "width": 96, "height": 96 }` on every non-`stickyNote` node — non-96 sizes render as rectangles in Studio Web
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Format handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
 
 ## Edge — both ports required
 

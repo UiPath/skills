@@ -45,11 +45,11 @@ references/
 
 ### Capability boundary
 
-- **Author** = on disk, locally, **without `uip login`** (`flow init`, `validate`, `tidy`, registry, JSON edits)
+- **Author** = on disk, locally, **without `uip login`** (`flow init`, `validate`, `format`, registry, JSON edits)
 - **Operate** = touches the cloud, **requires `uip login`** (`solution upload`, `flow debug`, `flow pack`, `process run`, `instance ...`)
 - **Diagnose** = postmortem on a failed run, **requires `uip login`** (`instance incidents`, `instance variables`, `instance asset`, `incident get`, `job traces`)
 
-Author terminates at `validate` + `tidy` and hands off to Operate. Operate hands off to Diagnose when a run faults. Diagnose hands off back to Author for the underlying fix.
+Author terminates at `validate` + `format` and hands off to Operate. Operate hands off to Diagnose when a run faults. Diagnose hands off back to Author for the underlying fix.
 
 ### Capability-index template
 

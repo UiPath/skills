@@ -9,7 +9,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | Pattern | Symptom | Cause |
 |---|---|---|
 | [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
-| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow tidy` not run before publish |
+| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
@@ -61,17 +61,17 @@ After publish or debug upload, Studio Web renders nodes as oblong rectangles (e.
 
 ### Cause
 
-`uip maestro flow tidy` was not run before publishing or debugging. Hand-written or stale `layout` data with non-96 dimensions remains in the `.flow` file and Studio Web renders it as-is.
+`uip maestro flow format` was not run before publishing or debugging. Hand-written or stale `layout` data with non-96 dimensions remains in the `.flow` file and Studio Web renders it as-is.
 
 ### Fix
 
-Run tidy before any publish or debug operation:
+Run format before any publish or debug operation:
 
 ```bash
-uip maestro flow tidy <ProjectName>.flow --output json
+uip maestro flow format <ProjectName>.flow --output json
 ```
 
-Tidy:
+Format:
 
 - Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }`
 - Arranges nodes horizontally with ELK at `nodeSpacing: 96`
@@ -80,7 +80,7 @@ Tidy:
 
 ### Reference
 
-[author capability](../../author/CAPABILITY.md) — see "Always run `flow tidy` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow tidy](../../shared/cli-commands.md#uip-maestro-flow-tidy).
+[author capability](../../author/CAPABILITY.md) — see "Always run `flow format` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow format](../../shared/cli-commands.md#uip-maestro-flow-format).
 
 ---
 
@@ -152,7 +152,7 @@ The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of 
 Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution project add` step is no longer needed.
 
 ```bash
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 cd <SolutionName>
 uip maestro flow init <ProjectName> --output json
 # Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
