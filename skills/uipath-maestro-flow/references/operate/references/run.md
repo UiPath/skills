@@ -62,6 +62,16 @@ uip maestro flow process list --output json                           # discover
 uip maestro flow process run <process-key> <folder-key> --output json # trigger a run
 ```
 
+Pass input arguments and/or bind file-typed input variables (same surface as `flow debug`):
+
+```bash
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --inputs '{"numberA": 5, "numberB": 7}' \
+  --attachment file1=./resume.pdf
+```
+
+> **Pre-flight.** `--attachment <name=path>` is repeatable, `name=` required; each `<name>` LHS must match a `variables.globals[]` entry with `direction:"in"` and `type:"file"` in the source `.flow`. Same invariant as `flow debug`. See [shared/cli-commands.md — uip maestro flow process](../../shared/cli-commands.md#uip-maestro-flow-process) for the `jq` pre-flight check and the `--inputs` / `--attachment` precedence rule (attachment wins on key collisions).
+
 Run `uip maestro flow process --help` for all subcommands and options.
 
 ## Job inspection — status and traces

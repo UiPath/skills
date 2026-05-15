@@ -163,7 +163,25 @@ Manage deployed Flow processes in Orchestrator. **Requires `uip login`.**
 ```bash
 uip maestro flow process list --output json
 uip maestro flow process run <process-key> <folder-key> --output json
+
+# Pass input arguments (JSON or @file.json)
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --inputs '{"numberA": 5, "numberB": 7}'
+
+# Bind local files to file-typed input variables (repeatable)
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --attachment file1=./resume.pdf
 ```
+
+Use `--attachment <name=path>` to upload a local file and bind it to a file-typed workflow input variable. Same semantics as `flow debug --attachment` — repeatable; **`name=` is required**; LHS must match a file-typed input variable's id; engine resolves `=js:$vars.<scope>.input.<name>` against the uploaded `JobAttachmentReference`; local basename becomes `FullName` in the Orchestrator UI. When `--inputs` and `--attachment` both supply the same key, `--attachment` wins and the CLI logs an override warning. The `--validate` flag (if used) accepts `JobAttachmentReference` objects for file-typed slots — they pass the JSON-schema check despite the slot's nominal `string` type.
+
+**Pre-flight: verify the binding key before invoking** — same invariant as `flow debug`. Each `<name>` LHS MUST exist in the deployed flow's `variables.globals[]` with `direction:"in"` AND `type:"file"`. Check against the source `.flow`:
+
+```bash
+jq '.variables.globals[] | select(.direction=="in" and .type=="file") | .id' <path-to>.flow
+```
+
+A mismatch is not enforced by the CLI today — the upload succeeds but the runtime binding is dangling and the consuming connector multipart slot faults.
 
 Run `uip maestro flow process --help` for all subcommands and options.
 
