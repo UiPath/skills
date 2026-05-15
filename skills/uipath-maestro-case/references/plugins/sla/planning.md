@@ -86,7 +86,7 @@ Recipient value already matches `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 1. **Pull once.** First group lookup in the planning session: `uip admin groups list --output json`. Cache the array in memory for the rest of Phase 1.
 2. **Exact match** — entries where `name` OR `displayName` equals sdd's group name case-insensitively. Exactly 1 match → write `UserGroup: <id> / "<group-name>"`. Rationale: `auto-exact-name`.
 3. **Substring fallback** — case-insensitive substring on `name` / `displayName`. Any hits → AskUserQuestion with top 3 (alphabetical by `name`) + `Keep as <UNRESOLVED>`.
-4. **Empty** — both filters return 0 → AskUserQuestion with closest fuzzy candidates or `Keep as <UNRESOLVED>`.
+4. **Empty** — both filters return 0 → AskUserQuestion: `No matching group found for "<group-name>". Keep as <UNRESOLVED>?` with a single `Keep as <UNRESOLVED>` option. Do NOT fabricate "fuzzy candidates"; the user patches the UUID externally per the standard decline path. Rationale: `user-declined-keep-unresolved`.
 
 ### Session cache
 
@@ -100,8 +100,8 @@ Non-zero exit from `uip admin ...` → AskUserQuestion:
 Question: Identity resolution failed (<stderr first line>). How should we proceed?
 Header:   Resolver failed
 Options:
-  - Retry
-      → re-run the same `uip admin ...`. Continue on success.
+  - Retry (max 2 attempts)
+      → re-run the same `uip admin ...`. Continue on success. After 2 failed retries the resolver auto-routes to "Skip resolution for this build" — do not loop further.
   - Skip resolution for this build
       → leave every recipient as <UNRESOLVED: ...>, log to tasks/build-issues.md, surface in completion report. Subsequent recipient lookups in this Phase 1 skip the CLI.
   - Abort planning
