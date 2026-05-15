@@ -25,6 +25,9 @@ initial_prompt: |
     - 3 -> "Fall"
     - 4 -> "Winter"
 
+  Declare a numeric flow-level input variable named "quarter" and use that
+  variable in the Switch case expressions.
+
   The flow should branch into separate cases for each quarter value.
 
   Validate the flow.

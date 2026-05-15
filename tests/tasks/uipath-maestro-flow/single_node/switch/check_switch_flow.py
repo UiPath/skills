@@ -19,9 +19,10 @@ def main():
 
     project_dir = find_project_dir()
     in_vars = read_flow_input_vars(project_dir)
+    if not in_vars:
+        sys.exit("FAIL: No input variable found for quarter")
 
-    inputs = {in_vars[0]: 2} if in_vars else None
-    payload = run_debug(inputs=inputs)
+    payload = run_debug(inputs={in_vars[0]: 2})
 
     # Quarter 2 -> "Summer"
     assert_outputs_contain(payload, "summer")

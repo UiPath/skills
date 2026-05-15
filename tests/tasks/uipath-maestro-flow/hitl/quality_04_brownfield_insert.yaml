@@ -41,42 +41,9 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "uip maestro flow validate passes after brownfield insert"
-    command: "uip maestro flow validate ContractReview/ContractReview/ContractReview.flow --output json"
+    description: "Flow validates and preserves brownfield HITL insertion invariants"
+    command: "python3 $TASK_DIR/check_brownfield_insert.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 3.0
+    weight: 10.5
     pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Flow contains the original script node"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"extractMeta"'
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Flow contains the inserted HITL node"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"uipath.human-in-the-loop"'
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "HITL completed handle is wired"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"completed"'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "HITL has a boolean output field for the approval decision"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"boolean"'
-    weight: 1.5
-    pass_threshold: 1.0
-
