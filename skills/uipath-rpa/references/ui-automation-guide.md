@@ -25,6 +25,14 @@ Do not re-inspect or keep polling after the initial check — subsequent capture
 
 ---
 
+## Inspecting & Interacting with GUI apps
+
+Use `uia snapshot inspect` to inspect a live app's UI and element refs, and `uia interact` to test interactions or advance the app between captures.
+
+**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md` — covers all `interact` subcommands and `snapshot inspect`.
+
+---
+
 ## Capturing from Manual Test Steps
 
 When the source is a Test Manager test case, a PDD, or any written list of "Click X / Enter Y / Select Z / Verify W" steps, treat each interaction step as a capture target before writing any workflow code.
