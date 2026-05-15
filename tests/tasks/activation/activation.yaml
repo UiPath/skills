@@ -28,7 +28,6 @@ dataset:
     - uipath-platform.jsonl
     - uipath-review.jsonl
     - uipath-rpa.jsonl
-    - uipath-rpa-legacy.jsonl
     - uipath-solution.jsonl
     - uipath-tasks.jsonl
     - uipath-test.jsonl
@@ -113,11 +112,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-rpa activation"
     skill_name: uipath-rpa
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-  - type: skill_triggered
-    description: "uipath-rpa-legacy activation"
-    skill_name: uipath-rpa-legacy
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered

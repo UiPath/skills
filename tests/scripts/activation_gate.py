@@ -28,7 +28,6 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-planner": 90,
     "uipath-tasks": 85,
     "uipath-governance": 85,
-    "uipath-rpa-legacy": 75,
     "uipath-platform": 70,
     "uipath-maestro-flow": 70,
     "uipath-human-in-the-loop": 70,

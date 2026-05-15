@@ -90,7 +90,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 | Field | Required | Notes |
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
-| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-maestro-flow`, `uipath-maestro-case`, `uipath-human-in-the-loop`, `uipath-test`, `uipath-rpa-legacy`. The planner emits this skill in the live `TaskCreate` call. |
+| `<skill-name>` | yes | One of `uipath-rpa` (handles both modern and legacy projects), `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-maestro-flow`, `uipath-maestro-case`, `uipath-human-in-the-loop`, `uipath-test`. The planner emits this skill in the live `TaskCreate` call. |
 | `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its TaskUpdate flips the checkbox; `human` only when the user manually edits the file. |

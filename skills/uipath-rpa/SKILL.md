@@ -1,7 +1,7 @@
 ---
 name: uipath-rpa
-description: "Always invoke for `.xaml` or `.cs` workflow files. UiPath RPA — create, edit, build, run, debug `.cs` coded workflows and `.xaml` workflows. UI automation with Object Repository selectors, test case authoring, Integration Service connector calls. Live desktop/browser UI exploration and control. Deploy via `.uipx`→uipath-solution. Non-solution Orchestrator ops→uipath-platform. Test reports→uipath-test. Agents→uipath-agents. Legacy→uipath-rpa-legacy."
-when_to_use: "User wants to create, edit, debug, or run a UiPath automation — '.cs' coded workflows or '.xaml' files. Triggers: 'build a workflow', 'automate Excel/email/web/PDF/queue items', 'add a try-catch', 'fix this XAML error', 'scrape this site', 'process invoices', 'create a test case', or project.json shows UiPath dependencies. NOT for '.flow' files (→uipath-maestro-flow), Python agents (→uipath-agents), legacy .NET 4.6.1 projects (→uipath-rpa-legacy)."
+description: "Always invoke for `.xaml` or `.cs` workflow files, including legacy .NET 4.6.1 (`targetFramework: Legacy`) projects. UiPath RPA — create, edit, build, run, debug `.cs` coded workflows and `.xaml` workflows (modern and legacy). UI automation with Object Repository selectors, test case authoring, Integration Service connector calls. Live desktop/browser UI exploration and control. Deploy via `.uipx`→uipath-solution. Non-solution Orchestrator ops→uipath-platform. Test reports→uipath-test. Agents→uipath-agents."
+when_to_use: "User wants to create, edit, debug, or run a UiPath automation — '.cs' coded workflows or '.xaml' files, modern or legacy. Triggers: 'build a workflow', 'automate Excel/email/web/PDF/queue items', 'add a try-catch', 'fix this XAML error', 'scrape this site', 'process invoices', 'create a test case', 'legacy XAML', '.NET Framework 4.6.1', 'uip rpa-legacy', or project.json shows UiPath dependencies. NOT for '.flow' files (→uipath-maestro-flow), Python agents (→uipath-agents)."
 ---
 
 # UiPath RPA Assistant
@@ -52,14 +52,19 @@ Before creating or modifying anything, determine which project to work with. See
 
 ## Project Type Detection
 
-After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAML** project:
+After establishing `PROJECT_DIR`, **first check `project.json` for `targetFramework`**:
+
+- **`targetFramework: "Legacy"` (or field absent in an older project) → Legacy mode.** Stop here and switch to the Legacy-mode workflow: [references/legacy/legacy-mode-guide.md](references/legacy/legacy-mode-guide.md). Legacy projects use the standalone `uip rpa-legacy` CLI, .NET Framework 4.6.1, classic activities (no "X" suffix), and `mscorlib` assembly references. The rest of this SKILL.md (modern mode) does NOT apply to Legacy projects.
+- **`targetFramework: "Windows"` or `"Portable"` → Modern mode**, continue below.
+
+For modern projects, determine whether this is a **coded** or **XAML** project:
 
 1. **Coded mode** — `.cs` files with `[Workflow]` or `[TestCase]` attributes exist AND no `.xaml` workflow files (beyond scaffolded `Main.xaml`)
 2. **XAML mode** — `.xaml` workflow files exist AND no coded workflow `.cs` files
 3. **Hybrid** — Both exist → consult [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) to pick the right mode for each new file; default to matching the user's current request
 4. **New project** — Neither exists → **default to XAML.** Switch to coded only when the user explicitly says "coded", ".cs", "C# workflow", "coded test case", or names a coded-specific trigger (custom data models / DTOs, unit-testable business logic). For all other phrasings ("create a workflow", "automate X", "build an automation"), use XAML. See [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) for the full decision flowchart.
 
-**Routing:** Once mode is determined, use the Task Navigation table below to find the right reference files. For guidance on **choosing** between coded and XAML approaches, see [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md).
+**Routing:** Once mode is determined, use the Task Navigation table below to find the right reference files. For guidance on **choosing** between coded and XAML approaches, see [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md). For Legacy projects, follow [references/legacy/legacy-mode-guide.md](references/legacy/legacy-mode-guide.md) instead.
 
 ## Authoring Mode Selection
 
@@ -186,6 +191,7 @@ Skip this path when the task has no UI surface (data transforms, IS connector ca
 
 | I need to... | Mode | Read these |
 |-------------|------|-----------|
+| **Work in a Legacy (.NET 4.6.1) project** | Legacy | [legacy/legacy-mode-guide.md](references/legacy/legacy-mode-guide.md) — entry point. Modern-mode rules below do not apply. |
 | **Choose coded vs XAML** | Both | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) |
 | **Work in a hybrid project** | Hybrid | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) → [project-structure.md](references/project-structure.md) |
 | **Create a new project** | Both | [environment-setup.md](references/environment-setup.md) |

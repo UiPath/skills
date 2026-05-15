@@ -182,8 +182,7 @@ Identify paths from SKILL.md and references. Common examples:
 
 | Skill | Paths |
 |---|---|
-| `uipath-rpa` | Coded (C#), XAML |
-| `uipath-rpa-legacy` | Cross-platform Legacy, Windows-only Legacy |
+| `uipath-rpa` | Coded (C#), XAML, Legacy (.NET 4.6.1) |
 | `uipath-agents` | LangGraph, LlamaIndex, OpenAI Agents, Simple Function, low-code |
 | `uipath-maestro-flow` (agents) | low-code, inline-flow |
 | `uipath-coded-apps` | Coded Web App, Coded Action App |

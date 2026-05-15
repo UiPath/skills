@@ -67,8 +67,8 @@
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
-# Legacy RPA skill
-/skills/uipath-rpa-legacy/ @roalexandru
+# Legacy RPA — merged into uipath-rpa. Co-own the legacy entry point with the rpa owners.
+/skills/uipath-rpa/references/legacy/ @roalexandru
 
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil

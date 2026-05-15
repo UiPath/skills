@@ -2,7 +2,7 @@
 
 Common request shapes that span more than one specialist skill. Use this guide when deciding whether a request is single-skill (load one specialist directly) or multi-skill (emit a plan).
 
-> **Legacy projects:** if the project is legacy (`.NET Framework 4.6.1`, XAML-only, `targetFramework: "Legacy"` or missing in `project.json`), substitute `uipath-rpa-legacy` for `uipath-rpa` in every pattern below.
+> **Legacy projects:** `uipath-rpa` handles both modern and legacy (`.NET Framework 4.6.1`, XAML-only, `targetFramework: "Legacy"` or missing in `project.json`) — the skill auto-detects legacy mode and switches CLI/conventions internally. Annotate `Mode: Legacy (.NET 4.6.1)` in the plan header for legacy projects; the skill name stays `uipath-rpa` in every pattern below.
 
 ## When to emit a multi-skill plan
 

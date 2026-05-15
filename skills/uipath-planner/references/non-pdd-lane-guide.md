@@ -109,12 +109,12 @@ echo "=== DONE ==="
 
 | Filesystem signal | Plan skill |
 |---|---|
-| `.xaml` files + `project.json` with `targetFramework: "Legacy"` or absent | `uipath-rpa-legacy` |
+| `.xaml` files + `project.json` with `targetFramework: "Legacy"` or absent | `uipath-rpa` (annotate `Mode: Legacy (.NET 4.6.1)` in the plan header) |
 | `.xaml` AND/OR `.cs` files + `project.json` with any other `targetFramework` | `uipath-rpa` |
 | `flow_files/*.flow` | `uipath-maestro-flow` |
 | `.uipath/` or `app.config.json` | `uipath-coded-apps` |
 | `.venv/` AND `pyproject.toml` with uipath dependency | `uipath-agents` |
-| `project.json` only (no `.cs`/`.xaml`) | Check `targetFramework` — `"Legacy"` or absent → `uipath-rpa-legacy`; otherwise → `uipath-rpa` |
+| `project.json` only (no `.cs`/`.xaml`) | `uipath-rpa` — annotate `Mode: Legacy (.NET 4.6.1)` when `targetFramework` is `"Legacy"` or absent |
 
 **Multiple signals?** Go back to Step 2 and emit a multi-skill plan.
 
