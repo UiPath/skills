@@ -12,6 +12,7 @@ Validates that guardrail recommendation for a web research agent produces:
 import json
 import os
 import sys
+import uuid
 from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "WebResearchBriefingSolution" / "WebResearchBriefingAgent"
@@ -40,8 +41,12 @@ def get_validator_type(g: dict) -> str | None:
 def check_structure(g: dict, idx: int) -> None:
     # id
     gid = g.get("id")
-    if not isinstance(gid, str) or "-" not in gid:
-        sys.exit(f"FAIL: guardrail[{idx}].id missing or malformed: {gid!r}")
+    try:
+        if not isinstance(gid, str):
+            raise ValueError
+        uuid.UUID(gid)
+    except (ValueError, AttributeError):
+        sys.exit(f"FAIL: guardrail[{idx}].id is not a valid UUID: {gid!r}")
 
     # action.$actionType
     action = g.get("action")
@@ -97,18 +102,19 @@ def main() -> None:
     # Check for Llm-scoped protection
     llm_guards = [
         g for g in guardrails
-        if get_validator_type(g) in LLM_PROTECTION_VALIDATORS
-        and "Llm" in (g.get("selector") or {}).get("scopes", [])
+        if g.get("$guardrailType") == "builtInValidator"
+        and "Llm" in ((g.get("selector") or {}).get("scopes") or [])
     ]
     if not llm_guards:
         validators_found = [get_validator_type(g) for g in guardrails if get_validator_type(g)]
         sys.exit(
-            f"FAIL: no Llm-scoped guardrail for prompt injection or user prompt attacks found. "
-            f"Expected one of {sorted(LLM_PROTECTION_VALIDATORS)} with scope 'Llm'. "
+            f"FAIL: no Llm-scoped builtInValidator guardrail found. "
+            f"Expected a builtInValidator with scope 'Llm' "
+            f"(e.g. {sorted(LLM_PROTECTION_VALIDATORS)}). "
             f"Validators found: {validators_found}"
         )
     llm_types = [get_validator_type(g) for g in llm_guards]
-    print(f"OK: Llm-scoped protection guardrail(s) present: {llm_types}")
+    print(f"OK: Llm-scoped builtInValidator guardrail(s) present: {llm_types}")
 
     # Check for content-safety guardrail
     content_guards = [

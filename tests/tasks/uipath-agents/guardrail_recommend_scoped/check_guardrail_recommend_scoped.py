@@ -11,6 +11,7 @@ Validates that a custom guardrail was added for the Slack tool:
 import json
 import os
 import sys
+import uuid
 from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "WebResearchBriefingSolution" / "WebResearchBriefingAgent"
@@ -51,13 +52,13 @@ def main() -> None:
     # Find one targeting the Slack tool
     slack_guards = []
     for g in custom:
-        match_names = (g.get("selector") or {}).get("matchNames", [])
+        match_names = (g.get("selector") or {}).get("matchNames") or []
         if TARGET_TOOL in match_names:
             slack_guards.append(g)
 
     if not slack_guards:
         all_match_names = [
-            (g.get("selector") or {}).get("matchNames", []) for g in custom
+            (g.get("selector") or {}).get("matchNames") or [] for g in custom
         ]
         sys.exit(
             f'FAIL: no custom guardrail targets "{TARGET_TOOL}". '
@@ -68,8 +69,12 @@ def main() -> None:
 
     # UUID id
     gid = g.get("id")
-    if not isinstance(gid, str) or "-" not in gid:
-        sys.exit(f"FAIL: guardrail.id missing or malformed: {gid!r}")
+    try:
+        if not isinstance(gid, str):
+            raise ValueError
+        uuid.UUID(gid)
+    except (ValueError, AttributeError):
+        sys.exit(f"FAIL: guardrail.id is not a valid UUID: {gid!r}")
     print(f"OK: guardrail id is a UUID: {gid}")
 
     # action.$actionType
@@ -79,7 +84,7 @@ def main() -> None:
     print(f"OK: action.$actionType = {action['$actionType']!r}")
 
     # selector.scopes contains "Tool"
-    scopes = (g.get("selector") or {}).get("scopes", [])
+    scopes = (g.get("selector") or {}).get("scopes") or []
     if "Tool" not in scopes:
         sys.exit(
             f'FAIL: guardrail selector.scopes must contain "Tool", got {scopes!r}'
