@@ -114,7 +114,7 @@ or
 Schema: v20
 ```
 
-Place this line above all `T<n>` headings. Re-entry protocol (Phase 2 Step 9.6, Phase 3 Step 9.6, Phase 4) re-reads tasks.md per Rule 7 and recovers the schema choice from this header. caseplan.json self-identifies via its top-level `version` literal as a secondary check.
+Place this line above all `T<n>` headings. Re-entry protocol (Phase 3 Step 9.6, Phase 4) re-reads tasks.md per Rule 7 and recovers the schema choice from this header. caseplan.json self-identifies via its top-level `version` literal as a secondary check.
 
 If the schema header in tasks.md conflicts with an already-written caseplan.json's `version` field at re-entry, **halt with explicit error** — never silently re-flip.
 

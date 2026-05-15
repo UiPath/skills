@@ -44,7 +44,7 @@ Create 2 entries in the bindings array per [bindings/impl-json.md](../../variabl
 | `"name"` | `"process"` | — | `name` from tasks.md |
 | `"folderPath"` | `"process"` | — | `folder-path` from tasks.md |
 
-Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate by `default + resource + resourceKey`.
+Each entry also needs `name` (= `propertyAttribute` value) and `type: "string"` — Studio Web fails to render the case without them. Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate by `default + resource + resourceKey`.
 
 **Step 2 — Write task:**
 
