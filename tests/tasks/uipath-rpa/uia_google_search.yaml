@@ -16,12 +16,9 @@ tags: [uipath-rpa, smoke, uia, xaml]
 task_timeout: 1800
 agent:
   type: claude-code
-  # Bumped from 40 → 60: CI run 24903966636 hit error_max_turns at 40 on
-  # this task after spending many turns on `uip rpa create-project`
-  # auth-retry loops. Prompt now tells the agent to hand-author
-  # project.json directly, but give turn headroom for the XAML
-  # discovery/edit cycles regardless.
-  max_turns: 60
+  # Bumped from 60 → 80: evalboard runs on Linux atm so some turns are
+  # wasted since the UiPath project targets Windows.
+  max_turns: 80
   turn_timeout: 1200
 
 sandbox:
