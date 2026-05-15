@@ -1,10 +1,10 @@
-`task_id: skill-sdd-smoke-file-reading
+task_id: skill-sdd-smoke-file-reading
 description: >
   Smoke test: the skill workflow uses the Read tool on a provided PDD file
   rather than relying on inline prompt content. Round-trip verification with
   a unique random sentinel string the LLM cannot know without reading the
   file. No analysis, no SDD generation.
-tags: [uipath-solution-design, smoke, lifecycle:generate]
+tags: [uipath-solution-design, smoke, mode:build]
 
 sandbox:
   driver: tempdir
