@@ -64,4 +64,4 @@ All playbooks use the same headers: `## Context`, `## Investigation` (optional),
 | **Medium** | Specific error → known troubleshooting path | Concrete steps | SSL cert invalid → check cert, chain, trust |
 | **Low** | General symptoms → multiple causes | General guidance or absent | Robot unresponsive → could be heartbeat, network, or machine issue |
 
-Template and full guide: [templates/playbook.md](./templates/playbook.md) | [GUIDE.md](./GUIDE.md)
+Template and full guide: [templates/playbook-template.md](./templates/playbook-template.md) | [knowledge-base-guide.md](./knowledge-base-guide.md)

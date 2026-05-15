@@ -24,8 +24,11 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json` — preserve the full stack trace
-2. Walk element executions: `uip maestro instance element-executions <instance-id> -f <folder-key> --output json` — note the element that faulted
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — preserve the full stack trace
+2. Walk element executions: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json` — note the element that faulted
 3. Check whether the workflow attempted to re-enter a multi-instance subprocess that already completed
 4. If reproducible, gather: Orchestrator URL config, exact `.bpmn`, sample inputs
 

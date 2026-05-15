@@ -23,8 +23,11 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json`
-2. Pull element executions and capture start/complete times of the timing-out activity: `uip maestro instance element-executions <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
+2. Pull element executions and capture start/complete times of the timing-out activity: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
 3. Locate the child Orchestrator job ID from the incident `errorDetails` and check its final state: `uip or jobs get <child-job-key> --output json`
 4. If the child job is `Successful` but Maestro 502'd, the gateway timed out before Orchestrator's response landed
 

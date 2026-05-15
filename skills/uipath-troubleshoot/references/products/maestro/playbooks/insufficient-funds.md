@@ -23,7 +23,10 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json` — error message is self-explanatory
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — error message is self-explanatory
 2. Confirm the element type: agent/GenAI vs other
 3. Check AU balance: Orchestrator UI → **Admin > Tenant > Licenses > Consumption > Agent Units**
 4. Verify debug-mode behaviour against the latest Maestro release notes — the debug-consumes-AU bug had a planned fix in late Feb / mid-March 2026

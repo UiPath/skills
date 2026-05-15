@@ -22,7 +22,10 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
 2. Confirm error text matches the quota wording above. If error code is `170002`, drill into the child Orchestrator job to see the underlying quota response
 3. Check tenant consumption: Orchestrator UI → **Admin > Tenant > Licenses > Consumption**
 4. If the user is running agents, also confirm Agentic Units are available (separate quota)

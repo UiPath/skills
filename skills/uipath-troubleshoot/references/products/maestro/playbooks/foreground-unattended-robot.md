@@ -24,7 +24,10 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
 2. Confirm the user has Unattended Robot enabled: Orchestrator UI → **Tenant > Manage Access > Users** → select user → license tab
 3. Check that machine credentials are set (domain\username + password)
 4. Confirm the folder type — "My Workspace" cannot host unattended robots

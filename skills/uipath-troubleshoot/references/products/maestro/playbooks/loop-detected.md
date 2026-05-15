@@ -23,10 +23,13 @@ What to look for:
 
 ## Investigation
 
-1. Get the incident: `uip maestro instance incidents <instance-id> -f <folder-key> --output json` — captures element ID and iteration count
-2. Walk element executions to see what each iteration produced: `uip maestro instance element-executions <instance-id> -f <folder-key> --output json`
-3. Pull the variables snapshot near the loop element: `uip maestro instance variables <instance-id> -f <folder-key> --parent-element-id <element-id> --output json` — look for the loop counter / exit condition variable
-4. Read the loop condition from the BPMN: `uip maestro instance asset <instance-id> -f <folder-key> --output json`
+> Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
+
+
+1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — captures element ID and iteration count
+2. Walk element executions to see what each iteration produced: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
+3. Pull the variables snapshot near the loop element: `uip maestro <type> instance variables <instance-id> -f <folder-key> --parent-element-id <element-id> --output json` — look for the loop counter / exit condition variable
+4. Read the loop condition from the BPMN: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
 
 ## Resolution
 
