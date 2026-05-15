@@ -23,10 +23,12 @@ from pathlib import Path
 # uipath-solution is the merged successor of uipath-solution-design + the
 # `uip solution` slice of uipath-platform; rebaseline after the next full run.
 #
-# uipath-rpa: projected baseline after the uipath-rpa-legacy merge
-# (PILOT-5232). Pre-merge values were 70% (modern, ~52 prompts) and 75%
-# (legacy, 51 prompts); weighted average rounds to 75%. The first full
-# activation run after merge supersedes this estimate.
+# uipath-rpa: held at the pre-merge modern value of 70 after the
+# uipath-rpa-legacy merge (PILOT-5232). The legacy half's 75% baseline
+# was measured against the dedicated legacy skill description; the
+# merged uipath-rpa description dilutes legacy signals, so the
+# combined recall is expected to land closer to the modern half.
+# Re-baseline after the first full activation run on the merged dataset.
 BASELINES_PCT: dict[str, int] = {
     "uipath-feedback": 90,
     "uipath-data-fabric": 90,
@@ -37,7 +39,7 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-flow": 70,
     "uipath-human-in-the-loop": 70,
     "uipath-test": 70,
-    "uipath-rpa": 75,
+    "uipath-rpa": 70,
     "uipath-troubleshoot": 70,
     "uipath-maestro-bpmn": 60,
     "uipath-coded-apps": 60,
