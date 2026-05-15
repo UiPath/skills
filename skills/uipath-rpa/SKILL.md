@@ -85,6 +85,16 @@ If target configuration is unavailable, fall back to the documented UIA indicati
 
 See [ui-automation-guide.md § Mandatory: Generate Targets Before Writing Any UI Code](references/ui-automation-guide.md#mandatory-generate-targets-before-writing-any-ui-code) for the full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope.
 
+### Placeholder-Selector Stub Pattern (when live app access is unavailable)
+
+When generating a UI automation workflow **without** live app access (target capture cannot be run because the app is not installed, the agent has no UI, or the user explicitly deferred capture to a developer), emit **real UIA activities with placeholder selectors and `TODO Indicate` markers** — never `Log` stubs.
+
+**Forbidden:** a workflow whose UI-interaction steps are `Log("LoginWorkflow: type username")` with a `// TODO[selectors]:` comment. The workflow passes build/validate and runs cleanly, but does nothing. This is the most expensive kind of stub — it looks complete, the validator says it's fine, and the failure mode is silent.
+
+**Required:** the **real** UIA activity (`NTypeInto`, `NClick`, `NGetText`, `NApplicationCard`, etc.) with the target descriptor's selector left as a placeholder string and a `TODO Indicate` marker embedded in the activity's `DisplayName` (XAML) or in a `// TODO[Indicate]` comment immediately adjacent to the coded call. A developer opens Studio, clicks **Indicate** on each marked activity, and the workflow runs.
+
+This applies to **both** XAML and coded modes. See [ui-automation-guide.md § Placeholder-Selector Stub Pattern](references/ui-automation-guide.md#placeholder-selector-stub-pattern) for the full pattern with XAML and coded examples.
+
 **Hybrid pattern** — XAML orchestration + coded fallback for logic with no matching activity:
 
     Main.xaml                  ← orchestration (XAML)

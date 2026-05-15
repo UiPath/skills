@@ -20,6 +20,7 @@ In **Autonomous** mode:
 - Skip Phase 2 architecture review (generate, do not wait)
 - Still ask the SME Review resolution question before writing (Step 1.5) — this is a hard blocker
 - Still ask the Agent/Coded App gap-filling question if triggered — this is a hard blocker
+- **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the four highest-leverage architectural picks with one-sentence reasons. See Step 2 below for the exact block format. Do **NOT** use `AskUserQuestion` — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
 
 In **Interactive** mode:
 - Present and wait at every checkpoint as described in the steps below
@@ -346,7 +347,31 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Do NOT rename the heading or strip the marker. They are redundant on purpose — keeping both means a hand-edit of one signal does not silently break Lane A detection.
 
-3. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header and before the Table of Contents:
+3a. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or the Table of Contents. The block makes the four highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
+
+   Format:
+
+   ```markdown
+   ## Decisions Made
+
+   > Autonomous mode picked the four architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode (`Execution autonomy: interactive` in the Planner Handoff header above) or by editing the relevant SDD section.
+
+   | # | Decision | Picked | One-sentence reason |
+   |---|---|---|---|
+   | 1 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON_TIED_TO_PDD_SIGNAL> |
+   | 2 | **RPA sub-type** (Level 1.5) — per RPA project | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON_TIED_TO_PDD_SIGNAL> |
+   | 3 | **Authoring mode** (Level 2) — per RPA project | <XAML_OR_CODED_OR_HYBRID> | <REASON_TIED_TO_PROCESS_BODY_SHAPE> |
+   | 4 | **Framework** — per RPA Process project | <REFRAMEWORK_OR_SEQUENCE> | <REASON_TIED_TO_PER_ITEM_INDEPENDENCE> |
+   ```
+
+   Rules for the block:
+   - Each "Picked" cell is a single concrete value, not a placeholder.
+   - Each "One-sentence reason" is ≤ 20 words and cites the PDD signal or process characteristic that drove the pick.
+   - For Solution scope, rows 2-4 repeat per RPA project (use a sub-table or one row per project — keep concise).
+   - For non-RPA scopes (e.g., Single-product Agent), rows 2-4 collapse to N/A with one row covering the product-specific Level-1.5-equivalent (framework choice, app type, etc.).
+   - The block does NOT replace the per-section detail later in the SDD — §10 / §11 / §13 still carry the full justification. The block is the **scannable index** of those decisions.
+
+3. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` block if present) and before the Table of Contents:
 
 ```markdown
 ## Action Required — SME Review Items
@@ -372,6 +397,19 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 6. Write the output file(s) to the current working directory:
    - **Single-product scope:** one file at `<PROCESS_NAME_KEBAB>-sdd.md`.
    - **Solution scope:** the solution overview at `<SOLUTION_NAME_KEBAB>-solution-sdd.md` PLUS one per-project SDD at `<PROJECT_NAME_KEBAB>-sdd.md` for each project in the unified project list. Put the `[SME REVIEW]` warning block in the solution overview AND in any per-project file where a review item lives in that project. Each per-project SDD gets its own `## Planner Handoff` header.
+
+6a. **Template-superset check (mandatory final step before Step 7).** After writing each SDD file, re-read it and extract every H2 (`## `) and H3 (`### `) heading. Compare against the template's Table of Contents and required subsections. The generated SDD's heading set MUST be a superset — extra subsections are fine, missing template sections are an SDD defect.
+
+   Minimum required H2 headings per template:
+   - **RPA template:** §1 Process Overview, §2 Process Map, §3 Detailed Process Steps, §4 Business Rules, §5 Data Definitions, §6 Value Mappings, §7 Exception Handling, §8 Error Handling, §9 Application Inventory, §10 Master Project Architecture, §11 Project Structure, §12 Queue Architecture (Master Project only — may be omitted for Single Project), §13 Implementation Mode, §14 Packages, §15 Credentials & Assets, §16 Deployment Environment, §17 Testing Strategy, §18 Next Steps
+   - **Other templates:** check the template file's TOC; the rule is the same — every H2 in the template appears in the generated SDD.
+
+   For any missing required H2:
+   1. Regenerate that section from the template + Phase 1 extraction data + Phase 2 architecture.
+   2. If the template's contents for that section depend on a Phase 1 / Phase 2 input that is genuinely absent (e.g. §4 Business Rules but the PDD has zero rule signals), emit the section with an explicit "No business rules extracted from the PDD" note plus an `[SME REVIEW]` row asking the user to supply any.
+   3. Never silently drop a section.
+
+   Common slip-fail: skipping §4 Business Rules because the PDD has no dedicated "Business Rules" section. Rules are usually buried in "Remarks", step descriptions, or screenshots — the PDD analysis guide's "Embedded business rules" pointer applies. Treat zero rules in §4 as a regeneration trigger, not a finished section.
 
 7. Output a summary in the conversation:
 

@@ -108,6 +108,46 @@ Applies to every RPA project in the scope (Process, Library, or Test Automation)
 
 The skill that builds the workflows owns the final, detailed decision — this is a directional recommendation.
 
+### Anti-pattern: picking Coded C# for UI-heavy automation
+
+**Trigger:** the process body is **>70% UI automation** against a browser, desktop app, or SaaS UI, with **minimal HTTP / parsing / DTO / data-shaping work**. The PDD describes "log in, navigate to a list, click each row, read fields, compute a derived value, write it back, close" — i.e. UI driving is the bulk of the work.
+
+**Decision:** **XAML** (or **Hybrid** if a discrete piece of non-trivial data logic exists). Do **NOT** pick Coded C# on a "cleaner control flow" argument.
+
+**Why:**
+
+1. **XAML already has clean control-flow primitives for this shape.** Try/Catch, Retry Scope, If/Else, For Each, Sequence — wrapped around UIA activities (`Use Application/Browser`, `Click`, `Type Into`, `Get Text`) — covers retry, exception handling, looping, and branching with no code. Reaching for Coded C# to get "cleaner control flow" reinvents what XAML already provides.
+
+2. **Studio's UI capture flow is significantly more productive than coded selectors.** The visual Indicate / `uia-configure-target` round-trip produces working selectors with proper attributes, content hashes, and reference IDs — and registers them in the Object Repository for reuse. The coded path requires the same OR registration plus extra ceremony (`uiAutomation.Open` / `Attach`, `Descriptors.<App>.<Screen>.<Element>` references, screen-handle affinity rules) without any productivity gain on the capture side.
+
+3. **The "cleaner control flow" argument is not sufficient on its own.** It is also not what UI-heavy work actually benefits from. UI-heavy work benefits from: visual selectors, fast retake, drag-and-drop activity surface, Object Repository sharing across workflows. None of those favour Coded C#.
+
+4. **Coded C# carries a tax that has to be earned.** Manual entry-point management in `project.json`, no visual surface for non-coded contributors, no Studio designer canvas — these costs are repaid by data transforms / HTTP work / DTOs / custom algorithms. They are **not** repaid by "I want explicit if/else" over UI activities.
+
+**Reserve Coded C# for:**
+
+- Substantial data transformation (JSON deserialization, CSV parsing, LINQ aggregation, regex extraction, hashing pipelines)
+- REST API integration (HTTP calls, pagination, retry/backoff on transport, auth-token refresh)
+- Custom DTOs / typed records / enums (XAML cannot define types)
+- Unit-testable business logic (pure functions exercised by Coded Test Cases)
+- Algorithm-heavy logic (sorting, deduplication, fuzzy matching, tree traversal)
+
+**If the process is mostly UI with one non-trivial data step,** use **Hybrid**: XAML for orchestration + UI; one Coded Workflow invoked via `Invoke Workflow File` for the data step.
+
+For the full coded-vs-XAML decision flow, see [coded-vs-xaml-guide.md](../../../uipath-rpa/references/coded-vs-xaml-guide.md) in the `uipath-rpa` skill (architectural design only — final per-workflow decisions are made by the build skill).
+
+### Selection checklist before recommending Coded C#
+
+Before §13 Implementation Mode commits to Coded C#, confirm at least **two** of these are true:
+
+- [ ] Process has significant data shaping / parsing / regex / hashing work (more than a single one-liner).
+- [ ] Process integrates with HTTP / REST APIs that justify a dedicated client.
+- [ ] Process defines typed DTOs / records / enums used across multiple workflows.
+- [ ] Process has algorithmically non-trivial logic (LINQ aggregation, sorting, dedup, custom comparison).
+- [ ] Process has unit-testable pure functions (exercised by Coded Test Cases on inputs the live system cannot easily reproduce).
+
+If **fewer than two** are true and the body is >70% UI, recommend XAML. The "cleaner control flow" line of reasoning is explicitly insufficient — strike it from the §13 justification.
+
 ## Level 2.5 Part A — RPA Decomposition Signals
 
 Apply these signals **to every RPA Process project** in the scope. Skip for RPA Library, RPA Test Automation, and non-RPA products — those are always one project each.
@@ -202,16 +242,64 @@ For RPA Library and RPA Test Automation projects in a Solution that are **not** 
 
 ## REFramework guidance
 
-REFramework is the standard UiPath framework for transactional processes. It provides: Init → Get Transaction → Process Transaction → End Process states, with built-in retry, exception handling, and logging.
+REFramework is the standard UiPath framework for **transactional processes** — any process that iterates over discrete units of work where each unit can succeed or fail independently. It provides: Init → Get Transaction → Process Transaction → End Process states, with built-in retry, exception handling, and logging.
+
+### Use REFramework when…
+
+**Use REFramework whenever the process iterates over discrete units of work with independent per-item success/failure.** Queue presence is **NOT** a precondition. The source of the transactions can be:
+
+- **Orchestrator queue items** — the canonical case; `GetTransactionData` pulls one item at a time.
+- **In-memory transactions** — a list, DataTable, or collection loaded once and processed per row (e.g., a CSV read into memory, then iterated row by row).
+- **Rows / records read from a UI** — items extracted from a web app's work-item list, a desktop grid, or a SaaS UI's table. The Performer reads the source UI itself to populate transactions on each iteration; no Orchestrator queue is involved.
+- **Files in a folder** — each file is a transaction; the framework iterates over the folder contents.
+- **Records returned by an API page** — paginated API results where individual records can fail independently.
+
+The defining criterion is **per-item independence**: one failing item must not block the others, must be retryable on its own, and must be tracked separately. Any source that satisfies this — queue, memory, UI, file system, API — justifies REFramework.
+
+### Do NOT use REFramework when…
+
+- The unit of work is **atomic** (the whole run succeeds or fails as one) — e.g., a single SQL query + single email, no per-item granularity.
+- The process is a **simple linear pipeline** with no iteration and no retry semantics.
+- The process is a **Library** or **Test Automation** project (those have their own templates).
+
+### Framework selection per role
 
 | Project Role | Framework | Why |
 |---|---|---|
 | Performer (queue-based) | **REFramework** | Built-in transaction retry, state management, exception routing |
+| Performer (in-memory transactions or UI-row iteration, no Orchestrator queue) | **REFramework** | Each row / record is a transaction with independent success/failure; queue presence is not required to justify the framework |
 | Dispatcher — atomic collect-then-commit (e.g., single SQL query, single folder scan) | **Sequence** | Collection is one unit of work; no per-item retry semantics required |
 | Dispatcher — retryable items (e.g., paginated API, flaky source where individual pages/items can fail) | **REFramework** | Each retrieved item is itself a transaction; per-item retry + state tracking justify REFramework |
 | Reporting (reads queue, generates output) | **REFramework** *(default)* or Sequence | Use REFramework when per-item reporting failures must be tracked, or when the reporting queue can exceed ~10 items per run (typical for daily/weekly aggregation over a Master Project). Use Sequence only for atomic end-of-run aggregation of a small, fixed set of items where a single failure can fail the whole run without loss. |
-| Single Project (no queues) | **Sequence** or **REFramework** | REFramework if processing multiple items with per-item retry; Sequence if simple linear |
+| Single Project (no queues, but iterates discrete items) | **REFramework** | REFramework gives per-item retry + state tracking even without a queue. Lifecycle just becomes Init → GetTransactionData (loads from memory / UI / file system) → Process → SetTransactionStatus. |
+| Single Project (no iteration at all) | **Sequence** | Linear pipeline, no transactions, no retry semantics. |
 
-**Rule R-04 — REFramework boundary:** a project uses REFramework when its unit of work is an **item that can fail, be retried, and be tracked independently**. A project uses Sequence when its unit of work is **atomic** (the whole run succeeds or fails as one).
+**Rule R-04 — REFramework boundary:** a project uses REFramework when its unit of work is an **item that can fail, be retried, and be tracked independently** — regardless of whether the items come from a queue, memory, UI, file system, or API. A project uses Sequence when its unit of work is **atomic** (the whole run succeeds or fails as one).
 
 When REFramework is selected for a project, the project structure in §11 of the RPA template must use the REFramework folder layout (Init, GetTransactionData, Process states) instead of a custom framework.
+
+### Worked example — Performer reading WI rows from a web UI, no queue
+
+**Scenario:** A web app shows a list of Work Items. The robot logs in, filters the list, then for each row: opens the WI, reads fields, computes an output, writes the result back, marks the WI processed. No Orchestrator queue. Volume is small (~15 items/day).
+
+**Decision:** **REFramework.** Justification:
+- Each WI row is a discrete unit of work with independent success/failure.
+- A failed WI must not block the remaining items — REFramework's per-transaction exception handling delivers this for free.
+- Per-item retry on system errors (selector failure, browser glitch) is the right behaviour — REFramework retries the failed transaction without restarting the run.
+- Lower volume does not change the analysis. "Only 15 items" is irrelevant; the question is whether items are independent, not how many there are.
+
+**Anti-pattern:** picking Sequence with a custom try/catch loop around the iteration. The custom loop will re-implement state tracking, retry counts, exception routing, and Init/teardown — all of which REFramework provides out of the box, more robustly.
+
+**Sources of transactions per the Performer's `GetTransactionData`:**
+- For this scenario: read the next row from the web UI's WI list (via UIA `NGetText` or table extraction).
+- No queue dependency: `GetTransactionData` returns the next un-processed WI from the UI's current state.
+
+### Anti-pattern: "no queue, so no REFramework"
+
+Reasoning along the lines of "this process has ~15 items/day, no Orchestrator queue, no peak load — REFramework is overkill" is wrong on every count:
+
+- Volume is not the criterion — independence is.
+- Queue is not the criterion — independence is.
+- REFramework's overhead is fixed (folder layout + states). The per-item benefits — retry, exception isolation, state tracking — apply whether items come from a queue or the UI.
+
+If you find yourself rejecting REFramework on volume or queue-absence grounds, re-read the "Use REFramework when…" criteria above before committing to Sequence + custom loop.

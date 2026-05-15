@@ -29,6 +29,39 @@
 
 ---
 
+<!--
+EMIT THIS BLOCK ONLY when Execution autonomy: autonomous.
+Skip entirely in interactive mode (decisions were checkpoint-reviewed).
+See sdd-generation-guide.md Phase 3 Step 3a for the format spec.
+-->
+## Decisions Made
+
+> Autonomous mode picked the four architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+
+| # | Decision | Picked | One-sentence reason |
+|---|---|---|---|
+| 1 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON> |
+| 2 | **RPA sub-type** (Level 1.5) | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON> |
+| 3 | **Authoring mode** (Level 2) | <XAML_OR_CODED_OR_HYBRID> | <REASON> |
+| 4 | **Framework** | <REFRAMEWORK_OR_SEQUENCE> | <REASON> |
+
+---
+
+<!--
+EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
+Skip entirely when no review items are open.
+See sdd-generation-guide.md Phase 3 Step 3 for the format spec.
+-->
+## Action Required — SME Review Items
+
+| # | Section | Item | Question |
+|---|---|---|---|
+| 1 | <SECTION> | <ITEM> | <QUESTION> |
+
+> These items are marked `[SME REVIEW]` in the document. The automation can be built with defaults, but these must be verified before production.
+
+---
+
 ## Table of Contents
 
 1. Process Overview
@@ -126,9 +159,20 @@ flowchart TD
 
 ## 4. Business Rules
 
-| ID | Rule Name | Description | Trigger Condition | Affected Steps |
-|---|---|---|---|---|
-| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <STEP_NUMBERS> |
+> **Authoring rules — read before filling the table:**
+> 1. **Extract rules from the PDD** — embedded in step descriptions, Remarks columns, exception conditions, validation prose, screenshots of expected output. Number them BR-01, BR-02, ... in extraction order. Zero rules is almost never correct — re-scan if the table ends empty.
+> 2. **For every output field in §5 Data Definitions, write at least one BR row capturing its validation rule.** This is non-negotiable. Validation = the rule a coding agent or test author can encode in a regex / length check / type assertion / allowed-values check. Missing validation is an SDD defect, not an `[SME REVIEW]` item.
+> 3. **Validation-rule shapes** — pick the tightest one the PDD supports:
+>    - **Regex** for format-shaped strings (e.g., SHA1: `^[0-9a-f]{40}$`, ISO date: `^\d{4}-\d{2}-\d{2}$`, email, phone, hex, base64)
+>    - **Length range** for free text where the PDD specifies bounds (e.g., 1–50 chars)
+>    - **Type** for numeric / boolean / date values (e.g., `decimal >= 0`, `boolean`, `DateTime in UTC`)
+>    - **Allowed values** (enum-shaped) when the PDD lists a closed set (e.g., `{ "Approved", "Rejected", "Pending" }`)
+> 4. **Tie BR rows to test oracles.** Every validation BR with a concrete example in §17 Canonical Test Case becomes a test assertion. Use the canonical input/output values from Phase 1 extraction — do NOT invent.
+> 5. **Embedded rules count.** A PDD that says "the hash must be 40 lowercase hex chars" is a BR even though the PDD has no dedicated Business Rules section.
+
+| ID | Rule Name | Description | Trigger Condition | Validation (regex / range / type / allowed values) | Affected Steps |
+|---|---|---|---|---|---|
+| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM_— `n/a` ONLY if the rule is purely behavioural> | <STEP_NUMBERS> |
 
 ---
 
@@ -363,6 +407,15 @@ Sub-type reference:
 |---|---|---|---|---|---|
 | 1 | `<FILENAME>` | <RESPONSIBILITY> | <STEP_NUMBERS> | <INPUT_ARGS_WITH_TYPES> | <OUTPUT_ARGS_WITH_TYPES> |
 
+### UI Element Groups (selector inventory)
+
+> **Include this subsection only when the project does UI automation.** Skip for headless / API-only projects. One row per Object Repository **screen** (or logical UI element group). Plan capture order top-to-bottom — the developer runs `uia-configure-target` / Indicate on each row in sequence.
+> Capture method choices: `uia-configure-target` (capture from live UI; default), `Indicate` (developer-driven indication in Studio; required when the element only appears after a hover/click), `Object Repository — existing` (already captured in a referenced UILibrary package).
+
+| # | Application | Screen | Elements (names) | Capture method |
+|---|---|---|---|---|
+| 1 | <APP_FROM_§9> | <SCREEN_NAME> | <COMMA_SEPARATED_ELEMENT_NAMES> | <CAPTURE_METHOD> |
+
 ### Workflow Dependencies
 
 ```text
@@ -405,12 +458,16 @@ Sub-type reference:
 ## 13. Implementation Mode
 
 > **For Master Project:** specify the mode per sub-project if they differ. A Dispatcher may be XAML while a Performer with heavy data logic is Hybrid.
+>
+> **Before recommending Coded C#:** verify at least two checklist items from the [RPA Product Guide § Selection checklist before recommending Coded C#](../../references/design/rpa-product-guide.md#selection-checklist-before-recommending-coded-c) are true. "Cleaner control flow over a UI loop" is **not** a sufficient justification — XAML already has Try/Catch + Retry Scope + For Each over UIA activities. If the process body is >70% UI automation with minimal data shaping, recommend **XAML** or **Hybrid**.
 
 **Recommendation:** <XAML / Coded C# / Hybrid>
 
-<2-3 sentence justification based on process characteristics.>
+**Justification (2-3 sentences):** Cite at least one concrete process characteristic from §3 Detailed Process Steps that drives the choice (e.g., "§3 shows 9 of 11 steps are UI driving against a browser; only step 7 involves data shaping" → XAML; or "§3 step 5 needs JSON deserialization + LINQ aggregation across 200 records, the other 8 steps are UI" → Hybrid).
 
-> **Note:** This is a preliminary recommendation. Detailed decision criteria will be applied during implementation and may adjust this choice.
+**If Coded C# selected:** list the satisfied checklist items inline (e.g., "Coded C# selected: significant data shaping (regex+hash pipeline) AND custom DTOs for `TransactionData`/`OutputData`").
+
+> **Note:** This is a preliminary recommendation. Detailed decision criteria will be applied during implementation and may adjust this choice — but the architectural recommendation must already pass the checklist.
 
 ---
 
@@ -529,10 +586,27 @@ The planner will:
 1. Detect the `## Planner Handoff` header and read the 6 fields above.
 2. Parse the project list section (per the `Project list section` field) and derive a per-skill task list.
 3. Write `<PROCESS_NAME_KEBAB>-tasks.md` alongside this SDD with the task list and dependencies.
-4. Emit live `TaskCreate` calls that route each task to the correct specialist (`uipath-rpa`, `uipath-platform`, `uipath-agents`, etc.).
+4. Emit live `TaskCreate` calls that route each task to the correct specialist (`uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, etc.).
 5. If `Execution autonomy: interactive`, enter plan mode for task review before execution.
 
 Implementation tasks **do not live in this SDD** — they live in the planner's output. The planner is the single source of truth for skill routing and task ordering.
+
+### Terminal artefact — a packed `.uipx` solution
+
+The build is not finished when the project folder compiles. **The terminal artefact of an SDD-driven build is a packed `.uipx` solution**, not a bare project folder. After the implementation specialist (`uipath-rpa`, `uipath-agents`, etc.) reports its tasks complete, return to the **`uipath-solution` Operate half** and run:
+
+```bash
+uip solution init <SOLUTION_NAME>
+uip solution project add <PROJECT_PATH> [--solution-file <SOLUTION_FILE>]    # repeat per project in the unified list
+uip solution resource refresh
+uip solution pack <SOLUTION_DIR> <OUTPUT_DIR>
+```
+
+For a single-project build, the solution wrap is still required — `uip solution pack` produces a `.uipx` that can be promoted via `uip solution publish` / `uip solution deploy run`. A bare `MyProject/` folder is not deployable through the modern lifecycle and is not the deliverable.
+
+For multi-project (Master Project) builds, run `uip solution project add` once per sub-project (Dispatcher / Performer / Reporting / Library / Test Automation) before `pack`.
+
+Full `uip solution` lifecycle: load `/uipath:uipath-solution` Operate half.
 
 ---
 

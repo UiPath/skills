@@ -19,6 +19,63 @@ When you encounter screenshots in the PDD:
 2. **Extract** visible field names, button labels, and navigation elements — these become data field references and process step descriptions.
 3. **Do NOT extract** selectors, XPath, CSS, coordinates, colors, or visual layout details — these are determined at development time, not from static images.
 4. **Reference** the screenshot content in the relevant process step's "Remarks" field if useful.
+5. **DO extract concrete data values** shown in the screenshot — sample IDs, names, dates, expected outputs, error messages. These are oracles for the test strategy, not selectors. See "Extract Canonical Examples" below.
+
+## Extract Canonical Examples
+
+**Mandatory step. Run this on every PDD before falling back to `[SME REVIEW]` for test data.** PDDs almost always carry concrete example values somewhere — most agents miss them because the values live in screenshots, inline strings, or example tables rather than in a dedicated "Test Data" section.
+
+### Where to look
+
+Scan every one of these surfaces for concrete values:
+
+| Surface | What to look for | Example signals |
+|---|---|---|
+| **Screenshots of input data** | Sample IDs, names, codes, dates, free-form values shown filled into a form or list | `PRO1037`, `Jeanine Frederick`, `Romania`, `01/15/2024` |
+| **Screenshots of expected output** | Hash values, computed outputs, status fields, post-state values | `bde2c5964a3cfbc9b839aef9aa2a2764829d5497` (SHA1), `Confirmed`, `Approved` |
+| **Inline strings in step descriptions** | Quoted literals — anything inside backticks, double quotes, or single quotes that names a value rather than a column | `"the value 'WI5' in the Type column"`, `'PRO1037'` |
+| **Example tables in the Appendix** | Rows where each cell is a concrete value rather than a placeholder | `Vendor: ACME`, `Amount: 1250.00`, `Currency: EUR` |
+| **Validation rule examples** | Concrete inputs paired with expected pass/fail outcomes | `Hash must be 40 lowercase hex chars; e.g., bde2c5964a3...` |
+| **"For example" callouts in prose** | Sentences like "for example, ID PRO1037 produces hash X" | `e.g.`, `for example`, `such as` |
+| **Error message screenshots** | Verbatim error strings the automation must match | `"Hash mismatch — expected ..., got ..."` |
+
+### What to extract
+
+For every concrete value found, capture:
+
+| Field | Description |
+|---|---|
+| **Source location** | PDD page or section (e.g., "page 9 screenshot, Login screen") |
+| **Data role** | Input / Expected output / Validation rule / Error message |
+| **Field name** | Maps to a field in §5 Data Definitions |
+| **Value** | The literal value, quoted exactly as it appears in the PDD |
+
+### Where to write the extracted values
+
+Write the canonical examples into the SDD's §17 Testing Strategy → Canonical Test Case table. Use the field/value rows of that table to capture the input set, and add a separate Expected Output subsection for the output values. The values feed:
+
+- **§4 Business Rule test oracles** — every business rule with a concrete example becomes a test assertion using these values (e.g., `BR-04: SHA1(input) == '<canonical hash>'`).
+- **§17 Happy Path Assertions** — the canonical case is the first row of happy-path tests.
+- **§17 Output validation tests** — the canonical output value is the oracle for output-format regex checks (see template §4 prompt block).
+
+### Canonical examples are NOT `[SME REVIEW]` items
+
+A canonical example present anywhere in the PDD is **fact**, not user-supplied data. Do not mark it as `[SME REVIEW]`. The `[SME REVIEW]` fallback applies only when:
+
+- The entire PDD has been scanned (all screenshots, all tables, all step descriptions, all appendices) AND
+- No concrete value can be derived for the field.
+
+If scanning finds at least one concrete value, treat it as the canonical case — the gap-detection row "Test data / canonical case" only fires when extraction returns empty.
+
+### Output writing checklist
+
+Before declaring Phase 1 extraction complete:
+
+- [ ] Every screenshot has been visually inspected for concrete values (not just labels and buttons).
+- [ ] Every inline-quoted string in step descriptions has been captured.
+- [ ] Every example table in the PDD body or appendix has been read row by row.
+- [ ] At least one canonical input set + expected output is recorded for the §17 Canonical Test Case (or the `[SME REVIEW]` fallback applies because the PDD genuinely has no examples).
+- [ ] Hash / regex / format-shaped values are paired with the BR they validate (e.g., "SHA1 output: `bde2c596...`" → BR-04 SHA1 format rule).
 
 ## Reading Strategy
 
@@ -155,7 +212,7 @@ Watch for:
 ### Appendix
 
 Extract:
-- **Canonical test data** — the specific test case used for development and verification
+- **Canonical test data** — apply the "Extract Canonical Examples" procedure above. The appendix is one of several surfaces; also scan screenshots, inline strings, and example tables elsewhere in the PDD.
 - **Selector references** — if provided (rare in traditional PDDs, common in agent-ready PDDs)
 - **Value mapping tables** — additional mappings not covered in the detailed process steps
 
@@ -203,6 +260,6 @@ After extraction, verify these items exist. Flag missing ones:
 | Amount/value thresholds | `[SME REVIEW]` — business decision |
 | Data retention requirements | `[SME REVIEW]` — compliance decision |
 | Credential rotation policy | `[DEFAULT]` — assume Orchestrator asset management |
-| Test data / canonical case | `[SME REVIEW]` — needed for testing strategy |
+| Test data / canonical case | Run "Extract Canonical Examples" first. Only mark `[SME REVIEW]` if scanning every screenshot, every inline-quoted string, and every example table genuinely returns zero concrete values. Most PDDs carry at least one example. |
 | Reporting requirements | `[DEFAULT]` — Orchestrator logs only (no dedicated report) |
 | Email protocol (when email is used) | `[SME REVIEW]` — needed for package selection (IMAP vs O365 vs Exchange) |
