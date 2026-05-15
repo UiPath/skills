@@ -144,24 +144,45 @@ uip or roles delete <role-key> --output json
 
 ### Step 4: Import Users from Identity Service
 
-Principals are managed in Identity Service (IS), not in Orchestrator. `users import` references an existing IS principal so the tenant can grant it folder access. (The legacy `users create` / `users delete` commands are gone — they called endpoints reserved for `ProvisionType=Manual`, which is not how cloud or IS-backed users are managed.)
+Principals are managed in Identity Service (IS), not in Orchestrator. `users import` is the **single integration point** between IS and the tenant: it references an existing IS principal and provisions the matching tenant user record. Everything downstream (`users assign`, `users assign-roles`, `roles assign`, etc.) takes the resolved Orchestrator user-key — no further IS round-trips. (The legacy `users create` / `users delete` commands are gone — they called endpoints reserved for `ProvisionType=Manual`, which is not how cloud or IS-backed users are managed.)
 
 ```bash
-uip or users import --username "jane.doe@example.com" --output json
+# Human user (cloud SSO or AD)
+uip or users import --username "jane.doe@example.com" --type DirectoryUser --domain "uipath" --output json
+
+# Robot account — requires --directory-id (the IS UUID)
+uip admin robot-accounts create "InvoiceRunner" --output json   # capture .Data.id
+uip or users import --directory-id <id-from-above> --type DirectoryRobot --domain autogen --output json
+
+# External application — requires --directory-id (the IS UUID)
+uip admin external-apps list --search "MyApp" --output json   # capture .id
+uip or users import --directory-id <id-from-above> --type DirectoryExternalApplication --domain autogen --output json
 ```
 
-Key options:
+Required options:
 
-- `--directory-id <id>` — Use the IS directory identifier (OIDC subject) instead of `--username`. Pass exactly one of the two.
-- `--domain <domain>` — IS directory domain. Defaults to `default`. List configured domains via `GET /api/DirectoryService/GetDomains` if your tenant uses on-prem AD or a non-default IS realm.
-- `--type <type>` — IS principal type. Four supported:
-  - `DirectoryUser` (default) — a real human user.
+- `--type <type>` — **Required**, no default. The CLI refuses to guess what kind of principal you're importing (otherwise a robot might silently land as a DirectoryUser in the tenant). Four values:
+  - `DirectoryUser` — a real human user.
   - `DirectoryGroup` — a directory group; folder grants apply to every member.
-  - `DirectoryRobot` — a **robot account** in IS. This is the standard way to give a folder an unattended robot identity. The robot account is created in IS first (separate flow); `users import --type DirectoryRobot` brings it into the tenant so it can be assigned to a folder and licensed for unattended execution. Without an imported `DirectoryRobot` (or a `DirectoryUser` with unattended permissions), `jobs start` returns `HTTP 409: Couldn't find any user with unattended robot permissions in the current folder.`
-  - `DirectoryExternalApplication` — an IS-registered external app (client credentials principal). Used for service-to-service tenants; folder grants apply to whoever holds the client secret.
-- `--folder-path <path>` / `--folder-key <key>` + `--role-keys <guids>` — Optional one-shot. Imports the principal **and** assigns folder roles in a single call. Both must be present together; pass neither for an import-only call. The next step covers folder assignment as a separate flow.
+  - `DirectoryRobot` — a **robot account** in IS. Standard way to give a folder an unattended robot identity. Without it (or a `DirectoryUser` with unattended permissions), `jobs start` returns `HTTP 409: Couldn't find any user with unattended robot permissions in the current folder.`
+  - `DirectoryExternalApplication` — an IS-registered external app (client-credentials principal) for service-to-service flows.
 
-Save the `UserName` from the response and look up the `Key` via `users list` for the next step.
+- `--domain <domain>` — IS directory domain. `autogen` for `DirectoryRobot` / `DirectoryExternalApplication`. For `DirectoryUser` / `DirectoryGroup`, the tenant's IS directory domain (typically the cloud org slug or the on-prem AD domain).
+
+Principal identifier — provide exactly one of:
+
+- `--username <name>` — IS principal name. Works for `DirectoryUser` / `DirectoryGroup` when the principal resolves as `<domain>\<name>` in IS (on-prem AD setups, classic IS configurations). For cloud SSO users this lookup typically fails — use `--directory-id` instead.
+- `--directory-id <uuid>` — IS UUID. **Required for `DirectoryRobot` and `DirectoryExternalApplication`** — the server-side `UserService.CreateAsync` rejects these types with HTTP 400 unless the tenant user-record `Key` matches the IS identifier, and `Key` is only populated when `--directory-id` is set. Find the UUID via:
+  - `uip admin robot-accounts create <name>` — returns the new robot's `.Data.id`.
+  - `uip admin robot-accounts list --search <name>` — `.Data[].id` of an existing robot.
+  - `uip admin external-apps list` — `.Data[].appId` for IS-registered external apps.
+  - `uip admin users list --search <name>` — `.Data[].id` for human users (when you'd prefer the UUID over `--username`).
+
+Optional one-shot folder assignment:
+
+- `--folder-path <path>` / `--folder-key <key>` + `--role-keys <guids>` — Imports the principal **and** assigns folder roles in a single call. Pass both together; pass neither for an import-only call.
+
+Save the `Key` from the response (returned via `users list --username "<imported-name>"` once import succeeds) — that's the **Orchestrator user-key** you'll use in `users assign`, `users assign-roles`, `roles assign`, and similar commands.
 
 ### Step 4b: Inspect / Edit / Unassign / Remove Users
 
@@ -309,9 +330,9 @@ uip or roles edit r1r2r3r4-... \
   --add-permissions "Assets.View,Assets.Edit,Queues.View,Jobs.Create,Jobs.View,Processes.View" \
   --output json
 
-# 4. Import a user from Identity Service
-uip or users import --username "jane.doe@example.com" --output json
-# (Look up the assigned Key with: uip or users list --search "jane.doe")
+# 4. Import a user from Identity Service (--type is required; --directory-id required for Robot/ExtApp)
+uip or users import --username "jane.doe@example.com" --type DirectoryUser --domain "uipath" --output json
+# (Look up the assigned Key with: uip or users list --username "jane.doe@example.com")
 
 # 5. Assign user to folder with role
 uip or users assign \
