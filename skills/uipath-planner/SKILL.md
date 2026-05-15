@@ -106,14 +106,14 @@ All RPA work — modern and legacy — routes to `uipath-rpa`. The skill interna
 |---|---|
 | `project.json` has `"targetFramework": "Legacy"` or no `targetFramework` field | `uipath-rpa` (legacy mode — note in plan: `Mode: Legacy (.NET 4.6.1)`) |
 | `project.json` has any other `targetFramework` (e.g., `"Portable"`, `"Windows"`) | `uipath-rpa` |
-| No existing project | `uipath-rpa` (default for all new projects; modern, not legacy) |
+| No existing project | `uipath-rpa` (default for all new projects) |
 | macOS host | `uipath-rpa` — cross-platform target only (Windows target not available on macOS) |
 | Windows host | `uipath-rpa` — user can choose Windows or cross-platform target |
 
 **Rules:**
 
-1. Never recommend legacy mode for new projects unless the user explicitly requests legacy (.NET Framework 4.6.1, classic activities). For new projects, default to modern `uipath-rpa`.
-2. On macOS, only cross-platform automation is supported — always route to modern `uipath-rpa`.
+1. Legacy mode is for **maintaining existing** .NET Framework 4.6.1 projects only. Never create a new legacy project — all new projects use modern `uipath-rpa`.
+2. On macOS, only cross-platform automation is supported — always route to `uipath-rpa`.
 
 ## Skill capability map
 

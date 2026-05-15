@@ -22,6 +22,11 @@ from pathlib import Path
 # yet (uipath-admin, uipath-ixp) — the gate SKIPs them.
 # uipath-solution is the merged successor of uipath-solution-design + the
 # `uip solution` slice of uipath-platform; rebaseline after the next full run.
+#
+# uipath-rpa: projected baseline after the uipath-rpa-legacy merge
+# (PILOT-5232). Pre-merge values were 70% (modern, ~52 prompts) and 75%
+# (legacy, 51 prompts); weighted average rounds to 75%. The first full
+# activation run after merge supersedes this estimate.
 BASELINES_PCT: dict[str, int] = {
     "uipath-feedback": 90,
     "uipath-data-fabric": 90,
@@ -32,7 +37,7 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-flow": 70,
     "uipath-human-in-the-loop": 70,
     "uipath-test": 70,
-    "uipath-rpa": 70,
+    "uipath-rpa": 75,
     "uipath-troubleshoot": 70,
     "uipath-maestro-bpmn": 60,
     "uipath-coded-apps": 60,
