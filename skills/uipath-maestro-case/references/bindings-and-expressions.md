@@ -34,6 +34,44 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 > Plain strings (no prefix) are literal values. `"hello"` is literally the string `hello`, not an expression.
 
+> The prefix tells you WHAT the value refers to. The **sink** tells you HOW to wrap it — see [§ Canonical form per sink](#canonical-form-per-sink) below.
+
+## Canonical form per sink
+
+Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime evaluators based on the sink it lands in. **The wrap form must match the sink** — wrong wrap is a silent runtime fault (the literal string arrives at the consumer instead of the resolved value).
+
+### Two evaluator paths
+
+| Path | Trigger | Capabilities |
+|---|---|---|
+| **Lookup** | Value starts with `=vars.<id>` or `=bindings.<id>` | Strip prefix, look up by id, return value. NO operators, NO dotted access, NO `=metadata.` |
+| **JS eval** | Value starts with `=js:<expr>` | Full JS evaluation. `vars`, `metadata`, `bindings`, `response` in scope. Operators, function calls, dotted access all work |
+
+`data.inputs[].value` on non-connector tasks runs **lookup** when the value matches `^=vars\.\w+$` or `^=bindings\.\w+$`; **JS eval** otherwise. Connector body fields, filter expressions, and condition expressions ALL run **JS eval** — they require `=js:` wrap regardless of value shape.
+
+### Canonical form per sink
+
+| Sink | Plain-ref form (when applicable) | Expression form |
+|---|---|---|
+| **Non-connector task `data.inputs[].value`** | `=vars.<id>` / `=bindings.<id>` (single identifier — no dots, no operators) | `=js:<expr>` (everything else: `=metadata.*`, dotted access, operators, function calls) |
+| **Connector body field — dot-notation** (curated connectors) | (no plain branch) | `=js:(<expr>)` — uniform wrap, parens always |
+| **Connector trigger filter expression** (`body.filters.expression`) with variable refs | n/a | `` =js:`<JMESPath with ${vars.X} interpolations>` `` |
+| **Connector trigger filter expression** plain literal (no variables) | Unwrapped CEQL/JMESPath text | n/a |
+| **`conditionExpression`** (stage entry/exit, task entry, case exit, trigger rules, edge transitions) | (no plain branch) | `=js:<expr>` — no outer parens; sub-clauses get manual parens when combining via `&&` / `\|\|` |
+| **SLA rule `expression`** | (no plain branch) | `=js:<expr>` (default: `=js:true`) |
+| **Task output `source` / `target`** | `=vars.<varId>` / `=<rawFieldName>` | n/a (always plain) |
+| **Binding refs in `data.context`, `caseShape.context`** | `=bindings.<id>` | n/a |
+
+> **JIT object mode (out of scope for this version).** When an activity's `inputMetadata.inputMode === "jitObject"` (synthetic HTTP request bodies, generic body-passthrough activities), the whole connector body becomes one `=js:({...})` expression with bare JS variable references inline. The skill currently routes synthetic HTTP through `queryParameters` instead. JIT-mode authoring is not documented in this version.
+
+### Conservative rule for `=metadata.X`
+
+The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is NOT resolved at runtime. **Always wrap as `=js:metadata.X`** (or `=js:(metadata.X)` if the sink requires parens). The FE design-time picker may classify `=metadata.X` as "variable" type, but that's a UI hint, not a runtime contract.
+
+### Planner-emit form
+
+The planner emits `tasks.md` using SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
+
 ## Cross-Task References
 
 Cross-task references wire the output of an earlier task into an input of a later task. The planning syntax uses **names** (human-readable), which the implementation phase resolves to variable IDs via direct JSON lookup.
@@ -126,3 +164,8 @@ See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/imp
 - **Fabricating output names.** Always discover via `tasks describe`. A typo becomes a runtime null, not a validation error.
 - **Plain-string where expression was intended.** `"metadata.amount"` (no `=`) is the literal string `metadata.amount`, not a reference. Always include the `=` prefix for dynamic values.
 - **Nesting expressions inside literals.** `"$metadata.amount"` or `"{{ amount }}"` do not work. Use `=metadata.amount` directly as the full value.
+- **Plain `=vars.X` inside connector body JSON.** The runtime does NOT evaluate plain prefix refs in connector body sinks — they arrive at the API as literal strings. Wrap as `=js:(vars.X)`. See [§ Canonical form per sink](#canonical-form-per-sink).
+- **Plain `=metadata.X` anywhere.** The lookup-path resolver has no `=metadata.` branch. Always wrap as `=js:metadata.X` (or `=js:(metadata.X)` for connector body / parens-required sinks).
+- **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user.email`.
+- **`=js:(...)` outer parens on `conditionExpression`.** Conditions use bare `=js:<expr>` per FE convention. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
+- **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-common.md](connector-trigger-common.md).

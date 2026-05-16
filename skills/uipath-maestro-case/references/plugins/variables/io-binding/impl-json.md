@@ -183,13 +183,15 @@ Where a `=vars.X` reference resolves to a declaration with a different `type` th
 
 ## Connector Tasks
 
-Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task `var` IDs before constructing the `input-values` body from `tasks.md`:
+Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task `var` IDs before constructing the `input-values` body from `tasks.md`, then apply the canonical wrap per sink:
 
 ```json
-{ "body": { "email": "=vars.employeeEmail", "caseRef": "=metadata.ExternalId" } }
+{ "body": { "email": "=js:(vars.employeeEmail)", "caseRef": "=js:(metadata.ExternalId)" } }
 ```
 
-Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl-json.md](../../../plugins/tasks/connector-activity/impl-json.md).
+**Connector body sinks require `=js:(...)` wrap for ALL references** — `=vars.X`, `=metadata.X`, `=bindings.X`, and operator expressions (e.g. `=js:(vars.amount > 5000)`). The runtime only evaluates `=js:` prefixed strings inside connector body fields; plain prefix forms arrive at the API as literal strings (silent runtime fault). Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+
+See [connector-activity/impl-json.md](../../../plugins/tasks/connector-activity/impl-json.md) for the connector body write path.
 
 ## End-to-End: Task A Output → Task B Input
 
