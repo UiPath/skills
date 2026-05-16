@@ -167,8 +167,8 @@ The filter tree only supports `isLiteral: true` values. When a filter requires r
 
 - Outer wrap: `` =js:`...` `` — JS prefix + template-literal backticks. The template literal evaluates at runtime to a JMESPath string.
 - Sub-clauses each wrapped in parens for operator-precedence grouping.
-- Variable references appear as `${vars.X}` template-literal interpolations — NOT as `=vars.X` (plain prefix doesn't get evaluated inside the body sink).
-- For each `=vars.X` reference in the SDD/tasks.md filter, the impl emits `${vars.X}` inside the appropriate JMESPath clause.
+- References appear as `${vars.X}` / `${metadata.X}` / `${bindings.X}` template-literal interpolations — NOT as `=vars.X` / `=metadata.X` (plain prefix doesn't get evaluated inside the body sink). All `=js:<ref>` forms get the same transformation via FE's `wrapJsVariablesInTemplateLiteral` (`IntsvcCommonUtils.ts:251-258`).
+- For each `=<prefix>.X` reference in the SDD/tasks.md filter, the impl emits `${<prefix>.X}` inside the appropriate JMESPath clause.
 
 **Worked example.** SDD filter: `subject contains =vars.calendarTitle`. Required event-param `parentFolderId` resolved to an Outlook folder id. The impl writes:
 
