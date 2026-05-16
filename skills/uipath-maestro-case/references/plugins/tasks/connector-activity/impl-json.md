@@ -25,16 +25,17 @@ The `tasks.md` entry provides:
 
 ### Step 1 — Build `--input-details` JSON from tasks.md
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object from `tasks.md`, rewriting every value containing a reference to its canonical sink form (connector body fields use `=js:(<expr>)`):
 
 ```jsonc
 {
-    // bodyParameters from tasks.md input-values.bodyParameters (dotted keys preserved)
-    "bodyParameters": "<input-values.bodyParameters or omit>",
-    // queryParameters from tasks.md input-values.queryParameters (or omit)
-    "queryParameters": "<input-values.queryParameters or omit>",
-    // pathParameters from tasks.md input-values.pathParameters (or omit)
-    "pathParameters":  "<input-values.pathParameters or omit>",
+    // bodyParameters from tasks.md input-values.bodyParameters (dotted keys preserved;
+    // each value rewritten to canonical form per Step 1.a)
+    "bodyParameters": "<input-values.bodyParameters with values rewritten>",
+    // queryParameters from tasks.md input-values.queryParameters (same rewrite rule)
+    "queryParameters": "<input-values.queryParameters with values rewritten>",
+    // pathParameters from tasks.md input-values.pathParameters (same rewrite rule)
+    "pathParameters":  "<input-values.pathParameters with values rewritten>",
     // filter — FilterTree object from tasks.md (or omit when not authored)
     "filter": "<filter from tasks.md or omit>"
 }
@@ -44,7 +45,22 @@ Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-requ
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
-#### Step 1.a — Array-of-object body fields: pre-input scan (MANDATORY)
+#### Step 1.a — Rewrite references to canonical sink form
+
+Connector body sinks (`bodyParameters`, `queryParameters`, `pathParameters`) require `=js:(...)` wrap for every reference. Resolve cross-task refs first, then apply the wrap:
+
+| Value in tasks.md | Value passed to CLI |
+|---|---|
+| `"=vars.X"` | `"=js:(vars.X)"` |
+| `"=metadata.X"` | `"=js:(metadata.X)"` |
+| `"=bindings.X"` | `"=js:(bindings.X)"` |
+| `"<- "Stage"."Task".out"` | resolve to `"=vars.<outputVar>"` → `"=js:(vars.<outputVar>)"` |
+| `"=js:(<expr>)"` (pre-wrapped operator expression) | pass-through unchanged |
+| `"<literal value>"` (no leading `=`) | pass-through unchanged |
+
+Full per-sink rule and FE source-of-truth: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+
+#### Step 1.b — Array-of-object body fields: pre-input scan (MANDATORY)
 
 Before passing `bodyParameters` to the CLI, scan for keys containing literal `[*]`. Halt if any are present — the binding is malformed.
 
@@ -216,7 +232,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
 10. `bindings_v2.json` `resources` array matches the schema-appropriate bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) after the deferred sync
-11. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.a translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
+11. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 
 ## What NOT to Do
 
@@ -228,7 +244,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.
-- **Do NOT pass literal `field[*]` keys in `bodyParameters`.** The `[*]` in `inputs.bodyFields[].name` is JSONPath-style schema notation meaning "array of"; it is NOT a valid input key. Express array-of-object body fields as real JSON arrays under the parent name (see [planning.md](planning.md)). Pre-input scan in [Step 1.a](#step-1a--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
+- **Do NOT pass literal `field[*]` keys in `bodyParameters`.** The `[*]` in `inputs.bodyFields[].name` is JSONPath-style schema notation meaning "array of"; it is NOT a valid input key. Express array-of-object body fields as real JSON arrays under the parent name (see [planning.md](planning.md)). Pre-input scan in [Step 1.b](#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
 - **Do NOT auto-inject `entryConditions`.** Step 10 in [implementation.md](../../../implementation.md) handles them — injecting here creates duplicates.
 - **Never reuse a reference ID from a prior case or session.** Reference IDs (e.g., Jira project keys, Slack channel IDs) are scoped to the authenticated account behind each connection. Always resolve fresh via `uip is resources run list` against the current `--connection-id`. See [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 - **Do NOT call legacy `uip maestro case tasks describe` or `uip is resources describe`.** `case spec --input-details` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` / placeholders.
