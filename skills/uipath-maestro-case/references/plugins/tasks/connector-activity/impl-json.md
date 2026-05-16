@@ -54,6 +54,7 @@ Connector body sinks (`bodyParameters`, `queryParameters`, `pathParameters`) req
 | `"=vars.X"` | `"=js:(vars.X)"` |
 | `"=metadata.X"` | `"=js:(metadata.X)"` |
 | `"=bindings.X"` | `"=js:(bindings.X)"` |
+| `"=<other-prefix>.X"` (e.g. `=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments[0]`) | `"=js:(<other-prefix>.X)"` — strip leading `=`, wrap in `=js:(...)` |
 | `"<- "Stage"."Task".out"` | resolve to `"=vars.<outputVar>"` → `"=js:(vars.<outputVar>)"` |
 | `"=js:(<expr>)"` (pre-wrapped operator expression) | pass-through unchanged |
 | `"<literal value>"` (no leading `=`) | pass-through unchanged |

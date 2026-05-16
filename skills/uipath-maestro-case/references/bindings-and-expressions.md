@@ -49,7 +49,7 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 
 `data.inputs[].value` on non-connector tasks runs **lookup** when the value matches `^=vars\.\w+$` or `^=bindings\.\w+$`; **JS eval** otherwise. Connector body fields, filter expressions, and condition expressions ALL run **JS eval** — they require `=js:` wrap regardless of value shape.
 
-### Canonical form per sink
+### Form by sink (the table)
 
 | Sink | Plain-ref form (when applicable) | Expression form |
 |---|---|---|
