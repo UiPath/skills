@@ -13,6 +13,11 @@ defaults:
     task_timeout: 900
     turn_timeout: 900
 
+  sandbox:
+    docker:
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+
   agent:
     type: claude-code
     permission_mode: acceptEdits
