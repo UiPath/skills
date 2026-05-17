@@ -110,6 +110,19 @@ The generated SDD must start with:
 - The SDD is a standalone developer artifact. It must NOT reference its own generation sources. Forbidden phrases anywhere in the output: `interview answers`, `from cache`, `from the registry`, `from state.*`, `REVIEW:`, `wiki/`, `PDD`, `pdd.md`, or any chain-of-thought explanation of how a value was derived.
 - State every fact directly. If mock substitution is permitted, say "Mock Connector substitution is permitted until a live connection is provisioned" — do not attribute the decision to a generation source.
 - Unknown values render as `—`, not as REVIEW markers. Review items belong in the Phase 0 round-4 summary or post-build loop, not in the document body.
+- **Express author intent, not skill implementation.** The SDD describes the business case; the skill is responsible for translating that into the plan and the JSON. The author should not need to know how the skill internally builds anything. Prose in Descriptions, subtitles, and any narrative cells MUST follow these rules:
+  - **No explanatory Notes about column semantics or skill internals.** Forbidden: `> **Note:**` blocks (or any prose) that justify why a row is shaped a certain way using skill vocabulary — e.g., "this Variable has no `sourceTriggers` because its producer is a task," or "the `<-` notation captures the response field into the companion." The columns and `<-` notation are the agreed authoring shapes; the skill's validator enforces correctness. Authors do not document their own conformance.
+  - **No raw structured formats inline.** Forbidden: `FilterTree` JSON, payload schema JSON, expression-language ASTs, `=jsonString:` blobs, or other plugin-internal data shapes embedded in the SDD body. Filters, payloads, and expressions belong as plain English. The skill builds the structured form. Canonical filter expression:
+    ```
+    **Filter:** Subject contains "urgent" AND From is "alice@example.com".
+    ```
+    The wait-for-connector / connector-activity plugin builds the FilterTree from this prose, validates the field/operator pair against the trigger spec, and AskUserQuestion's if a clause is unsupported.
+  - **No skill-internal vocabulary in prose.** Forbidden in any narrative cell: `Pattern C`, `bridge`, `companion`, `inputOutputs[]`, `=jsonString:`, `groupOperator`, `essentialConfiguration`, `savedFilterTrees`, `dispatcher`, `Phase 2 validator`, `Phase 3 dispatcher`, `Q10 II`, `Finding #N`, `io-binding`, `aliased into`, `aliased from`, `aliased back into`, `via the <- notation`. These are internal terms used inside the skill's references — not the author's vocabulary. Describe outcomes in business terms instead. Examples:
+    - **Bad:** `Slack message timestamp aliased into the messageTs Variable.`
+    - **Good:** `Slack message timestamp.` (the Binding column already declares the aliasing visually)
+    - **Bad:** `INVALID (Finding #6): In-argument with event-trigger source — Dispatcher must reject.`
+    - **Good:** `Subject sourced from the trigger. (Misclassified: trigger-sourced rows are Variables, not In-arguments.)`
+  - **What stays:** column headers (`sourceTriggers`, `sourceFields`, `Category`, etc.), the `<-` notation in Outputs Binding cells, `=vars.X` / `=js:(...)` expressions in Input Binding cells and IF columns. These are the *agreed authoring shapes*, not skill internals.
 
 ---
 
