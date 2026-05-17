@@ -230,7 +230,13 @@ After all value bindings (Step 9.8), conditions (Step 10), and SLA (Step 11) are
 
 **Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1 or Check 2 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
 
-**Reporting:** the completion report at end of Phase 4 MUST mention any Open Items count and point the user to `tasks/build-issues.md` § Open Items for User.
+**Reporting:** at end of Phase 4, count entries in the `## Open Items for User` section of `tasks/build-issues.md` (read the file after writing). If count > 0, the completion report MUST include a literal line of the form:
+
+```
+Open Items: <N> entry/entries — review tasks/build-issues.md § Open Items for User before publishing.
+```
+
+(Use `entry` for N == 1, `entries` otherwise.) Place this line above the per-stage / per-task summary in the completion report so it's not buried.
 
 End of Phase 3 mutations. Proceed directly to Phase 4 — no hard stop between Phase 3 and Phase 4.
 

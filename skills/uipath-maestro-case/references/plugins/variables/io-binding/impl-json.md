@@ -88,18 +88,18 @@ Pseudocode:
 for entry in root.outputs[]:
   var = entry.var
   has_companion_default      = exists(io in root.inputOutputs[] where io.id == var and io.default not empty)
-  has_producer_alias_in_sdd  = exists in SDD any task's Outputs row whose left-side name == var
+  has_producer_alias_in_tasks_md = exists in tasks.md any task's T-entry with an `outputs:` line containing `<var> <- <field>`
   has_producer_wire_in_plan  = exists in caseplan.json any task.data.outputs[] where id == var
-  producer_task_unresolved   = the SDD-declared producer task is a Rule 17 placeholder (data.uipath = {})
+  producer_task_unresolved   = the tasks.md-declared producer task is a Rule 17 placeholder (look up the task in caseplan.json by displayName; check `node.data.uipath` is empty `{}`)
 
-  if sdd_row(name=entry.name).default is not empty:
+  if tasks_md_row(name=entry.name).default is not empty:
       # Has Default — companion must exist with default
       if not has_companion_default: AskUserQuestion("companion missing for Default")
   else:
-      if has_producer_alias_in_sdd and producer_task_unresolved and not has_producer_wire_in_plan:
+      if has_producer_alias_in_tasks_md and producer_task_unresolved and not has_producer_wire_in_plan:
           # Declared producer but task is unresolvable — Rule 17 already prompted; just log
           LOG_OPEN_ITEM("Out-arg with declared but unresolvable producer — runtime undefined until producer is wired")
-      elif not has_producer_alias_in_sdd:
+      elif not has_producer_alias_in_tasks_md:
           # Pure orphan — author never declared a producer. Ask.
           AskUserQuestion("pure orphan", options=(a, b, c, d))
 ```
@@ -113,11 +113,18 @@ Out-argument "<name>" (id <random>, var <var>) has no value source:
   Producing task.data.outputs[].id="<var>": <missing>
 
 Pick one:
-  (a) Add producer task output — name the task; the skill will add `outputs: <name> <- <field>` to it
-  (b) Add a Default value to the SDD Case Variables row — supply value inline
-  (c) Recategorize as Variable (case-internal state) or remove the variable
-  (d) Continue with best-effort emit (case builds; runtime returns undefined for this Out-arg; entry logged under "Open Items for User" in build-issues.md)
+  (a) Add producer task output — supply the producer task's **display name** as shown in tasks.md (e.g., `Send Slack Message`). If the named task doesn't exist, re-prompt.
+  (b) Add a Default value to the SDD Case Variables row — supply value inline (literal string).
+  (c) Recategorize as Variable (case-internal state) or remove the variable.
+  (d) Continue with best-effort emit (case builds; runtime returns undefined for this Out-arg; entry logged under "Open Items for User" in build-issues.md).
 ```
+
+**Skill response per user pick:**
+
+- **(a)** Edit `tasks.md`: append `outputs: <var-name> <- <field>` to the named task's T-entry (use spec-derived field name if available, else `<UNKNOWN>` placeholder). Re-run Phase 1 dispatcher from the modified tasks.md, then retry Step 12.
+- **(b)** Edit `tasks.md`: set `default: "<value>"` on the Out-arg's T-entry. Re-run Phase 1 dispatcher, then retry Step 12.
+- **(c)** Prompt the user inline: `Recategorize as "Variable" or "Remove" the variable?` On `Variable`: edit `tasks.md` Case Variables row Category → Variable, re-run Phase 1 dispatcher, retry Step 12. On `Remove`: delete the row from `tasks.md`, re-run Phase 1 dispatcher, retry Step 12.
+- **(d)** Append the build-issues entry (template below) and continue to Phase 4. No re-run.
 
 Option (d) is the build-with-best escape for cases where the author intends to wire the producer later but wants to keep iterating now — equivalent to the silent-WARN treatment that declared-but-unresolvable producers (T20-style) get automatically.
 
