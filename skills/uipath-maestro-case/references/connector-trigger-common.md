@@ -157,7 +157,48 @@ After the Phase 3 `case spec --input-details` call, both filter sinks contain th
 
 #### Dynamic variable limitation
 
-The filter tree only supports `isLiteral: true` values. When a filter requires runtime case variable references, the impl step writes the canonical FE template-literal form into `body.filters.expression` (and `activityPropertyConfiguration.filterExpression`) directly post-CLI, and leaves `essentialConfiguration.filter` as `null`. This is a known SDK limitation shared with flow-tool.
+The CLI's filter compiler only accepts `isLiteral: true` clauses in the FilterTree (`case-spec-input-details.md § WorkflowValue`). When a filter requires runtime case variable references, the impl step writes the canonical FE template-literal form into `body.filters.expression` (and `activityPropertyConfiguration.filterExpression`) directly post-CLI, and leaves `essentialConfiguration.filter` as `null`. This is a known SDK limitation shared with flow-tool.
+
+**Planner-side authoring contract.** When translating an SDD filter clause to the `tasks.md` FilterTree, the planner classifies each clause by value shape:
+
+| SDD clause value | Encoded as `WorkflowValue` |
+|---|---|
+| Literal (`"urgent"`, `42`, `true`) | `{ "isLiteral": true, "rawString": "\"urgent\"", "value": "urgent" }` — JSON-encoded `rawString`, unwrapped `value` |
+| Variable reference (`=vars.X`, `=metadata.X`, `=bindings.X`) | `{ "isLiteral": false, "rawString": "=vars.X", "value": "=vars.X" }` — both fields carry the `=`-prefixed reference verbatim |
+
+The planner emits a single unified FilterTree containing both clause types. The impl then:
+
+1. Strips `isLiteral: false` entries from the CLI `--input-details.filter` payload (CLI rejects them).
+2. Runs `case spec --input-details` with the literal-only subset.
+3. Composes the canonical `` =js:`...${vars.X}...` `` template-literal form into `body.filters.expression` post-CLI by joining the CLI-compiled literal clauses with each var-bearing clause's translated JMESPath sub-clause (using `${<ref>}` for the `=vars.X` reference). Mandatory-filter prefix from required event-params is preserved.
+
+Example (SDD with mixed literal + var-bearing clauses):
+
+```
+filter: subject contains =vars.urgentKeyword AND from contains "VIP"
+```
+
+Planner emits to `tasks.md`:
+
+```json
+{
+  "filter": {
+    "groupOperator": "And",
+    "filters": [
+      { "id": "subject", "operator": "Contains",
+        "value": { "isLiteral": false, "rawString": "=vars.urgentKeyword", "value": "=vars.urgentKeyword" } },
+      { "id": "from", "operator": "Contains",
+        "value": { "isLiteral": true, "rawString": "\"VIP\"", "value": "VIP" } }
+    ]
+  }
+}
+```
+
+Impl composes (after CLI processes the literal-only subset):
+
+```
+=js:`(parentFolderId == '<inbox-id>') && (contains(subject, ${vars.urgentKeyword})) && (contains(from, 'VIP'))`
+```
 
 **Canonical filter-expression form with variables** (matches FE `buildFiltersExpression` output at `IntsvcActivityConfigurationUtils.ts:358-371`):
 
