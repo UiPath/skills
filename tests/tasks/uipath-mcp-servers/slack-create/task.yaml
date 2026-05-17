@@ -1,4 +1,4 @@
-task_id: mcp-servers-slack-create
+task_id: skill-mcp-servers-slack-create
 description: >
   Wrap Slack `send_message_to_channel_v2` Create as an MCP tool on `test-mcp-skill`.
   LLM picks channel and provides message text; `send_as` baked with designTimeLookups.

@@ -1,6 +1,6 @@
 ---
 name: uipath-mcp-servers
-description: "Use when a user asks to create or manage a UiPath AgentHub MCP server, or to add an Integration Service connector activity (Jira, Slack, Outlook, Salesforce, Workday, ServiceNow, etc.) as a tool on such a server. Trigger phrases include 'add Jira/Slack/Outlook tool to my MCP server', 'create an MCP server with tools for X', 'I need an MCP tool that reads/lists/creates Y'. Distinct from FastMCP / Python MCP SDK work — `uipath-mcp-python` is a server-implementation SDK, NOT this skill. For low-code agent IS resource.json tools→uipath-agents. For raw IS CLI→uipath-platform."
+description: "UiPath AgentHub MCP server tool authoring — wraps Integration Service connector activities (Jira, Slack, Outlook, Salesforce, Workday, ServiceNow, etc.) as MCP tools via `uip agenthub mcp-tools create-is-activity`. For Python MCP servers / coded-agent integration→uipath-agents. For raw IS CLI→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -8,11 +8,18 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 Wrap an Integration Service connector activity as a tool on a UiPath AgentHub MCP server via `uip agenthub mcp-tools create-is-activity`. Author three stringified blobs (`metadata`, `inputSchema`, `outputSchema`) and supply the connection GUID + server folder.
 
-## Hard Rules
+## When to Use This Skill
+
+- User asks to add an Integration Service activity (Jira, Slack, Outlook, Gmail, Salesforce, Workday, ServiceNow, etc.) as a tool on an AgentHub MCP server.
+- User asks to create, update, or manage tools on an existing AgentHub MCP server (slugs like `inbox-mcp`, `support-mcp`, `team-helper`).
+- User says "bake static values into an MCP tool" or "expose this activity to my agent via MCP".
+- Skip when the request is about Python MCP server implementation (FastMCP / `@uipath/mcp`)→use `uipath-agents`. Skip for raw IS CLI usage outside of MCP tooling→use `uipath-platform`.
+
+## Critical Rules
 
 1. **MCP server slug + external SaaS = AgentHub IS-Activity path.** Slugs like `inbox-mcp` / `support-mcp` / `team-helper` name AgentHub servers, not local repos. `uipath-mcp-python` (`@uipath/mcp`) is a server-implementation SDK — different task.
 
-2. **Discover exhaustively before authoring.** Resolve connector key + objectName with `uip agenthub mcp-tools candidates --category is-activity`. Pull field metadata with `uip is resources describe`. For curated / api-type activities (Jira `curated_create_issue`, Salesforce SOQL, Dataservice V3), the first describe shows only cascade-root fields; re-describe with `-f <parent>=<value>` to surface the real schema (see Hard Rule 7). Build schemas only after the cascade is expanded.
+2. **Discover exhaustively before authoring.** Resolve connector key + objectName with `uip agenthub mcp-tools candidates --category is-activity`. Pull field metadata with `uip is resources describe`. For curated / api-type activities (Jira `curated_create_issue`, Salesforce SOQL, Dataservice V3), the first describe shows only cascade-root fields; re-describe with `-f <parent>=<value>` to surface the real schema (see Critical Rule 7). Build schemas only after the cascade is expanded.
 
 3. **Stringify `metadata`, `inputSchema`, `outputSchema`** before passing to `--metadata` / `--input-schema` / `--output-schema`. SDK types them as `string | null`. Empty `--output-schema ""` is rejected with `Unexpected end of JSON input`; pass `"{}"` when the activity has no responseFields.
 
@@ -39,7 +46,7 @@ Walk these checks before writing `--metadata`. Use AskUserQuestion (one option p
 0. **Scoping (multi-tool builds).** Before authoring any tool, restate: server slug, folder, exact list of tools (one bullet each: `<connector> · <activity> · <op>`), and any baked statics. For ambiguous user asks ("Jira and Slack tools"), pick the canonical set and confirm or proceed-and-flag in autonomous mode.
    - **Folder pick.** If the user didn't name a folder, run `uip or folders list --output json` and choose: `Shared` (org-level default — preferred when teammates may share the server) OR the user's personal workspace (`<email>'s workspace`, type `Personal` — preferred for personal-use tools). Pass personal workspaces by `--folder-key <guid>` only (name lookup fails). Surface the choice in your output: `"server folder: Shared (default — change with --folder-path <name>)"`.
    - **Existing tool inventory.** Run `uip agenthub mcp-tools list --mcp <slug> --folder-path <name> --output json` BEFORE drafting. Catches duplicates ("another Create Issue tool — what's different?") and reveals naming conventions to match. Don't author a tool when one with the same name + connector + objectName already exists; surface the duplicate and ask whether to update vs add-new.
-   - **Scope decisions when user names an activity but not the binding.** "Create a Jira issue tool" names the activity but not which project, issue type, or other reference values. For api-type connectors (Jira `curated_create_issue`, Salesforce SOQL, …) with required references at create-time, STOP and ask — even in autonomous mode. The cascade `-f` expansion (Hard Rule 7) depends on these values; guessing them propagates errors through every subsequent step.
+   - **Scope decisions when user names an activity but not the binding.** "Create a Jira issue tool" names the activity but not which project, issue type, or other reference values. For api-type connectors (Jira `curated_create_issue`, Salesforce SOQL, …) with required references at create-time, STOP and ask — even in autonomous mode. The cascade `-f` expansion (Critical Rule 7) depends on these values; guessing them propagates errors through every subsequent step.
 1. **Connection** — `uip is connections list <connector> --output json` returns N>1 connections → ask "Which connection?" with one option per `<Name> in <Folder>` + "Something else".
 2. **Activity disambiguation** — `candidates --connector <key>` returns ≥ 2 entries with overlapping descriptions (e.g. `send_message_to_channel` vs `send_message_to_user`, `curated_get_issue` Retrieve vs `search_issues_with_fields`) → ask. Tie-break for the GET case: name `Get …` / `Find …` without ID → `List`; `Get … by …` or path `{id}`/`{key}` → `Retrieve`. When in doubt, describe without `--operation`.
 3. **Reference fields — discover, then present a 3-way choice (never default).** For every `requestFields[name].reference` OR `parameters[name].reference`:
@@ -51,7 +58,7 @@ Walk these checks before writing `--metadata`. Use AskUserQuestion (one option p
    - For **required** reference parameters, this question is forcing — do not skip even if the user said "LLM picks the channel". User phrasing like that often doesn't distinguish (b) from (c); confirm.
    - Autonomous-mode default: (b) constrained — safest middle ground when the discovered set is bounded (≤ 50 entries). Surface the choice and enum size in your output.
 4. **Enum fields the user didn't specify** — if `enum` has ≥ 2 values, ask. With ≤ 1 value or an explicit user value, bake into `staticValues` silently.
-5. **Cascade `-f` parents** — for api-type ObjectAction connectors, collect parent values from the user before running cascade (Hard Rule 7).
+5. **Cascade `-f` parents** — for api-type ObjectAction connectors, collect parent values from the user before running cascade (Critical Rule 7).
 6. **Required scalar with no enum / no reference / no description** — STOP. Ask the user; do not bake a guess (e.g., Slack `UsersByEmail.By` is a required string with no enum — its valid values are connector-specific).
 
 Asking once produces the right tool. Guessing produces wrong tools.
@@ -90,16 +97,16 @@ uip is resources describe <key> <objectName> --connection-id <id> --output json
 uip is resources describe <key> <objectName> --connection-id <id> --operation <name-from-3a> --output json
 # Read Data.requestFields[] (body), Data.parameters[] (query/path/header), Data.responseFields[] (output).
 # For api-type ObjectActions (curated_create_issue, GenerateQuerySchema, FetchObjectMetadataTenant): rerun with
-#   -f <parent>=<value> ... --action <name>   to expand the full schema (Hard Rule 7).
+#   -f <parent>=<value> ... --action <name>   to expand the full schema (Critical Rule 7).
 # If requestFields looks short for the operation (e.g. Create Issue without summary), the connector is curated —
 # the cascade is required, not optional.
 
 # Step 3c — find the connection in the right folder
 uip is connections list <connector-key> --output json
 # Read Data.items[].{id, name, folder.key}. Pick the connection whose folder.key matches the MCP server's folder.
-# Personal workspace folder: see Hard Rule 6.
+# Personal workspace folder: see Critical Rule 6.
 
-# Step 3d — resolve labels for every static reference value (Hard Rule 8 § Resolver)
+# Step 3d — resolve labels for every static reference value (Critical Rule 8 § Resolver)
 #   PREREQUISITE: Read the section first via the Read tool (don't skim from memory):
 #     Read uipath-platform/references/integration-service/reference-resolution.md (§ Static Reference-Value Labeling)
 # Run the 4-step resolver per baked staticValues entry.
@@ -190,7 +197,7 @@ Multi-tool requests ("server with tools for X and Y"): walk Pre-flight + Steps 1
     "designTimeLookups": {
       // one entry per staticValues.* field whose describe field has .reference
       // value format: "<displayName> - <baked-value>"  e.g. "fields.project.key": "Orchestrator - OR"
-      // see Hard Rule 8
+      // see Critical Rule 8
     },
     "manageProperties": []
   },
@@ -231,8 +238,8 @@ Set additionalProperties: false.
 - **`"Operation 'X' not found. Available: <Y>"`** — curated activity exposes only `Y`. Re-run `describe` without `--operation` to read `Data.availableOperations[]`, then pick from that list.
 - **`InvalidFolderKey: "--folder-key requires a GUID; use --folder-path for folder names"`** — switch to `--folder-path <name>`.
 - **`No folder named '<personal workspace name>' was found. Did you mean: Shared?`** — personal workspaces are unresolvable by name; pass `--folder-key <guid>` instead.
-- **`ConflictingInput: "Pass either --folder-path or --folder-key, not both."`** — drop one. See Hard Rule 6.
-- **Form renders raw scalar (e.g. `OR`, `3`, `bot`) instead of a labeled value** — `designTimeMetadata.designTimeLookups[<field>]` missing for that static reference value. Rebuild metadata with the lookup entry per Hard Rule 8 + Step 3d and `mcp-tools update <tool-id>`.
+- **`ConflictingInput: "Pass either --folder-path or --folder-key, not both."`** — drop one. See Critical Rule 6.
+- **Form renders raw scalar (e.g. `OR`, `3`, `bot`) instead of a labeled value** — `designTimeMetadata.designTimeLookups[<field>]` missing for that static reference value. Rebuild metadata with the lookup entry per Critical Rule 8 + Step 3d and `mcp-tools update <tool-id>`.
 - **`mcp-tools update` returns `ConflictingInput: Use exactly one of --file, --body, or scalar options.`** — pass `--metadata "<json>"` / `--input-schema "<json>"` / `--output-schema "<json>"` as scalars instead of `--file <path>`.
 - **`Unexpected end of JSON input` on `--output-schema`** — empty string is rejected; pass `"{}"` when the activity has no responseFields.
 - **`mcp delete <guid>` returns 404** — `mcp delete` looks up by slug, not by id. Pass the slug.
@@ -283,7 +290,7 @@ uip is resources describe uipath-atlassian-jira curated_create_issue --connectio
 uip is connections list uipath-atlassian-jira --folder-key 1222144b-... --output json
 # → id=9c6edfbd-...
 
-# 3d. Resolve labels (Hard Rule 8 resolver)
+# 3d. Resolve labels (Critical Rule 8 resolver)
 uip is resources execute list uipath-atlassian-jira project --connection-id 9c6edfbd-... --output json
 # → row where key=OR has name=Orchestrator → "Orchestrator - OR"
 uip is resources execute list uipath-atlassian-jira issuetype --connection-id 9c6edfbd-... --output json
