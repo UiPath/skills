@@ -239,7 +239,7 @@ When `healing-fixes.json` contains actionable fixes, present the findings to the
    ```
 3. **If the skill exists:** ask the user if they want to improve the selector using it. If yes, read `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`, pick the appropriate invocation form for this context, run the staging CLI command from that form to produce `Target_Definition.json`, spawn a subagent with the Agent tool to run the skill with `--mode recover` against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
 4. **If the skill does not exist:** update the activity's selector in XAML directly with the HA-recommended selector from `enhancedTarget`. Apply XML encoding per the XAML Selector Encoding rules above.
-5. Validate: `uip rpa get-errors --file-path "<WORKFLOW_FILE>" --output json --use-studio`
+5. Validate: `uip rpa validate --file-path "<WORKFLOW_FILE>" --output json --use-studio`
 
 ### Applying `dismiss-popup` Fixes
 
@@ -250,7 +250,7 @@ When `healing-fixes.json` contains actionable fixes, present the findings to the
    - Insert the Click activity immediately before the failing activity in the XAML (match by `ActivityRefId` → `IdRef`)
 3. The Click activity must be inside a `Use Application/Browser` (`NApplicationCard`) scope — verify the failing activity already has one
 4. After inserting the Click activity, verify it is correctly configured:
-   - Run `uip rpa get-errors --file-path "<WORKFLOW_FILE>" --output json --use-studio` to confirm the workflow still compiles with zero errors
+   - Run `uip rpa validate --file-path "<WORKFLOW_FILE>" --output json --use-studio` to confirm the workflow still compiles with zero errors
    - If validation errors appear on the new Click activity, troubleshoot and fix them before continuing (common issues: missing target, activity outside NApplicationCard scope, XML encoding errors in the selector)
    - Use `uip rpa focus-activity --activity-id "<NEW_CLICK_IDREF>" --use-studio` to highlight the new activity in Studio so the user can visually confirm placement and target
 
