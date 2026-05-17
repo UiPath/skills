@@ -293,7 +293,7 @@ jobs:
         run: |
           echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml --tags temporary -j "$TASK_PARALLELISM" -v
+            -e experiments/default.yaml --tags smoke -j "$TASK_PARALLELISM" -v
         continue-on-error: true
 
       - name: Summarize results
