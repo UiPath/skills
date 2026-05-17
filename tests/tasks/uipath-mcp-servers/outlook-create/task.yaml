@@ -1,4 +1,4 @@
-task_id: mcp-servers-outlook-create
+task_id: skill-mcp-servers-outlook-create
 description: >
   Wrap Outlook 365 `ListCalendarEvents` List as an MCP tool on `test-mcp-skill`.
   Bake outputTimezone with designTimeLookup; LLM provides date range.

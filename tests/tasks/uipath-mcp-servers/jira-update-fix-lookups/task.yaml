@@ -1,4 +1,4 @@
-task_id: mcp-servers-jira-update-fix-lookups
+task_id: skill-mcp-servers-jira-update-fix-lookups
 description: >
   An existing `Create Issue` tool renders raw "MOCKPROJ" and "10" in the form
   because designTimeLookups is empty. Agent must fetch, diagnose, rebuild with

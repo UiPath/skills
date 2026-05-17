@@ -1,10 +1,10 @@
-task_id: mcp-servers-jira-create
+task_id: skill-mcp-servers-jira-create
 description: >
   Wrap Jira `curated_create_issue` Create as an MCP tool on the `test-mcp-skill`
   AgentHub server. Bake project=MOCKPROJ and issue type=10 into staticValues with
   designTimeLookups populated; LLM provides summary (required) and description.
   Uses the manifest-driven uip mock — no real tenant call.
-tags: [uipath-mcp-servers, agenthub, is-activity, cascade, designtimelookups]
+tags: [uipath-mcp-servers, agenthub, is-activity, cascade, designtimelookups, e2e]
 
 agent:
   type: claude-code

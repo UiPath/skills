@@ -1,8 +1,8 @@
-task_id: mcp-servers-gmail-create
+task_id: skill-mcp-servers-gmail-create
 description: >
   Wrap Gmail `ApplyGmailLabel` Create as an MCP tool. LLM provides messageId + label
   id; the addLabelIds reference is exposed at runtime (no lookup needed).
-tags: [uipath-mcp-servers, agenthub, is-activity, array-reference]
+tags: [uipath-mcp-servers, agenthub, is-activity, array-reference, smoke]
 
 agent:
   type: claude-code
