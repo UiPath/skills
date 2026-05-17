@@ -102,9 +102,14 @@ Write the un-minted `caseShape` into the shared sidecar artifact for the variabl
 
 - Do NOT mint `var` / `id` / `elementId` on the `outputs[]` entries written to the sidecar — the variables plugin mints them at Step 6.2 according to whether the SDD references each output. The plain field name from the schema is preserved (e.g., `name: "subject"`).
 - Do NOT strip `body` from the outputs — the variables plugin needs the full JSON Schema when emitting the root companion (especially for `jsonSchema`-typed outputs).
-- Multi-trigger: this step **appends** to the sidecar (or merges by T-number). Trigger plugin is invoked once per trigger T-entry; each invocation adds its own top-level key.
 
-Regenerated on each Rule 6 regenerate-from-scratch run. Per Rule 13, edit via Read + Write/Edit only.
+**Sidecar lifecycle:**
+
+- **Persistence.** The sidecar persists across hard stops (Phase 2 approval gate, Phase 2 publish-for-preview, etc.) so Phase 3 re-entry doesn't lose spec data. Do NOT regenerate on re-entry — read the existing file.
+- **Regeneration.** Rule 6 (`Continue with regenerate from scratch`) replaces the sidecar entirely (Write, not append), starting from an empty `{}`. Rule 7 (`Continue without regenerate`) preserves the existing sidecar.
+- **Multi-trigger append.** Trigger plugin runs once per trigger T-entry. Each invocation **merges by T-number** into the existing sidecar JSON: read the file, set or replace the top-level `<T-number>` key, write back. Append order is **T-number ascending** (T02 then T03 then ...). Re-running a single trigger T-entry overwrites only its own key; other triggers' keys are untouched. This makes the sidecar **idempotent** for multi-trigger cases.
+- **Abort cleanup.** On `Abort` (per [`phased-execution.md`](../../../phased-execution.md) abort semantics), the sidecar is deleted along with other Phase 1/2 artifacts. `phased-execution.md § Abort cleanup` is the authority — this plugin just writes the file; cleanup is centralized.
+- **Edit discipline.** Per Rule 13, edit via Read + Write/Edit only. Do NOT use jq, sed, or any other tool that bypasses the file-state tracker.
 
 The variables plugin consumes this in Phase 3 Step 6.2 — see [`../../variables/global-vars/impl-json.md` § Inputs the plugin reads](../../variables/global-vars/impl-json.md) and § Dispatcher Loop.
 
@@ -140,7 +145,7 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
 
 **Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson). Create the trigger-edge to the first stage normally — both endpoints exist, guardrails pass. No root bindings, no `inputOutputs[]` entries from this trigger.
 
-**Log:** `[PLACEHOLDER] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.`
+**Log:** `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.`
 
 **Upgrade:** regenerate from scratch (Rule 5) — no in-place mutation path. Trigger config is sibling-file-coupled (`entry-points.json`, root variable bindings); a partial in-place edit leaves siblings stale.
 
@@ -150,7 +155,7 @@ Three distinct conditions can trigger placeholder fallback for an event trigger.
 
 | Trigger | What's happening | Placeholder action | Log |
 |---|---|---|---|
-| **Planning-time unresolved** (tasks.md T-entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[PLACEHOLDER] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
+| **Planning-time unresolved** (tasks.md T-entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
 | **`case spec` failure at Phase 3** (T-entry was resolved at planning, but the CLI call fails at implementation — connection deleted between phases, transient API error) | Spec call itself errored | Catch the exception; fall through to placeholder fallback shape | `[SKIPPED] case spec failed — event trigger downgraded to placeholder` |
 | **Required-event-param gate failure at Phase 3** (spec call succeeded, but `caseShape.inputs[name="eventParameters"].body` is missing required fields after AskUserQuestion either declined or didn't fully resolve) | Required event parameter never collected | If user picked decline or re-prompt failed, fall through to placeholder | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to placeholder` |
 
@@ -164,7 +169,7 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 2. **Fully configured:** `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), and `bindings[] = []` all present per §7b.
 3. **`tasks/trigger-spec-cache.json` exists** with this trigger's T-number as a top-level key, containing un-minted `context`, `inputs`, `outputs` from `caseShape`.
 4. **`id-map.json`** contains `"T<N>": { "kind": "trigger", "id": "<triggerId>" }` for this trigger.
-5. **Placeholder:** all four `data.uipath` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[PLACEHOLDER]` log entry present.
+5. **Placeholder:** all four `data.uipath` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
 6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
 7. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. Trigger node wired as `--source` in an edge to the first stage.

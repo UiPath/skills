@@ -115,6 +115,8 @@ For each trigger in `trigger-spec-cache.json`:
 
 **Variant A semantics (per Q6a):** matching is by **top-level spec output name only** (i.e., the `name` field of an entry in `caseShape.outputs[]` — `response`, `Error`, etc.). When an SDD row's Name equals the top-level spec name, the SDD-named entry **replaces** the would-be plain-name auto-emit for that exact entry; do not write both.
 
+**Name matching is case-sensitive.** Preserve the spec's name verbatim in the emitted `name`/`var`/`id` fields. Connector specs typically return PascalCase top-level keys (`response`, `Error`, `Title`); SDDs may use camelCase. If an SDD row's Name is `subject` and the spec returns `Subject`, **the match does NOT fire** — they are different identifiers per the runtime resolver (`VariablesService.findVariableByVariableId` performs direct case-sensitive string equality). To match, the SDD Name must equal the spec's name byte-for-byte. The skill never re-cases or aliases.
+
 **Sub-field references DO NOT trigger replacement.** When SDD references a sub-field path (e.g., `sourceField: response.Title`), the Pattern C entry is in ADDITION to — not in place of — the top-level `response` auto-emit. Worked example for SDD `calendarTitle ← response.Title` (Variable, type=string) on a trigger whose spec returns two top-level `jsonSchema` outputs `response` and `Error`:
 
 ```jsonc
@@ -225,11 +227,24 @@ Three entries — formal slot + companion + bridge:
 
 ### Out argument
 
-SDD row: `Category=Out`. Two cases:
+SDD row: `Category=Out`. Three cases.
 
-**No `Default` value — companion omitted:**
+#### Q10b — Conditional companion emission
 
-The producing task's `task.data.outputs[].id` self-declares the variable slot. The Out-arg formal entry's `var` points at that same string. Resolver finds the task output's id directly.
+The companion (`root.inputOutputs[]` entry for the Out-arg's `var`) is **conditional** on whether a `Default` value is declared:
+
+| SDD `Default` | Producer task output declared in tasks.md | Companion emitted? | Runtime source |
+|---|---|---|---|
+| empty | yes | **No** (Q10b: omit) | Task output's `id` self-declares; resolver matches `var` to task output |
+| present | yes | **Yes** with `default` | Task fire → value overwrites; task not fire → companion default returned |
+| present | no | **Yes** with `default` | Companion default returned (no producer to overwrite) |
+| empty | no | **No companion** | Pure orphan — Q10 II validator AskUserQuestion (see [`io-binding/impl-json.md` § Check 2](../io-binding/impl-json.md)) |
+
+**Why omit when no Default and producer exists:** the producer task's `task.data.outputs[].id` IS the variable slot (self-declares). Adding a `root.inputOutputs[]` companion with no default would be redundant and could conflict with the task's own write at runtime.
+
+#### Shapes
+
+**Case 1 — No `Default`, producer present (Q10b: companion omitted):**
 
 ```json
 // root.data.uipath.variables.outputs[]  — formal Out-arg entry
@@ -238,9 +253,9 @@ The producing task's `task.data.outputs[].id` self-declares the variable slot. T
 // var is a POINTER — at case end, engine reads vars.finalDecision via this pointer
 ```
 
-No `root.inputOutputs[]` companion. The io-binding validator (Phase 3) confirms a task output exists with matching `id`.
+No `root.inputOutputs[]` companion. The io-binding validator (Phase 3 Step 12) confirms a task output exists with matching `id`.
 
-**With `Default` value — companion required:**
+**Case 2 — `Default` present (companion required, ± producer):**
 
 ```json
 // 1. root.data.uipath.variables.outputs[]  — formal Out-arg entry (same as above)
@@ -251,7 +266,9 @@ No `root.inputOutputs[]` companion. The io-binding validator (Phase 3) confirms 
   "default": "Pending", "elementId": "root" }
 ```
 
-The companion provides the fallback returned if no task writes to `vars.finalDecision` (e.g., the producing stage was skipped via entry condition).
+The companion's `default` is the fallback returned if no task writes to `vars.finalDecision` (e.g., the producing stage was skipped via entry condition, OR the case has no producer task declared at all).
+
+**Default + producer precedence at runtime:** if a producer task is declared AND fires, its output value overwrites the companion's default in `vars.<name>`. If the producer task does NOT fire (e.g., skipped by stage entry condition, or stage exited without running it), the companion's default is what gets returned at case end. The runtime resolver does not see "default vs producer" — it sees a single slot whose value is whatever was last written to it; the design-time companion default is the initial value at case start.
 
 ### InOut argument
 

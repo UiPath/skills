@@ -219,7 +219,9 @@ Group `tasks.md §4.8` entries by target (root or stage), then compose and write
 
 ## Step 12 — End-of-Phase-3 validator pass
 
-After all value bindings (Step 9.8), conditions (Step 10), and SLA (Step 11) are written, invoke the end-of-Phase-3 validator per [`plugins/variables/io-binding/impl-json.md` § Binding Procedure](plugins/variables/io-binding/impl-json.md) — Checks 1, 2, 3.
+> **Algorithm reference:** the per-check pseudocode + AskUserQuestion prompt templates + skill-response-per-pick details all live in [`plugins/variables/io-binding/impl-json.md § Binding Procedure`](plugins/variables/io-binding/impl-json.md#binding-procedure). This step is the orchestration hook; that doc is the algorithm. When in doubt, follow the impl-json doc.
+
+After all value bindings (Step 9.8), conditions (Step 10), and SLA (Step 11) are written, invoke the end-of-Phase-3 validator — Checks 1, 2, 3.
 
 - **Check 1** — Resolve every `=vars.X` reference against `variables.{inputs, inputOutputs}[].id`. Scan all task input `value` fields, edge guards (`edges[].data.conditionExpression`), entry/exit condition expressions (stage and task), SLA expressions, and `=js:` expressions anywhere they appear. On unresolved → **AskUserQuestion** offering: (a) name the intended variable, (b) remove the reference, (c) continue with best-effort emit (entry logged under Open Items, runtime returns undefined).
 - **Check 2 (Q10 Option II)** — For every formal Out-arg in `variables.outputs[]`, verify the producer/Default situation per [`io-binding/impl-json.md` § Check 2](plugins/variables/io-binding/impl-json.md):

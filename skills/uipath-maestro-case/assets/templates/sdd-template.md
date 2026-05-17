@@ -196,7 +196,7 @@ DO NOT include in Configuration:
 |------|----------|------|----------------|--------------|---------|-------------|
 | {camelCase name} | {In \| Out \| Variable} | {string \| number \| boolean \| date \| object \| array \| jsonSchema} | {T-number(s), CSV — required when value comes from trigger payload; empty for pure state / Out-args} | {keyed `T<N>: <path>; T<M>: <path>` format when sourceTriggers has multiple entries; single `<path>` when one trigger; empty when no trigger source} | {default value or empty} | {what this variable represents} |
 
-**Category semantics:**
+**Category semantics (author-facing summary; canonical definition in [`global-vars/impl-json.md` § Pattern shapes by category](../../references/plugins/variables/global-vars/impl-json.md)):**
 
 - **`In`** — formal case argument supplied by an external caller (manual trigger / API). For manual/timer triggers only. **NOT valid for event-trigger-sourced rows** — those are case-internal state populated by the trigger, not formal arguments. Use `Variable` instead.
 - **`Out`** — formal case argument returned to the caller at case end. Value comes from a task output (via task plugin's `<-` aliasing — see per-task `Outputs` tables below) OR from a `Default` value if no task fires. `sourceTriggers` MUST be empty (direction mismatch — values flow case→caller, not trigger→case).

@@ -8,6 +8,8 @@ Case-level data lives in the variables block (v19: `root.data.uipath.variables`;
 | **In** | `inputs[]` + companion `inputOutputs[]` + `triggerNode.outputs[]` bridge | Formal argument supplied by external caller. Manual / timer triggers only. |
 | **Out** | `outputs[]` + companion `inputOutputs[]` (only when `Default` present) | Formal argument returned to caller at case end |
 
+> **Canonical definition:** [`impl-json.md` § Pattern shapes by category](impl-json.md) is the source of truth for emission shapes (which arrays get written, exact JSON shape, runtime resolution semantics). This table is the Phase 1 routing summary.
+
 ## SDD-to-Category Mapping
 
 Read the `Category` column on each Case Variables row. No inference, no fallback chain.
