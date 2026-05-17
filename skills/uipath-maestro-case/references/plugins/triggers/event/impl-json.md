@@ -174,5 +174,3 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 7. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. Trigger node wired as `--source` in an edge to the first stage.
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
-
-> Note: previously this plugin also wrote `triggerNode.data.uipath.outputs[]` (Step 6+7b) and `root.inputOutputs[]` companions (Step 8). Under B's redesign, those writes moved to the variables plugin (see [`../../variables/global-vars/impl-json.md` § Scope of this plugin](../../variables/global-vars/impl-json.md)). This plugin's responsibility shrunk to: trigger node skeleton, trigger config inputs, root resource bindings, entry-points.json entry, id-map.json append, and the new `trigger-spec-cache.json` sidecar. Verification 2 above reflects the narrower scope.
