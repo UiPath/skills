@@ -13,7 +13,7 @@ run_limits:
   max_turns: 65
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

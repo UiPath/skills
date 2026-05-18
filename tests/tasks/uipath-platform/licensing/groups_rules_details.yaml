@@ -11,7 +11,7 @@ skip: true
 # Re-enable when the CLI ships the groups surface. See PLT-103133.
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
   node: {}
 
