@@ -51,7 +51,6 @@ The repository contains skills for building and managing UiPath automation proje
 | **uipath-platform** | Authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tools |
 | **uipath-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
 | **uipath-coded-apps** | Build, sync, package, publish, and deploy UiPath Coded Web Applications — push/pull to Studio Web, pack into .nupkg, publish to Orchestrator, deploy to production |
-| **uipath-interact** | Desktop and browser UI interaction and testing — click, type, read, verify, screenshot, and extract UI elements |
 
 ## Agents
 

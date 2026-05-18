@@ -7,7 +7,8 @@ Combines the F8 (standalone IS tool) resource-shape assertions with
 the F2 (inline agent) flow-wiring assertions. Specifically:
 
   1. The flow file contains a `uipath.agent.autonomous` node whose
-     `model.source` points at the inline agent's UUID subdirectory.
+     `inputs.source` (falling back to `model.source` for legacy
+     fixtures) points at the inline agent's UUID subdirectory.
   2. The flow file contains a `uipath.agent.resource.tool.connector`
      node.
   3. An edge wires the agent's `tool` handle (source) to the connector
@@ -29,8 +30,14 @@ import os
 import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.inline_wiring import find_inline_resource  # noqa: E402
+
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
-CONNECTOR_TOOL_NODE_TYPE = "uipath.agent.resource.tool.connector"
+# Connector tool nodes carry the connector-key + activity in the type suffix
+# (e.g. `uipath.agent.resource.tool.connector.uipath-slack.send-message`),
+# so match on the prefix. Trailing "." disambiguates from any future bare type.
+CONNECTOR_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.connector."
 
 SOLUTION = Path(os.getcwd()) / "ResearchFlowSol"
 FLOW_PROJECT = SOLUTION / "ResearchFlow"
@@ -56,31 +63,45 @@ def assert_agent_and_connector_nodes(flow: dict) -> tuple:
         )
     agent_node = agent_nodes[0]
 
-    connector_nodes = [n for n in nodes if n.get("type") == CONNECTOR_TOOL_NODE_TYPE]
+    connector_nodes = [
+        n for n in nodes
+        if isinstance(n.get("type"), str)
+        and n["type"].startswith(CONNECTOR_TOOL_NODE_TYPE_PREFIX)
+    ]
     if not connector_nodes:
         sys.exit(
-            f"FAIL: flow has no node of type {CONNECTOR_TOOL_NODE_TYPE!r} — "
-            "the IS connector tool was not added to the flow canvas"
+            f"FAIL: flow has no node with type starting with "
+            f"{CONNECTOR_TOOL_NODE_TYPE_PREFIX!r} — the IS connector tool was "
+            "not added to the flow canvas"
         )
     connector_node = connector_nodes[0]
 
     if not agent_node.get("id"):
         sys.exit(f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no id")
     if not connector_node.get("id"):
-        sys.exit(f"FAIL: {CONNECTOR_TOOL_NODE_TYPE} node has no id")
+        sys.exit(f"FAIL: connector tool node has no id")
 
-    print(f"OK: flow has both {INLINE_AGENT_NODE_TYPE!r} and {CONNECTOR_TOOL_NODE_TYPE!r} nodes")
+    print(
+        f"OK: flow has {INLINE_AGENT_NODE_TYPE!r} and connector tool node "
+        f"{connector_node['type']!r}"
+    )
     return agent_node, connector_node
 
 
 def assert_agent_source_dir(agent_node: dict) -> Path:
-    source = (agent_node.get("model") or {}).get("source")
-    if not source:
-        sys.exit(f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no model.source")
+    inputs = agent_node.get("inputs") or {}
+    model = agent_node.get("model") or {}
+    source = inputs.get("source") or model.get("source")
+    if not isinstance(source, str) or not source:
+        sys.exit(
+            f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no inputs.source "
+            f"(checked model.source fallback too)"
+        )
     agent_dir = FLOW_PATH.parent / source
     if not agent_dir.is_dir():
+        source_location = "inputs.source" if inputs.get("source") else "model.source"
         sys.exit(
-            f"FAIL: model.source {source!r} does not point to an existing "
+            f"FAIL: {source_location} {source!r} does not point to an existing "
             f"directory ({agent_dir})"
         )
     print(f"OK: inline agent directory resolves to {agent_dir.name}")
@@ -107,29 +128,19 @@ def assert_tool_edge(flow: dict, agent_id: str, connector_id: str) -> None:
 
 
 def assert_integration_tool_resource(agent_dir: Path) -> None:
-    resources_dir = agent_dir / "resources"
-    if not resources_dir.is_dir():
-        sys.exit(
-            f"FAIL: {resources_dir} does not exist — the inline agent has no "
-            "resources/ directory, so no IS tool resource.json was authored"
-        )
-    for path in sorted(resources_dir.rglob("resource.json")):
-        data = load(path)
-        if data.get("$resourceType") == "tool" and data.get("type") == "integration":
-            rid = data.get("id")
-            if not isinstance(rid, str) or "-" not in rid:
-                sys.exit(f"FAIL: IS tool id missing or malformed at {path}: {rid!r}")
-            if not data.get("isEnabled"):
-                sys.exit(f"FAIL: IS tool isEnabled must be truthy at {path}")
-            print(
-                f'OK: {path.relative_to(SOLUTION.parent)} is $resourceType="tool", '
-                f'type="integration" (id={rid})'
-            )
-            return
-    sys.exit(
-        f"FAIL: no IS tool resource found under {resources_dir} — "
-        'expected at least one resource.json with $resourceType="tool" '
-        'and type="integration"'
+    path, data = find_inline_resource(
+        agent_dir,
+        lambda d: d.get("$resourceType") == "tool" and d.get("type") == "integration",
+        description='IS tool ($resourceType=="tool", type=="integration")',
+    )
+    rid = data.get("id")
+    if not isinstance(rid, str) or "-" not in rid:
+        sys.exit(f"FAIL: IS tool id missing or malformed at {path}: {rid!r}")
+    if not data.get("isEnabled"):
+        sys.exit(f"FAIL: IS tool isEnabled must be truthy at {path}")
+    print(
+        f'OK: {path.relative_to(SOLUTION.parent)} is $resourceType="tool", '
+        f'type="integration" (id={rid})'
     )
 
 

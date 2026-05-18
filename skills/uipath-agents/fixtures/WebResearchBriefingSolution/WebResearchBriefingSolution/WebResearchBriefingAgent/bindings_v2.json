@@ -1,0 +1,72 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "process",
+      "key": "A_Plus_B",
+      "value": {
+        "name": {
+          "defaultValue": "A_Plus_B",
+          "isExpression": false,
+          "displayName": "Process name"
+        }
+      },
+      "metadata": {
+        "subType": "process",
+        "bindingsVersion": "2.2",
+        "solutionsSupport": "true"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "3d8b2ad9-ec99-429c-a993-6c6f3f238d1c",
+      "value": {
+        "connectionId": {
+          "defaultValue": "3d8b2ad9-ec99-429c-a993-6c6f3f238d1c",
+          "isExpression": false,
+          "displayName": "Connection ID"
+        }
+      },
+      "metadata": {
+        "connector": "uipath-atlassian-jira",
+        "useConnectionService": "true",
+        "bindingsVersion": "2.2",
+        "solutionsSupport": "true"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "a9174bb6-e808-4330-b182-c8578bc100b1",
+      "value": {
+        "connectionId": {
+          "defaultValue": "a9174bb6-e808-4330-b182-c8578bc100b1",
+          "isExpression": false,
+          "displayName": "Connection ID"
+        }
+      },
+      "metadata": {
+        "connector": "uipath-salesforce-slack",
+        "useConnectionService": "true",
+        "bindingsVersion": "2.2",
+        "solutionsSupport": "true"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "d2e61ee5-6008-4162-8f54-eba948bbd5a0",
+      "value": {
+        "connectionId": {
+          "defaultValue": "d2e61ee5-6008-4162-8f54-eba948bbd5a0",
+          "isExpression": false,
+          "displayName": "Connection ID"
+        }
+      },
+      "metadata": {
+        "connector": "uipath-uipath-airdk",
+        "useConnectionService": "true",
+        "bindingsVersion": "2.2",
+        "solutionsSupport": "true"
+      }
+    }
+  ]
+}

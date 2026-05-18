@@ -7,7 +7,7 @@ Used by inline-agent tests that verify the combined shape of:
     handle (source) to the resource node's `input` handle (target), per
     `agent-flow-integration.md`,
   - a `resource.json` inside the inline agent's UUID subdirectory (pointed
-    to by `model.source` on the autonomous node).
+    to by `inputs.source` on the autonomous node).
 
 Import pattern in a check script:
 
@@ -19,6 +19,7 @@ Import pattern in a check script:
         find_autonomous_agent_node,
         find_resource_node,
         resolve_inline_agent_dir,
+        find_inline_resource,
         assert_edge,
     )
 """
@@ -90,17 +91,60 @@ def find_resource_node(
 
 
 def resolve_inline_agent_dir(flow_path: Path, agent_node: dict) -> Path:
-    """Return the inline agent's UUID subdirectory (from `model.source`)."""
-    source = (agent_node.get("model") or {}).get("source")
-    if not source:
-        sys.exit(f"FAIL: {AUTONOMOUS_NODE_TYPE} node has no model.source")
+    """Return the inline agent's UUID subdirectory.
+
+    Reads the projectId from `inputs.source` on the node instance. Falls
+    back to `model.source` for back-compat with older fixtures.
+    """
+    inputs = agent_node.get("inputs") or {}
+    model = agent_node.get("model") or {}
+    source = inputs.get("source") or model.get("source")
+    if not source or not isinstance(source, str):
+        sys.exit(
+            f"FAIL: {AUTONOMOUS_NODE_TYPE} node has no inputs.source "
+            f"(checked model.source fallback too)"
+        )
     agent_dir = flow_path.parent / source
     if not agent_dir.is_dir():
         sys.exit(
-            f"FAIL: model.source {source!r} does not point to an existing "
+            f"FAIL: inputs.source {source!r} does not point to an existing "
             f"directory ({agent_dir})"
         )
     return agent_dir
+
+
+def find_inline_resource(
+    agent_dir: Path,
+    predicate,
+    *,
+    description: str,
+) -> tuple[Path, dict]:
+    """Locate a resource.json inside an inline agent's resources/ tree by content.
+
+    Inline agents use UUID-named resource subdirectories
+    (`resources/<RES_UUID>/resource.json` per inline-in-flow.md), so checks
+    cannot hardcode a directory name. This helper iterates every
+    `resources/**/resource.json` under `agent_dir` and returns the first one
+    whose loaded JSON satisfies `predicate(data) -> bool`.
+
+    On miss it exits with FAIL referencing the `description` (e.g.
+    "context index 'ProductKnowledge'").
+    """
+    resources_dir = agent_dir / "resources"
+    if not resources_dir.is_dir():
+        sys.exit(f"FAIL: {resources_dir} does not exist — no resources/ directory")
+    for path in sorted(resources_dir.rglob("resource.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if predicate(data):
+            return path, data
+    sys.exit(
+        f"FAIL: no resource.json matching {description} under {resources_dir} — "
+        "inline agents use UUID-named resource subdirectories, so the test "
+        "matches on content (not directory name)"
+    )
 
 
 def assert_edge(

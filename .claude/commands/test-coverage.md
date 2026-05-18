@@ -52,7 +52,6 @@ Components are the specific, testable units the skill teaches. What counts as a 
 | RPA workflows (`uipath-rpa`) | Workflow modes (Coded C#, XAML), activity types, project types. Found in section headings like "Coded Workflows Quick Reference", "XAML Workflows Quick Reference". |
 | Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip solution`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
-| Desktop/browser interaction (`interact`) | Command categories (Discover, Interact, Inspect, Manage), input methods, framework types. Found in "Commands" section hierarchy. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
 
 Group components by category. For skills with `references/plugins/` subdirectories (like `uipath-maestro-flow`), each plugin directory is one component — use the planning.md to understand what it covers.
@@ -111,7 +110,7 @@ tags            — array carrying values from the Tag Taxonomy dimensions
                   [skill, tier, mode:X, shape:X, node:..., resource, connector, feature:...]
                     skill      — uipath-<name>                                (required, flat)
                     tier       — smoke | integration | e2e                    (required, flat)
-                    mode       — mode:{build|operate|diagnose}                (required)
+                    mode       — mode:{build|operate|troubleshoot}                (required)
                     shape      — shape:{single-node|multi-node}              (flow-building tests)
                     node       — node:{decision|switch|subflow|terminate|loop|transform|hitl} (0..n)
                     resource   — flat boolean marker (present iff task uses a resource node) (0..1)
@@ -191,7 +190,7 @@ Identify paths from SKILL.md and references. Common examples:
 
 A path is "covered" if at least one test exercises it (look at the `mode:*`, `node:*`, `feature:*`, or skill-specific tags on each task, plus the prompt content). For single-path skills, this dimension is **N/A**.
 
-### 4e. Anti-patterns (diagnostic, not scored)
+### 4e. Anti-patterns (troubleshooting, not scored)
 
 Report anti-patterns covered in a per-skill table, but do **NOT** include them in the weighted overall score. Across the repo, anti-pattern coverage is effectively 0% everywhere — keeping it at 15% weight was deadweight that compressed scores without adding signal. The "Negative-test gap" signal in Phase 4i already surfaces skills with ≥3 anti-patterns and zero negative tests, which is the actionable version.
 
@@ -214,13 +213,13 @@ Weights reflect what tests actually catch:
 | Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
 | Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
 | Planning skills (e.g. `uipath-planner`, `uipath-solution-design`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
-| Agent-orchestration skills (e.g. `uipath-diagnostics`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
+| Agent-orchestration skills (e.g. `uipath-troubleshoot`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
 
 Formula: `overall = sum(applicable_weight_i * dimension_pct_i) / sum(applicable_weight_i)`
 
 For skills with **no tests**: overall = 0%.
 
-### 4g. Test-density diagnostics (sidecar, not scored)
+### 4g. Test-density troubleshooting (sidecar, not scored)
 
 Report these alongside the Summary table to flag structural fragility that a high coverage score might hide. None of these feed the weighted score — they're red-flag indicators for readers.
 
@@ -229,7 +228,7 @@ Report these alongside the Summary table to flag structural fragility that a hig
 - **Tests per component (max)** — if one component has >50% of the tests, coverage is concentrated and fragile.
 - **Single-test-dominance flag** — emit a warning bullet if any one test task accounts for more than 1/3 of all Direct component hits. That test becomes a single point of failure for the coverage number.
 
-### 4h. Tag-dimension coverage (sidecar diagnostic)
+### 4h. Tag-dimension coverage (sidecar troubleshooting)
 
 For each skill that has at least one test, compute which values from the Tag Taxonomy are exercised. Report the variable dimensions (the `skill` dimension is trivially covered and `tier` is already reported in the Summary table):
 
@@ -305,7 +304,7 @@ Use this template when the skill has at least one test task.
 
 Anti-patterns are inventoried in the Anti-Patterns section below but are **not** part of the overall score (see Phase 4e).
 
-### Test-density diagnostics
+### Test-density troubleshooting
 
 - Total test tasks: N
 - Median tests per component: X
@@ -355,7 +354,7 @@ Applicable only when the skill documents ≥2 implementation paths. Otherwise wr
 | Coded (C#) | Yes | skill-rpa-coded-test-case |
 | XAML | No | — |
 
-### Anti-Patterns (X/Y covered — diagnostic only, NOT in overall score)
+### Anti-Patterns (X/Y covered — troubleshooting only, NOT in overall score)
 
 | # | Anti-Pattern | Covered | Test(s) | Notes |
 |---|-------------|---------|---------|-------|
@@ -363,7 +362,7 @@ Applicable only when the skill documents ≥2 implementation paths. Otherwise wr
 
 ### Tag-Dimension Coverage
 
-Sidecar diagnostic — see Phase 4h. Not part of the weighted overall score.
+Sidecar troubleshooting — see Phase 4h. Not part of the weighted overall score.
 
 **Mode**
 

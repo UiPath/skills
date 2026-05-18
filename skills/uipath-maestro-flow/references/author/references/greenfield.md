@@ -4,29 +4,6 @@ End-to-end journey for creating a Flow project from scratch. Author terminates a
 
 > **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
 
-## Suggested initial todos
-
-Pre-populate these via `TodoWrite` when entering this journey. Adapt to the user's actual flow shape (more nodes → more "Add node" rows; no triggers → drop). See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
-
-- [ ] Resolve `uip` binary and login state
-- [ ] Choose or create solution
-- [ ] Scaffold solution directory
-- [ ] Initialize Flow project inside solution (auto-registers in the parent `.uipx`)
-- [ ] Verify auto-registration succeeded (fall back to `uip solution project add` only if it didn't)
-- [ ] Verify double-nested layout
-- [ ] Discover trigger node type via registry
-- [ ] Add trigger node and wire definition
-- [ ] Discover action node type(s) via registry
-- [ ] Add action node #1 and wire inputs
-- [ ] Add action node #2 and wire inputs
-- [ ] Wire edges across all nodes
-- [ ] Add End node and map output variables
-- [ ] Resolve connection bindings (`solution resource refresh`)
-- [ ] Run `flow validate` and fix any errors
-- [ ] Run `flow format` to normalize layout
-- [ ] Report file path + change summary
-- [ ] Ask "what's next" (publish / debug / deploy)
-
 ## Should you plan first?
 
 For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
@@ -193,7 +170,7 @@ Read [editing-operations.md](editing-operations.md) for strategy selection and p
 
 > **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
-For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
+For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/remove/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 
 ## Step 5 — Validate loop
 

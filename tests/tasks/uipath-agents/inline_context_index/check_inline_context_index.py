@@ -5,8 +5,8 @@ Validates:
   1. Flow has a `uipath.agent.autonomous` node and a
      `uipath.agent.resource.context.index` node.
   2. Edge wires agent.context -> context.input.
-  3. Inline agent dir has `resources/ProductKnowledge/resource.json`
-     with:
+  3. Inline agent dir has at least one resource.json under
+     `resources/**/` (UUID-named per inline-in-flow.md) with:
        - $resourceType == "context"
        - contextType == "index"
        - indexName == "ProductKnowledge"
@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
@@ -47,15 +48,15 @@ def main() -> None:
     print("OK: agent 'context' handle is wired to context.index node's 'input' handle")
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
-    resource_path = agent_dir / "resources" / "ProductKnowledge" / "resource.json"
-    resource = load_json(resource_path)
-
-    if resource.get("$resourceType") != "context":
-        sys.exit(f'FAIL: {resource_path} $resourceType should be "context", got {resource.get("$resourceType")!r}')
-    if resource.get("contextType") != "index":
-        sys.exit(f'FAIL: {resource_path} contextType should be "index", got {resource.get("contextType")!r}')
-    if resource.get("indexName") != "ProductKnowledge":
-        sys.exit(f'FAIL: {resource_path} indexName should be "ProductKnowledge", got {resource.get("indexName")!r}')
+    resource_path, resource = find_inline_resource(
+        agent_dir,
+        lambda d: (
+            d.get("$resourceType") == "context"
+            and d.get("contextType") == "index"
+            and d.get("indexName") == "ProductKnowledge"
+        ),
+        description='context index "ProductKnowledge"',
+    )
     print(
         f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
         f'$resourceType="context", contextType="index", indexName="ProductKnowledge"'

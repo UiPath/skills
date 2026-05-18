@@ -6,8 +6,9 @@ Validates:
      `uipath.agent.resource.tool.*` node (exact API suffix
      under-asserted — use prefix match).
   2. Edge wires agent.tool -> tool.input.
-  3. Inline agent dir has `resources/GetLatestQuote/resource.json`
-     with:
+  3. Inline agent dir has at least one resource.json under
+     `resources/**/` (UUID-named per inline-in-flow.md) for a
+     "GetLatestQuote" external API workflow tool with:
        - $resourceType == "tool"
        - type == "api"
        - location == "external"
@@ -22,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
@@ -47,17 +49,16 @@ def main() -> None:
     print("OK: agent 'tool' handle is wired to external API workflow tool node's 'input' handle")
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
-    resource_path = agent_dir / "resources" / "GetLatestQuote" / "resource.json"
-    resource = load_json(resource_path)
-
-    expected = {
-        "$resourceType": "tool",
-        "type": "api",
-        "location": "external",
-    }
-    for key, want in expected.items():
-        if resource.get(key) != want:
-            sys.exit(f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}")
+    resource_path, resource = find_inline_resource(
+        agent_dir,
+        lambda d: (
+            d.get("$resourceType") == "tool"
+            and d.get("type") == "api"
+            and d.get("location") == "external"
+            and d.get("name") == "GetLatestQuote"
+        ),
+        description='external API workflow tool "GetLatestQuote"',
+    )
     print(
         f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
         f'$resourceType="tool", type="api", location="external"'

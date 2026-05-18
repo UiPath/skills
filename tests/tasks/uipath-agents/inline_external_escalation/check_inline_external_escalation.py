@@ -11,7 +11,7 @@ Validates:
        - id is a UUID-shaped string
        - isEnabled is truthy
        - channels contains at least one entry with
-         name == type == "ActionCenter"
+         type == "actionCenter" (lowercase) and a non-empty name
 
   Note: the escalation resource.json format does not expose a
   `location` field — the solution-vs-external distinction is captured
@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
@@ -52,38 +53,30 @@ def main() -> None:
     print("OK: agent 'escalation' handle is wired to escalation node's 'input' handle")
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
-    resources_dir = agent_dir / "resources"
-    if not resources_dir.is_dir():
-        sys.exit(f"FAIL: {resources_dir} does not exist — no resources/ directory")
-
-    for path in sorted(resources_dir.rglob("resource.json")):
-        data = load_json(path)
-        if data.get("$resourceType") != "escalation":
-            continue
-        rid = data.get("id")
-        if not isinstance(rid, str) or "-" not in rid:
-            sys.exit(f"FAIL: escalation id missing or malformed at {path}: {rid!r}")
-        if not data.get("isEnabled"):
-            sys.exit(f"FAIL: escalation isEnabled must be truthy at {path}")
-        channels = data.get("channels") or []
-        ac = [
-            c for c in channels
-            if isinstance(c, dict)
-            and c.get("name") == "ActionCenter"
-            and c.get("type") == "ActionCenter"
-        ]
-        if not ac:
-            sys.exit(
-                f"FAIL: {path} has no channel with name=='ActionCenter' "
-                f"and type=='ActionCenter'"
-            )
-        print(f"OK: escalation resource at {path.name} is valid (id={rid}, {len(ac)} ActionCenter channel(s))")
-        return
-
-    sys.exit(
-        f'FAIL: no escalation resource found under {resources_dir} — '
-        'expected at least one resource.json with $resourceType="escalation"'
+    path, data = find_inline_resource(
+        agent_dir,
+        lambda d: d.get("$resourceType") == "escalation",
+        description='escalation resource ($resourceType=="escalation")',
     )
+    rid = data.get("id")
+    if not isinstance(rid, str) or "-" not in rid:
+        sys.exit(f"FAIL: escalation id missing or malformed at {path}: {rid!r}")
+    if not data.get("isEnabled"):
+        sys.exit(f"FAIL: escalation isEnabled must be truthy at {path}")
+    channels = data.get("channels") or []
+    ac = [
+        c for c in channels
+        if isinstance(c, dict)
+        and c.get("type") == "actionCenter"
+        and isinstance(c.get("name"), str)
+        and c["name"].strip()
+    ]
+    if not ac:
+        sys.exit(
+            f'FAIL: {path} has no channel with type=="actionCenter" '
+            f"and a non-empty name"
+        )
+    print(f"OK: escalation resource at {path.name} is valid (id={rid}, {len(ac)} actionCenter channel(s))")
 
 
 if __name__ == "__main__":

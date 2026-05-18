@@ -22,8 +22,10 @@
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma
+/skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
+/tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
@@ -67,9 +69,9 @@
 # Legacy RPA skill
 /skills/uipath-rpa-legacy/ @roalexandru
 
-# Diagnostics
-/skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
-/tests/tasks/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+# Troubleshooting
+/skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+/tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
 # Governance skill
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath

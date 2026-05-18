@@ -1,0 +1,170 @@
+task_id: skill-troubleshooting-getasset-name-mismatch
+description: >
+  UiPath troubleshooting agent must troubleshoot a Get Credential failure where
+  the workflow's AssetName property is misspelled ("myHiddenAset" —
+  missing an "s") and Orchestrator returns HTTP 404 / error code 1002.
+  Success = agent matches the get-asset-not-found playbook AND
+  identifies the typo against the correctly-spelled asset
+  ("myHiddenAsset") that exists in the target folder.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, asset-not-found]
+
+# Inherits from experiments/default.yaml: model, permission_mode, plugins
+# ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
+# specific to this scenario.
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    # 1. Shared dispatcher (mocks/uip + mocks/uip.cmd).
+    - type: template_dir
+      path: ../_shared/mock_template
+    # 2. Project source — snapshot of the failing UiPath project.
+    - type: template_dir
+      path: process
+    # 3. Per-scenario fixtures (manifest + canned uip responses).
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My GetAssetFailure process is faulting in Orchestrator on every run.
+  The folder is "Remote Debugging". Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the get-asset-not-found playbook AND identified the AssetName typo"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My GetAssetFailure process is faulting in Orchestrator on
+         every run. The folder is 'Remote Debugging'."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/system-activities/playbooks/get-asset-not-found.md
+        because the runtime error
+          "Could not find the asset 'myHiddenAset'. Error code: 1002"
+        is the verbatim signature of that playbook (HTTP 404 / code 1002).
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the get-asset-not-found
+             playbook should appear (absolute or relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/system-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             system-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        get-asset-* playbooks while ruling out folder-scope-mismatch,
+        permission-denied, or wrong-activity-type. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Get Credential activity (GetRobotCredential) in
+            Main.xaml references AssetName="myHiddenAset" (typo —
+            missing an "s").
+          - The Orchestrator folder "Remote Debugging" contains an
+            asset named "myHiddenAsset" (correctly spelled, Credential
+            type) but no asset literally named "myHiddenAset".
+          - Orchestrator returns 404 / error code 1002 because asset
+            names are matched exactly.
+        The reference fix:
+          - Change AssetName to "myHiddenAsset" in Main.xaml and
+            republish, OR rename the Orchestrator asset to match the
+            workflow exactly.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.asset_name`,
+             `requirements.error_message`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the AssetName typo
+             (naming "myHiddenAset" vs "myHiddenAsset" explicitly).
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched get-asset-not-found AND identified the
+             AssetName typo explicitly (named "myHiddenAset" vs
+             "myHiddenAsset").
+        0.8  Both partial: e.g., correct playbook but conclusion says
+             "asset is missing" without naming the typo near-miss; or
+             conclusion names the typo but matched the
+             system-activities investigation_guide rather than the
+             specific not-found playbook.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (asset failure) but neither matched
+             the playbook nor identified the typo.
+        0.0  Reached the wrong conclusion (e.g., concluded permission-denied,
+             folder-scope-mismatch, wrong-activity-type) or got blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+# Override experiments/default.yaml's 600s limit -- the multi-agent
+# troubleshooting skill (triage -> hypothesis-generator -> tester -> presenter)
+# takes 25-35 min end-to-end when routed through LLMGW (proxy mode).
+# Direct Anthropic routing is faster (~8-12 min) but the test config
+# defaults to proxy, so we size for the slower path.
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test
+# runs end-to-end without a human. The simulator always picks the
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the user's initial report.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

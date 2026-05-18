@@ -1,0 +1,41 @@
+task_id: skill-sdd-smoke-skill-activation
+description: >
+  Smoke test: a PDD-design prompt loads the uipath-solution-design skill body.
+  Verifies activation only — no PDD analysis, no SDD generation. The agent
+  echoes the three phase names defined in the skill, which appear verbatim in
+  SKILL.md and cannot be fabricated without loading the skill.
+tags: [uipath-solution-design, smoke, lifecycle:generate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a Process Design Document I want to turn into a UiPath solution
+  architecture. Load the appropriate UiPath skill for this work.
+
+  Do NOT analyze any PDD. Do NOT generate any architecture or SDD. Do NOT
+  ask me clarifying questions.
+
+  After loading the skill, write to `phases.txt` the EXACT names of the
+  three phases of SDD generation as the skill defines them, one per line.
+  Use the names exactly as they appear in the skill body.
+
+  Stop after writing `phases.txt`.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent produced phases.txt"
+    path: "phases.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "phases.txt lists the three phases by name (verbatim from SKILL.md)"
+    path: "phases.txt"
+    includes:
+      - "PDD Analysis"
+      - "Architecture Review"
+      - "Full SDD Generation"
+    weight: 3.0
+    pass_threshold: 1.0

@@ -130,7 +130,7 @@ bucket/orchestratorBucket/...        │
 
 ## Bindings
 
-`uip agent validate` reads each `resources/{Name}/resource.json` and writes one binding entry per external dependency into `bindings_v2.json`. Every binding carries `name`; **Process, Index, and App bindings also carry `folderPath`** propagated verbatim from the agent-level resource. Connection bindings are exempt (bound by `connection.id`).
+`uip agent migrate` reads each `resources/{Name}/resource.json` and writes one binding entry per external dependency into `bindings_v2.json`. Every binding carries `name`; **Process, Index, and App bindings also carry `folderPath`** propagated verbatim from the agent-level resource. Connection bindings are exempt (bound by `connection.id`). `uip agent validate` performs the same read-only check without writing — it reports `MigrationPending` if the file is behind.
 
 | Binding kind | `name` source | `folderPath` source | Notes |
 |---|---|---|---|
@@ -206,9 +206,9 @@ bucket/orchestratorBucket/...        │
 
 The `solutionsSupport: "true"` metadata flag signals to the deployment engine that this resource participates in the solution deployment.
 
-> **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent validate` and `uip solution resource refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
+> **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent migrate` and `uip solution resource refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
 >
-> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json`. Edit the resource.json and re-validate; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 19.
+> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json`. Edit the resource.json and re-run `uip agent migrate`; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 19.
 
 ## Debug Overwrites
 
@@ -256,7 +256,7 @@ Re-scans all projects in the solution and syncs resource declarations from their
 
 Solution-internal bindings (`folderPath: "solution_folder"`) skip the RCS lookup — they are resolved at deploy time against the solution folder.
 
-**Run this after `uip agent validate`** whenever external tools have been added or changed.
+**Run this after `uip agent migrate`** whenever external tools have been added or changed.
 
 Handled kinds and what refresh produces:
 

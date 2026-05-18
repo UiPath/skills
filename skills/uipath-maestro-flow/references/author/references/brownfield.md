@@ -4,21 +4,6 @@ Recipe-driven journey for targeted changes to an existing `.flow` file. Author t
 
 > **Greenfield (creating a new flow) uses a different journey.** If the `.flow` file does not yet exist, see [greenfield.md](greenfield.md) instead.
 
-## Suggested initial todos
-
-Pre-populate these via `TodoWrite` when entering this journey. The list is edit-shaped — adapt to the user's actual change (single edit → drop discovery rows; multi-node refactor → add per-node rows). See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
-
-- [ ] Locate `.flow` file and read current structure
-- [ ] Confirm what the user wants changed
-- [ ] Discover any new node types via registry (if adding nodes)
-- [ ] Apply edit(s) with `Edit` / `Write` per [editing-operations.md](editing-operations.md) (Flow CLI only for connector activity, connector-trigger, and managed HTTP carve-outs)
-- [ ] Re-wire edges affected by the change
-- [ ] Update variables / output mappings if scope changed
-- [ ] Run `flow validate` and fix any errors
-- [ ] Run `flow format` to normalize layout
-- [ ] Report file path + change summary + remaining mocks/missing connections
-- [ ] Ask "what's next" (publish / debug / deploy)
-
 ## Read this first
 
 **[editing-operations.md](editing-operations.md)** — `Edit` / `Write` is required for non-carve-out `.flow` edits — the `Edit` tool for in-place changes, `Write` only when ≥70% of nodes change. Flow CLI is used only for connector activity, connector-trigger, and managed HTTP carve-outs. Read the strategy selection matrix before any modification.
@@ -34,13 +19,13 @@ For each edit, run `uip maestro flow validate` once after **all** edits are comp
 | **Change a script body or node inputs** | Use `Edit` to modify the node's `inputs` in-place. Do not delete + re-add — that changes the node ID and breaks `$vars` expressions. Script nodes must return an object (`return { key: value }`). | [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs) |
 | **Add a node between two existing nodes** | Remove the connecting edge, add the new node, wire upstream → new → downstream. | [Edit/Write: Insert a node](editing-operations-json.md#insert-a-node-between-two-existing-nodes) |
 | **Add a branch (decision node)** | Remove an edge, add a decision node, wire true/false branches. | [Edit/Write: Insert a decision branch](editing-operations-json.md#insert-a-decision-branch) |
-| **Remove a node** | Delete the node, sweep edges/definitions/variables, reconnect upstream to downstream. | [Edit/Write: Remove a node](editing-operations-json.md#remove-a-node-and-reconnect) |
-| **Remove an edge** | Find the edge ID, delete it. | [Edit/Write: Delete an edge](editing-operations-json.md#delete-an-edge) |
+| **Remove a node** | Remove the node, sweep edges/definitions/variables, reconnect upstream to downstream. | [Edit/Write: Remove a node](editing-operations-json.md#remove-a-node-and-reconnect) |
+| **Remove an edge** | Find the edge ID, remove it. | [Edit/Write: Delete an edge](editing-operations-json.md#delete-an-edge) |
 | **Add a workflow variable** | Use `Edit` to modify `variables.globals` in the `.flow` file (Edit-only). For `out` variables, map on every End node. See [shared/variables-and-expressions.md](../../shared/variables-and-expressions.md). | [Edit/Write: Add a workflow variable](editing-operations-json.md#add-a-workflow-variable) |
 | **Update a state variable** | Use `Edit` to add a `variableUpdates` entry for `inout` variables (Edit-only). See [shared/variables-and-expressions.md](../../shared/variables-and-expressions.md). | [Edit/Write: Add a variable update](editing-operations-json.md#add-a-variable-update) |
 | **Create a subflow** | Add a `core.subflow` parent node + `subflows.{nodeId}` with nested nodes/edges/variables (`Edit`-only, or `Write` if scaffolding from template). | [Edit/Write: Create a subflow](editing-operations-json.md#create-a-subflow) + [subflow/impl.md](plugins/subflow/impl.md) |
 | **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [Edit/Write: Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) + [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
-| **Add a connector trigger** | Delete manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
+| **Add a connector trigger** | Remove manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 | **Add a resource node** | Discover via registry (`--local` for in-solution, or tenant registry for published), add via `Edit`, wire edges. | Relevant plugin's `impl.md` + [editing-operations-json.md](editing-operations-json.md) |
 | **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, direct `.flow` JSON structure, and validation. |
 | **Add a HITL QuickForm node** | Insert a human approval/review/enrichment checkpoint. Wire the `completed` port after adding. | [Edit/Write: Add a node](editing-operations-json.md) + [hitl/impl.md](plugins/hitl/impl.md) |

@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T07:32:23.021Z",
+      "Message": "Copy File: Object reference not set to an instance of an object.\r\nin ERN.xaml\r\n    at CopyFile \"Copy File\"\r\n    at Sequence \"ERN\"\r\n    at ERN \"ERN\"\r\n\r\n--- .NET stack trace ---\r\nSystem.NullReferenceException\r\n   at Namespace_fmq3zcn67w.ERN_Expressions.ERN_Expressions_TypedDataContext2_ForReadOnly.__Expr2Get()\r\n   at Namespace_fmq3zcn67w.ERN_Expressions.ERN_Expressions_TypedDataContext2_ForReadOnly.ValueType___Expr2Get()\r\n   at Namespace_fmq3zcn67w.ERN_Expressions.InvokeExpression(Int32 expressionId, IList`1 locations, ActivityContext activityContext)\r\n   at Microsoft.CSharp.Activities.CSharpValue`1.Execute(CodeActivityContext context)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteInResolutionContext[T](ActivityInstance parentInstance, Activity`1 expressionActivity)\r\n   at System.Activities.InArgument`1.TryPopulateValue(LocationEnvironment targetEnvironment, ActivityInstance activityInstance, ActivityExecutor executor)\r\n   at System.Activities.ActivityInstance.InternalTryPopulateArgumentValueOrScheduleExpression(RuntimeArgument argument, Int32 nextArgumentIndex, ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Boolean isDynamicUpdate)\r\n   at System.Activities.ActivityInstance.ResolveArguments(ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Int32 startIndex)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    }
+  ]
+}

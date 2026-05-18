@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "AssetList",
+  "Data": [
+    {
+      "Key": "c3d4e5f6-a7b8-9012-cdef-0123456789ab",
+      "Name": "ApiBaseUrl",
+      "ValueType": "Text",
+      "ValueScope": "Global",
+      "Description": "Base URL for the downstream API integration. Configured as a Text asset by the platform team."
+    },
+    {
+      "Key": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+      "Name": "myHiddenAsset",
+      "ValueType": "Credential",
+      "ValueScope": "Global",
+      "Description": "Credential asset used by Get Credential demos in the Remote Debugging folder."
+    },
+    {
+      "Key": "b2c3d4e5-f6a7-8901-bcde-f01234567890",
+      "Name": "RemoteDebuggingEndpoint",
+      "ValueType": "Text",
+      "ValueScope": "Global",
+      "Description": "HTTPS endpoint used by remote debugging fixtures."
+    }
+  ],
+  "Pagination": {
+    "Returned": 3,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

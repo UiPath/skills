@@ -4,7 +4,7 @@ description: >
   "Create Issue" connector node so that customFieldsRequestDetails captures
   the parent values (project key + issue type id) that drive the schema
   fetch, and bodyParameters carries the required fields.summary value.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe]
 
 agent:
   type: claude-code

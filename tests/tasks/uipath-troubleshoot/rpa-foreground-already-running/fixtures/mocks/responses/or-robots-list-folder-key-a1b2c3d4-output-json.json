@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "RobotList",
+  "_doc": "One unattended Robot in ForegroundDemo. Run-only-one-job-at-a-time is OFF — relevant to one of the resolution paths.",
+  "Data": [
+    {
+      "Key": "f5a06d11-c2b3-4e8f-9a1b-2c3d4e5f6a7b",
+      "Name": "RobotUser1",
+      "MachineName": "MOCK-HOST",
+      "Username": "UIPATH\\USER1",
+      "Type": "Unattended",
+      "ExecutionSettings": {
+        "RunOnlyOneJobAtATime": false,
+        "LoginToConsole": true
+      },
+      "Description": "Unattended Robot bound to MOCK-HOST."
+    }
+  ]
+}

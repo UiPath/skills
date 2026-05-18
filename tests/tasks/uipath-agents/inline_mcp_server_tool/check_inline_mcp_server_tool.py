@@ -8,8 +8,9 @@ Validates:
   2. Edge wires agent.tool -> mcp.input. (The `tool` handle is the
      only agent-side handle documented for non-context / non-escalation
      resources; MCP uses it per convention.)
-  3. Inline agent dir has `resources/GitHubMcp/resource.json` with the
-     documented sparse shape:
+  3. Inline agent dir has at least one resource.json under
+     `resources/**/` (UUID-named per inline-in-flow.md) for a
+     "GitHubMcp" MCP server with the documented sparse shape:
        - $resourceType == "mcp"  (not "tool")
        - name == "GitHubMcp"
        - description is non-empty
@@ -26,6 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
@@ -51,16 +53,11 @@ def main() -> None:
     print("OK: agent 'tool' handle is wired to MCP server node's 'input' handle")
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
-    resource_path = agent_dir / "resources" / "GitHubMcp" / "resource.json"
-    resource = load_json(resource_path)
-
-    if resource.get("$resourceType") != "mcp":
-        sys.exit(
-            f'FAIL: {resource_path} $resourceType should be "mcp" '
-            f'(distinct from "tool"), got {resource.get("$resourceType")!r}'
-        )
-    if resource.get("name") != "GitHubMcp":
-        sys.exit(f'FAIL: MCP resource name should be "GitHubMcp", got {resource.get("name")!r}')
+    resource_path, resource = find_inline_resource(
+        agent_dir,
+        lambda d: d.get("$resourceType") == "mcp" and d.get("name") == "GitHubMcp",
+        description='MCP server "GitHubMcp" ($resourceType=="mcp")',
+    )
     description = resource.get("description")
     if not isinstance(description, str) or not description.strip():
         sys.exit(f"FAIL: MCP resource description missing or empty: {description!r}")
