@@ -25,7 +25,7 @@ Do not re-inspect or keep polling after the initial check — subsequent capture
 
 ---
 
-## Live-app interaction (uia-interact)
+## Launching, Inspecting & Interacting with GUI apps (uia-interact)
 
 `uia-interact` is the sub-skill for any one-shot UIA action against a live app: launching, advancing UI state between captures, inspecting top-level windows, screenshots, attribute reads, element interaction. It is **not** for authoring workflow activities — those go through `uia-configure-target`.
 
