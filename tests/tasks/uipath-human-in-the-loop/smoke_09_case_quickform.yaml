@@ -1,0 +1,75 @@
+task_id: skill-hitl-smoke-case-quickform
+description: >
+  Smoke test (Case surface): agent recognizes that a case-management
+  scenario with structured form fields and no deployed app calls for
+  the QuickForm path (inline schema). Pattern-recognition only — does
+  not generate caseplan.json.
+tags: [uipath-human-in-the-loop, smoke]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath Case Management process for invoice review. Each
+  case routes through a stage where a finance reviewer must:
+    - see the invoice ID and total amount that the agent extracted
+    - enter a decision (approve / reject) and optional notes
+    - click an outcome button (Approve or Reject)
+
+  I do NOT have a deployed Action Center app for this — and I don't
+  want to build one. Recommend which case-surface HITL path I should
+  use, based on the `uipath-human-in-the-loop` skill's
+  `references/hitl-casetask-action.md`. Three paths exist:
+
+    - QuickForm (inline schema, no deployed app)
+    - Generic (no form fields, just approve/reject)
+    - App-based (existing deployed Action Center app)
+
+  Write a `recommendation.json` file with this exact shape:
+  {
+    "case_path": "<one of: QuickForm | Generic | App-based>",
+    "rationale": "<one sentence explaining why>",
+    "proposed_schema": {
+      "inputs": ["<read-only fields the reviewer sees>"],
+      "outputs": ["<fields the reviewer fills in>"],
+      "outcomes": ["<button names>"]
+    }
+  }
+
+  Do NOT generate a caseplan.json. Do NOT run any CLI commands. Just
+  emit the recommendation.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote a recommendation.json"
+    path: "recommendation.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent picked the QuickForm path (inline schema, no deployed app needed for structured fields)"
+    path: "recommendation.json"
+    assertions:
+      - expression: "case_path"
+        operator: regex
+        expected: "^[Qq]uick[Ff]orm$"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Schema includes the structured outputs the reviewer fills in"
+    path: "recommendation.json"
+    includes:
+      - "decision"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Outcomes include Approve and Reject"
+    path: "recommendation.json"
+    includes:
+      - "Approve"
+      - "Reject"
+    weight: 1.5
+    pass_threshold: 1.0
