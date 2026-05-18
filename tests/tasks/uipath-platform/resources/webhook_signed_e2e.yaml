@@ -5,11 +5,6 @@ description: >
   job, fetches the inbound POST from webhook.site, verifies the HMAC SHA-256
   signature matches the secret.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, webhooks]
-skip: true
-# Blocked: needs (1) a job-emitting process (seed_process.py prerequisite),
-# (2) the runner can reach webhook.site (CI/local OK; sandbox-restricted no).
-# webhook.site is third-party — verify availability and add a retry-once
-# loop on the GET-requests step before flipping skip→false.
 
 agent:
   type: claude-code

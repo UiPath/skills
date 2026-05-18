@@ -5,11 +5,6 @@ description: >
   the trigger URL via httpx, verifies a job was started with the supplied input
   arguments.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
-skip: true
-# Blocked: needs a process to attach the API trigger to (seed_process.py
-# prerequisite). When unblocked, also confirm:
-#  - The runner has outbound network access to the tenant's trigger URL host.
-#  - The trigger response Data exposes the slug/token in a parseable shape.
 
 agent:
   type: claude-code

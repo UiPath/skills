@@ -5,12 +5,11 @@ description: >
   delete. Verifies each transition is reflected in subsequent `processes get`.
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup, orchestrator, processes]
 skip: true
-# Blocked: requires the stub package to have ≥2 versions uploaded to the tenant
-# feed. seed_process.py uploads version 1.0.0; to unblock this test:
-#   1. Build e2e-stub.1.0.0.nupkg AND e2e-stub.1.0.1.nupkg via build_fixtures.sh.
-#   2. Modify seed_process.py to also upload 1.0.1 when env SEED_PROCESS_TWO_VERSIONS=1.
-#   3. Flip skip→false.
-# See tests/fixtures/packages/README.md.
+# Known issue: agent times out trying to reconcile CLI flag semantics for
+# `processes update-version` / `rollback` against the deploy-created process
+# (which has a non-standard version pin). Needs prompt refinement to spell out
+# exact `--package-version` values and to skip version steps that aren't
+# well-defined for a solution-deploy-created process.
 
 agent:
   type: claude-code

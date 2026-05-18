@@ -6,9 +6,15 @@ description: >
   regressions in other tests.
 tags: [uipath-platform, integration, mode:build, lifecycle:generate, solution]
 skip: true
-# Blocked: same fixture dependency as S1/S2. Unblock by populating
-# tests/fixtures/solutions/minimal/ with a real project so `uip solution pack`
-# succeeds. See solutions/minimal/README.md.
+# Blocked: `uip solution pack` from the `tests/fixtures/solutions/e2e-stub/`
+# source (extracted from Studio Web `.uis`) fails with
+# `Solution definition empty or not found`. The Studio-Web-exported source
+# carries a `SolutionId` tied to that specific Studio Web solution; the local
+# `pack` CLI rejects it without that context.
+#
+# To unblock: produce a `uip solution pack`-compatible source dir (likely via
+# `uip solution new` + a freshly created project rather than a Studio Web
+# `.uis` extract). See tests/fixtures/solutions/ README when added.
 
 agent:
   type: claude-code

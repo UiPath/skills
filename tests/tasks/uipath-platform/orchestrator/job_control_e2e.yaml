@@ -4,11 +4,6 @@ description: >
   verify state goes to Stopped/Stopping, restart, wait for terminal state.
   Verifies the state-transition sequence is monotonically valid.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, orchestrator, jobs]
-skip: true
-# Blocked: requires a long-running stub package (e2e-stub-long.1.0.0.nupkg) so
-# there's a window in which to issue --strategy SoftStop. seed_process.py with
-# env SEED_PROCESS_LONG=1 should upload + create that variant. See
-# tests/fixtures/packages/README.md (TODO entry for e2e-stub-long).
 
 agent:
   type: claude-code

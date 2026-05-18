@@ -3,10 +3,6 @@ description: >
   Integration test: download a known package from the tenant feed and verify
   the file looks like a real .nupkg (zip magic bytes PK\x03\x04).
 tags: [uipath-platform, integration, mode:operate, lifecycle:discover, orchestrator, packages]
-skip: true
-# Blocked: needs a known package on the tenant. seed_process.py exposes
-# `package_id`/`package_version`/`package_key` in seed.json once stub fixtures
-# build OR TRACES_SMOKE_PROCESS_KEY is set. See packages/README.md.
 
 agent:
   type: claude-code

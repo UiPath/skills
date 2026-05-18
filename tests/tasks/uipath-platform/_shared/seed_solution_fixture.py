@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""pre_run: copy tests/fixtures/solutions/minimal into the sandbox CWD.
+"""pre_run: copy tests/fixtures/solutions/e2e-stub into the sandbox CWD.
 
 Pure-local — no tenant calls. After this runs, the sandbox contains a fully-formed
 solution that the agent can `uip solution pack` / `publish` / `deploy run` from.
 
 Writes into seed.json:
-    solution_dir: name of the copied solution dir
+    solution_dir: name of the copied solution dir (relative to sandbox)
 """
 
 from __future__ import annotations
@@ -19,9 +19,9 @@ from seed_common import FIXTURES_DIR, load_or_init_seed, log, save_seed
 
 
 def main() -> int:
-    src = FIXTURES_DIR / "solutions" / "minimal"
+    src = FIXTURES_DIR / "solutions" / "e2e-stub"
     if not src.is_dir():
-        log(f"FAIL: solution fixture missing at {src} — run `make install` to build fixtures")
+        log(f"FAIL: solution fixture missing at {src}")
         return 1
 
     seed = load_or_init_seed()

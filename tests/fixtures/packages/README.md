@@ -1,28 +1,48 @@
-# Stub package fixtures — for process-running E2E tests (O2, O4, O6, O7, R6, R10, R11)
+# Stub package fixtures — for process-running E2E tests
 
-**Status:** sources TBD — building a standalone `.nupkg` for a coded Python agent
-requires `uip codedagent` (not installed by default) and a working `uip pack`
-flow. Until that's wired:
+These `.zip` files are **packaged UiPath solutions** (Studio Web export, ready
+for `uip solution publish`). `seed_process.py` publishes + deploys them in
+`pre_run` for tests that need a process on the tenant.
 
-- Process-running tests fall through to **TRACES_SMOKE_PROCESS_KEY** env var
-  (same pattern as `tasks/uipath-platform/traces/traces_e2e.yaml`).
-- CI provides this secret (`.github/workflows/smoke-skills.yml:250`).
-- Locally, export `TRACES_SMOKE_PROCESS_KEY` from a known seeded process.
+| File | Used by | Notes |
+|------|---------|-------|
+| `e2e-stub-1.0.0.zip` | O2, O7, R6, R10, R11 (any test needing a process) | Quick stub; agent prints something and exits |
+| `e2e-stub-1.0.1.zip` | O4 (process rollback target) | Same source, version bumped |
+| `e2e-stub-long-1.0.0.zip` | O6 (jobs stop/restart) | Same workflow + ~30s delay so SoftStop has a window |
 
-When ready, scaffold the stub agent under `e2e-stub/`:
+## How `seed_process.py` uses them
 
+```yaml
+# default — uses e2e-stub-1.0.0.zip
+pre_run:
+  - command: "TASK_ID=<slug> python3 .../seed_process.py"
+
+# rollback target also published — uses both 1.0.0 and 1.0.1
+pre_run:
+  - command: "TASK_ID=<slug> SEED_PROCESS_TWO_VERSIONS=1 python3 .../seed_process.py"
+
+# long-running variant — uses e2e-stub-long-1.0.0.zip
+pre_run:
+  - command: "TASK_ID=<slug> SEED_PROCESS_LONG=1 python3 .../seed_process.py"
 ```
-tests/fixtures/packages/e2e-stub/
-├── project.json        # name=e2e-stub, version 1.0.0
-├── agent.json
-├── main.py             # prints "ran", exits 0
-└── pyproject.toml
-```
 
-`tests/fixtures/build_fixtures.sh` will then call `uip codedagent pack` (or the
-equivalent) to produce `e2e-stub.1.0.0.nupkg` and `e2e-stub.1.0.1.nupkg` (bump
-the version field between runs). Long-running variant: same source +
-`time.sleep(30)` in `main.py` → `e2e-stub-long.1.0.0.nupkg`.
+After `pre_run`, `seed.json` contains `process_key`, `folder_path`,
+`deployment_name`, `package_id`, `package_version`. The agent reads those.
 
-`seed_process.py` already handles the upload + process-create flow once the
-`.nupkg` files exist.
+`post_run` (`cleanup_platform_resources.py`) runs `uip solution deploy uninstall
+<deployment_name>`, which removes the folder + process + any deployed resources.
+
+## Rebuilding from source
+
+`.zip` files are Studio Web exports — open the source solution in Studio Web,
+click "Download" to get a `.zip`. To bump a version, edit the project's
+`project.json` version field, re-download.
+
+For the long variant, add a Delay activity (30s) at the top of `Main.xaml` and
+re-export.
+
+## Legacy: TRACES_SMOKE_PROCESS_KEY fallback
+
+`seed_process.py` still honors the `TRACES_SMOKE_PROCESS_KEY` env var as a
+fallback path (used by `traces_e2e.yaml` historically). If set, the env var
+wins and these `.zip` fixtures are ignored.

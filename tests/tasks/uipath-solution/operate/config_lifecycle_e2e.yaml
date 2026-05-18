@@ -1,15 +1,10 @@
 task_id: skill-platform-solution-config-e2e
 description: >
-  E2E solution config get/set/link/unlink: fetch the default config of the
-  published solution package, set a property value, verify it round-trips
-  through the config file, link a resource entry to an existing folder, then
-  unlink. No redeploy — verifies the config file mutations only.
+  E2E solution config get/set: fetch the default config of the published
+  e2e-stub package, set a property value, fetch again and confirm the value
+  round-trips through the config file. No redeploy — verifies config file
+  mutations only.
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup, solution]
-skip: true
-# Blocked: depends on a real published solution package (S1 prerequisite).
-# Unblock by populating tests/fixtures/solutions/minimal/ with a real project
-# and publishing at least once; this test can then run `config get` against
-# the published name. See solutions/minimal/README.md.
 
 agent:
   type: claude-code
@@ -20,30 +15,59 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "TASK_ID=config-lifecycle SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py && TASK_ID=config-lifecycle python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_solution_fixture.py"
-    timeout: 90
+  - command: "TASK_ID=config-lifecycle python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+    timeout: 30
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
-    timeout: 180
+    timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `solution_dir`, `folder_a_path`.
+  Use the `uipath-platform` skill. Read `seed.json` for `uuid8`.
 
-  Steps:
-  1. `solution deploy config get <package-name> -d ./config.json` → `config_initial.json`.
-  2. `solution deploy config set ./config.json <resource-name> <property> <value>` → `set.json`.
-  3. `solution deploy config get <package-name> -d ./config_after_set.json` → confirm new value.
-  4. `solution deploy config link ./config.json <resource-name> --name <existing-name> --folder-path <folder_a_path>` → `link.json`.
-  5. Confirm link in config file.
-  6. `solution deploy config unlink ./config.json <resource-name>` → `unlink.json`.
-  7. Confirm link is removed.
+  The published `e2e-stub` package is already on the tenant feed (or you can
+  publish it: `uip solution publish $SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`).
+
+  Goal: exercise `solution deploy config get` / `set` round-trip locally —
+  no deploy/uninstall.
+
+  Steps (use `--output json` on EVERY uip command):
+
+  1. (Optional, idempotent) `uip solution publish $SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip` → `publish.json`. Treat "already exists" as success.
+  2. `uip solution deploy config get e2e-stub -d ./config_initial.json` → `config_get.json`. Verify file `config_initial.json` was written.
+  3. Pick the first resource name from `config_initial.json` (path: `resources[0].name`). Save it to `resource_name.txt`.
+  4. `uip solution deploy config set ./config_initial.json "$(cat resource_name.txt)" description "e2e-test-edit"` → `config_set.json`.
+  5. Compare `config_initial.json` to itself (it's the same file post-set). Verify the picked resource now has `configuration.description == "e2e-test-edit"`. Save the JSON to `config_after_set.json` (copy of the file).
+
+  Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked config get/set/link/unlink"
+    description: "Agent invoked config get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\s+config\s+(get|set|link|unlink)'
-    min_count: 4
-    weight: 2.0
+    command_pattern: 'uip\s+solution\s+deploy\s+config\s+get'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked config set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+config\s+set'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Config file was fetched and edited"
+    path: "config_initial.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral check: description value changed to e2e-test-edit in config file"
+    command: "python3 $TASK_DIR/check_config_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0

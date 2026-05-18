@@ -4,10 +4,6 @@ description: >
   process, enable via update, change the cron, disable again, delete. Verifies
   Enabled flag transitions and cron field persists.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
-skip: true
-# Blocked: needs a process to attach the trigger to. seed_process.py handles
-# this once the stub is built OR TRACES_SMOKE_PROCESS_KEY env is set. See
-# tests/fixtures/packages/README.md.
 
 agent:
   type: claude-code

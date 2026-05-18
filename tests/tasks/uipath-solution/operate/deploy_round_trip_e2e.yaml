@@ -1,15 +1,9 @@
 task_id: skill-platform-solution-deploy-e2e
 description: >
-  E2E solution deploy round-trip (Confluence S10): pack → publish → deploy run
-  → poll deploy status to terminal → activate → uninstall. Slowest test by
-  far; gated behind PLATFORM_E2E_SLOW=1.
-tags: [uipath-platform, e2e, mode:build, lifecycle:setup, solution, slow]
-skip: true
-# Blocked: tests/fixtures/solutions/minimal/e2e-minimal.uipx has an empty
-# Projects array, which `uip solution pack` rejects. To unblock:
-#  1. Add at least one project to the fixture (see solutions/minimal/README.md).
-#  2. Optionally gate behind PLATFORM_E2E_SLOW=1 in the runner (~5-10 min).
-#  3. Flip skip→false.
+  E2E solution deploy round-trip (Confluence S10): publish a pre-packed .zip
+  fixture → deploy run → list → uninstall. Verifies the deployment lifecycle
+  end-to-end against the live tenant.
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup, solution]
 
 agent:
   type: claude-code
@@ -20,31 +14,62 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "TASK_ID=deploy-round-trip python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_solution_fixture.py"
-    timeout: 60
+  - command: "TASK_ID=deploy-round-trip python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+    timeout: 30
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
     timeout: 300
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `solution_dir`.
+  Use the `uipath-platform` skill. Read `seed.json` for `uuid8`.
 
-  Steps (use `--output json`):
-  1. `solution pack <solution_dir> ./packed.zip` → `pack.json`.
-  2. `solution publish ./packed.zip` → `publish.json`. Capture PackageKey/PackageVersion.
-  3. `solution deploy run --name <uuid8>-deploy --package-name <name> --package-version <ver> --folder-name <uuid8>-deploy-folder --parent-folder-path Shared --skip-activate` → `deploy_run.json`. Capture deploy id.
-  4. Append manifest entry for deploy + solution-package.
-  5. Poll `solution deploy status <deploy-id>` every 30s up to 10 min, save final to `deploy_status_terminal.json`.
-  6. `solution deploy list` → `deploy_list.json` (must include this deploy).
-  7. `solution deploy activate <name>` → `activate.json`.
-  8. `solution deploy uninstall <name>` → `uninstall.json`.
+  Goal: publish a pre-packed solution `.zip` fixture and run the full deploy
+  lifecycle against the live tenant.
+
+  The committed `.zip` is at:
+  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`
+
+  Steps (use `--output json` on EVERY uip command):
+
+  1. `uip solution publish $SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip` → `publish.json`. Capture `Data.PackageName` (= `e2e-stub`) and `Data.PackageVersion` (= `1.0.0`). Idempotent — if already published, the response message will say so; treat that as success.
+  2. `uip solution deploy run --name <uuid8>-deploy --package-name e2e-stub --package-version 1.0.0 --folder-name <uuid8>-deploy-folder --folder-path Shared` → `deploy_run.json`. Capture `Data.DeploymentKey` and `Data.FolderPath`.
+  3. Append `{"kind": "deploy", "key": "<uuid8>-deploy"}` as a single line to `created-resources.jsonl` so cleanup can find it.
+  4. `uip solution deploy list` → `deploy_list.json`. The deployment with name `<uuid8>-deploy` must appear in the list.
+  5. `uip solution deploy uninstall <uuid8>-deploy` → `uninstall.json`. Expect `Result: Success` with `Status: SuccessfulUninstall`.
+  6. `uip solution deploy list` → `deploy_list_after.json` (the deploy should no longer be active, though it may still appear with a different status).
+
+  Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
   - type: command_executed
-    description: "Agent walked pack → publish → deploy → activate → uninstall"
+    description: "Agent published the fixture .zip"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+(pack|publish|deploy\s+(run|activate|uninstall))'
-    min_count: 5
+    command_pattern: 'uip\s+solution\s+publish'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran deploy + uninstall"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+(run|uninstall)'
+    min_count: 2
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed deploys at least once"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral check: deploy reached terminal, uninstall succeeded"
+    command: "python3 $TASK_DIR/check_deploy_round_trip.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0

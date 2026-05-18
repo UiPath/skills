@@ -1,6 +1,6 @@
-# Built fixture binaries — produced by build_fixtures.sh, not checked in.
-packages/*.nupkg
-libraries/*.nupkg
+# .nupkg binaries are gitignored at repo root (`**/**.nupkg`). The fixtures we
+# commit here are .zip (packed solutions) or source directories — those are
+# tracked. Sandbox/local-build artifacts under solution sources are not.
 
 # Local-build solution outputs
 solutions/*/bin/

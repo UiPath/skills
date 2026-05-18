@@ -4,14 +4,6 @@ description: >
   traces, verify the round-trip (job reached terminal state, logs matched the
   job key, spans were emitted).
 tags: [uipath-platform, e2e, mode:operate, lifecycle:discover, orchestrator, jobs]
-skip: true
-# Blocked: requires `seed_process.py` to land an executable process. That seed
-# script supports two paths:
-#  1. $TRACES_SMOKE_PROCESS_KEY env var (preferred — same pattern as
-#     traces_e2e.yaml; this is what CI sets via GH secret).
-#  2. tests/fixtures/packages/e2e-stub.1.0.0.nupkg built by build_fixtures.sh.
-# When EITHER is in place, flip skip→false and rerun. See
-# tests/fixtures/packages/README.md.
 
 agent:
   type: claude-code
