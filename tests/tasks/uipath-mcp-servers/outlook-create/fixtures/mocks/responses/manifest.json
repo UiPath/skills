@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "rules": [
+    { "match": "or folders list",                                                                              "file": "or_folders_list.json" },
+    { "match": "agenthub mcp list",                                                                            "file": "agenthub_mcp_list.json" },
+    { "match": "agenthub mcp-tools list",                                                                      "file": "agenthub_mcp_tools_list.json" },
+    { "match": "agenthub mcp-tools candidates --category is-activity --name outlook",                          "file": "candidates_by_name.json" },
+    { "match": "agenthub mcp-tools candidates --category is-activity --connector uipath-microsoft-outlook365", "file": "candidates_by_connector.json" },
+    { "match": "is connections list uipath-microsoft-outlook365",                                              "file": "connections_list.json" },
+    { "match": "is resources describe uipath-microsoft-outlook365 ListCalendarEvents --connection-id conn-mock-outlook-01 --operation List", "file": "describe_op.json" },
+    { "match": "is resources describe uipath-microsoft-outlook365 ListCalendarEvents",                         "file": "describe_no_op.json" },
+    { "match": "is resources execute list uipath-microsoft-outlook365 timezones",                              "file": "execute_list_timezones.json" },
+    { "match": "agenthub mcp-tools create-is-activity",                                                        "file": "create_dryrun.json" }
+  ],
+  "unmocked_default": { "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked\"}\n", "exit_code": 1 }
+}

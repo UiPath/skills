@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rules": [
+    { "match": "or folders list",                                          "file": "or_folders_list.json" },
+    { "match": "agenthub mcp list",                                        "file": "agenthub_mcp_list.json" },
+    { "match": "agenthub mcp template remote",                             "file": "template_remote.json" },
+    { "match": "agenthub mcp create remote --print-schema",                "file": "create_remote_schema.json" },
+    { "match": "agenthub mcp create remote",                               "file": "create_remote.json" },
+    { "match": "agenthub mcp refresh-tools mock-remote-api",               "file": "refresh_tools.json" },
+    { "match": "agenthub mcp-tools list --mcp mock-remote-api",            "file": "agenthub_mcp_tools_list.json" },
+    { "match": "agenthub mcp get mock-remote-api",                         "file": "mcp_get.json" }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

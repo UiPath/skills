@@ -61,7 +61,7 @@ Returns the full field breakdown for the specified operation:
 ### Key field properties
 
 - **`required: true`** — field must be provided in `--body` or `--query`. Do NOT skip.
-- **`reference`** — field value must be looked up from another resource. See [reference-resolution.md](reference-resolution.md).
+- **`reference`** — field value must be looked up from another resource. See [reference-resolution.md](reference-resolution.md). When baking a static value for a reference field, also emit `designTimeMetadata.designTimeLookups` so the edit-UI renders a label — see [reference-resolution.md — Static Reference-Value Labeling](reference-resolution.md#static-reference-value-labeling).
 - **`enum`** — field only accepts the listed values (e.g., `["low", "normal", "high"]`).
 
 Results are cached locally. Use `--refresh` to bypass cache after re-auth or schema changes.
