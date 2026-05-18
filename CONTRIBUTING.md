@@ -84,7 +84,7 @@ Skill folders follow the naming convention: `uipath-<domain>` or `uipath-<tool>`
 
 - Use **kebab-case** (lowercase, hyphens between words)
 - Prefix with `uipath-` for UiPath-related skills
-- Be descriptive but concise: `uipath-rpa`, `uipath-interact`, `uipath-maestro-flow`
+- Be descriptive but concise: `uipath-rpa`, `uipath-platform`, `uipath-maestro-flow`
 
 ### 2. Create the Folder Structure
 
@@ -123,7 +123,7 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 ---
 ```
 
-> **1024-character limit.** Claude Code truncates the combined `description` + `when_to_use` at 1,536 characters in the skill listing ([source](https://code.claude.com/docs/en/skills.md)). This repo caps `description` at 1024 chars to leave headroom and keep descriptions focused; the pre-commit hook enforces it. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters.
+> **1024-character limit.** Claude Code truncates the combined `description` + `when_to_use` at 1,536 characters in the skill listing ([source](https://code.claude.com/docs/en/skills.md)). This repo caps `description` at 1024 chars to leave headroom and keep descriptions focused; the pre-commit hook enforces it. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`) within the first ~100 characters.
 
 **Required frontmatter fields:**
 

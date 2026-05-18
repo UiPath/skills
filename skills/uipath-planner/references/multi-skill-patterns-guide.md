@@ -20,7 +20,7 @@ A request is **single-skill** when:
 - The user is modifying an existing automation in a single project
 - The request is read-only / diagnostic / exploration only
 
-> **Important:** Single-app UI automation (one project, one live app, one workflow) is **not** a multi-skill pattern — it's a single-skill `uipath-rpa` task. `uipath-rpa` owns UI automation authoring end-to-end. Do NOT plan a separate "uipath-interact discovery" step for it.
+> **Important:** Single-app UI automation (one project, one live app, one workflow) is **not** a multi-skill pattern — it's a single-skill `uipath-rpa` task. `uipath-rpa` owns UI automation authoring end-to-end, including live-app exploration and probing.
 
 ## Pattern 1 — RPA build + deploy to Orchestrator
 
@@ -73,30 +73,7 @@ A request is **single-skill** when:
 
 `uipath-maestro-flow` follows the plan's `Solution scope` (SW or local); Orchestrator deploy requires `uipath-platform`.
 
-## Pattern 5 — Build + verify UI automation on the live app
-
-**When it applies:** user wants to build a UI automation AND observe it running on the live app, iterating from findings.
-
-```
-1. uipath-rpa      → build the workflow end-to-end
-2. uipath-rpa      → testing (mandatory)
-3. uipath-interact → observe the live app, capture screenshots / snapshots to diagnose issues
-4. uipath-rpa      → apply fixes from findings; repeat 3–4 as needed
-```
-
-`uipath-interact` here is post-build verification only — it does not participate in element discovery or selector authoring. Those belong to `uipath-rpa`.
-
-## Pattern 6 — Verify or fix existing automation against a running app
-
-**When it applies:** an existing RPA automation misbehaves against a live app and the user wants targeted observation and a fix.
-
-```
-1. uipath-interact → interact with the live app, identify the UI issue
-2. uipath-rpa      → fix the automation based on uipath-interact findings
-3. uipath-rpa      → testing for the fix (mandatory)
-```
-
-## Pattern 7 — Agent that uses RPA processes as tools
+## Pattern 5 — Agent that uses RPA processes as tools
 
 **When it applies:** the request is for an agent whose tools are RPA processes that need to be created and published.
 
@@ -122,7 +99,7 @@ When deriving tasks from an SDD, the planner picks a pattern based on the SDD's 
 | Solution with Flow consuming pre-published Orchestrator resources | Pattern 3 |
 | Solution overview SDD | Compose multiple patterns; respect cross-product integration order from §Cross-Project Data Flow |
 | API Workflow (single product) | API Workflow specialist + `uipath-platform` for deploy + testing |
-| Agent with RPA tools in §3 Tools | Pattern 7 |
+| Agent with RPA tools in §3 Tools | Pattern 5 |
 
 Cross-project integration order (general rule): **dependencies before dependents**. Build callable resources (RPA processes, API Workflows, agents-as-tools) before the products that consume them (Flows, Cases, parent agents).
 
@@ -140,8 +117,7 @@ Solution-scope SDDs produce a unified project list. The planner walks the list a
 
 ## Anti-patterns
 
-1. **Routing UI automation through `uipath-interact` for element discovery, selector work, or post-build verification.** `uipath-rpa` is the sole skill for UI automation authoring, debugging, and testing — it has built-in UIA handling, UI Explorer, and selector validation. `uipath-interact` is only for ad-hoc interactive driving of a live app (clicks/typing/screenshots performed by the user/agent against a running app), not as part of an RPA build pipeline.
-2. **Splitting a single-app UI automation into a "discovery" task plus an "authoring" task.** `uipath-rpa` owns end-to-end authoring including target configuration. One task, one skill.
-3. **Skipping the dedicated Testing task per generation skill.** Testing is mandatory and lives at the patterns level — every generation step in every pattern is followed by a testing step.
-4. **Deploying via `uipath-rpa` or `uipath-maestro-flow`.** Deployment to Orchestrator always goes through `uipath-platform`. The build skills do not deploy.
-5. **Building Flow nodes that reference resources before the resources exist.** Use Pattern 2 (local resources, mocked then wired) or Pattern 3 (build and deploy components first, then reference). Never reference an unpublished resource by ID.
+1. **Splitting a single-app UI automation into a "discovery" task plus an "authoring" task.** `uipath-rpa` owns end-to-end authoring including target configuration and live-app exploration. One task, one skill.
+2. **Skipping the dedicated Testing task per generation skill.** Testing is mandatory and lives at the patterns level — every generation step in every pattern is followed by a testing step.
+3. **Deploying via `uipath-rpa` or `uipath-maestro-flow`.** Deployment to Orchestrator always goes through `uipath-platform`. The build skills do not deploy.
+4. **Building Flow nodes that reference resources before the resources exist.** Use Pattern 2 (local resources, mocked then wired) or Pattern 3 (build and deploy components first, then reference). Never reference an unpublished resource by ID.
