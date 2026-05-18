@@ -24,7 +24,7 @@ The catalog at `assets/uip-catalog-snapshot.json` is the source of truth for "wh
    ```bash
    python3 scripts/build-uip-catalog.py
    ```
-   The builder requires `uip` on PATH. If the user has `uip 1.1.0+` and is missing plugin tools (`admin`, `platform`, etc.), warn that coverage will be incomplete — the report will surface those as Stale findings even when the verbs are valid in a fully-installed environment. Suggest `python3 scripts/build-uip-catalog.py --install-tools` if GH Packages auth is available.
+   The builder requires `uip` on PATH. If the user is missing plugin tools (`admin`, `platform`, etc.), warn that coverage will be incomplete — the report will surface those as Stale findings even when the verbs are valid in a fully-installed environment. Suggest `python3 scripts/build-uip-catalog.py --install-tools`; if local `npm` resolves `@uipath/*` from the internal GH Packages feed (alpha prereleases), pin the scope first with `npm config set @uipath:registry https://registry.npmjs.org/`.
 
 2. If the snapshot exists and `--refresh` was NOT passed, read its `generated_at` field. If older than 24 hours, print a one-line note suggesting `/audit-verbs --refresh` and continue with the stale snapshot.
 

@@ -70,9 +70,12 @@ def install_all_tools():
     search`. Plugin groups (solution, maestro, tm, df, ...) only contribute
     verbs to the catalog when installed.
 
-    Requires GitHub Packages authentication — uip 1.1.0+ pulls tools from
-    https://npm.pkg.github.com and will fail with E401 otherwise. In CI,
-    set `NPM_TOKEN` (or configure `.npmrc`) before running this script.
+    The @uipath/* packages live on public npm. The internal GitHub Packages
+    feed carries divergent 1.0.0-alpha.* prereleases under the same scope, so
+    if npm's @uipath scope is mapped there the catalog will pick up alpha
+    surface. The nightly workflow pins the scope to public npm before this
+    runs (`npm config set @uipath:registry https://registry.npmjs.org/`);
+    set the same locally if you hit auth errors.
     """
     listed = run_uip(["tools", "list"]) or {}
     # `uip tools list` returns short names like "solution-tool".
@@ -94,7 +97,10 @@ def install_all_tools():
             capture_output=True, text=True, check=False,
         )
         if proc.returncode != 0:
-            print(f"  failed: {proc.stdout[:200]}", file=sys.stderr)
+            # npm prints errors to stderr; stdout (JSON success channel) is
+            # usually empty on failure.
+            err = (proc.stderr or proc.stdout or "").strip()[:200]
+            print(f"  failed: {err}", file=sys.stderr)
 
 
 def collect_top_level():
@@ -159,19 +165,19 @@ def collect_group(group_path):
 def expand(verbs, groups, workers=8):
     seen = set(groups)
     frontier = list(groups)
-    while frontier:
-        with ThreadPoolExecutor(max_workers=workers) as pool:
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        while frontier:
             results = pool.map(collect_group, frontier)
-        next_frontier = []
-        for children in results:
-            for child in children:
-                if child in verbs:
-                    continue
-                verbs.add(child)
-                if child not in seen:
-                    seen.add(child)
-                    next_frontier.append(child)
-        frontier = next_frontier
+            next_frontier = []
+            for children in results:
+                for child in children:
+                    if child in verbs:
+                        continue
+                    verbs.add(child)
+                    if child not in seen:
+                        seen.add(child)
+                        next_frontier.append(child)
+            frontier = next_frontier
     return verbs
 
 

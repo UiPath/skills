@@ -164,6 +164,11 @@ def enumerate_paths(parsed, allow_partial=True):
                         continue
                 return _trim_to_word_boundary(paths) if allow_partial else None
         elif op == sre_parse.AT:
+            # `^` / `$` / `\A` / `\Z` are positional anchors that don't add
+            # text — safe to skip. `\b` / `\B` are context-dependent and can
+            # forbid the surrounding literal from matching; treat as dynamic.
+            if args in (sre_parse.AT_BOUNDARY, sre_parse.AT_NON_BOUNDARY):
+                return _trim_to_word_boundary(paths) if allow_partial else None
             continue
         elif op == sre_parse.IN:
             inner = args
@@ -413,8 +418,10 @@ def main():
               f"({sum(1 for f in all_findings if f['severity']=='High')} High, "
               f"{sum(1 for f in all_findings if f['severity']=='Medium')} Medium, "
               f"{sum(1 for f in all_findings if f['severity']=='Info')} Info)")
-        return 1 if any(f["severity"] in ("High", "Medium")
-                        for f in all_findings) else 0
+        # Mirror the contract documented in .claude/commands/audit-verbs.md
+        # (Phase 4): only High counts toward a non-zero exit. Medium retired-
+        # verb findings are advisory.
+        return 1 if any(f["severity"] == "High" for f in all_findings) else 0
 
     if args.json:
         for f in all_findings:

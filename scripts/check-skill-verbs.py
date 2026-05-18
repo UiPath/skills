@@ -47,6 +47,10 @@ SHELL_STOP = {"|", "||", "&&", ";", ">", ">>", "<", "2>", "2>&1"}
 # Strip trailing punctuation that markdown formatting can leave behind.
 TRAILING_PUNCT = re.compile(r"[`,.;:)\]\"'\\]+$")
 LEADING_PUNCT = re.compile(r"^[`(\[\"']+")
+# Common prose tokens that follow `uip` in English sentences ("the uip CLI ...",
+# "uip is great", "uip a tool"). A reference whose first token is one of these
+# cannot be a verb regardless of what comes after.
+PROSE_NOISE = {"CLI", "is", "a", "the", "an", "and", "or", "to", "for", "with"}
 
 
 def load_catalog():
@@ -131,8 +135,12 @@ def scan_file(path, catalog, unwalkable):
             match_str = best_prefix(tokens, catalog)
             if match_str == verb_path:
                 continue  # exact catalog hit
-            if match_str is None and len(tokens) == 1 and tokens[0] in ("CLI", "is", "a", "the"):
-                continue  # noise like "the uip CLI ..."
+            # Prose noise: `the uip CLI ...`, `uip is a tool`, etc. The first
+            # token after `uip` is an English word that can't possibly be a
+            # verb. Filter regardless of how many tokens follow — the bug
+            # this guards against was only firing on single-token tails.
+            if match_str is None and tokens[0] in PROSE_NOISE:
+                continue
             # Severity: if any catalog prefix sits under an unwalkable group,
             # we cannot verify the rest of the path — call it Uncertain.
             severity = "Stale"
@@ -161,8 +169,8 @@ def iter_markdown(roots):
                 yield p
 
 
-def write_report(findings, catalog, unwalkable, version, output_path):
-    """Render Stale/Uncertain findings to a markdown audit report."""
+def _aggregate(findings):
+    """Split findings by severity and compute Counter rollups."""
     stale = [f for f in findings if f["severity"] == "Stale"]
     uncertain = [f for f in findings if f["severity"] == "Uncertain"]
     by_verb = collections.Counter(f["verb_path"] for f in stale)
@@ -172,6 +180,12 @@ def write_report(findings, catalog, unwalkable, version, output_path):
         parts = Path(f["path"]).parts
         if len(parts) >= 2 and parts[0] == "skills":
             by_skill[parts[1]] += 1
+    return stale, uncertain, by_verb, by_file, by_skill
+
+
+def write_report(findings, catalog, unwalkable, version, output_path):
+    """Render Stale/Uncertain findings to a markdown audit report."""
+    stale, uncertain, by_verb, by_file, by_skill = _aggregate(findings)
 
     verbs_set = set(catalog)
 
@@ -295,8 +309,7 @@ def main():
             print(json.dumps(f))
         return 0
 
-    stale = [f for f in all_findings if f["severity"] == "Stale"]
-    uncertain = [f for f in all_findings if f["severity"] == "Uncertain"]
+    stale, uncertain, by_verb, by_file, _ = _aggregate(all_findings)
 
     if not stale and not uncertain:
         print(f"OK — no stale uip verbs found (catalog: uip {version}, "
@@ -307,8 +320,6 @@ def main():
           f"(catalog: uip {version}, {len(catalog)} verbs, "
           f"{len(unwalkable)} unwalkable groups)\n")
     if stale:
-        by_verb = collections.Counter(f["verb_path"] for f in stale)
-        by_file = collections.Counter(f["path"] for f in stale)
         print("Top stale verb paths:")
         for verb, n in by_verb.most_common(20):
             print(f"  {n:3d}  {verb}")

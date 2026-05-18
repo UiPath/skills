@@ -44,6 +44,14 @@ jobs:
         with:
           python-version: '3.13'
 
+      # Pin @uipath scope to public npm. The internal GitHub Packages feed
+      # carries divergent 1.0.0-alpha.* prereleases under the same scope; we
+      # want the stable public releases for the catalog. Same pattern as
+      # smoke-skills.yml / smoke-rpa-skills.yml.
+      - name: Configure npm to use public registry for @uipath
+        if: steps.check.outputs.exists != 'true'
+        run: npm config set @uipath:registry https://registry.npmjs.org/
+
       - name: Install uip CLI
         if: steps.check.outputs.exists != 'true'
         run: npm install -g @uipath/cli@latest

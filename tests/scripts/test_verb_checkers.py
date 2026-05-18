@@ -99,3 +99,71 @@ def test_run_uip_handles_missing_binary(tmp_path, monkeypatch):
     # After the fix, it should sys.exit with a message.
     with pytest.raises(SystemExit):
         build.run_uip(["--help"])
+
+
+# --- Issue 7 (High): noise filter is dead code ------------------------------
+
+def test_scan_suppresses_prose_noise(tmp_path):
+    """`the uip CLI works` and `uip is great` must NOT produce findings.
+
+    Current bug: the noise filter at check-skill-verbs.py:134 only fires when
+    `len(tokens) == 1`, but `"the uip CLI works"` extracts tokens
+    `["CLI", "works"]` (length 2), so the filter never matches and prose
+    becomes a Stale finding.
+    """
+    md = tmp_path / "noise.md"
+    md.write_text(
+        "The uip CLI works well.\n"
+        "Then uip is great for automation.\n"
+        "Also `uip a tool` is sometimes seen in prose.\n"
+    )
+    catalog = {"orchestrator", "flow"}
+    findings = skill.scan_file(md, catalog, set())
+    assert findings == [], (
+        f"Expected no findings on prose noise, got {findings!r}. "
+        "The noise filter must match these lines."
+    )
+
+
+# --- Issue 9 (Medium): word-boundary anchors must not pass silently --------
+
+def test_extract_verb_paths_treats_word_boundary_as_dynamic():
+    r"""`\b` and `\B` constrain matches in ways the literal walker cannot
+    model — the surrounding context decides whether the match fires. Treat
+    them like other dynamic tokens (return None for purely-dynamic patterns,
+    or trim back to the last whitespace for partial matches)."""
+    # Pattern is fully dynamic once the boundary appears mid-verb.
+    paths = cli.extract_verb_paths(r"uip\s+\bfoo\b")
+    # The walker should bail at `\b`, leaving only "uip " and returning no verb.
+    assert paths is None, (
+        f"Expected None for `\\b` anchor mid-verb, got {paths!r}. "
+        "Boundary anchors can prevent a match the literal-walker would assume."
+    )
+
+
+# --- Issue 8 (Medium): --report exit code contract --------------------------
+
+def test_report_exit_zero_when_only_medium(tmp_path, monkeypatch):
+    """`audit-verbs.md` documents 'exit 0 if no Stale/High findings'.
+    A Medium-only run (retired verbs) must therefore exit 0, not 1.
+    """
+    # Stub the catalog so 'foo bar' is recognised as RETIRED, not unknown.
+    monkeypatch.setattr(cli, "load_catalog", lambda: ({"baz"}, "test"))
+    monkeypatch.setattr(cli, "load_renames", lambda: {"foo bar": "baz"})
+
+    task = tmp_path / "task.yaml"
+    task.write_text(
+        "success_criteria:\n"
+        "  - type: command_executed\n"
+        "    command_pattern: 'uip\\s+foo\\s+bar'\n"
+    )
+    report = tmp_path / "report.md"
+    monkeypatch.setattr(sys, "argv",
+                        ["check-cli-verbs.py", "--report", str(report),
+                         str(task)])
+    rc = cli.main()
+    # Confirm we actually produced a Medium-only finding.
+    body = report.read_text()
+    assert "Medium" in body
+    assert "**High**" in body  # the summary table mentions High even if zero
+    assert rc == 0, f"Expected exit 0 for Medium-only run, got {rc}"
