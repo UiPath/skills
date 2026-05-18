@@ -43,8 +43,14 @@ if not match:
     names = [_pick(w, "Name") for w in items]
     sys.exit(f"FAIL: webhook {expected_name!r} not found; saw {names}")
 
-enabled = _pick(match, "Enabled")
-events = _pick(match, "Events", "EventTypes")
+# `webhooks list` only exposes Key/Name/Url/Enabled — Events requires `get`.
+webhook_key = _pick(match, "Key", "Id")
+get_env = uip_json("resource", "webhooks", "get", str(webhook_key))
+if get_env.get("Result") != "Success":
+    sys.exit(f"FAIL: webhooks get {webhook_key!r} Result={get_env.get('Result')!r}")
+detail = get_env.get("Data") or {}
+enabled = _pick(detail, "Enabled")
+events = _pick(detail, "Events", "EventTypes")
 event_names: list[str] = []
 if isinstance(events, list):
     for e in events:

@@ -60,7 +60,8 @@ if isinstance(items, dict):
 match = next((b for b in items if _pick(b, "Name") == expected_bucket), None)
 if not match:
     sys.exit(f"FAIL: bucket {expected_bucket!r} not in folder {folder_path!r}")
-bucket_key = _pick(match, "Key", "Id")
+# Bucket envelopes expose `identifier` (GUID string), NOT a Key — and `id` is numeric.
+bucket_key = _pick(match, "Identifier") or _pick(match, "Key")
 
 # 3) Tenant: bucket contains ≥1 file
 flist = uip_json("resource", "bucket-files", "list", bucket_key, "--folder-path", folder_path)

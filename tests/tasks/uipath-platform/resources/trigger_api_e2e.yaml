@@ -4,6 +4,14 @@ description: >
   trigger exists on the seeded process with a known slug/method/name. Check
   queries tenant directly.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
+skip: true
+# Blocked: CLI `uip resource triggers create --type api` rejects with
+# HTTP 400 "A folder is required for this action" regardless of how the
+# folder is passed (--folder-path is documented as time/queue only;
+# --folder-key also fails; without either, same error). The folder should
+# be inferred from the release-key's process, but the CLI doesn't pass the
+# X-UIPATH-FolderPath header correctly for API triggers. Re-enable once the
+# CLI bug is fixed in @uipath/resource-tool.
 
 agent:
   type: claude-code

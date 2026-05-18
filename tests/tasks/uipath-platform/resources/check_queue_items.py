@@ -40,9 +40,10 @@ if env.get("Result") != "Success":
 items = env.get("Data") or []
 if isinstance(items, dict):
     items = _pick(items, "Value", "Items", "Results") or []
-match = next((q for q in items if _pick(q, "Name") == expected_name), None)
+# `queues list` returns rows with `queueDefinitionName` (not Name).
+match = next((q for q in items if _pick(q, "QueueDefinitionName", "Name") == expected_name), None)
 if not match:
-    names = [_pick(q, "Name") for q in items]
+    names = [_pick(q, "QueueDefinitionName", "Name") for q in items]
     sys.exit(f"FAIL: no queue named {expected_name!r} in {folder_path!r}; saw {names}")
 
 env2 = uip_json("resource", "queue-items", "list", "--folder-path", folder_path, "--queue-name", expected_name, "--status", "New")
