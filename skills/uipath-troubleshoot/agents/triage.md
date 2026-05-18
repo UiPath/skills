@@ -37,6 +37,24 @@ Goal: get the error message and match playbooks as fast as possible.
    Write to raw/, write evidence summary.
 6. **Match playbooks** — read the product/package summary for every domain in `state.json.scope.domain`. Match playbooks against the error message/type from the fetched data. Record every match in `state.json.matched_playbooks` with confidence level and full path. Do NOT override confidence levels.
 
+7. **Confirm source-code availability when the matched playbook needs it.** Some playbooks cannot reach a root cause without inspecting project source — typically runtime exceptions, selector failures, expression-evaluation errors, variable-binding issues, and any case where the error stack names a compiled workflow expression (e.g., `__Expr<n>Get`, `CSharpValue.Execute`, `InArgument.TryPopulateValue`) or a specific activity inside a `.xaml` / `.cs` / `.py` source file. Decide:
+
+   a. **Does this investigation need source?** Read each matched playbook's `## Investigation` section. If it instructs reading XAML / `project.json` / activity arguments / variable bindings / expression text / compiled-expression mapping → source is required. If it only references CLI commands and platform-side fixtures → source is not required.
+
+   b. **Is source already known?** Check `state.json.requirements.source_code_path`. It is "known" if:
+      - The user's problem description named a directory or path (e.g., "the project at C:\…", "the source for X is in cwd", "this folder"), AND you recorded it during step 4 ("Resolve identity"), OR
+      - The current working directory contains a recognisable UiPath project (`project.json`, `agent.json`, or `caseplan.json` at the top level) and you record `source_code_path = "."` here with a note that you auto-discovered it.
+
+   c. **If source is required AND not yet known → STOP and ask the user.** Write `needs_input.json` (see shared.md) requesting the project source path. The question must be specific:
+      ```
+      "To trace the originating cause for <error class / activity name>, I need to inspect the project source (XAML / project.json / .py). Could you share the project's directory path? If you are already in the project directory, just reply `pwd` or `.`."
+      ```
+      Include in the `context` field the matched playbook(s) that drove this ask and which evidence types you need (e.g., "variable assignment chain for `myVar` in `ERN.xaml`"). Do NOT continue to the Confidence Gate or Pass 2 until the orchestrator re-spawns you with the user's answer.
+
+   d. **On re-spawn with the answer:** record the answer in `state.json.requirements.source_code_path` (verify the path resolves to a directory before writing). Then continue normally.
+
+   Do NOT use this rule for investigations that the matched playbook can resolve from platform-side data alone — asking for source unnecessarily is friction. Trigger only on the source-requiring conditions in (a).
+
 ### Confidence Gate
 
 **If ANY high-confidence playbook matched** → STOP. Write `state.json` and evidence. Return to orchestrator. The error was enough to match — deep data gathering is not needed for playbook matching.
@@ -47,9 +65,10 @@ Goal: get the error message and match playbooks as fast as possible.
 
 Goal: collect richer data for medium/low confidence matching and hypothesis generation.
 
-7. **Deep data gathering** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section for additional commands beyond the initial fetch (e.g., logs, traces, Healing Agent data, connection pings, element executions). Write each to raw/, write evidence summaries.
-8. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`. If Pass 2 surfaces a new `high`-confidence playbook, append it to `matched_playbooks` but do NOT return to Pass 1 — continue to the next step.
-9. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
+8. **Deep data gathering** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section for additional commands beyond the initial fetch (e.g., logs, traces, Healing Agent data, connection pings, element executions). Write each to raw/, write evidence summaries.
+9. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`. If Pass 2 surfaces a new `high`-confidence playbook, append it to `matched_playbooks` but do NOT return to Pass 1 — continue to the next step.
+10. **Re-check source-code availability for any newly-matched playbooks** — if Pass 2 surfaced a new playbook from step 7's source-requiring categories and `source_code_path` is still unset, apply step 7c (write `needs_input.json` and STOP). Otherwise continue.
+11. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
 
 ## Boundaries
 
