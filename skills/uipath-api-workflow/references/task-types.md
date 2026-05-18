@@ -14,8 +14,10 @@ Detailed reference for the activity types supported in the API Workflow DSL — 
 | TryCatch | `try` + `catch` | Error handling |
 | Wait | `wait` | Pause execution |
 | Response | `response` + `then: "end"` | Return result and end the workflow |
+| HTTP Request (Http kind) | `call: "UiPath.Http"` | Call an arbitrary REST API — use `uip api-workflow registry resolve` + `stub`. See [connector-activity-discovery.md](connector-activity-discovery.md) |
+| Connector activity (IntSvc kind) | `call: "UiPath.IntSvc"` | Call a vendor service (Slack, Outlook, Gmail, GitHub, …) — use `uip api-workflow registry resolve` + `stub` with a pinged connection. See [connector-activity-discovery.md](connector-activity-discovery.md) |
 
-> **HTTP / Connector activities are intentionally not covered by this skill.** They require StudioWeb-side editor metadata (`metadata.configuration` essential blob + a real connection UUID) that the CLI cannot generate cleanly today. Workflows that need outbound calls should be authored in StudioWeb and merged in. See [troubleshooting.md](troubleshooting.md) for context.
+> **HTTP / Connector activities are authored via `uip api-workflow registry resolve` + `stub`** — see [connector-activity-discovery.md](connector-activity-discovery.md) for the full flow and worked examples. The stub emits `unifiedTypesCompatible: true` + `savedJitInputFieldId` so StudioWeb renders the unified activity card. NEVER hand-author `call: "http"` (the deprecated simple form) — it renders as a "block" icon in StudioWeb.
 
 The `metadata.activityType` MUST match the type name above for designer roundtrip and executor dispatch.
 

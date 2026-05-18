@@ -132,7 +132,7 @@ Outputs are read from the final `Response` task's `response` value.
 
 ## WorkflowStart — System Activity
 
-`WorkflowStart` is **always the first activity** inside `Sequence_1.do`. It hydrates variable defaults into `$context.variables` and forwards inputs to `$input`. Treat it as system-generated:
+`WorkflowStart` is **always the first activity** inside the root sequence's `do` array (`Sequence_1.do` in the template skeleton; the actual key may differ in existing workflows). It hydrates variable defaults into `$context.variables` and forwards inputs to `$input`. Treat it as system-generated:
 
 ```json
 {
@@ -146,11 +146,11 @@ Outputs are read from the final `Response` task's `response` value.
 ```
 
 Rules:
-- Always present, always first inside `Sequence_1.do`
+- Always present, always first inside the root sequence's `do` array
 - `isTransparent: true` (only `WorkflowStart` uses `true` — user-created Assign uses `false`)
 - Do not rename, remove, or modify the `set` expression
 
-User activities go AFTER `WorkflowStart` inside `Sequence_1.do`.
+User activities go AFTER `WorkflowStart` inside the root sequence.
 
 ## Task Naming
 
