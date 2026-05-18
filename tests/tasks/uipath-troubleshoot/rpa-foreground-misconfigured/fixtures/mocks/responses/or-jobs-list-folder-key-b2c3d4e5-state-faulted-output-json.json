@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d1e2f3a4-b5c6-4789-abcd-ef0123456789",
+      "State": "Faulted",
+      "ProcessName": "MisconfiguredForeground",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T14:20:45.500Z",
+      "EndTime": "2026-05-13T14:20:46.218Z",
+      "CreationTime": "2026-05-13T14:20:45.302Z"
+    }
+  ]
+}
