@@ -50,6 +50,8 @@ Record the `Id` and `FolderKey` from the connection.
 
 ### Step 3 — Configure the node
 
+> **Find missing values first.** Before composing `url` / `query` / `body`, resolve any values the agent doesn't have (IDs from names, required body fields, response shape, …). See [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md).
+
 **Connector mode** (IS connection auth):
 
 ```bash
