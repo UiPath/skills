@@ -17,6 +17,8 @@ defaults:
     docker:
       env_passthrough_extra:
         - SKILLS_REPO_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
 
   agent:
     type: claude-code
