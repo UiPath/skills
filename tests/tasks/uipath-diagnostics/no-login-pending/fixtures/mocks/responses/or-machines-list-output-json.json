@@ -1,0 +1,64 @@
+{
+  "Result": "Success",
+  "Code": "MachineList",
+  "Data": [
+    {
+      "Name": "danVM",
+      "ID": 106816,
+      "Key": "ba627e42-0edd-4260-97a4-f92737c45e1a",
+      "Type": "Template",
+      "Scope": "Default",
+      "Description": "",
+      "UnattendedSlots": 1,
+      "HeadlessSlots": 0,
+      "NonProductionSlots": 0,
+      "TestAutomationSlots": 0,
+      "LicenseKey": "75b781fd-0d8f-4844-a3e8-3f74a4ac6f46"
+    },
+    {
+      "Name": "MyTemplate",
+      "ID": 28182,
+      "Key": "2ac2a9e6-12b2-4efc-958c-a20737282f94",
+      "Type": "Template",
+      "Scope": "Serverless",
+      "Description": "",
+      "UnattendedSlots": 0,
+      "HeadlessSlots": 0,
+      "NonProductionSlots": 0,
+      "TestAutomationSlots": 0,
+      "LicenseKey": "21fd2790-63c4-48f3-b48f-502d28f3f632"
+    },
+    {
+      "Name": "[Default] Cloud Robots - Serverless",
+      "ID": 21707,
+      "Key": "6477b341-3791-4867-b40f-305d99c969ce",
+      "Type": "Template",
+      "Scope": "Serverless",
+      "Description": "Automatically generated for use in Personal Workspaces",
+      "UnattendedSlots": 0,
+      "HeadlessSlots": 0,
+      "NonProductionSlots": 0,
+      "TestAutomationSlots": 0,
+      "LicenseKey": "8b15ed62-5392-4870-b59c-b6b52549caef"
+    },
+    {
+      "Name": "original_email@test.com's workspace machine",
+      "ID": 21706,
+      "Key": "850f2eee-d0a8-47c8-9c4b-8364ab3deecc",
+      "Type": "Template",
+      "Scope": "PersonalWorkspace",
+      "Description": "",
+      "UnattendedSlots": 0,
+      "HeadlessSlots": 0,
+      "NonProductionSlots": 0,
+      "TestAutomationSlots": 0,
+      "LicenseKey": ""
+    }
+  ],
+  "Pagination": {
+    "Returned": 4,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,41 @@
+Exit code 255
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "get",
+    "Description": "Get a job by its key (GUID). Returns state, input/output arguments, timing, machine info, and error details if faulted. If the job is in Pending state, also includes diagnostic reasons (robot availability, capacity, etc.). No folder context needed — the key is globally unique. Use 'jobs list' to find job keys.",
+    "Usage": "uip or jobs get [options] <job-key>",
+    "Arguments": [
+      {
+        "Name": "job-key",
+        "Description": "Job key (GUID)",
+        "Required": true
+      }
+    ],
+    "Options": [
+      {
+        "Flags": "-t, --tenant <tenant-name>",
+        "Description": "Tenant (optional, defaults to value selected during auth)"
+      },
+      {
+        "Flags": "--output-dir <path>",
+        "Description": "Directory for downloading OutputFile (default: current directory)"
+      },
+      {
+        "Flags": "--no-download",
+        "Description": "Skip automatic OutputFile download"
+      },
+      {
+        "Flags": "--all-fields",
+        "Description": "Return all fields from the API response instead of a curated summary"
+      },
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Examples": [
+      {
+        "Description": "Get a job by its key",
+        "Command": "uip or jobs get b2c3d4e5-0000-0000-0000-000000000001",

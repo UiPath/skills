@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "c8bcc580-3ad7-4760-ab40-cdaee7051a65",
+    "text": "“DynamicJobConnectedMachinesWindowsRobotVersionInvalid” is not mentioned in the provided documents as a specific error or pending reason, so I can’t give its exact internal definition.\n\nBased on the wording, it most likely indicates that:\n- A job is being started dynamically on a connected Windows machine\n- The Robot/Assistant version on that machine is not valid for that job (e.g., unsupported, mismatched with Orchestrator, or below a required minimum version)\n\nTypical causes in similar Robot/Orchestrator issues include:\n- Robot version too old for required features (for example, older than a version where a bug was fixed or a requirement was introduced, such as NLA requirements or CredSSP changes) [“A Specified Logon Session Does Not Exist” article hints at version‑specific behavior and fixes].\n- Environment not officially supported (e.g., Remote Desktop Connection Broker scenarios are explicitly “not supported” for unattended robots and can cause logon/session errors regardless of settings).  \n\nTo move forward, you’d usually:\n- Verify the Robot version on the target machine against supported Robot versions in your environment.\n- Ensure the environment is supported (no RDS Connection Broker for unattended robots).\n- If the issue persists, collect logs (Robot logs, Event Viewer) and open a UiPath support ticket.\n",
+    "sources": [
+      "https://customerportal-dev.uipath.com/kb/000001303",
+      "https://customerportal-dev.uipath.com/kb/000003335"
+    ],
+    "disclaimers": [],
+    "followups": [
+      "On which UiPath Robot and Orchestrator versions are you seeing the DynamicJobConnectedMachinesWindowsRobotVersionInvalid status?",
+      "Are you running these jobs in an RDS/Connection Broker environment or on standalone Windows servers?",
+      "Can you share the exact job status message and any related Robot or Event Viewer logs around the failure time?"
+    ]
+  }
+}
