@@ -45,6 +45,8 @@ These are the things the CLI does not advertise in `--help`.
 
 5. **`mcp delete` looks up by slug, not GUID.** Passing a GUID returns 404.
 
+6. **For any `is-activity` tool, read [references/is-activity-workflow.md](references/is-activity-workflow.md) end-to-end before any CLI call.** It owns the cascade-asking gate, the action-triggered platform-IS reads, the `ActivityMetadata` schema, and the `inputSchema` / `designTimeLookups` rules. IS metadata authored from memory passes `--dry-run` but fails at runtime — do not skip the reference.
+
 ## Server Types
 
 `uip agenthub mcp create` takes six type subcommands. All share `--name <display>`, `--slug <kebab>`, `--description`, `--version`, `--file`/`--body`/`--print-schema`, `--dry-run`, `--folder-path`/`--folder-key`, `--tenant`, `--login-validity`. The differentiating flag picks the integration shape:

@@ -23,8 +23,9 @@ initial_prompt: |
   Use the mocked `uip` CLI.
 
   TASK: Add a Slack 'Send Message to Channel' tool to `test-mcp-skill`.
-  Use the Slack connection in personal workspace. LLM should pick the channel
-  and provide message text. Use --dry-run on the final create call.
+  Use the Slack connection in personal workspace. Bake `send_as=bot` (the
+  agent posts as a bot, every call). LLM should pick the channel and
+  provide the message text at runtime. Use --dry-run on the final create call.
 
   Refs:
     - connector key: uipath-salesforce-slack
