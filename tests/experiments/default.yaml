@@ -34,3 +34,5 @@ defaults:
 
 variants:
   - variant_id: default
+
+# force smoke fanout: validate cli/main install path
