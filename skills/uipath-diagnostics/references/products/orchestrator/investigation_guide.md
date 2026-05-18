@@ -4,7 +4,7 @@
 
 Before fetching ANY job, queue, or asset data, resolve identity first:
 
-1. **Folder** — resolve the folder key (GUID). All Orchestrator data is folder-scoped. Use `uip or folders list-current-user` to find all accessible folders (Personal, Solution, and Standard). `uip or folders list` only returns Standard folders — it misses Personal and Solution types. Use `uip or folders get <key-or-path>` to confirm details. If the folder is inaccessible, STOP — nothing else will be valid without it. **After resolving the folder, verify it contains the target entity** (e.g., run `uip or jobs get <key>` or a scoped query for the expected process/queue). If the target entity is not found in the resolved folder, try other folders from `folders list-current-user` before continuing. Do NOT proceed with a folder that returns empty results for the target entity.
+1. **Folder** — resolve the folder key (GUID). All Orchestrator data is folder-scoped. Use `uip or folders list` to find all accessible folders (Personal, Solution, and Standard) — the default view is scoped to the current user. Use `uip or folders list --all` only when you need every folder in the tenant (filtering and sorting flags require `--all`). Use `uip or folders get <key-or-path>` to confirm details. If the folder is inaccessible, STOP — nothing else will be valid without it. **After resolving the folder, verify it contains the target entity** (e.g., run `uip or jobs get <key>` or a scoped query for the expected process/queue). If the target entity is not found in the resolved folder, try other folders from `folders list` before continuing. Do NOT proceed with a folder that returns empty results for the target entity.
 2. **Process** — identify the process name (from user input, working directory `project.json`, or package name). All subsequent queries filter by this process.
 3. **Time window** — establish the relevant period from the user's report.
 
@@ -18,7 +18,7 @@ Only after identity is resolved, fetch data and verify every result against it:
 If data doesn't match: **discard it**. Do NOT fetch details for jobs or items from other processes. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
 4. **Job selection** — if multiple jobs exist for the identified process, present the list to the user (showing state, timestamp, error summary) and ask which one to investigate. If the user said "latest" or didn't specify, default to the most recent faulted job and state this assumption explicitly. Do NOT fetch details for multiple jobs — investigate one at a time.
-5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip resource queues list --folder-key <key> --name <name>` to find the queue definition key. If the user provided a queue item key, use `uip resource queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list-current-user`.
+5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip resource queues list --folder-key <key> --name <name>` to find the queue definition key. If the user provided a queue item key, use `uip resource queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list`.
 
 ## Job Data Bundle
 
