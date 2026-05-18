@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay of a UIA selector-failure investigation. Triage rules captured verbatim; healing-data/history/get-errors stubbed so the agent can explore beyond the recorded path without aborting.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "Catch-all: any `or jobs list` (regardless of filters) returns the recorded faulted-jobs list. Lets the agent succeed even if it omits --state Faulted."
+    },
+    {
+      "match": "or jobs get d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "file": "or-jobs-get-d5fed611-e740-406c-a1b0-3c6de3371f17-output-json.json"
+    },
+    {
+      "match": "or jobs logs d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "file": "or-jobs-logs-d5fed611-level-error.json",
+      "_doc": "Recorded error-level logs that include the NodeNotFoundException + the Healing Agent recommendation-only message."
+    },
+    {
+      "match": "or jobs history d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "file": "or-jobs-history-d5fed611.json",
+      "_doc": "Stubbed: minimal job-history record showing the single Faulted transition. The original session did not redirect this command."
+    },
+    {
+      "match": "or jobs healing-data d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "file": "or-jobs-healing-data-d5fed611.json",
+      "_doc": "Stubbed: marker pointing the agent to the project `.uia/improve-NClick_1/` artifacts. The real HA recovery zip is materialized into the project snapshot."
+    },
+    {
+      "match": "or jobs traces d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "file": "or-jobs-traces-d5fed611.json",
+      "_doc": "Recorded job traces."
+    },
+    {
+      "match": "rpa get-errors",
+      "file": "rpa-get-errors-clean.json",
+      "_doc": "Clean validation result — used after the agent applies the selector fix and re-validates Google.xaml."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Per CLAUDE.md: docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  }
+}
