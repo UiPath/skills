@@ -1,10 +1,10 @@
 ---
-description: Install a curated Claude Code allowlist for safe `uip` subcommands so the agent is not prompted on every command.
+description: Install a curated Claude Code allowlist for read-only and local-only `uip` subcommands so the agent is not prompted on every command.
 ---
 
 # Install UiPath permission allowlist
 
-Help the user add a curated allowlist of safe `uip` subcommands to their Claude Code settings so the agent is not prompted on every command.
+Help the user add a curated allowlist of read-only and local-only `uip` subcommands to their Claude Code settings so the agent is not prompted on every command.
 
 **Why this command exists.** Claude Code plugins cannot ship permission rules declaratively — per the [plugins docs](https://code.claude.com/docs/en/plugins.md#ship-default-settings-with-your-plugin), only the `agent` and `subagentStatusLine` keys are honored in a plugin-shipped `settings.json`; any `permissions` block is silently ignored. Without a user-configured allowlist, every `Bash(...)` invocation prompts for approval, and a realistic Flow or RPA build runs 25+ distinct `uip` subcommands.
 

@@ -73,7 +73,7 @@ If you've already installed manually, uninstall and re-install via `uip skills i
 
 #### Reduce permission prompts
 
-By default, Claude Code prompts for approval on every `uip` command, and a realistic Flow or RPA build runs 25+ distinct subcommands. Claude Code plugins cannot ship permission allowlists declaratively, so run this once to install a curated allowlist of safe read-only commands (registry lookups, validation, local scaffolding) while keeping prompts for side-effectful operations (login, debug, publish):
+By default, Claude Code prompts for approval on every `uip` command, and a realistic Flow or RPA build runs 25+ distinct subcommands. Claude Code plugins cannot ship permission allowlists declaratively, so run this once to install a curated allowlist of read-only and local-only commands (registry lookups, validation, local scaffolding) while keeping prompts for side-effectful operations (login, debug, publish):
 
 ```text
 /uipath:install-permissions
