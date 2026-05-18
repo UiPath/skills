@@ -1,6 +1,6 @@
 # Connector Activity Discovery
 
-How to author an Integration Service connector activity (Gmail, Outlook, GitHub, Slack, Salesforce, etc.) so it **renders cleanly in StudioWeb's designer** AND **runs from the CLI**. The flow uses `uip api-workflow registry` to resolve a keyword to an activity-type GUID, then build a ready-to-paste activity object with the right shape — `metadata.configuration`, full endpoint path, multipart declarations, camelCase export bucket — all derived from StudioWeb's TypeCache + Integration Service Elements metadata.
+How to author an Integration Service connector activity (HTTP Request, Gmail, Outlook, GitHub, Slack, Salesforce, etc.) so it **renders cleanly in StudioWeb's designer** AND **runs from the CLI**. The flow uses `uip api-workflow registry` to resolve a keyword to an activity-type GUID, then build a ready-to-paste activity object with the right shape — `metadata.configuration` (with `unifiedTypesCompatible: true` + `savedJitInputFieldId` so StudioWeb renders the unified activity card), full endpoint path, multipart declarations, camelCase export bucket — all derived from StudioWeb's TypeCache + Integration Service Elements metadata.
 
 > The `registry` subcommand ships with `@uipath/cli`'s api-workflow tool. No separate install. Both calls require `uip login` (TypeCache + IS Elements are tenant-scoped, served live).
 
@@ -23,7 +23,7 @@ Without both, the designer renders the activity as a "block / forbidden" card an
      [--connection-id <uuid>] [--inputs '<json>'] --output json
    uip is resources describe <connector-key> <object-name> \       → REQUIRED cross-check —
      --operation <op> --connection-id <uuid> --output json           stub omits required fields
-4. Drop the Activity payload into Sequence_1.do, fill any missing required fields, replace placeholders.
+4. Drop the Activity payload into the root sequence, fill any missing required fields, replace placeholders.
 5. (Solutions-mode / IntSvc kind only) Write the Solution connection-resource file at
    Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json.
 6. Validate.
@@ -162,7 +162,7 @@ Sample output for Outlook GetNewestEmail:
 }
 ```
 
-`Data.Activity` is the single-key object you drop into `Sequence_1.do`. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.ResponseFields` lists the fields the IS schema says will be present on the output (under `.content.<field>` for IntSvc kind — see [Vendor curated activity response shape](#vendor-curated-activity-response-shape--contentx-not-x)).
+`Data.Activity` is the single-key object you drop into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.ResponseFields` lists the fields the IS schema says will be present on the output (under `.content.<field>` for IntSvc kind — see [Vendor curated activity response shape](#vendor-curated-activity-response-shape--contentx-not-x)).
 
 `Data.Warnings` (when present):
 - `"IS Elements metadata could not be fetched…"` → IS schema lookup failed (network / auth / connector unavailable). The stub uses fallback path `/<objectName>` and ships no `requestFields`. May still run for simple operations, but won't have the hub prefix or multipart declarations.
@@ -230,7 +230,7 @@ Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"dr
 
 ### Step 4 — Drop into the workflow, replace placeholders, validate
 
-Drop `Data.Activity` into `Sequence_1.do` after `WorkflowStart`. Replace any of these placeholders the stub may have emitted:
+Drop `Data.Activity` into the root sequence after `WorkflowStart`. Replace any of these placeholders the stub may have emitted:
 
 | Placeholder | When it appears | Replace with |
 |--|--|--|
@@ -327,10 +327,18 @@ The Http kind has a fixed shape: `with.method` is always `"POST"` (the outer wra
 |--|--|
 | `authentication` | `"manual"` (inline credentials) or `"connector"` (HTTP-connector connection) |
 | `method` | The actual HTTP verb — `GET`, `POST`, `PUT`, `DELETE`, etc. |
-| `url` | The target URL. The stub leaves `<REPLACE_WITH_TARGET_URL>` here. |
+| `url` | The target URL. The stub leaves `<REPLACE_WITH_TARGET_URL>` here unless passed via `--inputs`. |
 | `headers` | Object mapping header name → value |
 | `body` | Request body for POST/PUT/PATCH (object or string) |
 | (other) | Anything you pass via `--inputs` is merged in here |
+
+**Reading the response.** Http kind output is wrapped: `{ statusCode, content, headers }`. The parsed response body is in `.content`. Read via the camelCase export bucket key `http_request_1`:
+
+```javascript
+${$context.outputs.http_request_1.statusCode}              // 200
+${$context.outputs.http_request_1.content}                 // parsed JSON body
+${$context.outputs.http_request_1.content.fact}            // catfact field
+```
 
 ### IntSvc kind — `call: "UiPath.IntSvc"` (vendor curated activity)
 
@@ -536,12 +544,12 @@ uip api-workflow registry resolve "http request" --output json
 
 # 3. Stub the activity — pass the URL via --inputs to skip placeholder replacement
 uip api-workflow registry stub 5c4cc855-b42a-37e6-b910-de8588998fce \
-  --inputs '{"method":"GET","url":"${$workflow.input.url}","headers":{"Accept":"application/json"}}' \
+  --inputs '{"method":"GET","url":"https://catfact.ninja/fact"}' \
   --output json
-# → Data.Activity with the HTTP_Request_1 key, ready to drop in
+# → Data.Activity with the HttpRequest_1 key, ready to drop in
 ```
 
-The resulting workflow activity (drop into `Sequence_1.do`):
+The resulting workflow activity (drop into the root sequence):
 
 ```json
 {
@@ -556,8 +564,8 @@ The resulting workflow activity (drop into `Sequence_1.do`):
       "bodyParameters": {
         "authentication": "manual",
         "method": "GET",
-        "url": "${$workflow.input.url}",
-        "headers": { "Accept": "application/json" }
+        "url": "https://catfact.ninja/fact",
+        "headers": {}
       }
     },
     "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"http_request_1\": $output } }" },
@@ -566,13 +574,15 @@ The resulting workflow activity (drop into `Sequence_1.do`):
       "activityType": "Connector",
       "displayName": "HTTP Request",
       "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
-      "configuration": "{\"essentialConfiguration\":{\"instanceParameters\":{\"version\":\"1.0.0\",\"connectorKey\":\"uipath-uipath-http\",\"activityType\":\"Curated\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"operation\":null,\"eventOperation\":null,\"eventMode\":null,\"connectorObjects\":null,\"previewEndpoint\":null},\"objectName\":\"http-request\",\"operation\":null,\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":\"\"}}"
+      "configuration": "{\"essentialConfiguration\":{ … ,\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}"
     }
   }
 }
 ```
 
-Verified end-to-end: `uip api-workflow run --no-auth --input-arguments '{"url":"https://catfact.ninja/fact"}'` returns `statusCode: 200, hasContent: true`. StudioWeb's designer renders the activity as the HTTP Request card.
+The `unifiedTypesCompatible: true` + `savedJitInputFieldId: "in_http-request"` flags inside `essentialConfiguration` are what tell StudioWeb to render the unified HTTP card.
+
+Verified end-to-end: `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200`, `content.fact: "..."`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
 
 ## Worked example — Outlook Get Newest Email (IntSvc kind)
 
@@ -617,7 +627,7 @@ uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
 #    with "key" = a8e592a5-76bb-4062-b712-3c364e4a1128.
 ```
 
-Drop `Data.Activity` into `Sequence_1.do` after `WorkflowStart`. Bind downstream:
+Drop `Data.Activity` into the root sequence after `WorkflowStart`. Bind downstream:
 
 ```json
 "when": "${$context.outputs.getNewestEmail_1?.content?.subject?.length > 15}"
@@ -716,4 +726,5 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 - **Do NOT rename the export bucket key.** Connector activities use camelCase `objectName + "_<N>"` for the export — the stub gets this right; renaming it breaks every downstream `$context.outputs.<X>` read.
 - **Do NOT remove `multipartParameters` from a multipart endpoint** — even for an attachment-less email. The executor's multipart wrapper depends on the declaration; without it, the vendor returns `400 "Unable to parse multipart body"`.
 - **Do NOT trust `registry stub`'s `queryParameters` / `pathParameters` / `bodyParameters` as complete.** The stub drops `required: true` fields. After every stub call, cross-check via `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` (or parse `metadata.configuration.optionalConfiguration.fieldsContainer.inputFields` from the stub output itself) and fill in anything required that's missing. Symptom of skipping: workflow runs locally on stale defaults, fails in cloud with a 4xx, or the StudioWeb properties panel marks the field invalid without a clear error.
+- **Do NOT leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` (or any `<REPLACE_WITH_*>` placeholder) in a generated workflow.** StudioWeb's properties panel renders the literal placeholder string as if it were a real connection name — the connection pill shows `<REPLACE_WITH_VENDOR_C...>` with a red error, and any subsequent run 401s in cloud. The placeholder is meaningful **only** in the template file under `assets/templates/`; the moment you copy the stub's `Data.Activity` into the user's workflow, every placeholder MUST become a real value (UUID from `uip is connections ping`, URL from `--inputs` or the user's request). If you don't have a working UUID, **stop authoring** and ask the user — do not write the sentinel to disk. Re-stubbing with `--connection-id <uuid>` is the cleanest way to avoid the placeholder ever existing in the output.
 - **Do NOT skip the Solution connection-resource file in Solutions-mode projects.** Even when `bindings_v2.json` is correct and the workflow runs, the StudioWeb properties panel reads connection definitions from `Solution/resources/solution_folder/connection/<connector-key>/<name>.json` and flags the activity with "to debug this resource, select a connection for it from the resource definition page" without it. The CLI does not write this file — the agent must, with `resource.key` equal to the connection UUID. See [Step 5](#step-5--solutions-mode-intsvc-kind-declare-the-connection-as-a-solution-resource).

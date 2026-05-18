@@ -34,10 +34,10 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 - **Cause:** `"evaluate": { "mode": "strict", "language": "javascript" }` block missing from root
 - **Fix:** Add the evaluate block at the root level
 
-### Activities outside `Sequence_1`
+### Activities outside the root sequence
 - **Symptom:** Activities not visible in designer or not executing
-- **Cause:** Activities placed at wrong nesting level (not inside `Sequence_1.do`)
-- **Fix:** All user activities go inside `Sequence_1.do`, after `WorkflowStart`
+- **Cause:** Activities placed at wrong nesting level (not inside the root sequence's `do` array)
+- **Fix:** All user activities go inside the root sequence, after `WorkflowStart`
 
 ---
 
@@ -277,10 +277,10 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 - **Symptom:** StudioWeb shows the activity as blocked; you can only delete it. Run-time behavior depends — sometimes the activity is silently skipped, leading to downstream `$context.outputs.<missing>` errors.
 - **Cause:** StudioWeb's designer doesn't recognize the activity type. For HTTP-style cards specifically, the designer's `restoreFromTaskItem` (`connector-translator.ts:113`) requires `call: "UiPath.Http"` (or `"UiPath.IntSvc"`, `"UiPath.IntSvcEvent"`) AND a `metadata.configuration` blob containing at minimum `instanceParameters` (`connector-translator.ts:121-136`). Plain `call: "http"` and missing/empty configurations both produce the block icon.
-- **Fix:** Run the discovery flow in [connector-activity-discovery.md](connector-activity-discovery.md) to get a stub with the right `uiPathActivityTypeId` and `metadata.configuration` already filled in. The connector-call-example.json template shows the correct shape verified end-to-end. Common mistakes that produce block icons:
-  - Used `call: "http"` (the simple form). **Fix:** switch to `call: "UiPath.Http"` (Http kind) or `call: "UiPath.IntSvc"` (IntSvc kind) — re-stub via `uip api-workflow registry stub <guid>` and replace the activity.
-  - Used `call: "UiPath.Http"` but `metadata.configuration` is missing or `"{}"`. **Fix:** re-stub via `uip api-workflow registry stub <guid>` — the stub builds the essential-only configuration automatically.
-  - Invented a `uiPathActivityTypeId` value or used the default fallback (`111d59b7-...`). **Fix:** look up the real GUID via `uip api-workflow registry resolve "<keyword>"`. (The fallback won't crash, but renders as a generic "Connector" card instead of the right one.)
+- **Fix:** Run the discovery flow in [connector-activity-discovery.md](connector-activity-discovery.md) to get a stub with the right `uiPathActivityTypeId` and `metadata.configuration` already filled in. The [connector-call-example.json](../assets/templates/connector-call-example.json) template shows the correct shape verified end-to-end. Common mistakes that produce block / legacy icons:
+  - Used `call: "http"` (deprecated simple form). **Fix:** switch to `call: "UiPath.Http"` (Http kind) or `call: "UiPath.IntSvc"` (IntSvc kind) — re-stub via `uip api-workflow registry stub <guid>` and replace the activity.
+  - Used `call: "UiPath.Http"` but `metadata.configuration` is missing or `"{}"`. **Fix:** re-stub via `uip api-workflow registry stub <guid>` — the stub builds `essentialConfiguration` (with `unifiedTypesCompatible: true` + `savedJitInputFieldId`) automatically.
+  - Invented a `uiPathActivityTypeId` value or used the default fallback (`111d59b7-...`). **Fix:** look up the real GUID via `uip api-workflow registry resolve "<keyword>"`.
 
 ### `uip is connections ping` returns 404 `"Connection [<uuid>] is invalid or you do not have access to it"`
 

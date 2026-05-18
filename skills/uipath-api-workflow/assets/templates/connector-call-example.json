@@ -22,9 +22,7 @@
       "format": "json",
       "document": {
         "type": "object",
-        "properties": {
-          "url": { "type": "string" }
-        },
+        "properties": {},
         "title": "Inputs"
       }
     }
@@ -35,8 +33,12 @@
       "document": {
         "type": "object",
         "properties": {
-          "statusCode": { "type": "number" },
-          "body": { "type": "object" }
+          "fact": {
+            "type": "string"
+          },
+          "length": {
+            "type": "number"
+          }
         },
         "title": "Outputs"
       }
@@ -49,49 +51,75 @@
           {
             "WorkflowStart": {
               "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
-              "output": { "as": "${$input}" },
-              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-              "metadata": { "activityType": "Assign", "displayName": "Workflow start", "fullName": "Assign", "isTransparent": true }
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
             }
           },
           {
-            "HTTP_Request_1": {
+            "HttpRequest_1": {
               "call": "UiPath.Http",
               "with": {
                 "connector": "uipath-uipath-http",
                 "connectionId": "ImplicitConnection",
+                "connectionResourceId": "ImplicitConnection",
                 "method": "POST",
                 "endpoint": "/http-request",
                 "bodyParameters": {
                   "authentication": "manual",
                   "method": "GET",
-                  "url": "${$workflow.input.url}",
-                  "headers": { "Accept": "application/json" }
+                  "url": "https://catfact.ninja/fact",
+                  "headers": {}
                 }
               },
-              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"http_request_1\": $output } }" },
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"http_request_1\": $output } }"
+              },
               "metadata": {
                 "fullName": "Connector",
                 "activityType": "Connector",
                 "displayName": "HTTP Request",
                 "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
-                "configuration": "{\"essentialConfiguration\":{\"instanceParameters\":{\"version\":\"1.0.0\",\"connectorKey\":\"uipath-uipath-http\",\"activityType\":\"Curated\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"operation\":null,\"eventOperation\":null,\"eventMode\":null,\"connectorObjects\":null,\"previewEndpoint\":null},\"objectName\":\"http-request\",\"operation\":null,\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":\"\"}}"
+                "assemblyQualifiedName": "Connector",
+                "configuration": "{\"essentialConfiguration\":{\"connectorVersion\":\"\",\"executionType\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"version\":\"1.0.0\",\"connectorKey\":\"uipath-uipath-http\",\"activityType\":\"Curated\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"operation\":null,\"eventOperation\":null,\"eventMode\":null,\"connectorObjects\":null,\"previewEndpoint\":null},\"objectName\":\"http-request\",\"operation\":null,\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}"
               }
             }
           },
           {
             "Response_1": {
-              "response": "${{ statusCode: $context.outputs.http_request_1.statusCode, body: $context.outputs.http_request_1.content }}",
+              "response": "${{ fact: $context.outputs.http_request_1.content.fact, length: $context.outputs.http_request_1.content.length }}",
               "markJobAsFailed": false,
               "then": "end",
-              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }" },
-              "metadata": { "activityType": "Response", "displayName": "Response", "fullName": "Response" }
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }"
+              },
+              "metadata": {
+                "activityType": "Response",
+                "displayName": "Response",
+                "fullName": "Response"
+              }
             }
           }
         ],
-        "metadata": { "activityType": "Sequence", "displayName": "Sequence", "fullName": "Sequence" }
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
       }
     }
   ],
-  "evaluate": { "mode": "strict", "language": "javascript" }
+  "evaluate": {
+    "mode": "strict",
+    "language": "javascript"
+  }
 }

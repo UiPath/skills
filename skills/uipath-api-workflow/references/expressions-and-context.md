@@ -57,6 +57,50 @@ ${$context.outputs.Javascript_1.totalAmount}
 ${$context.outputs?.Javascript_1?.items ?? []}
 ```
 
+### Connector Output Access (Http kind + IntSvc kind)
+
+Connector activities (`call: "UiPath.Http"` / `call: "UiPath.IntSvc"`) wrap the response in `{ statusCode, content, headers }`. The actual payload lives under **`.content`** — reading at the root returns `undefined`. The export bucket key is **camelCase** (`slack_send_message_1`), not the PascalCase slot key (`Slack_Send_Message_1`).
+
+**The fields available under `.content` come from the stub's `Data.ResponseFields` array — never guess.** If a property isn't listed there, it's not in the response shape. See [connector-activity-discovery.md — Vendor curated activity response shape](connector-activity-discovery.md#vendor-curated-activity-response-shape--contentx-not-x).
+
+```javascript
+// ❌ Wrong — always undefined (root has no payload fields)
+${$context.outputs.getNewestEmail_1.subject}
+${$context.outputs.GetNewestEmail_1.content.subject}   // wrong casing too
+
+// ✅ Correct — IntSvc kind (Outlook GetNewestEmail)
+${$context.outputs.getNewestEmail_1.content.subject}
+${$context.outputs.getNewestEmail_1.content.from.emailAddress.address}
+
+// ✅ Correct — Http kind (any REST API)
+${$context.outputs.http_request_1.statusCode}    // 200
+${$context.outputs.http_request_1.content}       // parsed JSON body
+${$context.outputs.http_request_1.content.fact}  // example: top-level field
+
+// ✅ Slack Send Message / Send Reply
+${$context.outputs.slack_send_message_1.content.ok}      // true
+${$context.outputs.slack_send_message_1.content.ts}      // message timestamp
+${$context.outputs.slack_send_message_1.content.channel}
+
+// ✅ List-shaped vendor responses — items live under .content.value[]
+${$context.outputs.listUsers_1.content.value}            // the array
+${$context.outputs.listUsers_1.content.value?.[0]?.displayName}
+${$context.outputs.searchIssues_1.content.value?.length}
+
+// ✅ Null-safe chains for optional fields
+${$context.outputs?.getNewestEmail_1?.content?.subject ?? "(no subject)"}
+```
+
+Inside a JsInvoke script, the local CLI runtime sometimes returns `content` as a JSON string while cloud returns it pre-parsed — handle both:
+
+```javascript
+const out = $context.outputs.getNewestEmail_1;
+const raw = out && (out.content !== undefined ? out.content : out);
+const body = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+const subject = body?.subject ?? body?.value?.[0]?.subject ?? '';
+return { subject };
+```
+
 ### Input Access
 
 ```javascript

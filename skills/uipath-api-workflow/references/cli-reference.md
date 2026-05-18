@@ -145,7 +145,7 @@ Success output:
 }
 ```
 
-`Data.Activity` drops directly into `Sequence_1.do`. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
+`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
 
 `Data.Warnings` (when present):
 - `"IS Elements metadata could not be fetched…"` → IS schema lookup failed; stub uses fallback path `/<objectName>` and ships no `requestFields`. Endpoint may be wrong (no hub prefix, no multipart declaration).
@@ -178,7 +178,7 @@ uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
   --connection-id <uuid> \
   --output json
 
-# 4. Drop Data.Activity into Sequence_1.do, fill missing required fields, replace placeholders.
+# 4. Drop Data.Activity into the root sequence, fill missing required fields, replace placeholders.
 
 # 5. (Solutions-mode + IntSvc kind) write Solution/resources/solution_folder/connection/<connector-key>/<name>.json
 
