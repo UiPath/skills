@@ -155,7 +155,7 @@ uip df records list <entity-id> --cursor <NextCursor> --output json
 
 ## Query Request Format
 
-Pass via `--body` or `--file`. Use `--limit` and `--cursor` CLI flags for pagination — not body keys.
+Pass via `--body` or `--file`. Use `--limit`, `--cursor`, and `--offset` CLI flags for pagination — not body keys. See [Pagination](#pagination) below.
 
 ```json
 {
@@ -178,7 +178,7 @@ Pass via `--body` or `--file`. Use `--limit` and `--cursor` CLI flags for pagina
 
 ## Pagination
 
-`records list` and `records query` accept `--limit` (default `50`, min `1`), `--cursor <NextCursor>` (verbatim from previous response), and `-o, --offset <number>` (jump to the page containing that record index — mutually exclusive with `--cursor`). Loop until `HasNextPage: false`. See `references/records-query.md`.
+`records list` / `records query` paginate via `--limit`, `--cursor`, `--offset`. See [`references/records-query.md`](references/records-query.md).
 
 ---
 

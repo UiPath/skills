@@ -70,7 +70,7 @@ Both entity names and field names must:
   "isRbacEnabled": false,
   "isEncrypted": false,
   "defaultValue": "",
-  "lengthLimit": 500
+  "lengthLimit": 200
 }
 ```
 
@@ -188,7 +188,7 @@ uip df entities update <entity-id> \
   --output json
 ```
 
-`updateFields` entry supports: `id` (required), `displayName`, `description`, `isRequired`, `isUnique`, `isRbacEnabled`, `isEncrypted`, `defaultValue`.
+`updateFields` entry supports: `id` (required), `displayName`, `description`, `isRequired`, `isUnique`, `isRbacEnabled`, `isEncrypted`, `defaultValue`, `lengthLimit`, `maxValue`, `minValue`, `decimalPrecision`. The four constraint keys follow the per-type allow-list in [Advanced Field Constraints](#advanced-field-constraints).
 
 ### Supported `entities update` Body Keys
 

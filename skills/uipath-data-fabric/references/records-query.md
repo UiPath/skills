@@ -70,7 +70,7 @@ uip df records query <entity-id> \
 }
 ```
 
-> `start`, `limit`, `offset`, and `pageSize` are **not** valid body keys — use `--limit` and `--cursor` CLI flags instead. The CLI translates them into the underlying offset-based API call.
+> Pagination is CLI-flag only: `--limit`, `--cursor`, `--offset`. Do not put `start`, `limit`, `offset`, or `pageSize` inside `--body` — the CLI translates these flags into the underlying offset-based API call.
 
 ### Operators
 
