@@ -4,7 +4,7 @@ description: >
   trigger activities for a connector. Tests that the skill teaches the correct
   activity discovery workflow and the distinction between activities, triggers,
   and resources.
-tags: [uipath-platform, smoke, integration-service, activities]
+tags: [uipath-platform, integration, integration-service, activities]
 
 sandbox:
   driver: tempdir

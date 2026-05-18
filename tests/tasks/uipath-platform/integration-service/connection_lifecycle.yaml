@@ -5,7 +5,7 @@ description: >
   teaches the correct connection workflow (list, present options, ping) and
   that the agent knows the create/edit recovery paths without executing them
   (both require browser interaction).
-tags: [uipath-platform, smoke, integration-service, connections]
+tags: [uipath-platform, integration, integration-service, connections]
 
 sandbox:
   driver: tempdir

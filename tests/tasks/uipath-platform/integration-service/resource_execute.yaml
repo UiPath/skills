@@ -4,7 +4,7 @@ description: >
   Integration Service workflow — connector, connection, ping, discover,
   describe, and execute a create operation. Tests that the skill teaches the
   complete 6-step workflow and correct execute syntax with --body.
-tags: [uipath-platform, smoke, integration-service, resources, execute]
+tags: [uipath-platform, integration, integration-service, resources, execute]
 
 sandbox:
   driver: tempdir

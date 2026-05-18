@@ -4,7 +4,7 @@ description: >
   resources for a connector. Tests that the skill teaches the correct resource
   discovery workflow — listing with --operation, describing with --operation
   for field-level detail, and always passing --connection-id.
-tags: [uipath-platform, smoke, integration-service, resources, describe]
+tags: [uipath-platform, integration, integration-service, resources, describe]
 
 sandbox:
   driver: tempdir

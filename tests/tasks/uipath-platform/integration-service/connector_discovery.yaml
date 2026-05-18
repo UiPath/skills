@@ -4,7 +4,7 @@ description: >
   Service connectors by vendor name. Tests that the skill teaches the correct
   connector search workflow (list with --filter, --output json) and the HTTP
   fallback strategy when no native connector exists.
-tags: [uipath-platform, smoke, integration-service, connectors]
+tags: [uipath-platform, integration, integration-service, connectors]
 
 sandbox:
   driver: tempdir

@@ -62,6 +62,7 @@
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
+/tests/tasks/uipath-maestro-flow/connector_trigger/ @baishalighosh
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru

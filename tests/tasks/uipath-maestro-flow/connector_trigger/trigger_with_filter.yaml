@@ -2,7 +2,7 @@ task_id: skill-flow-trigger-with-filter
 description: >
   Verifies that the uipath-maestro-flow skill teaches agents to emit a structured `filter` tree.
   Without this, UI drops the filter silently on first open.
-tags: [uipath-maestro-flow, smoke, lifecycle:discover, connector-trigger, uipath-microsoft-outlook365, filter, ipe]
+tags: [uipath-maestro-flow, integration, lifecycle:discover, connector-trigger, uipath-microsoft-outlook365, filter, ipe]
 
 sandbox:
   driver: tempdir
