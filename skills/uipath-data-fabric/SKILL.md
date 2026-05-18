@@ -19,6 +19,7 @@ All operations go through `uip df <subject> <verb> --output json`.
 - Creating or modifying entity schemas (add fields, update metadata)
 - Reading, inserting, updating, or deleting records
 - Filtering records with complex predicates
+- Computing aggregate metrics for dashboards / KPIs (counts, sums, averages, group-by) — see [references/records-query.md](references/records-query.md#aggregates-server-side)
 - Importing bulk data from CSV files
 - Uploading or downloading file attachments on records
 
@@ -53,7 +54,7 @@ Respond that the operation is not supported. Do not try to work around it.
 
 ## Critical Rules
 
-1. **Install the tool first.** If `uip df` returns "unknown command": `uip tools install @uipath/data-fabric-tool` (min version `0.2.0`).
+1. **Install the tool first.** If `uip df` returns "unknown command": `uip tools install @uipath/data-fabric-tool`. See *Tool Version Requirements* below for the floor needed per feature.
 
 2. **Verify login and tenant first.** Run `uip login status --output json`. Switch with `uip login tenant set <tenant>` if needed. For full login/environment setup, see the `uipath-platform` skill.
 
@@ -77,6 +78,17 @@ Respond that the operation is not supported. Do not try to work around it.
 
 ---
 
+## Tool Version Requirements
+
+| Feature | Required `@uipath/data-fabric-tool` |
+|---------|--------------------------------------|
+| `entities` / `records` CRUD, `query` with filters/sort, `records import`, `files` | `0.9.0+` |
+| Server-side `aggregates` and `groupBy` on `records query` | `1.0.1+` |
+
+Upgrade with `uip tools install @uipath/data-fabric-tool@latest` when a feature appears to silently no-op (e.g. aggregate body keys returning raw record lists).
+
+---
+
 ## Quick Start
 
 ```bash
@@ -95,6 +107,11 @@ uip df records insert <entity-id> --body '{"Name":"Alice","Score":95}' --output 
 # Query with a filter
 uip df records query <entity-id> \
   --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Status","operator":"=","value":"active"}]}}' \
+  --output json
+
+# Aggregate query — count of records per Status (server-side groupBy)
+uip df records query <entity-id> \
+  --body '{"selectedFields":["Status"],"groupBy":["Status"],"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}]}' \
   --output json
 ```
 
@@ -119,6 +136,7 @@ uip df records query <entity-id> \
 | Batch update | `records update <entity-id> --body '[{"Id":"<id1>","field":"val"},{"Id":"<id2>","field":"val"}]'` |
 | Delete records | `records delete <entity-id> <id1> <id2>` |
 | Filter/search records | `records query <entity-id> --body '{...}'` |
+| Aggregate / group-by metrics | `records query <entity-id> --body '{"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}],"groupBy":["FieldName"]}'` |
 | Bulk import from CSV | `records import <entity-id> --file data.csv` |
 | Upload file to record | `files upload <entity-id> <record-id> <field-name> --file path` |
 | Download file | `files download <entity-id> <record-id> <field-name> --destination path` |

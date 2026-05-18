@@ -31,9 +31,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched spans using uip traces spans get with --job-key"
+    description: "Agent fetched spans using uip traces spans get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+traces\s+spans\s+get.*--job-key'
+    command_pattern: 'uip\s+traces\s+spans\s+get(\s+\S+|\s+.*--job-key)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

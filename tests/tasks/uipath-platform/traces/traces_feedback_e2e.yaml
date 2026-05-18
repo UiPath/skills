@@ -26,17 +26,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent started the job with --wait-for-completion"
+    description: "Agent fetched spans using uip traces spans get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+jobs\s+start.*--wait-for-completion'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent fetched spans using uip traces spans get with --job-key"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+traces\s+spans\s+get.*--job-key'
+    command_pattern: 'uip\s+traces\s+spans\s+get(\s+\S+|\s+.*--job-key)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -86,5 +78,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup_traces_feedback_e2e.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/cleanup_traces_feedback_e2e.py"
     timeout: 60

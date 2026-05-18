@@ -22,8 +22,10 @@
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma
+/skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
+/tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru

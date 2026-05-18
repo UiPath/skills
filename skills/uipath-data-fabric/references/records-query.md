@@ -100,6 +100,90 @@ uip df records query <entity-id> \
 }
 ```
 
+## Aggregates (server-side)
+
+Add `aggregates` and optional `groupBy` to the query body to return aggregated rows instead of records. Each entry in `aggregates` produces one column on each result row, keyed by `alias`.
+
+> **Field names are case-sensitive.** Examples below use `Status` as a placeholder — substitute the exact casing from the target entity's schema (`uip df entities get <entity-id>` lists the real names).
+
+```bash
+# Total count of records (no grouping → single result row)
+uip df records query <entity-id> \
+  --body '{"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}]}' \
+  --output json
+```
+
+Response:
+
+```json
+{
+  "Result": "Success",
+  "Code": "RecordQuery",
+  "Data": {
+    "TotalCount": 1,
+    "Records": [{ "total": 250 }],
+    "HasNextPage": false
+  }
+}
+```
+
+```bash
+# Count per group (one result row per distinct value)
+uip df records query <entity-id> \
+  --body '{"selectedFields":["Status"],"groupBy":["Status"],"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}]}' \
+  --output json
+```
+
+Response shape (one row per group, each row contains the group fields + every aggregate alias):
+
+```json
+{
+  "Result": "Success",
+  "Code": "RecordQuery",
+  "Data": {
+    "TotalCount": 2,
+    "Records": [
+      { "Status": "Open",   "total": 12 },
+      { "Status": "Closed", "total":  5 }
+    ],
+    "HasNextPage": false
+  }
+}
+```
+
+### Functions
+
+| `function` | Applies to | Notes |
+|------------|-----------|-------|
+| `COUNT` | Any field | Counts non-null values. For total row count use `field: "Id"` |
+| `SUM`   | Numeric only | |
+| `AVG`   | Numeric only | |
+| `MIN`   | Numeric / date | |
+| `MAX`   | Numeric / date | |
+
+Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
+
+### Aggregate Body Schema
+
+```json
+{
+  "selectedFields": ["Status"],
+  "groupBy": ["Status"],
+  "aggregates": [
+    { "function": "COUNT", "field": "Id",     "alias": "total" },
+    { "function": "AVG",   "field": "amount", "alias": "avgAmount" }
+  ]
+}
+```
+
+- `aggregates[].alias` is optional. When omitted, the server returns the column keyed as `{FUNCTION}_{field}` (for example `COUNT_Id`, `AVG_amount`). Provide an `alias` for stable, readable keys in your downstream code.
+- When `selectedFields` is present alongside `aggregates`, every entry in `selectedFields` must also appear in `groupBy` — otherwise the API rejects the request. The shortcut: use the same array for both, as in the examples above.
+- `groupBy` and `selectedFields` may reference root-entity fields only — expansions are not supported in aggregate mode.
+- The same `filterGroup`, `sortOptions`, and pagination flags (`--limit`, `--cursor`) work alongside aggregates. Filters are applied **before** grouping (SQL `WHERE`).
+- Choice-set fields in `groupBy` / filters require the numeric `numberId`, not the display label. Discover via the choice-set lookup if you need to filter / group by a choice value.
+
+> Tooling requirement: server-side aggregates ship in version `1.0.1`+ of `@uipath/data-fabric-tool` only. Older versions silently strip `aggregates` / `groupBy` from the body (the SDK they bundle prefixes unknown keys with OData `$`, which the API ignores) and the query falls back to a plain record list. If aggregates aren't returning the expected one-row-per-group shape, re-run `uip tools install @uipath/data-fabric-tool@latest` to pick up the latest.
+
 ## Insert Records
 
 The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint.
