@@ -4,7 +4,7 @@ description: >
   path parameter on the Jira "Get Issue" activity. Project + issue type are
   freely chosen by the agent; the issue key is deterministic so the test can
   verify the path-parameter wiring.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe]
 
 agent:
   type: claude-code

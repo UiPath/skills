@@ -70,7 +70,7 @@ uip is connections ping "<connection-id>" --output json
 
 **If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --output json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
 
-**Read [/uipath:uipath-platform — Integration Service — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md) for connection selection rules** (default preference, `--refresh` retry on empty results, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
+**Read [/uipath:uipath-platform — Integration Service — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md) for connection selection rules** (default preference, `--all-folders` and `--refresh` retry on empty results as mentioned in the selection rules, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
 
 ### Step 2 — Get enriched node definitions with connection
 
