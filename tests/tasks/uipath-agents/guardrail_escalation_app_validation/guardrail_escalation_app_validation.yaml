@@ -36,7 +36,7 @@ initial_prompt: |
   - Recipient email: reviewer@example.com (type 3)
 
   Use path-based commands from the working directory (no cd required):
-    uip solution new "ValidationSol" --output json
+    uip solution init "ValidationSol" --output json
     uip agent init "ValidationSol/ReviewAgent" --output json
     uip solution project add "ValidationSol/ReviewAgent" --output json
     uip agent guardrails list --output json
@@ -55,7 +55,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
+    command_pattern: 'uip\s+solution\s+init'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
