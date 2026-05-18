@@ -40,6 +40,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 4. **Each mechanic owns its own Critical Rules.** Once routed, follow the branch's rules — do not relax them from this top level.
 5. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
 6. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
+7. **Group actor UUID lookup uses client-side filtering.** `uip admin groups list` has no `--search` flag; when the user gives a group name or substring, run `uip admin groups list --output json --output-filter "Data[?contains(displayName, '<GROUP>')]"`.
 
 ## Workflow
 

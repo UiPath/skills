@@ -188,16 +188,20 @@ If `uip admin robot-accounts list --search` returns nothing for the named robot,
 `Group` is supported in `actorRule.values[].type` but has no `uip or` wrapper today. Resolve via Identity Server instead:
 
 ```bash
-uip admin groups list --output json
+uip admin groups list \
+  --output json \
+  --output-filter "Data[?contains(displayName, '<GROUP_NAME_OR_SUBSTRING>')]"
 ```
 
-Response: `Data` is an array; each entry has `id` (UUID), `name`, `displayName`, `type` (numeric — `0` is custom, non-zero is built-in), `creationTime`. The command has **no `--search` flag** — filter client-side:
+Response: `Data` is an array; each entry has `id` (UUID), `name`, `displayName`, `type` (numeric — `0` is custom, non-zero is built-in), `creationTime`. The command has **no `--search` flag** — for a named group, always filter client-side with `--output-filter` in the same command.
 
 ```bash
 uip admin groups list \
   --output json \
   --output-filter "Data[?contains(displayName, 'Ops')]"
 ```
+
+Only omit `--output-filter` when you truly need to enumerate every group.
 
 Take the matching record's `id` as the Group UUID for `actorRule.values[]`. See [/uipath:uipath-admin — group-management.md](../../../uipath-admin/references/group-management.md) for the broader group workflow. Only surface as an Open question on the Phase 1 Spec when the admin lookup returns nothing and the user cannot supply a GUID. Never fabricate.
 
