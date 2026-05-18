@@ -3,7 +3,7 @@ description: >
   An existing `Create Issue` tool renders raw "MOCKPROJ" and "10" in the form
   because designTimeLookups is empty. Agent must fetch, diagnose, rebuild with
   labels, and update with --dry-run.
-tags: [uipath-mcp-servers, agenthub, update, designtimelookups, fix]
+tags: [uipath-mcp-servers, integration, mode:build]
 
 agent:
   type: claude-code
