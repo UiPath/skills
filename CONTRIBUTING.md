@@ -7,6 +7,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 - [Repository Structure](#repository-structure)
 - [Adding a New Skill](#adding-a-new-skill)
 - [Modifying an Existing Skill](#modifying-an-existing-skill)
+- [Developing Experimental Skills](#developing-experimental-skills)
 - [Hooks](#hooks)
 - [Quality Checklist](#quality-checklist)
 - [Pull Request Process](#pull-request-process)
@@ -202,6 +203,47 @@ Static files like code templates go in `assets/`:
 4. **Test your changes.** After editing, verify the skill still activates correctly for its intended scenarios.
 5. **Coordinate with CODEOWNERS.** Check who owns the skill and tag them in your PR.
 
+## Developing Experimental Skills
+
+Some skills take weeks to reach a usable state — for example, large new product surfaces or skills that need an unreleased CLI feature to land first. This section covers how to develop those in this repository without disrupting users who install the published plugin.
+
+> **This repository is public.** Branches, commits, PR titles, and review comments are visible to everyone, including customers and competitors. Treat every push as a public statement.
+
+### Default: build in the open
+
+Develop directly in this repository on a feature branch off `main`. Skills are largely self-contained, so a long-lived `develop` integration branch is not useful here — each experimental skill gets its own branch and merges into `main` independently when ready.
+
+Only develop in a private fork when the feature must stay confidential before release (e.g., tied to an unannounced product). In that case, fork this repository, develop privately, and open the PR back here once the feature can be public.
+
+### Branch naming
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| New experimental skill | `feat/experimental/<skill-name>` | `feat/experimental/uipath-maestro-bpmn` |
+| Experimental change to existing skill | `feat/experimental/<skill-name>-<topic>` | `feat/experimental/uipath-rpa-coded-codegen` |
+
+### Workflow
+
+1. **Branch from `main`.** `git checkout -b feat/experimental/<skill-name>`.
+2. **Push the branch early and iterate on it.** Push intermediate commits to your branch, not to `main`. The branch is publicly visible — that is expected and fine.
+3. **Stay current with `main`.** Merge or rebase `main` into your branch regularly so the eventual integration PR stays small. Rebase if your branch has not been shared for review yet; merge once others are reviewing or building on it.
+4. **Mark the skill as experimental in `SKILL.md`.** Preview / experimental status goes in the SKILL.md body, not in frontmatter (per [.claude/rules/skill-structure.md](.claude/rules/skill-structure.md)). Example callout under the H1:
+
+   ```markdown
+   # UiPath My New Skill
+
+   > **Experimental.** This skill is under active development. Behavior, CLI flags, and reference structure may change without notice. Not recommended for production use.
+   ```
+
+5. **Merge to `main` only when the skill is usable end-to-end.** Do not merge work-in-progress commits straight to `main` just to keep the branch short — `main` is what users install. Open the integration PR when the skill triggers correctly, has at least the smoke + e2e tests required by the [Quality Checklist](#quality-checklist), and follows the rest of the contribution guidelines.
+
+### Public-repo discipline
+
+- **Never commit secrets, tokens, internal hostnames, customer data, or unreleased product/feature names that have not been publicly announced.** Use placeholders (`<TOKEN>`, `<TENANT_URL>`) in examples.
+- **Write commit messages and PR titles as if a customer is reading them** — because they are.
+- **If you accidentally commit a secret or confidential reference**, rotate the secret immediately, then contact a maintainer to coordinate history rewrite. Do not force-push over it yourself; the leaked value still needs to be rotated regardless.
+- **Avoid screenshots of internal tools** in PR descriptions or skill assets.
+
 ## Hooks
 
 Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (e.g., `SessionStart`).
@@ -328,6 +370,7 @@ Before submitting your PR, verify:
 |------|---------|---------|
 | New skill | `feat/add-<skill-name>` | `feat/add-uipath-data-service` |
 | Skill improvement | `feat/<skill-name>-<description>` | `feat/uia-add-drag-support` |
+| Experimental / long-running work | `feat/experimental/<skill-name>` | `feat/experimental/uipath-maestro-bpmn` |
 | Bug fix | `fix/<skill-name>-<description>` | `fix/flow-validate-edge-ports` |
 | Documentation | `docs/<description>` | `docs/update-platform-cli-reference` |
 
