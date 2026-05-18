@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify john.doe@example.com was invited (appears in users list)."""
+"""Verify john.doe@example.com was invited and appears in users list."""
 
 import json
 import subprocess
@@ -20,11 +20,10 @@ def main():
     )
 
     if not found:
-        # User may not have accepted yet — invite was sent but user isn't in list.
-        # This is expected behavior. Check that invite command succeeded instead.
-        print("OK: User not yet in list (invite pending acceptance) — expected for automated test")
-    else:
-        print("OK: john.doe@example.com found in users list")
+        print("FAIL: john.doe@example.com not found in users list")
+        sys.exit(1)
+
+    print("OK: john.doe@example.com found in users list")
 
 
 if __name__ == "__main__":
