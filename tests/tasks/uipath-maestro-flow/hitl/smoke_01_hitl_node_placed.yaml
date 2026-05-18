@@ -20,14 +20,11 @@ sandbox:
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that:
   1. Starts with a manual trigger
-  2. Pauses for a finance manager to review and approve an invoice (human-in-the-loop)
+  2. Pauses for a finance manager to review and approve an invoice
   3. Ends after the review is complete
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop),
-  not an external app. The node must show the reviewer: invoice ID and amount.
-  The reviewer clicks Approve or Reject.
-
-  Wire the completed handle to an End node.
+  The reviewer should see the invoice ID and amount. They click Approve or Reject.
+  After the manager acts, the flow ends.
 
   Validate the flow after building it.
 

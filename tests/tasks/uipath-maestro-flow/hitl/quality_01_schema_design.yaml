@@ -22,17 +22,15 @@ initial_prompt: |
 
   - A manual trigger starts the flow
   - A script node fetches PO data (mock it — just set variables)
-  - A HITL node lets the procurement officer review the PO:
-      - They can SEE (read-only): PO number, vendor name, total amount
-      - They must FILL IN: their decision (Approve/Reject) and optional notes
+  - A human review step lets the procurement officer review the PO:
+      - They can see (read-only): PO number, vendor name, total amount
+      - They must fill in: their decision and optional notes
       - They click: Approve (primary) or Reject
-  - A decision node routes on the officer's decision:
-      - Approve → Script node that logs "PO approved"
-      - Reject  → End node
+  - Route based on the officer's decision:
+      - Approved → Script node that logs "PO approved"
+      - Rejected → End node
 
-  Use the inline quickform node (uipath.human-in-the-loop).
-  Set priority to High.
-  Wire completed → decision node.
+  Set the task priority to High.
   Validate the flow after building.
 
 success_criteria:

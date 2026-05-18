@@ -18,13 +18,13 @@ sandbox:
 initial_prompt: |
   Create a flow called "ReviewAndRoute" with:
   1. A manual trigger
-  2. A HITL node (label: "Review Decision")
-  3. A script node after HITL that reads the human's decision and logs it
+  2. A human review step (label: "Review Decision")
+  3. A script node after the review that logs the reviewer's decision and
+     the outcome status
 
-  The script node must read the reviewer's decision via the HITL output
-  runtime variable ($vars.<nodeId>.output) and ALSO check the completion
-  status via the status runtime variable ($vars.<nodeId>.status). Wire the
-  completed handle to the script node. Validate the flow.
+  The flow continues to the script after the reviewer is done. The script
+  should log both what the reviewer decided and the completion outcome.
+  Validate the flow.
 
 success_criteria:
   - type: file_contains

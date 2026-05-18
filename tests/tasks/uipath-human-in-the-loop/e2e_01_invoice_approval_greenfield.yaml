@@ -26,10 +26,9 @@ initial_prompt: |
   needs to review and approve each invoice before it is posted — we cannot
   write to SAP without human sign-off.
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop).
-  Show the finance manager the relevant invoice fields, give them Approve and
-  Reject outcomes, and wire the completed handle to the downstream SAP step.
-  Use $vars.<hitl-node-id>.output downstream to access the manager's decision.
+  Show the finance manager the relevant invoice fields. Give them Approve and
+  Reject outcomes. After the manager acts, continue to the SAP posting step.
+  The SAP step should be able to read the manager's decision.
 
   Validate the flow when you're done.
 

@@ -18,14 +18,13 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath Flow named "PurchaseApproval" with this structure:
-    Manual Trigger -> HITL (manager approves purchase) -> Script (log approval) -> End
+  Build a UiPath Flow named "PurchaseApproval":
+    Manual Trigger -> manager approves purchase -> Script (log approval) -> End
 
-  Use the inline quickform HITL node (uipath.human-in-the-loop).
-  The HITL node shows the reviewer: purchase amount and vendor name.
+  The reviewer sees: purchase amount and vendor name.
   Outcomes: Approve and Reject.
 
-  Wire the HITL node's completed handle to the Script node.
+  After the manager acts, the flow continues to the Script node.
   The Script node logs: "Approval recorded."
 
   Validate the flow after building.

@@ -22,19 +22,16 @@ initial_prompt: |
 
   1. Manual trigger
   2. Script node — sets expense context (mock: amount = 1250.50, submittedDate = "2026-04-01")
-  3. HITL node — finance reviewer checks the expense:
-       - Sees (read-only): expense amount (should be a NUMBER), submission date (should be a DATE)
+  3. Human review step — a finance reviewer checks the expense:
+       - Sees (read-only): expense amount ($1250.50), submission date (2026-04-01)
        - Fills in:
-           - approved: a yes/no decision (should be BOOLEAN, not text)
-           - rejection_reason: optional explanation if rejected (text)
-           - approved_amount: the amount actually approved, may differ from requested (should be NUMBER)
+           - approved: yes or no decision
+           - rejection_reason: optional explanation if rejected
+           - approved_amount: the dollar amount actually approved (may differ from requested)
        - Outcomes: Approve (primary), Reject
   4. Script node — logs: "Approved: <approved>, Amount: <approved_amount>"
   5. End node
 
-  Wire: Trigger → Script → HITL →|completed| Script (log) → End
-
-  Use the inline quickform node (uipath.human-in-the-loop).
   Do NOT run flow debug. Validate after building.
 
 success_criteria:
