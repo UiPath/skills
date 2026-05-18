@@ -2,14 +2,22 @@
 
 This document defines the implementation boundary for business rule task recipes. Business rules are implemented as `bpmn:businessRuleTask`; see [task-recipes/business-rule.md](../../task-recipes/business-rule.md).
 
+Use the canonical shell from
+[shared/wrapper-shells.md](../../../../shared/wrapper-shells.md): a
+`bpmn:businessRuleTask` containing `uipath:activity version="v1"` and nested
+`uipath:type value="Orchestrator.BusinessRules" version="v1"`, with fact and
+result movement in sibling `uipath:mapping`.
+Do not author new business rule XML with legacy
+`<uipath:activity type="Orchestrator.BusinessRules">` shorthand.
+
 ## Model-owned implementation
 
 The model may edit:
 
 - `bpmn:businessRuleTask` wrapper.
 - Documented `Orchestrator.BusinessRules` `uipath:activity` shell.
-- Input CDATA for facts using declared variables.
-- Output mappings for rule result, matched rule, diagnostics, and outcome.
+- Input CDATA for facts in `uipath:mapping` using declared variables.
+- `uipath:mapping` outputs for rule result, matched rule, diagnostics, and outcome.
 - Gateway conditions that route by declared rule outputs.
 
 ## CLI or operator-owned implementation

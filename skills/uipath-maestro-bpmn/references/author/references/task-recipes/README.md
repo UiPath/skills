@@ -9,6 +9,7 @@ Use these recipes after the BPMN skeleton is chosen. They describe how UiPath re
 | Start an RPA process | `bpmn:serviceTask` | [rpa-job.md](rpa-job.md) |
 | Start a UiPath agent or A2A agent | `bpmn:serviceTask` | [agent-job.md](agent-job.md) |
 | Execute an API workflow | `bpmn:serviceTask` | [api-workflow.md](api-workflow.md) |
+| Call a plain HTTP endpoint | `bpmn:sendTask` | [http-request.md](http-request.md) |
 | Create a queue item | `bpmn:sendTask` | [queue.md](queue.md) |
 | Create and wait for a queue item | `bpmn:serviceTask` | [queue.md](queue.md) |
 | Execute a business rule | `bpmn:businessRuleTask` | [business-rule.md](business-rule.md) |

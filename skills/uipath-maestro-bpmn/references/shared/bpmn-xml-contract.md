@@ -8,6 +8,8 @@ Generated BPMN must be valid BPMN 2.0 with the UiPath extension namespace.
 
 - `bpmn:definitions` includes standard BPMN, BPMNDI, DI, DC, and the UiPath namespace.
 - The UiPath namespace URI is `http://uipath.org/schema/bpmn` and the preferred prefix is `uipath`.
+- Do not declare `uipath` as `http://schemas.uipath.com/workflow/activities` in
+  Maestro BPMN files.
 - Use one executable root process by default. Use collaboration/pools only when the user explicitly asks for that model.
 - Studio Web import requires at least one valid `bpmndi:BPMNDiagram` with a `bpmndi:BPMNPlane`.
 - Every visible flow node should have a `bpmndi:BPMNShape` with bounds.
@@ -16,6 +18,8 @@ Generated BPMN must be valid BPMN 2.0 with the UiPath extension namespace.
 - UiPath extension expressions should read BPMN variables through `vars.<variableId>`,
   for example `=vars.Var_RequestId`, rather than bare names.
 - CDATA is the expected representation for JSON bodies, schemas, scripts, variable schemas, custom output bodies, and case-management payload bodies.
+- XML comments must remain parseable. Do not put `--` inside comments, and do
+  not use dashed decorative separator lines in BPMN XML comments.
 
 ## Supported model-authored BPMN
 
@@ -46,7 +50,7 @@ For non-trivial authoring, split generation into two passes:
 
 - **Pass 1: BPMN skeleton** - author standard BPMN process structure, event definitions, gateway conditions, subprocess scopes, sequence/message flows, annotations, and BPMN DI. Use placeholder labels or annotations for resource intent. Preserve existing extension XML in brownfield files.
 - **Operator confirmation** - confirm the process shape before filling execution-specific XML.
-- **Pass 2: model-owned UiPath XML** - add root variables, entry point IDs, mappings, documented bindings, script metadata, retry/error metadata, loop metadata, and documented non-Integration-Service service shells.
+- **Pass 2: model-owned UiPath XML** - add root variables, entry point IDs, mappings, documented bindings, script metadata, retry/error metadata, loop metadata, and documented service shells from [wrapper-shells.md](wrapper-shells.md).
 - **CLI enrichment** - generate or enrich Integration Service activity/trigger payloads, connector bindings, dynamic schemas, and generated package files.
 
 Do not combine connector selection, connection binding, dynamic schema generation, and topology rewrites in one opaque edit.
@@ -56,7 +60,15 @@ Do not combine connector selection, connection binding, dynamic schema generatio
 The current confirmed generation boundary is preserve/model-shell only for areas whose runtime contract depends on tenant state, registry metadata, or non-BPMN subscriptions. Do not add generation guidance that creates executable payloads for those areas until the contract is fixture-backed and CLI-validated.
 
 - Signals: standard BPMN signal definitions and signal event references are model-owned XML. Runtime-executable cross-process signal subscriptions, correlation, payload schema contracts, and tenant/resource/channel bindings are outside the model-owned contract unless a dedicated CLI or operator-owned contract supplies them.
-- Integration Service: model authors may create the surrounding BPMN node and document connector intent. Executable `Intsvc.*` activity/event XML, connection bindings, connector metadata, trigger property bindings, filters, parameters, and dynamic schemas require live registry-backed CLI enrichment for the target tenant before upload, debug, publish, or deploy.
+- Plain connectionless HTTP: model authors may use the documented [HTTP request recipe](../author/references/task-recipes/http-request.md) when the workflow owns the URL, method, payload, and parsing, and no connector connection or dynamic connector schema is needed.
+- Integration Service: model authors may create the surrounding BPMN node and
+  document connector intent. They may also create a non-executable draft
+  `Intsvc.*` shell with `uipath:type value="Intsvc.<Variant>"` and placeholder
+  strings. Except for the documented plain connectionless HTTP recipe,
+  executable `Intsvc.*` activity/event XML, connection bindings, connector
+  metadata, trigger property bindings, filters, parameters, and dynamic schemas
+  require live registry-backed CLI enrichment for the target tenant before
+  upload, debug, publish, or deploy.
 - Brownfield files: preserve imported executable signal or Integration Service extension XML unless the user explicitly asks for normalization and the CLI can validate the replacement.
 
 ## UiPath extensions the model may write
@@ -72,6 +84,21 @@ Use lower-case XML aliases in examples and authoring guidance:
 - `uipath:loopCharacteristics inputCollection="..." inputElement="..."` under loop characteristic extensions.
 - `uipath:retry`, `uipath:errorMapping`, and `uipath:tags` when the user gives explicit public-safe metadata.
 - `uipath:activity` and `uipath:event` shells for documented non-Integration-Service service types.
+
+New authored `uipath:activity` and `uipath:event` shells use the canonical
+nested type element:
+
+```xml
+<uipath:activity version="v1">
+  <uipath:type value="Orchestrator.StartJob" version="v1" />
+</uipath:activity>
+```
+
+Do not use legacy shorthand such as `<uipath:activity type="...">` in new XML.
+For task payloads, keep the wrapper type and resource context in
+`uipath:activity`; put variable inputs and outputs in a sibling
+`uipath:mapping version="v1"` element whose `var` attributes target declared
+variable ids.
 
 Do not invent `uipath:caseManagement` payloads without a dedicated case-management contract. Preserve imported `uipath:caseManagement` and unknown generic `uipath:Activity` payloads unless the edit explicitly normalizes them.
 
@@ -92,6 +119,9 @@ The model may author placeholder-safe shells for documented non-Integration-Serv
 - `Maestro.CasePlanScheduler` only when a dedicated case-management contract is available; otherwise preserve imported XML.
 
 Keep resource identity fields synthetic or placeholder-based until CLI or user-provided public-safe data resolves them.
+
+For copyable minimal XML shells, read [wrapper-shells.md](wrapper-shells.md)
+before authoring a task wrapper.
 
 ## CLI-owned or CLI-enriched areas
 

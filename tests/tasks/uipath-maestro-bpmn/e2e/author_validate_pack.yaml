@@ -32,7 +32,7 @@ initial_prompt: |
   - Public-safe synthetic IDs, labels, variables, and any generated metadata.
 
   Keep the scope local:
-  - Validate the project with `uip maestro bpmn validate PurchaseApproval --output json`.
+  - Validate the BPMN source with `uip maestro bpmn validate PurchaseApproval/PurchaseApproval.bpmn --output json`.
   - Package the project with `uip maestro bpmn pack PurchaseApproval dist --output json`.
   - Do not upload, publish, deploy, debug, run a process, ask for approval, or
     call cloud-side UiPath commands.
@@ -69,7 +69,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the BPMN project locally"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+validate\s+PurchaseApproval\s+--output\s+json'
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+validate\s+PurchaseApproval/PurchaseApproval\.bpmn\s+--output\s+json'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -84,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "BPMN project validates successfully in the scored workspace"
-    command: "uip maestro bpmn validate PurchaseApproval --output json"
+    command: "uip maestro bpmn validate PurchaseApproval/PurchaseApproval.bpmn --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

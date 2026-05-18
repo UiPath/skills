@@ -65,6 +65,10 @@ When a connector activity or trigger is needed in pass 1:
 - Do not author `Intsvc.*` context, connection binding IDs, connector metadata, dynamic schemas, or generated outputs by hand.
 - Mark enrichment as required before upload, debug, publish, or deploy.
 
+For plain connectionless HTTP where the workflow owns the URL, method, payload,
+and parsing, use [task-recipes/http-request.md](task-recipes/http-request.md)
+instead of treating the node as connector enrichment.
+
 ## Done state
 
 Pass 1 is done when the operator can review the BPMN diagram and answer: "Is this the process shape we want?" without needing to inspect UiPath extension XML.

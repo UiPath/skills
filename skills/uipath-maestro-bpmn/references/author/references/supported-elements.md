@@ -32,7 +32,14 @@ The model may author these standard BPMN structures when the process intent is c
 
 ## UiPath extension coverage
 
-Use lower-case XML tags in authored examples: `uipath:activity`, `uipath:event`, and `uipath:mapping`. For copyable minimal XML shells per wrapper, see [../../shared/wrapper-shells.md](../../shared/wrapper-shells.md).
+Use lower-case XML tags in authored examples: `uipath:activity`, `uipath:event`, and `uipath:mapping`.
+For copyable canonical shells, including the required nested
+`uipath:type value="..."` element, see
+[../../shared/wrapper-shells.md](../../shared/wrapper-shells.md). Do not use legacy
+`<uipath:activity type="...">` shorthand in new XML.
+For resource-backed tasks, `uipath:activity` identifies the wrapper type and
+resource context; task payload inputs and outputs belong in sibling
+`uipath:mapping version="v1"` elements.
 
 | Extension type | BPMN wrapper | XML tag | Ownership |
 | --- | --- | --- | --- |
@@ -56,7 +63,7 @@ Use lower-case XML tags in authored examples: `uipath:activity`, `uipath:event`,
 | `Maestro.CaseManagerGuardrails` | `bpmn:serviceTask` | `uipath:activity` | Preserve-only until documented |
 | `Maestro.CaseRulesEvaluator` | `bpmn:serviceTask` | `uipath:activity` | Preserve-only until documented |
 | `Intsvc.ActivityExecution` | `bpmn:sendTask` and supported event wrappers | `uipath:activity` | CLI-owned enrichment |
-| `Intsvc.HttpExecution` | `bpmn:sendTask` or intermediate throw | `uipath:activity` | CLI-owned enrichment |
+| `Intsvc.HttpExecution` | `bpmn:sendTask` or intermediate throw | `uipath:activity` | Plain connectionless HTTP may use [http-request.md](task-recipes/http-request.md); connector-authenticated or dynamic HTTP remains CLI-owned enrichment |
 | `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` or intermediate throw | `uipath:activity` | CLI-owned enrichment |
 | `Intsvc.AsyncExecution` | `bpmn:serviceTask` | `uipath:activity` | CLI-owned enrichment |
 | `Intsvc.SyncAgentExecution` | `bpmn:serviceTask` | `uipath:activity` | CLI-owned enrichment |
@@ -81,7 +88,15 @@ Script tasks execute JavaScript through Jint, not Node.js or a browser runtime.
 
 ## Integration Service boundary
 
-For `Intsvc.*` elements, the model may author the surrounding BPMN shell, variables, mappings, error paths, and diagram geometry. The CLI must enrich connector key, operation/event metadata, connection binding, trigger property bindings, schemas, generated outputs, `bindings_v2.json`, and package metadata before upload or run.
+For `Intsvc.*` elements, the model may author the surrounding BPMN shell,
+variables, mappings, error paths, diagram geometry, and a non-executable draft
+`uipath:type value="Intsvc.<Variant>"` shell with placeholder strings. The
+documented exception is plain connectionless HTTP, which must follow
+[http-request.md](task-recipes/http-request.md). Connector-backed or dynamically
+schematized `Intsvc.*` work still requires the CLI to enrich connector key,
+operation/event metadata, connection binding, trigger property bindings,
+schemas, generated outputs, `bindings_v2.json`, and package metadata before
+upload or run.
 
 ## Preservation boundary
 

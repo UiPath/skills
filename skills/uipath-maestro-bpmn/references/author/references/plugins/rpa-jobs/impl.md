@@ -2,14 +2,20 @@
 
 This document defines the implementation boundary for RPA job task recipes. RPA jobs are implemented as `bpmn:serviceTask`; see [task-recipes/rpa-job.md](../../task-recipes/rpa-job.md).
 
+Use the canonical shell from
+[shared/wrapper-shells.md](../../../../shared/wrapper-shells.md): a
+`bpmn:serviceTask` containing `uipath:activity version="v1"` and nested
+`uipath:type value="Orchestrator.StartJob" version="v1"`, with job arguments
+and outputs in sibling `uipath:mapping`.
+
 ## Model-owned implementation
 
 The model may edit:
 
 - `bpmn:serviceTask` wrapper for RPA job execution.
 - Documented `Orchestrator.StartJob` `uipath:activity` shell.
-- Input CDATA for job arguments using declared variables.
-- Output mappings for job ID, status, outputs, and exception fields.
+- Input CDATA for job arguments in `uipath:mapping` using declared variables.
+- `uipath:mapping` outputs for job ID, status, outputs, and exception fields.
 - Retry, timeout, and boundary error paths.
 
 ## CLI or operator-owned implementation

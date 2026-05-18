@@ -42,6 +42,13 @@ validation step; the validation command must run and succeed before `pack`.
 
 ## Package checks
 
+Before executing `uip maestro bpmn pack`, ensure the project directory contains
+`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, and
+`package-descriptor.json`. If any generated file is missing, regenerate it or
+write the placeholder-safe local-only shape from
+[shared/local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md)
+before packing.
+
 When generated package files exist, verify that:
 
 - `bindings_v2.json` matches root bindings and enriched resource metadata.
@@ -57,3 +64,20 @@ Use [shared/local-metadata-regeneration-guide.md](../../shared/local-metadata-re
 - Warnings may be acceptable for local drafts, but warnings about CLI-owned executable elements are blockers for real runs.
 - If validation tooling is missing, report the exact checks that could not run and keep the project in Author state.
 - If Integration Service enrichment is unavailable, validation can pass only for source shape review; do not report the project as ready for Operate.
+
+## Implementation status summary
+
+When handing off to Operate or reporting completion, classify each external,
+resource-backed, HTTP, human, child-process, or script-enrichment node:
+
+- **Executable** - the node has concrete runtime metadata, declared input/output
+  variables, mappings to downstream variables, and no unresolved placeholder.
+- **Draft** - the BPMN shape and intent are present, but runtime metadata,
+  binding, schema, or enrichment is unresolved.
+- **Mock** - the node returns fixed sample data or bypasses the real external
+  action.
+- **Blocked** - required user, tenant, connection, schema, URL, or credential
+  information is missing.
+
+Do not use "fully implemented" for a process that contains draft, mock, or
+blocked nodes. Name those nodes explicitly and state what is still required.
