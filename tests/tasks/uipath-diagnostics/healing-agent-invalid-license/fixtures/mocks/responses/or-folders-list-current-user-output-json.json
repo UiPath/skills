@@ -1,0 +1,5 @@
+{
+  "Result": "ValidationError",
+  "Message": "error: unknown command 'list-current-user'",
+  "Instructions": "Check command arguments and options. Use --help for usage information."
+}

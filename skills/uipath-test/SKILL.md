@@ -45,7 +45,7 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 | `uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | Set the default Orchestrator folder for a project. |
 | `uip tm project clear-default-folder --project-key <PROJECT_KEY>` | Clear the default Orchestrator folder from a project. |
 
-> Get folder keys with `uip or folders list-current-user --output json` — returns all folders visible to the current user. Prefer it over `uip or folders list`, which is a narrower view and may miss folders the user can access.
+> Get folder keys with `uip or folders list --output json` — by default this returns all folders visible to the current user (Personal, Solution, and Standard). Use `uip or folders list --all` only when you need every folder in the tenant.
 
 ### TestCase Commands
 
@@ -130,8 +130,8 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 4. **Cap retries at 3** for any failing API call. After 3 failures, stop and report the error to the user.
 5. **Handle empty results** — if a list command returns an empty array, stop and inform the user rather than proceeding with a null key.
 6. **Confirm before delete** — always confirm the target resource key with the user before running any `delete` command.
-7. **For operations requiring folder key** — use `uip or folders list-current-user --output json` (run `/uipath-platform` for folder management details).
-8. **Discover before assuming** — never guess automation names, folder keys, project IDs, or test case keys. Always run the matching `list` command first (e.g., `uip tm testcases list-automations`, `uip or folders list-current-user`).
+7. **For operations requiring folder key** — use `uip or folders list --output json` (run `/uipath-platform` for folder management details).
+8. **Discover before assuming** — never guess automation names, folder keys, project IDs, or test case keys. Always run the matching `list` command first (e.g., `uip tm testcases list-automations`, `uip or folders list`).
 
 ### Pre-rename fallbacks
 
