@@ -1,9 +1,9 @@
 task_id: skill-platform-trigger-api-e2e
 description: >
-  E2E API trigger + external HTTP invocation (Confluence S30). Creates an API
-  trigger on the seeded process, captures the trigger slug + token, POSTs to
-  the trigger URL via httpx, verifies a job was started with the supplied input
-  arguments.
+  E2E API trigger lifecycle (Confluence S30, scoped): create an API trigger on
+  the seeded process with slug + method, get it back to verify config persists,
+  rename via update, delete. Drops the external HTTP-invoke step from the
+  original S30 — that needs tenant-specific URL knowledge and auth setup.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
 
 agent:
@@ -23,21 +23,45 @@ post_run:
     timeout: 180
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `process_key`, `folder_a_path`.
+  Use the `uipath-platform` skill. Read `seed.json` for `uuid8`, `process_key`, `folder_a_path`.
 
-  Steps (use `--output json`):
-  1. Create an API trigger: `uip resource triggers create --type api --name <uuid8>-api --release-key <process_key> --folder-path <folder_a_path>` → `create.json`. Capture trigger key, slug, token from response.
-  2. Append manifest entry.
-  3. POST to the trigger URL via curl with a small input-arguments JSON body. Save response to `invoke.json`. Capture the returned job ID.
-  4. Poll `uip or jobs get <job-id>` until terminal state. Save to `job_terminal.json`.
-  5. Verify InputArguments echo back. Save expected/actual to `verify.txt`.
-  6. Delete trigger.
+  Goal: round-trip an API trigger's lifecycle. API triggers require **--slug**,
+  **--method**, AND **--runtime-type** — all three are mandatory on `create`.
+
+  Steps (use `--output json` on EVERY uip command):
+
+  1. Create API trigger:
+     `uip resource triggers create --type api --name <uuid8>-api --release-key <process_key> --slug <uuid8>-api-slug --method Post --runtime-type Serverless --folder-path <folder_a_path>` → `create.json`.
+     Capture the trigger key from `Data.Key`.
+  2. Append `{"kind": "trigger", "key": "<trigger-key>", "extra": {"type": "api", "folder_path": "<folder_a_path>"}}` to `created-resources.jsonl`.
+  3. `uip resource triggers get <trigger-key> --type api --folder-path <folder_a_path>` → `get_after_create.json`. Verify Slug and Method match what was set.
+  4. `uip resource triggers update <trigger-key> --type api --name <uuid8>-api-renamed --folder-path <folder_a_path>` → `update.json`.
+  5. `uip resource triggers get <trigger-key> --type api --folder-path <folder_a_path>` → `get_after_update.json` (name should match).
+  6. `uip resource triggers delete <trigger-key> --type api --folder-path <folder_a_path>` → `delete.json`.
+
+  Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
   - type: command_executed
-    description: "Agent created an API trigger and invoked via HTTP"
+    description: "Agent created an API trigger with required flags"
     tool_name: "Bash"
-    command_pattern: '(uip\s+resource\s+triggers\s+create.*--type\s+api|curl.*-X\s+POST)'
+    command_pattern: 'uip\s+resource\s+triggers\s+create.*--type\s+api.*--slug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated and deleted the trigger"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+triggers\s+(update|delete).*--type\s+api'
     min_count: 2
-    weight: 2.0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral check: trigger persists with slug+method; rename reflected"
+    command: "python3 $TASK_DIR/check_trigger_api.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0

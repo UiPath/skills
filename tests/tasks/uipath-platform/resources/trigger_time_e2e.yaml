@@ -1,8 +1,9 @@
 task_id: skill-platform-trigger-time-e2e
 description: >
-  E2E time trigger lifecycle: create disabled cron trigger on the seeded
-  process, enable via update, change the cron, disable again, delete. Verifies
-  Enabled flag transitions and cron field persists.
+  E2E time trigger lifecycle: create a cron trigger on the seeded process,
+  disable it, re-enable it, update the cron, delete. Verifies Enabled flag
+  transitions through dedicated enable/disable subcommands and that cron
+  updates persist.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
 
 agent:
@@ -22,23 +23,59 @@ post_run:
     timeout: 180
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `process_key` and `folder_a_path`.
+  Use the `uipath-platform` skill. Read `seed.json` for `uuid8`, `process_key`, `folder_a_path`.
 
-  Steps (use `--output json`):
-  1. Create disabled cron trigger: `uip resource triggers create --type time --name <uuid8>-trig --release-key <process_key> --cron "0 0 3 * * ?" --time-zone UTC --folder-path <folder_a_path>` → `create.json`. Capture trigger key.
-  2. Append `{"kind": "trigger", "key": "<key>", "extra": {"type": "time", "folder_path": "<folder_a_path>"}}` to manifest.
-  3. `triggers get <key> --type time --folder-path <folder_a_path>` → `get_initial.json`.
-  4. `triggers update <key> --type time --enabled --folder-path <folder_a_path>` → `enable.json`.
-  5. `triggers get <key> --type time --folder-path <folder_a_path>` → `get_enabled.json` (Enabled=true).
-  6. `triggers update <key> --type time --cron "0 30 4 * * ?" --folder-path <folder_a_path>` → `update_cron.json`.
-  7. `triggers get <key> --type time --folder-path <folder_a_path>` → `get_after_cron.json` (new cron persisted).
-  8. `triggers delete <key> --type time --folder-path <folder_a_path>` → `delete.json`.
+  Goal: round-trip a time (cron) trigger through enable/disable and cron update.
+
+  IMPORTANT — the CLI uses **separate `triggers enable` / `disable`
+  subcommands**, NOT `update --enabled`/`--disabled`. Use those.
+
+  Steps (use `--output json` on EVERY uip command):
+
+  1. Create cron trigger:
+     `uip resource triggers create --type time --name <uuid8>-trig --release-key <process_key> --cron "0 0 3 * * ?" --time-zone UTC --runtime-type Serverless --folder-path <folder_a_path>` → `create.json`.
+     Capture the trigger key from `Data.Key`.
+  2. Append `{"kind": "trigger", "key": "<trigger-key>", "extra": {"type": "time", "folder_path": "<folder_a_path>"}}` to `created-resources.jsonl`.
+  3. `uip resource triggers get <trigger-key> --type time --folder-path <folder_a_path>` → `get_after_create.json`. (Triggers default to enabled.)
+  4. `uip resource triggers disable <trigger-key> --type time --folder-path <folder_a_path>` → `disable.json`.
+  5. `uip resource triggers get <trigger-key> --type time --folder-path <folder_a_path>` → `get_after_disable.json` (Enabled should be false).
+  6. `uip resource triggers enable <trigger-key> --type time --folder-path <folder_a_path>` → `enable.json`.
+  7. `uip resource triggers get <trigger-key> --type time --folder-path <folder_a_path>` → `get_after_enable.json` (Enabled true again).
+  8. `uip resource triggers update <trigger-key> --type time --cron "0 30 4 * * ?" --folder-path <folder_a_path>` → `update_cron.json`.
+  9. `uip resource triggers get <trigger-key> --type time --folder-path <folder_a_path>` → `get_after_cron.json` (new cron persisted).
+  10. `uip resource triggers delete <trigger-key> --type time --folder-path <folder_a_path>` → `delete.json`.
+
+  Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
   - type: command_executed
-    description: "Agent created, updated and deleted a time trigger"
+    description: "Agent created a time trigger"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+triggers\s+(create|update|delete).*--type\s+time'
-    min_count: 4
-    weight: 2.0
+    command_pattern: 'uip\s+resource\s+triggers\s+create.*--type\s+time'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent toggled enable/disable"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+triggers\s+(enable|disable)'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated cron"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+triggers\s+update.*--cron'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral check: Enabled flag flipped twice; cron value persisted"
+    command: "python3 $TASK_DIR/check_trigger_time.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0
