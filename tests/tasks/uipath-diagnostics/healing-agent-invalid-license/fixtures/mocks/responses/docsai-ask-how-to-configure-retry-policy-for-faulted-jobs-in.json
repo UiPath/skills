@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "85cb31ce-0531-4d8c-88c8-4539f1c9619a",
+    "text": "You can’t configure a *job-level* retry policy directly in Orchestrator, but you can control retries via Queues and monitor/alert on failures.\n\n**1. Configure retries via Queues (recommended pattern)**\nWhen your process uses Queues:\n- Go to **Queues** &gt; **Add** &gt; **Add** to open **Create Queue**.\n- Set:\n  - **Auto Retry** = **Yes**\n  - **Max # of retries** = desired retry count  \n- Save the queue and make sure your workflow processes items from this queue.  \nOrchestrator will then automatically retry faulted queue items up to the configured limit.  \n[Managing Queues in Orchestrator](https://docs-staging.uipath.com/orchestrator/automation-suite/2021.10/user-guide/managing-queues-in-orchestrator)\n\n**2. Handling faulted jobs**\n- Jobs that end in **Faulted** must be restarted manually from **Jobs** (or via your own logic/API).  \n[Job States](https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/job-states)\n\n**3. Alerting on child job failures**\nYou can’t target “child jobs” specifically, but you can alert on any faulted jobs:\n\n- Enable email alerts:\n  - In **Settings** &gt; **General**, select **Enable Alerts Email** and configure email settings.\n  - Ensure users:\n    - Have a valid email.\n    - Have **View** permission on **Alerts**.\n- Orchestrator sends:\n  - Email every 10 minutes aggregating **Fatal/Error** alerts.\n  - A daily **Alerts Dashboard** email including **Faulted Jobs** count.  \n\n[Setting Up Alert Emails](https://docs-staging.uipath.com/orchestrator/standalone/2022.4/user-guide/setting-up-alert-emails)\n\n---\n\n```json\n\n```\n\n```json```",
+    "sources": [
+      "https://docs-staging.uipath.com/orchestrator/automation-suite/2021.10/user-guide/managing-queues-in-orchestrator",
+      "https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/job-states",
+      "https://docs-staging.uipath.com/orchestrator/standalone/2022.4/user-guide/setting-up-alert-emails"
+    ],
+    "disclaimers": [
+      "Installation and administration instructions, if incorrectly implemented, can result in system disruptions or data loss.\nVerify if your scenario aligns with the documentation sources linked for this answer. We recommend creating a backup before making any changes."
+    ],
+    "followups": [
+      "How can I design my parent–child job architecture so that child failures are surfaced and retried via queues?",
+      "Can you show an example of a workflow pattern that restarts faulted jobs programmatically?",
+      "How do I filter or route alert emails so only specific teams get notified about certain processes?"
+    ]
+  }
+}

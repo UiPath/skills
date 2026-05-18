@@ -245,6 +245,8 @@ PROJECT_SNAPSHOT_IGNORE_DIRS = {
     ".project",
     ".templates",
     ".claude",
+    ".screenshots",
+    ".storage",
 }
 PROJECT_SNAPSHOT_IGNORE_SUFFIXES = {".pyc", ".pdb"}
 

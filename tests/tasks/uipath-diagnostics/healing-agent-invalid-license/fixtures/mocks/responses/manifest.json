@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay of a UIA Healing-Agent-no-license investigation. Triage rules captured verbatim from the original session; license/log fixtures restored from the investigation's raw/ folder. Match patterns are kept permissive (no quote-sensitive matching) so the agent succeeds even if it formats CLI args slightly differently than the recording.",
+  "rules": [
+    {
+      "match": "or licenses info",
+      "file": "or-licenses-info-output-json.json",
+      "_doc": "Deterministic discriminator for healing-agent-no-license.md cause #1: Allowed.AgentService=0 AND LicensedFeatures=[] with SubscriptionPlan='ENTERPRISE'. Catches any `or licenses info` variant the agent issues (with/without --output json)."
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-current-user-output-json.json",
+      "exit_code": 3,
+      "_doc": "Reproduces the original session's CLI error — `list-current-user` was rejected as an unknown command, forcing the agent to discover the correct surface. Catches any `or folders list*` form."
+    },
+    {
+      "match": "or folders --help",
+      "file": "or-folders-help.json",
+      "_doc": "Help text the agent fetched after the list-current-user error to discover `folders get`."
+    },
+    {
+      "match": "or folders get",
+      "file": "or-folders-get-shared-output-json.json",
+      "_doc": "Folder lookup for 'Shared' → returns Key=defb8e05-... and ID=1500287. Catches any `or folders get <name>` variant."
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-faulted.json",
+      "_doc": "Catch-all: any `or jobs list` (with or without --state Faulted / --folder-key) returns the recorded faulted-job d2c90d73-... in folder Shared."
+    },
+    {
+      "match": "or jobs get --help",
+      "file": "or-jobs-get-help.json",
+      "_doc": "Help text — agent fetched this after the first `jobs get --folder-key ...` call returned validation-error exit_code=3."
+    },
+    {
+      "match": "or jobs get d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff --folder-key",
+      "file": "or-jobs-get-d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff-folder-key-.json",
+      "exit_code": 3,
+      "_doc": "Reproduces the original validation error — `jobs get` is cross-folder; --folder-key is not a valid flag here."
+    },
+    {
+      "match": "or jobs get d2c90d73",
+      "file": "or-jobs-get-d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff-output-json.json",
+      "_doc": "Authoritative job record: State=Faulted, AutopilotForRobots.Enabled=true, HealingEnabled=true, RuntimeType=StudioPro, JobError={}, ErrorCode=Robot. Matches any `or jobs get d2c90d73...` variant — quotes optional."
+    },
+    {
+      "match": "or jobs logs d2c90d73",
+      "file": "or-jobs-logs-d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff-level-erro.json",
+      "_doc": "Robot Error logs — contains the deterministic 'No available license / Agentic units to perform healing analysis and recovery' message at 17:10:18.218Z AND the NodeNotFoundException at 17:10:18.631Z for the same activity. The HA-refusal line is the primary signal per healing-agent-no-license.md step 1."
+    },
+    {
+      "match": "or jobs healing-data d2c90d73",
+      "file": "or-jobs-healing-data-d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff-o-.json",
+      "_doc": "Marker showing Size=22 (empty ZIP, zero entries) — the corroborating signal per healing-agent-no-license.md step 3 that HA refused to run. The mock does not materialize the actual ZIP on disk; agents should treat Size in the response as authoritative."
+    },
+    {
+      "match": "or jobs history d2c90d73",
+      "file": "or-jobs-history-d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff-output-.json",
+      "_doc": "Minimal Faulted→Running history. Not load-bearing for this playbook; included so the agent does not abort if it explores history."
+    },
+    {
+      "match": "docsai ask",
+      "file": "docsai-ask-how-to-configure-retry-policy-for-faulted-jobs-in.json",
+      "_doc": "Catch-all: any `docsai ask` (regardless of topic) returns the recorded Orchestrator faulted-job propagation guidance (queue auto-retry + alert emails) from the original presenter phase."
+    }
+  ],
+  "expected_calls": [
+    {
+      "pattern": "or jobs get d2c90d73",
+      "min": 1,
+      "description": "Agent fetches the faulted job to confirm AutopilotForRobots.Enabled, HealingEnabled, RuntimeType, State=Faulted (playbook step 2)."
+    },
+    {
+      "pattern": "or jobs logs d2c90d73",
+      "min": 1,
+      "description": "Agent fetches Error-level robot logs to find the 'No available license / Agentic units' line (playbook step 1, the deterministic signal)."
+    },
+    {
+      "pattern": "or licenses info",
+      "min": 1,
+      "description": "Agent reads tenant license to discriminate the playbook cause (#1 missing entitlement vs #7 exhausted) — Allowed.AgentService=0, LicensedFeatures=[] confirms #1 (playbook step 5)."
+    },
+    {
+      "pattern": "or jobs healing-data d2c90d73",
+      "min": 0,
+      "description": "Optional: corroborates with empty-ZIP marker (playbook step 3). Agent may skip this when the Error log + licenses info already deterministically identify cause #1."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  }
+}
