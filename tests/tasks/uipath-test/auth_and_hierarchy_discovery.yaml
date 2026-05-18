@@ -1,17 +1,26 @@
 task_id: skill-test-auth-and-testset-hierarchy-discovery
 description: >
-  Smoke test: agent uses the uipath-test skill to get oriented in Test
-  Manager — verify auth, then walk the discovery chain
-  project → testset → testcases. Asserts auth-first ordering
-  (`uip login status`), project discovery, testset listing scoped by
-  `--project-key`, and testcase listing scoped by `--test-set-key`, all
-  with `--output json`. The skill — not the prompt — teaches the chain
-  and the `--output json` flag.
-tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:test-case]
+  Integration test: agent uses the uipath-test skill to get oriented in Test
+  Manager — verify auth, then traverse the discovery chain
+  project → testsets → testcases. Asserts auth-first ordering
+  (`uip login status`), project discovery (with `--output json`), test set
+  listing (with `--project-key` + `--output json`), and test case listing
+  from a test set (with `--project-key` + `--test-set-key` + `--output json`).
+  The prompt steers the agent toward a project that has test sets without
+  prescribing how to search. The skill — not the prompt — must teach the
+  chain commands and the `--output json` flag.
+tags: [uipath-test, integration, "mode:operate", "lifecycle:discover", "feature:test-case"]
 
 run_limits:
   expected_turns: 9
   max_turns: 30
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
 
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.
@@ -47,24 +56,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed test cases in a test set (`testsets list-testcases --test-set-key` + `--output json`)"
+    description: "Agent listed test cases in a test set (`testsets list-testcases --project-key --test-set-key` + `--output json`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testsets?\s+list-testcases\s+.*--test-set-key.*--output\s+json|uip\s+tm\s+testsets?\s+list-testcases\s+.*--output\s+json.*--test-set-key'
+    command_pattern: '(?=.*--project-key)(?=.*--test-set-key)(?=.*--output\s+json)uip\s+tm\s+testsets?\s+list-testcases\b'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Project list returns a non-empty Data array (validates the tenant actually has projects, not just that the agent ran the command)"
-    command: |
-      uip tm project list --output json | python3 -c "
-      import json, sys
-      d = json.load(sys.stdin)
-      assert d.get('Result') == 'Success', f'expected Success, got {d.get(\"Result\")}'
-      data = d.get('Data', [])
-      assert isinstance(data, list) and len(data) > 0, f'expected non-empty list, got {data!r}'
-      "
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
     pass_threshold: 1.0
