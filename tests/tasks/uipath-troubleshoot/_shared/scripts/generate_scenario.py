@@ -46,7 +46,18 @@ EXTRACT_SCRIPT = Path(__file__).with_name("extract_session.py")
 DEFAULT_OUTPUT_BASE = REPO_ROOT / "tests" / "tasks" / "uipath-troubleshoot"
 
 EMAIL_RE = re.compile(r"\b([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b")
-WIN_PATH_RE = re.compile(r"\b[A-Z]:[\\/](?:[^\s\"'<>|]*)", re.IGNORECASE)
+# Drive-letter Windows path. Exclude backtick so we don't drag markdown fence chars in.
+WIN_PATH_RE = re.compile(r"\b[A-Z]:[\\/](?:[^\s\"'<>|`]*)", re.IGNORECASE)
+# Git-bash translated path (/c/Users/<name>/...).
+GITBASH_PATH_RE = re.compile(r"/[a-z]/Users/[^\s\"'<>|`]+", re.IGNORECASE)
+# Windows domain account (DOMAIN\USER). Allow one or more backslashes so we
+# also match JSON-escaped occurrences like "UIPATH\\DAN.MOROSANU".
+WIN_DOMAIN_USER_RE = re.compile(r"\b([A-Z][A-Z0-9_]{1,})\\+([A-Z][A-Z0-9._-]+)\b")
+# Common Windows hostname prefixes — conservative to avoid false positives
+# on things like RFC-1234 or HTTP-200. Length-bounded suffix with mixed alnum.
+HOSTNAME_RE = re.compile(r"\b(?:DESKTOP|LAPTOP|UIP|WIN|PC|HOST)-[A-Z0-9]{6,}\b")
+# Username extracted from a Users/<name>/ path segment.
+USER_FROM_PATH_RE = re.compile(r"[\\/]Users[\\/]([A-Za-z0-9._-]+)", re.IGNORECASE)
 
 # Stdout from a redirect-captured call is just bash trailer noise: the
 # tool returns "(Bash completed with no output)" or "EXIT_CODE=N" or
@@ -54,9 +65,15 @@ WIN_PATH_RE = re.compile(r"\b[A-Z]:[\\/](?:[^\s\"'<>|]*)", re.IGNORECASE)
 EMPTY_STDOUT_PATTERNS = (
     r"^\s*$",
     r"^\(Bash completed with no output\)\s*$",
+    r"^\(PowerShell completed with no output\)\s*$",
     r"^EXIT_CODE=\d+\s*$",
+    r"^[A-Z][A-Z0-9_]*=\d+\s*$",       # generic `EXIT=N`, `TRACES=N`, `RC=N`
     r"^Exit:\s*\d+\s*$",
     r"^Exit\s+code\s+\d+\s*$",
+    r"^FAILED\s*$",
+    r"^OK\s*$",
+    r"^exit=(?:True|False)\s*$",
+    r"^[A-Za-z_]+:\d+\s*$",            # PowerShell `get:0`, `logs:0` trailers
 )
 EMPTY_STDOUT_RE = re.compile("|".join(EMPTY_STDOUT_PATTERNS), re.IGNORECASE)
 
@@ -265,10 +282,12 @@ def _backfill_redirect_stdouts(uip_calls: list[dict], investigation: Path) -> di
         target_path = Path(target)
         loaded: str | None = None
         if target_path.is_file():
-            try:
-                loaded = target_path.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
-                loaded = None
+            for enc in ("utf-8-sig", "utf-16", "utf-8"):
+                try:
+                    loaded = target_path.read_text(encoding=enc)
+                    break
+                except (OSError, UnicodeDecodeError):
+                    loaded = None
         if loaded is None:
             mapped = by_basename.get(target_path.name)
             if mapped is not None:
@@ -342,9 +361,56 @@ def _detect_scrub_map(samples: list[str]) -> "OrderedDict[str, str]":
                 seen_names.add(local)
                 mapping[local] = f"user{idx + 1}"
         for m in WIN_PATH_RE.finditer(text):
-            raw = m.group(0).rstrip("\\/")
+            raw = m.group(0).rstrip("\\/.,;:`'\")]")
             if raw and raw not in mapping:
                 mapping[raw] = ""
+        for m in GITBASH_PATH_RE.finditer(text):
+            raw = m.group(0).rstrip("\\/.,;:`'\")]")
+            if raw and raw not in mapping:
+                mapping[raw] = ""
+        for m in HOSTNAME_RE.finditer(text):
+            host = m.group(0)
+            if host and host not in mapping:
+                mapping[host] = "MOCK-HOST"
+
+    # Second pass: derive username placeholders from any path-like matches.
+    # E.g. /c/Users/<name>/... -> map "<name>" -> "replacement_user" so bare
+    # references (DOMAIN\<NAME>, <NAME>, <name>) get scrubbed even when they
+    # appear outside a full path.
+    user_placeholders: dict[str, str] = {}
+    for text in samples:
+        if not isinstance(text, str):
+            continue
+        for m in USER_FROM_PATH_RE.finditer(text):
+            name = m.group(1)
+            if not name or "." not in name and "_" not in name and "-" not in name:
+                # Skip generic single-token names (e.g. "Public", "Default").
+                continue
+            lower = name.lower()
+            if lower in {"public", "default", "all users"}:
+                continue
+            if lower not in user_placeholders:
+                idx = len(user_placeholders) + 1
+                placeholder = "replacement_user" if idx == 1 else f"replacement_user{idx}"
+                user_placeholders[lower] = placeholder
+        for m in WIN_DOMAIN_USER_RE.finditer(text):
+            domain, user = m.group(1), m.group(2)
+            # Skip well-known service accounts.
+            if user.upper() in {"SYSTEM", "ADMINISTRATOR", "NETWORKSERVICE", "LOCALSERVICE"}:
+                continue
+            lower = user.lower()
+            if lower not in user_placeholders:
+                idx = len(user_placeholders) + 1
+                placeholder = "replacement_user" if idx == 1 else f"replacement_user{idx}"
+                user_placeholders[lower] = placeholder
+
+    # Add username substitutions in both case forms.
+    for lower, placeholder in user_placeholders.items():
+        if lower not in mapping:
+            mapping[lower] = placeholder
+        upper = lower.upper()
+        if upper != lower and upper not in mapping:
+            mapping[upper] = placeholder.upper()
 
     return mapping
 
