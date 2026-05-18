@@ -70,6 +70,9 @@ Entry points show which workflows inside the package can be executed. Multi-entr
 Bind the uploaded package to a folder as a runnable process:
 
 ```bash
+# List published processes in a known folder path
+uip or processes list --folder-path "Production" --output json
+
 uip or processes create --name "MyProcess" \
   --package-key "MyProcess" \
   --package-version "1.0.0" \

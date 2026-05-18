@@ -240,21 +240,53 @@ jobs:
             -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments" \
             | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
           echo "::add-mask::$TOKEN"
+          TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}"
+          TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}"
+          if [ -n "$TENANT_ID" ]; then
+            TENANT_NAME_FOR_LIST="${TENANT_NAME:-$TENANT_ID}"
+            TENANTS_JSON=$(UIPATH_CLI_ENABLE_ENV_AUTH=true \
+              UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
+              UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
+              UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
+              UIPATH_CLI_TENANT_NAME="$TENANT_NAME_FOR_LIST" \
+              UIPATH_CLI_TENANT_ID="$TENANT_ID" \
+              uip login tenant list --output json)
+            RESOLVED_TENANT_NAME=$(TENANTS_JSON="$TENANTS_JSON" TENANT_ID="$TENANT_ID" python - <<'PY'
+          import json
+          import os
+
+          data = json.loads(os.environ["TENANTS_JSON"])
+          tenant_id = os.environ["TENANT_ID"]
+          for tenant in data.get("Data", []):
+              if tenant.get("TenantId") == tenant_id:
+                  print(tenant.get("TenantName", ""))
+                  break
+          PY
+          )
+            if [ -n "$RESOLVED_TENANT_NAME" ]; then
+              TENANT_NAME="$RESOLVED_TENANT_NAME"
+            fi
+          fi
+          if [ -z "$TENANT_NAME" ] || [ "$TENANT_NAME" = "UIPATH_TENANT_NAME" ]; then
+            echo "::error::Unable to resolve UIPATH_CLI_TENANT_NAME from UIPATH_TENANT_NAME/UIPATH_TENANT_ID"
+            exit 1
+          fi
+          echo "::add-mask::$TENANT_NAME"
           {
             echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
             echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
             echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
             echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
-            echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
-            echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
+            echo "UIPATH_CLI_TENANT_NAME=$TENANT_NAME"
+            echo "UIPATH_CLI_TENANT_ID=$TENANT_ID"
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
           } >> "$GITHUB_ENV"
           UIPATH_CLI_ENABLE_ENV_AUTH=true \
           UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
           UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
           UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
-          UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
-          UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
+          UIPATH_CLI_TENANT_NAME="$TENANT_NAME" \
+          UIPATH_CLI_TENANT_ID="$TENANT_ID" \
             uip login status --output json
 
       - name: Run smoke tests
@@ -323,6 +355,40 @@ jobs:
           echo ""
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
+
+      - name: Redact secrets from eval report
+        if: always()
+        working-directory: tests
+        env:
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+
+          names = (
+              "UIPATH_CLI_AUTH_TOKEN",
+              "AWS_BEARER_TOKEN_BEDROCK",
+              "ANTHROPIC_API_KEY",
+              "TRACES_SMOKE_PROCESS_KEY",
+          )
+          values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
+          if not values:
+              raise SystemExit(0)
+
+          suffixes = {".html", ".json", ".log", ".md"}
+          for path in pathlib.Path("runs").rglob("*"):
+              if not path.is_file() or path.suffix not in suffixes:
+                  continue
+              text = path.read_text(encoding="utf-8", errors="ignore")
+              redacted = text
+              for value in values:
+                  redacted = redacted.replace(value, "***")
+              if redacted != text:
+                  path.write_text(redacted, encoding="utf-8")
+          PY
 
       - name: Upload HTML / JSON eval report
         if: always()
