@@ -124,8 +124,6 @@ List products that support governance policies. Products are read-only — regis
 uip gov aops-policy product list --output json
 ```
 
-Use this exact subcommand for catalog discovery. Do not use legacy flattened names such as `list-products`.
-
 **Output:** `Data` is an array of product entries. Each entry has `identifier` (GUID), `name`, and `label`. Pass `name` (not `label`) to `--product-name`, `template get`, and every `deployment ... configure` entry; `label` is the human-readable display string.
 
 ## uip gov aops-policy product get
@@ -151,8 +149,6 @@ List license types available to the organization. Required for tenant deployment
 ```bash
 uip gov aops-policy license-type list --output json
 ```
-
-Use this exact subcommand for catalog discovery. Do not use legacy flattened names such as `list-license-types`.
 
 **Output:** `Data` is an array. Each entry has `identifier` (GUID) and `name` (e.g. `Attended`, `Unattended`).
 

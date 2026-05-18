@@ -17,12 +17,6 @@ uip admin groups get <GROUP_ID> --output json
 uip admin groups members list <GROUP_ID> --output json
 ```
 
-When the user gives a group name or substring, filter the list output instead of using a search flag:
-
-```bash
-uip admin groups list --output json --output-filter "Data[?contains(displayName, '<GROUP_NAME_OR_SUBSTRING>')]"
-```
-
 ## Workflow: Create a Group
 
 1. Check for duplicates: `uip admin groups list --output json`

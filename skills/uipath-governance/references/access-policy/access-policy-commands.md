@@ -82,8 +82,6 @@ uip gov access-policy list --output json
 uip gov access-policy list --filter "status in ('Active')" --order-by "Name asc" --output json
 ```
 
-Use `--filter` for status filtering and `--order-by "<FIELD> <asc|desc>"` for sorting. Do not use `--status`, `--order`, or split ordering across separate flags; those flags are not part of this command surface.
-
 ---
 
 ## uip gov access-policy get
