@@ -33,6 +33,7 @@
 
 # Guardrails capability docs
 /skills/uipath-agents/references/lowcode/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+/skills/uipath-agents/references/coded/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria

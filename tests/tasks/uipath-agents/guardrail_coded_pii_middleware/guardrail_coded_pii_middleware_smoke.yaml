@@ -1,0 +1,62 @@
+task_id: skill-agent-guardrail-coded-pii-middleware-smoke
+description: >
+  Smoke test: skill routes to guardrails-coded.md and the agent adds a
+  PII detection middleware guardrail at Agent scope with a log action.
+  Verifies key structural elements are present in graph.py without
+  requiring backend connectivity or full scope coverage.
+tags: [uipath-agents, smoke, coded]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 300
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-agents/fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py. I want to add a PII detection
+  guardrail using the middleware style at Agent scope. It should log Email
+  detections as warnings.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_contains
+    description: "UiPathPIIDetectionMiddleware imported and used"
+    path: "graph.py"
+    includes:
+      - "UiPathPIIDetectionMiddleware"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "middleware= keyword argument present in create_agent()"
+    path: "graph.py"
+    includes:
+      - "middleware="
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent scope and log action configured"
+    path: "graph.py"
+    includes:
+      - "GuardrailScope.AGENT"
+      - "LogAction"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "EMAIL entity type referenced"
+    path: "graph.py"
+    includes:
+      - "EMAIL"
+    weight: 1.0
+    pass_threshold: 1.0
