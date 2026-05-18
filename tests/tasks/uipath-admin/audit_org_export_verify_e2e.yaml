@@ -1,0 +1,147 @@
+task_id: skill-admin-audit-org-export-verify-e2e
+description: >
+  End-to-end test (artifact verification tier): agent drives
+  `uip admin audit org export` to produce a real ZIP, then verifies
+  (a) the ZIP exists, (b) it contains at least one daily .txt file,
+  (c) the event IDs inside the export are a subset of what the live
+  `events` API returns for the same whole-day window.
+
+  Sibling to `audit_export_verify_e2e.yaml` — same verification logic,
+  but exercises the `org` scope (admin events: memberships, license,
+  tenant lifecycle, Identity Server logins) rather than `tenant` scope.
+  Org-scope hits a different basePath (`/orgaudit_` vs `/tenantaudit_`)
+  and surfaces a different event set, so this isn't redundant with the
+  tenant artifact-verify task — it catches regressions on the org code
+  path specifically.
+
+  Whole-day granularity note: `uip admin audit ... export` issues one
+  HTTP call per UTC day inside [--from-date, --to-date] and produces
+  one .txt per day. The `events` API takes timestamp-precise bounds,
+  so to compare the same window the events query must use
+  `T00:00:00Z` / `T23:59:59.999Z` boundaries that bracket the export's
+  per-day files.
+
+  LTS lag note: the export reads from the long-term store, which lags
+  the live `events` endpoint. We pin the comparison window to dates at
+  least 48h in the past so LTS has caught up. Assertion direction is
+  "export IDs ⊆ events IDs" — events is the more complete set.
+
+  Org-scope volume note: organization-level audit events (memberships,
+  license, tenant lifecycle) are typically sparser than tenant events.
+  An empty or near-empty result on a quiet test org is a real outcome
+  and should not fail the test — the assertion is *correctness* of the
+  subset relationship, not a minimum event count.
+
+  Blocker: this task requires `uip admin audit` to exist in the
+  published `@uipath/cli` (UiPath/cli#1372 must ship + publish first).
+  Until then it will fail at the export step with `unknown command
+  'audit'`.
+tags: [uipath-admin, e2e, mode:operate, audit, export, scope-org, real-artifact]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 40
+  turn_timeout: 600
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Export ORGANIZATION-level audit events (memberships, license changes,
+  tenant lifecycle) for the 3-day window from 5 days ago through
+  2 days ago (UTC, whole days) to ./audit-org-window.zip in the
+  current working directory. Resolve the dates with
+  `date -u -d '5 days ago' +%Y-%m-%d` and `date -u -d '2 days ago' +%Y-%m-%d`
+  so the window slides with the run date.
+
+  Important:
+  - The `uip` CLI is available and connected via env-var auth to a
+    real tenant. The export should produce a real ZIP file at the
+    requested path.
+  - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
+    bounds (no inline `T00:00:00Z` for these flags — the CLI treats
+    them as whole-day boundaries).
+  - The 2-days-ago upper bound preserves the >48h LTS-lag buffer so
+    the export is comparable against the live events endpoint.
+  - This is ORG scope, not tenant. Do NOT pass `--tenant-id` (org
+    silently ignores it).
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit org export` (org scope) with bounded window + --output-file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-file\s+\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Export produced ./audit-org-window.zip"
+    path: "./audit-org-window.zip"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "ZIP is a valid archive (zero or more .txt entries — an empty zip is acceptable for a quiet org)"
+    command: |
+      set -euo pipefail
+      test -f ./audit-org-window.zip
+      # `unzip -l` should succeed on a valid archive; we don't require entries
+      # since a quiet org over a 3-day window can legitimately produce no events.
+      unzip -l ./audit-org-window.zip >/dev/null
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Org export event IDs are a subset of org events API for the same window (whole-day boundaries)"
+    command: |
+      set -euo pipefail
+      mkdir -p /tmp/audit-org-export
+      unzip -o ./audit-org-window.zip -d /tmp/audit-org-export >/dev/null
+
+      # If the ZIP has no .txt files (quiet org), the export-subset assertion
+      # trivially holds and we exit cleanly.
+      shopt -s nullglob
+      TXT_FILES=(/tmp/audit-org-export/*.txt)
+      if [ ${#TXT_FILES[@]} -eq 0 ]; then
+        echo "OK: org export window is empty — subset assertion trivially holds"
+        exit 0
+      fi
+
+      # Export shape uses PascalCase keys (Id, CreatedOn, ...).
+      EXPORTED=$(jq -r '.[]?.Id' "${TXT_FILES[@]}" 2>/dev/null | sort -u)
+      EXPORTED_COUNT=$(echo "$EXPORTED" | grep -c . || true)
+
+      # Live ORG events API — whole-day boundaries to bracket the
+      # export's per-day captures. NOTE: `org events`, not `tenant events`.
+      # Dates slide with the run date and match the relative window in
+      # the prompt (5 days ago through 2 days ago).
+      FROM=$(date -u -d '5 days ago' +%Y-%m-%d)
+      TO=$(date -u -d '2 days ago' +%Y-%m-%d)
+      LIVE_JSON=$(uip admin audit org events \
+        --from-date "${FROM}T00:00:00Z" \
+        --to-date   "${TO}T23:59:59.999Z" \
+        --limit 50000 --output json)
+      LIVE=$(echo "$LIVE_JSON" | jq -r '.Data.auditEvents[].id' | sort -u)
+      LIVE_COUNT=$(echo "$LIVE" | grep -c . || true)
+
+      # Export ⊆ Live (LTS lag means events can have *more* than export,
+      # but every export ID must appear in events).
+      MISSING=$(comm -23 <(echo "$EXPORTED") <(echo "$LIVE") | grep -c . || true)
+
+      echo "exported=$EXPORTED_COUNT  live=$LIVE_COUNT  missing_from_live=$MISSING"
+      if [ "$MISSING" -gt 0 ]; then
+        echo "FAIL: $MISSING org export IDs not found in events API" >&2
+        comm -23 <(echo "$EXPORTED") <(echo "$LIVE") | head -5 >&2
+        exit 1
+      fi
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
