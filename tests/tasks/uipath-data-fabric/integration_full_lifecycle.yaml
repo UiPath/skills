@@ -1,11 +1,15 @@
 task_id: skill-datafabric-integration-full-lifecycle
 description: >
   Integration test: agent performs a complete Data Fabric lifecycle against a
-  live tenant — verifies login, discovers or creates an entity, retrieves the
-  schema to collect field IDs from Fields[].ID, adds and updates fields, inserts
-  records, queries with a filter, updates one record, verifies the update with
-  records get, and deletes only the test records. Tests the full Discover → Act →
-  Verify workflow combining schema management and record CRUD in one multi-step run.
+  live tenant — verifies login, discovers or creates an entity with advanced
+  per-type field constraints (lengthLimit on STRING, minValue / maxValue on
+  INTEGER), retrieves the schema to collect field IDs and confirms the
+  constraints come back under Fields[].fieldDataType, adds and updates fields
+  (including tightening a constraint via updateFields), inserts records,
+  queries with a filter, updates one record, verifies the update with
+  records get, and deletes only the test records. Tests the full Discover →
+  Act → Verify workflow combining schema management, advanced field
+  constraints, and record CRUD in one multi-step run.
 tags: [uipath-data-fabric, integration, entities, records]
 
 agent:
@@ -27,19 +31,23 @@ initial_prompt: |
      whatever tenant is currently active.
 
   2. List native-only entities. If an entity named "LifecycleTest" already exists,
-     use its ID. If not, create it with fields:
-       - Label (STRING)
-       - Score (INTEGER)
+     use its ID. If not, create it with fields and advanced constraints:
+       - Label  (STRING,  lengthLimit 200)
+       - Score  (INTEGER, minValue 0, maxValue 1000)
        - Active (BOOLEAN)
 
   3. Retrieve the full schema for LifecycleTest using entities get.
      From the Fields array, note the ID (Fields[].ID) for the Score field.
+     Confirm the response echoes the constraints back under
+     Fields[].fieldDataType.{lengthLimit,minValue,maxValue} — print them so
+     they are visible in the transcript.
 
-  4. Add a new field to the entity: Notes (STRING).
+  4. Add a new field to the entity: Notes (MULTILINE_TEXT, lengthLimit 2000).
 
-  5. Update the Score field: set displayName to "Test Score" and isRequired to true.
-     Use the field ID from step 3 in the updateFields body — the payload key is
-     "id" (lowercase), not "ID".
+  5. Update the Score field: set displayName to "Test Score", isRequired to
+     true, and tighten maxValue from 1000 to 500. Use the field ID from
+     step 3 in the updateFields body — the payload key is "id" (lowercase),
+     not "ID".
 
   6. Insert two records:
        - { "Label": "alpha", "Score": 10, "Active": true }
@@ -167,6 +175,30 @@ success_criteria:
     description: "Agent included Id key in records update body"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+records\s+update.*\"Id\"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied lengthLimit on a field (via entities create or addFields on update)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*lengthLimit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied minValue/maxValue on a numeric field (via entities create or update)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*(minValue|maxValue)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent tightened a numeric constraint via updateFields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*updateFields.*(minValue|maxValue)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
