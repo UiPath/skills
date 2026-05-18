@@ -4,7 +4,7 @@ description: >
   AgentHub server. Bake project=MOCKPROJ and issue type=10 into staticValues with
   designTimeLookups populated; LLM provides summary (required) and description.
   Uses the manifest-driven uip mock — no real tenant call.
-tags: [uipath-mcp-servers, agenthub, is-activity, cascade, designtimelookups, e2e]
+tags: [uipath-mcp-servers, e2e, mode:build]
 
 agent:
   type: claude-code

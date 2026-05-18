@@ -11,11 +11,13 @@ tests/tasks/uipath-mcp-servers/
 │       └── mocks/
 │           └── uip                       # shared Python dispatcher (copy of diagnostics/_shared)
 ├── README.md                             # this file
-├── jira-create/                          # cascade + designTimeLookups
-├── slack-create/                         # reference fields (channel, send_as)
-├── outlook-create/                       # GET with timezone reference
-├── gmail-create/                         # array reference exposed at runtime
-└── jira-update-fix-lookups/              # high-leverage: fix missing labels on existing tool
+├── jira-create/                          # cascade + designTimeLookups (IS-activity)
+├── slack-create/                         # reference fields (channel, send_as) (IS-activity)
+├── outlook-create/                       # GET with timezone reference (IS-activity)
+├── gmail-create/                         # array reference exposed at runtime (IS-activity)
+├── jira-update-fix-lookups/              # high-leverage: fix missing labels on existing tool (IS-activity)
+├── remote-create/                        # generic Server Types: remote MCP + asset substitution + refresh-tools
+└── resource-create/                      # generic Tool Kinds: create-resource on a uipath-type server
     ├── task.yaml                         # TaskDefinition; uses --dry-run on every mutation
     └── fixtures/
         └── mocks/
@@ -37,13 +39,17 @@ A passing run produces `score: 1.0`. Inspect `mocks/.calls.jsonl` in the run art
 
 ## Coverage
 
-| Scenario | Hard Rules exercised | Key assertion |
+Rule numbers below reference SKILL.md generic Critical Rules (1-6) and the IS-Activity-Specific Critical Rules (IS 1-5) in `references/is-activity-workflow.md`.
+
+| Scenario | Rules exercised | Key assertion |
 |---|---|---|
-| `jira-create`              | 2, 4, 7, 8 | cascade `-f` expands schema; both lookups populated; `--description` present |
-| `slack-create`             | 4, 8       | `send_as` lookup (`Bot - bot`); channel exposed in inputSchema |
-| `outlook-create`           | 4, 7, 8    | parameters-only schema; `outputTimezone` reference resolved |
-| `gmail-create`             | 4, 8       | array reference (`addLabelIds[*]`) exposed at runtime — no lookup needed |
-| `jira-update-fix-lookups`  | 8 + update | fetch existing → diagnose missing lookups → rebuild → update with scalars |
+| `jira-create`              | IS 1, IS 4, IS 5 + generic 4 | cascade `-f` expands schema; both lookups populated; `--description` present |
+| `slack-create`             | IS 5 + generic 4             | `send_as` lookup (`Bot - bot`); channel exposed in inputSchema |
+| `outlook-create`           | IS 4, IS 5 + generic 4       | parameters-only schema; `outputTimezone` reference resolved |
+| `gmail-create`             | IS 5 + generic 4             | array reference (`addLabelIds[*]`) exposed at runtime — no lookup needed |
+| `jira-update-fix-lookups`  | IS 5 + update                | fetch existing → diagnose missing lookups → rebuild → update with scalars |
+| `remote-create`            | generic 2, 3, 4, 5           | slug regex compliance; discover payload shape via `--print-schema`/`template remote`; submit via `--file`/`--body`; refresh-tools + verify |
+| `resource-create`          | generic 4, 5                 | `mcp-tools create-resource` (NOT `create-is-activity`); `--category automation`; `candidates --category automation`; `template resource`; verify via `mcp-tools list` |
 
 ## Why synthetic fixtures (not live captures)
 
@@ -53,7 +59,7 @@ If you need to validate the skill against a real tenant, **don't commit those ca
 
 ## Capturing fresh shapes from a live tenant (for fixture maintenance)
 
-When a real CLI response shape changes (new field, renamed key), recapture out-of-band and translate the shape to a synthetic fixture. The full command set the skill exercises:
+When a real CLI response shape changes (new field, renamed key), recapture out-of-band and translate the shape to a synthetic fixture. The full command set the skill exercises (across IS-activity AND server CRUD / non-IS tool kinds):
 
 ```bash
 # Folder enumeration
