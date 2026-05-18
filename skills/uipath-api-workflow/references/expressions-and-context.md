@@ -59,7 +59,7 @@ ${$context.outputs?.Javascript_1?.items ?? []}
 
 ### Connector Output Access (Http kind + IntSvc kind)
 
-Connector activities (`call: "UiPath.Http"` / `call: "UiPath.IntSvc"`) wrap the response in `{ statusCode, content, headers }`. The actual payload lives under **`.content`** — reading at the root returns `undefined`. The export bucket key is **camelCase** (`slack_send_message_1`), not the PascalCase slot key (`Slack_Send_Message_1`).
+Connector activities (`call: "UiPath.Http"` / `call: "UiPath.IntSvc"`) wrap the response — the actual payload lives under **`.content`** (the wrapper also carries `statusCode`, `statusText`, `headers`, `ok`, `request`, `vendorProcessingTimeMs`; usually you only need `.content`). Reading at the root returns `undefined`. Use `Data.ExportBucketKey` from the stub — for connector activities the slot key (in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ; the stub returns both.
 
 **The fields available under `.content` come from the stub's `Data.ResponseFields` array — never guess.** If a property isn't listed there, it's not in the response shape. See [connector-activity-discovery.md — Vendor curated activity response shape](connector-activity-discovery.md#vendor-curated-activity-response-shape--contentx-not-x).
 
@@ -82,10 +82,14 @@ ${$context.outputs.slack_send_message_1.content.ok}      // true
 ${$context.outputs.slack_send_message_1.content.ts}      // message timestamp
 ${$context.outputs.slack_send_message_1.content.channel}
 
-// ✅ List-shaped vendor responses — items live under .content.value[]
-${$context.outputs.listUsers_1.content.value}            // the array
-${$context.outputs.listUsers_1.content.value?.[0]?.displayName}
-${$context.outputs.searchIssues_1.content.value?.length}
+// ✅ List-shaped vendor responses — .content is usually the array directly
+// (IS proxy strips vendor list envelopes like M365 Graph's { value: [...] }).
+// Read the stub's outputJsonSchema.type to confirm:
+//   type: "array"  → .content IS the array        → .content[0].<field>
+//   type: "object" → .content is a single object  → .content.<field>
+${$context.outputs.listEmails_1.content}                       // verified: bare array (Outlook ListEmails)
+${$context.outputs.listEmails_1.content?.[0]?.subject}
+${$context.outputs.listEmails_1.content?.length}
 
 // ✅ Null-safe chains for optional fields
 ${$context.outputs?.getNewestEmail_1?.content?.subject ?? "(no subject)"}
@@ -97,7 +101,8 @@ Inside a JsInvoke script, the local CLI runtime sometimes returns `content` as a
 const out = $context.outputs.getNewestEmail_1;
 const raw = out && (out.content !== undefined ? out.content : out);
 const body = (typeof raw === 'string') ? JSON.parse(raw) : raw;
-const subject = body?.subject ?? body?.value?.[0]?.subject ?? '';
+const item = Array.isArray(body) ? body[0] : body;
+const subject = item?.subject ?? '';
 return { subject };
 ```
 
