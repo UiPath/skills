@@ -1,9 +1,9 @@
 task_id: skill-platform-webhook-signed-e2e
 description: >
-  E2E webhook + signed payload (Confluence S58). Provisions a webhook.site
-  receiver URL, subscribes a webhook to Job.* events with a secret, fires a
-  job, fetches the inbound POST from webhook.site, verifies the HMAC SHA-256
-  signature matches the secret.
+  E2E (Confluence S58): agent creates a webhook with a secret, triggers a
+  job, fetches the inbound POST from webhook.site, verifies HMAC SHA-256
+  signature, writes the verification result to a file the check reads.
+  State check + behavioral artifact (signature verification result).
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, webhooks]
 
 agent:
@@ -16,29 +16,38 @@ sandbox:
 
 pre_run:
   - command: "TASK_ID=webhook-signed python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
-    timeout: 120
+    timeout: 180
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
     timeout: 180
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `process_key`.
+  Use the `uipath-platform` skill.
 
-  Steps (use `--output json` for uip, curl for HTTP):
-  1. GET `https://webhook.site/token` → captures `{"uuid": "<id>"}`. Receiver URL: `https://webhook.site/<id>`. Save to `receiver.json`.
-  2. Generate a 32-byte hex secret. Save to `secret.txt`.
-  3. `uip resource webhooks create --name <uuid8>-signed --url <receiver-url> --events "Job.Completed" --secret "$(cat secret.txt)" --allow-insecure-ssl` → `webhook_create.json`. Capture key.
-  4. Append manifest entry.
-  5. `uip or jobs start <process_key> --wait-for-completion --runtime-type Serverless` → `job.json`.
-  6. Sleep 15 seconds.
-  7. GET `https://webhook.site/token/<id>/requests?sorting=newest` → `inbound.json`.
-  8. Verify HMAC SHA-256: the X-UiPath-Signature header on the latest request must equal hmac_sha256(secret, body). Save the result to `verify.txt`.
-  9. Delete the webhook.
+  `seed.json` provides `uuid8`, `process_key`, `folder_path` (the deploy folder).
+
+  Goal:
+  1. Leave the tenant with a webhook named `e2e-webhook-signed-<uuid8>`
+     subscribed to `Job.Completed`, with a known secret. URL must point at a
+     fresh webhook.site receiver (GET `https://webhook.site/token` first to
+     get a UUID + URL).
+  2. Trigger a `Job.Completed` event for `process_key`, then fetch the
+     inbound POST from webhook.site's requests API. Verify the
+     `X-UiPath-Signature` header matches `HMAC-SHA256(secret, raw-body)` —
+     write the boolean result to `signature_verified.txt` (just `true` or
+     `false`).
+
+  Append a manifest record for the webhook:
+  `{"kind": "webhook", "key": "<webhook-key>"}`
+
+  Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: file_exists
-    description: "webhook.site inbound captured"
-    path: "inbound.json"
-    weight: 1.5
+  - type: run_command
+    description: "Tenant state: webhook exists; behavioral: signature verified"
+    command: "python3 $TASK_DIR/check_webhook_signed.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0

@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
-"""Verify the solution deploy round-trip: publish → deploy → list-contains → uninstall."""
+"""Query tenant: deploy with expected name is in list; folder + process exist."""
 
 import json
+import subprocess
 import sys
 from pathlib import Path
-
-
-def load(name: str) -> dict:
-    p = Path(name)
-    if not p.is_file():
-        sys.exit(f"FAIL: {name} not found")
-    try:
-        return json.loads(p.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {name} is not valid JSON: {e}")
 
 
 def _pick(d, *names):
@@ -26,56 +17,46 @@ def _pick(d, *names):
     return None
 
 
-seed = load("seed.json")
+def uip_json(*args: str) -> dict:
+    r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=60)
+    if not r.stdout.strip():
+        sys.exit(f"FAIL: uip {' '.join(args)} no stdout")
+    return json.loads(r.stdout)
+
+
+seed = json.loads(Path("seed.json").read_text())
 uuid8 = seed.get("uuid8")
 if not uuid8:
-    sys.exit("FAIL: seed.json has no uuid8")
-deploy_name = f"{uuid8}-deploy"
+    sys.exit("FAIL: seed.json missing uuid8")
 
+deploy_name = f"e2e-deploy-{uuid8}"
+folder_name = f"e2e-deploy-folder-{uuid8}"
 
-def assert_ok(env: dict, label: str, allow_already_exists: bool = False):
-    result = env.get("Result")
-    if result == "Success":
-        return env.get("Data")
-    if allow_already_exists:
-        msg = (env.get("Message") or "").lower()
-        if "already exists" in msg or "duplicate" in msg or "conflict" in msg:
-            return env.get("Data")
-    sys.exit(f"FAIL: {label} Result={result!r} Message={env.get('Message')!r}")
-
-
-# 1. Publish succeeded (or was already published — idempotent)
-publish = load("publish.json")
-publish_data = assert_ok(publish, "publish", allow_already_exists=True) or {}
-package_name = _pick(publish_data, "PackageName")
-if package_name and package_name != "e2e-stub":
-    sys.exit(f"FAIL: published package name = {package_name!r}, expected 'e2e-stub'")
-
-# 2. Deploy reached a terminal state
-deploy = load("deploy_run.json")
-deploy_data = assert_ok(deploy, "deploy_run") or {}
-status = _pick(deploy_data, "Status") or ""
-if status not in ("DeploymentSucceeded", "DeploymentSuccessful", "Succeeded"):
-    sys.exit(f"FAIL: deploy_run status = {status!r}, expected DeploymentSucceeded")
-folder_path = _pick(deploy_data, "FolderPath") or ""
-if "Shared" not in folder_path:
-    sys.exit(f"FAIL: deploy folder_path = {folder_path!r}, expected to contain 'Shared'")
-
-# 3. List contained the deploy
-lst = load("deploy_list.json")
-lst_data = assert_ok(lst, "deploy_list")
-items = lst_data if isinstance(lst_data, list) else (
-    _pick(lst_data, "Value", "Items", "Results") or []
-)
-names = [_pick(it, "Name") or _pick(it, "DeploymentName") for it in items if isinstance(it, dict)]
+# Deploy in list
+dl = uip_json("solution", "deploy", "list")
+if dl.get("Result") != "Success":
+    sys.exit(f"FAIL: deploy list Result={dl.get('Result')!r}")
+items = dl.get("Data") or []
+if isinstance(items, dict):
+    items = _pick(items, "Value", "Items", "Results") or []
+names = [_pick(d, "Name") or _pick(d, "DeploymentName") for d in items if isinstance(d, dict)]
 if deploy_name not in names:
-    sys.exit(f"FAIL: deploy_list does not contain {deploy_name!r}; saw {names[:5]}")
+    sys.exit(f"FAIL: deploy {deploy_name!r} not in deploy list; saw {names[:5]}")
 
-# 4. Uninstall succeeded
-uninstall = load("uninstall.json")
-uninstall_data = assert_ok(uninstall, "uninstall") or {}
-ustatus = _pick(uninstall_data, "Status") or ""
-if "Uninstall" not in ustatus:
-    sys.exit(f"FAIL: uninstall status = {ustatus!r}, expected SuccessfulUninstall")
+# Folder exists
+folder_path = f"Shared/{folder_name}"
+fg = uip_json("or", "folders", "get", folder_path)
+if fg.get("Result") != "Success":
+    sys.exit(f"FAIL: folder {folder_path!r} not present: {fg.get('Message')!r}")
 
-print(f"OK: deploy {deploy_name!r} round-trip — published, deployed ({folder_path}), listed, uninstalled ({ustatus})")
+# Process in folder
+pl = uip_json("or", "processes", "list", "--folder-path", folder_path)
+if pl.get("Result") != "Success":
+    sys.exit(f"FAIL: processes list in {folder_path!r}: {pl.get('Message')!r}")
+procs = pl.get("Data") or []
+if isinstance(procs, dict):
+    procs = _pick(procs, "Value", "Items", "Results") or []
+if not procs:
+    sys.exit(f"FAIL: folder {folder_path!r} has no processes")
+
+print(f"OK: deploy {deploy_name!r} in list; folder {folder_path!r} has {len(procs)} process(es)")

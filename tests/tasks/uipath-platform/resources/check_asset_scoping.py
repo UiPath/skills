@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
-"""Verify asset folder scoping: created-in-A asset is in list_in_a, absent from list_in_b."""
+"""Query tenant: asset by name in folder A only, never in B."""
 
 import json
+import subprocess
 import sys
 from pathlib import Path
-
-
-def load(name: str) -> dict:
-    p = Path(name)
-    if not p.is_file():
-        sys.exit(f"FAIL: {name} not found")
-    try:
-        return json.loads(p.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {name} is not valid JSON: {e}")
 
 
 def _pick(d, *names):
@@ -26,33 +17,38 @@ def _pick(d, *names):
     return None
 
 
-create = load("create.json")
-if create.get("Result") != "Success":
-    sys.exit(f"FAIL: create Result={create.get('Result')!r}")
-asset_key = _pick(create.get("Data") or {}, "Key", "Id")
-if not asset_key:
-    sys.exit("FAIL: create.json has no Data.Key/key")
+def uip_json(*args: str) -> dict:
+    r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=60)
+    if not r.stdout.strip():
+        sys.exit(f"FAIL: uip {' '.join(args)} no stdout")
+    return json.loads(r.stdout)
 
 
-def list_keys(env: dict, label: str) -> list[str]:
+def list_asset_names(folder_path: str) -> list[str]:
+    env = uip_json("resource", "assets", "list", "--folder-path", folder_path)
     if env.get("Result") != "Success":
-        sys.exit(f"FAIL: {label} Result={env.get('Result')!r}")
-    data = env.get("Data")
-    if isinstance(data, list):
-        items = data
-    elif isinstance(data, dict):
-        items = _pick(data, "Value", "Items", "Results") or []
-    else:
-        items = []
-    return [_pick(it, "Key", "Id") for it in items if isinstance(it, dict)]
+        sys.exit(f"FAIL: assets list {folder_path!r}: {env.get('Result')!r}")
+    items = env.get("Data") or []
+    if isinstance(items, dict):
+        items = _pick(items, "Value", "Items", "Results") or []
+    return [_pick(a, "Name") for a in items if isinstance(a, dict)]
 
 
-in_a = list_keys(load("list_in_a.json"), "list_in_a")
-in_b = list_keys(load("list_in_b.json"), "list_in_b")
+seed = json.loads(Path("seed.json").read_text())
+uuid8 = seed.get("uuid8")
+folder_a = seed.get("folder_a_path")
+folder_b = seed.get("folder_b_path")
+if not (uuid8 and folder_a and folder_b):
+    sys.exit("FAIL: seed.json missing required fields")
 
-if asset_key not in in_a:
-    sys.exit(f"FAIL: asset {asset_key} not in folder A list; got {len(in_a)} keys")
-if asset_key in in_b:
-    sys.exit(f"FAIL: asset {asset_key} leaked into folder B list — folder scoping broken")
+asset_name = f"e2e-asset-scoping-{uuid8}"
 
-print(f"OK: asset {asset_key} visible in A ({len(in_a)} total), absent from B ({len(in_b)} total)")
+names_a = list_asset_names(folder_a)
+names_b = list_asset_names(folder_b)
+
+if asset_name not in names_a:
+    sys.exit(f"FAIL: {asset_name!r} not in A list: {names_a}")
+if asset_name in names_b:
+    sys.exit(f"FAIL: {asset_name!r} leaked into B list — scoping broken")
+
+print(f"OK: {asset_name!r} scoped to A only")

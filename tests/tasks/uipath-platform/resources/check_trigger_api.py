@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""Verify API trigger lifecycle: slug+method persist; name update reflected."""
+"""Query tenant state to verify an API trigger exists with the expected fields."""
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
 
-def load(name: str) -> dict:
-    p = Path(name)
+def load_seed() -> dict:
+    p = Path("seed.json")
     if not p.is_file():
-        sys.exit(f"FAIL: {name} not found")
-    try:
-        return json.loads(p.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {name} is not valid JSON: {e}")
+        sys.exit("FAIL: seed.json not found")
+    return json.loads(p.read_text())
 
 
 def _pick(d, *names):
@@ -26,32 +24,43 @@ def _pick(d, *names):
     return None
 
 
-def ok(env, label):
-    if env.get("Result") != "Success":
-        sys.exit(f"FAIL: {label} Result={env.get('Result')!r} Message={env.get('Message')!r}")
-    return env.get("Data") or {}
+def uip_json(*args: str, timeout: int = 60) -> dict:
+    r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=timeout)
+    if not r.stdout.strip():
+        sys.exit(f"FAIL: uip {' '.join(args)} returned no stdout (stderr={r.stderr[:200]})")
+    try:
+        return json.loads(r.stdout)
+    except json.JSONDecodeError as e:
+        sys.exit(f"FAIL: uip {' '.join(args)} non-JSON: {e}: {r.stdout[:200]}")
 
 
-seed = load("seed.json")
+seed = load_seed()
 uuid8 = seed.get("uuid8")
-if not uuid8:
-    sys.exit("FAIL: seed.json has no uuid8")
+folder_path = seed.get("folder_path")
+if not uuid8 or not folder_path:
+    sys.exit(f"FAIL: seed.json missing uuid8 or folder_path")
 
-after_create = ok(load("get_after_create.json"), "get_after_create")
-after_update = ok(load("get_after_update.json"), "get_after_update")
+expected_name = f"e2e-trigger-api-{uuid8}-renamed"
+expected_slug = f"e2e-trigger-api-{uuid8}-slug"
 
-slug = _pick(after_create, "Slug")
-method = _pick(after_create, "Method")
-if slug != f"{uuid8}-api-slug":
-    sys.exit(f"FAIL: slug={slug!r}, expected '{uuid8}-api-slug'")
+envelope = uip_json("resource", "triggers", "list", "--type", "api", "--folder-path", folder_path)
+if envelope.get("Result") != "Success":
+    sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
+items = envelope.get("Data")
+if isinstance(items, dict):
+    items = _pick(items, "Value", "Items", "Results") or []
+items = items or []
+
+match = next((t for t in items if _pick(t, "Name") == expected_name), None)
+if not match:
+    names = [_pick(t, "Name") for t in items]
+    sys.exit(f"FAIL: no trigger named {expected_name!r} in {folder_path!r}; saw {names}")
+
+slug = _pick(match, "Slug")
+method = _pick(match, "Method")
+if slug != expected_slug:
+    sys.exit(f"FAIL: trigger slug={slug!r}, expected {expected_slug!r}")
 if str(method).lower() != "post":
-    sys.exit(f"FAIL: method={method!r}, expected 'Post'")
+    sys.exit(f"FAIL: trigger method={method!r}, expected 'Post'")
 
-name_before = _pick(after_create, "Name")
-name_after = _pick(after_update, "Name")
-if name_before == name_after:
-    sys.exit(f"FAIL: name did not change after update — both {name_before!r}")
-if name_after != f"{uuid8}-api-renamed":
-    sys.exit(f"FAIL: name after update = {name_after!r}, expected '{uuid8}-api-renamed'")
-
-print(f"OK: trigger slug={slug!r} method={method!r} persisted; name {name_before!r} → {name_after!r}")
+print(f"OK: API trigger {expected_name!r} exists with slug={slug!r}, method={method!r}")

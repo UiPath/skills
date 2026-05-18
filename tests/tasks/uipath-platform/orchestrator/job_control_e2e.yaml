@@ -1,8 +1,8 @@
 task_id: skill-platform-job-control-e2e
 description: >
-  E2E job stop + restart: start a long-running job, stop it via SoftStop,
-  verify state goes to Stopped/Stopping, restart, wait for terminal state.
-  Verifies the state-transition sequence is monotonically valid.
+  E2E: agent uses the skill to exercise the stop/restart job control flow on
+  the long-running seeded process. Writes the observed state transition
+  sequence to a file the check reads.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, orchestrator, jobs]
 
 agent:
@@ -15,28 +15,36 @@ sandbox:
 
 pre_run:
   - command: "TASK_ID=job-control SEED_PROCESS_LONG=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
-    timeout: 120
+    timeout: 180
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
     timeout: 180
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `process_key`.
+  Use the `uipath-platform` skill.
 
-  Steps (use `--output json`):
-  1. `jobs start <process_key> --runtime-type Serverless` → `start.json`. Capture job key.
-  2. Wait a few seconds for the job to reach Running.
-  3. `jobs stop <job-key> --strategy SoftStop` → `stop.json`.
-  4. Poll `jobs get` every 5s until state ∈ {Stopped, Stopping, Faulted}. Save to `get_after_stop.json`.
-  5. `jobs restart <job-key>` → `restart.json`.
-  6. Poll terminal state. Save to `get_terminal.json`.
+  `seed.json` provides `process_key` (a long-running stub that delays ~30s
+  before completing) and `folder_path`.
+
+  Goal: start a job, stop it (SoftStop), observe the stopping state, restart
+  it, wait for terminal. Write a JSON summary to `job_control.json`:
+  ```
+  {
+    "first_job_key": "<first job key>",
+    "state_after_stop": "<state observed after stop, e.g. Stopping/Stopped/Faulted>",
+    "restart_job_key": "<job key returned by restart>",
+    "restart_terminal": "<Successful|Faulted|Stopped>"
+  }
+  ```
+
+  Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent issued stop and restart"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+jobs\s+(stop|restart)'
-    min_count: 2
-    weight: 2.0
+  - type: run_command
+    description: "State transitions through stop, restart reached terminal"
+    command: "python3 $TASK_DIR/check_job_control.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0

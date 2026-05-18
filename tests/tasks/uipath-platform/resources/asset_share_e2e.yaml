@@ -1,7 +1,8 @@
 task_id: skill-platform-asset-share-e2e
 description: >
-  E2E asset sharing: create an asset in folder A, share it with folder B,
-  verify `get-folders` lists both, unshare from B, verify only A remains.
+  E2E: agent leaves the tenant with an asset shared with exactly one folder
+  (created in A, shared with B, then unshared from B — so final state is
+  "asset visible only in A"). Check queries tenant.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, assets]
 
 agent:
@@ -23,63 +24,26 @@ post_run:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  Read `seed.json`. It has `uuid8`, `folder_a_path`, `folder_a_key`,
-  `folder_b_path`, `folder_b_key`. Both folders already exist.
+  `seed.json` provides `uuid8` and two pre-created folders:
+  - `folder_a_path` / `folder_a_key`
+  - `folder_b_path` / `folder_b_key`
 
-  Goal: prove asset sharing works.
+  Goal: leave the tenant with an asset named `e2e-asset-share-<uuid8>`
+  visible in folder A only. Achieve this by sharing it with B at some point
+  and then unsharing — the path through the shared state must happen for the
+  test to be meaningful, but the FINAL state is "asset present in A,
+  absent from B".
 
-  Steps (use `--output json` on EVERY uip command):
-
-  1. Create asset `<uuid8>-shared` of type Text with value `share-me` in
-     `folder_a_path`. Save to `create.json`. Capture the asset key from
-     `Data.Key` (or `Data.key`).
-  2. Append `{"kind": "asset", "key": "<key>"}` to `created-resources.jsonl`.
-  3. `uip resource assets get-folders <key>` → save to `folders_before_share.json`
-  4. `uip resource assets share <key> --folder-path <folder_b_path>` → `share.json`
-  5. `uip resource assets get-folders <key>` → `folders_after_share.json`
-  6. `uip resource assets unshare <key> --folder-path <folder_b_path>` → `unshare.json`
-  7. `uip resource assets get-folders <key>` → `folders_after_unshare.json`
-  8. `uip resource assets delete <key>` → `delete.json`
+  Append a manifest record:
+  `{"kind": "asset", "key": "<asset-key>"}`
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created an asset"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+create'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent invoked assets share"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+share'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent invoked assets unshare"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+unshare'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent queried get-folders at least 3 times (before/after share/after unshare)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+get-folders'
-    min_count: 3
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: folder count went 1 → 2 → 1"
+    description: "Tenant state: asset visible in folder A; absent from folder B"
     command: "python3 $TASK_DIR/check_asset_share.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

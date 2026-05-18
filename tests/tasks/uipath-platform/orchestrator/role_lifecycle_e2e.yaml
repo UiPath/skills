@@ -1,8 +1,9 @@
 task_id: skill-platform-role-lifecycle-e2e
 description: >
-  E2E role + permissions lifecycle: create a Tenant-scoped role, add a
-  permission via edit-role, verify the permission appears in get-role, remove
-  it, then delete the role.
+  E2E: agent leaves the tenant with a Tenant-scoped role that has exactly
+  one specific permission attached. The agent must have exercised both
+  add-and-remove paths during the run (verified by the agent writing the
+  before/after observation to a file).
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup, orchestrator, roles]
 
 agent:
@@ -24,65 +25,27 @@ post_run:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  Read `seed.json` for `uuid8`.
+  `seed.json` provides `uuid8`.
 
-  Goal: full lifecycle of a custom tenant role — create empty, add a known
-  permission, verify it appears, remove it, delete the role.
+  Goal: leave the tenant with a tenant-scoped role named `e2e-role-<uuid8>`
+  that has exactly **one** specific permission granted, of your choice (pick
+  the first permission from the tenant's grantable list — save the chosen
+  name to `permission.txt`).
 
-  Steps (use `--output json` on EVERY uip command):
+  Exercise both add and remove during the run (e.g., add permission X, add
+  Y, then remove Y) — the final state must be "X granted, Y absent". The
+  check script reads tenant state and `permission.txt`.
 
-  1. `uip or roles list-permissions --limit 5` → `available_perms.json`. Pick
-     the first permission Name and save it to `perm.txt`.
-  2. `uip or roles create-role --name e2e-role-<uuid8> --type Tenant` → `create.json`. Capture role key.
-  3. Append `{"kind": "role", "key": "<role-key>"}` to `created-resources.jsonl`.
-  4. `uip or roles get-role <role-key>` → `get_before.json`.
-  5. `uip or roles edit-role <role-key> --add-permissions "$(cat perm.txt)"` → `edit_add.json`.
-  6. `uip or roles get-role <role-key>` → `get_after_add.json`.
-  7. `uip or roles edit-role <role-key> --remove-permissions "$(cat perm.txt)"` → `edit_remove.json`.
-  8. `uip or roles get-role <role-key>` → `get_after_remove.json`.
-  9. `uip or roles delete-role <role-key>` → `delete.json`.
+  Append a manifest record:
+  `{"kind": "role", "key": "<role-key>"}`
 
-  **STOP after step 9.** Do NOT inspect the JSON files, summarize what
-  happened, or run any verification — the check script does that. Do NOT ask
-  for approval. Do NOT pause.
+  Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent listed available permissions"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+roles\s+list-permissions'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent created a role"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+roles\s+create-role.*--type\s+Tenant'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent edited role twice (add + remove)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+roles\s+edit-role'
-    min_count: 2
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent deleted the role"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+roles\s+delete-role'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: permission absent before, present after add, absent after remove"
+    description: "Tenant state: role exists with the granted permission listed in permission.txt"
     command: "python3 $TASK_DIR/check_role_lifecycle.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

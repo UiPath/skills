@@ -1,8 +1,8 @@
 task_id: skill-platform-bucket-files-e2e
 description: >
-  E2E bucket file round-trip: generate a binary, get a pre-signed upload URL,
-  HTTP PUT the file, list it, get a download URL, HTTP GET it, verify
-  byte-equality (sha256). Then delete the file + bucket.
+  E2E: agent leaves the tenant with a bucket containing a file whose bytes
+  match a locally-generated source (verified by sha256 round-trip through
+  upload/download). Check queries tenant + reads local files.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, buckets]
 
 agent:
@@ -24,74 +24,28 @@ post_run:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  Read `seed.json` for `uuid8`, `folder_a_path`, `folder_a_key`.
+  `seed.json` provides `uuid8`, `folder_a_path`, `folder_a_key`.
 
-  Goal: round-trip a binary file through a UiPath Orchestrator bucket and
-  verify byte-equality via sha256. The CLI doesn't have direct upload/download
-  — use `get-upload-url` + curl PUT, and `get-download-url` + curl GET.
+  Goal: leave the tenant with a bucket named `e2e-bucket-<uuid8>` in
+  `folder_a_path` that contains a file. Before uploading, save the source
+  binary to `source.bin` in the sandbox (the check script reads it). After
+  uploading, also save a `downloaded.bin` that you downloaded back from the
+  bucket — the check script verifies both files exist and have identical
+  sha256.
 
-  Steps (use `--output json` on EVERY uip command):
+  Generate the source binary as ~64 KB of random bytes.
 
-  1. Generate 64 KB of random bytes into `source.bin`:
-     `dd if=/dev/urandom of=source.bin bs=1024 count=64`
-     Capture sha256: `shasum -a 256 source.bin > source.sha256`
-  2. `uip resource buckets create <uuid8>-bucket --folder-path <folder_a_path>` → `create_bucket.json`. Capture bucket key.
-  3. Append `{"kind": "bucket", "key": "<bucket-key>", "extra": {"folder_path": "<folder_a_path>"}}` to `created-resources.jsonl`.
-  4. `uip resource bucket-files get-upload-url <bucket-key> probe.bin --folder-path <folder_a_path>` → `upload_url.json`. The response Data has `Uri` (the pre-signed URL) and may have `Headers`.
-  5. Upload via curl PUT to that URL with `--upload-file source.bin` and any required headers (e.g. `Content-Type: application/octet-stream`, plus any headers from the response).
-  6. Append `{"kind": "bucket-file", "key": "probe.bin", "extra": {"bucket_key": "<bucket-key>", "folder_path": "<folder_a_path>"}}` to manifest.
-  7. `uip resource bucket-files list <bucket-key> --folder-path <folder_a_path>` → `list.json`. Confirm `probe.bin` appears.
-  8. `uip resource bucket-files get-download-url <bucket-key> probe.bin --folder-path <folder_a_path>` → `download_url.json`.
-  9. Download via curl GET from that URL to `downloaded.bin`.
-  10. Verify byte-equality: `shasum -a 256 downloaded.bin > downloaded.sha256` and `diff source.sha256 downloaded.sha256` (rewrite the path in one of them so the comparison only matches the hash).
-  11. `uip resource bucket-files delete <bucket-key> probe.bin --folder-path <folder_a_path>` → `delete_file.json`.
-  12. `uip resource buckets delete <bucket-key> --folder-path <folder_a_path>` → `delete_bucket.json`.
+  Append manifest records:
+  - bucket: `{"kind": "bucket", "key": "<bucket-key>", "extra": {"folder_path": "<folder_a_path>"}}`
+  - file: `{"kind": "bucket-file", "key": "<filename>", "extra": {"bucket_key": "<bucket-key>", "folder_path": "<folder_a_path>"}}`
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: file_exists
-    description: "Random source binary was generated"
-    path: "source.bin"
-    weight: 0.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent created a bucket"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+buckets\s+create'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent requested a pre-signed upload URL"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+bucket-files\s+get-upload-url'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent uploaded via curl PUT"
-    tool_name: "Bash"
-    command_pattern: 'curl.*(-X\s+PUT|--upload-file)'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent requested a pre-signed download URL"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+bucket-files\s+get-download-url'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: sha256(source) == sha256(downloaded), file listed in bucket"
+    description: "Tenant state + local: bucket has the file; sha256(source)==sha256(downloaded)"
     command: "python3 $TASK_DIR/check_bucket_files.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

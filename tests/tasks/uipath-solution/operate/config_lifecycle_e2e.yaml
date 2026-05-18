@@ -1,9 +1,8 @@
 task_id: skill-platform-solution-config-e2e
 description: >
-  E2E solution config get/set: fetch the default config of the published
-  e2e-stub package, set a property value, fetch again and confirm the value
-  round-trips through the config file. No redeploy — verifies config file
-  mutations only.
+  E2E (local config mutation): agent uses the skill's `solution deploy config`
+  surface to fetch a config file and edit a property — change is verified in
+  the resulting local JSON file. No tenant mutation.
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup, solution]
 
 agent:
@@ -23,49 +22,22 @@ post_run:
     timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `uuid8`.
+  Use the `uipath-platform` skill.
 
-  The published `e2e-stub` package is already on the tenant feed (or you can
-  publish it: `uip solution publish $SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`).
+  `seed.json` provides `uuid8`. The `e2e-stub` solution package is already
+  published on the tenant (or you can publish it from
+  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip` — idempotent).
 
-  Goal: exercise `solution deploy config get` / `set` round-trip locally —
-  no deploy/uninstall.
-
-  Steps (use `--output json` on EVERY uip command):
-
-  1. (Optional, idempotent) `uip solution publish $SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip` → `publish.json`. Treat "already exists" as success.
-  2. `uip solution deploy config get e2e-stub -d ./config_initial.json` → `config_get.json`. Verify file `config_initial.json` was written.
-  3. Pick the first resource name from `config_initial.json` (path: `resources[0].name`). Save it to `resource_name.txt`.
-  4. `uip solution deploy config set ./config_initial.json "$(cat resource_name.txt)" description "e2e-test-edit"` → `config_set.json`.
-  5. Compare `config_initial.json` to itself (it's the same file post-set). Verify the picked resource now has `configuration.description == "e2e-test-edit"`. Save the JSON to `config_after_set.json` (copy of the file).
+  Goal: end with a file `config_final.json` in the sandbox that is the result
+  of editing the first resource's `description` property to `e2e-test-edit`
+  via the skill's config commands. Save the chosen resource name to
+  `resource_name.txt`.
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent invoked config get"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\s+config\s+get'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent invoked config set"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\s+config\s+set'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Config file was fetched and edited"
-    path: "config_initial.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: description value changed to e2e-test-edit in config file"
+    description: "Local: config_final.json shows resource description changed"
     command: "python3 $TASK_DIR/check_config_lifecycle.py"
     timeout: 30
     expected_exit_code: 0

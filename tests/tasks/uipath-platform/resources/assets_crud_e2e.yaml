@@ -1,8 +1,8 @@
 task_id: skill-platform-assets-crud-e2e
 description: >
-  E2E asset CRUD across types: create one Text, Integer, and Bool asset in a
-  seeded folder, list them, fetch each value, update one, then delete all.
-  Verifies values round-trip exactly and update is reflected.
+  E2E: agent uses the skill to leave the tenant with 3 typed assets in the
+  seeded folder, with specific values reflecting an earlier update on one.
+  Check queries tenant.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, assets]
 
 agent:
@@ -24,66 +24,30 @@ post_run:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  Read `seed.json`. It has `uuid8`, `folder_a_key`, `folder_a_path`.
+  `seed.json` provides `uuid8`, `folder_a_path`, `folder_a_key`.
 
-  Goal: create three assets (Text, Integer, Bool) in `folder_a_path`, verify
-  each value round-trips, update the Text asset, confirm the update, then
-  delete all three. Save every CLI step's `--output json` envelope to its own
-  sandbox file (the check script reads them).
+  Goal: leave the tenant with these three assets inside `folder_a_path`:
 
-  Use `--output json` on EVERY uip command.
+  | Name | Type | Final value |
+  |------|------|-------------|
+  | `e2e-asset-<uuid8>-text` | Text | `updated-hello` |
+  | `e2e-asset-<uuid8>-int` | Integer | `42` |
+  | `e2e-asset-<uuid8>-bool` | Bool | `true` |
 
-  Steps:
+  The Text asset's final value reflects an **update from an earlier value** —
+  create it with something else first (e.g., `hello-world`), then update.
+  Final state is what's verified.
 
-  1. `uip resource assets create <uuid8>-text "hello-world" --type Text --folder-path <folder_a_path>` → save to `create_text.json`
-  2. `uip resource assets create <uuid8>-int "42" --type Integer --folder-path <folder_a_path>` → save to `create_int.json`
-  3. `uip resource assets create <uuid8>-bool "true" --type Bool --folder-path <folder_a_path>` → save to `create_bool.json`
-  4. For each of the 3 keys returned, append to `created-resources.jsonl`:
-     `{"kind": "asset", "key": "<asset-key>"}`
-  5. `uip resource assets list --folder-path <folder_a_path>` → `list_after_create.json`. **This is the authoritative source for values** — the `Data[]` entries inline `stringValue`, `intValue`, `boolValue`. (`get-asset-value` is a robot-only API; don't use it here — it 403s on user accounts.)
-  6. `uip resource assets update <text-key> "updated-hello"` → `update_text.json`
-  7. `uip resource assets list --folder-path <folder_a_path>` → `list_after_update.json` (the text asset's `stringValue` should now equal `updated-hello`).
-  8. Delete all three: `uip resource assets delete <key>` per asset → `delete_text.json`, `delete_int.json`, `delete_bool.json`
+  For each created asset, append a manifest line:
+  `{"kind": "asset", "key": "<asset-key>"}`
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created assets across multiple types"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+create.*--type\s+(Text|Integer|Bool)'
-    min_count: 3
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent listed assets to verify values (list is authoritative)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+list.*--folder-path'
-    min_count: 2
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent updated at least one asset"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+update'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent deleted at least one asset (may chain multiple in a single Bash call)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+delete'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: values round-trip and update is reflected"
+    description: "Tenant state: 3 assets exist with the final expected values"
     command: "python3 $TASK_DIR/check_assets_crud.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

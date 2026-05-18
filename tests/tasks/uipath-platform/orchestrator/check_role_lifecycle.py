@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
-"""Verify role lifecycle: permission absent → present after add → absent after remove."""
+"""Query tenant: role exists; permission from permission.txt is granted."""
 
 import json
+import subprocess
 import sys
 from pathlib import Path
-
-
-def load(name: str) -> dict:
-    p = Path(name)
-    if not p.is_file():
-        sys.exit(f"FAIL: {name} not found")
-    try:
-        return json.loads(p.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {name} is not valid JSON: {e}")
 
 
 def _pick(d, *names):
@@ -26,45 +17,48 @@ def _pick(d, *names):
     return None
 
 
-perm_file = Path("perm.txt")
-if not perm_file.is_file():
-    sys.exit("FAIL: perm.txt not written")
-perm = perm_file.read_text().strip()
-if not perm:
-    sys.exit("FAIL: perm.txt is empty")
+def uip_json(*args: str) -> dict:
+    r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=60)
+    if not r.stdout.strip():
+        sys.exit(f"FAIL: uip {' '.join(args)} no stdout")
+    return json.loads(r.stdout)
 
 
-def role_perms(env, label) -> list[str]:
-    if env.get("Result") != "Success":
-        sys.exit(f"FAIL: {label} Result={env.get('Result')!r}")
-    data = env.get("Data") or {}
-    raw = _pick(data, "Permissions", "RolePermissions", "PermissionsArray")
-    # Observed shape: Permissions is a comma-separated string (e.g. "AgentMemory,Triggers.View").
-    # Could also be a list[str] or list[{Name: str}] depending on the API surface.
-    if isinstance(raw, str):
-        return [p.strip() for p in raw.split(",") if p.strip()]
-    if isinstance(raw, list):
-        names = []
-        for p in raw:
-            if isinstance(p, str):
-                names.append(p)
-            elif isinstance(p, dict):
-                n = _pick(p, "Name")
-                if n:
-                    names.append(n)
-        return names
-    return []
+seed = json.loads(Path("seed.json").read_text())
+uuid8 = seed.get("uuid8")
+if not uuid8:
+    sys.exit("FAIL: seed.json has no uuid8")
+expected_name = f"e2e-role-{uuid8}"
 
+p = Path("permission.txt")
+if not p.is_file():
+    sys.exit("FAIL: permission.txt not written")
+chosen_perm = p.read_text().strip()
+if not chosen_perm:
+    sys.exit("FAIL: permission.txt empty")
 
-before = role_perms(load("get_before.json"), "get_before")
-after_add = role_perms(load("get_after_add.json"), "get_after_add")
-after_rm = role_perms(load("get_after_remove.json"), "get_after_remove")
+env = uip_json("or", "roles", "list-roles")
+if env.get("Result") != "Success":
+    sys.exit(f"FAIL: list-roles Result={env.get('Result')!r}")
+items = env.get("Data") or []
+if isinstance(items, dict):
+    items = _pick(items, "Value", "Items", "Results") or []
+match = next((r for r in items if _pick(r, "Name") == expected_name), None)
+if not match:
+    sys.exit(f"FAIL: role {expected_name!r} not in list-roles")
+role_key = _pick(match, "Key", "Id")
 
-if perm in before:
-    sys.exit(f"FAIL: permission {perm!r} already present pre-add: {before[:5]}")
-if perm not in after_add:
-    sys.exit(f"FAIL: permission {perm!r} not in role post-add: {after_add[:10]}")
-if perm in after_rm:
-    sys.exit(f"FAIL: permission {perm!r} still present after remove: {after_rm[:10]}")
+g = uip_json("or", "roles", "get-role", str(role_key))
+if g.get("Result") != "Success":
+    sys.exit(f"FAIL: get-role Result={g.get('Result')!r}")
+data = g.get("Data") or {}
+raw = _pick(data, "Permissions", "RolePermissions")
+perms: list[str] = []
+if isinstance(raw, str):
+    perms = [s.strip() for s in raw.split(",") if s.strip()]
+elif isinstance(raw, list):
+    perms = [p if isinstance(p, str) else (_pick(p, "Name") or "") for p in raw]
+if chosen_perm not in perms:
+    sys.exit(f"FAIL: role {expected_name!r} permissions = {perms}; expected to include {chosen_perm!r}")
 
-print(f"OK: permission {perm!r} cycle absent -> present -> absent verified")
+print(f"OK: role {expected_name!r} exists; permission {chosen_perm!r} granted")

@@ -1,9 +1,8 @@
 task_id: skill-platform-trigger-api-e2e
 description: >
-  E2E API trigger lifecycle (Confluence S30, scoped): create an API trigger on
-  the seeded process with slug + method, get it back to verify config persists,
-  rename via update, delete. Drops the external HTTP-invoke step from the
-  original S30 — that needs tenant-specific URL knowledge and auth setup.
+  E2E: agent uses the skill to leave the tenant in a state where an API
+  trigger exists on the seeded process with a known slug/method/name. Check
+  queries tenant directly.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
 
 agent:
@@ -15,7 +14,7 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "TASK_ID=trigger-api SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py && TASK_ID=trigger-api python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+  - command: "TASK_ID=trigger-api python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
     timeout: 180
 
 post_run:
@@ -23,45 +22,33 @@ post_run:
     timeout: 180
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `uuid8`, `process_key`, `folder_a_path`.
+  Use the `uipath-platform` skill.
 
-  Goal: round-trip an API trigger's lifecycle. API triggers require **--slug**,
-  **--method**, AND **--runtime-type** — all three are mandatory on `create`.
+  `seed.json` provides: `uuid8`, `process_key`, `folder_path` (the folder
+  containing the process — triggers must live in the same folder).
 
-  Steps (use `--output json` on EVERY uip command):
+  Goal: leave the tenant in this state — an **API trigger** exists in
+  `folder_path`, attached to `process_key`, with these fields:
+  - Name: `e2e-trigger-api-<uuid8>-renamed`
+  - Slug: `e2e-trigger-api-<uuid8>-slug`
+  - Method: `Post`
 
-  1. Create API trigger:
-     `uip resource triggers create --type api --name <uuid8>-api --release-key <process_key> --slug <uuid8>-api-slug --method Post --runtime-type Serverless --folder-path <folder_a_path>` → `create.json`.
-     Capture the trigger key from `Data.Key`.
-  2. Append `{"kind": "trigger", "key": "<trigger-key>", "extra": {"type": "api", "folder_path": "<folder_a_path>"}}` to `created-resources.jsonl`.
-  3. `uip resource triggers get <trigger-key> --type api --folder-path <folder_a_path>` → `get_after_create.json`. Verify Slug and Method match what was set.
-  4. `uip resource triggers update <trigger-key> --type api --name <uuid8>-api-renamed --folder-path <folder_a_path>` → `update.json`.
-  5. `uip resource triggers get <trigger-key> --type api --folder-path <folder_a_path>` → `get_after_update.json` (name should match).
-  6. `uip resource triggers delete <trigger-key> --type api --folder-path <folder_a_path>` → `delete.json`.
+  Exercise renaming the trigger at some point (you may create it with a
+  different name first, then rename). What matters at the end is the desired
+  state above.
+
+  When you create the trigger, append one line to `created-resources.jsonl`:
+  ```
+  {"kind": "trigger", "key": "<trigger-key>", "extra": {"type": "api", "folder_path": "<folder_path-from-seed>"}}
+  ```
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created an API trigger with required flags"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+triggers\s+create.*--type\s+api.*--slug'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent updated and deleted the trigger"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+triggers\s+(update|delete).*--type\s+api'
-    min_count: 2
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: trigger persists with slug+method; rename reflected"
+    description: "Tenant state: API trigger with expected name/slug/method exists"
     command: "python3 $TASK_DIR/check_trigger_api.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

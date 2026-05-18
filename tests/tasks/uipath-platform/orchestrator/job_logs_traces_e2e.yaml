@@ -1,8 +1,8 @@
 task_id: skill-platform-job-logs-traces-e2e
 description: >
-  E2E: start a job for the seeded process, wait for completion, fetch logs and
-  traces, verify the round-trip (job reached terminal state, logs matched the
-  job key, spans were emitted).
+  E2E: agent uses the skill to start a job on the seeded process, wait for
+  completion, and verify (locally) that logs + traces were retrievable.
+  Writes a small observation file the check reads.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:discover, orchestrator, jobs]
 
 agent:
@@ -15,34 +15,39 @@ sandbox:
 
 pre_run:
   - command: "TASK_ID=job-logs-traces python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
-    timeout: 120
+    timeout: 180
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
     timeout: 180
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `process_key`.
+  Use the `uipath-platform` skill.
 
-  Steps (use `--output json`):
-  1. `uip or jobs start <process_key> --wait-for-completion --runtime-type Serverless` → `job_start.json`. Capture job key.
-  2. `uip or jobs get <job-key>` → `job_get.json`. Verify state ∈ {Successful, Faulted, Stopped}.
-  3. `uip or jobs logs <job-key>` → `logs.json`. Verify each log entry's JobKey matches.
-  4. `uip or jobs traces <job-key>` → `traces.json`. Up to 6 retries (15s sleep between) if Data is empty — trace ingestion can lag.
+  `seed.json` provides `process_key` and `folder_path`.
+
+  Goal: start a job for `process_key`, wait for it to reach a terminal state,
+  retrieve logs and traces. Write a JSON summary to `job_outcome.json` with
+  these fields:
+  ```
+  {
+    "job_key": "<job-key>",
+    "terminal_state": "<Successful|Faulted|Stopped>",
+    "log_count": <number of log entries returned>,
+    "span_count": <number of trace spans returned>
+  }
+  ```
+
+  Trace ingestion may lag — be patient (retry traces fetch a few times if Data
+  is empty initially).
+
+  Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent started a job and waited for completion"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+jobs\s+start.*--wait-for-completion'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent fetched logs and traces"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+jobs\s+(logs|traces)'
-    min_count: 2
-    weight: 1.5
+  - type: run_command
+    description: "Job reached terminal state and produced logs + traces"
+    command: "python3 $TASK_DIR/check_job_logs_traces.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0

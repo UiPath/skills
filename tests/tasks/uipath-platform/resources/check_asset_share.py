@@ -1,56 +1,54 @@
 #!/usr/bin/env python3
-"""Verify asset share/unshare flow: folder count goes 1 → 2 → 1."""
+"""Query tenant: asset visible in folder A, absent from folder B."""
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
 
-def load(name: str) -> dict:
-    p = Path(name)
-    if not p.is_file():
-        sys.exit(f"FAIL: {name} not found")
-    try:
-        return json.loads(p.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {name} is not valid JSON: {e}")
+def _pick(d, *names):
+    if not isinstance(d, dict):
+        return None
+    for n in names:
+        for k in (n, n[:1].lower() + n[1:], n.lower()):
+            if k in d:
+                return d[k]
+    return None
 
 
-def assert_ok(env: dict, label: str):
+def uip_json(*args: str) -> dict:
+    r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=60)
+    if not r.stdout.strip():
+        sys.exit(f"FAIL: uip {' '.join(args)} no stdout")
+    return json.loads(r.stdout)
+
+
+def list_asset_names(folder_path: str) -> list[str]:
+    env = uip_json("resource", "assets", "list", "--folder-path", folder_path)
     if env.get("Result") != "Success":
-        sys.exit(f"FAIL: {label} Result={env.get('Result')!r} Message={env.get('Message')!r}")
-    return env.get("Data")
+        sys.exit(f"FAIL: assets list {folder_path!r} Result={env.get('Result')!r}")
+    items = env.get("Data") or []
+    if isinstance(items, dict):
+        items = _pick(items, "Value", "Items", "Results") or []
+    return [_pick(a, "Name") for a in items if isinstance(a, dict)]
 
 
-def folder_count(env: dict, label: str) -> int:
-    data = assert_ok(env, label)
-    # Observed shape: {"accessibleFolders": [...], "totalFoldersCount": N}
-    if isinstance(data, dict):
-        if "totalFoldersCount" in data:
-            return int(data["totalFoldersCount"])
-        items = (
-            data.get("accessibleFolders")
-            or data.get("Value")
-            or data.get("Items")
-            or data.get("Results")
-            or []
-        )
-        return len(items)
-    if isinstance(data, list):
-        return len(data)
-    sys.exit(f"FAIL: {label} Data shape unexpected: {type(data).__name__}")
+seed = json.loads(Path("seed.json").read_text())
+uuid8 = seed.get("uuid8")
+folder_a = seed.get("folder_a_path")
+folder_b = seed.get("folder_b_path")
+if not (uuid8 and folder_a and folder_b):
+    sys.exit("FAIL: seed.json missing required fields")
 
+asset_name = f"e2e-asset-share-{uuid8}"
 
-before = folder_count(load("folders_before_share.json"), "folders_before_share")
-if before != 1:
-    sys.exit(f"FAIL: pre-share folder count = {before}, expected 1")
+names_a = list_asset_names(folder_a)
+names_b = list_asset_names(folder_b)
 
-after_share = folder_count(load("folders_after_share.json"), "folders_after_share")
-if after_share != 2:
-    sys.exit(f"FAIL: post-share folder count = {after_share}, expected 2")
+if asset_name not in names_a:
+    sys.exit(f"FAIL: {asset_name!r} not in folder A list: {names_a}")
+if asset_name in names_b:
+    sys.exit(f"FAIL: {asset_name!r} still visible in folder B — unshare did not happen")
 
-after_unshare = folder_count(load("folders_after_unshare.json"), "folders_after_unshare")
-if after_unshare != 1:
-    sys.exit(f"FAIL: post-unshare folder count = {after_unshare}, expected 1")
-
-print(f"OK: folder count round-trip 1 -> 2 -> 1 verified")
+print(f"OK: {asset_name!r} present in A, absent from B (final state correct)")

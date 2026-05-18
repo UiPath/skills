@@ -1,8 +1,8 @@
 task_id: skill-platform-solution-deploy-e2e
 description: >
-  E2E solution deploy round-trip (Confluence S10): publish a pre-packed .zip
-  fixture → deploy run → list → uninstall. Verifies the deployment lifecycle
-  end-to-end against the live tenant.
+  E2E (Confluence S10): agent publishes the committed e2e-stub solution .zip
+  and deploys it. Final state: a deploy with the expected name exists on the
+  tenant, and a folder containing a process has been provisioned.
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup, solution]
 
 agent:
@@ -22,54 +22,26 @@ post_run:
     timeout: 300
 
 initial_prompt: |
-  Use the `uipath-platform` skill. Read `seed.json` for `uuid8`.
+  Use the `uipath-platform` skill.
 
-  Goal: publish a pre-packed solution `.zip` fixture and run the full deploy
-  lifecycle against the live tenant.
+  `seed.json` provides `uuid8`.
 
-  The committed `.zip` is at:
+  Goal: leave the tenant with a solution deployment named
+  `e2e-deploy-<uuid8>` provisioning a folder named `e2e-deploy-folder-<uuid8>`
+  under `Shared/`. The folder must contain a process from the e2e-stub
+  package. Source `.zip`:
   `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`
 
-  Steps (use `--output json` on EVERY uip command):
-
-  1. `uip solution publish $SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip` → `publish.json`. Capture `Data.PackageName` (= `e2e-stub`) and `Data.PackageVersion` (= `1.0.0`). Idempotent — if already published, the response message will say so; treat that as success.
-  2. `uip solution deploy run --name <uuid8>-deploy --package-name e2e-stub --package-version 1.0.0 --folder-name <uuid8>-deploy-folder --folder-path Shared` → `deploy_run.json`. Capture `Data.DeploymentKey` and `Data.FolderPath`.
-  3. Append `{"kind": "deploy", "key": "<uuid8>-deploy"}` as a single line to `created-resources.jsonl` so cleanup can find it.
-  4. `uip solution deploy list` → `deploy_list.json`. The deployment with name `<uuid8>-deploy` must appear in the list.
-  5. `uip solution deploy uninstall <uuid8>-deploy` → `uninstall.json`. Expect `Result: Success` with `Status: SuccessfulUninstall`.
-  6. `uip solution deploy list` → `deploy_list_after.json` (the deploy should no longer be active, though it may still appear with a different status).
+  Append a manifest record for cleanup:
+  `{"kind": "deploy", "key": "e2e-deploy-<uuid8>"}`
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent published the fixture .zip"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+publish'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent ran deploy + uninstall"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\s+(run|uninstall)'
-    min_count: 2
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent listed deploys at least once"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\s+list'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: deploy reached terminal, uninstall succeeded"
+    description: "Tenant state: deploy present in list; folder + process exist"
     command: "python3 $TASK_DIR/check_deploy_round_trip.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

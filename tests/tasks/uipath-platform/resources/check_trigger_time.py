@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""Verify time trigger lifecycle: enable flag flips correctly; cron persists across update."""
+"""Query tenant state to verify the trigger lifecycle outcome.
+
+We don't read any sandbox-emitted files — the agent's CLI choices are
+irrelevant. We query `triggers list` in the seeded folder, find the one with
+the expected name pattern, and assert its cron + enabled flag."""
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
+EXPECTED_CRON = "0 30 4 * * ?"
 
-def load(name: str) -> dict:
-    p = Path(name)
+
+def load_seed() -> dict:
+    p = Path("seed.json")
     if not p.is_file():
-        sys.exit(f"FAIL: {name} not found")
-    try:
-        return json.loads(p.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {name} is not valid JSON: {e}")
+        sys.exit("FAIL: seed.json not found")
+    return json.loads(p.read_text())
 
 
 def _pick(d, *names):
@@ -26,33 +30,46 @@ def _pick(d, *names):
     return None
 
 
-def ok(env, label):
-    if env.get("Result") != "Success":
-        sys.exit(f"FAIL: {label} Result={env.get('Result')!r} Message={env.get('Message')!r}")
-    return env.get("Data") or {}
+def uip_json(*args: str, timeout: int = 60) -> dict:
+    r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=timeout)
+    if not r.stdout.strip():
+        sys.exit(f"FAIL: uip {' '.join(args)} returned no stdout (stderr={r.stderr[:200]})")
+    try:
+        return json.loads(r.stdout)
+    except json.JSONDecodeError as e:
+        sys.exit(f"FAIL: uip {' '.join(args)} non-JSON: {e}: {r.stdout[:200]}")
 
 
-after_create = ok(load("get_after_create.json"), "get_after_create")
-after_disable = ok(load("get_after_disable.json"), "get_after_disable")
-after_enable = ok(load("get_after_enable.json"), "get_after_enable")
-after_cron = ok(load("get_after_cron.json"), "get_after_cron")
+seed = load_seed()
+uuid8 = seed.get("uuid8")
+folder_path = seed.get("folder_path")
+if not uuid8 or not folder_path:
+    sys.exit(f"FAIL: seed.json missing uuid8 or folder_path: {seed}")
 
-enabled_create = _pick(after_create, "Enabled")
-enabled_disable = _pick(after_disable, "Enabled")
-enabled_enable = _pick(after_enable, "Enabled")
+expected_name = f"e2e-trigger-time-{uuid8}"
 
-if enabled_create is not True:
-    sys.exit(f"FAIL: trigger not enabled by default after create: {enabled_create!r}")
-if enabled_disable is not False:
-    sys.exit(f"FAIL: trigger still enabled after disable: {enabled_disable!r}")
-if enabled_enable is not True:
-    sys.exit(f"FAIL: trigger not re-enabled after enable: {enabled_enable!r}")
+envelope = uip_json("resource", "triggers", "list", "--type", "time", "--folder-path", folder_path)
+if envelope.get("Result") != "Success":
+    sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
+items = envelope.get("Data")
+if isinstance(items, dict):
+    items = _pick(items, "Value", "Items", "Results") or []
+items = items or []
 
-cron_create = _pick(after_create, "Cron", "CronExpression")
-cron_after = _pick(after_cron, "Cron", "CronExpression")
-if cron_after == cron_create:
-    sys.exit(f"FAIL: cron did not change — before={cron_create!r} after={cron_after!r}")
-if "30" not in str(cron_after):  # "0 30 4 * * ?"
-    sys.exit(f"FAIL: cron after update doesn't match expected pattern: {cron_after!r}")
+match = next((t for t in items if _pick(t, "Name") == expected_name), None)
+if not match:
+    names = [_pick(t, "Name") for t in items]
+    sys.exit(f"FAIL: no trigger named {expected_name!r} in {folder_path!r}; saw {names}")
 
-print(f"OK: enabled flag flipped true→false→true; cron updated {cron_create!r}→{cron_after!r}")
+enabled = _pick(match, "Enabled")
+cron = _pick(match, "StartProcessCron", "Cron", "CronExpression")
+release_key = _pick(match, "ReleaseKey")
+
+if enabled is not True:
+    sys.exit(f"FAIL: trigger {expected_name!r} Enabled={enabled!r}, expected True")
+if cron != EXPECTED_CRON:
+    sys.exit(f"FAIL: trigger {expected_name!r} cron={cron!r}, expected {EXPECTED_CRON!r}")
+if release_key and release_key.lower() != seed.get("process_key", "").lower():
+    sys.exit(f"FAIL: trigger release_key={release_key!r}, expected {seed.get('process_key')!r}")
+
+print(f"OK: trigger {expected_name!r} exists in {folder_path}, enabled=True, cron={cron!r}")

@@ -1,8 +1,8 @@
 task_id: skill-platform-folders-hierarchy-e2e
 description: >
-  E2E folder hierarchy + move: build a 3-level chain (top/A/B), verify each
-  child's ParentKey matches its parent, then move B to be a sibling of A and
-  verify the ParentKey was updated.
+  E2E: agent uses the skill to leave the tenant with a 3-level folder
+  hierarchy under Shared/, with a specific ParentID chain after a folder
+  move. Check queries tenant directly.
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup, orchestrator, folders]
 
 agent:
@@ -14,7 +14,7 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "TASK_ID=folder-hierarchy python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+  - command: "TASK_ID=folders-hierarchy python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
     timeout: 30
 
 post_run:
@@ -24,47 +24,29 @@ post_run:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  Read `seed.json` for `uuid8`. (Folders are the test — none are pre-seeded.)
+  `seed.json` provides `uuid8` (per-run prefix).
 
-  Goal: build a 3-level folder hierarchy and verify ParentKey relationships and
-  the move operation.
+  Goal: leave the tenant with this folder structure under `Shared/`:
+  - `Shared/e2e-fh-<uuid8>-top` (top folder)
+  - `Shared/e2e-fh-<uuid8>-top/e2e-fh-<uuid8>-A` (child A under top)
+  - `Shared/e2e-fh-<uuid8>-top/e2e-fh-<uuid8>-B` (B originally under A,
+    then **moved** to be a sibling of A directly under `top`)
 
-  Steps (use `--output json` on EVERY uip command):
+  All three folders must exist at the end. B's parent must be `top` — the
+  move must actually have happened.
 
-  1. Create top folder `e2e-fh-<uuid8>-top` under `Shared`:
-     `uip or folders create e2e-fh-<uuid8>-top --parent Shared` → `create_top.json`. Capture key as `top_key`.
-  2. Append `{"kind": "folder", "key": "<top_key>"}` to `created-resources.jsonl`.
-  3. Create child A under top: `uip or folders create e2e-fh-<uuid8>-A --parent <top_key-or-path>` → `create_a.json`. Capture key.
-  4. Append A's key to manifest.
-  5. Create grandchild B under A: `uip or folders create e2e-fh-<uuid8>-B --parent <A's key-or-path>` → `create_b.json`. Capture key.
-  6. Append B's key to manifest.
-  7. Get each: `uip or folders get <top_key>` → `get_top.json`; same for A and B → `get_a.json`, `get_b.json`.
-  8. Move B to be a sibling of A (under top): `uip or folders move <B's key> --parent <top_key-or-path>` → `move_b.json`.
-  9. `uip or folders get <B's key>` → `get_b_after_move.json`.
+  When you create each folder, append a line to `created-resources.jsonl`:
+  ```
+  {"kind": "folder", "key": "<folder-key>", "extra": {"path": "<full-path>"}}
+  ```
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created exactly 3 folders"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+create'
-    min_count: 3
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent moved a folder"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+move'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: ParentKey chain pre-move; ParentKey updated post-move"
+    description: "Tenant state: 3-level hierarchy with B re-parented to top"
     command: "python3 $TASK_DIR/check_folders_hierarchy.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

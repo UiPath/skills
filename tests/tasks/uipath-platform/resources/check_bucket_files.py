@@ -1,29 +1,11 @@
 #!/usr/bin/env python3
-"""Verify bucket round-trip: sha256 byte-equality, file listed in bucket, sizes match."""
+"""Query tenant: bucket exists with the expected file; local source==downloaded."""
 
 import hashlib
 import json
-import os
+import subprocess
 import sys
 from pathlib import Path
-
-
-def sha256_of(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def load(name: str) -> dict:
-    p = Path(name)
-    if not p.is_file():
-        sys.exit(f"FAIL: {name} not found")
-    try:
-        return json.loads(p.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {name} is not valid JSON: {e}")
 
 
 def _pick(d, *names):
@@ -36,33 +18,58 @@ def _pick(d, *names):
     return None
 
 
+def uip_json(*args: str) -> dict:
+    r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=60)
+    if not r.stdout.strip():
+        sys.exit(f"FAIL: uip {' '.join(args)} no stdout")
+    return json.loads(r.stdout)
+
+
+def sha256_of(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+seed = json.loads(Path("seed.json").read_text())
+uuid8 = seed.get("uuid8")
+folder_path = seed.get("folder_a_path")
+if not (uuid8 and folder_path):
+    sys.exit("FAIL: seed.json missing uuid8 or folder_a_path")
+
+expected_bucket = f"e2e-bucket-{uuid8}"
+
+# 1) Local sha256 round-trip (file existence + byte equality)
 for f in ("source.bin", "downloaded.bin"):
     if not Path(f).is_file():
-        sys.exit(f"FAIL: {f} not found")
-
+        sys.exit(f"FAIL: {f} not present in sandbox")
 src_sha = sha256_of("source.bin")
 dl_sha = sha256_of("downloaded.bin")
 if src_sha != dl_sha:
-    sys.exit(f"FAIL: sha256 mismatch — source={src_sha} downloaded={dl_sha}")
+    sys.exit(f"FAIL: sha256 mismatch — source={src_sha[:12]}… downloaded={dl_sha[:12]}…")
 
-src_size = os.path.getsize("source.bin")
-dl_size = os.path.getsize("downloaded.bin")
-if src_size != dl_size:
-    sys.exit(f"FAIL: size mismatch — source={src_size} downloaded={dl_size}")
+# 2) Tenant: bucket exists in folder
+env = uip_json("resource", "buckets", "list", "--folder-path", folder_path)
+if env.get("Result") != "Success":
+    sys.exit(f"FAIL: buckets list Result={env.get('Result')!r}")
+items = env.get("Data") or []
+if isinstance(items, dict):
+    items = _pick(items, "Value", "Items", "Results") or []
+match = next((b for b in items if _pick(b, "Name") == expected_bucket), None)
+if not match:
+    sys.exit(f"FAIL: bucket {expected_bucket!r} not in folder {folder_path!r}")
+bucket_key = _pick(match, "Key", "Id")
 
-# Verify list contained the uploaded file
-lst = load("list.json")
-if lst.get("Result") != "Success":
-    sys.exit(f"FAIL: list.json Result={lst.get('Result')!r}")
-data = lst.get("Data")
-if isinstance(data, dict):
-    items = _pick(data, "Items", "Value", "Results", "Files") or []
-elif isinstance(data, list):
-    items = data
-else:
-    items = []
-names = [_pick(it, "FullPath", "Path", "Name") for it in items if isinstance(it, dict)]
-if not any(name and "probe.bin" in name for name in names):
-    sys.exit(f"FAIL: list.json does not contain probe.bin — saw: {names}")
+# 3) Tenant: bucket contains ≥1 file
+flist = uip_json("resource", "bucket-files", "list", bucket_key, "--folder-path", folder_path)
+if flist.get("Result") != "Success":
+    sys.exit(f"FAIL: bucket-files list Result={flist.get('Result')!r}")
+fdata = flist.get("Data") or []
+if isinstance(fdata, dict):
+    fdata = _pick(fdata, "Items", "Value", "Results", "Files") or []
+if not fdata:
+    sys.exit(f"FAIL: bucket {expected_bucket!r} contains no files")
 
-print(f"OK: sha256 match ({src_sha[:12]}…), size={src_size}B, file 'probe.bin' present in bucket listing")
+print(f"OK: bucket {expected_bucket!r} exists with {len(fdata)} file(s); sha256 round-trip verified ({src_sha[:12]}…)")

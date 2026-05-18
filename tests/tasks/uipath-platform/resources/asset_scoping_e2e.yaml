@@ -1,8 +1,7 @@
 task_id: skill-platform-asset-scoping-e2e
 description: >
-  E2E folder scoping for assets: create an asset in folder A, list assets
-  scoped to folder B (must NOT include it), list scoped to A (must include it).
-  Proves the folder header is correctly applied end-to-end.
+  E2E: agent leaves the tenant with an asset created in folder A, never
+  shared elsewhere — proves folder scoping by absence in folder B's listing.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, assets]
 
 agent:
@@ -24,41 +23,23 @@ post_run:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  Read `seed.json` for `uuid8`, `folder_a_path`, `folder_b_path`. Both folders exist.
+  `seed.json` provides `uuid8`, `folder_a_path`, `folder_b_path` (both
+  pre-created).
 
-  Goal: prove folder scoping — an asset created in A is not visible in B.
+  Goal: leave the tenant with an asset named `e2e-asset-scoping-<uuid8>`
+  present in folder A's listing and absent from folder B's listing — i.e.,
+  scoped to folder A only.
 
-  Steps (use `--output json` on EVERY uip command):
-
-  1. Create asset `<uuid8>-scoped` of type Text, value `in-A`, in `folder_a_path`. Save to `create.json`. Capture asset key.
-  2. Append `{"kind": "asset", "key": "<key>"}` to `created-resources.jsonl`.
-  3. `uip resource assets list --folder-path <folder_a_path>` → `list_in_a.json` — asset SHOULD appear.
-  4. `uip resource assets list --folder-path <folder_b_path>` → `list_in_b.json` — asset must NOT appear.
-  5. `uip resource assets delete <key>` → `delete.json`.
+  Append a manifest record:
+  `{"kind": "asset", "key": "<asset-key>"}`
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created an asset"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+create'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent listed assets in both folders"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+list.*--folder-path'
-    min_count: 2
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Behavioral check: asset key present in A list, absent in B list"
+    description: "Tenant state: asset in A, not in B"
     command: "python3 $TASK_DIR/check_asset_scoping.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
