@@ -27,8 +27,13 @@ initial_prompt: |
   `seed.json` provides `process_key` and `folder_path`.
 
   Goal: start a job for `process_key`, wait for it to reach a terminal state,
-  retrieve logs and traces. Write a JSON summary to `job_outcome.json` with
-  these fields:
+  retrieve logs and traces.
+
+  Use the skill's recommended pattern (`--wait-for-completion` on `jobs start`
+  — don't poll `jobs get` in a loop, it'll time out the agent turn before
+  picking up the terminal state).
+
+  Write a JSON summary to `job_outcome.json` with these fields:
   ```
   {
     "job_key": "<job-key>",
