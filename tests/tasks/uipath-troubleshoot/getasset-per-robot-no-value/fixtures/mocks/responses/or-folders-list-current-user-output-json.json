@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "2c5e8f4a-9b3d-4f6c-8e1d-7a2b3c4d5e6f",
+      "Name": "Remote Debugging",
+      "Path": "Remote Debugging",
+      "Description": "Folder used for ad-hoc remote debugging of UiPath processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

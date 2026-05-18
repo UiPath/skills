@@ -1,0 +1,191 @@
+﻿task_id: skill-troubleshoot-rpa-foreground-already-running
+description: >
+  UiPath diagnostic agent must diagnose a faulted ForegroundHolder job that
+  failed with System.InvalidOperationException: "A foreground process is
+  already running. Only one foreground process can run at a time." Two
+  foreground triggers fire on overlapping schedules against the same Robot
+  session — the second job is rejected by the Robot. The agent must match
+  the orchestrator/foreground-already-running playbook (NOT the sibling
+  maestro/foreground-unattended-robot playbook for HTTP 409 #1230) and
+  identify concurrent foreground jobs as the cause.
+
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, foreground-already-running, concurrency]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ForegroundHolder process just faulted in Orchestrator a few seconds
+  after it started — can you investigate? The project source is in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the orchestrator/foreground-already-running playbook AND identified concurrent foreground jobs as the cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My ForegroundHolder process just faulted in Orchestrator a few
+         seconds after it started — can you investigate?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/products/orchestrator/playbooks/foreground-already-running.md
+        because the runtime error
+          "System.InvalidOperationException: A foreground process is
+           already running. Only one foreground process can run at a
+           time."
+        is the verbatim signature of that playbook.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` — the
+             orchestrator/foreground-already-running playbook should
+             appear (absolute or relative path).
+          2. The agent's tool-call summary — a Read on
+             references/products/orchestrator/playbooks/foreground-already-running.md.
+          3. state.json's `scope.domain` — should include the
+             orchestrator domain.
+
+        Acceptable / non-penalized: the agent may also Read the
+        sibling playbook `maestro/playbooks/foreground-unattended-robot.md`
+        while ruling it out (it covers a different signature: HTTP 409
+        / error #1230). Exploration is normal.
+
+        PENALIZED: matching ONLY the maestro/foreground-unattended-robot
+        playbook (different error class — HTTP 409 about a missing
+        unattended robot, not concurrent foreground guard).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Two foreground (UI-interactive) jobs were scheduled to the
+            same Robot session with overlapping start times.
+          - The earlier job (`b0a1b2c3-...`) started at 10:14:50Z and
+            was still running when the failing job (`c0a1b2c3-...`)
+            started at 10:15:00Z — within the earlier job's ~60s
+            runtime window.
+          - The Robot rejected the second start with
+            `System.InvalidOperationException: A foreground process is
+            already running. Only one foreground process can run at a
+            time.` (visible in the failing job's logs and Info field).
+          - `RequiresUserInteraction: true` on both jobs confirms both
+            are foreground.
+        The reference fix (any of the following is acceptable):
+          - Sequence the triggers so they cannot overlap (stagger cron
+            expressions / chain via a parent process).
+          - Enable "Run only one job at a time" on the Robot in
+            Orchestrator so subsequent jobs queue instead of failing.
+          - Convert ForegroundHolder to background
+            (`runtimeOptions.requiresUserInteraction: false` in
+            project.json / Studio Project Settings "Starts in
+            Background: Yes") IF the workflow does not actually need
+            UI interaction. (In this scenario the workflow uses Delay
+            only — no UI activities — so the background conversion is
+            a legitimate fix.)
+
+        NOT acceptable as the sole conclusion:
+          - "The job failed because of a missing unattended robot
+            configuration" (that's the sibling 409 / #1230 issue).
+          - "Increase the Delay or timeout" (does not address slot
+            contention).
+          - "Restart the Robot" (a recovery action, not a fix for the
+            underlying overlap).
+
+        Evidence sources (in priority order):
+          1. state.json — `requirements.error_code`,
+             `requirements.error_message`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json — the hypothesis flagged
+             `is_root_cause: true` should describe the concurrent
+             foreground job conflict.
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched orchestrator/foreground-already-running AND
+             named "two concurrent foreground jobs" (or equivalent —
+             overlapping triggers, the prior job still occupying the
+             slot, etc.) as the root cause, with at least one
+             actionable fix from the acceptable list.
+        0.8  Both partial: correct playbook but conclusion says
+             "concurrent jobs" without naming the foreground
+             constraint; OR conclusion names the foreground constraint
+             but matched the broader orchestrator investigation_guide
+             rather than the specific playbook.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (job faulted with an exception)
+             but neither matched the playbook nor identified the
+             concurrent-foreground issue.
+        0.0  Misdiagnosed (e.g., concluded the job lacks an unattended
+             robot per the #1230 playbook, or concluded a
+             credential / session-creation issue).
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages, ui-automation), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

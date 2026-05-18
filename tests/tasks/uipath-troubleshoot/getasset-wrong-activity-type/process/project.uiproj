@@ -1,0 +1,6 @@
+{
+  "Name": "AssetWrongActivityType",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Credential failure caused by activity-asset type mismatch — Get Credential activity used on an asset whose actual type is Text.",
+  "MainFile": "Main.xaml"
+}

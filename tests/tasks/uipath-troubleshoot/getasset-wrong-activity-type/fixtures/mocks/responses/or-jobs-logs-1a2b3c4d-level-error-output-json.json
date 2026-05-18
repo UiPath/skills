@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T08:14:34.490Z",
+      "Message": "[Get Credential] Status code: 400 (Bad Request). Orchestrator response: \r\nActivity does not work with assets of type 'Text'. Invalid asset type."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T08:14:34.505Z",
+      "Message": "Activity does not work with assets of type 'Text'. Invalid asset type.\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

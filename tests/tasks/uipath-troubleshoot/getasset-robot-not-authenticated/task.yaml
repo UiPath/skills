@@ -1,0 +1,172 @@
+﻿task_id: skill-troubleshoot-getasset-robot-not-authenticated
+description: >
+  UiPath diagnostic agent must diagnose a Get Credential failure where
+  the target asset and folder are correctly configured and the robot
+  has the right permissions assigned, but the robot account has no
+  license assigned (Connected, Unlicensed in Orchestrator).
+  Orchestrator returns HTTP 401 / "You are not authenticated! Error
+  code: 0." The agent must rule out asset-not-found,
+  folder-scope-mismatch, permission-denied (which is "not authorized",
+  NOT "not authenticated"), wrong-activity-type, and per-robot-no-value
+  before converging on the missing robot license.
+
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, robot-not-authenticated]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  max_turns: 60
+  turn_timeout: 3600
+
+run_limits:
+  task_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My AssetRobotUnlicensed process is faulting in Orchestrator on every
+  run. Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the get-asset-robot-not-authenticated playbook AND identified the unlicensed robot"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My AssetRobotUnlicensed process is faulting in Orchestrator
+         on every run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/system-activities/playbooks/get-asset-robot-not-authenticated.md
+        because the runtime error
+          "You are not authenticated! Error code: 0"
+        is the verbatim signature of that playbook ("not authenticated"
+        phrasing — distinct from "not authorized" which is the
+        permission-denied playbook).
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             get-asset-robot-not-authenticated playbook should appear
+             (absolute or relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/system-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             system-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        get-asset-* playbooks (not-found, folder-scope-mismatch,
+        permission-denied, wrong-activity-type, per-robot-no-value)
+        while ruling them out. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Get Credential activity (GetRobotCredential) in
+            Main.xaml targets `AssetName="myHiddenAsset"` in folder
+            "Remote Debugging".
+          - Both the asset and the folder are correctly configured;
+            the asset is the right type (Credential); the robot has
+            the necessary roles.
+          - The robot account running the job (`RobotUser1`) is
+            shown as `Connected, Unlicensed` in Orchestrator —
+            `IsLicensed: false`, `LicenseType: null`.
+          - Orchestrator therefore returns HTTP 401 / "You are not
+            authenticated! Error code: 0" before any asset call can
+            execute.
+        The reference fix:
+          - Assign a license to `RobotUser1` in Orchestrator (Tenant
+            -> Licenses -> Robot Services -> assign an available
+            seat to the robot account). Alternatively, free up a
+            seat by unassigning an idle robot, or contact the admin
+            to purchase additional capacity.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.error_code`,
+             `requirements.error_message`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the missing
+             license on the robot account (NOT a missing asset, NOT
+             a folder issue, NOT a permission gap, NOT a per-robot
+             value gap, NOT a type mismatch).
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched get-asset-robot-not-authenticated AND
+             identified the unlicensed robot account explicitly.
+             Conclusion must (a) name the robot (`RobotUser1`),
+             (b) recognize it lacks a license (`IsLicensed: false`
+             or "Connected, Unlicensed"), and (c) recommend
+             assigning a license.
+        0.8  Both partial: e.g., correct playbook but conclusion
+             says "robot auth issue" without naming the licensing
+             gap; or conclusion names the licensing gap but matched
+             the system-activities investigation_guide rather than
+             the specific robot-not-authenticated playbook.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (asset / auth failure) but
+             neither matched the playbook nor identified the
+             licensing issue.
+        0.0  Misdiagnosed (e.g., concluded permission-denied,
+             asset-not-found, folder-scope-mismatch, wrong-activity-
+             type, or per-robot-no-value) or got blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -1,0 +1,35 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Recent jobs in ComputeJobs. The failing MisconfiguredForeground (d1e2f3a4) tried to start while ForegroundHolder (e1f2a3b4) was Running. Notice both have foreground intent but only ForegroundHolder is legitimate per its source code.",
+  "Data": [
+    {
+      "Key": "d1e2f3a4-b5c6-4789-abcd-ef0123456789",
+      "State": "Faulted",
+      "ProcessName": "MisconfiguredForeground",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T14:20:45.500Z",
+      "EndTime": "2026-05-13T14:20:46.218Z",
+      "CreationTime": "2026-05-13T14:20:45.302Z"
+    },
+    {
+      "Key": "e1f2a3b4-c5d6-4789-abcd-ef0123456789",
+      "State": "Successful",
+      "ProcessName": "ForegroundHolder",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T14:20:30.000Z",
+      "EndTime": "2026-05-13T14:21:30.412Z",
+      "CreationTime": "2026-05-13T14:20:29.851Z"
+    }
+  ]
+}
