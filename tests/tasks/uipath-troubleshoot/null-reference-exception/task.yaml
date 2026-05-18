@@ -168,9 +168,10 @@ simulation:
     constraints. Approve every scope expansion or clarification the
     agent requests so the investigation reaches the final resolution.
   constraints:
-    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
-    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator, runtime-exceptions), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered. EXCEPTION: if the missing data is the project source code path, fall back to the rule above (`.` / current working directory) before suggesting best-effort."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (see rules above)."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
