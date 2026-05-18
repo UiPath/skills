@@ -64,3 +64,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $TASK_DIR/../_shared/cleanup_invited_user.py"
+    timeout: 30

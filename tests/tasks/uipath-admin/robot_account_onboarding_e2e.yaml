@@ -72,3 +72,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $TASK_DIR/../_shared/cleanup_robot_account.py"
+    timeout: 30
