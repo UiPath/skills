@@ -131,9 +131,17 @@ Example — manual start trigger:
 
 ### Node outputs
 
-Nodes that produce data consumed by downstream nodes **must** include an `outputs` block on the node instance. This tells the runtime how to capture the node's results into `$vars.{nodeId}.{outputId}`. Without it, downstream `$vars` references may not resolve.
+`$vars.<sourceNodeId>.<outputId>` resolution at runtime is driven by **`variables.nodes[]`**, not by the node instance's `outputs` block. The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs; the action-node instance `outputs` block is ignored at serialization (the manifest's `outputDefinition` supplies the activity-side mapping). End / terminate nodes are the exception — their instance `outputs` block IS consumed to map workflow-level `out` variables. See [end/impl.md](../author/references/plugins/end/impl.md).
 
-Each output entry has:
+The canonical recipe for a data-producing node is therefore:
+
+- `definitions[]` entry copied verbatim from `uip maestro flow registry get` (carries the manifest `outputDefinition`).
+- `variables.nodes[]` entry per output: `{ "id": "<nodeId>.<outputId>", "type": "object", "binding": { "nodeId": "<nodeId>", "outputId": "<outputId>" } }`.
+- Optional instance `outputs` block matching the manifest — harmless and matches the canonical examples below for clarity, but **not** what controls runtime variable visibility.
+
+Skipping `variables.nodes[]` produces a flow that passes `flow validate` but resolves `$vars.<sourceNodeId>.output` to `undefined` at runtime (MST-9972). `uip maestro flow format` regenerates `variables.nodes[]` from `nodes[]` + `definitions[]`, so always run it after structural edits — the omission becomes self-healing.
+
+When you DO author the instance `outputs` block (for documentation / parity with manifest schema), use the shape below. Each output entry has:
 
 - `type` — data type (usually `"object"`)
 - `description` — human-readable description
