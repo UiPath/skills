@@ -13,7 +13,6 @@ uip is activities list "<connector-key>" --output json
 ```
 
 This lists **non-trigger activities only** (actions, not event listeners).
-Pass the connector **Key** returned by `uip is connectors list`, not the vendor or display name. For Salesforce, use `uipath-salesforce-sfdc`, not `salesforce`.
 
 ## List Trigger Activities
 

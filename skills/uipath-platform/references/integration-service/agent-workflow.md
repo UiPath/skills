@@ -75,13 +75,6 @@ uip is connections ping "<connection-id>" --output json
 uip is activities list "<connector-key>" --output json
 ```
 
-Use the exact connector **`Key`** from Step 1, not the vendor/display name. For Salesforce, that key is `uipath-salesforce-sfdc`, so the activity discovery commands must be:
-
-```bash
-uip is activities list "uipath-salesforce-sfdc" --output json
-uip is activities list "uipath-salesforce-sfdc" --triggers --output json
-```
-
 | Outcome | Action |
 |---|---|
 | Matching activity found for the user's task | Use the activity. See [activities.md](activities.md) for details. |
