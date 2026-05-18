@@ -14,7 +14,7 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Two outcomes:
+Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. **Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
@@ -25,11 +25,11 @@ Do not re-inspect or keep polling after the initial check — subsequent capture
 
 ---
 
-## Inspecting & Interacting with GUI apps
+## Live-app interaction (uia-interact)
 
-Use `uia snapshot inspect` to inspect a live app's UI and element refs, and `uia interact` to test interactions or advance the app between captures.
+`uia-interact` is the sub-skill for any one-shot UIA action against a live app: launching, advancing UI state between captures, inspecting top-level windows, screenshots, attribute reads, element interaction. It is **not** for authoring workflow activities — those go through `uia-configure-target`.
 
-**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md` — covers all `interact` subcommands and `snapshot inspect`.
+**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Mandatory before any `uip rpa uia interact` or `uip rpa uia snapshot inspect` call.
 
 ---
 
