@@ -1,6 +1,7 @@
 ---
 name: uipath-troubleshoot
-description: "UiPath cross-platform troubleshooting — failed or stuck Orchestrator jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems. For .flow run troubleshooting→uipath-maestro-flow. For .bpmn run troubleshooting→uipath-maestro-bpmn. For .xaml/.cs workflow debug→uipath-rpa. For platform ops→uipath-platform."
+description: "UiPath troubleshooting, diagnostics, and root-cause investigations across any UiPath product, feature, runtime, or artifact. Investigates errors, failures, faults, exceptions, regressions, performance problems, unexpected behavior, and silent malfunctions — answers why something failed, broke, stopped, hung, slowed down, returned wrong results, lost access, or stopped working after a change. Walks the available evidence (logs, traces, incidents, status fields, configuration, history) to identify the originating fault and explain what changed."
+when_to_use: "User asks why something failed, broke, stopped, hung, was stuck, returns wrong results, or behaves unexpectedly in any UiPath system. Triggers: 'why did X fail', 'find the cause', 'find why', 'what changed', 'investigate', 'diagnose', 'debug this', 'triage', 'help me figure out', 'what's wrong', 'root cause', 'fix this error', 'inspect this trace / incident / log / job / instance', 'X worked yesterday but now …'. Also fires on raw error messages, exception stacks, error codes, job / queue IDs, or 'stuck / orphan / zombie' state descriptions."
 ---
 
 # UiPath Troubleshooting Agent
