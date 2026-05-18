@@ -43,7 +43,7 @@ For every queue item under investigation, gather these in order. Write each to `
 For comparison investigations (e.g., queue-items-failing playbook), also gather successful items:
 
 5. **List failed items** — `uip resource queue-items list --queue-key <queue-key> --folder-key <key> --status Failed` — all failed items for comparison
-6. **List successful items** — `uip resource queue-items list --queue-key <queue-key> --folder-key <key> --status Successful --top 3` — sample of successful items to compare SpecificContent
+6. **List successful items** — `uip resource queue-items list --queue-key <queue-key> --folder-key <key> --status Successful --limit 3` — sample of successful items to compare SpecificContent
 
 ## Finding Related Jobs
 

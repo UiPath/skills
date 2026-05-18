@@ -24,7 +24,7 @@ What to look for:
 
 1. Get the faulted job details: `uip or jobs get <job-key> --output json`. Note `type`, error message, machine name, start/end time.
 2. Check `requiresUserInteraction` — NOT available via the `uip` CLI. Only visible in the Orchestrator UI: Processes → select the process → Settings → "Requires User Interaction".
-3. Check recent job history on the same machine: `uip or jobs list --folder-path '<folder>' --top 20 --output json`. If other recent jobs succeeded or failed with different (non-logon) errors, credentials are valid — session configuration is the cause.
+3. Check recent job history on the same machine: `uip or jobs list --folder-path '<folder>' --limit 20 --output json`. If other recent jobs succeeded or failed with different (non-logon) errors, credentials are valid — session configuration is the cause.
 4. **If `requiresUserInteraction` is true:** check "Login to Console". First try: `uip or users get <user-key> --output json` — look for `unattendedRobot.executionSettings.LoginToConsole`. If the `users` command is not available, check the Orchestrator UI: Tenant → Users → select user → Access Rules → Advanced Robot Options.
    - If Login to Console = false → session configuration mismatch (root cause)
    - If Login to Console = true → the robot should have created a session; investigate credential or account issues instead

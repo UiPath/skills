@@ -185,7 +185,7 @@ A non-zero exit code indicates either client-side preflight failure, server-side
 - **`--connection-id` must exist in Integration Service first** — credentials are resolved lazily. If the connection is missing, server-side validation surfaces an unavailability reason and aborts.
 - **Validation is mandatory in `create` / `update`** — no skip flag. The save is aborted if any model fails the probe.
 - **`--product` and `--feature` are case-sensitive.** Use the exact values from `list-product-configs`.
-- **Lists are unpaginated** — there are no `--limit` / `--skip` flags here.
+- **Lists are unpaginated** — there are no `--limit` / `--offset` flags here.
 
 ## Out of Scope
 
