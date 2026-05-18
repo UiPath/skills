@@ -1,0 +1,85 @@
+task_id: skill-platform-webhook-lifecycle-e2e
+description: >
+  E2E webhook lifecycle: list event-types, create a webhook subscribed to a
+  subset, get it back and verify Events == subset, ping it, disable via
+  update, verify disabled, delete.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, webhooks]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=webhook python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  Read `seed.json` for `uuid8`. (Webhooks are tenant-scoped; no folder needed.)
+
+  Goal: round-trip a webhook subscription against a throwaway receiver URL.
+
+  Steps (use `--output json` on EVERY uip command):
+
+  1. `uip resource webhooks event-types` → `event_types.json`. Pick the first
+     two event-type names from the response Data; write them as a
+     comma-separated list to a sandbox file `chosen_events.txt`.
+  2. `uip resource webhooks create --name <uuid8>-hook --url https://webhook.site/test --events "<chosen-events>" --allow-insecure-ssl` → `create.json`. Capture webhook key/id.
+  3. Append `{"kind": "webhook", "key": "<webhook-key>"}` to `created-resources.jsonl`.
+  4. `uip resource webhooks get <webhook-key>` → `get_after_create.json`. The Events field should equal the subset.
+  5. `uip resource webhooks ping <webhook-key>` → `ping.json`. Expect Result=Success.
+  6. `uip resource webhooks update <webhook-key> --disabled` → `update.json`.
+  7. `uip resource webhooks get <webhook-key>` → `get_after_disable.json`. Enabled flag should be false.
+  8. `uip resource webhooks delete <webhook-key>` → `delete.json`.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed event types"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+webhooks\s+event-types'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a webhook"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+webhooks\s+create.*--name'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pinged the webhook"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+webhooks\s+ping'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated and re-read the webhook"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+webhooks\s+(update|get)'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral check: event types non-empty, Events subset matches, ping Success, disable reflected"
+    command: "python3 $TASK_DIR/check_webhook.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

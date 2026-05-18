@@ -1,0 +1,114 @@
+task_id: skill-platform-queue-items-lifecycle-e2e
+description: >
+  E2E lifecycle for an Orchestrator queue: create the queue under a seeded
+  folder, bulk-add 5 items, list them by status, then delete items + queue.
+  Verifies that the bulk-add count matches the list count and that the queue
+  is gone post-cleanup.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, queues]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=queue-items SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py"
+    timeout: 60
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  Read `seed.json` from the current directory. It already contains a per-run
+  prefix (`uuid8`) and a pre-created folder (`folder_a_path`, `folder_a_key`).
+  Do NOT create the folder yourself — it already exists.
+
+  Goal: exercise the full queue + queue-items lifecycle and write every step's
+  raw `--output json` output to a file in the sandbox cwd. The check script
+  reads these files; if they are missing or malformed, the test fails.
+
+  Steps (use `--output json` on EVERY uip command):
+
+  1. Create a queue named `<uuid8>-q` in `folder_a_path` (read the values from
+     seed.json). Save the full response envelope to `create_queue.json`.
+  2. Append `{"kind": "queue", "key": "<queue-key-from-create>", "extra": {"folder_path": "<folder_a_path>"}}`
+     as a single line to `created-resources.jsonl` so cleanup can find it.
+  3. Bulk-add exactly 5 items to that queue via `queue-items bulk-add`. Use a
+     JSON array of 5 specific-content objects (each with at least a unique
+     `Id`). Save the full response envelope to `bulk_add.json`.
+  4. List queue items filtered to `--status New` for that queue. Save to
+     `list_new.json`.
+  5. Delete-bulk all items by their keys. Save the response envelope to
+     `delete_items.json`.
+  6. Delete the queue itself by its key. Save to `delete_queue.json`.
+
+  After step 6, list queue items again (status New) and save to
+  `list_after_delete.json` — should be empty.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation.
+
+success_criteria:
+  - type: file_exists
+    description: "create_queue.json written"
+    path: "create_queue.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "bulk_add.json written"
+    path: "bulk_add.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "list_new.json written"
+    path: "list_new.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked uip resource queues create with --folder-path"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+queues\s+create.*--folder-path'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked uip resource queue-items bulk-add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+queue-items\s+bulk-add'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked uip resource queue-items list with --status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+queue-items\s+list.*--status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip resource calls"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+.*--output\s+json'
+    min_count: 4
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral check: bulk-add count == list count == 5; queue gone after delete"
+    command: "python3 $TASK_DIR/check_queue_items.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

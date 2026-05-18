@@ -1,0 +1,48 @@
+task_id: skill-platform-trigger-time-e2e
+description: >
+  E2E time trigger lifecycle: create disabled cron trigger on the seeded
+  process, enable via update, change the cron, disable again, delete. Verifies
+  Enabled flag transitions and cron field persists.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
+skip: true
+# Blocked: needs a process to attach the trigger to. seed_process.py handles
+# this once the stub is built OR TRACES_SMOKE_PROCESS_KEY env is set. See
+# tests/fixtures/packages/README.md.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=trigger-time SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py && TASK_ID=trigger-time python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 180
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill. Read `seed.json` for `process_key` and `folder_a_path`.
+
+  Steps (use `--output json`):
+  1. Create disabled cron trigger: `uip resource triggers create --type time --name <uuid8>-trig --release-key <process_key> --cron "0 0 3 * * ?" --time-zone UTC --folder-path <folder_a_path>` → `create.json`. Capture trigger key.
+  2. Append `{"kind": "trigger", "key": "<key>", "extra": {"type": "time", "folder_path": "<folder_a_path>"}}` to manifest.
+  3. `triggers get <key> --type time --folder-path <folder_a_path>` → `get_initial.json`.
+  4. `triggers update <key> --type time --enabled --folder-path <folder_a_path>` → `enable.json`.
+  5. `triggers get <key> --type time --folder-path <folder_a_path>` → `get_enabled.json` (Enabled=true).
+  6. `triggers update <key> --type time --cron "0 30 4 * * ?" --folder-path <folder_a_path>` → `update_cron.json`.
+  7. `triggers get <key> --type time --folder-path <folder_a_path>` → `get_after_cron.json` (new cron persisted).
+  8. `triggers delete <key> --type time --folder-path <folder_a_path>` → `delete.json`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created, updated and deleted a time trigger"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+triggers\s+(create|update|delete).*--type\s+time'
+    min_count: 4
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,42 @@
+task_id: skill-platform-package-download-integration
+description: >
+  Integration test: download a known package from the tenant feed and verify
+  the file looks like a real .nupkg (zip magic bytes PK\x03\x04).
+tags: [uipath-platform, integration, mode:operate, lifecycle:discover, orchestrator, packages]
+skip: true
+# Blocked: needs a known package on the tenant. seed_process.py exposes
+# `package_id`/`package_version`/`package_key` in seed.json once stub fixtures
+# build OR TRACES_SMOKE_PROCESS_KEY is set. See packages/README.md.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=package-download python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 120
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill. Read `seed.json` for `package_id` + `package_version`.
+
+  Steps (use `--output json`):
+  1. `packages get <package_id>:<package_version>` → `get.json`.
+  2. `packages versions <package_id>` → `versions.json`.
+  3. `packages download <package_id>:<package_version> --destination ./pkg.nupkg` → `download.json`.
+  4. Verify the first 4 bytes of `pkg.nupkg` are `PK\x03\x04`:
+     `python3 -c "import sys; b=open('pkg.nupkg','rb').read(4); sys.exit(0 if b==b'PK\\x03\\x04' else 1)"`
+
+success_criteria:
+  - type: file_exists
+    description: "Downloaded package present in sandbox"
+    path: "pkg.nupkg"
+    weight: 2.0
+    pass_threshold: 1.0

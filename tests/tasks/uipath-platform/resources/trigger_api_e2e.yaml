@@ -1,0 +1,48 @@
+task_id: skill-platform-trigger-api-e2e
+description: >
+  E2E API trigger + external HTTP invocation (Confluence S30). Creates an API
+  trigger on the seeded process, captures the trigger slug + token, POSTs to
+  the trigger URL via httpx, verifies a job was started with the supplied input
+  arguments.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
+skip: true
+# Blocked: needs a process to attach the API trigger to (seed_process.py
+# prerequisite). When unblocked, also confirm:
+#  - The runner has outbound network access to the tenant's trigger URL host.
+#  - The trigger response Data exposes the slug/token in a parseable shape.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=trigger-api SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py && TASK_ID=trigger-api python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 180
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill. Read `seed.json` for `process_key`, `folder_a_path`.
+
+  Steps (use `--output json`):
+  1. Create an API trigger: `uip resource triggers create --type api --name <uuid8>-api --release-key <process_key> --folder-path <folder_a_path>` → `create.json`. Capture trigger key, slug, token from response.
+  2. Append manifest entry.
+  3. POST to the trigger URL via curl with a small input-arguments JSON body. Save response to `invoke.json`. Capture the returned job ID.
+  4. Poll `uip or jobs get <job-id>` until terminal state. Save to `job_terminal.json`.
+  5. Verify InputArguments echo back. Save expected/actual to `verify.txt`.
+  6. Delete trigger.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created an API trigger and invoked via HTTP"
+    tool_name: "Bash"
+    command_pattern: '(uip\s+resource\s+triggers\s+create.*--type\s+api|curl.*-X\s+POST)'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0

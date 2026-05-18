@@ -1,0 +1,56 @@
+task_id: skill-platform-job-logs-traces-e2e
+description: >
+  E2E: start a job for the seeded process, wait for completion, fetch logs and
+  traces, verify the round-trip (job reached terminal state, logs matched the
+  job key, spans were emitted).
+tags: [uipath-platform, e2e, mode:operate, lifecycle:discover, orchestrator, jobs]
+skip: true
+# Blocked: requires `seed_process.py` to land an executable process. That seed
+# script supports two paths:
+#  1. $TRACES_SMOKE_PROCESS_KEY env var (preferred — same pattern as
+#     traces_e2e.yaml; this is what CI sets via GH secret).
+#  2. tests/fixtures/packages/e2e-stub.1.0.0.nupkg built by build_fixtures.sh.
+# When EITHER is in place, flip skip→false and rerun. See
+# tests/fixtures/packages/README.md.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=job-logs-traces python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 120
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill. Read `seed.json` for `process_key`.
+
+  Steps (use `--output json`):
+  1. `uip or jobs start <process_key> --wait-for-completion --runtime-type Serverless` → `job_start.json`. Capture job key.
+  2. `uip or jobs get <job-key>` → `job_get.json`. Verify state ∈ {Successful, Faulted, Stopped}.
+  3. `uip or jobs logs <job-key>` → `logs.json`. Verify each log entry's JobKey matches.
+  4. `uip or jobs traces <job-key>` → `traces.json`. Up to 6 retries (15s sleep between) if Data is empty — trace ingestion can lag.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent started a job and waited for completion"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+jobs\s+start.*--wait-for-completion'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched logs and traces"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+jobs\s+(logs|traces)'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0

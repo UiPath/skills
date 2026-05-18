@@ -1,0 +1,49 @@
+task_id: skill-platform-solution-config-e2e
+description: >
+  E2E solution config get/set/link/unlink: fetch the default config of the
+  published solution package, set a property value, verify it round-trips
+  through the config file, link a resource entry to an existing folder, then
+  unlink. No redeploy — verifies the config file mutations only.
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup, solution]
+skip: true
+# Blocked: depends on a real published solution package (S1 prerequisite).
+# Unblock by populating tests/fixtures/solutions/minimal/ with a real project
+# and publishing at least once; this test can then run `config get` against
+# the published name. See solutions/minimal/README.md.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=config-lifecycle SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py && TASK_ID=config-lifecycle python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_solution_fixture.py"
+    timeout: 90
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill. Read `seed.json` for `solution_dir`, `folder_a_path`.
+
+  Steps:
+  1. `solution deploy config get <package-name> -d ./config.json` → `config_initial.json`.
+  2. `solution deploy config set ./config.json <resource-name> <property> <value>` → `set.json`.
+  3. `solution deploy config get <package-name> -d ./config_after_set.json` → confirm new value.
+  4. `solution deploy config link ./config.json <resource-name> --name <existing-name> --folder-path <folder_a_path>` → `link.json`.
+  5. Confirm link in config file.
+  6. `solution deploy config unlink ./config.json <resource-name>` → `unlink.json`.
+  7. Confirm link is removed.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked config get/set/link/unlink"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+config\s+(get|set|link|unlink)'
+    min_count: 4
+    weight: 2.0
+    pass_threshold: 1.0

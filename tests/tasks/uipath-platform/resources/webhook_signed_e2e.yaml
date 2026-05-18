@@ -1,0 +1,49 @@
+task_id: skill-platform-webhook-signed-e2e
+description: >
+  E2E webhook + signed payload (Confluence S58). Provisions a webhook.site
+  receiver URL, subscribes a webhook to Job.* events with a secret, fires a
+  job, fetches the inbound POST from webhook.site, verifies the HMAC SHA-256
+  signature matches the secret.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, webhooks]
+skip: true
+# Blocked: needs (1) a job-emitting process (seed_process.py prerequisite),
+# (2) the runner can reach webhook.site (CI/local OK; sandbox-restricted no).
+# webhook.site is third-party — verify availability and add a retry-once
+# loop on the GET-requests step before flipping skip→false.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=webhook-signed python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 120
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill. Read `seed.json` for `process_key`.
+
+  Steps (use `--output json` for uip, curl for HTTP):
+  1. GET `https://webhook.site/token` → captures `{"uuid": "<id>"}`. Receiver URL: `https://webhook.site/<id>`. Save to `receiver.json`.
+  2. Generate a 32-byte hex secret. Save to `secret.txt`.
+  3. `uip resource webhooks create --name <uuid8>-signed --url <receiver-url> --events "Job.Completed" --secret "$(cat secret.txt)" --allow-insecure-ssl` → `webhook_create.json`. Capture key.
+  4. Append manifest entry.
+  5. `uip or jobs start <process_key> --wait-for-completion --runtime-type Serverless` → `job.json`.
+  6. Sleep 15 seconds.
+  7. GET `https://webhook.site/token/<id>/requests?sorting=newest` → `inbound.json`.
+  8. Verify HMAC SHA-256: the X-UiPath-Signature header on the latest request must equal hmac_sha256(secret, body). Save the result to `verify.txt`.
+  9. Delete the webhook.
+
+success_criteria:
+  - type: file_exists
+    description: "webhook.site inbound captured"
+    path: "inbound.json"
+    weight: 1.5
+    pass_threshold: 1.0

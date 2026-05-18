@@ -1,0 +1,8 @@
+# Built fixture binaries — produced by build_fixtures.sh, not checked in.
+packages/*.nupkg
+libraries/*.nupkg
+
+# Local-build solution outputs
+solutions/*/bin/
+solutions/*/obj/
+solutions/*/.uipath/

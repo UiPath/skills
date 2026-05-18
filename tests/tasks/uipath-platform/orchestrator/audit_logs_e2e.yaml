@@ -1,0 +1,66 @@
+task_id: skill-platform-audit-logs-e2e
+description: >
+  E2E audit log query: list the last 7 days of audit entries (read-only),
+  then filter by a specific action and verify the response shape. Smoke-level
+  verification — no mutation.
+tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, orchestrator, audit-logs]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=audit-logs python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  Goal: query the Orchestrator audit log to answer a compliance-style question
+  ("what folder changes happened in the last 7 days?"). This is read-only —
+  no mutations.
+
+  Steps (use `--output json` on EVERY uip command):
+
+  1. Compute the ISO 8601 timestamp for 7 days ago. Save it to `since.txt`:
+     `date -u -v-7d +"%Y-%m-%dT%H:%M:%SZ" > since.txt` (macOS) or
+     `date -u -d '7 days ago' +"%Y-%m-%dT%H:%M:%SZ" > since.txt` (Linux).
+  2. `uip or audit-logs list --created-after "$(cat since.txt)" --limit 100` → `logs_all.json`.
+  3. `uip or audit-logs list --component Folders --created-after "$(cat since.txt)" --limit 100` → `logs_folders.json`.
+
+  **STOP after step 3.** Do NOT analyze, summarize, format, or report on the
+  log entries. The check script reads the JSON files directly. Do NOT ask for
+  approval. Do NOT pause.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked audit-logs list with --created-after"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+audit-logs\s+list.*--created-after'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent filtered by --component"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+audit-logs\s+list.*--component'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral check: both responses have Result=Success and Data is a list"
+    command: "python3 $TASK_DIR/check_audit_logs.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
