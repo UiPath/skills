@@ -1,0 +1,81 @@
+task_id: skill-agent-coded-deploy-folder-and-rebump
+description: >
+  Deploy to a named Orchestrator folder (NOT `--my-workspace` — that
+  branch is already covered by `deploy_my_workspace`) and re-deploy
+  after a tiny code change. Exercises two deploy paths: (1) `uip codedagent deploy --folder
+  "<Name>"`, and (2) the troubleshooting row "Version already exists
+  on deploy → bump patch version in pyproject.toml". A second deploy
+  without the patch bump fails with `Version already exists`, so the
+  agent must update `pyproject.toml` between the two deploys.
+  **Cloud auth + a writable folder named `Shared` required** — the
+  test harness must provision or alias that folder for the tenant
+  identity before the agent turn starts.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:deploy, feature:deploy]
+max_iterations: 1
+task_timeout: 1800
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1500
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a minimal echo agent named `acme-echo` that takes a
+  `message` (string) and returns `{"echoed": message}`. No LLM
+  needed.
+
+  Once it's working locally, ship it to the `Shared` folder in
+  Orchestrator. After that first ship, apply one small change so
+  the output prepends `"acme: "` — i.e. `main(message="hi")` now
+  returns `echoed="acme: hi"` — and ship to the same `Shared`
+  folder a second time.
+
+  The test harness has UiPath auth pre-configured and the
+  `Shared` folder already exists. Do NOT pause between planning
+  and implementation. Do NOT ask for approval, confirmation, or
+  feedback between the two ships. Complete end-to-end in a single
+  pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deployed to the `Shared` folder TWICE (initial + after edit)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--folder\s+["'']?Shared'
+    min_count: 2
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent project exists"
+    path: "acme-echo/pyproject.toml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "pyproject.toml version was bumped past the scaffold default (0.0.1), proving the re-deploy bumped the patch"
+    command: "python3 $TASK_DIR/check_deploy_folder_and_rebump.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

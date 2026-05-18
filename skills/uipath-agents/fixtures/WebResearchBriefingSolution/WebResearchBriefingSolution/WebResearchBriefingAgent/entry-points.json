@@ -1,0 +1,46 @@
+{
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+        {
+            "filePath": "/content/agent.json",
+            "uniqueId": "8689053e-f34d-4936-abfd-6a8edf85b068",
+            "type": "agent",
+            "input": {
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": "The topic or question to research on the web"
+                    },
+                    "slackChannel": {
+                        "type": "string",
+                        "description": "Slack channel ID or name where the briefing will be posted"
+                    },
+                    "jiraProject": {
+                        "type": "string",
+                        "description": "Jira project key where a tracking issue will be created (e.g. DEMO)"
+                    }
+                },
+                "required": ["topic", "slackChannel", "jiraProject"]
+            },
+            "output": {
+                "type": "object",
+                "properties": {
+                    "slackMessageTimestamp": {
+                        "type": "string",
+                        "description": "Timestamp of the posted Slack message"
+                    },
+                    "jiraIssueKey": {
+                        "type": "string",
+                        "description": "Key of the created Jira tracking issue (e.g. DEMO-42)"
+                    },
+                    "sourcesCount": {
+                        "type": "integer",
+                        "description": "Total number of sources found (web search results + summary citations)"
+                    }
+                }
+            }
+        }
+    ]
+}

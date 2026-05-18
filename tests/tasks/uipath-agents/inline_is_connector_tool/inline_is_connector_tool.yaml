@@ -52,9 +52,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the solution with uip solution new"
+    description: "Agent created the solution with uip solution init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
+    command_pattern: 'uip\s+solution\s+init'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

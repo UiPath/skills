@@ -1,4 +1,4 @@
-`task_id: skill-sdd-smoke-file-reading
+task_id: skill-sdd-smoke-file-reading
 description: >
   Smoke test: the skill workflow uses the Read tool on a provided PDD file
   rather than relying on inline prompt content. Round-trip verification with
