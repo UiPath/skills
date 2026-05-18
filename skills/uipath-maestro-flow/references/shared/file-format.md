@@ -2,6 +2,22 @@
 
 The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
 
+## Table of contents
+
+- [Top-level structure](#top-level-structure)
+- [Project structure (from `uip maestro flow init`)](#project-structure-from-uip-maestro-flow-init)
+- [Node instance](#node-instance)
+- [Layout](#layout)
+- [Edge — both ports required](#edge--both-ports-required)
+- [Definition entry](#definition-entry)
+- [Common node types](#common-node-types)
+- [Standard ports by node type](#standard-ports-by-node-type)
+- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+
 ## Top-level structure
 
 ```json
