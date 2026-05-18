@@ -85,3 +85,7 @@
 
 # Access Policy Governance skill (CLI-based ToolUsePolicy management)
 /skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+
+# Guardrails Lens skill (inspect guardrails-analysis results: violating agents, runs, prompts; submit analysis jobs)
+/skills/uipath-guardrails-lens/ @ctiliescu @guardrails
+/commands/guardrails-lens.md @ctiliescu @guardrails
