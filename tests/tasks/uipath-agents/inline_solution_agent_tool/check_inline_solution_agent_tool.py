@@ -5,7 +5,9 @@ Validates:
   1. Flow has a `uipath.agent.autonomous` node and a
      `uipath.agent.resource.tool.agent.*` node (per-agent suffix).
   2. Edge wires agent.tool -> tool.input.
-  3. Inline agent dir has `resources/ToolAgent/resource.json` with:
+  3. Inline agent dir has at least one resource.json under
+     `resources/**/` (UUID-named per inline-in-flow.md) for a
+     "ToolAgent" solution agent-as-tool with:
        - $resourceType == "tool"
        - type == "agent"
        - location == "solution"
@@ -21,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
@@ -46,25 +49,22 @@ def main() -> None:
     print("OK: agent 'tool' handle is wired to agent-as-tool node's 'input' handle")
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
-    resource_path = agent_dir / "resources" / "ToolAgent" / "resource.json"
-    resource = load_json(resource_path)
-
-    expected = {
-        "$resourceType": "tool",
-        "type": "agent",
-        "location": "solution",
-    }
-    for key, want in expected.items():
-        if resource.get(key) != want:
-            sys.exit(f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}")
+    resource_path, resource = find_inline_resource(
+        agent_dir,
+        lambda d: (
+            d.get("$resourceType") == "tool"
+            and d.get("type") == "agent"
+            and d.get("location") == "solution"
+            and (d.get("properties") or {}).get("processName") == "ToolAgent"
+        ),
+        description='solution agent-as-tool "ToolAgent"',
+    )
     print(
         f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
         f'$resourceType="tool", type="agent", location="solution"'
     )
 
     props = resource.get("properties") or {}
-    if props.get("processName") != "ToolAgent":
-        sys.exit(f'FAIL: properties.processName should be "ToolAgent", got {props.get("processName")!r}')
     if props.get("folderPath") != "solution_folder":
         sys.exit(f'FAIL: properties.folderPath should be "solution_folder", got {props.get("folderPath")!r}')
     print('OK: properties.processName="ToolAgent", folderPath="solution_folder"')

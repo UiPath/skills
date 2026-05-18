@@ -5,11 +5,16 @@ Reads WeatherSol/WeatherFlow/WeatherFlow.flow (existence asserted by
 a file_exists criterion in the task YAML) and verifies:
 
   1. The flow contains a `uipath.agent.autonomous` node.
-  2. The node's `model.source` property points to an existing
-     directory (the inline agent's UUID-named subdirectory).
-  3. The node's `model.serviceType` is `Orchestrator.StartInlineAgentJob`
-     (inline agents only — `StartAgentJob` is the solution-agent variant
-     and would fail at runtime).
+  2. The node's source (read from `inputs.source`, falling back to
+     `model.source` for legacy fixtures) points to an existing
+     directory (the inline agent's UUID-named subdirectory). Per
+     inline-in-flow.md Critical Rule 15, the registry definition
+     declares `model.source: true` but flow-core hoists the source
+     identity onto `inputs.source` on each node instance.
+  3. If `model.serviceType` is present, it must be
+     `Orchestrator.StartInlineAgentJob` (not the solution-agent variant
+     `StartAgentJob`). The field is optional on the instance — the BPMN
+     `serviceType` is inherited from the node definition at compile time.
   4. The agent node is wired into the flow — at least one incoming edge
      on port `input` and at least one outgoing edge on port `success`.
 """
@@ -39,35 +44,41 @@ def main() -> None:
         )
 
     agent_node = agent_nodes[0]
+    inputs = agent_node.get("inputs") or {}
     model = agent_node.get("model") or {}
 
-    source = model.get("source")
-    if not source:
+    source = inputs.get("source") or model.get("source")
+    if not isinstance(source, str) or not source:
         sys.exit(
-            f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no model.source"
+            f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no inputs.source "
+            f"(checked model.source fallback too)"
         )
+    source_location = "inputs.source" if inputs.get("source") else "model.source"
 
     agent_dir = FLOW_PATH.parent / source
     if not agent_dir.is_dir():
         sys.exit(
-            f"FAIL: model.source {source!r} does not point to an "
+            f"FAIL: {source_location} {source!r} does not point to an "
             f"existing directory ({agent_dir})"
         )
 
     print(
-        f"OK: {INLINE_AGENT_NODE_TYPE} node's model.source points to "
+        f"OK: {INLINE_AGENT_NODE_TYPE} node's {source_location} points to "
         f"inline agent directory {source}"
     )
 
     service_type = model.get("serviceType")
-    if service_type != INLINE_AGENT_SERVICE_TYPE:
+    if service_type is not None and service_type != INLINE_AGENT_SERVICE_TYPE:
         sys.exit(
             f"FAIL: {INLINE_AGENT_NODE_TYPE} node's model.serviceType is "
-            f"{service_type!r}, expected {INLINE_AGENT_SERVICE_TYPE!r}. "
-            f"'Orchestrator.StartAgentJob' is the solution-agent variant "
-            f"and must not be used for inline agents."
+            f"{service_type!r}, expected {INLINE_AGENT_SERVICE_TYPE!r} or "
+            f"omitted. 'Orchestrator.StartAgentJob' is the solution-agent "
+            f"variant and must not be used for inline agents."
         )
-    print(f"OK: model.serviceType is {INLINE_AGENT_SERVICE_TYPE!r}")
+    if service_type == INLINE_AGENT_SERVICE_TYPE:
+        print(f"OK: model.serviceType is {INLINE_AGENT_SERVICE_TYPE!r}")
+    else:
+        print("OK: model.serviceType omitted (inherited from node definition)")
 
     agent_id = agent_node.get("id")
     if not agent_id:

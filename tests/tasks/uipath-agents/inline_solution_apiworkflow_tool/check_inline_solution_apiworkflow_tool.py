@@ -2,14 +2,16 @@
 """Inline agent + solution API workflow tool check.
 
 Validates:
-  1. Flow has a `uipath.agent.autonomous` node whose `model.source`
-     resolves to an existing UUID subdirectory.
+  1. Flow has a `uipath.agent.autonomous` node whose `inputs.source`
+     (falling back to `model.source` for legacy fixtures) resolves to
+     an existing UUID subdirectory.
   2. Flow has a `uipath.agent.resource.tool.*` node for the API workflow
      (exact suffix under-asserted — use prefix match).
   3. Edge wires the autonomous node's `tool` handle (source) to the
      tool node's `input` handle (target).
-  4. Inside the inline agent dir, `resources/CalculateShippingRate/resource.json`
-     declares a solution-internal API workflow tool:
+  4. Inside the inline agent dir, at least one resource.json under
+     `resources/**/` (UUID-named per inline-in-flow.md) declares a
+     "CalculateShippingRate" solution-internal API workflow tool:
        - $resourceType == "tool"
        - type == "api"
        - location == "solution"
@@ -24,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
@@ -49,17 +52,16 @@ def main() -> None:
     print("OK: agent 'tool' handle is wired to API workflow tool node's 'input' handle")
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
-    resource_path = agent_dir / "resources" / "CalculateShippingRate" / "resource.json"
-    resource = load_json(resource_path)
-
-    expected = {
-        "$resourceType": "tool",
-        "type": "api",
-        "location": "solution",
-    }
-    for key, want in expected.items():
-        if resource.get(key) != want:
-            sys.exit(f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}")
+    resource_path, resource = find_inline_resource(
+        agent_dir,
+        lambda d: (
+            d.get("$resourceType") == "tool"
+            and d.get("type") == "api"
+            and d.get("location") == "solution"
+            and d.get("name") == "CalculateShippingRate"
+        ),
+        description='solution API workflow tool "CalculateShippingRate"',
+    )
     print(
         f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
         f'$resourceType="tool", type="api", location="solution"'

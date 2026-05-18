@@ -9,8 +9,9 @@ Validates:
        - isEnabled is truthy
   2. The escalation has at least one channel wired to ActionCenter:
        - channels is a non-empty list
-       - at least one channel has name == "ActionCenter"
-         and type == "ActionCenter"
+       - at least one channel has type == "actionCenter" (lowercase, per
+         the schema documented in the skill's escalation reference) and
+         a non-empty name.
   3. agent.json.inputSchema  == entry-points.json entryPoints[0].input
      agent.json.outputSchema == entry-points.json entryPoints[0].output
      (Critical Rule 4 — schema sync.)
@@ -58,15 +59,16 @@ def assert_actioncenter_channel(resource: dict) -> None:
     ac_channels = [
         c for c in channels
         if isinstance(c, dict)
-        and c.get("name") == "ActionCenter"
-        and c.get("type") == "ActionCenter"
+        and c.get("type") == "actionCenter"
+        and isinstance(c.get("name"), str)
+        and c["name"].strip()
     ]
     if not ac_channels:
         sys.exit(
-            "FAIL: no channel with name=='ActionCenter' and type=='ActionCenter' "
+            'FAIL: no channel with type=="actionCenter" and non-empty name '
             f"in channels: {json.dumps(channels, indent=2)}"
         )
-    print(f"OK: found {len(ac_channels)} ActionCenter channel(s)")
+    print(f"OK: found {len(ac_channels)} actionCenter channel(s)")
 
 
 def assert_schema_sync(agent: dict, entry: dict) -> None:
