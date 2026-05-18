@@ -33,8 +33,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "CLI is functional — external-apps list returns valid JSON"
-    command: "uip admin external-apps list --output json 2>&1 | python3 -c \"import sys,json; d=json.load(sys.stdin); assert d['Result']=='Success', f'Got {d}'; print('OK')\""
+    description: "CLI is functional — external-apps list returns valid JSON array"
+    command: "python3 $TASK_DIR/../_shared/check_external_apps_list.py"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

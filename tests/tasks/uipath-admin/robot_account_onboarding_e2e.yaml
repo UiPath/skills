@@ -66,9 +66,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Robot-accounts list returns valid JSON with Success result"
-    command: "uip admin robot-accounts list --output json 2>&1 | python3 -c \"import sys,json; d=json.load(sys.stdin); assert d['Result']=='Success' and d['Code']=='RobotAccountList', f'Got {d}'; print('OK')\""
+    description: "Robot account 'smoke-e2e-bot' was created and exists"
+    command: "python3 $TASK_DIR/../_shared/check_robot_account.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
+    weight: 3.0
     pass_threshold: 1.0

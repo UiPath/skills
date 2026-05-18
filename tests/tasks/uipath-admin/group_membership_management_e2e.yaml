@@ -83,17 +83,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Groups list returns valid JSON with Success result"
-    command: "uip admin groups list --output json 2>&1 | python3 -c \"import sys,json; d=json.load(sys.stdin); assert d['Result']=='Success' and d['Code']=='GroupList', f'Got {d}'; print('OK')\""
+    description: "Group 'Invoice Processing Team' exists and has at least one member"
+    command: "python3 $TASK_DIR/../_shared/check_group_membership.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Users list returns valid JSON with Success result"
-    command: "uip admin users list --output json 2>&1 | python3 -c \"import sys,json; d=json.load(sys.stdin); assert d['Result']=='Success' and d['Code']=='UserList', f'Got {d}'; print('OK')\""
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.5
+    weight: 3.0
     pass_threshold: 1.0

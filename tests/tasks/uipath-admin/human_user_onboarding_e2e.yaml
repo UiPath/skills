@@ -58,9 +58,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Users list returns valid JSON with Success result"
-    command: "uip admin users list --output json 2>&1 | python3 -c \"import sys,json; d=json.load(sys.stdin); assert d['Result']=='Success' and d['Code']=='UserList', f'Got {d}'; print('OK')\""
+    description: "Invite was processed — user search returns valid response"
+    command: "python3 $TASK_DIR/../_shared/check_user_invited.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
