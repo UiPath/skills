@@ -5,7 +5,9 @@ Validates:
   1. Flow has a `uipath.agent.autonomous` node and a
      `uipath.agent.resource.tool.agent.*` node (per-agent suffix).
   2. Edge wires agent.tool -> tool.input.
-  3. Inline agent dir has `resources/SupportExpert/resource.json` with:
+  3. Inline agent dir has at least one resource.json under
+     `resources/**/` (UUID-named per inline-in-flow.md) for a
+     "SupportExpert" external agent-as-tool with:
        - $resourceType == "tool"
        - type == "agent"
        - location == "external"
@@ -21,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
+    find_inline_resource,
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
@@ -46,25 +49,22 @@ def main() -> None:
     print("OK: agent 'tool' handle is wired to external agent-as-tool node's 'input' handle")
 
     agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
-    resource_path = agent_dir / "resources" / "SupportExpert" / "resource.json"
-    resource = load_json(resource_path)
-
-    expected = {
-        "$resourceType": "tool",
-        "type": "agent",
-        "location": "external",
-    }
-    for key, want in expected.items():
-        if resource.get(key) != want:
-            sys.exit(f"FAIL: {resource_path} {key!r} should be {want!r}, got {resource.get(key)!r}")
+    resource_path, resource = find_inline_resource(
+        agent_dir,
+        lambda d: (
+            d.get("$resourceType") == "tool"
+            and d.get("type") == "agent"
+            and d.get("location") == "external"
+            and (d.get("properties") or {}).get("processName") == "SupportExpert"
+        ),
+        description='external agent-as-tool "SupportExpert"',
+    )
     print(
         f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
         f'$resourceType="tool", type="agent", location="external"'
     )
 
     props = resource.get("properties") or {}
-    if props.get("processName") != "SupportExpert":
-        sys.exit(f'FAIL: properties.processName should be "SupportExpert", got {props.get("processName")!r}')
     fpath = props.get("folderPath")
     if not isinstance(fpath, str) or not fpath.strip():
         sys.exit(f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}")
