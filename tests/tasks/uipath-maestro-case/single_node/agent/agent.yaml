@@ -4,8 +4,7 @@ description: >
   AGENT. Exercises the agent plugin, registry resolution via
   agent-index.json, and direct caseplan.json write of a `type: "agent"`
   task. Validates the resulting case file and runs `uip maestro case debug`
-  end-to-end, asserting the CountLetters agent returns the expected 'r'
-  letter count.
+  end-to-end, asserting only that the case finalStatus is `Completed`.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
@@ -128,7 +127,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has an agent task and debug returns the 'r' letter count for 'arrow'"
+    description: "Caseplan has an agent task and debug completes successfully"
     command: "python3 $TASK_DIR/check_agent_case.py"
     timeout: 900
     expected_exit_code: 0

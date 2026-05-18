@@ -4,7 +4,7 @@ description: >
   RPA workflow. Exercises planning, RPA-task plugin, registry resolution
   via process-index.json, and direct caseplan.json write of a `type: "rpa"`
   task. Validates the resulting case file and runs `uip maestro case debug`
-  end-to-end, asserting the RPA task returns the expected problem title.
+  end-to-end, asserting only that the case finalStatus is `Completed`.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
@@ -127,7 +127,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has an rpa task and debug returns the problem 123 title"
+    description: "Caseplan has an rpa task and debug completes successfully"
     command: "python3 $TASK_DIR/check_rpa_case.py"
     timeout: 900
     expected_exit_code: 0

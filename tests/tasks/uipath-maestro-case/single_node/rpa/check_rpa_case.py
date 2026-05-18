@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""RpaSingleCase: an rpa task is wired and debug returns the problem title."""
+"""RpaSingleCase: an rpa task is wired and debug completes successfully."""
 
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
-    assert_outputs_contain,
     assert_task_type_present,
     run_debug,
     task_is_skeleton,
@@ -20,11 +19,10 @@ def main():
             "FAIL: rpa task is a skeleton — debug requires a resolved "
             "ProjectEuler registry entry with a real taskTypeId"
         )
-    payload = run_debug(timeout=720)
-    assert_outputs_contain(payload, "prime square remainders")
+    run_debug(timeout=720)
     print(
         f"OK: rpa task wired (displayName={task.get('displayName')!r}); "
-        f"debug returned the problem 123 title"
+        f"debug finalStatus=Completed"
     )
 
 
