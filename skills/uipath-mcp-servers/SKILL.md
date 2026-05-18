@@ -11,7 +11,7 @@ Register UiPath AgentHub MCP servers via `uip agenthub mcp` (six server types). 
 ## When to Use This Skill
 
 - User asks to create / register an MCP server (any of: uipath, coded, command, remote, swagger, platform).
-- User asks to register a remote / swagger / coded / command / platform MCP server pointing at an external URL, OpenAPI spec, RCS process, subprocess command, or first-party UiPath service.
+- User asks to register a remote / swagger / coded / command / platform MCP server pointing at an external URL, OpenAPI spec, published coded-agent process in Orchestrator, subprocess command, or first-party UiPath service.
 - User asks to update an MCP server (change a remote URL, swap a swagger spec, repoint a coded process) or `refresh-tools` on an existing server.
 - User asks to add an Integration Service activity (Jira, Slack, Outlook, Gmail, Salesforce, Workday, ServiceNow, etc.) as a tool on an AgentHub MCP server → load `references/is-activity-workflow.md` before authoring.
 - User asks to add an Orchestrator resource (process, agent, agentic-process, api-workflow) as a tool on an MCP server.
@@ -40,7 +40,7 @@ These rules apply to every server type and every tool kind. IS-activity adds fiv
 | Type | Differentiating flag | When to use | Tool surface |
 |------|---------------------|-------------|--------------|
 | `uipath`   | _(none)_              | AgentHub-hosted server you'll fill with `mcp-tools create-*` (is-activity / resource / raw). | Authored via `uip agenthub mcp-tools create-*`. |
-| `coded`    | `--process-key <key>` | Wrap an existing coded-agent process (RCS) as an MCP server. | Tools discovered via `refresh-tools` (async 202). |
+| `coded`    | `--process-key <key>` | Wrap an existing coded-agent process (published to Orchestrator) as an MCP server. | Tools discovered via `refresh-tools` (async 202). |
 | `command`  | `--command <cmd>`     | Spawn a local subprocess as an MCP server. | Tools discovered via `refresh-tools` (async 202). |
 | `remote`   | `--uri <url>` (+ `--file`/`--body` for headers/auth) | Point at an existing HTTP MCP server. Bearer/header auth values can be Orchestrator asset references; `AssetReferenceSubstitutor` resolves them at runtime through the caller's token + folder context. Do NOT introduce a separate AgentHub credential store. | Tools discovered via `refresh-tools` (sync 200). |
 | `platform` | `--service <name>`    | Bind to a first-party UiPath service. | Server-defined. |

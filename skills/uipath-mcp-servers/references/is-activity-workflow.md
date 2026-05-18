@@ -1,6 +1,6 @@
 # IS-Activity Tool Authoring
 
-Full workflow for `uip agenthub mcp-tools create-is-activity` — wrapping an Integration Service connector activity as a tool on a `uipath`-type AgentHub MCP server. The parent SKILL.md keeps the generic server + tool-kind surface; this file owns the IS-activity-specific rules, pre-flight, workflow, and `ActivityMetadata` shape.
+Full workflow for `uip agenthub mcp-tools create-is-activity` — wrapping an Integration Service connector activity as an MCP tool.
 
 Read this end-to-end before authoring an IS-activity tool. Pair it with the cross-skill IS references it points at.
 
