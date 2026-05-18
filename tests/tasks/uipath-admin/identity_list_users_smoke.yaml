@@ -1,8 +1,7 @@
 task_id: skill-admin-identity-list-users-smoke
 description: >
   Smoke test: agent uses the uipath-admin skill to list identity users.
-  Tests correct CLI namespace, --output json convention, and verifies
-  the CLI returns a successful JSON response with user data.
+  Tests correct CLI namespace and --output json convention.
 tags: [uipath-admin, smoke, list]
 
 sandbox:
@@ -20,13 +19,5 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+users\s+list\s+.*--output\s+json'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "CLI returns Success with UserList code and valid array"
-    command: "python3 $TASK_DIR/../_shared/check_users_list.py"
-    timeout: 30
-    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

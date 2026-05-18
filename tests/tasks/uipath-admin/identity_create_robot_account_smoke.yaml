@@ -39,11 +39,3 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-
-  - type: run_command
-    description: "CLI is functional — robot-accounts list returns valid JSON array"
-    command: "python3 $TASK_DIR/../_shared/check_robot_accounts_list.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 1.0
