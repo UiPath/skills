@@ -213,13 +213,13 @@ jobs:
       # only carries the cut-release `latest` line which lags `main` by
       # days, so smoke against `@latest` was masking CLI changes that
       # task YAMLs and skills had already been updated for.
-      - name: Install uip CLI + admin tool (GitHub Packages @alpha)
+      - name: Install uip CLI (GitHub Packages @alpha — tracks cli/main)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           npm config set @uipath:registry https://npm.pkg.github.com/
           npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
-          npm install -g @uipath/cli@alpha @uipath/admin-tool@alpha
+          npm install -g @uipath/cli@alpha
           uip --version
           uip admin --help
 
