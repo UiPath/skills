@@ -1,8 +1,8 @@
 task_id: skill-platform-job-control-e2e
 description: >
-  E2E: agent uses the skill to exercise the stop/restart job control flow on
-  the long-running seeded process. Writes the observed state transition
-  sequence to a file the check reads.
+  E2E: agent starts a job, stops it, then restarts. Check queries tenant
+  jobs list directly to verify both jobs exist on the seeded process and
+  the stopped one is in a stop-related state.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, orchestrator, jobs]
 
 agent:
@@ -24,27 +24,25 @@ post_run:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  `seed.json` provides `process_key` (a long-running stub that delays ~30s
-  before completing) and `folder_path`.
+  `seed.json` provides `process_key` (a long-running stub) and `folder_path`.
 
-  Goal: start a job, stop it (SoftStop), observe the stopping state, restart
-  it, wait for terminal. Write a JSON summary to `job_control.json`:
-  ```
-  {
-    "first_job_key": "<first job key>",
-    "state_after_stop": "<state observed after stop, e.g. Stopping/Stopped/Faulted>",
-    "restart_job_key": "<job key returned by restart>",
-    "restart_terminal": "<Successful|Faulted|Stopped>"
-  }
-  ```
+  Goal: leave the tenant in a state where:
+  - Two jobs have run on `process_key`
+  - The first reached a stop-related state (Stopping / Stopped / Faulted /
+    Killed — i.e. it was halted, not allowed to run to natural Successful)
+  - The second is in a terminal state (Successful / Faulted / Stopped)
+
+  Write both job keys to `job_keys.txt`, one per line, in the order they
+  were created. The check script queries tenant for each and verifies the
+  states.
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
   - type: run_command
-    description: "State transitions through stop, restart reached terminal"
+    description: "Tenant: 2 jobs on process; first stop-related, second terminal"
     command: "python3 $TASK_DIR/check_job_control.py"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

@@ -1,8 +1,8 @@
 task_id: skill-platform-job-logs-traces-e2e
 description: >
-  E2E: agent uses the skill to start a job on the seeded process, wait for
-  completion, and verify (locally) that logs + traces were retrievable.
-  Writes a small observation file the check reads.
+  E2E: agent runs a job on the seeded process. Check queries tenant state
+  (job state, logs, traces) directly via uip and verifies the job reached
+  terminal, produced logs, and emitted traces.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:discover, orchestrator, jobs]
 
 agent:
@@ -26,33 +26,18 @@ initial_prompt: |
 
   `seed.json` provides `process_key` and `folder_path`.
 
-  Goal: start a job for `process_key`, wait for it to reach a terminal state,
-  retrieve logs and traces.
-
-  Use the skill's recommended pattern (`--wait-for-completion` on `jobs start`
-  — don't poll `jobs get` in a loop, it'll time out the agent turn before
-  picking up the terminal state).
-
-  Write a JSON summary to `job_outcome.json` with these fields:
-  ```
-  {
-    "job_key": "<job-key>",
-    "terminal_state": "<Successful|Faulted|Stopped>",
-    "log_count": <number of log entries returned>,
-    "span_count": <number of trace spans returned>
-  }
-  ```
-
-  Trace ingestion may lag — be patient (retry traces fetch a few times if Data
-  is empty initially).
+  Goal: run a job on the seeded process to a terminal state. When done, leave
+  the job key in `job_key.txt` (just the GUID on a single line). The check
+  script queries tenant state from that key — it independently verifies the
+  job reached terminal, has logs, and has traces.
 
   Do NOT ask for approval. Do NOT pause.
 
 success_criteria:
   - type: run_command
-    description: "Job reached terminal state and produced logs + traces"
+    description: "Tenant: job is terminal with logs + traces"
     command: "python3 $TASK_DIR/check_job_logs_traces.py"
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
