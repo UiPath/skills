@@ -2,6 +2,10 @@
 
 ## Basic List (All Records)
 
+Two pagination modes. `--cursor` and `--offset` are mutually exclusive.
+
+**Cursor (recommended for large or changing datasets):**
+
 ```bash
 # First page
 uip df records list <entity-id> --limit 50 --output json
@@ -10,10 +14,18 @@ uip df records list <entity-id> --limit 50 --output json
 uip df records list <entity-id> --limit 50 --cursor <NextCursor> --output json
 ```
 
+**Offset (for direct page jumps; requires `@uipath/data-fabric-tool` 1.0.0+):**
+
+```bash
+# Skip the first 100 records, return the next 50
+uip df records list <entity-id> --limit 50 --offset 100 --output json
+```
+
 Response: `{ TotalCount, Records, HasNextPage, NextCursor?, CurrentPage?, TotalPages? }`
 
-- Use `HasNextPage` to check if more records exist
-- Pass the `NextCursor` string value to `--cursor` to fetch the next page
+- `HasNextPage` indicates more records exist
+- Pass `NextCursor` to `--cursor` for the next page (cursor mode)
+- Increment `--offset` by `--limit` for the next page (offset mode)
 
 ## Filtered Query
 
@@ -23,14 +35,21 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Pagination for query also uses `--limit` and `--cursor` flags — not body keys.
+Query supports the same `--limit`, `--cursor`, and `--offset` flags as `list`. Not body keys.
 
 ```bash
-# Query with pagination
+# Query with cursor pagination
 uip df records query <entity-id> \
   --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Score","operator":">=","value":"80"}]}}' \
   --limit 100 \
   --cursor <NextCursor> \
+  --output json
+
+# Query with offset pagination (tool 1.0.0+)
+uip df records query <entity-id> \
+  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Score","operator":">=","value":"80"}]}}' \
+  --limit 100 \
+  --offset 200 \
   --output json
 ```
 
@@ -52,7 +71,7 @@ uip df records query <entity-id> \
 }
 ```
 
-> `start` and `limit` are **not** valid body keys — use `--limit` and `--cursor` CLI flags instead.
+> `start` and `limit` are **not** valid body keys — use `--limit`, `--cursor`, or `--offset` CLI flags instead.
 
 ### Operators
 
