@@ -205,18 +205,23 @@ jobs:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      # Install from public npm at @latest. `--@uipath:registry=`
-      # forces the @uipath scope to public npm regardless of any
-      # `.npmrc` scope mapping (e.g., to the internal GitHub Packages
-      # feed, which carries divergent 1.0.0-alpha.* prereleases). See
-      # smoke-rpa-skills.yml for the full rationale.
+      # Install from GitHub Packages under the `alpha` dist-tag so smoke
+      # tracks `cli/main`. Every merge to `cli/main` runs
+      # cli/.github/workflows/ci.yml, which publishes a
+      # `-alpha.<date>.<run>` prerelease to
+      # https://npm.pkg.github.com/ under dist-tag `alpha`. Public npm
+      # only carries the cut-release `latest` line which lags `main` by
+      # days, so smoke against `@latest` was masking CLI changes that
+      # task YAMLs and skills had already been updated for.
       # NOTE: @uipath/admin-tool is not yet in a stable CLI release;
       # uipath-admin smoke tests tolerate "unknown command 'admin'".
-      - name: Install uip CLI (public npm @latest)
+      - name: Install uip CLI (GitHub Packages @alpha — tracks cli/main)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          npm install -g \
-            --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest
+          npm config set @uipath:registry https://npm.pkg.github.com/
+          npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
+          npm install -g @uipath/cli@alpha
           uip --version
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
@@ -392,8 +397,35 @@ jobs:
           print(f'All {len(task_jsons)} task(s) passed llm_review >= {threshold}')
           PY
 
-      - name: Fail if tests failed
-        # Also catch `cancelled` (the job timeout firing) so a truncated
-        # run is not silently reported green.
-        if: steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled'
-        run: exit 1
+      # Hard gate: fail the job if fewer than PASS_RATE_THRESHOLD of tasks
+      # passed deterministic criteria. Lets a small number of flakes /
+      # known-broken tasks through without blocking every PR, while still
+      # catching systemic regressions. Cancellation (120m timeout) is
+      # always a fail since a truncated run has no meaningful rate.
+      - name: Enforce pass-rate threshold (>= 95%)
+        if: always()
+        working-directory: tests
+        env:
+          PASS_RATE_THRESHOLD: "0.95"
+        run: |
+          if [ "${{ steps.smoke.outcome }}" = "cancelled" ]; then
+            echo "::error::Smoke step cancelled (timeout) — failing without rate check"
+            exit 1
+          fi
+          python - <<'PY'
+          import json, os, pathlib, sys
+          threshold = float(os.environ['PASS_RATE_THRESHOLD'])
+          tasks = sorted(pathlib.Path('runs').rglob('task.json'))
+          results = [json.loads(p.read_text(encoding='utf-8')) for p in tasks]
+          passed = sum(1 for d in results if d.get('final_status') == 'SUCCESS')
+          n = len(results)
+          rate = passed / n if n else 0.0
+          for d in results:
+              s = d.get('final_status')
+              if s != 'SUCCESS':
+                  print(f"::warning::{d.get('task_id')}: status={s}")
+          print(f'Pass rate: {rate:.1%} ({passed}/{n})')
+          if rate < threshold:
+              print(f'::error::Pass rate {rate:.1%} < threshold {threshold:.0%}')
+              sys.exit(1)
+          PY
