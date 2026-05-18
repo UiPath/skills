@@ -10,7 +10,7 @@ description: >
   NOT "not authenticated"), wrong-activity-type, and per-robot-no-value
   before converging on the missing robot license.
 
-tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, robot-not-authenticated]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, robot-not-authenticated, rpa]
 
 agent:
   type: claude-code

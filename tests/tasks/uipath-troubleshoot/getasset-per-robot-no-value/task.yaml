@@ -9,7 +9,7 @@ description: >
   folder-scope-mismatch, permission-denied, and wrong-activity-type —
   and converge on the per-robot value gap.
 
-tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, per-robot-no-value]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, per-robot-no-value, rpa]
 
 agent:
   type: claude-code

@@ -10,7 +10,7 @@ description: >
   populate its outputs, then connect that to the documented package-
   version bug.
 
-tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, activity-bug-silent-failure]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, activity-bug-silent-failure, rpa]
 
 agent:
   type: claude-code
