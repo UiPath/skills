@@ -300,7 +300,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### IntSvc kind activity output read at the root returns `undefined`
 
 - **Symptom:** A `UiPath.IntSvc` activity (Outlook GetNewestEmail, Gmail Send Email, GitHub Search Issues, …) ran successfully — the run output shows the vendor data in the activity result. Downstream code that reads `$context.outputs.<Activity>.<field>` gets `undefined`. If conditions like `${$context.outputs.getNewestEmail_1?.subject?.length > 15}` always evaluate false. JsInvoke scripts return empty values.
-- **Cause:** IntSvc kind (`call: "UiPath.IntSvc"`) wraps the vendor payload in `.content`. The activity output is `{ statusCode: 200, content: { <vendor fields> }, headers: {...} }` — the actual data is one level deeper than the root.
+- **Cause:** IntSvc kind (`call: "UiPath.IntSvc"`) wraps the vendor payload in `.content`. The full activity output is `{ statusCode, statusText, headers, ok, request, content: { <vendor fields> }, vendorProcessingTimeMs }` — the actual data is one level deeper than the root, under `.content`. The other keys carry HTTP-level metadata you usually don't need.
 - **Fix:** Read through `.content`:
   ```javascript
   // ✗ Wrong — always undefined
@@ -309,20 +309,21 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   // ✓ Correct
   "${$context.outputs.getNewestEmail_1?.content?.subject}"
   ```
-  For list-shaped responses (e.g. `getMessages`, `searchIssues`), the items live under `.content.value[]`:
-  ```javascript
-  "${$context.outputs.getMessages_1?.content?.value?.[0]?.subject}"
-  ```
+  For list-shaped operations, `.content` itself holds the result — usually as a bare array (the IS proxy strips vendor-native envelopes like M365 Graph's `{ value: [...] }` before it reaches you), but the exact shape is per-operation. **Read the stub's `optionalConfiguration.fieldsContainer.outputJsonSchema.type` to know which:**
+  - `type: "array"` → `.content` IS the array. Read `.content[0].<field>`.
+  - `type: "object"` → `.content` is a single object. Read `.content.<field>`.
+
+  Verified shapes: Outlook `ListEmails` → `.content[0].subject` (bare array). Slack `send_message_to_user_v2` → `.content.ok`, `.content.ts` (single object). HTTP Request → `.content.<field>` (single object). For unverified vendors, log the activity output once and inspect.
 - **Defensive form for JsInvoke** (handles the local-CLI quirk where `.content` is sometimes a JSON string):
   ```javascript
   const out = $context.outputs.getNewestEmail_1;
   const raw = out && (out.content !== undefined ? out.content : out);
   const body = (typeof raw === 'string') ? JSON.parse(raw) : raw;
-  const item = body && Array.isArray(body.value) ? body.value[0] : body;
+  const item = Array.isArray(body) ? body[0] : body;
   return { subject: (item && (item.subject || item.Subject)) || '' };
   ```
-- **Note the camelCase export key** (`getNewestEmail_1`, not `GetNewestEmail_1`). Connector activities have a slot/export divergence — see "Connector activity export key is camelCase, not the slot's PascalCase" below.
-- **Http kind (`UiPath.Http`) is the same shape:** `{ statusCode, content, headers }`. The `.content` field carries the parsed response body. The wrapping is universal across both kinds.
+- **Use the stub's `Data.ExportBucketKey`** for downstream reads — for Outlook `getNewestEmail` it's `getNewestEmail_1`, not the slot's `GetNewestEmail_1`. Connector activities can have a slot/export divergence — see "Connector slot key and export-bucket key can differ — use the stub's values" below.
+- **Http kind (`UiPath.Http`) is the same shape:** `{ statusCode, statusText, headers, ok, request, content, vendorProcessingTimeMs }`. The `.content` field carries the parsed response body. The wrapping is universal across both kinds.
 
 ### Connector `bodyParameters` fields disappear after StudioWeb save (nested objects dropped)
 
@@ -371,19 +372,19 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   ```
   References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped](connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped).
 
-### Connector activity export key is camelCase, not the slot's PascalCase
+### Connector slot key and export-bucket key can differ — use the stub's values
 
-- **Symptom:** Authored a connector activity as `"GetNewestEmail_1"` with export `"GetNewestEmail_1": $output`. Workflow runs locally; downstream `$context.outputs.GetNewestEmail_1.content.subject` returns the correct value. After opening or saving in StudioWeb, downstream reads return `undefined`. The TypeScript linter shows `TS2551: Property 'GetNewestEmail_1' does not exist on type 'typeof outputs'. Did you mean 'getNewestEmail_1'?`. Diff of the file shows the export bucket key was renamed to `getNewestEmail_1` (camelCase) — the slot key in the `do` array stayed `GetNewestEmail_1` (PascalCase).
-- **Cause:** Connector activities are the only activity type where StudioWeb's serializer renames the export bucket. Every other type (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps "slot key === export key." For connector activities, StudioWeb writes the export bucket as `Config.objectName` (camelCase, with `-` → `_`) suffixed with `_<N>`. So `getNewestEmail` → `getNewestEmail_1`, `send-mail-v2` → `send_mail_v2_1`, `http-request` → `http_request_1`. The slot key is left as the human-friendly PascalCase you authored.
-- **Fix:** Author the export bucket key in the StudioWeb-canonical form from the start. The slot key stays PascalCase; the export bucket and every downstream `$context.outputs.<X>` reference uses camelCase:
+- **Symptom:** Authored a connector activity using the slot key for the export — `"GetNewestEmail_1"` in the `do` array AND in the `export.as`. Workflow runs locally; downstream `$context.outputs.GetNewestEmail_1.content.subject` returns the correct value. After opening or saving in StudioWeb, downstream reads return `undefined`. The TypeScript linter shows `TS2551: Property 'GetNewestEmail_1' does not exist on type 'typeof outputs'. Did you mean 'getNewestEmail_1'?`. Diff of the file shows the export bucket key was rewritten to `getNewestEmail_1` — the slot key in the `do` array stayed `GetNewestEmail_1`.
+- **Cause:** Connector activities are the only activity type where the slot key (in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ. Every other type (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps "slot key === export key." For connector activities, StudioWeb's serializer normalizes the export bucket to a stub-computed form. The stub returns both keys correctly in `Data.SlotKey` and `Data.ExportBucketKey` — they are sometimes identical (Outlook `ListEmails` → both `ListEmails_1`) and sometimes different (Outlook `getNewestEmail` → slot `GetNewestEmail_1` / bucket `getNewestEmail_1`; HTTP `http-request` → slot `HttpRequest_1` / bucket `http_request_1`). Reconstructing either key from `objectName` by hand is what produces the mismatch.
+- **Fix:** Use `Data.SlotKey` and `Data.ExportBucketKey` from the stub verbatim. The slot key goes in the `do` array; the export-bucket key goes in `export.as` AND in every downstream `$context.outputs.<X>` reference:
   ```json
-  // ✓ Correct — author both keys correctly the first time
+  // ✓ Correct — both keys taken from the stub output
   {
-    "GetNewestEmail_1": {                          // slot key — PascalCase
+    "GetNewestEmail_1": {                          // Data.SlotKey
       "call": "UiPath.IntSvc",
       "with": { ... },
       "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"getNewestEmail_1\": $output } }" }
-                                                   // export bucket — camelCase
+                                                   // Data.ExportBucketKey
     }
   }
   ```
@@ -392,7 +393,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   "when": "${$context.outputs.getNewestEmail_1?.content?.subject?.length > 15}"
   "response": "${{ subject: $context.outputs.getNewestEmail_1.content.subject }}"
   ```
-- **Derivation rule:** take `objectName` from `uip api-workflow registry resolve` (or read `Data.ExportBucketKey` from `uip api-workflow registry stub`), replace any non-identifier character (e.g. `-`) with `_`, append `_<N>`. See [connector-activity-discovery.md#rule-c--slot-key-pascalcase--export-bucket-key-camelcase-objectname--n](connector-activity-discovery.md#rule-c--slot-key-pascalcase--export-bucket-key-camelcase-objectname--n).
+- **Rule:** Read `Data.SlotKey` and `Data.ExportBucketKey` from `uip api-workflow registry stub` output. Use both verbatim. Never derive either from `objectName` by hand. See [connector-activity-discovery.md — Rule (c)](connector-activity-discovery.md#rule-c--use-dataslotkey-and-dataexportbucketkey-from-the-stub-verbatim).
 
 ### `400 "Unable to parse multipart body"` from a curated send-email-style endpoint
 

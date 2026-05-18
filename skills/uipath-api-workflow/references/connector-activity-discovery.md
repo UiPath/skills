@@ -1,6 +1,6 @@
 # Connector Activity Discovery
 
-How to author an Integration Service connector activity (HTTP Request, Gmail, Outlook, GitHub, Slack, Salesforce, etc.) so it **renders cleanly in StudioWeb's designer** AND **runs from the CLI**. The flow uses `uip api-workflow registry` to resolve a keyword to an activity-type GUID, then build a ready-to-paste activity object with the right shape — `metadata.configuration` (with `unifiedTypesCompatible: true` + `savedJitInputFieldId` so StudioWeb renders the unified activity card), full endpoint path, multipart declarations, camelCase export bucket — all derived from StudioWeb's TypeCache + Integration Service Elements metadata.
+How to author an Integration Service connector activity (HTTP Request, Gmail, Outlook, GitHub, Slack, Salesforce, etc.) so it **renders cleanly in StudioWeb's designer** AND **runs from the CLI**. The flow uses `uip api-workflow registry` to resolve a keyword to an activity-type GUID, then build a ready-to-paste activity object with the right shape — `metadata.configuration` (with `unifiedTypesCompatible: true` + `savedJitInputFieldId` so StudioWeb renders the unified activity card), full endpoint path, multipart declarations, stub-computed slot and export-bucket keys — all derived from StudioWeb's TypeCache + Integration Service Elements metadata.
 
 > The `registry` subcommand ships with `@uipath/cli`'s api-workflow tool. No separate install. Both calls require `uip login` (TypeCache + IS Elements are tenant-scoped, served live).
 
@@ -35,7 +35,7 @@ What the `stub` command does internally (you don't need to call any of these by 
 - Calls IS Elements `getObjectMetadata` (or `getInstanceObjectMetadata` if `--connection-id` is given) → extracts full path, request fields, response fields, parameters, multipart signal
 - Picks Http kind vs IntSvc kind by `connectorKey === "uipath-uipath-http"`
 - Builds `metadata.configuration` (essential-only) with the full path
-- Derives the camelCase export-bucket key from `objectName`
+- Computes `SlotKey` (the activity's key in the `do` array) and `ExportBucketKey` (what `$context.outputs.<X>` reads as) — both returned in the stub output
 - Declares `multipartParameters` when the operation requires multipart
 - Stuffs `--inputs` values into the right `bodyParameters` / `queryParameters` / `pathParameters` / `multipartParameters` slots based on each field's `location` in the IS schema
 
@@ -332,7 +332,7 @@ The Http kind has a fixed shape: `with.method` is always `"POST"` (the outer wra
 | `body` | Request body for POST/PUT/PATCH (object or string) |
 | (other) | Anything you pass via `--inputs` is merged in here |
 
-**Reading the response.** Http kind output is wrapped: `{ statusCode, content, headers }`. The parsed response body is in `.content`. Read via the camelCase export bucket key `http_request_1`:
+**Reading the response.** Http kind output is wrapped: the parsed response body is in `.content` (the wrapper also carries `statusCode`, `statusText`, `headers`, `ok`, `request`, `vendorProcessingTimeMs` — usually you only need `.content`). Read via the stub's `ExportBucketKey` (for HTTP Request this is `http_request_1`):
 
 ```javascript
 ${$context.outputs.http_request_1.statusCode}              // 200
@@ -360,11 +360,11 @@ The IS proxy URL for a IntSvc kind call to Outlook GetNewestEmail becomes `/elem
 
 ## Vendor curated activity response shape — `content.X`, not `X`
 
-The output of a IntSvc kind (`UiPath.IntSvc`) call is wrapped: the actual vendor payload lives under `.content`, not at the root of the activity output. Reading the payload as `$context.outputs.<Activity>.X` returns `undefined`; the correct path is `$context.outputs.<Activity>.content.X` (or `.content.value[0].X` for list-shaped vendor responses).
+The output of a IntSvc kind (`UiPath.IntSvc`) call is wrapped: the actual vendor payload lives under `.content`, not at the root of the activity output. Reading the payload as `$context.outputs.<Activity>.X` returns `undefined`. Correct paths: `$context.outputs.<Activity>.content.<field>` for single-item operations, or `$context.outputs.<Activity>.content[<index>].<field>` for list ops. The IS proxy strips vendor-native list envelopes (e.g. M365 Graph's `{value: [...]}` → `.content: [...]` directly) — **never assume `.content.value[]`**. To know which shape applies: read the stub's `optionalConfiguration.fieldsContainer.outputJsonSchema` — `type: "object"` is single, `type: "array"` is list.
 
 | Activity output (IntSvc kind) | What you get | What you want |
 |--|--|--|
-| `$context.outputs.getNewestEmail_1` | `{ statusCode: 200, content: { subject: "...", from: { ... }, body: "..." }, headers: { ... } }` | the `.content.X` field |
+| `$context.outputs.getNewestEmail_1` | `{ statusCode: 200, statusText: "OK", headers: {...}, ok: true, request: {...}, content: { subject: "...", from: {...}, body: "..." }, vendorProcessingTimeMs: 276 }` | the `.content.<field>` field |
 | `$context.outputs.getNewestEmail_1.subject` | `undefined` (wrong path) | — |
 | `$context.outputs.getNewestEmail_1.content.subject` | `"Welcome to UiPath"` | ✓ |
 
@@ -382,11 +382,11 @@ Examples:
 const out = $context.outputs.getNewestEmail_1;
 const raw = out && (out.content !== undefined ? out.content : out);
 const body = (typeof raw === 'string') ? JSON.parse(raw) : raw;
-const item = body && Array.isArray(body.value) ? body.value[0] : body;
+const item = Array.isArray(body) ? body[0] : body;
 return { subject: (item && (item.subject || item.Subject)) || '' };
 ```
 
-This wrapping is universal for `UiPath.IntSvc` calls — it's how the IS proxy returns its envelope. Http kind (`UiPath.Http`) calls have their own wrapping (`statusCode`, `content`, `headers`) that follows the same pattern. Always assume `.content.<field>` first; if that's undefined, log the full output once to confirm the actual shape.
+This wrapping is universal for both kinds — the IS proxy returns the same envelope for `UiPath.IntSvc` and `UiPath.Http` calls: `{ statusCode, statusText, headers, ok, request, content, vendorProcessingTimeMs }`. The parsed payload always lives under `.content`; the other keys carry the HTTP-level metadata you usually don't need. Always assume `.content.<field>` first; if that's undefined, log the full output once to confirm the actual shape.
 
 ## Field-shape rules (flat keys, bare literals, renamed export, hub prefix)
 
@@ -450,33 +450,33 @@ References stay wrapped: `"message.body.content": "${$context.variables.titleLab
 
 When passing literals via `--inputs` to `stub`, pass bare strings: `--inputs '{"message.subject": "hi"}'`, NOT `'{"message.subject": "${'hi'}"}'`.
 
-### Rule (c) — Slot key (PascalCase) ≠ export bucket key (camelCase `objectName + "_N"`)
+### Rule (c) — Use `Data.SlotKey` and `Data.ExportBucketKey` from the stub verbatim
 
-Every other activity type in this skill (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps the same key in the slot AND in the export bucket. Connector activities are the **single exception**: StudioWeb's serializer renames the export bucket to a camelCase form derived from the connector's `objectName`.
+Every other activity type in this skill (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps the same key in the slot AND in the export bucket. Connector activities are the **single exception**: the slot key (the activity's key in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ. The stub computes both; never reconstruct either by hand from `objectName`.
 
 ```json
-// Slot key — PascalCase, what's in the do array:
+// Slot key (Data.SlotKey) — the activity key in the do array:
 { "GetNewestEmail_1": { ... } }
 
-// Export bucket key — camelCase, what StudioWeb writes for the export
+// Export bucket key (Data.ExportBucketKey) — what the export writes
 // AND what $context.outputs reads as:
 "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"getNewestEmail_1\": $output } }" }
 
-// Downstream reads also use camelCase:
+// Downstream reads use ExportBucketKey:
 "when": "${$context.outputs.getNewestEmail_1?.content?.subject?.length > 15}"
 "response": "${{ subject: $context.outputs.getNewestEmail_1.content.subject }}"
 ```
 
-**Derivation rule.** Take `objectName` from the resolve output, replace any non-identifier character (e.g. `-`) with `_`, append `_<N>` where N is the activity's instance number:
+**The two keys can match or differ depending on `objectName`** — the stub handles it. Verified examples:
 
-| `objectName` | Slot key (stub emits) | Export bucket key (stub emits) |
+| Connector / operation | `Data.SlotKey` | `Data.ExportBucketKey` |
 |--|--|--|
-| `getNewestEmail` | `GetNewestEmail_1` | `getNewestEmail_1` |
-| `send-mail-v2` | `SendMailV2_1` (or `--slot-key` override) | `send_mail_v2_1` |
-| `http-request` | `HttpRequest_1` (or `--slot-key` override) | `http_request_1` |
-| `search_issues` | `SearchIssues_1` | `search_issues_1` |
+| Outlook `getNewestEmail` | `GetNewestEmail_1` | `getNewestEmail_1` (differ) |
+| Outlook `ListEmails` | `ListEmails_1` | `ListEmails_1` (match) |
+| HTTP `http-request` | `HttpRequest_1` | `http_request_1` (differ — `-`→`_`) |
+| Slack `send_message_to_user_v2` | `SendMessageToUserV2_1` | `send_message_to_user_v2_1` (differ) |
 
-The stub returns both as `Data.SlotKey` and `Data.ExportBucketKey`. Bind downstream `$context.outputs.<X>` against `ExportBucketKey`. The TypeScript linter flag `TS2551: Property 'GetNewestEmail_1' does not exist on type 'typeof outputs'. Did you mean 'getNewestEmail_1'?` is the symptom of binding against the wrong one.
+Bind downstream `$context.outputs.<X>` against `Data.ExportBucketKey`. The TypeScript linter flag `TS2551: Property '<SlotKey>' does not exist on type 'typeof outputs'. Did you mean '<ExportBucketKey>'?` is the symptom of binding against the wrong one when they differ.
 
 ### Rule (d) — `endpoint` may include a hub prefix beyond `/<objectName>`
 
@@ -698,7 +698,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 - **Adding a field to `bodyParameters` / `queryParameters` / `pathParameters`** → use the exact field name from `Data.ResponseFields` or the IS schema. Flat dotted (rule a). Bare literal or `${$context...}` reference (rule b).
 - **Changing the connection** → re-ping the new UUID before pasting it in. Update both `connectionId` and `connectionResourceId`.
-- **Renaming the slot key** (e.g. `GetNewestEmail_1` → `GetNewestEmail_Inbox`) → DO NOT also rename the export bucket key. The export key stays `getNewestEmail_1` (or whatever camelCase form the stub emitted). Downstream `$context.outputs.<X>` references must continue to use the camelCase key.
+- **Renaming the slot key** (e.g. `GetNewestEmail_1` → `GetNewestEmail_Inbox`) → DO NOT also rename the export bucket key. The export bucket stays whatever the stub emitted in `Data.ExportBucketKey`. Downstream `$context.outputs.<X>` references must continue to use that key.
 - **Adding a second instance of the same activity** → re-stub with `--instance 2` instead of copy-pasting. The stub re-derives `_2`-suffixed slot and export bucket keys correctly.
 
 ## Limits of this approach
@@ -723,7 +723,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 - **Do NOT mix `call: "http"` and `call: "UiPath.Http"`.** The simple `call: "http"` form won't render in StudioWeb's designer. The stub always emits `UiPath.Http` (Http kind) or `UiPath.IntSvc` (IntSvc kind).
 - **Do NOT nest `bodyParameters` fields when editing.** Connector schema's dotted names (`message.toRecipients`) are literal keys. Nested `{ message: { toRecipients: ... } }` is silently dropped by StudioWeb's deserializer on save.
 - **Do NOT wrap `bodyParameters` / `queryParameters` literals as `${'literal'}` when editing.** Connector params take BARE literals — `${'foo'}` is read as an expression and cleared on save.
-- **Do NOT rename the export bucket key.** Connector activities use camelCase `objectName + "_<N>"` for the export — the stub gets this right; renaming it breaks every downstream `$context.outputs.<X>` read.
+- **Do NOT rename the export bucket key.** The stub emits `Data.ExportBucketKey` correctly — use it verbatim. Renaming it breaks every downstream `$context.outputs.<X>` read.
 - **Do NOT remove `multipartParameters` from a multipart endpoint** — even for an attachment-less email. The executor's multipart wrapper depends on the declaration; without it, the vendor returns `400 "Unable to parse multipart body"`.
 - **Do NOT trust `registry stub`'s `queryParameters` / `pathParameters` / `bodyParameters` as complete.** The stub drops `required: true` fields. After every stub call, cross-check via `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` (or parse `metadata.configuration.optionalConfiguration.fieldsContainer.inputFields` from the stub output itself) and fill in anything required that's missing. Symptom of skipping: workflow runs locally on stale defaults, fails in cloud with a 4xx, or the StudioWeb properties panel marks the field invalid without a clear error.
 - **Do NOT leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` (or any `<REPLACE_WITH_*>` placeholder) in a generated workflow.** StudioWeb's properties panel renders the literal placeholder string as if it were a real connection name — the connection pill shows `<REPLACE_WITH_VENDOR_C...>` with a red error, and any subsequent run 401s in cloud. The placeholder is meaningful **only** in the template file under `assets/templates/`; the moment you copy the stub's `Data.Activity` into the user's workflow, every placeholder MUST become a real value (UUID from `uip is connections ping`, URL from `--inputs` or the user's request). If you don't have a working UUID, **stop authoring** and ask the user — do not write the sentinel to disk. Re-stubbing with `--connection-id <uuid>` is the cleanest way to avoid the placeholder ever existing in the output.
