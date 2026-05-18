@@ -9,6 +9,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | Pattern | Symptom | Cause |
 |---|---|---|
 | [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
+| [MST-9972](#mst-9972--variablesnodes-missing-vars-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
 | [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
@@ -50,6 +51,47 @@ Do **not** add `=js:` to condition expressions (decision `expression`, switch ca
 ### Reference
 
 [shared/node-output-wiring.md](../../shared/node-output-wiring.md) — canonical per-node-type field reference.
+
+---
+
+## MST-9972 — `variables.nodes[]` missing → `$vars.X.output` resolves to undefined
+
+### Symptom
+
+A downstream script or expression reads `$vars.<sourceNodeId>.output` and gets `undefined` at runtime. Common shapes: `Cannot read property 'output' of undefined`, `Cannot read properties of undefined (reading '<field>')`, or a connector activity receiving an empty / undefined input that an upstream node should have populated. `uip maestro flow validate` accepts the file without complaint. The upstream node's own incident shows it ran successfully.
+
+### Cause
+
+The `.flow` file is missing `variables.nodes[]` entries for the upstream node. The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs — without them, the activity's local `output` value has no process variable to flow into, and downstream `$vars` reads fail.
+
+This happens almost exclusively on **direct-authored** `.flow` files: `uip maestro flow node add` and the canvas / Studio Web save path both auto-populate `variables.nodes[]`. `Edit` / `Write` authoring does not, and pre-fix `uip maestro flow format` did not regenerate it either. Adding an `outputs` block on the action-node instance does **not** fix this — for action nodes the BPMN emitter reads the manifest's `outputDefinition`, not the instance block, so authoring the instance block has no runtime effect.
+
+### Fix
+
+Run `uip maestro flow format <ProjectName>.flow --output json`. Post-MST-9972 the format command regenerates `variables.nodes[]` from `nodes[]` + `definitions[]` (matching `node add` and canvas behavior). On older CLI versions, add the entries manually:
+
+```json
+"variables": {
+  "nodes": [
+    {
+      "id": "<nodeId>.output",
+      "type": "object",
+      "binding": { "nodeId": "<nodeId>", "outputId": "output" }
+    },
+    {
+      "id": "<nodeId>.error",
+      "type": "object",
+      "binding": { "nodeId": "<nodeId>", "outputId": "error" }
+    }
+  ]
+}
+```
+
+One entry per declared output (trigger nodes: `output` only; action nodes: `output` + `error`; end / terminate: none).
+
+### Reference
+
+[shared/file-format.md — Node outputs](../../shared/file-format.md#node-outputs), [author/CAPABILITY.md rule #15](../../author/CAPABILITY.md), [editing-operations-json.md — Pre-flight Checklist step 5–6](../../author/references/editing-operations-json.md#pre-flight-checklist).
 
 ---
 
