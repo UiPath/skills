@@ -82,11 +82,23 @@ def assert_task_type_present(task_type: str, *, caseplan_path: str | None = None
 
 
 def task_is_skeleton(task: dict) -> bool:
+    """True when the task's resource hasn't been wired into ``data``.
+
+    v20 caseplan markers for a populated task:
+    - ``execute-connector-activity`` / ``wait-for-connector``: ``data.typeId`` AND ``data.connectionId``
+    - ``action``: ``data.inputs`` present (bare ``taskTitle`` / ``priority`` is still skeleton-equivalent)
+    - everything else (``process`` / ``agent`` / ``rpa`` / ``api-workflow`` / ``case-management``):
+      ``data.name`` AND ``data.folderPath`` (both as ``=bindings.<id>`` refs)
+    """
     data = task.get("data") or {}
     if not data:
         return True
-    context = data.get("context") or {}
-    return not context.get("taskTypeId")
+    task_type = task.get("type")
+    if task_type in {"execute-connector-activity", "wait-for-connector"}:
+        return not (data.get("typeId") and data.get("connectionId"))
+    if task_type == "action":
+        return "inputs" not in data
+    return not (data.get("name") and data.get("folderPath"))
 
 
 def _stringify(v: Any) -> str:
