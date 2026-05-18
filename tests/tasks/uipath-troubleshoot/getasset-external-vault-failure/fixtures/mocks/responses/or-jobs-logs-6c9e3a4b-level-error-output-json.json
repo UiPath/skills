@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T15:42:09.380Z",
+      "Message": "[Get Credential] Status code: 500 (Internal Server Error). Orchestrator response: \r\nFailed to read from Credential Store type 'CyberArk'. Error code: 2304"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T15:42:09.395Z",
+      "Message": "Failed to read from Credential Store type 'CyberArk'. Error code: 2304\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}
