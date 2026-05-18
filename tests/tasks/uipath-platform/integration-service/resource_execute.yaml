@@ -3,7 +3,7 @@ description: >
   Smoke test: agent uses the uipath-platform skill to walk through the full
   Integration Service workflow — connector, connection, ping, discover,
   describe, and execute a create operation. Tests that the skill teaches the
-  complete 6-step workflow and correct execute syntax with --body.
+  complete 6-step workflow and correct run syntax with --body.
 tags: [uipath-platform, smoke, integration-service, resources, execute]
 
 sandbox:
@@ -59,9 +59,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent executed a create operation with --body"
+    description: "Agent ran a create operation with --body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+execute\s+create[\s\S]*--body'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create[\s\S]*--body'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -73,4 +73,3 @@ success_criteria:
     min_count: 3
     weight: 1.0
     pass_threshold: 1.0
-
