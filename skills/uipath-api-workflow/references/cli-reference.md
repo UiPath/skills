@@ -17,7 +17,7 @@ uip api-workflow run <file> \
 |-----------------|----------|-------------|
 | `<file>` | yes | Path to the workflow JSON file. |
 | `-i, --input-arguments <json>` | no | Input arguments as a JSON string (e.g., `'{"name":"World"}'`). Invalid JSON exits 1. |
-| `--no-auth` | no | Skip credential loading. Use for workflows that don't need Orchestrator/IS auth (the typical case for this skill, since HTTP/Connector activities are out of scope). |
+| `--no-auth` | no | Skip credential loading. Use for workflows that don't need Orchestrator/IS auth — control-flow-only workflows, or Http kind activities using `connectionId: "ImplicitConnection"`. IntSvc kind (vendor connector) activities always need auth at run time. |
 | `--output json` | no | Emit machine-readable JSON. Strongly recommended when output is parsed. |
 
 ### Success output
