@@ -5,8 +5,10 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ## Table of Contents
 
 - [Repository Structure](#repository-structure)
+- [Canonical SKILL.md Contract](#canonical-skillmd-contract)
 - [Adding a New Skill](#adding-a-new-skill)
 - [Modifying an Existing Skill](#modifying-an-existing-skill)
+- [Developing Experimental Skills](#developing-experimental-skills)
 - [Hooks](#hooks)
 - [Quality Checklist](#quality-checklist)
 - [Pull Request Process](#pull-request-process)
@@ -55,7 +57,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 
 ### Key Principles
 
-- **Skills are self-contained.** Each skill is an independent folder under `skills/`. Skills cannot reference or depend on other skills.
+- **Skills are runtime-independent.** Each skill is an independent folder under `skills/`. A skill MUST NOT import or link to another skill's `references/` or `assets/`. Sibling-disambiguation pointers in the `description` field (`For X→uipath-other-skill`) are required for the matcher, not violations — see [Cross-skill boundaries](#cross-skill-boundaries).
 - **SKILL.md is the entry point.** The AI agent reads `SKILL.md` first. Everything the agent needs to know must be reachable from there.
 - **References are supplementary.** Large reference material goes in `references/` subdirectories, linked from SKILL.md.
 - **No build system.** This is a documentation and skill-definitions repository. There is no compilation, bundling, or package publishing from this repo.
@@ -75,6 +77,56 @@ Tool wiring lives outside `skills/`:
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
 
 When adding a skill, only touch files under `skills/uipath-<name>/` — the root integration files already wire every tool up automatically.
+
+## Canonical SKILL.md Contract
+
+This section is the single source of truth for the SKILL.md frontmatter contract in this repo. Both `CLAUDE.md` and `.claude/rules/skill-structure.md` defer to this section. Validators enforce the **Required** rules; **Optional** fields are recognized and used in real skills today; **Style guidance** is a SHOULD.
+
+### Required fields (enforced)
+
+| Field | Rule |
+|-------|------|
+| `name` | MUST match the parent folder name exactly (kebab-case, `uipath-<domain>`). |
+| `description` | ≤ 1024 characters. Front-load identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`, `BYO LLM`) within the first ~100 chars. Use `→` redirects for sibling disambiguation (`For XAML→uipath-rpa`). MUST NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — those have been replaced by `→` redirects. |
+
+### Optional fields (recognized; in use across real skills)
+
+| Field | Use |
+|-------|-----|
+| `when_to_use` | Standalone trigger sentence ("User says 'X'…"). Useful when the `description` is identity/capability-focused and you want a separate trigger phrasing. Combined `description + when_to_use` is truncated by Claude Code at 1,536 chars in the skill listing — the 1024 cap on `description` leaves ~500 chars of headroom for `when_to_use`. |
+| `allowed-tools` | Comma-separated tool list (e.g., `Bash, Read, Write, Glob, Grep, AskUserQuestion`). Restricts which tools the skill is allowed to call. Bash invocations may be scoped (e.g., `Bash(uip:*)`). |
+| `user-invocable` | Defaults to `true`. Set `false` to make the skill agent-only — not directly invocable as `/uipath:<name>` by users. |
+
+### Style guidance (SHOULD, not enforced)
+
+- **Front-load the brand/domain identity** ("UiPath …") when natural. Most skills do, and it places the strongest matching signal first. Action verbs ("Manage", "Send", "Always invoke for `.flow` files") are acceptable when they make the skill's purpose clearer in the first ~100 chars.
+- **Avoid metadata prefixes** like `[PREVIEW]` / `[BETA]` at the start of `description` — they displace high-value matching tokens. Indicate preview / experimental status in the SKILL.md body instead, with a `> **Preview**` or `> **Experimental**` callout under the H1.
+- **All frontmatter fields MUST be at the top level** — never nested under a `metadata:` key. Claude Code only reads top-level keys.
+- **Frontmatter MUST be valid YAML** — no tabs, proper quoting of strings containing colons.
+
+### Cross-skill boundaries
+
+Skills are **runtime-independent**. A skill MUST NOT import, link to, or rely on content from another skill's `references/` or `assets/`. Each `skills/uipath-*/` folder is fully self-contained when an agent loads it.
+
+However, **disambiguation pointers in `description` are required, not violations.** Every skill SHOULD include `→` redirects for sibling skills it commonly gets confused with — these tell the matcher which skill is correct:
+
+- `For Python agents→uipath-agents`
+- `For .flow files→uipath-maestro-flow`
+- `For Test Manager→uipath-test`
+
+Routing skills (e.g., `uipath-planner`) explicitly delegate to specialist skills by name — that is the routing skill's purpose, not a cross-dependency.
+
+### What the validator enforces today
+
+`hooks/validate-skill-descriptions.sh` (run by the pre-commit hook and the [Validate Skills](.github/workflows/validate-skills.yml) CI job) enforces:
+
+- `name` field is present
+- `name` matches the parent folder name
+- `description` field is present
+- `description` ≤ 1024 chars
+- Combined `description + when_to_use` ≤ 1,500 chars (warning when exceeded)
+
+Style guidance (brand identity, `→` redirects, metadata prefixes) is reviewer-enforced, not validator-enforced. New validators should be proposed via a PR that updates this section, the rules, and the script together.
 
 ## Adding a New Skill
 
@@ -112,7 +164,7 @@ skills/uipath-<your-skill>/
 
 ### 3. Write SKILL.md
 
-SKILL.md is the most important file. It uses YAML frontmatter followed by markdown content.
+SKILL.md is the most important file. It uses YAML frontmatter followed by markdown content. The full schema is documented in the [Canonical SKILL.md Contract](#canonical-skillmd-contract) section below — this section gives the quick view.
 
 #### Frontmatter Format
 
@@ -129,15 +181,18 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 
 | Field | Description |
 |-------|-------------|
-| `name` | Exact skill identifier, must match the folder name |
-| `description` | Under 1024 chars. Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
+| `name` | Exact skill identifier, MUST match the folder name. Enforced by `hooks/validate-skill-descriptions.sh`. |
+| `description` | ≤ 1024 chars (enforced). Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
 
-**Optional frontmatter fields:**
+**Optional frontmatter fields** (all in current use across real skills):
 
 | Field | Description |
 |-------|-------------|
-| `allowed-tools` | Restricts which tools the skill can use (e.g., `Bash, Read, Write, Glob, Grep`) |
-| `user-invocable` | Defaults to `true`. Set to `false` if the skill should only be discoverable by the agent, not directly invocable by users |
+| `when_to_use` | Standalone trigger phrasing ("User says 'X', 'Y'…"). Useful when `description` is identity/capability-focused and you want a separate, scannable trigger sentence. The combined `description + when_to_use` is truncated by Claude Code at 1,536 chars in the skill listing. |
+| `allowed-tools` | Restricts which tools the skill can use (e.g., `Bash, Read, Write, Glob, Grep`). Bash invocations may be scoped (e.g., `Bash(uip:*)`). |
+| `user-invocable` | Defaults to `true`. Set to `false` if the skill should only be discoverable by the agent, not directly invocable by users via `/uipath:<name>`. |
+
+> **No nested `metadata:` key.** All fields above MUST be at the top level of the frontmatter. Claude Code only reads top-level keys; anything nested under `metadata:` is invisible to the matcher.
 
 #### Content Structure
 
@@ -201,6 +256,47 @@ Static files like code templates go in `assets/`:
 3. **Don't break frontmatter.** The `name` and `description` fields are parsed by the plugin system. Validate your YAML.
 4. **Test your changes.** After editing, verify the skill still activates correctly for its intended scenarios.
 5. **Coordinate with CODEOWNERS.** Check who owns the skill and tag them in your PR.
+
+## Developing Experimental Skills
+
+Some skills take weeks to reach a usable state — for example, large new product surfaces or skills that need an unreleased CLI feature to land first. This section covers how to develop those in this repository without disrupting users who install the published plugin.
+
+> **This repository is public.** Branches, commits, PR titles, and review comments are visible to everyone, including customers and competitors. Treat every push as a public statement.
+
+### Default: build in the open
+
+Develop directly in this repository on a feature branch off `main`. Skills are largely self-contained, so a long-lived `develop` integration branch is not useful here — each experimental skill gets its own branch and merges into `main` independently when ready.
+
+Only develop in a private fork when the feature must stay confidential before release (e.g., tied to an unannounced product). In that case, fork this repository, develop privately, and open the PR back here once the feature can be public.
+
+### Branch naming
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| New experimental skill | `feat/experimental/<skill-name>` | `feat/experimental/uipath-maestro-bpmn` |
+| Experimental change to existing skill | `feat/experimental/<skill-name>-<topic>` | `feat/experimental/uipath-rpa-coded-codegen` |
+
+### Workflow
+
+1. **Branch from `main`.** `git checkout -b feat/experimental/<skill-name>`.
+2. **Push the branch early and iterate on it.** Push intermediate commits to your branch, not to `main`. The branch is publicly visible — that is expected and fine.
+3. **Stay current with `main`.** Merge or rebase `main` into your branch regularly so the eventual integration PR stays small. Rebase if your branch has not been shared for review yet; merge once others are reviewing or building on it.
+4. **Mark the skill as experimental in `SKILL.md`.** Preview / experimental status goes in the SKILL.md body, not in frontmatter (per [.claude/rules/skill-structure.md](.claude/rules/skill-structure.md)). Example callout under the H1:
+
+   ```markdown
+   # UiPath My New Skill
+
+   > **Experimental.** This skill is under active development. Behavior, CLI flags, and reference structure may change without notice. Not recommended for production use.
+   ```
+
+5. **Merge to `main` only when the skill is usable end-to-end.** Do not merge work-in-progress commits straight to `main` just to keep the branch short — `main` is what users install. Open the integration PR when the skill triggers correctly, has at least the smoke + e2e tests required by the [Quality Checklist](#quality-checklist), and follows the rest of the contribution guidelines.
+
+### Public-repo discipline
+
+- **Never commit secrets, tokens, internal hostnames, customer data, or unreleased product/feature names that have not been publicly announced.** Use placeholders (`<TOKEN>`, `<TENANT_URL>`) in examples.
+- **Write commit messages and PR titles as if a customer is reading them** — because they are.
+- **If you accidentally commit a secret or confidential reference**, rotate the secret immediately, then contact a maintainer to coordinate history rewrite. Do not force-push over it yourself; the leaked value still needs to be rotated regardless.
+- **Avoid screenshots of internal tools** in PR descriptions or skill assets.
 
 ## Hooks
 
@@ -328,6 +424,7 @@ Before submitting your PR, verify:
 |------|---------|---------|
 | New skill | `feat/add-<skill-name>` | `feat/add-uipath-data-service` |
 | Skill improvement | `feat/<skill-name>-<description>` | `feat/uia-add-drag-support` |
+| Experimental / long-running work | `feat/experimental/<skill-name>` | `feat/experimental/uipath-maestro-bpmn` |
 | Bug fix | `fix/<skill-name>-<description>` | `fix/flow-validate-edge-ports` |
 | Documentation | `docs/<description>` | `docs/update-platform-cli-reference` |
 
