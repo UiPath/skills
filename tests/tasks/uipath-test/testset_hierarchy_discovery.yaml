@@ -1,9 +1,9 @@
 task_id: skill-test-testset-hierarchy-discovery
 description: >
   Smoke test: agent uses the uipath-test skill to traverse the Test Manager
-  discovery chain — project → testset → testcases. Asserts the correct
-  `uip tm` list commands for project (with `--output json`), testset list
-  (with `--project-key` + `--output json`), and testset list-testcases
+  discovery chain — project → testsets → testcases. Asserts the correct
+  `uip tm` list commands for project (with `--output json`), testsets list
+  (with `--project-key` + `--output json`), and testsets list-testcases
   (with `--test-set-key` + `--output json`). The prompt steers the agent
   toward a project that has test sets, so the chain runs against
   non-empty data without prescribing how to search. The skill — not the
