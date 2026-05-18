@@ -110,7 +110,7 @@ All steps 1-2 are GETs because we are in the authoring phase. The POST to `/issu
 
 ## Critical Rules - Do NOT
 
-- **Setting `Authorization` header manually in connector mode.** Auth is applied automatically by the connection. Setting it yourself can leak or override the token.
-- **Absolute URL in connector-mode `url`.** Wrong: `"url": "https://example.atlassian.net/rest/api/2/project"`. Right: `"url": "/project"`.
-- **Writing via CLI during authoring.** See "Read-Only During Authoring" above.
-- **Guessing the base URL.** Use `uip is connections base-url <connection-id>`.
+1. **Do NOT set the `Authorization` header manually in connector mode.** Auth is applied automatically by the connection. Setting it yourself can leak or override the token.
+2. **Do NOT use an absolute URL in connector-mode `url`.** Wrong: `"url": "https://example.atlassian.net/rest/api/2/project"`. Right: `"url": "/project"`.
+3. **Do NOT issue writes via CLI during authoring.** See "Read-Only During Authoring" above.
+4. **Do NOT guess the base URL.** Use `uip is connections base-url <connection-id>`.
