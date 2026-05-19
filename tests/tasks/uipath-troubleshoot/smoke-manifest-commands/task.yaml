@@ -54,7 +54,7 @@ pre_run:
       uip tools install @uipath/docsai-tool;
       uip tools install @uipath/traces-tool;
       uip tools install @uipath/rpa-tool
-    timeout: 600
+    timeout: 300
     fail_on_error: false
 
   # 2) Resolve the validator script through SKILLS_REPO_PATH — coder-eval
