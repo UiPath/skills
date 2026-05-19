@@ -14,33 +14,21 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
-run_limits:
   max_turns: 40
   turn_timeout: 1200
+
+task_timeout: 1800
 
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
-  Create a UiPath solution "EscalateSol" containing a low-code agent
-  "ComplianceAgent" that handles user requests about financial data.
-  Then add a built-in PII detection guardrail that escalates violations
-  to a human reviewer instead of blocking.
-
-  Guardrail requirements:
-  - validatorType: pii_detection
-  - Detect Email and PhoneNumber entities, threshold 0.5 for both
-  - Scope: Agent level
-  - Action: use $actionType "escalate"
-  - Escalation app name: "Tool.Guardrail.Escalation.Action.App"
-  - Recipient email: reviewer@example.com (type 3)
-
-  Use `uip solution resource list` to attempt to discover the app and
-  populate app fields. If the app is not found remotely, write the
-  minimum required fields (app.name, app.version, app.folderName).
-
+  Create a UiPath solution "EscalateSol" with an agent "ComplianceAgent" for
+  handling user requests about financial data. Add a guardrail that detects PII
+  — specifically email addresses and phone numbers — and instead of blocking,
+  escalates violations to a human reviewer via the
+  "Tool.Guardrail.Escalation.Action.App" app, notifying reviewer@example.com.
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
