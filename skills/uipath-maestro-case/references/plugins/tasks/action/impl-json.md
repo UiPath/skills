@@ -67,6 +67,16 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 2. Set `data.taskTitle`, `data.priority`, `data.recipient`, `data.actionCatalogName`, `data.labels` from tasks.md
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
+
+   **Output binding per `->` and `=` operators** (parsed from tasks.md `outputs:` row; documented in [`../../variables/io-binding/planning.md`](../../variables/io-binding/planning.md#discovering-inputoutput-names)):
+
+   - **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape: `{name: <Step 0 displayName>, id: <camelCase(leaf segment)>, var: "<sdd-name>", originalVar: <camelCase(leaf segment)>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<id>", elementId: "<stage-task>"}`. **`source` is the SDD's left-side string with `=` prefix, verbatim.** The SDD writes the full runtime path (e.g., `Action`, `Error.code`); skill never adds, removes, or infers envelope prefixes. Consult the Step 0 schema only for type / displayName lookup — top-level entries match by their `source` field (with `=` stripped); nested fields are found by navigating the parent entry's `body` schema. **`originalVar` is load-bearing** — tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits.
+   - **Bare `<name>`** (no operator) → auto-mint shape: `{name, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
+   - **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it.
+   - Expression values for `=`: literal (`"InReview"`, `5`, `true`), computed (`=js:vars.x + 1`), or variable reference (`=vars.X.Y.Z`).
+   - Dot-paths in `->` paths are supported (e.g., `response.message.ts`, `Error.code`). Array indexing not supported in v1.
+   - Target case variable on both `->` and `=` MUST exist in Case Variables table (validated at planning time).
+   - [Uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) applies to `var`/`id` on collision; `source` is never suffixed.
 5. Append to target stage's `tasks[laneIndex][]`
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).

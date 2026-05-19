@@ -219,6 +219,29 @@ For each condition in `tasks.md §4.7`, open the matching plugin's `impl-json.md
 
 Group `tasks.md §4.8` entries by target (root or stage), then compose and write full `slaRules[]` array per target in single mutation per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules.
 
+## Step 12 — End-of-Phase-3 validator pass
+
+> **Algorithm reference:** the per-check pseudocode + AskUserQuestion prompt templates + skill-response-per-pick details all live in [`plugins/variables/io-binding/impl-json.md § Binding Procedure`](plugins/variables/io-binding/impl-json.md#binding-procedure). This step is the orchestration hook; that doc is the algorithm. When in doubt, follow the impl-json doc.
+
+After all value bindings (Step 9.8), conditions (Step 10), and SLA (Step 11) are written, invoke the end-of-Phase-3 validator — Checks 1, 2, 3.
+
+- **Check 1** — Resolve every `=vars.X` reference against `variables.{inputs, inputOutputs}[].id`. Scan all task input `value` fields, edge guards (`edges[].data.conditionExpression`), entry/exit condition expressions (stage and task), SLA expressions, and `=js:` expressions anywhere they appear. On unresolved → **AskUserQuestion** offering: (a) name the intended variable, (b) remove the reference, (c) continue with best-effort emit (entry logged under Open Items, runtime returns undefined).
+- **Check 2 (Q10 Option II)** — For every formal Out-arg in `variables.outputs[]`, verify the producer/Default situation per [`io-binding/impl-json.md` § Check 2](plugins/variables/io-binding/impl-json.md):
+  - **Has Default but no companion** → AskUserQuestion.
+  - **No Default + producer declared in SDD on a Rule 17 placeholder task** (declared-but-unresolvable) → no prompt; silent log to `## Open Items for User` in `tasks/build-issues.md`. Rule 17 already prompted the author for this task.
+  - **No Default + no producer declared anywhere (pure orphan)** → AskUserQuestion offering 4 options: (a) add producer task output, (b) add Default value, (c) recategorize as Variable / remove, (d) continue with best-effort emit (entry logged under Open Items).
+- **Check 3** — Type mismatch between `=vars.X` reference and consumer slot → log WARN inline (non-blocking; string coercion is runtime-tolerant).
+
+**Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1 or Check 2 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
+
+**Reporting:** at end of Phase 4, count entries in the `## Open Items for User` section of `tasks/build-issues.md` (read the file after writing). If count > 0, the completion report MUST include a literal line of the form:
+
+```
+Open Items: <N> entry/entries — review tasks/build-issues.md § Open Items for User before publishing.
+```
+
+(Use `entry` for N == 1, `entries` otherwise.) Place this line above the per-stage / per-task summary in the completion report so it's not buried.
+
 End of Phase 3 mutations. Proceed directly to Phase 4 — no hard stop between Phase 3 and Phase 4.
 
 ---
