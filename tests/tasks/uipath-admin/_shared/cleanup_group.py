@@ -1,28 +1,17 @@
 #!/usr/bin/env python3
-"""Best-effort cleanup: delete the 'Invoice Processing Team' group created by e2e tests.
+"""Best-effort cleanup: delete all 'Invoice Processing Team' groups.
 
 Always exits 0 — failures here never affect pass/fail.
 """
 
-import json
 import logging
-import subprocess
 import sys
+
+sys.path.insert(0, sys.path[0])
+from admin_helpers import run_cli, find_all
 
 logging.basicConfig(level=logging.INFO, format="cleanup_group: %(message)s")
 logger = logging.getLogger(__name__)
-
-
-def run_cli(args: list[str]) -> dict | None:
-    try:
-        result = subprocess.run(
-            ["uip", *args, "--output", "json"],
-            capture_output=True, text=True, timeout=30,
-        )
-        return json.loads(result.stdout)
-    except Exception as e:
-        logger.warning("CLI call failed: %s", e)
-        return None
 
 
 def main():
@@ -31,15 +20,21 @@ def main():
         logger.warning("Could not list groups — skipping cleanup")
         return
 
-    for g in data.get("Data", []):
-        name = g.get("name") or g.get("displayName") or ""
-        if "Invoice Processing Team" in name:
-            group_id = g.get("id")
-            logger.info("Deleting group '%s' (id=%s)", name, group_id)
-            run_cli(["admin", "groups", "delete", group_id])
-            return
+    matches = find_all(data, "Invoice Processing Team", ["name", "displayName"])
+    if not matches:
+        logger.info("No 'Invoice Processing Team' group found — nothing to clean up")
+        return
 
-    logger.info("Group 'Invoice Processing Team' not found — nothing to clean up")
+    for g in matches:
+        group_id = g.get("id")
+        if not group_id:
+            continue
+        logger.info("Deleting group (id=%s)", group_id)
+        result = run_cli(["admin", "groups", "delete", group_id])
+        if result:
+            logger.info("Delete result: %s — %s", result.get("Result"), result.get("Message", ""))
+        else:
+            logger.warning("Delete call returned no result for id=%s", group_id)
 
 
 if __name__ == "__main__":

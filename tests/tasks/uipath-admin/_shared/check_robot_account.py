@@ -1,33 +1,24 @@
 #!/usr/bin/env python3
-"""Verify a robot account named 'smoke-e2e-bot' exists."""
+"""Verify robot account 'smoke-e2e-bot' exists."""
 
-import json
-import subprocess
+import logging
 import sys
 
+sys.path.insert(0, sys.path[0])
+from admin_helpers import run_cli, find_one, fail, ok
 
-def run_cli(args: list[str]) -> dict:
-    result = subprocess.run(
-        ["uip", *args, "--output", "json"],
-        capture_output=True, text=True, timeout=30,
-    )
-    return json.loads(result.stdout)
+logging.basicConfig(level=logging.INFO, format="check_robot: %(message)s")
 
 
 def main():
     data = run_cli(["admin", "robot-accounts", "list", "--search", "smoke-e2e-bot"])
-    assert data["Result"] == "Success", f"robot-accounts list failed: {data}"
+    if not data or data.get("Result") != "Success":
+        fail("robot-accounts list did not return Success")
 
-    found = any(
-        "smoke-e2e-bot" in (r.get("name", "") or "")
-        for r in data.get("Data", [])
-    )
+    if not find_one(data, "smoke-e2e-bot", ["name"]):
+        fail("Robot account 'smoke-e2e-bot' not found")
 
-    if not found:
-        print("FAIL: Robot account 'smoke-e2e-bot' not found")
-        sys.exit(1)
-
-    print("OK: Robot account 'smoke-e2e-bot' exists")
+    ok("Robot account 'smoke-e2e-bot' exists")
 
 
 if __name__ == "__main__":
