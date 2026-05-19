@@ -21,7 +21,11 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
 
 sandbox:
   driver: tempdir
@@ -29,8 +33,8 @@ sandbox:
 
 initial_prompt: |
   Build a UiPath Case Management solution named "BranchingExit" containing
-  a project also named "BranchingExit" from the sdd.md below. Write the
-  sdd.md to disk first, then build from it.
+  a project also named "BranchingExit" from the sdd.md below. Use v20
+  schema. Write the sdd.md to disk first, then build from it.
 
   ```
   # BranchingExit

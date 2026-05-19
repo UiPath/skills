@@ -16,7 +16,11 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
 
 sandbox:
   driver: tempdir
@@ -24,8 +28,8 @@ sandbox:
 
 initial_prompt: |
   Build a UiPath Case Management solution named "CaseExitFull" containing
-  a project also named "CaseExitFull" from the sdd.md below. Write the
-  sdd.md to disk first, then build from it.
+  a project also named "CaseExitFull" from the sdd.md below. Use v20 schema.
+  Write the sdd.md to disk first, then build from it.
 
   ```
   # CaseExitFull
@@ -92,7 +96,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "3 stages with mixed isRequired; Audit has wait-for-connector entry; root has 4 case-exits covering all rule-types (required-stages-completed/wait-for-connector true; selected-stage-exited Audit / selected-stage-completed Archive false)"
+    description: "3 stages with mixed isRequired; Audit has wait-for-connector entry; case has 4 case-exits (v20 metadata.caseExitRules) covering all rule-types (required-stages-completed/wait-for-connector true; selected-stage-exited Audit / selected-stage-completed Archive false)"
     command: "python3 $TASK_DIR/check_case_exit_full.py"
     timeout: 30
     expected_exit_code: 0

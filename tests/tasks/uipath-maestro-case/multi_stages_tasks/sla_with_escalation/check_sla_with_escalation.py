@@ -8,7 +8,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from _shared.case_check import (  # noqa: E402
     find_node_by_label,
     get_default_sla,
-    get_root,
     get_sla_rules,
     read_caseplan,
 )
@@ -16,12 +15,11 @@ from _shared.case_check import (  # noqa: E402
 
 def main():
     plan = read_caseplan()
-    root = get_root(plan)
-    rules = get_sla_rules(root)
+    rules = get_sla_rules(plan)
 
     if len(rules) < 3:
         sys.exit(
-            f"FAIL: root.data.slaRules should have ≥3 entries (2 conditional + "
+            f"FAIL: case-level slaRules should have ≥3 entries (2 conditional + "
             f"1 default); got {len(rules)}"
         )
     if rules[-1].get("expression") != "=js:true":
@@ -30,12 +28,12 @@ def main():
             f"got expression={rules[-1].get('expression')!r}"
         )
 
-    default = get_default_sla(root)
+    default = get_default_sla(plan)
     if not default:
-        sys.exit("FAIL: root.data.slaRules missing =js:true default rule")
+        sys.exit("FAIL: case-level slaRules missing =js:true default rule")
     if default.get("count") != 3 or default.get("unit") != "w":
         sys.exit(
-            f"FAIL: root default SLA should be count=3, unit=w; "
+            f"FAIL: case-level default SLA should be count=3, unit=w; "
             f"got count={default.get('count')!r}, unit={default.get('unit')!r}"
         )
 
@@ -64,7 +62,7 @@ def main():
         if (e.get("triggerInfo") or {}).get("type") == "at-risk"
     ]
     if not at_risk:
-        sys.exit("FAIL: root default SLA has no at-risk escalation")
+        sys.exit("FAIL: case-level default SLA has no at-risk escalation")
     if (at_risk[0].get("triggerInfo") or {}).get("atRiskPercentage") != 80:
         sys.exit(
             f"FAIL: at-risk escalation should be atRiskPercentage=80; got "
@@ -135,7 +133,7 @@ def main():
         )
 
     print(
-        "OK: root.data.slaRules has Urgent (30min, sla-breached UserGroup "
+        "OK: case-level slaRules has Urgent (30min, sla-breached UserGroup "
         "escalation) → Standard (5d) → default =js:true (3w, at-risk 80% "
         "MULTI-RECIPIENT escalation to User manager@corp.com + UserGroup "
         "Operations Leadership); 'Resolve' stage carries its own data.slaRules "
