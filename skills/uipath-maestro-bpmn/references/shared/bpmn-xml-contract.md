@@ -103,6 +103,11 @@ For task payloads, keep the wrapper type and resource context in
 `uipath:mapping version="v1"` element whose `var` attributes target declared
 variable ids.
 
+For new root variables, use `uipath:input`, `uipath:inputOutput`, and
+`uipath:output` children. Do not author generic `uipath:variable
+direction="..."` entries in new source; preserve imported instances only when
+normalizing the file is out of scope.
+
 Do not invent `uipath:caseManagement` payloads without a dedicated case-management contract. Preserve imported `uipath:caseManagement` and unknown generic `uipath:Activity` payloads unless the edit explicitly normalizes them.
 
 ## Non-Integration-Service task shells

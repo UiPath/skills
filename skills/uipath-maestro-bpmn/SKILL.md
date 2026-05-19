@@ -65,5 +65,9 @@ Guide for authoring, inspecting, validating, packaging, operating, and diagnosin
 - **Do not rely on BPMN without diagrams for Studio Web import** - a valid diagram and plane are required, and visible elements need shapes or waypoints.
 - **Do not edit derived package files as the primary fix** - fix the BPMN source or rerun the CLI generator/enricher unless the package file itself is the documented source for that field.
 - **Do not include real exported XML snippets in docs or examples** - summarize patterns using public-safe synthetic IDs and placeholder values.
+- **Do not use validation fixtures as greenfield templates** - fixtures are
+  coverage examples, not the authoring source of truth. Use capability docs,
+  shared contracts, wrapper shells, and the specific plugin or task recipe
+  instead.
 
 > Trouble? Send public-safe product feedback through the repository's normal feedback path.

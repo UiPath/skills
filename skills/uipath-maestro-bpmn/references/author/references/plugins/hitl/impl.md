@@ -26,10 +26,17 @@ The operator or tooling must resolve:
 - Dynamic form schemas and generated resources.
 - Tenant-specific routing and notification metadata.
 
+For a new draft HITL node, do not add an orphan root `uipath:bindings` entry
+just to represent an unresolved Action Center form or app. Keep unresolved
+Action Center resources in the project notes until the operator or CLI supplies
+a concrete binding contract. If a binding is authored, it must be referenced by
+the task and backed by generated package metadata before Operate.
+
 ## Validation expectations
 
 - Task inputs and outputs reference declared variables.
 - Outcome gateway conditions match possible result values.
 - Timeout paths do not discard required process state.
-- Binding references are placeholders or resolved generated resources.
+- Binding references are placeholders or resolved generated resources, and no
+  unreferenced HITL binding is left in root metadata.
 - No personal names, emails, tenant URLs, or exported form payloads are committed.

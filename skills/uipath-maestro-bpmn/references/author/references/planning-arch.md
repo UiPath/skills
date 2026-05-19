@@ -39,6 +39,9 @@ Before drafting the skeleton, identify:
 - Keep pass 1 conditions in business-readable terms. Do not use
   Maestro runtime expressions such as `=vars.<variableId>` until pass 2 has
   declared the variables and mappings those expressions reference.
+- Keep script tasks structural in pass 1. A pass 1 `bpmn:scriptTask` may have a
+  readable name or documentation, but executable script bodies and
+  UiPath script mappings belong in pass 2.
 - Set a `default` sequence flow when the business process has a fallthrough route.
 - Model errors with boundary events or event subprocesses instead of unlabeled failure branches when the runtime should handle failures structurally.
 - Keep sequence flows inside their owning process or subprocess scope.

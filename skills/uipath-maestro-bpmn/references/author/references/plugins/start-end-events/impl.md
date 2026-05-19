@@ -19,6 +19,20 @@ Message event boundaries:
 - Use `Maestro.SendMessageEvent` for model-owned message throws and message end events when the message name and payload contract are known.
 - Use `Intsvc.EventTrigger` and `Intsvc.WaitForEvent` only through CLI enrichment because connector event metadata, bindings, trigger properties, and schemas are registry-backed.
 
+Boundary event flow rules:
+
+- A boundary event has no incoming flow.
+- A boundary event lists each exception/timeout sequence flow as its own
+  `bpmn:outgoing` child.
+- The attached activity lists only its normal incoming and outgoing flows. Do
+  not add boundary-event exception flows as normal activity incoming or
+  outgoing flows.
+- The exception sequence flow uses `sourceRef` equal to the boundary event ID
+  and `targetRef` equal to the recovery or review target.
+- Error boundary events must reference a declared root `bpmn:error`.
+- Add BPMN DI for the boundary event shape and for each outgoing exception
+  sequence flow.
+
 ## CLI-owned or externally resolved implementation
 
 The CLI or operator must resolve:
@@ -34,5 +48,8 @@ The CLI or operator must resolve:
 - Entry point variables reference the owning start event.
 - Event subprocesses have exactly one valid start event.
 - Boundary events attach to an activity in the same scope.
+- Boundary events have outgoing sequence flow children for their exception
+  paths, and the attached activity does not list those exception flows as
+  normal incoming/outgoing activity flows.
 - Message, signal, error, and escalation references resolve.
 - Every visible event and event flow has diagram geometry.

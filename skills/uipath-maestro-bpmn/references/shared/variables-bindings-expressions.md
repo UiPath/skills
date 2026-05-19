@@ -4,7 +4,17 @@
 
 Use root `uipath:variables version="v1"` for entry point contracts and process globals.
 
-Variables may include:
+For new authored BPMN, declare variables with the supported child elements:
+
+- `uipath:input` for entry-point inputs.
+- `uipath:inputOutput` for mutable process state.
+- `uipath:output` for process outputs.
+
+Do not create new generic `uipath:variable direction="..."` entries. The local
+CLI currently reports generic `uipath:variable` as an unsupported extension tag;
+preserve it only when editing imported XML that already contains it.
+
+Variable elements may include:
 
 - `id`
 - `name`
@@ -21,7 +31,7 @@ Entry point inputs use `elementId` to scope an input variable to the correspondi
 
 Maestro exports commonly model trigger-bound values as `uipath:inputOutput`
 variables scoped with `elementId`. Prefer that shape for new runtime-oriented
-examples unless preserving imported `uipath:input` XML.
+examples unless a value is only an entry input or only a process output.
 
 Subprocesses can carry scoped `uipath:variables` in subprocess extension elements. Do not silently move variables across scopes.
 

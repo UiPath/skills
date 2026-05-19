@@ -8,7 +8,18 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
   project, keep the BPMN source basename exactly aligned with the project
   directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
   `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
-- `project.uiproj` - UiPath project metadata.
+- `project.uiproj` - UiPath project metadata. Keep it in the same project
+  directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
+  to the project directory.
+
+For a new local project, create a single project directory and place source
+files under it:
+
+```text
+ProjectName/
+  ProjectName.bpmn
+  project.uiproj
+```
 
 ## Generated or CLI-managed package files
 

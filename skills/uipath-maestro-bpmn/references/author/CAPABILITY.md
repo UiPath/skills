@@ -13,6 +13,22 @@ Capability index for local BPMN project authoring. Author owns source edits, loc
 - Plan Integration Service nodes/triggers that must be CLI-enriched.
 - Run local validation before handing off to Operate.
 
+## Context budget
+
+For greenfield authoring, read only the files needed for the current step:
+
+1. This capability file.
+2. [shared/project-layout.md](../shared/project-layout.md).
+3. [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md).
+4. [references/planning-arch.md](references/planning-arch.md) for pass 1.
+5. [references/planning-impl.md](references/planning-impl.md) and only the specific plugin or task recipe needed for pass 2.
+6. [references/validation.md](references/validation.md) before reporting done.
+
+Do not bulk-read the full skill tree or validation fixtures during normal
+authoring. Validation fixtures are coverage examples, not greenfield authoring
+templates. Open fixtures only after a validation failure or a directly linked
+guide requires a concrete example, and then read the smallest relevant fixture.
+
 ## Critical rules
 
 1. **Use the two-pass workflow for non-trivial authoring** - first generate or edit a pure BPMN skeleton with readable IDs and diagram geometry, then ask the operator to confirm the process shape, then add UiPath variables, bindings, mappings, entry points, and documented non-Integration-Service extensions.

@@ -14,6 +14,9 @@ Validate these before Operate:
 - Diagram plane references an existing root process, collaboration, or subprocess.
 - Every rendered node has a shape and every rendered edge has waypoints.
 - Root variables, bindings, migration metadata, and transaction markers are structurally valid.
+- New root variables use `uipath:input`, `uipath:inputOutput`, or
+  `uipath:output`; generic `uipath:variable direction="..."` appears only when
+  preserving imported XML.
 - Entry point IDs are unique and appear on root-level start events.
 - Entry point input variables use an `elementId` matching the start event.
 - Binding expressions in context values resolve to root bindings.
@@ -25,15 +28,24 @@ Validate these before Operate:
 - Each scope has at most one blank start event.
 - Event subprocesses have exactly one start event.
 - Boundary error events and error event subprocesses reference valid error definitions.
+- Boundary events own their exception outgoing flows; attached activities do
+  not list boundary exception flows as normal incoming/outgoing flows.
 - Multi-instance collection and item bindings reference declared variables and use explicit sequential/parallel metadata.
 - Expressions avoid assignment operators in fields that require read-only expression evaluation.
 - Output mappings target declared variables.
 - CLI-owned Integration Service fields have been enriched or are clearly marked as blockers.
 
 For local-only authoring, always execute at least one validation command before
-packaging. Prefer `uip maestro bpmn validate <ProjectDir> --output json` when
-the installed CLI exposes it. If the installed CLI does not expose validation,
-run an explicit XML parse command against the BPMN source, for example:
+packaging. The current local CLI validator expects a BPMN/XML file path, so use
+the main source file:
+
+```bash
+uip maestro bpmn validate ProjectName/ProjectName.bpmn --output json
+```
+
+Only validate a project directory if the installed CLI explicitly supports that
+shape. If the installed CLI does not expose validation, run an explicit XML
+parse command against the BPMN source, for example:
 
 ```bash
 python3 -c "import xml.etree.ElementTree as ET; ET.parse('ProjectName/ProjectName.bpmn')"
