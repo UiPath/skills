@@ -25,7 +25,7 @@ If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, t
 
 ## Adding / Editing
 
-Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [author/CAPABILITY.md rule 2](../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the Summarize node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Summarize.
+Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [Author capability, rule 2](../../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the Summarize node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Summarize.
 
 ## Wiring `attachment` — file variable bound to the trigger
 
@@ -111,7 +111,7 @@ Then on the Summarize node:
 
 Notes:
 
-- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
+- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [Author capability, rule 16](../../../CAPABILITY.md), node instances normally have no `model` block.
 - **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
 - `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows). Do not rewrite to `=deepRagResult` or similar.
 - `outputs.output.type` is **`"object"`**, with the nested PascalCase schema above.
@@ -119,7 +119,7 @@ Notes:
 
 ## End-node output mapping
 
-If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [author/CAPABILITY.md rule 12](../../CAPABILITY.md), value-field expressions need the `=js:` prefix. Note the **PascalCase** field names:
+If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [Author capability, rule 12](../../../CAPABILITY.md), value-field expressions need the `=js:` prefix. Note the **PascalCase** field names:
 
 ```json
 {

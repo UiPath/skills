@@ -22,7 +22,7 @@ If the command errors with **"Node type not found: uipath.pattern.batch-transfor
 
 ## Adding / Editing
 
-Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [author/CAPABILITY.md rule 2](../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the BT node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Batch Transform.
+Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [Author capability, rule 2](../../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the BT node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Batch Transform.
 
 ## Wiring `attachment` — file variable bound to the trigger
 
@@ -87,7 +87,7 @@ Then on the BT node:
 
 Notes:
 
-- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.BatchTransform"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.batch-transform --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
+- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.BatchTransform"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.batch-transform --output json`. Per [Author capability, rule 16](../../../CAPABILITY.md), node instances normally have no `model` block.
 - **`typeVersion` must match `definitions[<batch-transform>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
 - `inputs.outputColumns` is an **array of objects** with exactly the keys `name` and `description`. Do not flatten to a map (`{ Category: "...", Summary: "..." }`) — the canvas editor and the BPMN serializer expect the array shape.
 - `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows; the engine wraps its result under that key). Do not rewrite to `=batchTransformResult`, `=result.output`, or similar.
@@ -95,7 +95,7 @@ Notes:
 
 ## End-node output mapping
 
-If the flow surfaces the result file handle as a flow `out` variable (e.g. `result`), the End node must map it. Per [author/CAPABILITY.md rule 12](../../CAPABILITY.md), value-field expressions need the `=js:` prefix:
+If the flow surfaces the result file handle as a flow `out` variable (e.g. `result`), the End node must map it. Per [Author capability, rule 12](../../../CAPABILITY.md), value-field expressions need the `=js:` prefix:
 
 ```json
 {
