@@ -47,14 +47,14 @@ pre_run:
   # to install will surface as a BAD entry in the validator below, which
   # has a clearer message.
   - command: >-
-      uip tools install orchestrator
-      && uip tools install integrationservice
-      && uip tools install maestro
-      && uip tools install resource
-      && uip tools install docsai
-      && uip tools install traces
-      && uip tools install rpa
-    timeout: 300
+      uip tools install @uipath/orchestrator-tool;
+      uip tools install @uipath/integrationservice-tool;
+      uip tools install @uipath/maestro-tool;
+      uip tools install @uipath/resource-tool;
+      uip tools install @uipath/docsai-tool;
+      uip tools install @uipath/traces-tool;
+      uip tools install @uipath/rpa-tool
+    timeout: 600
     fail_on_error: false
 
   # 2) Resolve the validator script through SKILLS_REPO_PATH — coder-eval
