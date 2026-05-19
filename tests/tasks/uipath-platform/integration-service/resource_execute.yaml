@@ -7,7 +7,7 @@ description: >
 tags: [uipath-platform, smoke, integration-service, resources, execute]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
   node: {}
 

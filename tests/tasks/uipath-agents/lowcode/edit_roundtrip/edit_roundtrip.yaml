@@ -17,7 +17,7 @@ agent:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

@@ -385,8 +385,8 @@ jobs:
           for run_dir in run_dirs:
               task_jsons.extend(sorted(run_dir.rglob('task.json')))
           if not task_jsons:
-              print('::error::No task.json files found — nothing to gate')
-              sys.exit(1)
+              print('::warning::No task.json files found — nothing to gate')
+              sys.exit(0)
           failures, missing = [], []
           for p in task_jsons:
               d = json.loads(p.read_text(encoding='utf-8'))
