@@ -5,7 +5,7 @@ description: >
   has an extra key "Sexual" not in harmfulContentEntities), then use the skill to validate
   and fix all issues. Verifies that the catalog is fetched, the misconfiguration is detected
   and corrected, and the agent validates successfully after the fix.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, low-code, guardrail]
 max_iterations: 1
 
 agent:
