@@ -101,7 +101,29 @@ uip solution packages list --name "Invoice" --output json
 | `--order-by <field>` | Sort field | -- |
 | `--order-direction <dir>` | `asc` or `desc` | -- |
 
-## Step 5: Delete a Package Version
+## Step 5: Download a Package Version
+
+Download a published solution package .zip from the solution feed:
+
+```bash
+# Latest ready/active version, saved as ./MySolution.<version>.zip
+uip solution packages download "MySolution" --output json
+
+# Specific version, saved to a directory or full file path
+uip solution packages download "MySolution" "1.0.0" --destination ./packages/ --output json
+uip solution packages download "MySolution" --package-version "1.0.0" --destination ./packages/MySolution.1.0.0.zip --output json
+```
+
+Use `--destination <path>` for the local output file or directory. Reserve `--output json` for the CLI response format when you need to parse the command result.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `<package-name>` | Published solution package name | -- |
+| `[package-version]` | Package version to download | Latest ready/active version |
+| `--package-version <version>` | Version selector alternative to the positional version | Latest ready/active version |
+| `--destination <path>` | Local .zip file path or directory | Current directory |
+
+## Step 6: Delete a Package Version
 
 Remove a specific version of a published package from the solution feed:
 
@@ -111,7 +133,7 @@ uip solution packages delete "MySolution" "1.0.0" --output json
 
 Arguments: `<package-name> <version>`. This deletes only the specified version, not all versions of the package.
 
-## Step 6: Delete from Studio Web
+## Step 7: Delete from Studio Web
 
 Remove a solution from Studio Web (browser-based editor). This is separate from deployment management:
 
@@ -164,6 +186,10 @@ Activation is not instant. It provisions processes, queues, assets, and other re
 ### `packages delete` Deletes One Version
 
 `packages delete` takes both a name **and** a version. It deletes only that specific version. To remove all versions, you must delete each one individually.
+
+### `packages download` Uses `--destination` for Files
+
+`--output` is the global CLI response format flag (`json`, `table`, `yaml`, `plain`). For downloaded solution package files, use `--destination <path>` so commands can also keep `--output json` for parseable results.
 
 ### Uninstall is Destructive
 

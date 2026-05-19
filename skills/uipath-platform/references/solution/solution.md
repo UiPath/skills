@@ -96,6 +96,7 @@ uip solution
   │           └── unlink <file> <resource> Remove a resource link
   └── packages
         ├── list                          List published solution packages
+        ├── download <name> [version]      Download a published solution package .zip
         └── delete <name> <version>       Delete a specific package version
 ```
 
