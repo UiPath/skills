@@ -28,15 +28,16 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
 
-Bind local files to file-typed input variables with `--attachment <name=path>` (repeatable; `name=` required, must match the file-typed input variable's id):
+Bind local files to file-typed input variables with `--attachment <variableId>=<localPath>` (repeatable). `<variableId>` (left of `=`) must match the `id` of a `variables.globals[]` entry with `direction:"in"` and `type:"file"`:
 
 ```bash
+# Replace <variableId> and <localPath> placeholders below with your own values.
 UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
-  --attachment invoice=./fixtures/invoice-123.pdf \
-  --attachment receipt=./fixtures/receipt-123.png
+  --attachment <variableId>=<localPath> \
+  --attachment <variableId>=<localPath>
 ```
 
-> **Pre-flight.** Each `<name>` LHS must match a `variables.globals[]` entry with `direction:"in"` and `type:"file"` in the `.flow` file. The CLI does not yet enforce this — see [shared/cli-commands.md — uip maestro flow debug](../../shared/cli-commands.md#uip-maestro-flow-debug) for the `jq` pre-flight check.
+> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#attachment-preflight).
 
 ### Reporting debug runs to the user
 
@@ -62,15 +63,16 @@ uip maestro flow process list --output json                           # discover
 uip maestro flow process run <process-key> <folder-key> --output json # trigger a run
 ```
 
-Pass input arguments and/or bind file-typed input variables (same surface as `flow debug`):
+Pass input arguments and/or bind file-typed input variables:
 
 ```bash
+# Replace <variableId> and <localPath> placeholders below with your own values.
 uip maestro flow process run <process-key> <folder-key> --output json \
   --inputs '{"numberA": 5, "numberB": 7}' \
-  --attachment file1=./resume.pdf
+  --attachment <variableId>=<localPath>
 ```
 
-> **Pre-flight.** `--attachment <name=path>` is repeatable, `name=` required; each `<name>` LHS must match a `variables.globals[]` entry with `direction:"in"` and `type:"file"` in the source `.flow`. Same invariant as `flow debug`. See [shared/cli-commands.md — uip maestro flow process](../../shared/cli-commands.md#uip-maestro-flow-process) for the `jq` pre-flight check and the `--inputs` / `--attachment` precedence rule (attachment wins on key collisions).
+> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#attachment-preflight). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
 
 Run `uip maestro flow process --help` for all subcommands and options.
 

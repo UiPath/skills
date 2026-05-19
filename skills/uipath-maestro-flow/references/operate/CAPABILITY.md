@@ -40,8 +40,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Sync solution resource declarations** | [ship.md — Pre-flight](references/ship.md#pre-flight) (the `uip solution resource refresh` step) |
 | **Debug a flow end-to-end** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) |
 | **Pass input arguments to `flow debug`** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
-| **Bind local files to `flow debug` file-typed inputs** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) (the `--attachment <name=path>` flag, repeatable) |
-| **Bind local files to `flow process run` file-typed inputs** | [run.md — Process run](references/run.md#process-run--trigger-a-deployed-process) (same `--attachment <name=path>` surface; `--attachment` overrides `--inputs` on key collisions) |
+| **Bind local files to file-typed inputs** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) and [run.md — Process run](references/run.md#process-run--trigger-a-deployed-process) (same `--attachment <variableId>=<localPath>` flag on both, repeatable; `--attachment` overrides `--inputs` on key collisions) |
 | **Trigger a deployed process** | [run.md — Process run](references/run.md#process-run--trigger-a-deployed-process) |
 | **Check status of a running job** | [run.md — Job inspection](references/run.md#job-inspection--status-and-traces) |
 | **Stream verbose execution traces** | [run.md — Job inspection](references/run.md#job-inspection--status-and-traces) (use sparingly — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |

@@ -53,7 +53,7 @@ Then on the Summarize node:
 }
 ```
 
-`uip maestro flow debug --attachment documentFile=./path/to/doc.pdf` populates that variable as a `{ FullName, Id, Metadata, MimeType }` Attachment object at runtime. The flag is repeatable; `documentFile=` is required. **Invariant:** the LHS (`documentFile` here) MUST equal a `variables.globals[]` entry's `id` with `direction:"in"` AND `type:"file"`. Verify with `jq '.variables.globals[] | select(.direction=="in" and .type=="file") | .id' <flow>.flow` — a mismatch is not caught by the CLI today and faults silently at runtime. Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.documentFile` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ FullName, Id, Metadata, MimeType }` Attachment object. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
 
 ## JSON Structure
 

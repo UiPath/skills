@@ -22,11 +22,11 @@ If the command errors with **"Node type not found: uipath.pattern.batch-transfor
 
 ## Adding / Editing
 
-Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [Author capability, rule 2](../../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the BT node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Batch Transform.
+Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [Author capability, rule 2](../../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the Batch Transform node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Batch Transform.
 
 ## Wiring `attachment` — file variable bound to the trigger
 
-The canonical canvas-produced shape is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, with the BT node's `attachment` referencing it through the trigger's output:
+The canonical canvas-produced shape is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, with the Batch Transform node's `attachment` referencing it through the trigger's output:
 
 ```json
 "variables": {
@@ -41,7 +41,7 @@ The canonical canvas-produced shape is a flow `in` variable of `type: "file"` bo
 }
 ```
 
-Then on the BT node:
+Then on the Batch Transform node:
 
 ```json
 "inputs": {
@@ -50,7 +50,7 @@ Then on the BT node:
 }
 ```
 
-`uip maestro flow debug --attachment csvFile=./path/to/data.csv` populates that variable as a `{ FullName, Id, Metadata, MimeType }` Attachment object at runtime. The flag is repeatable; `csvFile=` is required. **Invariant:** the LHS (`csvFile` here) MUST equal a `variables.globals[]` entry's `id` with `direction:"in"` AND `type:"file"`. Verify with `jq '.variables.globals[] | select(.direction=="in" and .type=="file") | .id' <flow>.flow` — a mismatch is not caught by the CLI today and faults silently at runtime. Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.csvFile` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment csvFile=./path/to/data.csv` for the `csvFile` variable above). The CLI uploads the file and binds it as a `{ FullName, Id, Metadata, MimeType }` Attachment object. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
 
 ## JSON Structure
 
