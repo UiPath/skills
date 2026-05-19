@@ -105,11 +105,12 @@ inputs that point at `=bindings.<id>`; those expressions require generated
 ## Draft handoff notes
 
 Until CLI enrichment runs, record an explicit handoff in the project so the
-operator and the CLI know which fields are still placeholders. Add a
-`README.md` or `notes.md` inside the project that lists every CLI-owned blocker
-before upload, publish, debug, or run.
+operator and the CLI know which fields are still placeholders. Prefer the
+handoff summary or an existing project-owned documentation location. Do not
+create a new `README.md`, `notes.md`, or other project file solely for draft
+blockers unless the user asks for that artifact.
 
-The README should make each unresolved CLI-owned blocker explicit:
+The handoff should make each unresolved CLI-owned blocker explicit:
 
 1. **`connector metadata`** - the CLI fills in operation/event metadata, version, and connector key.
 2. **`connection binding`** - the CLI generates the root `uipath:bindings` connection entry and the `=bindings.<id>` references on the node.
