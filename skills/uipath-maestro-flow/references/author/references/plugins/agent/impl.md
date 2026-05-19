@@ -166,7 +166,7 @@ return { classification: response };
 
 Create the agent first, then wire it. Three paths:
 
-- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution project add` to mint the local `resource.key`, then discover via `uip maestro flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../uipath-agents/references/coded/embedding-in-flows.md).
+- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution project add` to mint the local `resource.key`, then discover via `uip maestro flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../../../uipath-agents/references/coded/embedding-in-flows.md).
 - **Published coded agent** — `uip codedagent deploy`, then `uip maestro flow registry pull --force`.
 - **Published low-code agent** — `uip solution deploy`, then `uip maestro flow registry pull --force`.
 
@@ -175,8 +175,8 @@ Create the agent first, then wire it. Three paths:
 To use a published agent (coded or low-code) as a **tool for another agent** rather than a standalone flow node, add it as a `uipath.agent.resource.tool.agent` resource node wired to the parent agent's `tool` handle. This lives within the agent's canvas, not at the top level of the flow.
 
 For the resource file format and wiring details, see the `uipath-agents` skill:
-- Coded agents: [coded/flow-integration.md § Pattern 3](../../../../uipath-agents/references/coded/flow-integration.md#pattern-3-tool-resource-for-another-agent)
-- Low-code agents: [lowcode/agent-flow-integration.md](../../../../uipath-agents/references/lowcode/agent-flow-integration.md)
+- Coded agents: [coded/flow-integration.md § Pattern 3](../../../../../../uipath-agents/references/coded/flow-integration.md#pattern-3-tool-resource-for-another-agent)
+- Low-code agents: see the `uipath-agents` skill's low-code references.
 
 ## Debug
 
