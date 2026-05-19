@@ -2,20 +2,27 @@
 """Inline agent + external API workflow tool check.
 
 Validates:
-  1. Flow has a `uipath.agent.autonomous` node and a
-     `uipath.agent.resource.tool.*` node (exact API suffix
-     under-asserted — use prefix match).
-  2. Edge wires agent.tool -> tool.input.
-  3. Inline agent dir has at least one resource.json under
-     `resources/**/` (UUID-named per inline-in-flow.md) for a
-     "GetLatestQuote" external API workflow tool with:
+  1. Flow has a `uipath.agent.autonomous` node whose `inputs.source`
+     matches the sub-folder UUID of the inline agent under the flow
+     project.
+  2. Flow has a `uipath.agent.resource.tool.api.<uuid>` node whose
+     `model.source` matches the sub-folder UUID of the inline agent's
+     resource (under `<inline-agent-uuid>/resources/`).
+  3. Edge wires agent.tool -> tool.input.
+  4. Inline agent dir has at least one resource.json under
+     `resources/**/` (UUID-named per inline-in-flow.md) for the
+     "WeatherAPI" external API workflow tool with:
        - $resourceType == "tool"
        - type == "api"
        - location == "external"
-       - properties.folderPath is a real path (NOT "solution_folder")
+       - properties.processName == "WeatherAPI"
+       - properties.folderPath == "Shared/uipath-agents/WeatherAPI"
+       - referenceKey is a UUID-shaped non-empty string (copied from
+         `uip solution resource list`'s `Key`)
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -29,15 +36,40 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "QuoteFlowSol" / "QuoteFlow" / "QuoteFlow.flow"
-TOOL_NODE_PREFIX = "uipath.agent.resource.tool."
+FLOW_PATH = Path(os.getcwd()) / "WeatherFlowSol" / "WeatherFlow" / "WeatherFlow.flow"
+API_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.api."
+UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+EXPECTED_PROCESS_NAME = "WeatherAPI"
+EXPECTED_FOLDER_PATH = "Shared/uipath-agents/WeatherAPI"
 
 
 def main() -> None:
     flow = load_json(FLOW_PATH)
     agent_node = find_autonomous_agent_node(flow)
-    tool_node = find_resource_node(flow, node_type_prefix=TOOL_NODE_PREFIX)
+    tool_node = find_resource_node(flow, node_type_prefix=API_TOOL_NODE_TYPE_PREFIX)
     print(f"OK: flow has {agent_node['type']} and {tool_node['type']} nodes")
+
+    agent_source = (agent_node.get("inputs") or {}).get("source")
+    if not isinstance(agent_source, str) or not UUID_RE.match(agent_source):
+        sys.exit(
+            f"FAIL: {agent_node['type']} inputs.source must be a UUID matching "
+            f"the inline agent's sub-folder name, got {agent_source!r}"
+        )
+    agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
+    if agent_dir.name != agent_source:
+        sys.exit(
+            f"FAIL: inputs.source UUID {agent_source!r} does not match "
+            f"the inline agent sub-folder name {agent_dir.name!r}"
+        )
+    print(f"OK: autonomous node inputs.source={agent_source!r} matches inline agent sub-folder")
+
+    tool_source = (tool_node.get("model") or {}).get("source")
+    if not isinstance(tool_source, str) or not UUID_RE.match(tool_source):
+        sys.exit(
+            f"FAIL: {tool_node['type']} model.source must be a UUID matching "
+            f"the inline agent resource's sub-folder name, got {tool_source!r}"
+        )
 
     assert_edge(
         flow,
@@ -48,16 +80,24 @@ def main() -> None:
     )
     print("OK: agent 'tool' handle is wired to external API workflow tool node's 'input' handle")
 
-    agent_dir = resolve_inline_agent_dir(FLOW_PATH, agent_node)
     resource_path, resource = find_inline_resource(
         agent_dir,
         lambda d: (
             d.get("$resourceType") == "tool"
             and d.get("type") == "api"
             and d.get("location") == "external"
-            and d.get("name") == "GetLatestQuote"
+            and (d.get("properties") or {}).get("processName") == EXPECTED_PROCESS_NAME
         ),
-        description='external API workflow tool "GetLatestQuote"',
+        description=f'external API workflow tool "{EXPECTED_PROCESS_NAME}"',
+    )
+    if resource_path.parent.name != tool_source:
+        sys.exit(
+            f"FAIL: tool model.source UUID {tool_source!r} does not match "
+            f"the resource sub-folder name {resource_path.parent.name!r}"
+        )
+    print(
+        f"OK: tool node model.source={tool_source!r} matches resource sub-folder "
+        f"({resource_path.relative_to(Path(os.getcwd()))})"
     )
     print(
         f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
@@ -66,15 +106,20 @@ def main() -> None:
 
     props = resource.get("properties") or {}
     fpath = props.get("folderPath")
-    if not isinstance(fpath, str) or not fpath.strip():
-        sys.exit(f"FAIL: properties.folderPath must be a non-empty string, got {fpath!r}")
-    if fpath == "solution_folder":
+    if fpath != EXPECTED_FOLDER_PATH:
         sys.exit(
-            'FAIL: properties.folderPath is "solution_folder", which is only '
-            'valid for location=="solution". External tools require a real '
-            'Orchestrator folder path like "Shared".'
+            f"FAIL: properties.folderPath should be {EXPECTED_FOLDER_PATH!r} "
+            f"(the deployed Orchestrator folder of {EXPECTED_PROCESS_NAME}), got {fpath!r}"
         )
-    print(f'OK: properties.folderPath={fpath!r} (not "solution_folder")')
+    print(f'OK: properties.processName={EXPECTED_PROCESS_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}')
+
+    rkey = resource.get("referenceKey")
+    if not isinstance(rkey, str) or "-" not in rkey:
+        sys.exit(
+            f"FAIL: resource.referenceKey must be a UUID-shaped string copied "
+            f"from `uip solution resource list`'s `Key`, got {rkey!r}"
+        )
+    print(f"OK: resource.referenceKey={rkey!r} (UUID-shaped)")
 
 
 if __name__ == "__main__":
