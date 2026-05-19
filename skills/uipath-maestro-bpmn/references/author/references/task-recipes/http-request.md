@@ -1,16 +1,10 @@
 # HTTP Request Recipe
 
-Use this pass-2 recipe for a plain HTTP request where the workflow owns the URL,
+Use this recipe for a confirmed plain HTTP request where the workflow owns the URL,
 method, payload, and response parsing. Do not use it for connector-authenticated
 operations, Integration Service connector objects, dynamic connector schemas, or
 tenant-specific connection resources; those remain CLI-enriched Integration
 Service work.
-
-This recipe does not replace the two-pass authoring workflow. In pass 1, model
-the process in standard BPMN terms and keep HTTP as draft intent or a clear
-placeholder until the operator confirms the process shape. Apply this recipe
-only after the confirmed skeleton has a plain connectionless HTTP node that
-should become executable.
 
 ## Modeling boundary
 
@@ -18,7 +12,7 @@ Choose the BPMN element for the skeleton before choosing this implementation
 recipe. For confirmed request-and-continue HTTP work, the current supported
 implementation wrapper is `bpmn:sendTask` with `Intsvc.HttpExecution`. If the
 skeleton uses a different supported BPMN shape for a clear modeling reason, do
-not rewrite the topology just to use this recipe without operator confirmation.
+not rewrite the topology just to use this recipe.
 
 Do not represent an executable HTTP call as:
 

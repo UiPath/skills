@@ -1,11 +1,7 @@
 # API Workflow Recipe
 
-Use this pass-2 recipe for confirmed API workflow invocation. In pass 1, model
-the API workflow step as process intent in the BPMN skeleton; apply this recipe
-after the skeleton is chosen and the node should receive UiPath metadata.
-
-The current supported implementation wrapper is `bpmn:serviceTask` with
-`Orchestrator.ExecuteApiWorkflowAsync`.
+The current supported implementation wrapper for confirmed API workflow
+invocation is `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
 
 The model may draft:
 

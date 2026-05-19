@@ -19,7 +19,7 @@ Capability index for local BPMN project authoring. Author owns source edits, loc
 2. **Keep pass 1 standard BPMN-first** - pass 1 may include placeholders and annotations for resource intent, but it must not invent `uipath:activity`, `uipath:event`, connector bindings, generated schemas, or package metadata.
 3. **Read the BPMN XML contract before editing** - the Maestro BPMN contract defines which XML the model may author and which pieces require CLI generation or enrichment.
 4. **Default to reviewable file edits for BPMN source** - edit `.bpmn` directly for model-owned XML so diffs stay inspectable.
-5. **Choose BPMN element class before resource recipe** - RPA, agents, and API workflows are service tasks; queue create is a send task; business rules are business rule tasks; HITL is a user task. See [supported-elements.md](references/supported-elements.md).
+5. **Choose BPMN element class before resource recipe** - RPA, agents, and API workflows are service tasks; queue create is a send task; business rules are business rule tasks; HITL is a user task. Task recipes are pass-2 implementation references and assume the skeleton has already been chosen. See [supported-elements.md](references/supported-elements.md).
 6. **Do not hand-author Integration Service details** - use [plugins/integration-service/](references/plugins/integration-service/) for the planning and implementation boundary.
 7. **Keep generated package files derived** - if `bindings_v2.json`, `entry-points.json`, `operate.json`, or `package-descriptor.json` is stale, prefer regeneration or validation over manual patching.
 8. **Every Studio Web-visible element needs diagram geometry** - ensure diagrams, planes, shapes, bounds, edges, and waypoints exist for rendered nodes and flows.
