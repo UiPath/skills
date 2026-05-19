@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for foreground-already-running scenario. Folder/job/release keys are stable and human-readable; the agent should derive them by chaining: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs. The overlapping prior job (b0a1b2c3-...) is the key evidence — surfaced via the broader jobs list call without the state filter.",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {
@@ -57,14 +57,6 @@
     {
       "match": "or jobs logs c0a1b2c3-d4e5-4678-9012-3456789abcde --output json",
       "file": "or-jobs-logs-c0a1b2c3-output-json.json"
-    },
-    {
-      "match": "or robots list --folder-key \"a1b2c3d4-e5f6-7890-1234-56789abcdef0\" --output json",
-      "file": "or-robots-list-folder-key-a1b2c3d4-output-json.json"
-    },
-    {
-      "match": "or robots list --folder-key a1b2c3d4-e5f6-7890-1234-56789abcdef0 --output json",
-      "file": "or-robots-list-folder-key-a1b2c3d4-output-json.json"
     },
     {
       "match": "docsai ask",

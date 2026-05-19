@@ -40,7 +40,7 @@
       "_doc": "Recorded job traces."
     },
     {
-      "match": "rpa get-errors",
+      "match": "rpa validate",
       "file": "rpa-get-errors-clean.json",
       "_doc": "Clean validation result — used after the agent applies the selector fix and re-validates Google.xaml."
     },

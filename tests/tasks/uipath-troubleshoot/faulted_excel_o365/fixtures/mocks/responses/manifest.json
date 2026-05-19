@@ -53,7 +53,7 @@
       "exit_code": 0
     },
     {
-      "match": "or folders list-current-user",
+      "match": "or folders list",
       "file": "triage-folders-list-current-user.json",
       "exit_code": 0
     },
@@ -63,20 +63,14 @@
       "exit_code": 1
     },
     {
-      "match": "is connections list uipath-microsoft-onedrive --folder-key 7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
-      "file": "H1-connections-list-personal-workspace.json",
-      "exit_code": 0
-    },
-    {
-      "match": "is connections list uipath-microsoft-onedrive",
-      "file": "H1-connections-list-personal-workspace.json",
-      "exit_code": 0
-    },
-    {
       "match": "is connections list --folder-key 7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
-      "file": "connections-list-folder-empty.json",
-      "exit_code": 0,
-      "_doc": "Bare folder-list (no connector filter) — returns an empty array. We don't have ground-truth data on every connection type the runner has in their workspace; an empty array is the honest 'we don't know what else is here' response."
+      "file": "H1-connections-list-personal-workspace.json",
+      "exit_code": 0
+    },
+    {
+      "match": "is connections list",
+      "file": "H1-connections-list-personal-workspace.json",
+      "exit_code": 0
     },
     {
       "match": "docsai ask",

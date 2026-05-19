@@ -31,13 +31,9 @@
       "file": "or-processes-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379.json"
     },
     {
-      "match": "or libraries list --output json",
+      "match": "resource libraries list --output json",
       "file": "or-libraries-list-output-json.json",
       "exit_code": 1
-    },
-    {
-      "match": "or releases list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --output json",
-      "file": "or-releases-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379c.json"
     },
     {
       "match": "docsai ask",

@@ -35,10 +35,32 @@ sandbox:
 # $env:TASK_DIR), so we resolve TASK_DIR through `python -c` which works the
 # same everywhere.
 pre_run:
-  # Resolve the script through SKILLS_REPO_PATH — coder-eval does NOT inject
-  # TASK_DIR into pre_run env (TASK_DIR is criterion-only). SKILLS_REPO_PATH
-  # is already the repo's convention for locating the plugin source (see
-  # smoke-skills.yml and tests/experiments/default.yaml).
+  # 1) Install every per-tool plugin the troubleshoot manifests reference.
+  # The bare `@uipath/cli` install in CI does NOT auto-list subcommands of
+  # uninstalled tools in `--help` output, so the validator below would see
+  # `or` / `is` / `maestro` / `resource` / `docsai` / `traces` / `rpa` as
+  # unknown until something invokes them. Install eagerly here so the
+  # validator's `--help` walk sees the full tree.
+  #
+  # `uip tools install` is idempotent — already-installed tools are no-ops.
+  # Errors are tolerated (fail_on_error: false) because a tool that fails
+  # to install will surface as a BAD entry in the validator below, which
+  # has a clearer message.
+  - command: >-
+      uip tools install @uipath/orchestrator-tool;
+      uip tools install @uipath/integrationservice-tool;
+      uip tools install @uipath/maestro-tool;
+      uip tools install @uipath/resource-tool;
+      uip tools install @uipath/docsai-tool;
+      uip tools install @uipath/traces-tool;
+      uip tools install @uipath/rpa-tool
+    timeout: 300
+    fail_on_error: false
+
+  # 2) Resolve the validator script through SKILLS_REPO_PATH — coder-eval
+  # does NOT inject TASK_DIR into pre_run env (TASK_DIR is criterion-only).
+  # SKILLS_REPO_PATH is already the repo's convention for locating the
+  # plugin source (see smoke-skills.yml and tests/experiments/default.yaml).
   - command: >-
       python -c "import os,subprocess,sys;
       script=os.path.join(os.environ['SKILLS_REPO_PATH'], 'tests', 'tasks', 'uipath-troubleshoot', '_shared', 'scripts', 'verify_manifest_commands.py');
