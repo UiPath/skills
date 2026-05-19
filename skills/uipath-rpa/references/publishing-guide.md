@@ -46,7 +46,8 @@ uip or packages upload "<NUPKG_PATH>" --output json
 |---|---|---|
 | `<NUPKG_PATH>` | Yes (positional) | Path to the `.nupkg` produced by `pack`. |
 | `--feed-id <UUID>` | No | Target a non-default feed. Defaults to the tenant feed. |
-| `-t, --tenant <NAME>` | No | Override the authenticated tenant. |
+
+Package upload uses the active tenant. Switch with `uip login tenant set <tenant>` before upload if the package belongs in another tenant feed.
 
 Output JSON includes the package `Id` (the package name Orchestrator stores) and `Version`. Hold on to the `Id` — it is the `--package-name` value that `uip tm testcases link-automation` and `uip or processes create` need.
 

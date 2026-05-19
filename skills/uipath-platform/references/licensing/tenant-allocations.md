@@ -17,7 +17,7 @@ Allocate license units (`UNATT`, `RU`, `PLTU`, `NONPR`, etc.) from the account p
 
 1. Authenticated: `uip login`
 2. Org admin permissions to allocate licenses
-3. Tenant key (GUID) of the target tenant — discover with `uip or settings list --tenant <name>` or the Automation Cloud portal
+3. Tenant key (GUID) of the target tenant — discover with `uip login tenant list --output json` or the Automation Cloud portal
 
 ---
 
