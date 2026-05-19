@@ -174,10 +174,10 @@ uip or jobs list --process-name "MyProcess" --folder-path "Production" --output 
 ```bash
 uip or jobs logs <job-key> --output json                  # All logs
 uip or jobs logs <job-key> --level Error --output json    # Error logs only
-uip or jobs logs <job-key> --export -o ./logs.csv         # Export to CSV file
+uip or jobs logs <job-key> --export --destination ./logs.csv  # Export to CSV file
 ```
 
-`--export` writes a CSV file instead of terminal output. Combine with `-o` to set the output path. Logs are cross-folder -- no `--folder-path` required.
+`--export` writes a CSV file instead of terminal output. Combine with `--destination` (or `-d`) to set the file path. Logs are cross-folder -- no `--folder-path` required.
 
 ## Step 7: Get Traces
 
@@ -261,7 +261,7 @@ uip or jobs start <process-key> --folder-path "Finance" \
   --wait-for-completion --timeout 600 --output json
 
 uip or jobs logs <job-key> --level Error --output json
-uip or jobs logs <job-key> --export -o ./invoice-logs.csv
+uip or jobs logs <job-key> --export --destination ./invoice-logs.csv
 ```
 
 ---
