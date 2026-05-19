@@ -17,7 +17,7 @@ Send structured bug reports or improvement suggestions to UiPath with auto-captu
 1. **Minimum user interaction.** If the conversation already contains enough context (error, what the user was doing, what went wrong), go straight to confirm and send. Only ask clarifying questions when you genuinely cannot determine what happened.
 2. **Never send without explicit user confirmation.** Always show a preview and wait for "yes".
 3. **Never include secrets, tokens, credentials, or customer data.** Sanitize all captured content before sending.
-4. **Never include full conversation history.** Summarize the relevant context in 2-3 sentences.
+4. **Never include full conversation history.** Summarize relevant context in 2-3 sentences. Sample prompts (Step 2e) are a curated max-5 selection — not a transcript.
 5. **Use `--output json`** on `uip feedback send` to parse the result programmatically.
 6. **If `uip feedback send` fails**, save the report to `./feedback-report.md` so the user does not lose the gathered context.
 
@@ -83,7 +83,19 @@ Review the current conversation for the last CLI command that failed. If identif
 
 If not identifiable, skip this section.
 
-#### 2e. Session retrospective
+#### 2e. Capture sample prompts
+
+Pick 3-5 user prompts from the conversation that show what the user was trying to do. These give triagers what the retrospective cannot: the user's actual words.
+
+Selection rules:
+- Prefer prompts stating intent ("build a flow that…", "I need to…", "help me…") or describing failure ("this is broken", "wrong result").
+- Keep wording **verbatim**. Paraphrasing loses signal. Sanitization Rules apply.
+- Skip filler ("ok", "thanks", "try again").
+- If fewer than 3 substantive prompts exist, include what you have. Do not pad.
+- Maximum 5 prompts. Total length under 1000 characters across all prompts. Truncate any single prompt over 200 chars with `... [truncated]`; keep the most informative portion.
+- If no substantive prompts are available, omit the `## Sample prompts` section in Step 3 entirely.
+
+#### 2f. Session retrospective
 
 Review the full conversation and produce a structured self-assessment. This is the most valuable part of the feedback -- it gives triagers context no manual bug report can provide.
 
@@ -95,7 +107,7 @@ Answer each question concisely (1-3 sentences each). Reference actual tool names
 4. **Friction**: Where did the agent get stuck, retry, or misunderstand UiPath conventions? How many generate-validate-fix cycles?
 5. **Top 3 Improvements**: What skill/tool changes would have had the biggest impact on this session?
 
-#### 2f. Auto-detect type and priority
+#### 2g. Auto-detect type and priority
 
 **Type** -- determine from conversation signals:
 
@@ -116,11 +128,11 @@ Default to `bug` when ambiguous.
 
 Default to `normal` when ambiguous.
 
-#### 2g. Sanitize everything
+#### 2h. Sanitize everything
 
 Apply all rules from the [Sanitization Rules](#sanitization-rules) section below to every piece of captured content before proceeding.
 
-#### 2h. Only if context is insufficient
+#### 2i. Only if context is insufficient
 
 If the agent genuinely cannot determine what happened (e.g., user typed `/uipath-feedback` with no prior context in the conversation), ask **one** structured question:
 
@@ -157,6 +169,11 @@ Build the `--description` content:
 ```
 ## What happened
 {User's problem -- in their own words or summarized from conversation}
+
+## Sample prompts
+1. "{prompt 1 -- verbatim, sanitized}"
+2. "{prompt 2 -- verbatim, sanitized}"
+3. "{prompt 3 -- verbatim, sanitized}"
 
 ## Error
 {The actual error message or validation output -- if available, otherwise omit this section}
@@ -197,6 +214,12 @@ Build the `--description` content:
 ```
 ## What happened
 When running `uip maestro flow validate` on a flow with nested loops, the CLI returned a generic "expression error" with no line number or variable name, making it impossible to locate the issue.
+
+## Sample prompts
+1. "Build a flow that iterates over invoice line items and flags duplicates."
+2. "Now add a nested loop to compare each item against the prior month's list."
+3. "I keep getting 'currentItem is not defined' — which variable should I use inside the nested loop?"
+4. "Run validate again and just tell me which line is broken."
 
 ## Error
 ExpressionError: Invalid expression at unknown location — currentItem is not defined
@@ -311,11 +334,12 @@ Apply these rules to ALL content before it is included in the description or att
 4. **Truncate long content.** Files over 150 lines: keep first 100 + `... [truncated N lines] ...` + last 30. Full description: max 4000 characters
 5. **Never include**: `~/.uipath/.auth`, `.env`, `.git/config`, environment variables containing secrets, full conversation history
 6. **Never include customer data.** Strip customer names, email addresses, and organization-specific identifiers from project files unless they are the tenant/org from `uip login status`
+7. **Sanitize sample prompts.** Apply rules 1-3 and 6 to every captured prompt before including it under `## Sample prompts`. Replace customer names, email addresses, project codenames, account IDs, ticket IDs, internal URLs, and file paths revealing usernames with `<REDACTED>`. If a prompt cannot be sanitized without losing its signal (the prompt is mostly customer-specific data), drop that prompt and pick another from Step 2e. Never quote a prompt verbatim if it contains a secret, even if the user typed it.
 
 ## What NOT to Do
 
 1. **Do not ask questions you already know the answer to.** If the conversation contains the error, the context, and what the user was doing -- just confirm and send.
-2. **Do not include raw conversation dumps.** Summarize in 2-3 sentences.
+2. **Do not include raw conversation dumps.** `## What happened` is a 2-3 sentence summary. `## Sample prompts` is a curated max-5 selection per Step 2e — not a transcript.
 3. **Do not send without confirmation.** Always preview first.
 4. **Do not include secrets, credentials, or PII.** When in doubt, redact.
 5. **Do not attach unsanitized files.** Always strip sensitive content before attaching.
