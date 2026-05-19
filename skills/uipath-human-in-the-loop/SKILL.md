@@ -30,7 +30,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
+1. **Confirm schema with the user before writing anything for quickform type — unless the context already provides enough information.** If the user's description fully determines the fields, types, directions, and outcomes (nothing is genuinely ambiguous), proceed directly and explain what you designed. Only stop to confirm when a key schema decision cannot be inferred from context. Never ask for confirmation in agentic or automated contexts where no interactive user is present.
 2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle. As of flow-schema MST-9713, `flow validate` raises `HITL_COMPLETED_UNWIRED` (error severity) if the `completed` port has no outgoing edge — validation will fail rather than silently producing a broken flow.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
 4. **Validate after every change.** Run `uip maestro flow validate <file> --output json` after writing the node and edges. The `uip` CLI does not accept `--format`; using it produces `error: unknown option '--format'` and exit code 3.
@@ -140,6 +140,8 @@ Present the user with three options. Do not choose on their behalf or perform an
 | 1 | **QuickForm** | `"quick"` | Inline typed form — fields rendered by Action Center from the schema you design here |
 | 2 | **New Coded Action App** | `"custom"` | Scaffold a new React + TypeScript app inside the solution — full UI control |
 | 3 | **Existing Deployed App** | `"custom"` | Reference an app already deployed to Orchestrator |
+
+> **If the user's request is purely business-oriented** (no mention of a deployed app, coded action app, or custom UI): skip the question and proceed directly with QuickForm. Do not ask. Say: "I'll use QuickForm — it's inline, no deployment step needed, and works for most approval and review tasks."
 
 > **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a Coded Action App later."
 
