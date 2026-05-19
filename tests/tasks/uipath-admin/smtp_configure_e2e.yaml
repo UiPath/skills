@@ -1,0 +1,63 @@
+task_id: skill-admin-smtp-configure-e2e
+description: >
+  End-to-end test: agent configures SMTP settings following the
+  recommended test-first-then-save workflow. Tests the settings,
+  saves them, and verifies they were applied.
+tags: [uipath-admin, e2e, lifecycle:generate]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Configure SMTP email settings for my organization: host
+  smtp.example.com, port 587, SSL enabled, sender address
+  noreply@example.com, display name "UiPath E2E Test".
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent tested or updated SMTP with --host"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+smtp\s+(test|update)\s+.*--host'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent saved SMTP settings via update"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+smtp\s+update'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent consistently used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "SMTP settings were applied (host is non-empty)"
+    command: "python3 $TASK_DIR/../_shared/check_smtp_settings.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $TASK_DIR/../_shared/cleanup_smtp.py"
+    timeout: 30
