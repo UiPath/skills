@@ -14,7 +14,7 @@ description: >
 tags: [uipath-admin, smoke, mode:diagnose, audit, scope-org]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

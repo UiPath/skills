@@ -14,7 +14,7 @@ description: >
 tags: [uipath-governance, smoke, catalog]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

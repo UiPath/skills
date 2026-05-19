@@ -7,7 +7,7 @@ description: >
 tags: [uipath-agents, smoke, coded, bindings]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

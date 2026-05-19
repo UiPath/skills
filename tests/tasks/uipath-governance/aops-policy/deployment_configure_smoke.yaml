@@ -19,7 +19,7 @@ description: >
 tags: [uipath-governance, smoke, aops-policy, deployment, configure]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

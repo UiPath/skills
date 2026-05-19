@@ -6,7 +6,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, lifecycle:generate]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

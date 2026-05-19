@@ -61,7 +61,7 @@ jobs:
           # ...) drive their own jobs/dashboards and don't change smoke
           # behavior, so editing them shouldn't trigger a 30-min full-suite
           # run on every PR.
-          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$'; then
+          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -199,11 +199,23 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Verify Docker is available
+        run: |
+          docker --version
+          docker run --rm hello-world > /dev/null
+
       - name: Install coder-eval
         working-directory: .coder_eval
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
+
+      - name: Build coder-eval Docker image
+        working-directory: .coder_eval
+        env:
+          UV_INDEX_UIPATH_USERNAME: ${{ secrets.UV_INDEX_UIPATH_USERNAME }}
+          UV_INDEX_UIPATH_PASSWORD: ${{ secrets.UV_INDEX_UIPATH_PASSWORD }}
+        run: make docker-image
 
       # Install from GitHub Packages under the `alpha` dist-tag so smoke
       # tracks `cli/main`. Every merge to `cli/main` runs
@@ -285,16 +297,18 @@ jobs:
         run: |
           echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml --tags smoke -j "$TASK_PARALLELISM" -v
+            -e experiments/default.yaml \
+            -j "$TASK_PARALLELISM" -v \
+            --run-dir /tmp/runs \
+            --tags smoke
         continue-on-error: true
 
       - name: Summarize results
         if: always()
-        working-directory: tests
         run: |
           # Find the most recent run directory (tests may not have produced
           # one on catastrophic install failures).
-          run_dir=$(ls -td runs/*/ 2>/dev/null | head -n 1)
+          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1)
           if [ -z "$run_dir" ]; then
             echo "::warning::No run directory found — nothing to summarize"
             exit 0
@@ -305,7 +319,7 @@ jobs:
           python - <<'PY'
           import json
           import pathlib
-          run_dir = sorted(pathlib.Path('runs').glob('*/'))[-1]
+          run_dir = sorted(pathlib.Path('/tmp/runs').glob('*/'))[-1]
           rows = []
           for p in sorted(run_dir.rglob('task.json')):
               d = json.loads(p.read_text(encoding='utf-8'))
@@ -328,24 +342,30 @@ jobs:
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
 
+      - name: Clean up artifacts (remove .venv and node_modules)
+        if: always()
+        run: |
+          find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + 2>/dev/null || true
+
       - name: Upload HTML / JSON eval report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: eval-report-${{ github.run_id }}
           # Use ** so the pattern still matches the replicate-index segment
-          # that coder_eval adds to per-task run dirs (runs/<ts>/<variant>/<task>/<NN>/).
+          # that coder_eval adds to per-task run dirs (/tmp/runs/<ts>/<variant>/<task>/<NN>/).
           path: |
-            tests/runs/*/experiment.html
-            tests/runs/*/experiment.md
-            tests/runs/*/experiment.json
-            tests/runs/*/experiment.log
-            tests/runs/*/*/variant.html
-            tests/runs/*/*/variant.md
-            tests/runs/*/*/variant.json
-            tests/runs/**/task.html
-            tests/runs/**/task.json
-            tests/runs/**/task.log
+            /tmp/runs/*/experiment.html
+            /tmp/runs/*/experiment.md
+            /tmp/runs/*/experiment.json
+            /tmp/runs/*/experiment.log
+            /tmp/runs/*/*/variant.html
+            /tmp/runs/*/*/variant.md
+            /tmp/runs/*/*/variant.json
+            /tmp/runs/**/task.html
+            /tmp/runs/**/task.json
+            /tmp/runs/**/task.log
+            /tmp/runs/**/artifacts
           if-no-files-found: warn
           retention-days: 14
 
@@ -358,7 +378,6 @@ jobs:
       # agent already recovered from without false-failing correct runs.
       - name: Enforce LLM reviewer score threshold (>= 0.7)
         if: always()
-        working-directory: tests
         env:
           REVIEWER_THRESHOLD: "0.7"
         # Single-quoted heredoc keeps Python literals intact. Threshold
@@ -367,7 +386,7 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, sys
           threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          run_dirs = sorted(pathlib.Path('/tmp/runs').glob('*/'))
           if not run_dirs:
               print('::warning::No run directory — skipping reviewer threshold check')
               sys.exit(0)

@@ -8,7 +8,7 @@ description: >
 tags: [uipath-planner, smoke, lifecycle:plan]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
