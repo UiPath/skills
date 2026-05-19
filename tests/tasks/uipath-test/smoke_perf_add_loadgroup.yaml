@@ -1,0 +1,52 @@
+task_id: skill-test-perf-add-loadgroup
+description: >
+  Smoke test: agent uses the uipath-test skill to attach a test case as a
+  load group on a perf scenario. Asserts that the agent (a) discovers
+  projects + test cases first (Critical Rule #7), (b) creates a scenario
+  (or reuses one referenced by the user), (c) calls `uip tm scenario
+  add-testcase` with `--scenario-key`, `--test-case-key`, `--folder-key`,
+  and `--package-name`, and (d) **omits `--package-version`** so the CLI
+  auto-resolves to the latest published version (per skill anti-pattern).
+  The skill — not the prompt — must teach version auto-resolve and
+  `--output json`.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:perf-loadgroup]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Set up a performance scenario that exercises my login test case as a
+  load group. Discover what's available, create the scenario, and attach
+  the test case using the latest published package version.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed test cases for the project (Critical Rule #7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcase\s+list\s+.*--project-key\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called `scenario add-testcase` with the required IDs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+add-testcase\s+.*--scenario-key\s+\S+.*--test-case-key\s+\S+.*--folder-key\s+\S+.*--package-name\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT pin --package-version (skill anti-pattern: omit to auto-resolve latest)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+add-testcase\s+.*--package-version'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0

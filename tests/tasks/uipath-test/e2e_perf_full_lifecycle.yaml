@@ -1,0 +1,147 @@
+task_id: skill-test-perf-full-lifecycle
+description: >
+  E2E test: agent uses the uipath-test skill to drive the **complete**
+  performance-testing lifecycle from a vague natural-language prompt:
+  Explore -> discover (project + test case + folder) -> create scenario
+  -> add load group (omit --package-version) -> dry run with --wait ->
+  confirm load profile with user (skill rule) -> update-loadgroup ->
+  full performanceTesting run -> fetch results -> per-API breakdown ->
+  write Performance Engineer report. The prompt is intentionally vague
+  so the skill — not the prompt — drives every step.
+tags: [uipath-test, e2e, mode:operate, lifecycle:end-to-end, feature:perf-scenario]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 120
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Run a full performance test on my login test case and write me a
+  Performance Engineer report to ./perf-report.md including the per-API
+  breakdown. Use sensible defaults but confirm the load profile with me
+  before kicking off the full run.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login first (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered projects (Critical Rule #7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+list'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered test cases (Critical Rule #7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcase\s+list\s+.*--project-key'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the scenario"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+create\s+.*--project-key\s+\S+.*--name\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attached the load group without pinning --package-version (auto-resolve)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+add-testcase\s+.*--scenario-key\s+\S+.*--test-case-key\s+\S+.*--package-name\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT pin --package-version"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+add-testcase\s+.*--package-version'
+    min_count: 0
+    max_count: 0
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a dry run with --wait first (precondition for full)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+execute\s+.*--execution-type\s+dryRun.*--wait'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent surfaced the current load profile via `scenario get`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+get\s+.*--scenario-key\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent submitted a performanceTesting run (the full run)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+execute\s+.*--execution-type\s+performanceTesting'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted per-API transaction metrics"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+transaction-metrics\s+.*--load-group-id\s+\S+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Report file written at ./perf-report.md"
+    command: "ls perf-report.md >/dev/null 2>&1"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Report contains Performance Engineer persona content (percentile + SLO violation reasons + numeric ms value)"
+    command: |
+      python3 -c "
+      import re, sys
+      try:
+          body = open('perf-report.md', encoding='utf-8', errors='replace').read()
+      except FileNotFoundError:
+          sys.exit(2)
+      checks = {
+          'percentile (p95 or p99)': re.search(r'(?i)\\bp9[59]\\b', body) is not None,
+          'SLO violation referenced': re.search(r'(?i)slo|service[- ]level|violat', body) is not None,
+          'numeric ms value': re.search(r'\\d+(?:\\.\\d+)?\\s*ms', body) is not None,
+      }
+      missing = [k for k,ok in checks.items() if not ok]
+      if missing:
+          sys.stderr.write('missing: ' + ', '.join(missing) + chr(10))
+          sys.exit(1)
+      sys.exit(0)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

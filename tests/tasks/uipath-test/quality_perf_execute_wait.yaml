@@ -1,0 +1,64 @@
+task_id: skill-test-perf-execute-wait
+description: >
+  Integration test: agent uses the uipath-test skill to drive a dry-run
+  perf execution end-to-end. Asserts that the agent (a) uses
+  `uip tm scenario execute` with `--wait` (skill anti-pattern: do NOT
+  hand-roll a polling loop with `scenario execution-results`),
+  (b) defaults to `--execution-type dryRun` when the user prompt doesn't
+  explicitly demand a full load run, and (c) passes `--output json`.
+  The skill — not the prompt — must teach the `--wait` preference and
+  the dryRun-as-default rule.
+tags: [uipath-test, integration, mode:operate, lifecycle:execute, feature:perf-scenario]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Run a perf test on one of my existing scenarios (whichever has a load
+  group already attached). Wait for it to finish and tell me the outcome.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent inspected the scenario before executing (reuse-vs-create rule)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+get\s+.*--scenario-key\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used `scenario execute --wait` (skill anti-pattern: don't hand-roll a poll loop)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+execute\s+.*--scenario-key\s+\S+.*--wait'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT hand-roll a `scenario execution-results` polling loop in lieu of --wait"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+execution-results\s+.*--execution-id'
+    min_count: 0
+    max_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --output json on every scenario command (Critical Rule #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+scenario\s+\S+\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
