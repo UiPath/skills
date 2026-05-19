@@ -76,15 +76,7 @@ For each entry in `caseShape.inputs[]`:
 
 For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-common.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers).
 
-**Output binding per `->` and `=` operators** (parsed from tasks.md `outputs:` row; documented in [`../../variables/io-binding/planning.md`](../../variables/io-binding/planning.md#discovering-inputoutput-names)):
-
-- For each `caseShape.outputs[]` entry, check whether the SDD's `outputs:` row in tasks.md references it (matched by schema field name on the left side of `->` or as a bare name).
-- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape: override the minted `var/value` with `<sdd-name>`, keep `id` at the camelCased leaf segment, set `originalVar` to the same. **`source` is `=<sdd-field-path>` verbatim.** The SDD writes the full runtime path (e.g., `response.subject`, `Error`); skill never adds, removes, or infers envelope prefixes. Resolve `name` (display name) and type from the Step 0 schema — top-level entries match by their `source` field (with `=` stripped); nested fields are found by navigating the parent entry's `body` schema. **`originalVar` is load-bearing** — tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits.
-- **Bare `<name>` in SDD** (no operator) → match against a top-level Step 0 entry; if matched, write camelCased name to `var/id/value`; `source` is the entry's pre-populated value verbatim. No `originalVar`.
-- **`<sdd-name> = <expression>`** (set / compute / copy) → emit a Scenario E entry on `caseShape.outputs[]`: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. NO root mirror — FE's `isUpdateExistingOutput` filter skips it.
-- Schema fields with no SDD reference → fall back to today's auto-mint shape (`var` = camelCased schema name, dedup-suffix on collision).
-- Dot-paths in `->` paths are supported (e.g., `response.message.ts`, `Error.code`). Array indexing not supported in v1.
-- Target case variable on both `->` and `=` MUST exist in Case Variables table (validated at planning time).
+**Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
 ### Step 7 — Build task and write to caseplan.json
 
