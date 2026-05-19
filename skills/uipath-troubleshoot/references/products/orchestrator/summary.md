@@ -10,3 +10,4 @@
 | Job Stuck in Running | Low | Job remains in Running state indefinitely with no progress | [job-stuck.md](./playbooks/job-stuck.md) |
 | Job Pending — No Available Host | High | Job stuck in Pending with "No host is available on the machine template" error | [job-pending-no-host.md](./playbooks/job-pending-no-host.md) |
 | Foreground Process Already Running | Medium | `InvalidOperationException: A foreground process is already running. Only one foreground process can run at a time.` — Robot rejects concurrent foreground jobs on the same session | [foreground-already-running.md](./playbooks/foreground-already-running.md) |
+| Job Stopped — Exit Code 0x40010004 | Medium | `System.Exception: Job stopped with an unexpected exit code: 0x40010004` — executor was killed via `TerminateProcess` (operator Kill, service restart, session logoff, OOM, native crash, or platform recycle) | [job-stopped-exit-code-0x40010004.md](./playbooks/job-stopped-exit-code-0x40010004.md) |
