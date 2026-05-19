@@ -4,8 +4,6 @@ description: >
   a personal access token with scopes and expiration. Tests correct
   flag usage and token-shown-once awareness.
 
-  Platform note: runs without an authenticated tenant — commands will
-  fail with auth errors. That is acceptable.
 tags: [uipath-admin, smoke, create]
 
 sandbox:
@@ -16,14 +14,7 @@ initial_prompt: |
   Create a personal access token for CI/CD with read access to Folders
   and Jobs, expiring January 15, 2027.
 
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: command_executed

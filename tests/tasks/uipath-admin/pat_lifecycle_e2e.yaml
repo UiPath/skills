@@ -1,8 +1,7 @@
 task_id: skill-admin-pat-lifecycle-e2e
 description: >
-  End-to-end test: agent manages the full PAT lifecycle. Creates a
-  personal access token with scopes and expiration, lists tokens to
-  verify, then revokes it.
+  End-to-end test: agent creates a PAT with scopes and expiration,
+  then lists tokens to verify it exists. Cleanup revokes the PAT.
 tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
 
 agent:
@@ -21,7 +20,7 @@ sandbox:
 initial_prompt: |
   Create a personal access token described as "e2e-test-pat" with
   read access to Folders, expiring 2027-06-01. Then list my tokens
-  to confirm it exists, and revoke it.
+  to confirm it was created.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 
@@ -43,14 +42,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent revoked the PAT"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+pat\s+revoke'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent consistently used --output json"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+.*--output\s+json'
@@ -59,7 +50,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "PAT 'e2e-test-pat' was created (may already be revoked)"
+    description: "PAT 'e2e-test-pat' exists in token list"
     command: "python3 $TASK_DIR/../_shared/check_pat_created.py"
     timeout: 30
     expected_exit_code: 0
