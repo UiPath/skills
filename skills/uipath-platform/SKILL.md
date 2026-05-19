@@ -77,6 +77,7 @@ All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uni
 ### Step 1 — Authenticate
 
 Before interacting with Orchestrator, solutions, or Integration Service, the user must be logged in.
+Login must establish an active tenant. Tenant-scoped commands use that active tenant by default.
 
 **Interactive login (browser OAuth2):**
 ```bash
@@ -100,7 +101,7 @@ uip login status --output json
 
 ### Step 2 — Select a Tenant
 
-List available tenants and set the active one:
+List available tenants and set the active one. Use this command to switch tenants after login; do not add `--tenant` to individual tenant-scoped commands.
 
 ```bash
 uip login tenant list --output json

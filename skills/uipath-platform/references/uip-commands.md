@@ -5,8 +5,9 @@
 **Global flags:**
 - `--output json` — always use when calling programmatically
 - `--output-filter <expr>` — JMESPath filter for JSON output
-- `--tenant <name>` — tenant override (defaults to authenticated tenant)
 - `--verbose` — enable debug logging
+
+Tenant-scoped commands use the active tenant from `uip login`. Switch tenants with `uip login tenant set <name>`. Do not pass per-command `--tenant`; legacy hidden overrides only exist for backwards compatibility and emit a deprecation warning.
 
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.

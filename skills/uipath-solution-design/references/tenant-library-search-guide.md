@@ -22,7 +22,8 @@ Returns `Data: [{ Key, Title, Version, Authors }]`. `Key` is `PackageId:Version`
 | `--offset <N>` | Pagination offset. Use only if `Data.length == --limit`. |
 | `--order-by "<field> <asc\|desc>"` | Sort. Default `Id desc`. |
 | `--output-filter "<JMESPath>"` | Global filter, evaluated client-side after the API returns. |
-| `-t, --tenant <name>` | Override default tenant. |
+
+Library search uses the active tenant. Switch with `uip login tenant set <tenant>` before searching another tenant feed.
 
 There is **no `--search` flag** and **no `--feed-id` flag** on `libraries list`. Filter via `--output-filter`.
 
