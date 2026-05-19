@@ -54,9 +54,9 @@ if isinstance(log_data, dict):
 if not log_data:
     sys.exit("FAIL: jobs logs returned empty")
 
-# 3. Traces non-empty (with up to 5 retries — ingestion lag)
+# 3. Traces non-empty (with up to 12 retries × 15s = 3 min — ingestion lag can be slow)
 spans = []
-for attempt in range(5):
+for attempt in range(12):
     tr = uip_json("or", "jobs", "traces", job_key)
     if tr.get("Result") == "Success":
         d = tr.get("Data") or []
@@ -67,6 +67,6 @@ for attempt in range(5):
             break
     time.sleep(15)
 if not spans:
-    sys.exit("FAIL: jobs traces returned empty after retries — trace ingestion lag")
+    sys.exit("FAIL: jobs traces returned empty after 3 min — trace ingestion lag")
 
 print(f"OK: job {job_key} state={state} logs={len(log_data)} spans={len(spans)}")

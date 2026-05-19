@@ -9,6 +9,7 @@ tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, webhooks]
 agent:
   type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+  turn_timeout: 600  # job-completion + webhook-delivery polling > default 300s
 
 sandbox:
   driver: tempdir

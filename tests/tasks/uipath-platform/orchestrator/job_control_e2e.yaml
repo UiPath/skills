@@ -8,6 +8,7 @@ tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, orchestrator, jobs]
 agent:
   type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+  turn_timeout: 600  # agent's restart/stop polling can exceed default 300s
 
 sandbox:
   driver: tempdir

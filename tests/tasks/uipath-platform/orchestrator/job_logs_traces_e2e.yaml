@@ -37,7 +37,7 @@ success_criteria:
   - type: run_command
     description: "Tenant: job is terminal with logs + traces"
     command: "python3 $TASK_DIR/check_job_logs_traces.py"
-    timeout: 180
+    timeout: 240  # trace ingestion can take up to ~3 min
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
