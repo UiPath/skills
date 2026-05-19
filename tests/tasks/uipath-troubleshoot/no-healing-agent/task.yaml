@@ -1,0 +1,124 @@
+task_id: skill-troubleshoot-no-healing-agent
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay, rpa, ui-automation, healing-agent]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  Why did my last job from folder Shared has failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent reached the same root cause as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      The user's request was:
+        "Why did my last job from folder Shared has failed?"
+
+      Grade ONLY on what the agent presented to the user (its final
+      response) and the tool-call summary. Do NOT grade on the shape or
+      content of files under `.local/investigations/` — those are
+      bookkeeping, not the deliverable.
+
+      The reference root cause names BOTH:
+        (a) Selector typo in NClick `Click 'Simt că am noroc'` in
+            Google.xaml — the failed selector `aria-label` contains 10
+            spurious trailing `c` characters (`Simt că am noroccccccccccc`)
+            instead of `Simt că am noroc`, causing NodeNotFoundException.
+        (b) Healing Agent did NOT auto-recover because this is an
+            Attended StudioPro run (Type=Attended, RuntimeType=StudioPro,
+            Source=Agent). HA only runs for unattended Orchestrator-
+            scheduled jobs. The empty 22-byte ZIP from
+            `or jobs healing-data` is the symptom — HA-ineligibility is
+            the cause.
+
+      The reference fix names BOTH:
+        (i) Correct the NClick aria-label in Google.xaml from
+            "Simt că am noroccccccccccc" to "Simt că am noroc".
+        (ii) Note that HA exclusion of attended runs is by design —
+             no Orchestrator-side change enables HA for this run type.
+
+      SCORING RUBRIC (grade the presented conclusion):
+
+        1.0  Response names BOTH (a)+(b) AND recommends (i); ideally
+             also explains (ii).
+        0.8  Names (a)+(b) and recommends (i), but misses (ii) /
+             frames HA absence as a bug rather than HA-ineligibility.
+        0.5  Names ONE of (a) or (b) clearly. E.g., identifies the
+             selector typo but blames HA absence on infrastructure, OR
+             identifies HA-ineligibility but misses the selector typo.
+        0.2  Recognizes NodeNotFoundException surface but blames a
+             different culprit (package corruption, version mismatch,
+             selector strictness without naming the typo, or HA
+             configuration issue).
+        0.0  Misdiagnosed (blamed asset, permissions, connection) or
+             got blocked.
+
+      Penalize fabrication: claims of "package corruption" or "version
+      mismatch" or invented assets are NOT supported by the evidence.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator, runtime-exceptions), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered. EXCEPTION: if the missing data is the project source code path, fall back to the rule above (`.` / current working directory) before suggesting best-effort."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (see rules above)."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

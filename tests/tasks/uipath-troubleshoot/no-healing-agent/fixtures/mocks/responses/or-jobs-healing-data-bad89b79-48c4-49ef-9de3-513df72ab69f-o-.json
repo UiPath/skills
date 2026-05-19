@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "JobHealingData",
+  "Data": {
+    "JobKey": "bad89b79-48c4-49ef-9de3-513df72ab69f",
+    "FileName": ".investigation/raw/H1-healing-data.zip",
+    "Size": 22,
+    "ExportId": 268
+  }
+}
