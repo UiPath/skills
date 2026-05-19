@@ -10,7 +10,7 @@ description: >
   playbook with multiple sub-causes — the agent's job is to identify
   the family, not pinpoint the exact sub-cause).
 
-tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, network-connectivity]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, network-connectivity, rpa]
 
 agent:
   type: claude-code

@@ -148,6 +148,10 @@ uip df records query <entity-id> \
 
 Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`. For the full type table with SQL backing types, see [`references/entity-schema.md`](references/entity-schema.md).
 
+### Advanced Field Constraints
+
+Optional per-type constraints on create/update — `lengthLimit` (STRING, MULTILINE_TEXT), `maxValue` / `minValue` (INTEGER, BIG_INTEGER, DECIMAL, FLOAT, DOUBLE), `decimalPrecision` (DECIMAL, FLOAT, DOUBLE). See `references/entity-schema.md` for ranges and examples.
+
 ---
 
 ## Workflow: Discover → Act → Verify
@@ -169,7 +173,7 @@ uip df records list <entity-id> --cursor <NextCursor> --output json
 
 ## Query Request Format
 
-Pass via `--body` or `--file`. Use `--limit` and `--cursor` CLI flags for pagination — not body keys.
+Pass via `--body` or `--file`. Use `--limit`, `--cursor`, and `--offset` CLI flags for pagination — not body keys. See [Pagination](#pagination) below.
 
 ```json
 {
@@ -189,6 +193,10 @@ Pass via `--body` or `--file`. Use `--limit` and `--cursor` CLI flags for pagina
 - Operators: `=`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `not contains`, `startswith`, `endswith`, `in`, `not in`
 - For `in` / `not in` use `"valueList": ["a","b","c"]` — **not** a comma-separated `value` string
 - Response includes `HasNextPage` and `NextCursor` — pass `NextCursor` to `--cursor` for the next page
+
+## Pagination
+
+`records list` / `records query` paginate via `--limit`, `--cursor`, `--offset`. See [`references/records-query.md`](references/records-query.md).
 
 ---
 

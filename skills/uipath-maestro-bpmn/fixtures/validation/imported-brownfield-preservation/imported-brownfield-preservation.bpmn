@@ -23,14 +23,14 @@
           <uipath:context>
             <uipath:inputSchema><![CDATA[{"type":"object","properties":{"legacyPayload":{"type":"object"}}}]]></uipath:inputSchema>
           </uipath:context>
-          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"legacyPayload":"=legacyPayload"}]]></uipath:input>
-          <uipath:output name="normalizedStatus" type="string" var="normalizedStatus" source="result.status" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"legacyPayload":"=vars.Var_LegacyPayload"}]]></uipath:input>
+          <uipath:output name="normalizedStatus" type="string" var="Var_NormalizedStatus" source="=result.response.status" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Start_To_Script</bpmn:incoming>
       <bpmn:outgoing>Flow_Script_To_End</bpmn:outgoing>
       <bpmn:script><![CDATA[
-return { result: { status: "preserved-v2" } };
+return { response: { status: "preserved-v2" } };
 ]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="End_ImportedDone" name="Imported Done">

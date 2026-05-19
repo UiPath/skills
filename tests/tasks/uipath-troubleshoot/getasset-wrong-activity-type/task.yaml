@@ -10,7 +10,7 @@ description: >
   (different error signature) — and converge on the activity-vs-asset
   type mismatch.
 
-tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, wrong-activity-type]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, wrong-activity-type, rpa]
 
 agent:
   type: claude-code

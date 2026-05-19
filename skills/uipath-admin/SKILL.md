@@ -113,8 +113,8 @@ The `org` vs `tenant` choice matters — they hit different basePaths and surfac
 
 | User says... | Likely scope | Why |
 |---|---|---|
-| "who joined / left the organization", "who was made an admin", "license changes", "cross-tenant audit" | **org** | Org-level admin events (memberships, license, tenant lifecycle) live under `/orgaudit_`. |
-| "what happened on tenant X", "logins on this tenant", "policy changes within a tenant", "asset/queue/folder edits" | **tenant** | Tenant-scoped events (Orchestrator, AOps, AI Trust, etc.) live under `/{tenantId}/tenantaudit_`. |
+| "who joined / left the organization", "who was made an admin", "license changes", "cross-tenant audit", **"failed/successful logins"**, **"login history for user X"**, **"who's been signing in"** | **org** | Org-level events (memberships, license, tenant lifecycle, **Identity Server / IdP authentication including User Login**) live under `/orgaudit_`. |
+| "what happened on tenant X", "asset/queue/folder edits", "queue items processed", "job failures", "Action Center task changes", "Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity" | **tenant** | Tenant-scoped events (Orchestrator, Action Center, Apps, AgentHub, Document Understanding, Integration Service, Test Manager, Data Fabric, Process Mining, Relay, Hypervisor, tenant-side Admin) live under `/{tenantId}/tenantaudit_`. Note: governance/AOps policies, source control, and pipelines are **org**-scoped despite the AOps name. |
 | "everything everywhere" | **both** — run the same flow once per scope and present combined results. |
 
 If the prompt is **vague about scope** AND no prior turn has established it, **stop and ask** (one yes/no question, two clarifications max). Don't assume `tenant` just because it's the more common case.

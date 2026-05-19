@@ -14,7 +14,7 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Two outcomes:
+Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. **Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
@@ -22,6 +22,14 @@ Before configuring any target or writing any UIA workflow, list top-level window
 Do not re-inspect or keep polling after the initial check — subsequent capture and attach are `uia-configure-target`'s job. This single pre-flight exists only to drive the launch decision.
 
 **Never use `Get-Process`, `tasklist`, `ps`, WMI, window-title scraping, or any other OS-level process command** to infer app state. They report processes, not UIA-visible windows; they miss background apps and name-mismatched binaries; and they produce wrong launch decisions.
+
+---
+
+## Launching, Inspecting & Interacting with GUI apps (uia-interact)
+
+`uia-interact` is the sub-skill for any one-shot UIA action against a live app: launching, advancing UI state between captures, inspecting top-level windows, screenshots, attribute reads, element interaction. It is **not** for authoring workflow activities — those go through `uia-configure-target`.
+
+**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Mandatory before any `uip rpa uia interact` or `uip rpa uia snapshot inspect` call.
 
 ---
 

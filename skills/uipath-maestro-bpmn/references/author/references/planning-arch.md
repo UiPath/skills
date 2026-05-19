@@ -36,6 +36,12 @@ Before drafting the skeleton, identify:
 - Keep labels public-safe and user-readable.
 - Create BPMN DI while creating elements; do not leave layout as a later afterthought.
 - Put conditions on outgoing sequence flows from exclusive or inclusive gateway splits.
+- Keep pass 1 conditions in business-readable terms. Do not use
+  Maestro runtime expressions such as `=vars.<variableId>` until pass 2 has
+  declared the variables and mappings those expressions reference.
+- Keep script tasks structural in pass 1. A pass 1 `bpmn:scriptTask` may have a
+  readable name or documentation, but executable script bodies and
+  UiPath script mappings belong in pass 2.
 - Set a `default` sequence flow when the business process has a fallthrough route.
 - Model errors with boundary events or event subprocesses instead of unlabeled failure branches when the runtime should handle failures structurally.
 - Keep sequence flows inside their owning process or subprocess scope.
@@ -64,6 +70,12 @@ When a connector activity or trigger is needed in pass 1:
 - Record connector intent: connector, operation/event, object, filters, required parameters, and desired outputs.
 - Do not author `Intsvc.*` context, connection binding IDs, connector metadata, dynamic schemas, or generated outputs by hand.
 - Mark enrichment as required before upload, debug, publish, or deploy.
+
+For plain connectionless HTTP where the workflow owns the URL, method, payload,
+and parsing, record the node as a plain HTTP candidate in pass 1 instead of
+treating it as connector enrichment. After the operator confirms the skeleton,
+use [task-recipes/http-request.md](task-recipes/http-request.md) only for the
+pass-2 executable wrapper.
 
 ## Done state
 

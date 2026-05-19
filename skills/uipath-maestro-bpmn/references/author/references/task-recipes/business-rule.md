@@ -1,6 +1,7 @@
 # Business Rule Recipe
 
-Use `bpmn:businessRuleTask` with `Orchestrator.BusinessRules`.
+The current supported implementation wrapper for confirmed business rule
+execution is `bpmn:businessRuleTask` with `Orchestrator.BusinessRules`.
 
 The model may draft:
 

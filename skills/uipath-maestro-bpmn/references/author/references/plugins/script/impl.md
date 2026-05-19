@@ -31,9 +31,9 @@ The model may edit:
   <bpmn:process id="Process_RiskScore" isExecutable="true">
     <bpmn:extensionElements>
       <uipath:variables version="v1">
-        <uipath:variable id="Var_Amount" name="amount" direction="in" type="number" />
-        <uipath:variable id="Var_DaysOverdue" name="daysOverdue" direction="in" type="number" />
-        <uipath:variable id="Var_RiskScore" name="riskScore" direction="out" type="number" />
+        <uipath:input id="Var_Amount" name="amount" type="number" elementId="Start_Manual" />
+        <uipath:input id="Var_DaysOverdue" name="daysOverdue" type="number" elementId="Start_Manual" />
+        <uipath:output id="Var_RiskScore" name="riskScore" type="number" />
       </uipath:variables>
     </bpmn:extensionElements>
     ...

@@ -53,7 +53,6 @@ Components are the specific, testable units the skill teaches. What counts as a 
 | Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
 | Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate) and PDD → SDD authoring. Found in the Operate half and Design half of the SKILL.md. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
-| Desktop/browser interaction (`interact`) | Command categories (Discover, Interact, Inspect, Manage), input methods, framework types. Found in "Commands" section hierarchy. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
 
 Group components by category. For skills with `references/plugins/` subdirectories (like `uipath-maestro-flow`), each plugin directory is one component — use the planning.md to understand what it covers.

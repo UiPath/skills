@@ -1,6 +1,7 @@
 # API Workflow Recipe
 
-Use `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync` for API workflow invocation.
+The current supported implementation wrapper for confirmed API workflow
+invocation is `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
 
 The model may draft:
 

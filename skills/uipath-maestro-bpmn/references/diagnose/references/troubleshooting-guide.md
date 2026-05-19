@@ -52,11 +52,17 @@ uip maestro bpmn processes incidents <PROCESS_KEY> --output json
 Inspect variables around the faulting element.
 Redact private payloads.
 Check whether expected outputs were missing, malformed, or literal strings instead of evaluated expressions.
+If the user reports a behavioral mismatch, inspect variables even when the final
+run status is `Completed`; a completed run only proves control-flow completion,
+not semantic correctness.
 
 ```bash
 uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
 ```
+
+For affected elements, confirm runtime inputs and outputs match the modeled
+contract before changing source.
 
 ## Step 4 - Correlate deployed BPMN
 

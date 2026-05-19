@@ -6,7 +6,7 @@ description: >
   Success = agent matches the get-asset-not-found playbook AND
   identifies the typo against the correctly-spelled asset
   ("myHiddenAsset") that exists in the target folder.
-tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, asset-not-found]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, asset-not-found, rpa]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

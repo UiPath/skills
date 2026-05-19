@@ -1,6 +1,6 @@
 # Queue Recipe
 
-Use the BPMN wrapper that matches the queue behavior.
+Use the BPMN wrapper that matches the confirmed queue behavior.
 
 | Operation | BPMN element | Extension type |
 | --- | --- | --- |

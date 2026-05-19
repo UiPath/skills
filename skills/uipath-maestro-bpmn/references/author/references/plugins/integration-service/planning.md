@@ -12,10 +12,16 @@ Use this plugin reference when a BPMN process needs:
 - Unified HTTP or connector-authenticated HTTP behavior.
 - Dynamic input/output schemas from connector metadata.
 
+For plain connectionless HTTP calls where the workflow owns the URL, method,
+payload, and parsing, record the intent during pass 1 and read
+[task-recipes/http-request.md](../../task-recipes/http-request.md) after the
+skeleton is chosen, before deciding whether the node is executable or only
+draft intent.
+
 ## Planning steps
 
 1. Identify the connector, operation/event, object, and user-visible intent.
-2. Determine whether the element is a trigger, wait event, activity, or HTTP-style call.
+2. Determine whether the element is a trigger, wait event, connector activity, connector-authenticated HTTP call, or plain connectionless HTTP call.
 3. Check whether the process can proceed with a draft placeholder or must stop until enrichment is available.
 4. Record required user decisions: connector, connection, folder/resource scope, operation, filters, required parameters, and output variables.
 5. Keep the surrounding BPMN structure model-authored: start/event/task placement, sequence flows, gateways, error handling, and diagrams.
@@ -27,7 +33,7 @@ Executable Integration Service nodes require live registry-backed enrichment for
 
 - Use current CLI/registry data for connector keys, operation/event names, object metadata, connection availability, trigger properties, filters, parameter schemas, and generated output schemas.
 - Treat stale exported metadata, copied tenant identifiers, or fixture values as non-authoritative.
-- If live enrichment is unavailable, keep the node as draft intent and stop before Operate. Do not hand-author enough `Intsvc.*` XML to make the node appear executable.
+- If live enrichment is unavailable, keep the node as draft intent and stop before Operate. A draft may include a canonical `uipath:type value="Intsvc.<Variant>"` shell with placeholder strings, but not real connector metadata, connection bindings, dynamic schemas, or generated resource references.
 
 ## Model may draft
 

@@ -3,7 +3,7 @@
   <bpmn:process id="Process_IntegrationService" name="Integration Service Enriched" isExecutable="true">
     <bpmn:extensionElements>
       <uipath:variables version="v1">
-        <uipath:input id="Var_RecordId" name="recordId" type="string" elementId="Start_RecordCreated" />
+        <uipath:inputOutput id="Var_RecordId" name="recordId" type="string" elementId="Start_RecordCreated" />
         <uipath:output id="Var_TicketId" name="ticketId" type="string" />
       </uipath:variables>
       <uipath:bindings version="v1">
@@ -24,7 +24,7 @@
             <uipath:input name="connectorKey" type="string" value="service-desk" />
             <uipath:input name="eventName" type="string" value="record-created" />
           </uipath:context>
-          <uipath:output name="RecordId" type="string" var="recordId" source="id" />
+          <uipath:output name="RecordId" type="string" var="Var_RecordId" source="id" />
         </uipath:event>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_Start_To_CreateTicket</bpmn:outgoing>
@@ -39,9 +39,9 @@
             <uipath:input name="activity" type="string" value="create-ticket" />
             <uipath:input name="operation" type="string" value="tickets.create" />
           </uipath:context>
-          <uipath:input name="TicketBody" type="json" target="bodyField"><![CDATA[{"sourceRecordId":"=recordId","summary":"Synthetic validation ticket"}]]></uipath:input>
+          <uipath:input name="TicketBody" type="json" target="bodyField"><![CDATA[{"sourceRecordId":"=vars.Var_RecordId","summary":"Synthetic validation ticket"}]]></uipath:input>
           <uipath:inputSchema><![CDATA[{"type":"object","properties":{"sourceRecordId":{"type":"string"},"summary":{"type":"string"}}}]]></uipath:inputSchema>
-          <uipath:output name="TicketId" type="string" var="ticketId" source="id" />
+          <uipath:output name="TicketId" type="string" var="Var_TicketId" source="id" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Start_To_CreateTicket</bpmn:incoming>

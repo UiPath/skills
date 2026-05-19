@@ -1,0 +1,124 @@
+task_id: skill-troubleshoot-argument-null-exception
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay, rpa, runtime-exception]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  Why did my job 0686cab1-35c6-4d92-aed2-c91d9c275524 from Shared folder has failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      DIMENSION A -- Correct playbook (argument-null-exception)
+        `state.json.matched_playbooks` must contain a path ending in
+        `runtime-exceptions/playbooks/argument-null-exception.md`.
+        Neighboring-playbook reads during exploration are fine.
+
+      DIMENSION B -- Required findings
+        The agent's last response and `hypotheses.json` together must
+        cover ALL of the following. Each missing item is a half-point off
+        within this dimension.
+          1. Exception `System.ArgumentNullException`, parameter `'path'`,
+             raised at the `Copy File` activity in `Main.xaml`.
+          2. Job key `0686cab1-35c6-4d92-aed2-c91d9c275524`, release
+             `ERN`, folder `Shared`.
+          3. Root cause = the explicit `Assign myVar = null` upstream of
+             `Copy File` (NOT a missing In argument, NOT a config/asset
+             lookup, NOT a runtime/platform fault).
+          4. H3 (caller-supplied In argument) explicitly eliminated with
+             evidence (`InputArguments={}` and release has no input args).
+          5. `hypotheses.json` has an entry with `is_root_cause: true`
+             corresponding to the Assign-null finding.
+
+      DIMENSION C -- Anti-fabrication
+        Penalize any of these:
+          - Claims an Orchestrator auto-retry policy for faulted jobs
+            (none exists).
+          - Names an asset, config key, or upstream activity output that
+            does not appear in the evidence.
+          - Asserts a root cause without citing the Main.xaml content
+            or the job log.
+
+      SCORING RUBRIC (single score):
+        1.0  All three dimensions clean.
+        0.8  Right playbook + all required findings, minor fabrication.
+        0.6  Right playbook; 1 required finding missing OR moderate
+             fabrication.
+        0.4  Right playbook only; findings substantially incomplete.
+        0.2  Recognized the surface but neither matched the playbook nor
+             produced the required findings.
+        0.0  Misdiagnosed or got blocked.
+
+      Return JSON:
+        {"score": <float>, "rationale": "<one sentence>",
+         "findings": ["dim A: ...", "dim B item 1: ...", ...]}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator, runtime-exceptions), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered. EXCEPTION: if the missing data is the project source code path, fall back to the rule above (`.` / current working directory) before suggesting best-effort."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (see rules above)."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

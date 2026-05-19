@@ -127,6 +127,113 @@ When no rule matches:
 
 Test runs require valid `uip` auth on the host (set via `.env` or environment) for any rule with `passthrough: true` to succeed.
 
+## Task YAML requirements
+
+Every new scenario's `task.yaml` MUST satisfy the following.
+
+### `run_limits`
+
+```yaml
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1800
+```
+
+Troubleshooting investigations span many turns and produce large intermediate outputs. Lower limits cause spurious timeouts in CI and mask real regressions.
+
+### `tags`
+
+Tags MUST be lowercase kebab-case — the coder-eval schema rejects PascalCase or spaced names (e.g., `RPA` and `Integration Service` are invalid; use `rpa` and `integration-service`).
+
+Must include `uipath-troubleshoot` AND at least one product/domain tag from this list:
+
+| Tag | When to apply |
+|-----|---------------|
+| `rpa` | Anything touching an activity package or `.xaml` workflow. **Default for any activity-package-related failure.** Apply alongside other tags when the failure spans domains (e.g., a preflight that hits both System.Activities and IS connectors gets both `rpa` and `integration-service`). |
+| `flow` | Maestro Flow / flow-graph artifacts |
+| `bpmn`, `maestro` | BPMN-modelled processes (Maestro). Apply both. |
+| `case-management` | Case Management product |
+| `integration-service` | IS connectors, connections, connector activities |
+| `hitl` | Human-in-the-loop / Action Center / Tasks |
+| `agents` | Agent runtime, agent definitions |
+| `ixp` | Intelligent Xtraction and Processing |
+| `document-understanding` | Document Understanding (extraction models, classification, validation, projects) |
+| `llm-gateway` | LLM Gateway (model routing, BYO connections, product LLM configurations) |
+| `data-fabric` | Data Fabric tables, entities |
+| `api-workflow` | API workflow artifacts |
+| `orchestrator` | Orchestrator-only failures with no workflow execution involved (e.g., licensing, machine state, asset/queue admin) |
+
+### Investigation output location
+
+The skill writes investigation artifacts to `.local/investigations/` — NOT `.investigations/`. Every `file_exists` criterion path and every post-run script path MUST use `.local/investigations/...`.
+
+### `docsai` mocking
+
+Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: true`. Query strings vary between runs and canned responses go stale immediately; the dispatcher caches passthrough responses per query for in-run reuse.
+
+```json
+{
+  "match": "docsai ask",
+  "passthrough": true
+}
+```
+
+### `success_criteria`
+
+Every scenario MUST include exactly TWO required criteria:
+
+1. **`skill_triggered`** — verify `uipath-troubleshoot` activated. Without this, the agent can fake an answer by reading fixture files directly and bypassing the skill entirely (we have seen this happen).
+2. **`llm_judge`** — grade whether the agent reached the correct conclusion against `RESOLUTION.md`.
+
+Do NOT add `file_exists` or `command_executed` criteria as standard practice — they encode one specific path through the investigation and turn legitimate alternative solutions into false failures.
+
+Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded `FAILURE` solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
+
+#### Judge prompts grade on PRESENTATION, not internal state
+
+The `llm_judge` prompt MUST grade only:
+
+- The agent's **final response** to the user.
+- The agent's **conclusion vs. `RESOLUTION.md`** (correct root cause, fix, evidence-citation).
+- Optionally: whether the agent **avoided fabrication** (no invented assets/configs/policies).
+
+The judge MUST NOT grade on internal-state fields in `.local/investigations/`:
+
+- ❌ Require a specific path in `state.json.matched_playbooks`.
+- ❌ Require `hypotheses.json` entries to carry a particular `status` (`eliminated`, `confirmed`) or `is_root_cause` value.
+- ❌ Require a specific `evidence_refs` or `evidence_summary` shape.
+
+Reason: `hypotheses.json` legitimately contains `pending` hypotheses after early-stop. The orchestrator stops testing as soon as a high-confidence root cause is confirmed (see `SKILL.md` "When to stop testing"); remaining hypotheses correctly stay `pending` so the user can choose to investigate them later. Grading on those internal fields punishes correct skill behavior.
+
+What the agent presents IS the contract. What it writes into `.local/investigations/` is bookkeeping for the next conversation, not a deliverable.
+
+Permissible exceptions — add a non-required criterion ONLY when:
+
+- **`file_exists`** — only when the scenario specifically tests artifact production (e.g., a deliverable file the skill is contracted to write). Do not use it to verify intermediate investigation state — the judge reads the agent's output directly.
+- **`command_executed`** — only when the scenario specifically tests that a particular dangerous/required action ran (e.g., a destructive cleanup that MUST be invoked). Never use it to enforce investigation paths.
+
+Lean default for a new scenario:
+
+```yaml
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent reached the same root cause as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      ...grading rubric tied to RESOLUTION.md...
+```
+
 ## Anti-patterns
 
 - **Do not** hand-edit a generated scenario's `manifest.json` to "make tests pass." If the agent calls a command not in the manifest, that's a coverage gap — add a rule with the verbatim recorded response.

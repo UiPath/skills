@@ -8,13 +8,13 @@ Four canonical investigations the `uipath-audit` skill should drive. Each starts
 
 ## Investigation 1 — "Who did X to resource Y?"
 
-**User asks:** "Who deleted the `Sales-Reports` folder last Tuesday?" / "Who edited the AI Trust Layer policy this week?" / "Who turned off MFA for the org admin group?"
+**User asks:** "Who deleted the `Sales-Reports` folder last Tuesday?" / "Who edited the production governance policy this week?" / "Who removed jane.doe from the organization yesterday?"
 
 **Approach:** Discover the source/target IDs that match the resource, narrow `events` by source + target + time window, then format actor + timestamp.
 
 ### Step 1 — Discover sources at the right scope
 
-The "what changed" determines scope. Folder/queue/asset edits are **tenant** scope. Membership/license/tenant-lifecycle is **org** scope. Most resource-touching investigations are tenant.
+The "what changed" determines scope. Orchestrator-managed entities (folders, queues, assets, processes) and tenant-service activity (Action Center, Apps, Document Understanding, Integration Service, Test Manager, Data Fabric) are **tenant** scope. Identity / authentication, org membership, license, governance policies, and tenant lifecycle are **org** scope.
 
 ```bash
 uip admin audit tenant sources --output json > /tmp/sources.json
@@ -22,30 +22,39 @@ uip admin audit tenant sources --output json > /tmp/sources.json
 
 ### Step 2 — Locate the matching source/target
 
-Find a source whose `name` matches the resource type, then drill into its `eventTargets[]` for the specific entity type, and `eventTypes[]` for the verb.
+Find a source whose `Name` matches the broad product area, then drill into its `EventTargets[]` for the specific entity type, and `EventTypes[]` for the verb. Names come straight from the `event-metadata/definitions/{org,tenant}/*.json` set published by the Audit Service.
 
-For "deleted folder":
+For "deleted folder" (tenant scope):
 
-- Source: `Folders` (or similar)
-- Target: `Folder`
-- Type: `Deleted folder`
+- Source: `Orchestrator`
+- Target: `Folders`
+- Type: `Delete folder`
+
+Other realistic mappings to keep in mind:
+
+- "edited a governance policy" → **org** scope, Source `Governance`, Target `Policy management`, Type `Edited policy`
+- "removed a user from the org" → **org** scope, Source `Organization Management`, Target `Org Membership`, Type `User Manually Removed From An Org`
+- "created an Orchestrator queue/asset/process" → **tenant** scope, Source `Orchestrator`, with the matching `EventTarget`
 
 The agent should grep the JSON for these names to extract the GUIDs:
 
 ```bash
-jq -r '.Data[] | select(.name == "Folders") | .id' /tmp/sources.json
-jq -r '.Data[] | select(.name == "Folders") | .eventTargets[] | select(.name == "Folder") | .id' /tmp/sources.json
+jq -r '.Data[] | select(.name == "Orchestrator") | .id' /tmp/sources.json
+jq -r '.Data[] | select(.name == "Orchestrator") | .eventTargets[] | select(.name == "Folders") | .id' /tmp/sources.json
+jq -r '.Data[] | select(.name == "Orchestrator") | .eventTargets[] | select(.name == "Folders") | .eventTypes[] | select(.name == "Delete folder") | .id' /tmp/sources.json
 ```
+
+> The CLI returns lowerCamelCase keys (`name`, `id`, `eventTargets`, `eventTypes`) over the `Name`/`Id`/`EventTargets`/`EventTypes` shape in the metadata JSON. Use lowerCamelCase in `jq` selectors against the CLI response.
 
 ### Step 3 — Query events with filters
 
 ```bash
 uip admin audit tenant events \
-  --source <FOLDERS_SOURCE_GUID> \
-  --target <FOLDER_TARGET_GUID> \
-  --type   <DELETED_FOLDER_TYPE_GUID> \
-  --from-date   2026-04-22T00:00:00Z \
-  --to-date     2026-04-29T00:00:00Z \
+  --source <ORCHESTRATOR_SOURCE_GUID> \
+  --target <FOLDERS_TARGET_GUID> \
+  --type   <DELETE_FOLDER_TYPE_GUID> \
+  --from-date   2026-05-11T00:00:00Z \
+  --to-date     2026-05-18T00:00:00Z \
   --limit  50 \
   --output json
 ```
@@ -69,7 +78,18 @@ If `Data.previous` is non-null, mention "older results available — extend the 
 
 **User asks:** "Show me failed logins for jane.doe@example.com this month." / "When did Bob last log in?" / "Was anyone logging in from outside the US last week?"
 
-**Approach:** Filter events by user ID + the `User Login` event type, optionally with `--status Failure`. Present chronologically with `ipAddress`/`ipCountry` from `clientInfo`.
+**Scope: `org`.** Org-level audit events are everything that's not scoped to a single tenant — anything emitted by services that operate at the organization or cross-tenant level. The broad categories live under `/orgaudit_`:
+
+- **Identity Server / IdP authentication** — `User Login`, password changes, MFA setup, federation events, SSO bindings
+- **Membership** — users joining/leaving the org, role assignments, invitations, group changes at org scope
+- **License & billing** — license assignments, plan changes, seat allocation, billing events
+- **Tenant lifecycle** — tenant create/suspend/delete/restore, region moves
+- **Org settings** — admin role changes, branding/identity provider settings, org-wide policy changes
+- **Robot accounts & external apps** — when managed at org level (vs tenant-bound)
+
+If the user's question maps to anything in those categories — and `User Login` does — query `org` scope. Anything scoped to a single tenant (Orchestrator runs, asset/queue/folder edits, Action Center task changes, Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity) is `tenant` scope instead. Querying `tenant events` for org-level events returns nothing useful because the events don't live under `/{tenantId}/tenantaudit_`. Note that **AOps governance policies, pipelines, and source control are org-scoped** despite the AOps naming — `Governance`, `Pipelines`, and `Source Control` are sources in `org sources`, not tenant.
+
+**Approach:** Filter `org` events by user ID + the `User Login` event type, optionally with `--status Failure`. Present chronologically with `ipAddress`/`ipCountry` from `clientInfo`.
 
 ### Step 1 — Find the user's GUID
 
@@ -79,25 +99,28 @@ The user's `actorId` GUID is required by `--user-id`. It's not visible from emai
 2. Otherwise, run a search-only query (no `--user-id`) for `--search jane.doe` and take `actorId` from the first match.
 
 ```bash
-uip admin audit tenant events \
+uip admin audit org events \
   --search "jane.doe@example.com" \
   --limit 5 --output json --output-filter "Data.auditEvents[0].actorId"
 ```
 
 ### Step 2 — Find the User Login type GUID
 
+Discover from `org sources` (not tenant — login event metadata lives org-side):
+
 ```bash
+uip admin audit org sources --output json > /tmp/sources.json
 jq -r '.Data[] | select(.name == "Identity") | .eventTargets[] | select(.name == "Authentication") | .eventTypes[] | select(.name == "User Login") | .id' /tmp/sources.json
 ```
 
-Names like `Identity`, `Authentication`, `User Login` are illustrative — confirm against your actual `sources.json` output before committing the selector. They can vary across UiPath cloud versions and regions; if the `jq` returns empty, list the candidate names with `jq -r '.Data[].name'` and `.eventTargets[].name` and pick the closest match.
+The `Identity` → `Authentication` → `User Login` path matches the Audit Service event metadata (`event-metadata/definitions/org/identity.json`). Adjacent types under the same target — `Robot Login`, `External App Login`, `User Logout` — work the same way and are useful when the question is about non-user sign-ins. If `jq` returns empty, list the candidate names with `jq -r '.Data[].name'` and `.eventTargets[].name` and pick the closest match (names can drift across cloud regions/versions).
 
 ### Step 3 — Query
 
 For "all logins this month":
 
 ```bash
-uip admin audit tenant events \
+uip admin audit org events \
   --user-id <USER_GUID> \
   --type    <USER_LOGIN_TYPE_GUID> \
   --from-date    2026-04-01T00:00:00Z \
@@ -109,7 +132,7 @@ uip admin audit tenant events \
 For "failed logins only":
 
 ```bash
-uip admin audit tenant events \
+uip admin audit org events \
   --user-id <USER_GUID> \
   --type    <USER_LOGIN_TYPE_GUID> \
   --status  Failure \

@@ -8,15 +8,37 @@ Maestro BPMN import and validation.
 
 Anchors of every shell:
 
+- New BPMN files must declare `xmlns:uipath="http://uipath.org/schema/bpmn"`
+  on `bpmn:definitions`. Do not use
+  `http://schemas.uipath.com/workflow/activities`.
 - `bpmn:<element>` element class is the model's choice; do not collapse to
   `bpmn:task` for any of these.
 - `bpmn:extensionElements` wraps every `uipath:*` payload.
-- `uipath:activity` (or `uipath:event` for message and Integration Service
-  events) carries the wrapper kind through `<uipath:type value="..." version="v1" />`.
-- Every `uipath:input` body that references a root variable uses
+- `uipath:activity` or `uipath:event` carries the wrapper kind through
+  `<uipath:type value="..." version="v1" />`.
+- Do not use legacy shorthand such as `<uipath:activity type="...">` in new XML.
+- Keep wrapper identity and resource context in `uipath:activity` or
+  `uipath:event`. Put variable payload inputs and outputs in a sibling
+  `uipath:mapping version="v1"` element.
+- Every expression that references a root variable uses
   `=vars.<variableId>`, not bare names.
 - Every visible flow node and sequence flow needs matching `bpmndi:BPMNShape`
-  / `bpmndi:BPMNEdge` entries; the shells below omit DI for brevity.
+  and `bpmndi:BPMNEdge` entries; the shells below omit DI for brevity.
+- If you add XML comments around a shell, keep them parseable: comments must
+  not contain `--`, including dashed separator lines.
+
+Namespace baseline for greenfield files:
+
+```xml
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:uipath="http://uipath.org/schema/bpmn">
+  <!-- process and diagram content -->
+</bpmn:definitions>
+```
 
 > Public-safe synthetic IDs only. Never paste real connection IDs, folder
 > keys, tenant URLs, release keys, queue IDs, user names, or process names.
@@ -33,9 +55,11 @@ Anchors of every shell:
       <uipath:context>
         <uipath:input name="processName" type="string" value="Synthetic Process" />
       </uipath:context>
+    </uipath:activity>
+    <uipath:mapping version="v1">
       <uipath:input name="inArgs" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
       <uipath:output name="JobId" type="string" var="Var_JobId" source="id" />
-    </uipath:activity>
+    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_RpaJob</bpmn:incoming>
   <bpmn:outgoing>Flow_RpaJob_Out</bpmn:outgoing>
@@ -55,6 +79,9 @@ Anchors of every shell:
         <uipath:input name="agentName" type="string" value="Synthetic Agent" />
       </uipath:context>
     </uipath:activity>
+    <uipath:mapping version="v1">
+      <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_AgentJob</bpmn:incoming>
   <bpmn:outgoing>Flow_AgentJob_Out</bpmn:outgoing>
@@ -71,8 +98,10 @@ Anchors of every shell:
     <uipath:activity version="v1">
       <uipath:type value="A2A.AgentExecution" version="v1" />
       <uipath:context />
-      <uipath:input name="Prompt" type="string" value="Summarize the synthetic request." />
     </uipath:activity>
+    <uipath:mapping version="v1">
+      <uipath:input name="Prompt" type="string" value="Summarize the synthetic request." />
+    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_A2A</bpmn:incoming>
   <bpmn:outgoing>Flow_A2A_Out</bpmn:outgoing>
@@ -88,9 +117,16 @@ Anchors of every shell:
   <bpmn:extensionElements>
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
-      <uipath:context />
-      <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:context>
+        <uipath:input name="name" type="string" value="Synthetic API Workflow" />
+      </uipath:context>
     </uipath:activity>
+    <uipath:mapping version="v1">
+      <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="InvocationId" type="string" var="Var_ApiWorkflowInvocationId" source="id" />
+      <uipath:output name="Status" type="string" var="Var_ApiWorkflowStatus" source="status" />
+      <uipath:output name="Result" type="json" var="Var_ApiWorkflowResult" source="result" />
+    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_ApiWorkflow</bpmn:incoming>
   <bpmn:outgoing>Flow_ApiWorkflow_Out</bpmn:outgoing>
@@ -106,9 +142,15 @@ Anchors of every shell:
   <bpmn:extensionElements>
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.BusinessRules" version="v1" />
-      <uipath:context />
-      <uipath:input name="facts" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:context>
+        <uipath:input name="name" type="string" value="Synthetic Rule" />
+      </uipath:context>
     </uipath:activity>
+    <uipath:mapping version="v1">
+      <uipath:input name="facts" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="Outcome" type="string" var="Var_RuleOutcome" source="outcome" />
+      <uipath:output name="Diagnostics" type="json" var="Var_RuleDiagnostics" source="diagnostics" />
+    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_BusinessRule</bpmn:incoming>
   <bpmn:outgoing>Flow_BusinessRule_Out</bpmn:outgoing>
@@ -117,17 +159,21 @@ Anchors of every shell:
 
 ## Orchestrator.CreateQueueItem
 
-`bpmn:sendTask` with `Orchestrator.CreateQueueItem` (fire-and-continue).
+`bpmn:sendTask` with `Orchestrator.CreateQueueItem` for fire-and-continue work.
 
 ```xml
 <bpmn:sendTask id="Task_CreateQueueItem" name="Create Queue Item">
   <bpmn:extensionElements>
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.CreateQueueItem" version="v1" />
-      <uipath:context />
+      <uipath:context>
+        <uipath:input name="queueName" type="string" value="SyntheticQueue" />
+      </uipath:context>
+    </uipath:activity>
+    <uipath:mapping version="v1">
       <uipath:input name="itemData" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
       <uipath:output name="QueueItemId" type="string" var="Var_WorkItemId" source="id" />
-    </uipath:activity>
+    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_CreateQueue</bpmn:incoming>
   <bpmn:outgoing>Flow_CreateQueue_Out</bpmn:outgoing>
@@ -136,7 +182,8 @@ Anchors of every shell:
 
 ## Orchestrator.CreateAndWaitForQueueItem
 
-`bpmn:serviceTask` with `Orchestrator.CreateAndWaitForQueueItem` (waits for completion).
+`bpmn:serviceTask` with `Orchestrator.CreateAndWaitForQueueItem` when the
+process waits for completion.
 
 ```xml
 <bpmn:serviceTask id="Task_WaitQueueItem" name="Create And Wait For Queue Item">
@@ -144,8 +191,10 @@ Anchors of every shell:
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.CreateAndWaitForQueueItem" version="v1" />
       <uipath:context />
-      <uipath:input name="reference" type="string" value="=vars.Var_WorkItemId" />
     </uipath:activity>
+    <uipath:mapping version="v1">
+      <uipath:input name="reference" type="string" value="=vars.Var_WorkItemId" />
+    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_WaitQueue</bpmn:incoming>
   <bpmn:outgoing>Flow_WaitQueue_Out</bpmn:outgoing>
@@ -181,7 +230,7 @@ or `Orchestrator.StartAgenticProcessAsync` for asynchronous calls.
 </bpmn:callActivity>
 ```
 
-## Orchestrator.StartCaseMgmtProcess (and Async variant) — preserve / draft only
+## Orchestrator.StartCaseMgmtProcess (and Async variant) - preserve / draft only
 
 `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcess` or
 `Orchestrator.StartCaseMgmtProcessAsync`. Author only with a dedicated
@@ -237,8 +286,8 @@ case-management contract; otherwise preserve imported XML and mark
 
 ## Maestro.ReceiveMessageEvent
 
-`bpmn:intermediateCatchEvent` (or `bpmn:startEvent` / `bpmn:boundaryEvent` for
-the corresponding event positions) with `Maestro.ReceiveMessageEvent`.
+`bpmn:intermediateCatchEvent` or matching start/boundary message event with
+`Maestro.ReceiveMessageEvent`.
 
 ```xml
 <bpmn:intermediateCatchEvent id="Event_WaitForMessage" name="Wait For Message">
@@ -256,10 +305,10 @@ the corresponding event positions) with `Maestro.ReceiveMessageEvent`.
 </bpmn:intermediateCatchEvent>
 ```
 
-## Maestro.CasePlanScheduler — draft / preserve only
+## Maestro.CasePlanScheduler - draft / preserve only
 
 `bpmn:serviceTask` with `Maestro.CasePlanScheduler`. Mark
-`preservation="draft-only"` (or `preserve-only`) until a dedicated
+`preservation="draft-only"` or `preserve-only` until a dedicated
 case-management contract is available; do not invent payload content.
 
 ```xml
@@ -275,7 +324,7 @@ case-management contract is available; do not invent payload content.
 </bpmn:serviceTask>
 ```
 
-## Maestro.CaseManagerGuardrails — preserve only
+## Maestro.CaseManagerGuardrails - preserve only
 
 `bpmn:serviceTask` with `Maestro.CaseManagerGuardrails`. Preserve imported
 XML; do not author a new payload.
@@ -293,7 +342,7 @@ XML; do not author a new payload.
 </bpmn:serviceTask>
 ```
 
-## Maestro.CaseRulesEvaluator — preserve only
+## Maestro.CaseRulesEvaluator - preserve only
 
 `bpmn:serviceTask` with `Maestro.CaseRulesEvaluator`. Preserve imported XML.
 
@@ -321,15 +370,43 @@ CLI or operator.
     <uipath:activity version="v1">
       <uipath:type value="Actions.HITL" version="v1" />
       <uipath:context />
-      <uipath:output name="Outcome" type="string" var="Var_Outcome" source="outcome" />
     </uipath:activity>
+    <uipath:mapping version="v1">
+      <uipath:input name="TaskData" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="Outcome" type="string" var="Var_Outcome" source="outcome" />
+    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_Review</bpmn:incoming>
   <bpmn:outgoing>Flow_Review_Out</bpmn:outgoing>
 </bpmn:userTask>
 ```
 
-## Intsvc.WaitForEvent — draft Integration Service shell
+## Intsvc.ActivityExecution - draft Integration Service shell
+
+`bpmn:sendTask` with `Intsvc.ActivityExecution`. The model owns the BPMN
+wrapper, ID, name, and surrounding flow; the CLI owns connector resource key,
+connection binding, dynamic schemas, and operation metadata.
+
+```xml
+<bpmn:sendTask id="Task_ConnectorActivity" name="Connector Activity">
+  <bpmn:extensionElements>
+    <uipath:activity version="v1">
+      <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+      <uipath:context>
+        <uipath:input name="connectorKey" type="string" value="placeholder-connector" />
+        <uipath:input name="activity" type="string" value="placeholder-operation" />
+      </uipath:context>
+    </uipath:activity>
+    <uipath:mapping version="v1">
+      <uipath:input name="Body" type="json" target="bodyField"><![CDATA[{"value":"=vars.Var_RequestId"}]]></uipath:input>
+    </uipath:mapping>
+  </bpmn:extensionElements>
+  <bpmn:incoming>Flow_To_ConnectorActivity</bpmn:incoming>
+  <bpmn:outgoing>Flow_ConnectorActivity_Out</bpmn:outgoing>
+</bpmn:sendTask>
+```
+
+## Intsvc.WaitForEvent - draft Integration Service shell
 
 `bpmn:receiveTask` with `Intsvc.WaitForEvent`. The model owns the BPMN
 wrapper, ID, name, and surrounding flow; the CLI owns connector resource
@@ -352,18 +429,20 @@ key, connection binding, dynamic schemas, and trigger property metadata.
 </bpmn:receiveTask>
 ```
 
-For other `Intsvc.*` shells (`ActivityExecution`, `HttpExecution`,
-`UnifiedHttpRequest`, `AsyncExecution`, `SyncAgentExecution`,
-`AsyncAgentExecution`, `SyncWorkflowExecution`, `AsyncWorkflowExecution`,
-`EventTrigger`, `TimerTrigger`), keep the same draft shape: model writes the
-BPMN wrapper plus a `uipath:type` payload with placeholder strings only,
-then hands enrichment to the CLI. See
-[../author/references/plugins/integration-service/](../author/references/plugins/integration-service/).
+For other `Intsvc.*` shells (`HttpExecution`, `UnifiedHttpRequest`,
+`AsyncExecution`, `SyncAgentExecution`, `AsyncAgentExecution`,
+`SyncWorkflowExecution`, `AsyncWorkflowExecution`, `EventTrigger`,
+`TimerTrigger`), keep the same draft shape: model writes the BPMN wrapper plus
+a `uipath:type` payload with placeholder strings only, then hands enrichment to
+the CLI. Confirmed plain connectionless HTTP is the documented pass-2
+exception. Use the HTTP request recipe instead of a connector draft shell only
+after the BPMN skeleton is chosen and the workflow owns URL, method, payload,
+and parsing, with no tenant connector connection or dynamic connector schema.
 
 ## Preserve markers and migration metadata
 
-Preserve these markers when present on import. Do not delete unknown
-extension XML on a normal edit; pass them through.
+Preserve these markers when present on import. Do not delete unknown extension
+XML on a normal edit; pass them through.
 
 ```xml
 <bpmn:process id="Process_ImportedExample" isExecutable="true">

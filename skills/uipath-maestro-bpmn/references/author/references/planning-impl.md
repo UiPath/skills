@@ -9,9 +9,12 @@ Pass 2 makes the confirmed skeleton locally coherent for validation and packagin
 - Root variables and scoped subprocess variables.
 - Entry point IDs on runnable root start events.
 - Variable mappings on tasks, events, scripts, subprocesses, and ends.
-- Resource bindings for documented non-Integration-Service service shells.
+- Lint-compatible expressions using [expression-authoring.md](../../shared/expression-authoring.md).
+- Resource bindings for documented non-Integration-Service service shells and
+  the plain connectionless HTTP recipe.
 - Script task metadata and input/output mapping.
-- Retry, error mapping, loop metadata, transaction marker, and tags when specified.
+- Retry, error mapping, multi-instance metadata, UiPath transaction-root marker,
+  and tags when specified.
 - Draft Integration Service intent handed to CLI enrichment.
 
 ## Fill order
@@ -20,9 +23,13 @@ Pass 2 makes the confirmed skeleton locally coherent for validation and packagin
 2. **Variables** - add root `uipath:variables` for entry point inputs, process globals, outputs, and schemas; add subprocess variables only when scope requires them.
 3. **Mappings** - add `uipath:mapping` where values move between variables, task inputs, task outputs, and end outputs.
 4. **Bindings** - add root `uipath:bindings` only for documented non-Integration-Service resources or placeholder-safe binding shapes.
-5. **Task shells** - add documented non-Integration-Service `uipath:activity` or `uipath:event` metadata when the task wrapper and service type contract are known. Use [supported-elements.md](supported-elements.md) and [task-recipes/](task-recipes/) before writing XML.
+5. **Task shells** - add documented non-Integration-Service `uipath:activity` or `uipath:event` metadata, or the plain connectionless HTTP recipe, when the task wrapper and service type contract are known. Use [supported-elements.md](supported-elements.md) and [task-recipes/](task-recipes/) before writing XML.
 6. **Scripts** - add BPMN script CDATA, `uipath:scriptVersion`, merged `args` input, schema, and outputs.
-7. **Runtime behavior metadata** - add retry, error mapping, loop characteristics, transaction marker, or tags only when user intent is explicit.
+7. **Runtime behavior metadata** - add retry, error mapping, documented
+   multi-instance characteristics, UiPath transaction-root marker, or tags only
+   when user intent is explicit. Use [error-handling.md](../../shared/error-handling.md)
+   for retry, boundary error, event subprocess, and error mapping shapes. Do not
+   generate `bpmn:transaction`; it is preserve-only.
 8. **CLI-owned enrichment** - hand Integration Service activities/triggers and generated package metadata to the CLI.
 
 ## Variables
@@ -52,6 +59,8 @@ Root bindings describe resources that packaging turns into `bindings_v2.json`.
 - Avoid assignment operators in condition, skip, and mapping expressions where fields require read-only expression evaluation.
 - Keep gateway condition expressions on sequence flows, not on the gateway itself.
 - Keep script source in BPMN `script` CDATA with `scriptFormat="JavaScript"`.
+- Read [expression-authoring.md](../../shared/expression-authoring.md) before
+  writing `vars`, `result`, `bindings`, `iterator`, or `vars.error` references.
 
 ## Non-Integration-Service task shells
 
@@ -69,14 +78,16 @@ Wrapper choices are not optional:
 For every shell:
 
 - Include the correct `uipath:type` service type and version only when documented.
-- Add required `uipath:context` fields.
-- Add `uipath:input` bodies with CDATA for JSON payloads.
-- Add `uipath:output` mappings to declared variables.
+- Add required `uipath:context` fields inside `uipath:activity` or `uipath:event`.
+- Add task payload inputs and output mappings in a sibling
+  `uipath:mapping version="v1"` element.
+- Use CDATA for JSON payload `uipath:input` bodies and target declared
+  variables with `uipath:output var="..."`.
 - Validate that each binding or variable reference resolves.
 
 ## Integration Service handoff
 
-For `Intsvc.*` activities and triggers, pass 2 should stop at the enrichment boundary unless registry-backed CLI output is available.
+For connector-backed or dynamically schematized `Intsvc.*` activities and triggers, pass 2 should stop at the enrichment boundary unless registry-backed CLI output is available. Confirmed plain connectionless HTTP is the documented pass-2 exception and must follow [task-recipes/http-request.md](task-recipes/http-request.md).
 
 The CLI must own:
 

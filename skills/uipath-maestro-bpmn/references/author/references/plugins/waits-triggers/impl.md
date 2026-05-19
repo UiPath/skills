@@ -6,7 +6,7 @@ This document defines the implementation boundary for waits and triggers.
 
 The model may edit:
 
-- Timer, message, signal, conditional, and boundary event definitions.
+- Timer, message, and boundary event definitions.
 - Receive-task or event-based-gateway structures.
 - Entry point metadata for runnable starts.
 - Public-safe correlation variable names and mappings.
@@ -34,3 +34,7 @@ The CLI or operator must provide:
 - Boundary timers attach to valid activities.
 - Event schemas and output mappings resolve.
 - Connector-backed waits are enriched before upload/run.
+
+Excluded event definitions from
+[supported-elements.md](../../supported-elements.md#current-generation-exclusions)
+are preserve-only for imported files.

@@ -7,7 +7,7 @@ description: >
   agent must rule out asset-not-found (1002) and folder-scope-mismatch
   (1100) and converge on the permission-denied root cause.
 
-tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, permission-denied]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, permission-denied, rpa]
 
 agent:
   type: claude-code

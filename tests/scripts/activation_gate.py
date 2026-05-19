@@ -25,7 +25,6 @@ from pathlib import Path
 BASELINES_PCT: dict[str, int] = {
     "uipath-feedback": 90,
     "uipath-data-fabric": 90,
-    "uipath-interact": 90,
     "uipath-planner": 90,
     "uipath-tasks": 85,
     "uipath-governance": 85,

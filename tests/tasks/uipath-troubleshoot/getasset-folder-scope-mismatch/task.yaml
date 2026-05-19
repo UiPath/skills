@@ -8,7 +8,7 @@ description: >
   get-asset-folder-scope-mismatch playbook AND identifies the
   FolderPath value in Main.xaml against the actual list of folders.
 
-tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, folder-scope-mismatch]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, folder-scope-mismatch, rpa]
 
 agent:
   type: claude-code

@@ -4,7 +4,17 @@
 
 Use root `uipath:variables version="v1"` for entry point contracts and process globals.
 
-Variables may include:
+For new authored BPMN, declare variables with the supported child elements:
+
+- `uipath:input` for entry-point inputs.
+- `uipath:inputOutput` for mutable process state.
+- `uipath:output` for process outputs.
+
+Do not create new generic `uipath:variable direction="..."` entries. The local
+CLI currently reports generic `uipath:variable` as an unsupported extension tag;
+preserve it only when editing imported XML that already contains it.
+
+Variable elements may include:
 
 - `id`
 - `name`
@@ -21,7 +31,7 @@ Entry point inputs use `elementId` to scope an input variable to the correspondi
 
 Maestro exports commonly model trigger-bound values as `uipath:inputOutput`
 variables scoped with `elementId`. Prefer that shape for new runtime-oriented
-examples unless preserving imported `uipath:input` XML.
+examples unless a value is only an entry input or only a process output.
 
 Subprocesses can carry scoped `uipath:variables` in subprocess extension elements. Do not silently move variables across scopes.
 
@@ -59,7 +69,7 @@ When changing a task ID, subprocess ID, or entry start event, recheck every mapp
 
 ## Expressions
 
-Conditions, scripts, variable mappings, and skip conditions are expression-normalized during import. Author expressions in the Maestro-compatible form and avoid assignment operators in fields that require read-only expression evaluation.
+Conditions, scripts, variable mappings, and skip conditions are expression-normalized during import. Author expressions in the Maestro-compatible form and avoid assignment operators in fields that require read-only expression evaluation. For the full lint-sensitive expression rules, read [expression-authoring.md](expression-authoring.md).
 
 Use a leading `=` for expressions where Maestro expects expression content. Treat plain strings as literals.
 
@@ -69,6 +79,11 @@ variable by its XML variable id through the runtime `vars` object, for example
 runtime examples.
 
 Gateway conditions belong on outgoing sequence flows. Service skip conditions belong on the documented `uipath:activity` attribute. Script source belongs in BPMN `script` CDATA, not in an extension text field.
+
+Output mappings should target mutable variables: `uipath:inputOutput` or
+`uipath:output`. Do not write task outputs back to read-only `uipath:input`
+variables. If a caller-provided input must also become mutable state, declare a
+separate `uipath:inputOutput` variable and map the entry input into it.
 
 ## Script tasks
 

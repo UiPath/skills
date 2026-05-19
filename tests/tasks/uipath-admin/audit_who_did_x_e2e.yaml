@@ -55,7 +55,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked `uip admin audit tenant events` with a bounded window AND at least one of --source/--target/--type"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+.*--(?:source|target|type)\s+'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--(?:source|target|type)\s+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
