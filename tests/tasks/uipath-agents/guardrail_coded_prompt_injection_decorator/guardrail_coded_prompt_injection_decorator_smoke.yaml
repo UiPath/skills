@@ -1,0 +1,54 @@
+task_id: skill-agent-guardrail-coded-prompt-injection-decorator-smoke
+description: >
+  Smoke test: skill routes to guardrails-coded.md and the agent adds a
+  prompt injection decorator guardrail at LLM scope. Verifies key structural
+  elements are present in graph.py without requiring backend connectivity.
+tags: [uipath-agents, smoke, coded]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 300
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-agents/fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py. The LLM is created in a
+  create_llm() factory function. I want to add a prompt injection detection
+  guardrail using the decorator style at LLM scope — adversarial inputs
+  should be blocked before they reach the LLM.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_contains
+    description: "@guardrail decorator and PromptInjectionValidator present"
+    path: "graph.py"
+    includes:
+      - "@guardrail"
+      - "PromptInjectionValidator"
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BlockAction used (prompt injection must block)"
+    path: "graph.py"
+    includes:
+      - "BlockAction"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "PRE stage configured"
+    path: "graph.py"
+    includes:
+      - "GuardrailExecutionStage.PRE"
+    weight: 2.0
+    pass_threshold: 1.0
