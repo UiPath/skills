@@ -7,13 +7,16 @@ Run validation after the local BPMN edit is coherent. Do not chase every interme
 Validate these before Operate:
 
 - The pass 1 skeleton has been confirmed or the edit is small and explicitly summarized.
+- New source does not generate any structure listed in
+  [Current generation exclusions](supported-elements.md#current-generation-exclusions).
 - A pass 1 skeleton uses business-readable conditions rather than runtime
   `=vars.<variableId>` expressions for variables that do not exist until pass 2.
 - BPMN XML parses with the UiPath extension descriptor.
 - At least one valid diagram and plane exists.
 - Diagram plane references an existing root process, collaboration, or subprocess.
 - Every rendered node has a shape and every rendered edge has waypoints.
-- Root variables, bindings, migration metadata, and transaction markers are structurally valid.
+- Root variables, bindings, migration metadata, and UiPath transaction-root
+  markers are structurally valid.
 - New root variables use `uipath:input`, `uipath:inputOutput`, or
   `uipath:output`; generic `uipath:variable direction="..."` appears only when
   preserving imported XML.

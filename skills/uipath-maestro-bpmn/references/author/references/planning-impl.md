@@ -12,7 +12,8 @@ Pass 2 makes the confirmed skeleton locally coherent for validation and packagin
 - Resource bindings for documented non-Integration-Service service shells and
   the plain connectionless HTTP recipe.
 - Script task metadata and input/output mapping.
-- Retry, error mapping, loop metadata, transaction marker, and tags when specified.
+- Retry, error mapping, multi-instance metadata, UiPath transaction-root marker,
+  and tags when specified.
 - Draft Integration Service intent handed to CLI enrichment.
 
 ## Fill order
@@ -23,7 +24,10 @@ Pass 2 makes the confirmed skeleton locally coherent for validation and packagin
 4. **Bindings** - add root `uipath:bindings` only for documented non-Integration-Service resources or placeholder-safe binding shapes.
 5. **Task shells** - add documented non-Integration-Service `uipath:activity` or `uipath:event` metadata, or the plain connectionless HTTP recipe, when the task wrapper and service type contract are known. Use [supported-elements.md](supported-elements.md) and [task-recipes/](task-recipes/) before writing XML.
 6. **Scripts** - add BPMN script CDATA, `uipath:scriptVersion`, merged `args` input, schema, and outputs.
-7. **Runtime behavior metadata** - add retry, error mapping, loop characteristics, transaction marker, or tags only when user intent is explicit.
+7. **Runtime behavior metadata** - add retry, error mapping, documented
+   multi-instance characteristics, UiPath transaction-root marker, or tags only
+   when user intent is explicit. Do not generate `bpmn:transaction`; it is
+   preserve-only.
 8. **CLI-owned enrichment** - hand Integration Service activities/triggers and generated package metadata to the CLI.
 
 ## Variables

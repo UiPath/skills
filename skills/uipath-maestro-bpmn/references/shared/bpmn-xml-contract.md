@@ -25,15 +25,18 @@ Generated BPMN must be valid BPMN 2.0 with the UiPath extension namespace.
 
 For the supported element map and UiPath extension wrapper table, see [author/supported-elements.md](../author/references/supported-elements.md).
 
-The model may directly author standard BPMN structure when user intent is clear:
+The model may directly author standard BPMN structure when user intent is clear.
+Anything listed in
+[Current generation exclusions](../author/references/supported-elements.md#current-generation-exclusions)
+is preserve-only for imported files and must not be generated in new source.
 
 - Events: start, end, boundary, intermediate catch, and intermediate throw events.
-- Event definitions: timer, message, signal, error, escalation, conditional, link, and terminate where supported by the runtime path.
-- Gateways: exclusive, inclusive, parallel, event-based, and complex gateways.
-- Tasks and activities: task, service task, send task, receive task, user task, manual task, business rule task, script task, and call activity.
-- Containers: subprocess and event subprocess. Expanded subprocesses need a second diagram when nested content must render in Studio Web.
-- Flow and annotation elements: sequence flow, message flow, association, data input/output association, group, text annotation, categories, messages, signals, errors, escalations, data stores, global tasks, item definitions, and resources.
-- Loop markers: standard and multi-instance loop characteristics. UiPath collection/element metadata belongs under the loop characteristic extension elements.
+- Event definitions: none, timer, message, error, and terminate end events where supported by the runtime path.
+- Gateways: exclusive, inclusive, parallel, and event-based gateways.
+- Tasks and activities: task, service task, send task, receive task, user task, business rule task, script task, and call activity.
+- Containers: subprocess and supported event subprocesses. Expanded subprocesses need a second diagram when nested content must render in Studio Web.
+- Flow and annotation elements: sequence flow, message flow, association, data input/output association, group, text annotation, categories, messages, errors, data stores, item definitions, and resources.
+- Loop markers: documented multi-instance parallel or sequential loop metadata. UiPath collection/element metadata belongs under the loop characteristic extension elements.
 
 Conservative defaults:
 
@@ -59,7 +62,9 @@ Do not combine connector selection, connection binding, dynamic schema generatio
 
 The current confirmed generation boundary is preserve/model-shell only for areas whose runtime contract depends on tenant state, registry metadata, or non-BPMN subscriptions. Do not add generation guidance that creates executable payloads for those areas until the contract is fixture-backed and CLI-validated.
 
-- Signals: standard BPMN signal definitions and signal event references are model-owned XML. Runtime-executable cross-process signal subscriptions, correlation, payload schema contracts, and tenant/resource/channel bindings are outside the model-owned contract unless a dedicated CLI or operator-owned contract supplies them.
+- Signals: do not generate new signal definitions or signal event definitions.
+  Preserve imported signal XML and report it as unsupported for regeneration
+  unless a current product contract and local validation prove support.
 - Plain connectionless HTTP: after skeleton confirmation, model authors may use
   the documented [HTTP request recipe](../author/references/task-recipes/http-request.md)
   when the workflow owns the URL, method, payload, and parsing, and no
@@ -72,7 +77,7 @@ The current confirmed generation boundary is preserve/model-shell only for areas
   metadata, trigger property bindings, filters, parameters, and dynamic schemas
   require live registry-backed CLI enrichment for the target tenant before
   upload, debug, publish, or deploy.
-- Brownfield files: preserve imported executable signal or Integration Service extension XML unless the user explicitly asks for normalization and the CLI can validate the replacement.
+- Brownfield files: preserve imported signal or Integration Service extension XML unless the user explicitly asks for normalization and the CLI can validate the replacement.
 
 ## UiPath extensions the model may write
 
@@ -155,7 +160,7 @@ Validation should report:
 - XML parse errors.
 - Missing or orphaned BPMN diagrams.
 - Missing shape/edge geometry for rendered elements.
-- Invalid root variables, bindings, migration metadata, or transaction markers.
+- Invalid root variables, bindings, migration metadata, or UiPath transaction-root markers.
 - Duplicate or invalid entry point IDs.
 - Entry point variables whose `elementId` does not match the start event.
 - Context binding expressions that do not resolve to root bindings.

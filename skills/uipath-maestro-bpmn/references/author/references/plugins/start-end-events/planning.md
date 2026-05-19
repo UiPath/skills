@@ -4,10 +4,10 @@ Use this reference when planning BPMN start events, end events, intermediate eve
 
 ## When to use
 
-- Manual, timer, message, signal, conditional, or trigger-driven starts.
-- Normal, terminate, error, escalation, message, or signal ends.
+- Manual, timer, message, or trigger-driven starts.
+- Normal, terminate, error, or message ends.
 - Intermediate catch or throw events in the process body.
-- Boundary events attached to activities for timeout, error, message, signal, or escalation paths.
+- Boundary events attached to activities for timeout, error, or message paths.
 
 ## Planning steps
 
@@ -24,9 +24,14 @@ Use this reference when planning BPMN start events, end events, intermediate eve
 - Standard BPMN event elements and event definitions.
 - `uipath:entryPointId` for runnable root start events.
 - Public-safe IDs, labels, mappings, and diagram geometry.
-- Message, signal, error, or escalation definitions with synthetic names.
+- Message or error definitions with synthetic names.
 - Boundary attachment and interrupting versus non-interrupting intent.
 
 ## Stop conditions
 
 Stop before Operate when an event depends on unresolved connector metadata, trigger properties, dynamic schema, real message correlation contract, or private identifiers.
+
+Do not generate event definitions listed in
+[supported-elements.md](../../supported-elements.md#current-generation-exclusions)
+for new source. Preserve imported instances and report them as unsupported for
+regeneration.

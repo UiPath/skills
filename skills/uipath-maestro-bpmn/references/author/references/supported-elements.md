@@ -1,6 +1,6 @@
 # Supported Elements
 
-Use this supported coverage map before choosing a BPMN wrapper or UiPath extension type. Treat anything outside this map as preserve-only unless a newer product contract says otherwise.
+Use this supported coverage map before choosing a BPMN wrapper or UiPath extension type. Treat anything outside this map, or listed in [Current generation exclusions](#current-generation-exclusions), as preserve-only unless a newer product contract says otherwise.
 
 ## Modeling rule
 
@@ -21,14 +21,34 @@ The model may author these standard BPMN structures when the process intent is c
 | Family | Supported elements |
 | --- | --- |
 | Events | `bpmn:startEvent`, `bpmn:endEvent`, `bpmn:intermediateCatchEvent`, `bpmn:intermediateThrowEvent`, `bpmn:boundaryEvent` |
-| Event definitions | none, message, timer, conditional, signal, error, escalation, link, compensate, terminate where valid for that event kind |
-| Gateways | `bpmn:exclusiveGateway`, `bpmn:inclusiveGateway`, `bpmn:parallelGateway`, `bpmn:eventBasedGateway`, `bpmn:complexGateway` |
-| Tasks | `bpmn:task`, `bpmn:serviceTask`, `bpmn:sendTask`, `bpmn:receiveTask`, `bpmn:userTask`, `bpmn:manualTask`, `bpmn:businessRuleTask`, `bpmn:scriptTask` |
-| Containers | `bpmn:subProcess`, event subprocess, `bpmn:callActivity`, `bpmn:adHocSubProcess` for preservation or explicit user intent |
+| Event definitions | none, message, timer, error, and terminate end events where valid for that event kind |
+| Gateways | `bpmn:exclusiveGateway`, `bpmn:inclusiveGateway`, `bpmn:parallelGateway`, `bpmn:eventBasedGateway` |
+| Tasks | `bpmn:task`, `bpmn:serviceTask`, `bpmn:sendTask`, `bpmn:receiveTask`, `bpmn:userTask`, `bpmn:businessRuleTask`, `bpmn:scriptTask` |
+| Containers | `bpmn:subProcess`, event subprocess when the start event type is supported, `bpmn:callActivity` |
 | Flow | `bpmn:sequenceFlow` with source, target, optional condition, optional default references on gateways |
-| Definitions | `bpmn:message`, `bpmn:signal`, `bpmn:error`, `bpmn:escalation`, item definitions, data objects, data stores, participants when required by the model |
+| Definitions and visual context | `bpmn:message`, `bpmn:error`, item definitions, data objects, data stores, text annotations, groups, pools, and lanes when required by the model |
 
-`bpmn:transaction` can appear in imported projects, but do not generate new executable transaction flows until there is a dedicated execution contract. Preserve imported transactions unless the user asks to normalize.
+Visual-only elements such as pools, lanes, data objects, data stores, text annotations, and groups can describe the model but do not execute. Do not use them as substitutes for executable variables, mappings, or task payloads.
+
+## Current generation exclusions
+
+Do not generate these BPMN structures in new Maestro BPMN source. If they appear
+in imported or brownfield files, preserve them and report that the skill cannot
+safely regenerate or normalize them unless a current product contract and local
+CLI validation prove support.
+
+Planned, future, preview, and TBD support statuses are treated as unsupported
+for generation until they are confirmed by current tooling.
+
+| Family | Excluded from new generation |
+| --- | --- |
+| Gateways | `bpmn:complexGateway` |
+| Tasks and containers | `bpmn:manualTask`, `bpmn:adHocSubProcess`, `bpmn:transaction` |
+| Event definitions | `bpmn:conditionalEventDefinition`, `bpmn:signalEventDefinition`, `bpmn:escalationEventDefinition`, `bpmn:compensateEventDefinition`, `bpmn:cancelEventDefinition`, `bpmn:linkEventDefinition`, multiple event definitions, and parallel multiple event definitions |
+| Markers | Standard loop markers and compensation markers. Use only documented multi-instance parallel or sequential metadata for new loops. |
+
+Terminate is supported only for end events. Do not generate terminate starts,
+boundary events, intermediate catches, or intermediate throws.
 
 ## UiPath extension coverage
 

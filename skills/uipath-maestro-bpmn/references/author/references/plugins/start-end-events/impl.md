@@ -7,7 +7,7 @@ This document defines the implementation boundary for BPMN events.
 The model may edit:
 
 - `bpmn:startEvent`, `bpmn:endEvent`, `bpmn:intermediateCatchEvent`, `bpmn:intermediateThrowEvent`, and `bpmn:boundaryEvent`.
-- Standard event definitions such as timer, message, signal, error, escalation, conditional, link, and terminate where supported.
+- Standard event definitions such as timer, message, error, and terminate end events where supported.
 - Event IDs, names, `attachedToRef`, `cancelActivity`, incoming/outgoing flows, and BPMN DI.
 - Root `uipath:entryPointId` values for root starts.
 - `uipath:mapping` entries for event input/output movement.
@@ -51,5 +51,9 @@ The CLI or operator must resolve:
 - Boundary events have outgoing sequence flow children for their exception
   paths, and the attached activity does not list those exception flows as
   normal incoming/outgoing activity flows.
-- Message, signal, error, and escalation references resolve.
+- Message and error references resolve.
 - Every visible event and event flow has diagram geometry.
+
+Excluded event definitions from
+[supported-elements.md](../../supported-elements.md#current-generation-exclusions)
+are preserve-only for imported files.

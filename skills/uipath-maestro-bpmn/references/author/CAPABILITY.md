@@ -112,7 +112,7 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 Each plugin reference has a `planning.md` for pass 1 shape/resource decisions and an `impl.md` for pass 2 XML ownership and validation boundaries.
 
 - [plugins/start-end-events/](references/plugins/start-end-events/) - start events, end events, intermediate events, and boundary events
-- [plugins/gateways/](references/plugins/gateways/) - exclusive, inclusive, parallel, event-based, and complex gateways
+- [plugins/gateways/](references/plugins/gateways/) - exclusive, inclusive, parallel, and event-based gateways
 - [plugins/sequence-flows/](references/plugins/sequence-flows/) - control-flow edges, conditions, defaults, and diagram waypoints
 - [plugins/service-tasks/](references/plugins/service-tasks/) - base service task boundary; use [task-recipes/](references/task-recipes/) for concrete resource-backed tasks
 - [plugins/connectors/](references/plugins/connectors/) - connector-backed activities, triggers, waits, and dynamic schemas
@@ -125,7 +125,7 @@ Each plugin reference has a `planning.md` for pass 1 shape/resource decisions an
 - [plugins/agents/](references/plugins/agents/) - service task recipes for agent job and A2A execution shells
 - [plugins/rpa-jobs/](references/plugins/rpa-jobs/) - service task recipe for Orchestrator RPA process execution
 - [plugins/api-workflows/](references/plugins/api-workflows/) - service task recipe for API workflow invocation
-- [plugins/signals/](references/plugins/signals/) - signal definitions, throws, catches, waits, and broadcast semantics
+- [plugins/signals/](references/plugins/signals/) - preserve-only signal guidance for imported files
 - [plugins/business-rules/](references/plugins/business-rules/) - business rule task invocation and result routing
 
 ### Cross-capability

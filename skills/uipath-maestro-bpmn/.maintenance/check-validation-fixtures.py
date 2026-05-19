@@ -47,6 +47,21 @@ NODE_TYPES = {
     "complexGateway",
 }
 
+GENERATION_EXCLUDED_BPMN_TAGS = {
+    "adHocSubProcess",
+    "cancelEventDefinition",
+    "compensateEventDefinition",
+    "complexGateway",
+    "conditionalEventDefinition",
+    "escalationEventDefinition",
+    "linkEventDefinition",
+    "manualTask",
+    "multipleEventDefinition",
+    "parallelMultipleEventDefinition",
+    "signalEventDefinition",
+    "transaction",
+}
+
 ALLOWED_URLS = (
     "http://www.omg.org/spec/BPMN/20100524/MODEL",
     "http://www.omg.org/spec/BPMN/20100524/DI",
@@ -255,11 +270,26 @@ class Validator:
         self.validate_start_events(path, process)
         self.validate_entry_points(path, process)
         self.validate_gateway_conditions(path, root)
+        self.validate_generation_exclusions(path, root)
         self.validate_error_events(path, root, elements_by_id)
         self.validate_message_events(path, root, elements_by_id)
         self.validate_multi_instance(path, root, variables)
         self.validate_uipath_extensions(path, root, bindings, variables)
         self.record_contract_coverage(root)
+
+    def validate_generation_exclusions(self, path: Path, root: ET.Element) -> None:
+        for elem in root.iter():
+            if ns(elem.tag) != BPMN_NS:
+                continue
+            kind = local(elem.tag)
+            if kind in GENERATION_EXCLUDED_BPMN_TAGS:
+                self.error(path, f"uses generation-excluded BPMN tag {kind}")
+
+        for loop in root.findall(f".//{{{BPMN_NS}}}standardLoopCharacteristics"):
+            self.error(
+                path,
+                f"uses generation-excluded BPMN tag {local(loop.tag)}",
+            )
 
     def record_contract_coverage(self, root: ET.Element) -> None:
         for version in root.findall(f".//{{{UIPATH_NS}}}migrationVersion"):

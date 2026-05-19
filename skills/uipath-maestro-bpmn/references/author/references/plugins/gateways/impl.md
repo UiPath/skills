@@ -6,7 +6,7 @@ This document defines the implementation boundary for BPMN gateways.
 
 The model may edit:
 
-- `bpmn:exclusiveGateway`, `bpmn:inclusiveGateway`, `bpmn:parallelGateway`, `bpmn:eventBasedGateway`, and `bpmn:complexGateway`.
+- `bpmn:exclusiveGateway`, `bpmn:inclusiveGateway`, `bpmn:parallelGateway`, and `bpmn:eventBasedGateway`.
 - Incoming and outgoing `bpmn:sequenceFlow` references.
 - `default` attributes for exclusive and inclusive split gateways.
 - `bpmn:conditionExpression` on outgoing flows.
@@ -20,6 +20,7 @@ The model may edit:
 - Prefer explicit default flows for fallthrough paths.
 - Use parallel gateways only when every branch should run or rejoin.
 - Use event-based gateways only when the next route is determined by the first event that occurs.
+- Do not generate `bpmn:complexGateway`; preserve imported complex gateways only.
 
 ## Validation expectations
 
