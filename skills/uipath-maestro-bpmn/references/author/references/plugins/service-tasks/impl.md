@@ -8,7 +8,8 @@ The model may edit:
 
 - `bpmn:serviceTask` elements, flow references, and diagram shapes.
 - `uipath:mapping` for declared variables.
-- `uipath:retry`, `uipath:errorMapping`, and tags when explicitly requested.
+- `uipath:retry`, `uipath:errorMapping`, and tags when explicitly requested;
+  use [error-handling.md](../../../../shared/error-handling.md) for current shapes.
 - Documented non-Integration-Service `uipath:activity` shells with public-safe context.
 - Boundary error or timeout events attached to the task.
 
@@ -26,7 +27,7 @@ The CLI must enrich or validate:
 ## Validation expectations
 
 - Required service context fields exist for the selected type.
-- Inputs reference declared variables or literals.
+- Inputs reference declared variables with `vars.<variableId>` or use literals.
 - Outputs map to declared writable variables.
 - Binding expressions resolve to root `uipath:bindings` or generated bindings.
 - Boundary events use valid event definitions and stay in scope.

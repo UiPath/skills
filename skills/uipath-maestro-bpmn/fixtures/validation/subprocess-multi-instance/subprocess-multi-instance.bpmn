@@ -5,7 +5,6 @@
     <bpmn:extensionElements>
       <uipath:variables version="v1">
         <uipath:input id="Var_Items" name="items" type="jsonSchema" elementId="Start_Manual"><![CDATA[{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"}}}}]]></uipath:input>
-        <uipath:inputOutput id="Var_CurrentItem" name="currentItem" type="json" />
         <uipath:output id="Var_Summary" name="summary" type="string" />
       </uipath:variables>
     </bpmn:extensionElements>
@@ -25,7 +24,7 @@
       <bpmn:outgoing>Flow_Subprocess_To_Wait</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics id="Loop_ProcessItems" isSequential="true">
         <bpmn:extensionElements>
-          <uipath:loopCharacteristics inputCollection="=items" inputElement="currentItem" />
+          <uipath:loopCharacteristics inputCollection="=vars.Var_Items" inputElement="iterator[0]" />
         </bpmn:extensionElements>
       </bpmn:multiInstanceLoopCharacteristics>
       <bpmn:startEvent id="Start_Subprocess" name="Each Item">
@@ -39,14 +38,14 @@
             <uipath:context>
               <uipath:inputSchema><![CDATA[{"type":"object","properties":{"currentItem":{"type":"object"}}}]]></uipath:inputSchema>
             </uipath:context>
-            <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"currentItem":"=currentItem"}]]></uipath:input>
-            <uipath:output name="outcome" type="string" var="subprocessOutcome" source="result" />
+            <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"currentItem":"=iterator[0].item"}]]></uipath:input>
+            <uipath:output name="outcome" type="string" var="Var_SubprocessOutcome" source="=result.response" />
           </uipath:mapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_Sub_Start_To_Script</bpmn:incoming>
         <bpmn:outgoing>Flow_Script_To_Sub_End</bpmn:outgoing>
         <bpmn:script><![CDATA[
-return { result: "processed" };
+return { response: "processed" };
 ]]></bpmn:script>
       </bpmn:scriptTask>
       <bpmn:endEvent id="End_Subprocess" name="Item Done">
@@ -62,7 +61,7 @@ return { result: "processed" };
           <uipath:context>
             <uipath:input name="messageName" type="string" value="ItemReady" />
           </uipath:context>
-          <uipath:input name="ItemData" type="json" target="bodyField"><![CDATA[{"item":"=currentItem"}]]></uipath:input>
+          <uipath:input name="ItemData" type="json" target="bodyField"><![CDATA[{"summary":"=vars.Var_Summary"}]]></uipath:input>
         </uipath:event>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Subprocess_To_Wait</bpmn:incoming>

@@ -9,6 +9,7 @@ Pass 2 makes the confirmed skeleton locally coherent for validation and packagin
 - Root variables and scoped subprocess variables.
 - Entry point IDs on runnable root start events.
 - Variable mappings on tasks, events, scripts, subprocesses, and ends.
+- Lint-compatible expressions using [expression-authoring.md](../../shared/expression-authoring.md).
 - Resource bindings for documented non-Integration-Service service shells and
   the plain connectionless HTTP recipe.
 - Script task metadata and input/output mapping.
@@ -26,8 +27,9 @@ Pass 2 makes the confirmed skeleton locally coherent for validation and packagin
 6. **Scripts** - add BPMN script CDATA, `uipath:scriptVersion`, merged `args` input, schema, and outputs.
 7. **Runtime behavior metadata** - add retry, error mapping, documented
    multi-instance characteristics, UiPath transaction-root marker, or tags only
-   when user intent is explicit. Do not generate `bpmn:transaction`; it is
-   preserve-only.
+   when user intent is explicit. Use [error-handling.md](../../shared/error-handling.md)
+   for retry, boundary error, event subprocess, and error mapping shapes. Do not
+   generate `bpmn:transaction`; it is preserve-only.
 8. **CLI-owned enrichment** - hand Integration Service activities/triggers and generated package metadata to the CLI.
 
 ## Variables
@@ -57,6 +59,8 @@ Root bindings describe resources that packaging turns into `bindings_v2.json`.
 - Avoid assignment operators in condition, skip, and mapping expressions where fields require read-only expression evaluation.
 - Keep gateway condition expressions on sequence flows, not on the gateway itself.
 - Keep script source in BPMN `script` CDATA with `scriptFormat="JavaScript"`.
+- Read [expression-authoring.md](../../shared/expression-authoring.md) before
+  writing `vars`, `result`, `bindings`, `iterator`, or `vars.error` references.
 
 ## Non-Integration-Service task shells
 

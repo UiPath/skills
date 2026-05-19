@@ -17,6 +17,7 @@ Generated BPMN must be valid BPMN 2.0 with the UiPath extension namespace.
 - Conditions and scripts should use a leading `=` where Maestro expects expressions.
 - UiPath extension expressions should read BPMN variables through `vars.<variableId>`,
   for example `=vars.Var_RequestId`, rather than bare names.
+- For lint-sensitive expression details, see [expression-authoring.md](expression-authoring.md).
 - CDATA is the expected representation for JSON bodies, schemas, scripts, variable schemas, custom output bodies, and case-management payload bodies.
 - XML comments must remain parseable. Do not put `--` inside comments, and do
   not use dashed decorative separator lines in BPMN XML comments.
@@ -90,7 +91,7 @@ Use lower-case XML aliases in examples and authoring guidance:
 - `uipath:scriptVersion value="..."` for script task metadata. Prefer `v3` for new script tasks; preserve imported `v2` metadata unless the user explicitly migrates it.
 - `uipath:migrationVersion version="..."` as import migration metadata to preserve, including numeric values such as `5`, `11`, and `11.5`.
 - `uipath:loopCharacteristics inputCollection="..." inputElement="..."` under loop characteristic extensions.
-- `uipath:retry`, `uipath:errorMapping`, and `uipath:tags` when the user gives explicit public-safe metadata.
+- `uipath:retry`, `uipath:errorMapping`, and `uipath:tags` when the user gives explicit public-safe metadata. For retry, boundary errors, event subprocesses, and error mapping shapes, see [error-handling.md](error-handling.md).
 - `uipath:activity` and `uipath:event` shells for documented non-Integration-Service service types.
 
 New authored `uipath:activity` and `uipath:event` shells use the canonical

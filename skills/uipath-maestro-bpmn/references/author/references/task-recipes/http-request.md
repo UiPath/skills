@@ -24,6 +24,15 @@ Do not represent an executable HTTP call as:
 If the executable HTTP activity shape is unavailable in the current tooling,
 keep the node as draft intent and report it as not implemented.
 
+## HTTP shape decision
+
+| Scenario | Authoring decision |
+| --- | --- |
+| Plain connectionless request and the workflow owns URL, method, payload, and parsing | Use this `Intsvc.HttpExecution` recipe after skeleton confirmation. |
+| Connector-authenticated request, tenant connection, dynamic connector schema, or object operation | Keep the BPMN node as draft intent and hand enrichment to the CLI. |
+| Solution/V2 unified HTTP shape is explicitly available from current tooling | Let CLI enrichment generate `Intsvc.UnifiedHttpRequest`; do not copy this recipe by hand. |
+| Unsure which HTTP runtime is active | Keep draft intent and report the missing enrichment decision. |
+
 ## Executable contract
 
 For confirmed connectionless HTTP execution, use the current UiPath HTTP

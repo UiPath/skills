@@ -14,7 +14,8 @@ The model may edit:
 
 ## Implementation rules
 
-- Declare collection and item variables before referencing them.
+- Declare the collection variable before referencing it. Do not invent a bare
+  item variable for subprocess bodies; use the iterator shape documented below.
 - Use sequential execution when item order or resource limits matter.
 - Keep per-item outputs distinct from aggregate outputs.
 - Do not hide service-call retries inside loop metadata; model retry or boundary behavior explicitly.

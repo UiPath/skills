@@ -16,9 +16,9 @@ The model may edit:
 
 - `bpmn:businessRuleTask` wrapper.
 - Documented `Orchestrator.BusinessRules` `uipath:activity` shell.
-- Input CDATA for facts in `uipath:mapping` using declared variables.
+- Input CDATA for facts in `uipath:mapping` using `vars.<variableId>` references.
 - `uipath:mapping` outputs for rule result, matched rule, diagnostics, and outcome.
-- Gateway conditions that route by declared rule outputs.
+- Gateway conditions that route by declared rule outputs through `vars.<variableId>`.
 
 ## CLI or operator-owned implementation
 

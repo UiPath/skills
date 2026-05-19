@@ -77,6 +77,8 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 | Create a confirmed BPMN skeleton | [references/planning-arch.md](references/planning-arch.md) + [references/greenfield.md](references/greenfield.md) |
 | Add or revise BPMN structure | [references/brownfield.md](references/brownfield.md) + [references/editing-operations.md](references/editing-operations.md) + [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md) |
 | Add variables, mappings, bindings, or expressions | [references/planning-impl.md](references/planning-impl.md) + [shared/variables-bindings-expressions.md](../shared/variables-bindings-expressions.md) |
+| Add lint-compatible runtime expressions | [shared/expression-authoring.md](../shared/expression-authoring.md) |
+| Add retry, boundary errors, or error mappings | [shared/error-handling.md](../shared/error-handling.md) |
 | Select the right BPMN wrapper for RPA, agent, API workflow, queue, HITL, business rule, or call activity work | [references/supported-elements.md](references/supported-elements.md) + [references/task-recipes/](references/task-recipes/) |
 | Add an Integration Service activity or trigger | [references/plugins/integration-service/](references/plugins/integration-service/) |
 | Add a specific BPMN or UiPath extension element | [Plugin references](#plugin-references) |
@@ -133,5 +135,7 @@ Each plugin reference has a `planning.md` for pass 1 shape/resource decisions an
 - [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md) - model-owned versus CLI-owned XML
 - [shared/project-layout.md](../shared/project-layout.md) - source and generated files
 - [shared/variables-bindings-expressions.md](../shared/variables-bindings-expressions.md) - variables, bindings, mappings, expressions
+- [shared/expression-authoring.md](../shared/expression-authoring.md) - lint-compatible runtime expressions
+- [shared/error-handling.md](../shared/error-handling.md) - Maestro retry, boundary error, event subprocess, and error mapping behavior
 - [shared/cli-conventions.md](../shared/cli-conventions.md) - CLI and side-effect conventions
 - [shared/public-safety.md](../shared/public-safety.md) - sanitization rules

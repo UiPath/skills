@@ -16,7 +16,8 @@ The model may edit:
 
 - Keep sequence flows inside one process or subprocess scope.
 - Use `xsi:type="bpmn:tFormalExpression"` for condition expressions when the file uses that convention.
-- Use a leading `=` for UiPath runtime expressions.
+- Use a leading `=` for UiPath runtime expressions and follow
+  [expression-authoring.md](../../../../shared/expression-authoring.md).
 - Do not attach conditions to outgoing flows from parallel gateways.
 - Update both XML references and diagram edges together.
 
@@ -24,6 +25,6 @@ The model may edit:
 
 - Every sequence flow source and target exists.
 - Connected elements reference the sequence flow consistently.
-- Conditional expressions parse and use declared variables.
+- Conditional expressions parse and use `vars.<variableId>` for declared variables.
 - Default flows are not also treated as mandatory conditional branches.
 - Every visible sequence flow has a BPMN DI edge.

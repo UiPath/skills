@@ -34,7 +34,7 @@ the task and backed by generated package metadata before Operate.
 
 ## Validation expectations
 
-- Task inputs and outputs reference declared variables.
+- Task inputs use `vars.<variableId>` and outputs target declared writable variable ids.
 - Outcome gateway conditions match possible result values.
 - Timeout paths do not discard required process state.
 - Binding references are placeholders or resolved generated resources, and no

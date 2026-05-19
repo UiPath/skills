@@ -62,6 +62,20 @@ GENERATION_EXCLUDED_BPMN_TAGS = {
     "transaction",
 }
 
+ALLOWED_RETRY_ATTRS = {
+    "version",
+    "maxRetryCount",
+    "retryBackoff",
+    "retryAllErrors",
+    "retryBackoffType",
+    "maxDuration",
+    "exponentialBase",
+}
+
+ALLOWED_ERROR_MAPPING_ATTRS = {"version"}
+ALLOWED_ERROR_ATTRS = {"id", "errorRef", "priority", "condition", "detail", "retryable"}
+SPECIAL_RUNTIME_VARS = {"error"}
+
 ALLOWED_URLS = (
     "http://www.omg.org/spec/BPMN/20100524/MODEL",
     "http://www.omg.org/spec/BPMN/20100524/DI",
@@ -269,9 +283,10 @@ class Validator:
         self.validate_sequence_flows(path, root, elements_by_id)
         self.validate_start_events(path, process)
         self.validate_entry_points(path, process)
-        self.validate_gateway_conditions(path, root)
+        self.validate_gateway_conditions(path, root, bindings, variables)
         self.validate_generation_exclusions(path, root)
         self.validate_error_events(path, root, elements_by_id)
+        self.validate_error_handling(path, root, elements_by_id, bindings, variables)
         self.validate_message_events(path, root, elements_by_id)
         self.validate_multi_instance(path, root, variables)
         self.validate_uipath_extensions(path, root, bindings, variables)
@@ -381,15 +396,26 @@ class Validator:
         return result
 
     def collect_variables(self, root: ET.Element) -> dict[str, set[str]]:
-        variables: dict[str, set[str]] = {"root": set(), "all": set()}
+        variables: dict[str, set[str]] = {
+            "root": set(),
+            "all": set(),
+            "writable": set(),
+            "names": set(),
+        }
+        root_variables = root.find(
+            f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}variables"
+        )
         for vars_elem in root.findall(f".//{{{UIPATH_NS}}}variables"):
             for child in list(vars_elem):
+                var_id = child.attrib.get("id")
                 if child.attrib.get("name"):
-                    variables["all"].add(child.attrib["name"])
-                    if vars_elem in root.findall(
-                        f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}variables"
-                    ):
-                        variables["root"].add(child.attrib["name"])
+                    variables["names"].add(child.attrib["name"])
+                if var_id:
+                    variables["all"].add(var_id)
+                    if vars_elem is root_variables:
+                        variables["root"].add(var_id)
+                    if local(child.tag) in {"inputOutput", "output"}:
+                        variables["writable"].add(var_id)
         return variables
 
     def validate_diagram(
@@ -481,7 +507,13 @@ class Validator:
                     f"entry input variable {var.attrib.get('name')} references non-root start {element_id}",
                 )
 
-    def validate_gateway_conditions(self, path: Path, root: ET.Element) -> None:
+    def validate_gateway_conditions(
+        self,
+        path: Path,
+        root: ET.Element,
+        bindings: dict[str, ET.Element],
+        variables: dict[str, set[str]],
+    ) -> None:
         for gateway in root.findall(f".//{{{BPMN_NS}}}exclusiveGateway"):
             outgoing = [
                 child.text for child in gateway.findall(f"{{{BPMN_NS}}}outgoing") if child.text
@@ -499,6 +531,16 @@ class Validator:
                 flow = root.find(f".//{{{BPMN_NS}}}sequenceFlow[@id='{flow_id}']")
                 if flow is not None and flow.find(f"{{{BPMN_NS}}}conditionExpression") is None:
                     self.error(path, f"gateway flow {flow_id} is missing conditionExpression")
+                elif flow is not None:
+                    condition = flow.find(f"{{{BPMN_NS}}}conditionExpression")
+                    if condition is not None:
+                        self.validate_expression_value(
+                            path,
+                            condition.text or "",
+                            bindings,
+                            variables,
+                            f"conditionExpression {flow_id}",
+                        )
 
     def validate_error_events(
         self, path: Path, root: ET.Element, elements_by_id: dict[str, ET.Element]
@@ -516,6 +558,65 @@ class Validator:
                     f"boundaryEvent {boundary.attrib.get('id')} references missing activity {attached}",
                 )
 
+    def validate_error_handling(
+        self,
+        path: Path,
+        root: ET.Element,
+        elements_by_id: dict[str, ET.Element],
+        bindings: dict[str, ET.Element],
+        variables: dict[str, set[str]],
+    ) -> None:
+        for retry in root.findall(f".//{{{UIPATH_NS}}}retry"):
+            for attr in retry.attrib:
+                if attr not in ALLOWED_RETRY_ATTRS:
+                    self.error(path, f"uipath:retry uses unsupported attribute {attr}")
+
+            max_retry = retry.attrib.get("maxRetryCount")
+            if max_retry and not max_retry.isdigit():
+                self.error(path, "uipath:retry maxRetryCount must be an integer")
+
+            retry_all = retry.attrib.get("retryAllErrors")
+            if retry_all and retry_all not in {"true", "false"}:
+                self.error(path, "uipath:retry retryAllErrors must be true or false")
+
+            for error_def in retry.findall(f"{{{UIPATH_NS}}}errorDefinition"):
+                ref = error_def.attrib.get("errorRef")
+                if ref and ref not in elements_by_id:
+                    self.error(path, f"uipath:retry errorDefinition references missing error {ref}")
+
+        for mapping in root.findall(f".//{{{UIPATH_NS}}}errorMapping"):
+            for attr in mapping.attrib:
+                if attr not in ALLOWED_ERROR_MAPPING_ATTRS:
+                    self.error(path, f"uipath:errorMapping uses unsupported attribute {attr}")
+
+            for error in mapping.findall(f"{{{UIPATH_NS}}}error"):
+                for attr in error.attrib:
+                    if attr not in ALLOWED_ERROR_ATTRS:
+                        self.error(
+                            path,
+                            f"uipath:errorMapping error uses unsupported attribute {attr}",
+                        )
+
+                ref = error.attrib.get("errorRef")
+                if ref and ref not in elements_by_id:
+                    self.error(path, f"uipath:errorMapping references missing error {ref}")
+
+                priority = error.attrib.get("priority")
+                if priority is not None and not priority.isdigit():
+                    self.error(path, "uipath:errorMapping priority must be an integer")
+
+                retryable = error.attrib.get("retryable")
+                if retryable and retryable not in {"true", "false"}:
+                    self.error(path, "uipath:errorMapping retryable must be true or false")
+
+                self.validate_expression_value(
+                    path,
+                    error.attrib.get("condition", ""),
+                    bindings,
+                    variables,
+                    f"errorMapping {error.attrib.get('id')}",
+                )
+
     def validate_message_events(
         self, path: Path, root: ET.Element, elements_by_id: dict[str, ET.Element]
     ) -> None:
@@ -527,6 +628,7 @@ class Validator:
     def validate_multi_instance(
         self, path: Path, root: ET.Element, variables: dict[str, set[str]]
     ) -> None:
+        parent_map = build_parent_map(root)
         for loop in root.findall(f".//{{{BPMN_NS}}}multiInstanceLoopCharacteristics"):
             marker = loop.attrib.get("isSequential")
             if marker not in {"true", "false"}:
@@ -548,8 +650,11 @@ class Validator:
                 continue
 
             input_collection = metadata.attrib.get("inputCollection", "")
-            collection_var = self.expression_variable(input_collection)
-            if not collection_var or collection_var not in variables["all"]:
+            collection_vars = self.expression_variable_ids(input_collection)
+            has_declared_collection = any(
+                var_id in variables["all"] for var_id in collection_vars
+            )
+            if not collection_vars or not has_declared_collection:
                 self.error(
                     path,
                     f"multi-instance inputCollection references undeclared variable "
@@ -557,23 +662,88 @@ class Validator:
                 )
 
             input_element = metadata.attrib.get("inputElement")
-            if not input_element or input_element not in variables["all"]:
+            if not input_element:
                 self.error(
                     path,
-                    f"multi-instance inputElement references undeclared variable {input_element}",
+                    f"multi-instance inputElement is missing on {loop.attrib.get('id')}",
                 )
+            elif local(parent_map.get(id(loop), ET.Element("")).tag) == "subProcess":
+                if input_element != "iterator[0]":
+                    self.error(
+                        path,
+                        f"multi-instance subprocess inputElement must be iterator[0], "
+                        f"found {input_element}",
+                    )
+            elif not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*(?:\[\d+\])?", input_element):
+                self.error(path, f"multi-instance inputElement has invalid shape {input_element}")
+
+            self.validate_expression_value(
+                path,
+                input_collection,
+                {},
+                variables,
+                f"multi-instance inputCollection {loop.attrib.get('id')}",
+            )
+            self.validate_expression_value(
+                path,
+                metadata.attrib.get("filterCondition", ""),
+                {},
+                variables,
+                f"multi-instance filterCondition {loop.attrib.get('id')}",
+            )
 
             completion = loop.find(f"{{{BPMN_NS}}}completionCondition")
-            if completion is not None and self.contains_assignment(completion.text or ""):
-                self.error(
+            if completion is not None:
+                self.validate_expression_value(
                     path,
-                    f"multiInstanceLoopCharacteristics {loop.attrib.get('id')} "
-                    "completionCondition may contain assignment",
+                    completion.text or "",
+                    {},
+                    variables,
+                    f"multi-instance completionCondition {loop.attrib.get('id')}",
                 )
 
-    def expression_variable(self, value: str) -> str | None:
-        match = re.fullmatch(r"=([A-Za-z_][A-Za-z0-9_]*)", value.strip())
-        return match.group(1) if match else None
+    def expression_variable_ids(self, value: str) -> set[str]:
+        return set(re.findall(r"\bvars\.([A-Za-z_][A-Za-z0-9_]*)", value))
+
+    def extract_expressions(self, value: str) -> list[str]:
+        if not value:
+            return []
+        expressions: list[str] = []
+        stripped = value.strip()
+        if stripped.startswith("="):
+            expressions.append(stripped)
+        expressions.extend(match.group(1).strip() for match in re.finditer(r'"(=[^"]+)"', value))
+        return expressions
+
+    def validate_expression_value(
+        self,
+        path: Path,
+        value: str,
+        bindings: dict[str, ET.Element],
+        variables: dict[str, set[str]],
+        label: str,
+    ) -> None:
+        for expression in self.extract_expressions(value):
+            if self.contains_assignment(expression):
+                self.error(path, f"{label} may contain assignment: {expression}")
+
+            for binding_ref in re.findall(r"\bbindings\.([A-Za-z0-9_]+)", expression):
+                if binding_ref not in bindings:
+                    self.error(
+                        path,
+                        f"{label} references undeclared binding {binding_ref}",
+                    )
+
+            for var_ref in self.expression_variable_ids(expression):
+                if var_ref not in variables["all"] and var_ref not in SPECIAL_RUNTIME_VARS:
+                    self.error(path, f"{label} references undeclared variable id {var_ref}")
+
+            for var_name in sorted(variables["names"], key=len, reverse=True):
+                if re.search(rf"={re.escape(var_name)}(?=$|[^A-Za-z0-9_])", expression):
+                    self.error(
+                        path,
+                        f"{label} uses bare variable name {var_name}; use vars.<variableId>",
+                    )
 
     def contains_assignment(self, value: str) -> bool:
         return "=" in value and re.search(r"(?<![=!<>])=(?!=)", value[1:]) is not None
@@ -593,16 +763,24 @@ class Validator:
                 self.validate_activity_or_event(path, elem, bindings, parent_map)
             if local(elem.tag) == "output":
                 target = elem.attrib.get("var") or elem.attrib.get("target")
-                if target and target not in variables["all"]:
-                    self.error(path, f"uipath:output targets undeclared variable {target}")
-            value = elem.attrib.get("value", "")
-            for binding_ref in re.findall(r"=bindings\.([A-Za-z0-9_]+)", value):
-                if binding_ref not in bindings:
-                    self.error(
-                        path, f"binding expression references undeclared binding {binding_ref}"
-                    )
-            if self.contains_assignment(value):
-                self.error(path, f"expression may contain assignment: {value}")
+                if target and target not in variables["writable"]:
+                    self.error(path, f"uipath:output targets non-writable variable id {target}")
+
+            for attr_name, attr_value in elem.attrib.items():
+                self.validate_expression_value(
+                    path,
+                    attr_value,
+                    bindings,
+                    variables,
+                    f"uipath:{local(elem.tag)} @{attr_name}",
+                )
+            self.validate_expression_value(
+                path,
+                elem.text or "",
+                bindings,
+                variables,
+                f"uipath:{local(elem.tag)} text",
+            )
 
     def validate_activity_or_event(
         self,

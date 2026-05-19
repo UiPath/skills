@@ -16,7 +16,7 @@ The model may edit:
 
 - `bpmn:serviceTask` wrapper for API workflow execution.
 - Documented `Orchestrator.ExecuteApiWorkflowAsync` `uipath:activity` shell.
-- Request input CDATA in `uipath:mapping` using declared variables.
+- Request input CDATA in `uipath:mapping` using `vars.<variableId>` references.
 - `uipath:mapping` outputs for invocation ID, status, result, and errors.
 - Retry and boundary error metadata when specified.
 
@@ -32,6 +32,6 @@ The CLI or operator must resolve:
 
 - Workflow binding resolves before upload/run.
 - Request body matches the resolved schema.
-- Output mappings target declared variables.
+- Output mappings target declared writable variable ids.
 - Fire-and-forget versus wait behavior is explicit.
 - No private endpoint URLs, resource IDs, or exported payloads are committed.

@@ -33,9 +33,13 @@ Validate these before Operate:
 - Boundary error events and error event subprocesses reference valid error definitions.
 - Boundary events own their exception outgoing flows; attached activities do
   not list boundary exception flows as normal incoming/outgoing flows.
-- Multi-instance collection and item bindings reference declared variables and use explicit sequential/parallel metadata.
+- Multi-instance collection bindings reference declared variables, subprocess item access uses the documented iterator shape, and sequential/parallel metadata is explicit.
 - Expressions avoid assignment operators in fields that require read-only expression evaluation.
-- Output mappings target declared variables.
+- Runtime expressions use `vars.<variableId>`, `bindings.<bindingId>`, `result`,
+  or the documented iterator/error namespaces instead of bare variable names.
+- Output mappings target declared mutable variables.
+- Retry and error mapping metadata use current attributes from
+  [shared/error-handling.md](../../shared/error-handling.md).
 - CLI-owned Integration Service fields have been enriched or are clearly marked as blockers.
 
 For local-only authoring, always execute at least one validation command before

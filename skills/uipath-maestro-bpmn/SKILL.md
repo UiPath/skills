@@ -42,6 +42,8 @@ Guide for authoring, inspecting, validating, packaging, operating, and diagnosin
 | Understand BPMN XML authoring boundaries | [references/shared/bpmn-xml-contract.md](references/shared/bpmn-xml-contract.md) |
 | Copy minimal XML shells per supported wrapper | [references/shared/wrapper-shells.md](references/shared/wrapper-shells.md) |
 | Understand variables, bindings, entry points, and expressions | [references/shared/variables-bindings-expressions.md](references/shared/variables-bindings-expressions.md) |
+| Author lint-compatible runtime expressions | [references/shared/expression-authoring.md](references/shared/expression-authoring.md) |
+| Author Maestro retry and error handling | [references/shared/error-handling.md](references/shared/error-handling.md) |
 | Understand CLI conventions and side-effect boundaries | [references/shared/cli-conventions.md](references/shared/cli-conventions.md) |
 | Keep examples and commits public-safe | [references/shared/public-safety.md](references/shared/public-safety.md) |
 

@@ -14,7 +14,7 @@ The model may edit:
 
 - `bpmn:serviceTask` wrapper for RPA job execution.
 - Documented `Orchestrator.StartJob` `uipath:activity` shell.
-- Input CDATA for job arguments in `uipath:mapping` using declared variables.
+- Input CDATA for job arguments in `uipath:mapping` using `vars.<variableId>` references.
 - `uipath:mapping` outputs for job ID, status, outputs, and exception fields.
 - Retry, timeout, and boundary error paths.
 
@@ -31,5 +31,5 @@ The CLI or operator must resolve:
 - Process binding expression resolves.
 - Argument names match the resolved process contract.
 - Wait and timeout behavior is explicit.
-- Outputs map to declared writable variables.
+- Outputs map to declared writable variable ids.
 - No release keys, folder IDs, robot names, or exported private metadata are committed.

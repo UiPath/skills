@@ -15,7 +15,8 @@ The model may edit:
 ## Implementation rules
 
 - Store branch logic on outgoing sequence flows, not on the gateway element.
-- Use a leading `=` for runtime expressions where Maestro expects expressions.
+- Use a leading `=` for runtime expressions where Maestro expects expressions;
+  follow [expression-authoring.md](../../../../shared/expression-authoring.md).
 - Do not use assignment expressions in gateway conditions.
 - Prefer explicit default flows for fallthrough paths.
 - Use parallel gateways only when every branch should run or rejoin.
@@ -27,5 +28,5 @@ The model may edit:
 - Split gateways have the right number of outgoing flows.
 - Join gateways have the right number of incoming flows.
 - Defaults reference an outgoing flow from the same gateway.
-- Conditional branches reference declared variables.
+- Conditional branches reference declared variables with `vars.<variableId>`.
 - Event-based gateway outgoing flows lead to valid catch events or receive tasks.

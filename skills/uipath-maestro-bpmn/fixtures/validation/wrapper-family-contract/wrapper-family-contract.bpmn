@@ -33,8 +33,8 @@
           <uipath:context>
             <uipath:input name="agent" type="resource" value="=bindings.Binding_AgentDefinition" />
           </uipath:context>
-          <uipath:input name="body" type="json" target="bodyField"><![CDATA[{"request":"=request"}]]></uipath:input>
-          <uipath:output name="response" type="json" var="agentResult" source="response" />
+          <uipath:input name="body" type="json" target="bodyField"><![CDATA[{"request":"=vars.Var_Request"}]]></uipath:input>
+          <uipath:output name="response" type="json" var="Var_AgentResult" source="response" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Start_To_Agent</bpmn:incoming>
@@ -47,8 +47,8 @@
           <uipath:context>
             <uipath:input name="process" type="resource" value="=bindings.Binding_ApiWorkflow" />
           </uipath:context>
-          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"agentResult":"=agentResult"}]]></uipath:input>
-          <uipath:output name="JobResult" type="json" var="apiResult" source="result" />
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"agentResult":"=vars.Var_AgentResult"}]]></uipath:input>
+          <uipath:output name="JobResult" type="json" var="Var_ApiResult" source="result" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Agent_To_Api</bpmn:incoming>
@@ -61,8 +61,8 @@
           <uipath:context>
             <uipath:input name="process" type="resource" value="=bindings.Binding_BusinessRule" />
           </uipath:context>
-          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"apiResult":"=apiResult"}]]></uipath:input>
-          <uipath:output name="RuleDecision" type="string" var="ruleResult" source="decision" />
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"apiResult":"=vars.Var_ApiResult"}]]></uipath:input>
+          <uipath:output name="RuleDecision" type="string" var="Var_RuleResult" source="decision" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Api_To_BusinessRule</bpmn:incoming>
@@ -75,8 +75,8 @@
           <uipath:context>
             <uipath:input name="queue" type="resource" value="=bindings.Binding_Queue" />
           </uipath:context>
-          <uipath:input name="ItemData" type="json" target="bodyField"><![CDATA[{"ruleResult":"=ruleResult"}]]></uipath:input>
-          <uipath:output name="QueueStatus" type="string" var="queueState" source="status" />
+          <uipath:input name="ItemData" type="json" target="bodyField"><![CDATA[{"ruleResult":"=vars.Var_RuleResult"}]]></uipath:input>
+          <uipath:output name="QueueStatus" type="string" var="Var_QueueState" source="status" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_BusinessRule_To_Queue</bpmn:incoming>
@@ -89,7 +89,7 @@
           <uipath:context>
             <uipath:input name="process" type="resource" value="=bindings.Binding_CaseProcess" />
           </uipath:context>
-          <uipath:input name="caseManagerInput" type="json" target="bodyField"><![CDATA[{"queueState":"=queueState"}]]></uipath:input>
+          <uipath:input name="caseManagerInput" type="json" target="bodyField"><![CDATA[{"queueState":"=vars.Var_QueueState"}]]></uipath:input>
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Queue_To_Case</bpmn:incoming>
@@ -114,7 +114,7 @@
       <bpmn:extensionElements>
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="finalStatus" type="string" var="finalStatus" source="done" />
+          <uipath:output name="finalStatus" type="string" var="Var_FinalStatus" source="done" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Wait_To_End</bpmn:incoming>
