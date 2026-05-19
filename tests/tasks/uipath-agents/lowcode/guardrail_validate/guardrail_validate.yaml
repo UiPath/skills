@@ -20,7 +20,7 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: ../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
+      path: ../../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
   I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
