@@ -1,0 +1,207 @@
+task_id: skill-diagnostics-healing-agent-no-license
+description: >
+  Faithful replay of a real UiPath diagnostic investigation where the
+  Healing Agent refused to recover a faulted UI Automation activity
+  because the tenant has no Healing Agent entitlement
+  (Allowed.AgentService=0, LicensedFeatures=[]). Unlike the
+  invalid-license replay, the user does not provide a job key — the
+  agent must list Faulted jobs in the Shared folder and pick the most
+  recent one (job key cedeff5a-ba9b-4ff5-80c2-b79b5662f59b). Success =
+  the agent matches the healing-agent-no-license playbook AND
+  identifies cause #1 (missing tenant entitlement) as RESOLUTION.md
+  does.
+tags: [uipath-diagnostics, e2e, faithful-replay, healing-agent, licensing]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  Why my last job from folder Shared has failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-diagnostics skill"
+    skill_name: "uipath-diagnostics"
+    expected_skill: "uipath-diagnostics"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: file_contains
+    description: "state.json names the healing-agent-no-license playbook (not the older selector-failure-manual / no-recovery-data classification)"
+    path: .local/investigations/state.json
+    includes:
+      - "healing-agent-no-license"
+    excludes:
+      - "selector-failure-manual"
+    weight: 1.0
+
+  - type: file_contains
+    description: "hypotheses.json captures the missing-entitlement signal as root cause, not pool exhaustion / Test Heals / runtime-type gate"
+    path: .local/investigations/hypotheses.json
+    includes:
+      - "is_root_cause"
+      - "Allowed.AgentService"
+      - "LicensedFeatures"
+    # Excludes target false-positive conclusions that should NEVER appear as
+    # the chosen root cause. "pool exhausted" / "Test Heals" are intentionally
+    # NOT excluded — they appear legitimately in `to_eliminate` when the agent
+    # discriminates cause #1 from causes #7 / Test-Heals branch.
+    excludes:
+      - "Attended StudioPro is not HA-eligible"
+      - "package corruption"
+      - "version mismatch"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent listed Faulted jobs in the Shared folder to discover the failing job key (no key was given in the prompt)"
+    tool_name: "Bash"
+    command_pattern: '(?<![\./\w])uip\s+or\s+jobs\s+list\b[^|;&]*--state\s+Faulted'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the faulted job to confirm Autopilot/Healing flags and RuntimeType (playbook step 2)"
+    tool_name: "Bash"
+    command_pattern: '(?<![\./\w])uip\s+or\s+jobs\s+get\s+["\x27]?cedeff5a'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched Error-level robot logs to find the 'No available license' line (playbook step 1)"
+    tool_name: "Bash"
+    command_pattern: '(?<![\./\w])uip\s+or\s+jobs\s+logs\s+["\x27]?cedeff5a'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read tenant license info to discriminate the playbook cause (#1 missing entitlement vs #7 exhausted) — playbook step 5"
+    tool_name: "Bash"
+    command_pattern: '(?<![\./\w])uip\s+or\s+licenses\s+info'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent matched healing-agent-no-license.md AND identified cause #1 (missing entitlement) as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome (the attached RESOLUTION.md). The investigation
+      is about a faulted Orchestrator job where Healing Agent refused to
+      recover a UI Automation NodeNotFoundException because the tenant
+      has no Healing Agent entitlement. The user did NOT provide a job
+      key in the initial prompt — the agent had to discover it by
+      listing Faulted jobs in the Shared folder.
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+        `references/activity-packages/ui-automation/playbooks/healing-agent-no-license.md`.
+        It should appear in state.json's `matched_playbooks`. Acceptable:
+        the agent also Reads neighboring playbooks during exploration
+        (e.g. selector-failure-healing-fix.md, no-recovery-data.md), but
+        the FINAL matched playbook must be healing-agent-no-license.md
+        (or healing-agent-no-license referenced by another exact name).
+
+      DIMENSION B -- Correct cause within the playbook
+        The root-cause hypothesis (the one flagged `is_root_cause: true`
+        in hypotheses.json, or the agent's final user-facing answer) must
+        identify cause #1 from the playbook's ## Causes enumeration:
+        "No Healing Agent entitlement on the tenant" (signature:
+        Allowed.AgentService=0 AND LicensedFeatures=[]). It is NOT
+        sufficient to identify only the surface NodeNotFoundException;
+        the agent must explain that Healing Agent refused to run for
+        lack of entitlement and that this is what turned a normally
+        recoverable selector failure into a Faulted job. Distinguishing
+        from cause #7 (pool exhausted: Used>=Allowed AND Allowed>0) is
+        required — those two causes have different fixes.
+
+      DIMENSION C -- Correct resolution direction
+        The proposed fix must match RESOLUTION.md's primary remediation:
+        acquire the Healing Agent Add-On for this tenant, or move the
+        tenant to a plan that bundles Heals (Flex Advanced / Unified
+        Enterprise). The fix targets the **Heals** pool (regular Heals,
+        operation code HealingAgent), NOT Test Heals — because
+        RuntimeType=StudioPro is in the Non-Test set. Acceptable
+        secondary recommendations: correct the aria-label typo in
+        Google.xaml, enable Orchestrator alert emails, add queue-level
+        retry. NOT acceptable as the primary fix: "increase delay
+        before", "re-record the selector", "enable Healing Agent" (it
+        was already enabled — the block is licensing).
+
+      SCORING RUBRIC (single score):
+        1.0  All three dimensions correct: right playbook, cause #1
+             (missing entitlement) named, fix targets the Heals
+             entitlement / HA Add-On.
+        0.8  Right playbook + cause #1, but the proposed fix is vague
+             or names the wrong pool (e.g., Test Heals).
+        0.6  Right playbook but the agent stopped at "HA was not
+             licensed" without discriminating cause #1 from #7 / #5 / #6.
+        0.4  Recognized HA was involved but matched a different playbook
+             (e.g., selector-failure-healing-fix.md) and missed the
+             licensing block entirely.
+        0.2  Recognized the surface NodeNotFoundException only;
+             missed that HA was invoked but refused.
+        0.0  Misdiagnosed or got blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the diagnostic flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent asks whether the tenant is on Flex or Unified, say you don't know — that information is in Automation Cloud Admin and you don't have access."
+    - "If the agent asks which job in folder Shared you mean, say it's the most recent one — you don't have the key."
+  max_turns: 6
