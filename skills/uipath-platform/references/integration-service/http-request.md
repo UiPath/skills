@@ -32,9 +32,9 @@ uip is connections base-url "<connection-id>" --output json
 - `url` is the **fully qualified URL**.
 - No connection is bound - you supply everything needed to make the call: URL, headers (including auth if needed), query params, and body.
 
-## Filling In Values with `http-request` command
+## Authoring Helper: `http-request` command
 
-Authoring a Managed HTTP Request payload requires concrete vendor values - IDs, field names, response shape. Use `http-request` command to call any vendor API directly through the connection - same auth, same base URL the Managed HTTP Request will use at runtime.
+Authoring a Managed HTTP Request payload requires concrete vendor values - IDs, field names, endpoint paths. Use `http-request` command to call any vendor API directly through the connection - same auth, same base URL the Managed HTTP Request will use at runtime.
 
 ### When the Agent Needs `http-request` command
 
@@ -42,7 +42,6 @@ Use `http-request` command to resolve any of the following before authoring the 
 
 - **Identifier lookups.** Resolve a human-friendly name to the vendor's internal ID. Examples: project key from a project name, channel ID from a channel name, user ID from email/name, custom-field IDs.
 - **Required and optional fields** the vendor expects in the request body
-- **Response shape** so downstream steps can reference `output.<field>` correctly
 - **Endpoint paths, query params, pagination tokens** before committing to a payload
 - **Vendor error responses** for unsupported parameters or permissions
 
