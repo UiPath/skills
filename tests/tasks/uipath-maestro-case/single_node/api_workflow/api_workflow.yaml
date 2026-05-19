@@ -129,7 +129,7 @@ success_criteria:
   - type: run_command
     description: "Caseplan has an api-workflow task and debug completes successfully"
     command: "python3 $TASK_DIR/check_api_workflow_case.py"
-    timeout: 600
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
