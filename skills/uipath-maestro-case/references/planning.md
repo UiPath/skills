@@ -56,7 +56,7 @@ If not logged in, prompt the user to log in. The registry pull caches all resour
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
 
-If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 resumes here only after Round 4 approval.
+If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 resumes here only after the Approve hard-stop in Phase 0.
 
 `sdd.md` is the **sole input**. It describes stages, tasks, edges, conditions, SLA, component types, persona information, and provides the search keywords for registry lookups. The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
 
