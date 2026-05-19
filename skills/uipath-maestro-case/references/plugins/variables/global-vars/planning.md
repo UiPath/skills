@@ -6,7 +6,7 @@ Case-level data lives in the variables block (v19: `root.data.uipath.variables`;
 |---|---|---|
 | **Variable** | `inputOutputs[]` (declaration) + `triggerNode.outputs[]` (when populated by trigger payload) | Case-internal state, including trigger-payload-sourced state |
 | **In** | `inputs[]` + companion `inputOutputs[]` + `triggerNode.outputs[]` bridge | Formal argument supplied by external caller. Manual / timer triggers only. |
-| **Out** | `outputs[]` + companion `inputOutputs[]` (only when `Default` present) | Formal argument returned to caller at case end |
+| **Out** | `outputs[]` + companion `inputOutputs[]` (ALWAYS — see [`impl-json.md` § Out argument](impl-json.md)) | Formal argument returned to caller at case end |
 
 > **Canonical definition:** [`impl-json.md` § Pattern shapes by category](impl-json.md) is the source of truth for emission shapes (which arrays get written, exact JSON shape, runtime resolution semantics). This table is the Phase 1 routing summary.
 
@@ -42,7 +42,7 @@ Validate at planning time (before tasks.md is finalized). All checks operate on 
 | `Category=Out` row has `sourceTriggers` filled | ERROR | Reject — Out-args flow case→caller, not trigger→case. AskUserQuestion: recategorize or clear sourceTriggers. |
 | `Category=In` or `Out` row has missing `Type` | ERROR | Reject — type is required for formal arguments. |
 | Two rows share the same `Name` (regardless of which other columns differ) | ERROR | Reject — name collision. Variable names MUST be globally unique. AskUserQuestion to resolve (rename one, or merge into one row). |
-| `Category=Variable` row has `sourceTriggers` but no matching `sourceFields` entry per trigger | ERROR | Reject — multi-trigger requires per-trigger sourceField (Q9 strict). |
+| `Category=Variable` row has `sourceTriggers` but no matching `sourceFields` entry per trigger | ERROR | Reject — multi-trigger requires per-trigger sourceField. |
 | `sourceTriggers` references a T-number that doesn't exist in tasks.md | ERROR | Reject — orphan reference. |
 
 Phase 3 (implementation) catches spec-dependent issues — see [`impl-json.md`](impl-json.md) § Phase 3 Validation.
@@ -85,7 +85,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 - category: Out
 - type: string
 - producedBy: T15.outputs.finalDecision   # informational reference to the producing task T-entry
-- verify: outputs[] formal entry (var=finalDecision); companion in inputOutputs[] only if Default present; io-binding validator confirms producer task output has id=finalDecision.
+- verify: outputs[] formal entry (var=finalDecision); companion in inputOutputs[] ALWAYS emitted (with default="" when Default empty); io-binding validator confirms producer task output has id=finalDecision.
 ```
 
 **Field semantics on the T-entry:**

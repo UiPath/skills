@@ -191,6 +191,8 @@ DO NOT include in Configuration:
 ### Case Variables
 
 > Complete inventory of all case-level variables and arguments. Every row's `Category` column is REQUIRED — drives classification at build time. Inference from other columns is no longer supported.
+>
+> For worked patterns by use case (single-trigger, multi-trigger, In / Out / Variable, Pattern C, etc.), see [`sdd-template-examples.md`](sdd-template-examples.md).
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|

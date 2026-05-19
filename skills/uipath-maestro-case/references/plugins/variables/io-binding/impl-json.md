@@ -90,9 +90,9 @@ Also scan `=vars.X` references in:
 
 Same resolution rule applies — these are read-side consumers of the variable namespace.
 
-### Check 2 — Out-arg producer presence (Q10 Option II)
+### Check 2 — Out-arg producer presence
 
-For every entry in `root.data.uipath.variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the revised Q10b (always emit companion), the companion in `root.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
+For every entry in `root.data.uipath.variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the always-emit-companion rule, the companion in `root.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
 
 **The check:** can the Out-arg's slot be populated at runtime? Three populating mechanisms exist:
 
@@ -168,7 +168,7 @@ Option (d) is the build-with-best escape for cases where the author intends to w
 ```markdown
 ## Open Items for User
 
-- **[Q10 II — Out-arg `<name>` has no value source]** — The Out-argument `<name>` (id `<random>`, var `<var>`) is declared in `variables.outputs[]` but {no producer wired AND no Default}. Runtime will return empty string for this Out-argument unless one of:
+- **[Out-arg `<name>` has no value source]** — The Out-argument `<name>` is declared in `variables.outputs[]` but {no producer wired AND no Default}. Runtime will return empty string for this Out-argument unless one of:
   - Add a `<field> -> <name>` row to a task's Outputs that produces this value (extraction)
   - Add a `<name> = <expression>` row to a task's Outputs (assignment from literal / computed / variable reference)
   - Add a Default value to the SDD Case Variables row
@@ -207,7 +207,7 @@ Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000
   "elementId": "Stage_submit-tEnrich02" }
 ```
 
-Two things must exist: output on Task A with a `var` field, and bound input on Task B referencing `=vars.<var>`. Root `inputOutputs` companion entries for task outputs are optional — see [global-vars/impl-json.md § Task Output → inputOutputs Wiring](../global-vars/impl-json.md#task-output--inputoutputs-wiring).
+Two things must exist: output on Task A with a `var` field, and bound input on Task B referencing `=vars.<var>`. Root `inputOutputs` companion entries for case Variables produced via `->` are also written for picker visibility — see [global-vars/impl-json.md § Task Output → variable resolution](../global-vars/impl-json.md#task-output--variable-resolution).
 
 ## Error Handling
 
@@ -219,7 +219,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
 | `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |
-| Out-arg formal entry's `var` doesn't match any task `outputs[].id` AND companion has no `default` | `ERROR` | Log Out-arg producer issue (Check 2 above); AskUserQuestion |
+| Out-arg formal entry has NO producer (no extraction, assignment, or bare-name match in any task outputs) AND companion has no `default` | `ERROR` | Log Out-arg pure-orphan issue (Check 2 above); AskUserQuestion |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):
