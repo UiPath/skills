@@ -18,7 +18,7 @@ Confirm:
 - `outputDefinition.output.type` — `"file"`; `outputDefinition.output.source` — `"=response"` (the BPMN engine wraps the result under that key — same convention as every other ServiceTask)
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
-If the command errors with **"Node type not found: uipath.pattern.batch-transform"**, the CLI build predates Batch Transform support or the tenant's `canvas.nodes.batch-transform` server flag is off. Run `uip cli update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that the `canvas.nodes.batch-transform` flag is enabled on the tenant.
+If the command errors with **"Node type not found: uipath.pattern.batch-transform"**, the CLI build predates Batch Transform support or the tenant's `canvas.nodes.batch-transform` server flag is off. Run `uip tools update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that the `canvas.nodes.batch-transform` flag is enabled on the tenant.
 
 ## Adding / Editing
 
@@ -156,7 +156,7 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `Node type not found: uipath.pattern.batch-transform` | CLI predates Batch Transform support, or tenant flag `canvas.nodes.batch-transform` is off | `uip cli update`, `uip maestro flow registry pull --force`; check with admin that `canvas.nodes.batch-transform` is enabled if still missing |
+| `Node type not found: uipath.pattern.batch-transform` | CLI predates Batch Transform support, or tenant flag `canvas.nodes.batch-transform` is off | `uip tools update`, `uip maestro flow registry pull --force`; check with admin that `canvas.nodes.batch-transform` is enabled if still missing |
 | Validate rejects `outputColumns` | Wrong shape — e.g., passed a map `{ name: description }` or string array | Rewrite to `[{ "name": "...", "description": "..." }, ...]` |
 | Runtime error `exceeded maxColumns` | More than 10 output columns | Reduce to ≤10 or split into two Batch Transform nodes chained on the output file |
 | All rows produce blank values for a column | `description` is too vague or references fields not in the source CSV | Tighten the `description` — name the source column(s) the LLM should read from; test with a small sample first |

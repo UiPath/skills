@@ -21,7 +21,7 @@ Confirm:
   - `content.Citations` — array|null of `{ Ordinal: integer, PageNumber: integer, Source: string, Reference: string }`
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
-If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, the CLI build predates Summarize support or the tenant's `canvas.nodes.summarize` server flag is off. Run `uip cli update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that `canvas.nodes.summarize` is enabled on the tenant.
+If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, the CLI build predates Summarize support or the tenant's `canvas.nodes.summarize` server flag is off. Run `uip tools update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that `canvas.nodes.summarize` is enabled on the tenant.
 
 ## Adding / Editing
 
@@ -179,7 +179,7 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | `uip cli update`, `uip maestro flow registry pull --force`; check with admin that `canvas.nodes.summarize` is enabled if still missing |
+| `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | `uip tools update`, `uip maestro flow registry pull --force`; check with admin that `canvas.nodes.summarize` is enabled if still missing |
 | Runtime: synthesis returns empty `content.Text` | Prompt too vague, or attachment unreadable (image-only PDF with no OCR, corrupted file) | Tighten the prompt; confirm the attachment type is supported and has selectable text |
 | `content.Citations` missing even though set `returnCitations: true` | Downstream consumer read the node's `inputDefaults` before the runtime produced the output | Reference `$vars.{nodeId}.output.content.Citations` only in nodes downstream of Summarize; do not precompute |
 | Downstream `result.content.text` / `result.content.citations` is `undefined` | Used lowercase field names — the response shape is PascalCase | Switch to `result.content.Text` / `result.content.Citations` |
