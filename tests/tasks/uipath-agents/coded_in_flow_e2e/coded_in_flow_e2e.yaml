@@ -23,21 +23,16 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Use the `uipath-agents` skill to build the following end-to-end in a
-  single continuous pass — do not stop after any individual step:
-
-    1. Create solution "GreeterSol" with a Flow project "GreeterFlow" inside it.
-    2. Scaffold a sibling LangGraph coded agent "InputProcessor" (Python, gateway
-       model `gpt-4o-mini-2024-07-18`, `temperature=0`). Keep LLM construction
-       inside a node body — no module-level instantiation.
-    3. Register "InputProcessor" in the solution with `uip solution project add`.
-    4. Discover it with `uip maestro flow registry list --local --output json`.
-    5. Wire "InputProcessor" as an agent node in GreeterFlow: `userInput` in,
-       `summary` out.
-    6. Validate the flow with `uip maestro flow validate`.
+  Build a UiPath solution "GreeterSol" containing a Flow project
+  "GreeterFlow" and a sibling LangGraph coded agent "InputProcessor"
+  (Python, gateway model `gpt-4o-mini-2024-07-18`, `temperature=0`).
+  The agent takes `userInput` and returns `summary`. Wire the agent
+  into the Flow, register it in the solution, and validate the
+  result. Keep LLM construction inside node bodies.
 
   Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
-  ask for approval, confirmation, or feedback. Complete all 6 steps.
+  ask for approval, confirmation, or feedback. Complete in a single
+  pass.
 
 success_criteria:
   - type: command_executed

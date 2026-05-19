@@ -24,28 +24,14 @@ sandbox:
 
 initial_prompt: |
   Build a LangGraph UiPath coded agent named `intent-classifier` that
-  classifies a free-text user request into one of: `weather`,
-  `news`, `joke`.
+  classifies a free-text user request into one of: `weather`, `news`,
+  `joke`. Input: `text` (str). Output: `category` (str), `text` (str).
+  Use `gpt-4o-mini-2024-07-18` with `temperature=0`.
 
-  Input: `text` (str). Output: `category` (str), `text` (str).
-
-  For deterministic test runs, pin the LLM to a low-cost gateway
-  model (e.g. `gpt-4o-mini-2024-07-18`) with `temperature=0`.
-
-  Take the agent through scaffold → init → run, then add an
-  evaluation harness with **two LLM judges in one eval set**:
-
-  - The semantic-output LLM judge (id `LLMJudgeOutputEvaluator`).
-    Each test case's criteria block carries an `expectedOutput`.
-  - The trajectory LLM judge (id `LLMJudgeTrajectoryEvaluator`).
-    Each test case's criteria block carries an
-    `expectedAgentBehavior` string — e.g. "Agent classifies the
-    input into exactly one of weather/news/joke and returns that
-    label."
-
-  Three test cases. Run the eval set locally (no Studio Web
-  reporting) and cache LLM responses for reproducibility. Save the
-  results to `eval-results.json` in the project root.
+  Add an evaluation harness with two LLM judges in one eval set: one
+  that scores the agent's output and one that scores its decision
+  trajectory. Use three test cases. Run locally with reproducible LLM
+  responses and save the results to `eval-results.json`.
 
   Do NOT publish, upload, or deploy. Do NOT pause between planning
   and implementation. Complete end-to-end in a single pass.
