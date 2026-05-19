@@ -1,6 +1,11 @@
 # Business Rule Recipe
 
-Use `bpmn:businessRuleTask` with `Orchestrator.BusinessRules`.
+Use this pass-2 recipe for confirmed business rule execution. In pass 1, model
+the decision point and routing in the BPMN skeleton; apply this recipe after
+the skeleton is chosen and the rule node should receive UiPath metadata.
+
+The current supported implementation wrapper is `bpmn:businessRuleTask` with
+`Orchestrator.BusinessRules`.
 
 The model may draft:
 

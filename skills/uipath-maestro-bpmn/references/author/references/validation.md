@@ -7,6 +7,8 @@ Run validation after the local BPMN edit is coherent. Do not chase every interme
 Validate these before Operate:
 
 - The pass 1 skeleton has been confirmed or the edit is small and explicitly summarized.
+- A pass 1 skeleton uses business-readable conditions rather than runtime
+  `=vars.<variableId>` expressions for variables that do not exist until pass 2.
 - BPMN XML parses with the UiPath extension descriptor.
 - At least one valid diagram and plane exists.
 - Diagram plane references an existing root process, collaboration, or subprocess.

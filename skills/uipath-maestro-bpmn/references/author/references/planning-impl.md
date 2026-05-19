@@ -79,7 +79,7 @@ For every shell:
 
 ## Integration Service handoff
 
-For connector-backed or dynamically schematized `Intsvc.*` activities and triggers, pass 2 should stop at the enrichment boundary unless registry-backed CLI output is available. Plain connectionless HTTP is the documented exception and must follow [task-recipes/http-request.md](task-recipes/http-request.md).
+For connector-backed or dynamically schematized `Intsvc.*` activities and triggers, pass 2 should stop at the enrichment boundary unless registry-backed CLI output is available. Confirmed plain connectionless HTTP is the documented pass-2 exception and must follow [task-recipes/http-request.md](task-recipes/http-request.md).
 
 The CLI must own:
 

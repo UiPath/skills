@@ -1,6 +1,11 @@
 # Call Activity Recipe
 
-Use `bpmn:callActivity` for process calls exposed through Orchestrator process-orchestration resource types.
+Use this pass-2 recipe for confirmed process calls exposed through Orchestrator
+process-orchestration resource types. In pass 1, decide whether the work is an
+inline subprocess or a reusable process call; apply this recipe after the
+skeleton is chosen and the call node should receive UiPath metadata.
+
+The current supported implementation wrapper is `bpmn:callActivity`.
 
 Supported shells:
 

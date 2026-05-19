@@ -3,8 +3,8 @@
 This document defines the implementation boundary for Integration Service BPMN elements.
 
 This boundary covers connector-backed and dynamically schematized Integration
-Service work. For plain connectionless HTTP where the workflow owns the URL,
-method, payload, and parsing, use
+Service work. For confirmed pass-2 plain connectionless HTTP where the workflow
+owns the URL, method, payload, and parsing, use
 [task-recipes/http-request.md](../../task-recipes/http-request.md).
 
 ## Model-owned implementation

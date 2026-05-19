@@ -1,6 +1,10 @@
 # Agent Job Recipe
 
-Use `bpmn:serviceTask` for agent execution.
+Use this pass-2 recipe for confirmed agent execution work. In pass 1, model
+the agent step as process intent in the BPMN skeleton; apply this recipe after
+the skeleton is chosen and the agent node should receive UiPath metadata.
+
+The current supported implementation wrapper is `bpmn:serviceTask`.
 
 Supported shells:
 

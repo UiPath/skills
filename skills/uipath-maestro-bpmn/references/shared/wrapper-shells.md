@@ -434,10 +434,10 @@ For other `Intsvc.*` shells (`HttpExecution`, `UnifiedHttpRequest`,
 `SyncWorkflowExecution`, `AsyncWorkflowExecution`, `EventTrigger`,
 `TimerTrigger`), keep the same draft shape: model writes the BPMN wrapper plus
 a `uipath:type` payload with placeholder strings only, then hands enrichment to
-the CLI. Plain connectionless HTTP is the documented exception. Use the HTTP
-request recipe instead of a connector draft shell when the workflow owns URL,
-method, payload, and parsing, and no tenant connector connection or dynamic
-connector schema is required.
+the CLI. Confirmed plain connectionless HTTP is the documented pass-2
+exception. Use the HTTP request recipe instead of a connector draft shell only
+after the BPMN skeleton is chosen and the workflow owns URL, method, payload,
+and parsing, with no tenant connector connection or dynamic connector schema.
 
 ## Preserve markers and migration metadata
 

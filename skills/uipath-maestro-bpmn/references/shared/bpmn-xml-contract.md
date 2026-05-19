@@ -48,7 +48,7 @@ Conservative defaults:
 
 For non-trivial authoring, split generation into two passes:
 
-- **Pass 1: BPMN skeleton** - author standard BPMN process structure, event definitions, gateway conditions, subprocess scopes, sequence/message flows, annotations, and BPMN DI. Use placeholder labels or annotations for resource intent. Preserve existing extension XML in brownfield files.
+- **Pass 1: BPMN skeleton** - author standard BPMN process structure, event definitions, gateway conditions, subprocess scopes, sequence/message flows, annotations, and BPMN DI. Use placeholder labels or annotations for resource intent. Keep gateway conditions business-readable; do not use Maestro runtime expressions such as `=vars.<variableId>` until pass 2 declares those variables. Preserve existing extension XML in brownfield files.
 - **Operator confirmation** - confirm the process shape before filling execution-specific XML.
 - **Pass 2: model-owned UiPath XML** - add root variables, entry point IDs, mappings, documented bindings, script metadata, retry/error metadata, loop metadata, and documented service shells from [wrapper-shells.md](wrapper-shells.md).
 - **CLI enrichment** - generate or enrich Integration Service activity/trigger payloads, connector bindings, dynamic schemas, and generated package files.
@@ -60,11 +60,14 @@ Do not combine connector selection, connection binding, dynamic schema generatio
 The current confirmed generation boundary is preserve/model-shell only for areas whose runtime contract depends on tenant state, registry metadata, or non-BPMN subscriptions. Do not add generation guidance that creates executable payloads for those areas until the contract is fixture-backed and CLI-validated.
 
 - Signals: standard BPMN signal definitions and signal event references are model-owned XML. Runtime-executable cross-process signal subscriptions, correlation, payload schema contracts, and tenant/resource/channel bindings are outside the model-owned contract unless a dedicated CLI or operator-owned contract supplies them.
-- Plain connectionless HTTP: model authors may use the documented [HTTP request recipe](../author/references/task-recipes/http-request.md) when the workflow owns the URL, method, payload, and parsing, and no connector connection or dynamic connector schema is needed.
+- Plain connectionless HTTP: after skeleton confirmation, model authors may use
+  the documented [HTTP request recipe](../author/references/task-recipes/http-request.md)
+  when the workflow owns the URL, method, payload, and parsing, and no
+  connector connection or dynamic connector schema is needed.
 - Integration Service: model authors may create the surrounding BPMN node and
   document connector intent. They may also create a non-executable draft
   `Intsvc.*` shell with `uipath:type value="Intsvc.<Variant>"` and placeholder
-  strings. Except for the documented plain connectionless HTTP recipe,
+  strings. Except for the documented pass-2 plain connectionless HTTP recipe,
   executable `Intsvc.*` activity/event XML, connection bindings, connector
   metadata, trigger property bindings, filters, parameters, and dynamic schemas
   require live registry-backed CLI enrichment for the target tenant before

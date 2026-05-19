@@ -1,6 +1,11 @@
 # RPA Job Recipe
 
-Use `bpmn:serviceTask` with `Orchestrator.StartJob` for RPA process execution.
+Use this pass-2 recipe for confirmed RPA process execution. In pass 1, model
+the automation step as process intent in the BPMN skeleton; apply this recipe
+after the skeleton is chosen and the RPA node should receive UiPath metadata.
+
+The current supported implementation wrapper is `bpmn:serviceTask` with
+`Orchestrator.StartJob`.
 
 The model may draft:
 

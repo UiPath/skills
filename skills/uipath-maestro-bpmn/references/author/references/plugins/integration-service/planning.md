@@ -13,8 +13,10 @@ Use this plugin reference when a BPMN process needs:
 - Dynamic input/output schemas from connector metadata.
 
 For plain connectionless HTTP calls where the workflow owns the URL, method,
-payload, and parsing, read [task-recipes/http-request.md](../../task-recipes/http-request.md)
-before deciding whether the node is executable or only draft intent.
+payload, and parsing, record the intent during pass 1 and read
+[task-recipes/http-request.md](../../task-recipes/http-request.md) after the
+skeleton is chosen, before deciding whether the node is executable or only
+draft intent.
 
 ## Planning steps
 

@@ -36,6 +36,9 @@ Before drafting the skeleton, identify:
 - Keep labels public-safe and user-readable.
 - Create BPMN DI while creating elements; do not leave layout as a later afterthought.
 - Put conditions on outgoing sequence flows from exclusive or inclusive gateway splits.
+- Keep pass 1 conditions in business-readable terms. Do not use
+  Maestro runtime expressions such as `=vars.<variableId>` until pass 2 has
+  declared the variables and mappings those expressions reference.
 - Set a `default` sequence flow when the business process has a fallthrough route.
 - Model errors with boundary events or event subprocesses instead of unlabeled failure branches when the runtime should handle failures structurally.
 - Keep sequence flows inside their owning process or subprocess scope.

@@ -1,6 +1,10 @@
 # Queue Recipe
 
-Use the BPMN wrapper that matches the queue behavior.
+Use this pass-2 recipe for confirmed queue work. In pass 1, model the queue
+handoff or wait behavior in the BPMN skeleton; apply this recipe after the
+skeleton is chosen and the queue node should receive UiPath metadata.
+
+Use the BPMN wrapper that matches the confirmed queue behavior.
 
 | Operation | BPMN element | Extension type |
 | --- | --- | --- |

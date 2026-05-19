@@ -1,6 +1,11 @@
 # HITL Recipe
 
-Use `bpmn:userTask` with `Actions.HITL` for Action Center human work.
+Use this pass-2 recipe for confirmed Action Center human work. In pass 1, model
+the human decision or data-entry step in the BPMN skeleton; apply this recipe
+after the skeleton is chosen and the human task should receive UiPath metadata.
+
+The current supported implementation wrapper is `bpmn:userTask` with
+`Actions.HITL`.
 
 The model may draft:
 
