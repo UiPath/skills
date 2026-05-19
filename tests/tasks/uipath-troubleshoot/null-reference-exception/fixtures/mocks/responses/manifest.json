@@ -39,7 +39,7 @@
     {
       "pattern": "or jobs logs 77dc53dd-5c45-4a77-b39f-a52e9e7ef163",
       "min": 0,
-      "description": "OPTIONAL \u2014 Agent may pull error-level logs to corroborate the stack frame, but the job-get payload already contains the full Info string. min:0 means tracked-but-not-required."
+      "description": "OPTIONAL — Agent may pull error-level logs to corroborate the stack frame, but the job-get payload already contains the full Info string. min:0 means tracked-but-not-required."
     }
   ]
 }

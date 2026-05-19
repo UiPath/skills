@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for foreground-already-running scenario. Folder/job/release keys are stable and human-readable; the agent should derive them by chaining: folders list-current-user \u2192 jobs list --state Faulted \u2192 jobs get \u2192 jobs logs. The overlapping prior job (b0a1b2c3-...) is the key evidence \u2014 surfaced via the broader jobs list call without the state filter.",
+  "_doc": "Synthetic fixture set for foreground-already-running scenario. Folder/job/release keys are stable and human-readable; the agent should derive them by chaining: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs. The overlapping prior job (b0a1b2c3-...) is the key evidence — surfaced via the broader jobs list call without the state filter.",
   "rules": [
     {
       "match": "or folders list --output json",

@@ -76,7 +76,7 @@
       "match": "docsai ask",
       "file": "presenter-docsai-orch-job-failure.json",
       "exit_code": 0,
-      "_doc": "Catch-all: every `docsai ask` (regardless of topic) returns the same Orchestrator-focused retry guidance, mirroring the single docsai call observed in the original session. If the agent asks docsai about Integration Service it receives non-blocking but off-topic content \u2014 relying on docsai for IS guidance is not part of the success path."
+      "_doc": "Catch-all: every `docsai ask` (regardless of topic) returns the same Orchestrator-focused retry guidance, mirroring the single docsai call observed in the original session. If the agent asks docsai about Integration Service it receives non-blocking but off-topic content — relying on docsai for IS guidance is not part of the success path."
     }
   ],
   "expected_calls": [
@@ -98,7 +98,7 @@
     {
       "pattern": "is connections ping e62228b7-ffc2-49dc-a779-29207b0d2b6f",
       "min": 0,
-      "description": "OPTIONAL \u2014 Agent may ping the failing connection ID to confirm the runtime error verbatim, but a more efficient path confirms cross-workspace ownership directly from the project's connection resource file + Main.xaml. Both paths are valid; the source-file path is optimal. min:0 means tracked-but-not-required."
+      "description": "OPTIONAL — Agent may ping the failing connection ID to confirm the runtime error verbatim, but a more efficient path confirms cross-workspace ownership directly from the project's connection resource file + Main.xaml. Both paths are valid; the source-file path is optimal. min:0 means tracked-but-not-required."
     }
   ]
 }

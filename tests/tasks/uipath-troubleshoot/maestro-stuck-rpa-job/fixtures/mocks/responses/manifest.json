@@ -62,7 +62,7 @@
     {
       "match": "or jobs healing-data 0fbda085-5c96-4dab-a4b3-012c1914845a",
       "file": "jobs-healing-data-0fbda085.json",
-      "_doc": "Mocked empty \u2014 the original session did not capture HA recovery ZIP for this job."
+      "_doc": "Mocked empty — the original session did not capture HA recovery ZIP for this job."
     },
     {
       "match": "docsai ask",
