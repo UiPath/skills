@@ -1,11 +1,11 @@
-task_id: skill-platform-solution-new-init
+task_id: skill-solution-new-init
 description: >
-  Smoke test: agent uses the uipath-platform skill to scaffold a new UiPath
+  Smoke test: agent uses the uipath-solution skill to scaffold a new UiPath
   solution via `uip solution init` (post-rename of the old `solution new`).
   Verifies the agent runs the scaffold command AND the resulting `.uipx`
   manifest is present on disk (`file_exists` on the expected path). Runs
   entirely in the sandbox tempdir — no tenant interaction.
-tags: [uipath-platform, smoke, mode:build, lifecycle:generate]
+tags: [uipath-solution, smoke, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

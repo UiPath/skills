@@ -107,12 +107,16 @@ def main() -> int:
             ],
             cwd=repo_root, check=False,
         )
+        # coder-eval exits non-zero whenever any individual task fails its
+        # criteria. That's exactly the case DROP_PP is designed to absorb —
+        # the threshold check below is the single source of truth. Only
+        # treat the run as broken if suite.json never materialised.
         if result.returncode != 0:
             print(
-                f"ERROR: coder-eval exited with code {result.returncode}",
+                f"::notice::coder-eval exited with code {result.returncode} "
+                f"(per-task failures expected; deferring to threshold check)",
                 file=sys.stderr,
             )
-            return 2
 
         suite_json = run_dir / "default" / f"skill-activation-gate-{skill}" / "suite.json"
         if not suite_json.is_file():
