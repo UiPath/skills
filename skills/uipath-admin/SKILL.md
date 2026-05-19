@@ -97,7 +97,7 @@ uip admin users list \
 ### Step 3 — Assign to a group
 
 ```bash
-uip admin groups list --output json
+uip admin groups list --output json --output-filter "Data[?contains(displayName, '<GROUP_NAME_OR_SUBSTRING>')]"
 uip admin groups members add <GROUP_ID> \
   --user-ids "<USER_ID>" \
   --output json
