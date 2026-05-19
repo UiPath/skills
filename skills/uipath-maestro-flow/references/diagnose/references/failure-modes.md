@@ -14,6 +14,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
+| [MST-10004](#mst-10004--unregistered-project--flow-debug-import-400) | `flow debug` exits with `Flow project is not registered in the enclosing solution.` — or with opaque `Import failed (400): The solution archive does not contain any valid projects.` on older CLIs | `.uipx` `Projects[]` manifest does not list the project — `flow init` returned `NotInSolution` / `Skipped` / `Failed` / absent and was not handled |
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
@@ -181,7 +182,7 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ### Symptom
 
-`uip solution upload` rejects the project. `flow init` returned without a `Data.SolutionRegistration` block (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none and skips silently). Studio Web upload fails with structural errors. Packaging fails.
+`uip solution upload` rejects the project. `flow init` returned `Data.SolutionRegistration.Status: "NotInSolution"` — or, on pre-MST-10004 CLI versions, returned without a `Data.SolutionRegistration` block at all (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none). Studio Web upload fails with structural errors. Packaging fails. `uip maestro flow debug` fails locally with a `ValidationError` (`Flow debug requires this Flow to be inside a solution.`) or — on older CLI versions — with Studio Web's opaque `Import failed (400): The solution archive does not contain any valid projects.`.
 
 The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested).
 
@@ -197,8 +198,12 @@ Delete the partial scaffold. Restart in the correct order — `flow init` from i
 uip solution init "<SolutionName>" --output json
 cd <SolutionName>
 uip maestro flow init <ProjectName> --output json
-# Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
-# Only if Status is "Skipped" / "Failed" do you need:
+# Confirm Data.SolutionRegistration.Status is "Registered" or "AlreadyRegistered".
+# - "NotInSolution"  → the `cd` above did not take effect; restart from `solution init`.
+# - "Skipped" / "Failed" → run `uip solution project add` (see below).
+# - Field absent (pre-MST-10004 CLI) → inspect <SolutionName>.uipx Projects[]
+#   manually; if your project isn't listed but the double-nested layout exists,
+#   run `uip solution project add`. If no `.uipx` exists, restart.
 #   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 
@@ -215,6 +220,68 @@ If the absolute path doesn't exist, the `init` step was wrong — do not try to 
 ### Reference
 
 [Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
+
+---
+
+## MST-10004 — Unregistered project / `flow debug` import 400
+
+### Symptom
+
+`uip maestro flow validate` passes. `uip maestro flow debug` fails with one of two error shapes depending on CLI version:
+
+**Post-MST-10004 (local validation error, exit 3):**
+
+```json
+{
+  "Result": "ValidationError",
+  "Message": "Flow project is not registered in the enclosing solution.",
+  "Instructions": "The .uipx manifest at .../<SolutionName>.uipx does not list .../<ProjectName> in its Projects[] array. ..."
+}
+```
+
+**Pre-MST-10004 (opaque Studio Web 400 surfaced from the network call):**
+
+```json
+{
+  "Result": "Failure",
+  "Message": "Import failed (400): {\"code\":\"20001\",\"message\":\"The solution archive does not contain any valid projects.\",\"translatedMessage\":null}"
+}
+```
+
+The double-nested file layout (`<Solution>/<Project>/<Project>.flow`) looks correct on disk and `flow validate` passes, but the `.uipx` manifest's `Projects[]` array does not list the project being debugged.
+
+### Cause
+
+`uip maestro flow init` reported a non-`Registered` solution registration outcome — or, on pre-MST-10004 CLIs, omitted the `Data.SolutionRegistration` field entirely — and the scaffold step proceeded anyway. Common triggers:
+
+- `flow init` was run from the parent of the solution, not from inside `<SolutionName>/`. Auto-registration walks ancestors and finds no `.uipx`; on post-MST-10004 CLI you see `Status: "NotInSolution"`, on older CLI you see the absent field.
+- Older CLI builds can omit the field even when the double-nested layout exists; in that case the `.uipx` manifest is the source of truth.
+- The solution directory contained multiple `.uipx` files; auto-registration returns `Status: "Skipped"` and waits for the user to disambiguate.
+- A read/write error during registration (`Status: "Failed"`).
+
+### Fix
+
+Run `flow init`'s status branch explicitly per [author/greenfield.md — Step 2c](../../author/references/greenfield.md#2c-verify-the-project-is-registered-in-the-solution). Treatment by status:
+
+| Status | Action |
+| --- | --- |
+| `Registered` / `AlreadyRegistered` | Project is in the manifest — debug should succeed. If you still see import 400, your CLI is behind the new preflight; upgrade. |
+| `NotInSolution` | Delete the partial scaffold and restart from `uip solution init` then `cd` into the solution dir before `flow init`. |
+| `Skipped` / `Failed` | Run `uip solution project add "<ProjectDir>" "<SolutionName>.uipx"` to wire the project manually, then re-run `flow debug`. |
+| Field absent on pre-MST-10004 CLI | Inspect `.uipx` `Projects[]`. If the project is already listed, proceed. If the layout is double-nested but `Projects[]` is empty or missing the project, run `uip solution project add "<ProjectDir>" "<SolutionName>.uipx"`. If no `.uipx` exists or the project is single-nested, restart from `uip solution init`. |
+
+To verify what's actually in `Projects[]` before debug:
+
+```bash
+cat "<SolutionName>/<SolutionName>.uipx" | jq '.Projects'
+```
+
+The project's `<ProjectName>/project.uiproj` must be listed under `ProjectRelativePath`.
+
+### Reference
+
+- [Author greenfield journey — Step 2c](../../author/references/greenfield.md#2c-verify-the-project-is-registered-in-the-solution) — the post-MST-10004 status table.
+- [Single-nested layout](#single-nested-layout) — the cwd-mistake variant of this failure.
 
 ---
 
