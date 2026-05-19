@@ -1,0 +1,80 @@
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "or",
+    "Description": "Manage Orchestrator jobs, processes, packages, folders, machines, licenses, users, and permissions. Supports the full automation lifecycle: deploy packages, create processes, execute jobs, provision machines, manage licenses, manage access, and monitor results.",
+    "Usage": "uip or [options] [command]",
+    "Arguments": [],
+    "Options": [
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Subcommands": [
+      {
+        "Name": "attachments",
+        "Description": "Manage job attachments. Download files attached to jobs (screenshots, reports, data files). Attachments are tenant-scoped — no folder context needed."
+      },
+      {
+        "Name": "audit-logs",
+        "Description": "View audit logs for the tenant. Shows who did what and when — tracks changes to users, processes, assets, jobs, and other entities."
+      },
+      {
+        "Name": "calendars",
+        "Description": "Manage calendars (Non-Working Days). Calendars define excluded dates (holidays) used by time triggers to skip scheduled runs."
+      },
+      {
+        "Name": "credential-stores",
+        "Description": "Manage Orchestrator credential stores (tenant-scoped secure storage backends for credentials and assets)."
+      },
+      {
+        "Name": "feeds",
+        "Description": "Manage UiPath package feeds. Feeds are repositories that store automation packages (.nupkg). Use the feed ID with 'packages list --feed-id' to browse packages in a specific feed."
+      },
+      {
+        "Name": "folders",
+        "Description": "Manage UiPath Orchestrator folders. Folders organize and scope resources (processes, jobs, assets, queues) with role-based access. Most commands require --folder-path or --folder-key to target a specific folder."
+      },
+      {
+        "Name": "jobs",
+        "Description": "Manage UiPath Orchestrator jobs (process executions). Start jobs from processes, monitor execution, check logs and traces."
+      },
+      {
+        "Name": "licenses",
+        "Description": "Manage UiPath Orchestrator licenses. View license allocation and usage across robot types, list runtime and named-user license assignments, and toggle machine licensing on or off."
+      },
+      {
+        "Name": "machines",
+        "Description": "Manage UiPath Orchestrator machines (robot host definitions). Machines define the hosts where robots execute automations, along with their license slot allocations. Machines are tenant-scoped but can be assigned to specific folders."
+      },
+      {
+        "Name": "packages",
+        "Description": "Manage UiPath automation packages (.nupkg) in the Orchestrator feed. Packages are uploaded code artifacts. Use 'processes' to manage runnable process bindings in folders."
+      },
+      {
+        "Name": "roles",
+        "Description": "Manage Orchestrator roles and permissions (RBAC). Roles group permissions and are assigned to users at the tenant or folder level. Tenant roles apply globally; Folder roles scope access to specific folders. Use 'roles list' to find role keys, 'roles permissions list' for grantable permissions."
+      },
+      {
+        "Name": "sessions",
+        "Description": "View and manage Orchestrator sessions (active host connections). Sessions represent live connections between hosts and Orchestrator, including their current state, runtime type, and maintenance status. Use subcommands to list sessions, inspect machine runtimes, toggle debug mode, delete inactive sessions, or set maintenance mode."
+      },
+      {
+        "Name": "processes",
+        "Description": "Manage UiPath processes (runnable bindings of packages to folders). Processes are what you execute with 'jobs start'. Use 'packages' to manage the uploaded automation code."
+      },
+      {
+        "Name": "settings",
+        "Description": "Manage tenant settings. Settings are key-value pairs — use 'settings list' to discover keys. Categories and common keys: [General] Abp.Timing.TimeZone (timezone ID, e.g. 'UTC' — use 'settings timezones' to list valid IDs), Abp.Localization.DefaultLanguageName (language code, e.g. 'en', 'fr', 'de'). [Email] Alerts.Email.Enabled (true/false), Abp.Net.Mail.Smtp.Host (hostname), .Port (integer, e.g. 587), .UserName, .Password, .EnableSsl (true/false), .UseDefaultCredentials (true/false), Abp.Net.Mail.DefaultFromAddress (email address). [Robot Security] Auth.Robot.EnforceAuthenticationToken (true/false — force token auth for robots), Auth.UnattendedRobot.ForceClientCredentials (True/False), AttendedRobot.RunDisconnectedHours (integer, 0=disabled, hours a robot can run disconnected). [Deployment] DeploymentUrl (NuGet feed URL), NuGet.Packages.ApiKey (API key string), Deployment.Libraries.Url, NuGet.Activities.ApiKey, Deployment.Processes.AuthenticationType (Secure/apiKey). [Scalability] Scalability.SignalR.Enabled (true/false), Scalability.SignalR.Transport (bitmask: 1=WebSockets, 2=SSE, 4=LongPolling, 7=all), Scalability.Heartbeat.PeriodSeconds (integer, default 30, seconds between robot heartbeats), Scalability.Heartbeat.FailureThreshold (integer, default 4, missed heartbeats before marking not responding). [Triggers] Triggers.DisableWhenFailedCount (integer, default 10, consecutive failures to auto-disable), Triggers.DisableWhenFailingSinceDays (integer, default 1), Triggers.JobsCountStrategy (PERPROCESS/PERTRIGGER), QueueTrigger.ActivationFrequencyInMinutes (integer, default 30), ConnectedTriggers.AutoDisableJobFailuresThreshold (integer, default 5). [Queue] inProgressMaxNumberOfMinutes (integer, default 1440=24h, max time an item stays InProgress). [Jobs] Jobs.TerminatingJobsTimeout (integer, default 1440 minutes=24h, timeout for terminating jobs). Use 'settings execution' for structured execution settings with display names and allowed values."
+      },
+      {
+        "Name": "users",
+        "Description": "Manage Orchestrator users (tenant-scoped). List, import (from Identity Service), edit, and assign users. Manage folder roles per user. Manage tenant-level role assignments. Use 'users list' to find user keys (GUIDs)."
+      },
+      {
+        "Name": "help [command]",
+        "Description": "display help for command"
+      }
+    ],

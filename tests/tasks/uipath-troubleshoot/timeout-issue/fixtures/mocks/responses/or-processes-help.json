@@ -1,0 +1,60 @@
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "processes",
+    "Description": "Manage UiPath processes (runnable bindings of packages to folders). Processes are what you execute with 'jobs start'. Use 'packages' to manage the uploaded automation code.",
+    "Usage": "uip or processes [options] [command]",
+    "Arguments": [],
+    "Options": [
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Subcommands": [
+      {
+        "Name": "list [options]",
+        "Description": "List processes in a folder, or use --all-folders for a tenant-wide audit. Returns process key (GUID), name, version, and type. Use the process key with 'jobs start' to execute a process."
+      },
+      {
+        "Name": "get [options] <process-key>",
+        "Description": "Get detailed process information by key (GUID). Returns version, entry point, input/output argument schemas, process type, and configuration. No folder context needed — the key is globally unique. Use 'processes list' to find process keys."
+      },
+      {
+        "Name": "resources [options] <process-key>",
+        "Description": "List package resources required by a process. Resolves the process folder automatically and returns referenced queues, assets, buckets, connections, and other package requirements."
+      },
+      {
+        "Name": "version-history [options] <process-key>",
+        "Description": "List chronological package version history for a process. Folder is optional; if not provided, it is inferred from the process key. Returns versions previously associated with the process."
+      },
+      {
+        "Name": "create [options]",
+        "Description": "Create a new process by binding a package to a folder. Requires --folder-path or --folder-key. Use the package Id from 'packages list' or 'packages get', and 'packages versions' to find available versions. After creation, start the process with 'jobs start <process-key>'."
+      },
+      {
+        "Name": "update-version [options] <process-keys...>",
+        "Description": "Update one or more processes to the latest package version, or a specific version with --version. Folder is optional — if not provided, it is inferred from the process key. Running jobs are not affected — only new jobs will use the updated version. Accepts one or more process keys. Multiple keys use the bulk API. Use --version only with a single key."
+      },
+      {
+        "Name": "edit [options] <process-key>",
+        "Description": "Edit process settings by key (GUID). No folder needed — resolves cross-folder. Only provided fields are updated (PATCH). Use 'processes get' to see current values."
+      },
+      {
+        "Name": "delete [options] <process-key>",
+        "Description": "Delete a process binding by key (GUID). This removes the release binding from its folder and does not delete the package. Use 'processes list' to find process keys."
+      },
+      {
+        "Name": "rollback [options] <process-key>",
+        "Description": "Rollback a process to its previous package version. Folder is optional — if not provided, it is inferred from the process key. Useful when a new version causes issues and you need to quickly revert."
+      },
+      {
+        "Name": "help [command]",
+        "Description": "display help for command"
+      }
+    ],
+    "GlobalOptions": [
+      {
+        "Flags": "--output <table|json|yaml|plain>",
+        "Description": "Output format (default: json)"

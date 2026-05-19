@@ -1,0 +1,60 @@
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "packages",
+    "Description": "Manage UiPath automation packages (.nupkg) in the Orchestrator feed. Packages are uploaded code artifacts. Use 'processes' to manage runnable process bindings in folders.",
+    "Usage": "uip or packages [options] [command]",
+    "Arguments": [],
+    "Options": [
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Subcommands": [
+      {
+        "Name": "list [options]",
+        "Description": "List all automation packages in the feed. Returns package key (format: PackageId:Version), title, version, and metadata. Use --search to filter by name. No folder context needed — packages are tenant-scoped."
+      },
+      {
+        "Name": "get [options] <key>",
+        "Description": "Get a specific package version by key. The key format is 'PackageId:Version' (e.g., 'MyProcess:1.0.0'). Returns metadata, target framework, authors, and release notes."
+      },
+      {
+        "Name": "versions [options] <package-id>",
+        "Description": "List all available versions of a package. Use this to find specific versions before creating a process with 'processes create --package-version'."
+      },
+      {
+        "Name": "entry-points [options] <key>",
+        "Description": "List all workflow entry points in a package. Each entry point has a path, display name, and input/output argument schemas. Use the entry point path with 'processes create --entry-point' for multi-entry-point packages."
+      },
+      {
+        "Name": "upload [options] <file>",
+        "Description": "Upload a .nupkg automation package to the Orchestrator feed. After upload, use 'processes create' to bind the package to a folder for execution."
+      },
+      {
+        "Name": "download [options] <key>",
+        "Description": "Download a .nupkg automation package from the Orchestrator feed. The key format is 'PackageId:Version' (e.g., 'MyProcess:1.0.0'). Use 'packages list' or 'packages versions' to find the key."
+      },
+      {
+        "Name": "help [command]",
+        "Description": "display help for command"
+      }
+    ],
+    "GlobalOptions": [
+      {
+        "Flags": "--output <table|json|yaml|plain>",
+        "Description": "Output format (default: json)"
+      },
+      {
+        "Flags": "--output-filter <expression>",
+        "Description": "JMESPath expression to filter output"
+      },
+      {
+        "Flags": "--log-level <debug|info|warn|error>",
+        "Description": "Log level threshold (default: info)"
+      },
+      {
+        "Flags": "--log-file <path>",
+        "Description": "Write logs to file instead of stderr"
