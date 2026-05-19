@@ -63,7 +63,7 @@ resource context; task payload inputs and outputs belong in sibling
 | `Maestro.CaseManagerGuardrails` | `bpmn:serviceTask` | `uipath:activity` | Preserve-only until documented |
 | `Maestro.CaseRulesEvaluator` | `bpmn:serviceTask` | `uipath:activity` | Preserve-only until documented |
 | `Intsvc.ActivityExecution` | `bpmn:sendTask` and supported event wrappers | `uipath:activity` | CLI-owned enrichment |
-| `Intsvc.HttpExecution` | `bpmn:sendTask` or intermediate throw | `uipath:activity` | Plain connectionless HTTP may use [http-request.md](task-recipes/http-request.md); connector-authenticated or dynamic HTTP remains CLI-owned enrichment |
+| `Intsvc.HttpExecution` | `bpmn:sendTask` or intermediate throw | `uipath:activity` | After skeleton confirmation, request-and-continue plain connectionless HTTP may use [http-request.md](task-recipes/http-request.md); connector-authenticated or dynamic HTTP remains CLI-owned enrichment |
 | `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` or intermediate throw | `uipath:activity` | CLI-owned enrichment |
 | `Intsvc.AsyncExecution` | `bpmn:serviceTask` | `uipath:activity` | CLI-owned enrichment |
 | `Intsvc.SyncAgentExecution` | `bpmn:serviceTask` | `uipath:activity` | CLI-owned enrichment |
@@ -91,9 +91,9 @@ Script tasks execute JavaScript through Jint, not Node.js or a browser runtime.
 For `Intsvc.*` elements, the model may author the surrounding BPMN shell,
 variables, mappings, error paths, diagram geometry, and a non-executable draft
 `uipath:type value="Intsvc.<Variant>"` shell with placeholder strings. The
-documented exception is plain connectionless HTTP, which must follow
-[http-request.md](task-recipes/http-request.md). Connector-backed or dynamically
-schematized `Intsvc.*` work still requires the CLI to enrich connector key,
+documented pass-2 exception is confirmed plain connectionless HTTP, which must
+follow [http-request.md](task-recipes/http-request.md). Connector-backed or
+dynamically schematized `Intsvc.*` work still requires the CLI to enrich connector key,
 operation/event metadata, connection binding, trigger property bindings,
 schemas, generated outputs, `bindings_v2.json`, and package metadata before
 upload or run.

@@ -66,8 +66,10 @@ When a connector activity or trigger is needed in pass 1:
 - Mark enrichment as required before upload, debug, publish, or deploy.
 
 For plain connectionless HTTP where the workflow owns the URL, method, payload,
-and parsing, use [task-recipes/http-request.md](task-recipes/http-request.md)
-instead of treating the node as connector enrichment.
+and parsing, record the node as a plain HTTP candidate in pass 1 instead of
+treating it as connector enrichment. After the operator confirms the skeleton,
+use [task-recipes/http-request.md](task-recipes/http-request.md) only for the
+pass-2 executable wrapper.
 
 ## Done state
 
