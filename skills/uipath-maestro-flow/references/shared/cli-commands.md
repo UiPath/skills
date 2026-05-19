@@ -17,6 +17,14 @@ uip solution init "<SolutionName>" --output json
 #    the project with the parent `.uipx` — no manual `solution project add`
 #    is required. Confirm via `Data.SolutionRegistration.Status` in the
 #    response (`Registered` or `AlreadyRegistered`).
+#
+#    Post-MST-10004 the field is ALWAYS present:
+#      - "Registered" / "AlreadyRegistered" → done
+#      - "NotInSolution" → cd into the solution dir is missing, restart from step 1
+#      - "Skipped" / "Failed" → fall through to step 3
+#    On pre-MST-10004 CLI versions the field can be absent — treat that the
+#    same as "NotInSolution" unless the `.uipx` Projects[] manifest already
+#    lists your project (verify with `cat <SolutionName>.uipx`).
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
 # 3. (Fallback only) Wire the project manually if auto-registration was
