@@ -19,6 +19,8 @@ tags: [uipath-test, integration, mode:operate, lifecycle:generate, feature:test-
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 50
 
 sandbox:
@@ -26,7 +28,6 @@ sandbox:
   python: {}
   node:
     env_packages:
-      - "@uipath/cli"
       - "@uipath/test-manager-tool"
 
 initial_prompt: |

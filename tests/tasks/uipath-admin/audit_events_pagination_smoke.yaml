@@ -1,0 +1,53 @@
+task_id: skill-admin-audit-events-pagination-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to query
+  audit events with a bounded time window and a >200 limit, exercising
+  the skill's pagination rule. The CLI tool paginates internally for
+  --limit > 200 (server-side maxCount cap), so the agent should pass
+  --limit, NOT roll its own cursor loop with --before / --before-id.
+
+  Platform note: commands fail with auth errors in this environment;
+  what matters is the agent's CLI invocation pattern.
+tags: [uipath-admin, smoke, mode:diagnose, audit, pagination]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A compliance reviewer wants the 500 most recent tenant audit events
+  from the last 30 days.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant events` with both --from-date and --to-date ISO 8601 bounds"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --limit 500 (or any value > 200) — single call, not a manual loop"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--limit\s+(?:[2-9]\d{2,}|[1-9]\d{3,})'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the events call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

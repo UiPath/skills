@@ -1,5 +1,0 @@
-{
-  "Result": "ValidationError",
-  "Message": "error: unknown command 'resources'",
-  "Instructions": "Check command arguments and options. Run 'uip --help' for available commands."
-}

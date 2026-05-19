@@ -1,0 +1,121 @@
+task_id: skill-platform-licensing-read-e2e
+description: >
+  E2E test: agent uses the uipath-platform skill to walk through the
+  read-only licensing queries against the live tenant — seat availability,
+  group rules + per-group details, and a consumables summary. Verifies each
+  CLI call succeeds (`Result: "Success"`), each JSON artifact is written,
+  and the agent's final summary reports at least one bundle using the
+  `<Friendly Name> (<CODE>)` format from the docs page.
+tags: [uipath-platform, e2e, licensing]
+skip: true
+# Blocked: depends on `uip platform users licenses available`,
+# `groups rules get/details`, and `licenses consumables get` — none of
+# which are in the public @uipath/platform-tool (v1.0.0, which ships only
+# `tenants licenses get|set`). Re-enable when the CLI publishes these
+# subcommands. See PLT-103133.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "WebFetch"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  Produce a read-only licensing snapshot of this account. Do NOT run any
+  command that mutates state — only `get`, `available`, `details`, and
+  `consumables get`. Specifically:
+
+  1. Run `uip platform users licenses available --output json` and save the
+     full CLI output (the entire envelope, not just `Data`) to
+     `available.json`.
+  2. Fetch the UiPath docs license-codes page so you can translate bundle
+     codes to friendly names.
+  3. Run `uip platform groups rules get --output json` and save the full
+     output to `rules.json`.
+  4. If `rules.json` contains at least one group, pick the first group's
+     `groupName` and run
+     `uip platform groups rules details "<that-group>" --output json`,
+     saving the full output to `details.json`. If `rules.json` is empty,
+     skip this step (the validator will skip the corresponding check).
+  5. Run `uip platform licenses consumables get --mode summary --output json`
+     and save the full output to `consumables.json`.
+  6. Print a final summary that references at least one bundle code from
+     `available.json` using the `<Friendly Name> (<CODE>)` format — e.g.,
+     `Automation Developer Named User (RPADEVPRONU)`.
+
+  Use `--output json` on every uip command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran users licenses available"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+platform\s+users\s+licenses\s+available.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran groups rules get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+platform\s+groups\s+rules\s+get.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran consumables get --mode summary"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get.*--mode\s+summary.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the UiPath docs license-codes page"
+    tool_name: "WebFetch"
+    command_pattern: 'docs\.uipath\.com.*license-codes'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "available.json written to sandbox"
+    path: "available.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "rules.json written to sandbox"
+    path: "rules.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "consumables.json written to sandbox"
+    path: "consumables.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Each JSON artifact has Result=Success and valid envelope shape"
+    command: "python3 $TASK_DIR/_shared/licensing_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Final reply renders at least one bundle as `<Friendly Name> (<CODE>)`"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Score 1.0 if it references at
+      least one license bundle in the form `<Friendly Name> (<CODE>)` —
+      e.g., `Automation Developer Named User (RPADEVPRONU)` or `Attended
+      Named User (ATTUNU)`. Score 0.0 if the reply shows only raw codes,
+      only friendly names without codes, or no bundle references at all.
+    weight: 2.0
+    pass_threshold: 1.0

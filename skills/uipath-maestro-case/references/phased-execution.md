@@ -37,7 +37,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 ### Structural nodes (full detail)
 
-- Solution + project scaffolding (`uip solution new`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
+- Solution + project scaffolding (`uip solution init`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
 - Root case — `caseplan.json` with `root` block populated (name, caseIdentifier, empty `nodes[]`, empty `edges[]`, empty `caseExitConditions[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared. Path is schema-dependent: `root.data.uipath.variables` in v19, top-level `variables` in v20 (Rule 18).
 - Stages — all StageIds generated and captured.

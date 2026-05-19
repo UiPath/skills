@@ -12,6 +12,8 @@ tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:test-case]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 30
 
 sandbox:
@@ -19,7 +21,6 @@ sandbox:
   python: {}
   node:
     env_packages:
-      - "@uipath/cli"
       - "@uipath/test-manager-tool"
 
 initial_prompt: |

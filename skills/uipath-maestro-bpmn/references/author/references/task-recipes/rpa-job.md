@@ -1,6 +1,7 @@
 # RPA Job Recipe
 
-Use `bpmn:serviceTask` with `Orchestrator.StartJob` for RPA process execution.
+The current supported implementation wrapper for confirmed RPA process
+execution is `bpmn:serviceTask` with `Orchestrator.StartJob`.
 
 The model may draft:
 

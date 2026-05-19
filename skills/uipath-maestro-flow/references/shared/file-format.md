@@ -2,12 +2,28 @@
 
 The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
 
+## Table of contents
+
+- [Top-level structure](#top-level-structure)
+- [Project structure (from `uip maestro flow init`)](#project-structure-from-uip-maestro-flow-init)
+- [Node instance](#node-instance)
+- [Layout](#layout)
+- [Edge — both ports required](#edge--both-ports-required)
+- [Definition entry](#definition-entry)
+- [Common node types](#common-node-types)
+- [Standard ports by node type](#standard-ports-by-node-type)
+- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+
 ## Top-level structure
 
 ```json
 {
   "id": "<uuid>",
-  "version": "1.0.0",
+  "version": "1.1",
   "name": "MyFlow",
   "nodes": [],
   "edges": [],
@@ -19,6 +35,10 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
   }
 }
 ```
+
+**Top-level `version`** = workflow file-format version, currently `"1.1"` — what `uip maestro flow init` scaffolds and what Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. Not a semver string; schema gates on a literal (`z.literal("1.1")`). Do not use `"1.0.0"`, `"1.0"`, or other values for new flows; older values exist only for legacy parser compatibility.
+
+> **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `'Version must be in format "x.y" or "x.y.z"'`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`"1.0"`) and older scaffolded nodes (`"1.0.0"`) both parse. The two layers report distinct errors, but Zod may collapse a node-level mismatch to path `(root)`. If you see a version-related error at `(root)`, audit the top-level `version` first; if it's correct, check each node's `typeVersion` against the matching `definitions[].version`.
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
 
@@ -111,9 +131,17 @@ Example — manual start trigger:
 
 ### Node outputs
 
-Nodes that produce data consumed by downstream nodes **must** include an `outputs` block on the node instance. This tells the runtime how to capture the node's results into `$vars.{nodeId}.{outputId}`. Without it, downstream `$vars` references may not resolve.
+`$vars.<sourceNodeId>.<outputId>` resolution at runtime is driven by **`variables.nodes[]`**, not by the node instance's `outputs` block. The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs; the action-node instance `outputs` block is ignored at serialization (the manifest's `outputDefinition` supplies the activity-side mapping). End / terminate nodes are the exception — their instance `outputs` block IS consumed to map workflow-level `out` variables. See [end/impl.md](../author/references/plugins/end/impl.md).
 
-Each output entry has:
+The canonical recipe for a data-producing node is therefore:
+
+- `definitions[]` entry copied verbatim from `uip maestro flow registry get` (carries the manifest `outputDefinition`).
+- `variables.nodes[]` entry per output: `{ "id": "<nodeId>.<outputId>", "type": "object", "binding": { "nodeId": "<nodeId>", "outputId": "<outputId>" } }`.
+- Optional instance `outputs` block matching the manifest — harmless and matches the canonical examples below for clarity, but **not** what controls runtime variable visibility.
+
+Skipping `variables.nodes[]` produces a flow that passes `flow validate` but resolves `$vars.<sourceNodeId>.output` to `undefined` at runtime (MST-9972). `uip maestro flow format` regenerates `variables.nodes[]` from `nodes[]` + `definitions[]`, so always run it after structural edits — the omission becomes self-healing.
+
+When you DO author the instance `outputs` block (for documentation / parity with manifest schema), use the shape below. Each output entry has:
 
 - `type` — data type (usually `"object"`)
 - `description` — human-readable description
@@ -156,7 +184,7 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 ## Layout
 
-Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow tidy` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-tidy)) — you should not need to hand-write it.
+Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow format` (see [cli-commands.md](cli-commands.md#uip-maestro-flow-format)) — you should not need to hand-write it.
 
 ```json
 "layout": {
@@ -180,15 +208,15 @@ Node positioning is stored in a **top-level `layout` object**, keyed by node `id
 }
 ```
 
-Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for every node and populates `position` + `size`.
+Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for every node and populates `position` + `size`.
 
-**What tidy does:**
+**What format does:**
 - Arranges nodes horizontally (left-to-right) with `nodeSpacing: 96`, anchored to the leftmost node's original position
 - Sets `size` to `{ "width": 96, "height": 96 }` on every non-`stickyNote` node — non-96 sizes render as rectangles in Studio Web
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Format handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
@@ -317,7 +345,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
-  "version": "1.0.0",
+  "version": "1.1",
   "name": "DiceRoller",
   "nodes": [
     {

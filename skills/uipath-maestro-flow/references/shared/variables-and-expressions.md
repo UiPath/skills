@@ -2,7 +2,33 @@
 
 Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
 
-> **Read this before** adding variables or writing expressions in any flow. Incorrect variable declarations cause silent runtime failures that `flow validate` does not catch.
+> **Read this before** adding variables or writing expressions in any flow.
+>
+> `flow validate` catches the structural expression-reference errors:
+>
+> - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+> - Invented `nodes.<id>.output` syntax
+> - References to unknown variables or node IDs
+> - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+>
+> Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+
+---
+
+## Table of contents
+
+- [Variables Overview](#variables-overview)
+- [Workflow Variables (`globals`)](#workflow-variables-globals)
+- [Node Variables (`nodes`)](#node-variables-nodes)
+- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+- [Expression System](#expression-system)
+- [Available Globals](#available-globals)
+- [Expression Contexts](#expression-contexts)
+- [Jint Engine Constraints](#jint-engine-constraints)
+- [Scoping Rules](#scoping-rules)
+- [Variable Management via CLI](#variable-management-via-cli)
+- [Complete Example](#complete-example)
 
 ---
 
@@ -329,7 +355,7 @@ Every `$vars` / `$metadata` / `$self` reference inside `inputs.detail.bodyParame
 | `"recordId": "nodes.createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 | `"recordId": "{vars.createEntityRecord1.output.Id}"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 
-The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). `flow validate` does not catch this — it only manifests at `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
+The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). `flow validate` catches this (cli-side `expression-prefix-validator`, error with remediation hint) — older cli versions without the validator still let it through to `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
 
 ### Comparison
 

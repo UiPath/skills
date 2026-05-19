@@ -1,0 +1,85 @@
+task_id: skill-troubleshoot-smoke-manifest-commands
+description: >
+  Verify every uip subcommand mocked in any diagnostic scenario's manifest is
+  a real subcommand in the locally installed uip CLI. Catches fixture drift
+  when CLI tools rename, remove, or reshape subcommands — the kind of breakage
+  that previously slipped through because the mock dispatcher's permissive
+  fallback returns an empty result for unmatched calls.
+
+  The deterministic gate is a pre_run command (fail_on_error: true). On
+  failure the task aborts with FinalStatus.ERROR before the agent starts —
+  no LLM cost on regressions. On success the agent does nothing meaningful;
+  the no-op criterion below records the pass.
+
+tags: [uipath-troubleshoot, smoke, fixture-validation]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Bash"]
+
+run_limits:
+  turn_timeout: 60
+  max_turns: 1
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+# Run the verification script BEFORE the agent. fail_on_error: true (the
+# default) aborts the task with FinalStatus.ERROR if any mocked uip command
+# is not reachable in the locally installed CLI — the agent never runs.
+#
+# Portable across cmd.exe (Windows), PowerShell, and /bin/sh: each shell has
+# its own env-var expansion syntax for TASK_DIR ($TASK_DIR / %TASK_DIR% /
+# $env:TASK_DIR), so we resolve TASK_DIR through `python -c` which works the
+# same everywhere.
+pre_run:
+  # 1) Install every per-tool plugin the troubleshoot manifests reference.
+  # The bare `@uipath/cli` install in CI does NOT auto-list subcommands of
+  # uninstalled tools in `--help` output, so the validator below would see
+  # `or` / `is` / `maestro` / `resource` / `docsai` / `traces` / `rpa` as
+  # unknown until something invokes them. Install eagerly here so the
+  # validator's `--help` walk sees the full tree.
+  #
+  # `uip tools install` is idempotent — already-installed tools are no-ops.
+  # Errors are tolerated (fail_on_error: false) because a tool that fails
+  # to install will surface as a BAD entry in the validator below, which
+  # has a clearer message.
+  - command: >-
+      uip tools install @uipath/orchestrator-tool;
+      uip tools install @uipath/integrationservice-tool;
+      uip tools install @uipath/maestro-tool;
+      uip tools install @uipath/resource-tool;
+      uip tools install @uipath/docsai-tool;
+      uip tools install @uipath/traces-tool;
+      uip tools install @uipath/rpa-tool
+    timeout: 300
+    fail_on_error: false
+
+  # 2) Resolve the validator script through SKILLS_REPO_PATH — coder-eval
+  # does NOT inject TASK_DIR into pre_run env (TASK_DIR is criterion-only).
+  # SKILLS_REPO_PATH is already the repo's convention for locating the
+  # plugin source (see smoke-skills.yml and tests/experiments/default.yaml).
+  - command: >-
+      python -c "import os,subprocess,sys;
+      script=os.path.join(os.environ['SKILLS_REPO_PATH'], 'tests', 'tasks', 'uipath-troubleshoot', '_shared', 'scripts', 'verify_manifest_commands.py');
+      sys.exit(subprocess.call(['python', script]))"
+    timeout: 300
+    fail_on_error: true
+
+initial_prompt: |
+  Pre-run verification passed. Print "OK" and stop.
+
+success_criteria:
+  # coder-eval requires at least one success criterion. The pre_run command
+  # above is the real gate (fail_on_error: true aborts the task before this
+  # point on regression). This criterion is a meaningful invariant that
+  # MUST hold once pre_run passed: the uip CLI is reachable.
+  - type: run_command
+    description: "uip CLI is reachable on PATH"
+    command: "uip --version"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

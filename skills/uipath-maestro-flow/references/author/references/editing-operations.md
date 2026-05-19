@@ -76,9 +76,9 @@ These apply regardless of which strategy you use.
 
 ### Layout
 
-- Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow tidy` — do not hand-compute coordinates
-- When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save
-- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [cli-commands.md](../../shared/cli-commands.md#uip-maestro-flow-tidy)
+- Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow format` — do not hand-compute coordinates
+- When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); format rewrites it on save
+- Run `uip maestro flow format <file>.flow` after edits and before publish/debug — see [cli-commands.md](../../shared/cli-commands.md#uip-maestro-flow-format)
 
 ### Edge rules
 

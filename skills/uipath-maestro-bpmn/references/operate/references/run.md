@@ -80,6 +80,10 @@ When a run starts, report:
 - Final status if the command waited for completion.
 - Next inspection command or status path.
 
+When the user cares about a business result, final status alone is insufficient.
+Also report the relevant output variable or the reason it could not be
+inspected.
+
 ## Status and traces
 
 Start with status and incidents before verbose traces.

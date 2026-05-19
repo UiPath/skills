@@ -9,6 +9,8 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, n
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 110
   turn_timeout: 900
 

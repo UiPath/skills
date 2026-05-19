@@ -69,7 +69,8 @@ Both entity names and field names must:
   "isUnique": false,
   "isRbacEnabled": false,
   "isEncrypted": false,
-  "defaultValue": ""
+  "defaultValue": "",
+  "lengthLimit": 200
 }
 ```
 
@@ -84,6 +85,39 @@ Both entity names and field names must:
 | `isRbacEnabled` | boolean | `false` | Role-based access control on this field |
 | `isEncrypted` | boolean | `false` | Encrypted at rest |
 | `defaultValue` | string | — | Default value (always a string representation) |
+| `lengthLimit`, `maxValue`, `minValue`, `decimalPrecision` | number | type-specific | Advanced per-type constraints — see below |
+
+### Advanced Field Constraints
+
+Accepted on `entities create` and on `addFields` / `updateFields` in `entities update`. Each constraint applies only to specific types — passing one to an unsupported type errors with *"Field '<name>' of type <TYPE> does not accept <option>"*. `minValue` must be strictly less than `maxValue`.
+
+| Constraint | Allowed types | Range |
+|------------|---------------|-------|
+| `lengthLimit` | `STRING` (1–4000), `MULTILINE_TEXT` (1–10000) | — |
+| `maxValue` / `minValue` | `INTEGER`, `BIG_INTEGER`, `DECIMAL`, `FLOAT`, `DOUBLE` | ±9,007,199,254,740,991 |
+| `decimalPrecision` | `DECIMAL`, `FLOAT`, `DOUBLE` | 0–10 |
+
+```bash
+uip df entities create "Orders" \
+  --body '{
+    "fields": [
+      {"fieldName": "ProductName", "type": "STRING",  "lengthLimit": 500, "isRequired": true},
+      {"fieldName": "Price",       "type": "DECIMAL", "decimalPrecision": 4, "maxValue": 999999, "minValue": 0},
+      {"fieldName": "Quantity",    "type": "INTEGER", "maxValue": 10000, "minValue": 1}
+    ]
+  }' \
+  --output json
+```
+
+Change a constraint after creation via `updateFields` (use the field UUID from `entities get`):
+
+```bash
+uip df entities update <entity-id> \
+  --body '{"updateFields":[{"id":"<field-id>","lengthLimit":1000}]}' \
+  --output json
+```
+
+`entities get` echoes the current constraint values on each field under `Fields[].fieldDataType.{lengthLimit,maxValue,minValue,decimalPrecision}` — read these before authoring an `updateFields` call.
 
 ### Choice Set Fields
 
@@ -154,7 +188,7 @@ uip df entities update <entity-id> \
   --output json
 ```
 
-`updateFields` entry supports: `id` (required), `displayName`, `description`, `isRequired`, `isUnique`, `isRbacEnabled`, `isEncrypted`, `defaultValue`.
+`updateFields` entry supports: `id` (required), `displayName`, `description`, `isRequired`, `isUnique`, `isRbacEnabled`, `isEncrypted`, `defaultValue`, `lengthLimit`, `maxValue`, `minValue`, `decimalPrecision`. The four constraint keys follow the per-type allow-list in [Advanced Field Constraints](#advanced-field-constraints).
 
 ### Supported `entities update` Body Keys
 

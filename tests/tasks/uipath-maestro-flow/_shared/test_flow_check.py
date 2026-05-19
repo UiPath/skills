@@ -31,13 +31,19 @@ def _payload(*, globals_=(), elements=()):
     }
 
 
-def _write_flow(tmp_path, node_types):
-    """Create a minimal project.uiproj + .flow file tree and return its root."""
+def _write_flow(tmp_path, node_types, *, project_type: str = "Flow"):
+    """Create a minimal project.uiproj + .flow file tree and return its root.
+
+    ``project_type`` is written into the project.uiproj manifest so
+    _find_project's manifest-based filtering (MST-9734) can distinguish
+    Flow projects from sibling agent / coded / process projects in the
+    same solution.
+    """
     import json
 
     proj = tmp_path / "MyFlow"
     proj.mkdir()
-    (proj / "project.uiproj").write_text("{}")
+    (proj / "project.uiproj").write_text(json.dumps({"ProjectType": project_type}))
     flow = {
         "nodes": [
             node if isinstance(node, dict) else {"id": f"n{i}", "type": node}
@@ -239,3 +245,81 @@ def test_assert_outputs_contain_fails_when_missing():
     payload = _payload(globals_=[{"value": "hello"}])
     with pytest.raises(SystemExit, match="missing"):
         assert_outputs_contain(payload, ["world"])
+
+
+# ── _find_project (manifest-based Flow filtering, MST-9734) ─────────────────
+
+from flow_check import _find_project, _is_flow_project, find_project_dir  # noqa: E402
+
+
+def _make_proj(root, name, project_type):
+    """Create <root>/<name>/project.uiproj declaring the given ProjectType."""
+    import json as _json
+
+    p = root / name
+    p.mkdir()
+    (p / "project.uiproj").write_text(_json.dumps({"ProjectType": project_type}))
+    return p
+
+
+def test_find_project_picks_flow_when_sibling_agent_exists(tmp_path, monkeypatch):
+    """coded_agent / lowcode_agent shape: Flow project + sibling Agent project."""
+    monkeypatch.chdir(tmp_path)
+    solution = tmp_path / "CountLettersCoded"
+    solution.mkdir()
+    _make_proj(solution, "CountLetters", "Agent")
+    _make_proj(solution, "CountLettersCoded", "Flow")
+    found = _find_project("**/project.uiproj")
+    # _find_project returns a path relative to cwd (glob default)
+    assert found == os.path.join("CountLettersCoded", "CountLettersCoded")
+
+
+def test_find_project_fails_when_no_flow_present(tmp_path, monkeypatch):
+    """All siblings are Agent / Coded — no Flow project to operate on."""
+    monkeypatch.chdir(tmp_path)
+    solution = tmp_path / "AllAgents"
+    solution.mkdir()
+    _make_proj(solution, "AgentA", "Agent")
+    _make_proj(solution, "AgentB", "Coded")
+    with pytest.raises(SystemExit, match="No Flow project.uiproj found"):
+        _find_project("**/project.uiproj")
+
+
+def test_find_project_fails_when_multiple_flows(tmp_path, monkeypatch):
+    """Two Flow projects in the same solution: still ambiguous."""
+    monkeypatch.chdir(tmp_path)
+    solution = tmp_path / "MultiFlow"
+    solution.mkdir()
+    _make_proj(solution, "FlowA", "Flow")
+    _make_proj(solution, "FlowB", "Flow")
+    with pytest.raises(SystemExit, match="Multiple Flow projects match"):
+        _find_project("**/project.uiproj")
+
+
+def test_find_project_fails_when_no_candidates(tmp_path, monkeypatch):
+    """No project.uiproj at all — original failure message preserved."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit, match="No project.uiproj found matching"):
+        _find_project("**/project.uiproj")
+
+
+def test_is_flow_project_handles_malformed_manifest(tmp_path):
+    """A bad sibling manifest must not crash discovery."""
+    bad = tmp_path / "project.uiproj"
+    bad.write_text("{not valid json")
+    assert _is_flow_project(str(bad)) is False
+
+
+def test_is_flow_project_handles_missing_file(tmp_path):
+    missing = tmp_path / "does-not-exist.uiproj"
+    assert _is_flow_project(str(missing)) is False
+
+
+def test_find_project_dir_uses_central_filter(tmp_path, monkeypatch):
+    """The public find_project_dir() helper goes through the same filter."""
+    monkeypatch.chdir(tmp_path)
+    solution = tmp_path / "Mixed"
+    solution.mkdir()
+    _make_proj(solution, "Helper", "Process")
+    _make_proj(solution, "MainFlow", "Flow")
+    assert find_project_dir() == os.path.join("Mixed", "MainFlow")

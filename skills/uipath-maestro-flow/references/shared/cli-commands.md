@@ -2,7 +2,7 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
 ## uip maestro flow init
 
@@ -10,7 +10,7 @@ Scaffold a new Flow project directory. **Always create a solution first** (see t
 
 ```bash
 # 1. Create solution first
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 
 # 2. Init the flow project inside the solution folder.
 #    When run from inside a solution directory, `flow init` auto-registers
@@ -56,16 +56,16 @@ Exit code 0 = valid, 1 = invalid.
 
 Validates agent nodes against organization governance policies fetched from the platform. Requires `uip login`. When governance data cannot be fetched (no login, platform unreachable), the command exits with a failure. Omit `--governance` to run local-only schema validation without auth.
 
-## uip maestro flow tidy
+## uip maestro flow format
 
-Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without tidy, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
+Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without format, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
 
 ```bash
-uip maestro flow tidy <path/to/file.flow>
-uip maestro flow tidy <path/to/file.flow> --output json
+uip maestro flow format <path/to/file.flow>
+uip maestro flow format <path/to/file.flow> --output json
 ```
 
-Tidy:
+Format:
 - Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved
 - Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }` — preserving sticky-note custom sizes
 - Recurses into subflows and rewrites `subflows[<id>].layout` for each
@@ -86,7 +86,7 @@ uip maestro flow pack <ProjectDir> <OutputDir> --output json
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
-> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
+> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.
 
 ## uip solution resource refresh
 
@@ -234,7 +234,7 @@ See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-
 
 ## uip maestro flow node / uip maestro flow edge
 
-See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
+See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/remove/list/configure` and `edge add/remove/list` syntax, flags, and auto-managed behaviors.
 
 ## uip maestro flow eval
 

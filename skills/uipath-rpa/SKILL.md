@@ -1,6 +1,6 @@
 ---
 name: uipath-rpa
-description: "Always invoke for `.xaml` or `.cs` workflow files. UiPath RPA — create, edit, build, run, debug `.cs` coded workflows and `.xaml` workflows. UI automation with Object Repository selectors, test case authoring, Integration Service connector calls. Deploy→uipath-platform. Test reports→uipath-test. Agents→uipath-agents. Legacy→uipath-rpa-legacy."
+description: "Always invoke for `.xaml` or `.cs` workflow files. UiPath RPA — create, edit, build, run, debug `.cs` coded workflows and `.xaml` workflows. UI automation with Object Repository selectors, test case authoring, Integration Service connector calls. Live desktop/browser UI exploration and control. Deploy via `.uipx`→uipath-solution. Non-solution Orchestrator ops→uipath-platform. Test reports→uipath-test. Agents→uipath-agents. Legacy→uipath-rpa-legacy."
 when_to_use: "User wants to create, edit, debug, or run a UiPath automation — '.cs' coded workflows or '.xaml' files. Triggers: 'build a workflow', 'automate Excel/email/web/PDF/queue items', 'add a try-catch', 'fix this XAML error', 'scrape this site', 'process invoices', 'create a test case', or project.json shows UiPath dependencies. NOT for '.flow' files (→uipath-maestro-flow), Python agents (→uipath-agents), legacy .NET 4.6.1 projects (→uipath-rpa-legacy)."
 ---
 
@@ -85,6 +85,16 @@ If target configuration is unavailable, fall back to the documented UIA indicati
 
 See [ui-automation-guide.md § Mandatory: Generate Targets Before Writing Any UI Code](references/ui-automation-guide.md#mandatory-generate-targets-before-writing-any-ui-code) for the full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope.
 
+### Placeholder-Selector Stub Pattern (when live app access is unavailable)
+
+When generating a UI automation workflow **without** live app access (target capture cannot be run because the app is not installed, the agent has no UI, or the user explicitly deferred capture to a developer), emit **real UIA activities with placeholder selectors and `TODO Indicate` markers** — never `Log` stubs.
+
+**Forbidden:** a workflow whose UI-interaction steps are `Log("LoginWorkflow: type username")` with a `// TODO[selectors]:` comment. The workflow passes build/validate and runs cleanly, but does nothing. This is the most expensive kind of stub — it looks complete, the validator says it's fine, and the failure mode is silent.
+
+**Required:** the **real** UIA activity (`NTypeInto`, `NClick`, `NGetText`, `NApplicationCard`, etc.) with the target descriptor's selector left as a placeholder string and a `TODO Indicate` marker embedded in the activity's `DisplayName` (XAML) or in a `// TODO[Indicate]` comment immediately adjacent to the coded call. A developer opens Studio, clicks **Indicate** on each marked activity, and the workflow runs.
+
+This applies to **both** XAML and coded modes. See [ui-automation-guide.md § Placeholder-Selector Stub Pattern](references/ui-automation-guide.md#placeholder-selector-stub-pattern) for the full pattern with XAML and coded examples.
+
 **Hybrid pattern** — XAML orchestration + coded fallback for logic with no matching activity:
 
     Main.xaml                  ← orchestration (XAML)
@@ -134,8 +144,10 @@ Skip this path when the task has no UI surface (data transforms, IS connector ca
    - **Writing a new activity tag** — confirm via `uip rpa activities find --query "<verb>" --output json` and use the returned `ClassName`. Do not derive tag names from Studio display names. See [common-pitfalls.md § Common Activity Name Confusions](references/xaml/common-pitfalls.md#common-activity-name-confusions).
 7. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
 7a. **[UIA] Verify UIA prerequisites before invoking `uia-configure-target`.** UIA minimum is `26.4.1-preview` (source-of-truth: [uia-prerequisites.md](references/uia-prerequisites.md) — kept in sync with that file). Run the prerequisite check in that file. If `UiPath.UIAutomation.Activities` is below the minimum or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent: ask the user to upgrade or fall back to indication authoring — never silently route to a non-existent skill path. If the plan header records `UI capture: indication-only`, skip `uia-configure-target` entirely and use indication authoring.
+7b. **[UIA] Before invoking `uip rpa uia interact` or `uip rpa uia snapshot inspect`, read `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`.** That file is recommended over `--help` as it contains more useful context.
 8. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 8a. **`run` / `debug start` success/failure verdict comes from the outer `Result` (and equivalently the inner `HasErrors`), NEVER from any log entry's `Level`.** A successful workflow may emit `Log Message` activities at `Error` or `Warning` level as observability — those are workflow-emitted data, not CLI failures. Compile failures, validation failures, and unhandled runtime exceptions all flip `HasErrors` and propagate to the outer `Result`. Treating log-entry levels as a failure signal flips green runs to "failed" and burns retries on healthy workflows. See [cli-reference.md § run](references/cli-reference.md) and [debugging.md § Reading Debug Output Effectively](references/debugging.md#reading-debug-output-effectively).
+9. **For "leverage / reuse / find shared libraries" requests, search the tenant feed — not the local filesystem, NuGet.org, or keyword-permutation loops.** Run `uip resource libraries list --limit 500 --output-filter "<JMESPath>" --output json`. On zero results from the filtered call, take the fallback branch — do not re-keyword. Skip when an SDD already records §16 "Shared libraries referenced" or the user has said "no shared libraries" earlier in the session. See [tenant-library-search-guide.md](references/tenant-library-search-guide.md) for the full procedure.
 
 ### Execution Discipline (Both Modes)
 
@@ -186,6 +198,7 @@ Skip this path when the task has no UI surface (data transforms, IS connector ca
 | **Use execution templates** | XAML | [testing-guide.md § Execution Templates](references/testing-guide.md) |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
+| **Explore/probe a live UI** | Both | [ui-automation-guide.md § Launching, Inspecting & Interacting with GUI apps](references/ui-automation-guide.md#launching-inspecting--interacting-with-gui-apps-uia-interact) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md#multi-step-ui-flows) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
@@ -195,6 +208,7 @@ Skip this path when the task has no UI surface (data transforms, IS connector ca
 | **Pack & publish project to Orchestrator** | Both | [publishing-guide.md](references/publishing-guide.md) |
 | **List project best-practice / analyzer rules** | Both | [cli-reference.md § analyzer-rules list](references/cli-reference.md) |
 | **Add a NuGet package** | Coded | [coded/operations-guide.md § Add Dependency](references/coded/operations-guide.md) → [coded/third-party-packages-guide.md](references/coded/third-party-packages-guide.md) |
+| **Find / reuse existing tenant libraries** | Both | [tenant-library-search-guide.md](references/tenant-library-search-guide.md) |
 | **Invoke a PowerShell script from a workflow** | Both | [powershell-interop-guide.md](references/powershell-interop-guide.md) |
 | **List / install Data Fabric entities** | Both | [cli-reference.md § Data Fabric Entities](references/cli-reference.md#commands----data-fabric-entities) |
 | **Discover activity APIs** | Coded | [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md) |
@@ -333,13 +347,33 @@ uip rpa packages install --packages '[{"id":"<PackageId>","version":"<LATEST_VER
 
 ## UI Automation References
 
-**MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) before any UI automation work** — mode-specific UIA patterns (coded vs XAML).
+UIA references live in two locations. Always cite by location so the reader knows which tree to open:
 
-Additional UIA procedures and guides:
-- [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements
+- **This skill** (`skills/uipath-rpa/references/`) — policy, decision logic, target-capture orchestration, debug/recovery flows.
+- **UIA activity pack** (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`, installed via `uip rpa packages install`) — concrete `uip rpa uia` CLI syntax, per-activity property surfaces, coded API surface, and the UIA skill internal procedures. Co-versioned with the package, so always source-of-truth over anything in this skill when they diverge.
+
+### In this skill (`skills/uipath-rpa/references/`)
+
+**MUST read [ui-automation-guide.md](references/ui-automation-guide.md) before any UI automation work** — mode-specific UIA patterns (coded vs XAML), prohibited-tool list, exploration-tool boundaries.
+
+- [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements, upgrade-consent rules
+- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target-capture orchestration, multi-step UI flows, indication-fallback routing
 - [uia-debug-workflow.md](references/uia-debug-workflow.md) — Running and debugging UI automation workflows
 - [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
-- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow, multi-step UI flows, and indication fallback
+
+### In the UIA activity pack (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`)
+
+- `overview.md` — Package overview and entry point
+- `references/cli-reference.md` — Full `uip rpa uia` CLI: subcommands, flags, accepted values, artifact filenames
+- `references/object-repository.md` — Object Repository concepts and CLI flows
+- `references/selector-variables.md` — Selector variable substitution
+- `references/uia-target-attachment-guide.md` — Attaching OR targets to XAML activities (TargetApp / TargetAnchorable)
+- `references/indication-fallback-workflow.md` — Indication-mode capture when `uia-configure-target` is unavailable
+- `coded/coded-api.md` — Coded API surface for `uiAutomation.*` service calls
+- `activities/<Activity>.md` — Per-activity property surface (`NClick`, `NTypeInto`, `NApplicationCard`, …)
+- `activities/common/<Type>.md` — Shared enums and types (`NHealingAgentBehavior`, `Target`, `NClickType`, …)
+- `skills/uia-configure-target/{SKILL.md,USAGE.md}` — Target-configuration skill: procedure + invocation modes
+- `skills/uia-improve-selector/{SKILL.md,USAGE.md}` — Selector recovery / improvement skill
 
 ## Completion Output
 

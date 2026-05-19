@@ -4,17 +4,16 @@ description: >
   group, discovers users, adds members, verifies membership, then
   removes a member. Tests full group lifecycle and the critical rule
   about using user IDs (not usernames) for membership operations.
-  Command-construction only — no live tenant available for
-  side-effect verification.
 tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
-max_iterations: 2
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   max_turns: 40
   turn_timeout: 600
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 sandbox:
   driver: tempdir
@@ -24,24 +23,9 @@ initial_prompt: |
   Set up a new "Invoice Processing Team" group containing the first
   two users in the org, verify membership, then remove the second user.
 
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent checked login status"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent listed existing groups first (discover before create)"
     tool_name: "Bash"
@@ -51,9 +35,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the group"
+    description: "Agent created the group with positional name"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+create\s+.*Invoice\s+Processing\s+Team'
+    command_pattern: 'uip\s+admin\s+groups\s+create\s+"?Invoice\s+Processing\s+Team'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -97,3 +81,15 @@ success_criteria:
     min_count: 5
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Group 'Invoice Processing Team' exists and has at least one member"
+    command: "python3 $TASK_DIR/../_shared/check_group_membership.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $TASK_DIR/../_shared/cleanup_group.py"
+    timeout: 30

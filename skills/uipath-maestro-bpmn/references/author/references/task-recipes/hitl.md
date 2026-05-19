@@ -1,6 +1,7 @@
 # HITL Recipe
 
-Use `bpmn:userTask` with `Actions.HITL` for Action Center human work.
+The current supported implementation wrapper for confirmed Action Center human
+work is `bpmn:userTask` with `Actions.HITL`.
 
 The model may draft:
 
