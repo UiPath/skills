@@ -13,7 +13,7 @@ run_limits:
   turn_timeout: 400
 
 sandbox:
-  driver: docker
+  driver: tempdir
   python: {}
 
 initial_prompt: |

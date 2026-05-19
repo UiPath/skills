@@ -52,7 +52,7 @@ A month from now, `git checkout a1b2c3d` in either worktree reconstructs exactly
 Divergent tasks are worth analyzing only if the variants were actually running under the same conditions. Before kicking off:
 
 - **Prompts must not name the skill.** If the task prompt says "use the uipath-maestro-flow skill", you're testing whether the skill's *name* triggers, not the skill's *content*. Edit task YAML prompts to describe goals, not skill names.
-- **Run with `cwd` outside the skill repo.** Running inside the repo lets the agent read skill source files directly via `Read`, bypassing the plugin system. Use `sandbox.driver: tempdir` (all existing tasks already do this).
+- **Run with `cwd` outside the skill repo.** Running inside the repo lets the agent read skill source files directly via `Read`, bypassing the plugin system. Use `sandbox.driver: docker` for better isolation (Linux smoke tests use this by default).
 - **Confirm the experiment's `plugins` list is the only plugin source.** If you also have plugins installed at the user level (`~/.claude/plugins/`), they load in addition to the experiment's plugins and can pollute the comparison. Check with `ls ~/.claude/plugins/` before the run; temporarily move any entries aside if they overlap in scope with the skill under test.
 - **Lock the model.** Set `model: claude-sonnet-4-6` (or whichever) in `defaults.agent`. Don't let variants pick up different defaults.
 

@@ -200,9 +200,7 @@ jobs:
           node-version: '20'
 
       - name: Verify Docker is available
-        run: |
-          docker --version
-          docker run --rm hello-world > /dev/null
+        run: docker info > /dev/null
 
       - name: Install coder-eval
         working-directory: .coder_eval
@@ -345,7 +343,7 @@ jobs:
       - name: Clean up artifacts (remove .venv and node_modules)
         if: always()
         run: |
-          find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + 2>/dev/null || true
+          find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
 
       - name: Upload HTML / JSON eval report
         if: always()
