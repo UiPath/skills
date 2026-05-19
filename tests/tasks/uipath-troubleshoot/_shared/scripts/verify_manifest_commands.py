@@ -77,7 +77,14 @@ def walk_manifests(root: Path) -> Iterable[dict]:
 
 
 def validate_path(uip_bin: str, path: tuple[str, ...]) -> tuple[bool, str]:
-    """Run `uip <path> --output json --help`. Return (valid, message)."""
+    """Run `uip <path> --output json --help`. Return (valid, message).
+
+    A real subcommand returns Result=Success with Data.Command == path[-1].
+    For an unknown subcommand the CLI walks back to the deepest valid parent
+    and returns help for THAT — Data.Command will be the parent token, not
+    the requested leaf. This second case is the Windows `.CMD` shim quirk
+    that previously slipped through as a false Success.
+    """
     cmd = [uip_bin, *path, "--output", "json", "--help"]
     try:
         result = subprocess.run(
@@ -95,9 +102,17 @@ def validate_path(uip_bin: str, path: tuple[str, ...]) -> tuple[bool, str]:
         data = json.loads(stdout)
     except json.JSONDecodeError:
         return False, f"non-JSON stdout (rc={result.returncode}): {stdout[:120]}"
-    if data.get("Result") == "Success":
-        return True, ""
-    return False, data.get("Message", "unknown error")
+    if data.get("Result") != "Success":
+        return False, data.get("Message", "unknown error")
+
+    returned_cmd = (data.get("Data") or {}).get("Command")
+    expected_leaf = path[-1] if path else None
+    if returned_cmd != expected_leaf:
+        return False, (
+            f"help returned for parent '{returned_cmd}' instead of requested "
+            f"leaf '{expected_leaf}' — subcommand likely does not exist"
+        )
+    return True, ""
 
 
 def main(argv: list[str] | None = None) -> int:
