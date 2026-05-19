@@ -49,7 +49,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 | --- | --- |
 | **Create a new flow** | [greenfield.md](references/greenfield.md) |
 | **Edit an existing flow** | [brownfield.md](references/brownfield.md) + [editing-operations.md](references/editing-operations.md) |
-| **Add/delete/wire nodes and edges** | [editing-operations.md](references/editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
+| **Add/remove/wire nodes and edges** | [editing-operations.md](references/editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
 | **Generate a flow plan** | [planning-arch.md](references/planning-arch.md) + [planning-impl.md](references/planning-impl.md) |
 | **Choose the right node type** | [planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
 | **Understand the .flow JSON format** | [shared/file-format.md](../shared/file-format.md) |

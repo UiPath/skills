@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "a1b2c3d4-e5f6-7890-1234-56789abcdef0",
+      "Name": "ForegroundDemo",
+      "Path": "ForegroundDemo",
+      "Description": "Demo folder hosting the ForegroundHolder process (foreground / UI-interactive).",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "e0772cbe-c19c-4d5f-926c-043c2d2d300a",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 ---
 name: uipath-feedback
-description: "UiPath bug reports and improvement suggestions via `uip feedback send`. Use for 'report issue', 'send feedback', 'file a bug', or the /uipath-feedback command. For investigating an error rather than reporting one→uipath-diagnostics."
+description: "UiPath bug reports and improvement suggestions via `uip feedback send`. Use for 'report issue', 'send feedback', 'file a bug', or the /uipath-feedback command. For investigating an error rather than reporting one→uipath-troubleshoot."
 when_to_use: "User says 'this is broken', 'this isn't working', 'report a bug', 'send feedback', 'something is wrong', 'file an issue', 'this crashed', 'wrong result' about a UiPath product, CLI, or skill. Also fires on the /uipath-feedback slash command."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
@@ -8,7 +8,7 @@ user-invocable: true
 
 # UiPath Feedback
 
-Send structured bug reports or improvement suggestions to UiPath with auto-captured diagnostics via `uip feedback send`.
+Send structured bug reports or improvement suggestions to UiPath with auto-captured troubleshooting via `uip feedback send`.
 
 > **Design principle: minimum friction.** The agent already knows what went wrong from the conversation. Don't re-ask what you already know. The only mandatory interaction is confirmation before sending.
 
@@ -65,7 +65,7 @@ From login status, extract only: `tenantName`, `organizationName`, `baseUrl`. St
 
 From tools list, extract tool `name` and `version` from each row.
 
-#### 2c. Capture skill-specific diagnostics
+#### 2c. Capture skill-specific troubleshooting
 
 | Skill context | What to capture | Limits |
 |---|---|---|
@@ -168,7 +168,7 @@ Build the `--description` content:
 - OS: {os info}
 - Tenant: {tenant} ({org})
 
-## Diagnostics
+## Troubleshooting
 - Project type: {detected type}
 - Key files: {list of relevant project files found}
 - Last failed command: {command + truncated output}
@@ -208,7 +208,7 @@ ExpressionError: Invalid expression at unknown location — currentItem is not d
 - OS: Windows 11 Enterprise 10.0.26100
 - Tenant: demo (aro)
 
-## Diagnostics
+## Troubleshooting
 - Project type: Flow (.flow)
 - Key files: MyProcess.flow
 - Last failed command: uip maestro flow validate MyProcess.flow --output json
