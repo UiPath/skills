@@ -37,7 +37,7 @@ Go in this order — cheaper checks first, and each step narrows the branch.
 
 1. **Get the faulted job:** `uip or jobs get <job-key> --output json`. Capture `MachineName`, `RobotName` / user, `StartTime`, `EndTime`, `Info` / error message. Look at the exact wording — `Logon failed`, `account is locked`, `password has expired`, `RDP connection failed`, and any `0x000005..` / `131092` codes are the strongest single hint about the branch.
 2. **Recent-jobs history on the same machine:**
-   `uip or jobs list --folder-path '<folder>' --top 20 --output json`
+   `uip or jobs list --folder-path '<folder>' --limit 20 --output json`
    - Mixed success/failure on the same machine/user → branches 1 or 6 (session/RDP availability) more likely than 2/3/5.
    - Every recent job on this user has faulted with the same logon error → branches 2, 3, 4, or 5 (user-side problem).
    - Other users succeed on the same machine → rules out a pure machine/network cause.

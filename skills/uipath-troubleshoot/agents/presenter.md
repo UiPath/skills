@@ -142,7 +142,7 @@ The matched playbook's resolution is interactive. Orchestrator: execute the step
   ```
 - Warning to include verbatim: {empty string OR "Healing Agent was running in recommendation-only mode (OrchestratorEnableHeal=false) — the recovered selector was inferred from the UI tree after the failure but was not validated at runtime. There is no guarantee it will work." OR analogous warning for RecoverySuccessful=false}
 - AskUserQuestion: {exact question + options the orchestrator should ask, including the "I'll provide the project path" follow-up question if the project path is not already known from prior context}
-- On user accept: {procedure to follow — e.g., "follow `interpretations/healing-agent-data.md` § Applying `update-target` Fixes: check for `uia-improve-selector` skill at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`; if present, use it; otherwise edit the XAML activity matched by `ActivityRefId` directly, applying XML encoding per the playbook's XAML Selector Encoding rules; then validate with `uip rpa get-errors --file-path "<WORKFLOW_FILE>" --output json --use-studio`."}
+- On user accept: {procedure to follow — e.g., "follow `interpretations/healing-agent-data.md` § Applying `update-target` Fixes: check for `uia-improve-selector` skill at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`; if present, use it; otherwise edit the XAML activity matched by `ActivityRefId` directly, applying XML encoding per the playbook's XAML Selector Encoding rules; then validate with `uip rpa validate --file-path "<WORKFLOW_FILE>" --output json`."}
 - On user decline: stop; do not modify files.
 
 ### Action 2 — ...
