@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for the foreground-misconfigured cause-branch. Failing job is MisconfiguredForeground (d1e2f3a4-...); blocking foreground job is ForegroundHolder (e1f2a3b4-...). The agent must inspect process/Main.xaml + process/project.json to identify the misconfig (no UI activities, yet requiresUserInteraction=true).",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {
@@ -57,14 +57,6 @@
     {
       "match": "or jobs logs d1e2f3a4-b5c6-4789-abcd-ef0123456789 --output json",
       "file": "or-jobs-logs-d1e2f3a4-output-json.json"
-    },
-    {
-      "match": "or robots list --folder-key \"b2c3d4e5-f6a7-8901-2345-6789abcdef01\" --output json",
-      "file": "or-robots-list-folder-key-b2c3d4e5-output-json.json"
-    },
-    {
-      "match": "or robots list --folder-key b2c3d4e5-f6a7-8901-2345-6789abcdef01 --output json",
-      "file": "or-robots-list-folder-key-b2c3d4e5-output-json.json"
     },
     {
       "match": "docsai ask",

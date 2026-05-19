@@ -7,7 +7,7 @@
       "file": "or-folders-list-output-json.json"
     },
     {
-      "match": "or jobs get 77dc53dd-5c45-4a77-b39f-a52e9e7ef163 --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --output json",
+      "match": "or jobs get 77dc53dd-5c45-4a77-b39f-a52e9e7ef163 --output json",
       "file": "or-jobs-get-77dc53dd-5c45-4a77-b39f-a52e9e7ef163-folder-key-.json",
       "exit_code": 1
     },
@@ -29,7 +29,7 @@
     {
       "pattern": "or folders list",
       "min": 1,
-      "description": "Agent enumerates folders to locate the Shared folder (folder-key 1965a46b-…) where the faulted job lives."
+      "description": "Agent enumerates folders to locate the Shared folder (folder-key 1965a46b-\u2026) where the faulted job lives."
     },
     {
       "pattern": "or jobs get 77dc53dd-5c45-4a77-b39f-a52e9e7ef163",
@@ -39,7 +39,7 @@
     {
       "pattern": "or jobs logs 77dc53dd-5c45-4a77-b39f-a52e9e7ef163",
       "min": 0,
-      "description": "OPTIONAL — Agent may pull error-level logs to corroborate the stack frame, but the job-get payload already contains the full Info string. min:0 means tracked-but-not-required."
+      "description": "OPTIONAL \u2014 Agent may pull error-level logs to corroborate the stack frame, but the job-get payload already contains the full Info string. min:0 means tracked-but-not-required."
     }
   ]
 }

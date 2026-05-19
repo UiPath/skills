@@ -40,14 +40,14 @@
       "_doc": "Recorded job traces."
     },
     {
-      "match": "rpa get-errors",
+      "match": "rpa validate",
       "file": "rpa-get-errors-clean.json",
-      "_doc": "Clean validation result — used after the agent applies the selector fix and re-validates Google.xaml."
+      "_doc": "Clean validation result \u2014 used after the agent applies the selector fix and re-validates Google.xaml."
     },
     {
       "match": "docsai ask",
       "passthrough": true,
-      "_doc": "Per CLAUDE.md: docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+      "_doc": "Per CLAUDE.md: docsai queries always passthrough \u2014 query strings vary between runs and canned responses go stale. Cached per-query within a run."
     }
   ],
   "unmocked_default": {
