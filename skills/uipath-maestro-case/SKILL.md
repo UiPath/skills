@@ -10,9 +10,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 
 Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, is describe) and solution boundary operations (`uip solution init` / `project add` / `upload`).
 
-> **Probe the `solution` verb once per session before the first scaffold.** Run `uip solution init --help --output json`. Result `Success` → use `solution init` (post-rename, default). `unknown command` / non-zero exit → CLI predates the rename; substitute `uip solution new <Name>` (same arguments) wherever this skill calls `solution init`.
-
-When `sdd.md` is absent, **Phase 0 interview** generates one interactively from a lightweight 4-round Q&A (open describe → placeholder + gap-fill → registry resolution → review). Complex / multi-product cases redirect to `uipath-solution` — see [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds) for caps.
+When `sdd.md` is absent, **Phase 0 interview** generates one interactively (listen → sketch → ask → resolve → approve, with optional HTML preview before handing off). Complex / multi-product cases redirect to `uipath-solution-design` — see [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds) for caps.
 
 **Scope:** new case from `sdd.md` (user-provided or Phase 0-generated). Modifying existing case not supported (no remote fetch tooling).
 
@@ -29,7 +27,7 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively from 
 
 ## Critical Rules
 
-1. **Phase 0 interview when `sdd.md` absent.** Generate `sdd.md` via 4-round lightweight Q&A; output requires explicit user approval (Round 4 hard-stop) before treating as Rule 2 input. Apply complexity thresholds — soft-redirect to `uipath-solution` on breach. Never overwrite an existing `sdd.md`. See [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds).
+1. **Phase 0 interview when `sdd.md` absent.** Generate `sdd.md` via a guided interview (listen → sketch → ask → resolve → approve); output requires explicit user approval (Approve hard-stop) before treating as Rule 2 input. Apply complexity thresholds — soft-redirect to `uipath-solution-design` on breach. Never overwrite an existing `sdd.md`. See [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds).
 2. **sdd.md is sole input post-Phase-0.** After Phase 0 approval (or when user-provided), trust as written. Skill does not validate or gap-fill. If ambiguous, use AskUserQuestion — never infer silently.
 3. **Run `uip maestro case registry pull` before planning.** Discovery reads cache files at `~/.uip/case-resources/<type>-index.json` directly. `registry search` has known gaps (esp. action-apps). See [references/registry-discovery.md](references/registry-discovery.md).
 4. **`--output json` on every parsed read.**
@@ -55,11 +53,12 @@ Up to seven hard stops (Phase 0 + Phase 2 second prompt + Phase 4 conditional): 
 
 ### Phase 0 — Interview (conditional)
 
-Triggered when `sdd.md` absent at resolved path. Read [references/phase-0-interview.md](references/phase-0-interview.md) for round structure, thresholds, soft-redirect contract, and resumption. Produces:
+Triggered when `sdd.md` absent at resolved path. Read [references/phase-0-interview.md](references/phase-0-interview.md) for the interview modes (listen → sketch → ask → resolve → approve), thresholds, soft-redirect contract, resumption, and HTML preview offer. Produces:
 
-- `sdd.md` — generated via 4-round Q&A, fills `assets/templates/sdd-template.md`
-- `tasks/registry-resolved.json` — per-task registry resolutions from Round 3
-- `sdd.draft.md` — intermediate, deleted on approval
+- `sdd.md` — generated against `assets/templates/sdd-template.md`
+- `tasks/registry-resolved.json` — per-task registry resolutions
+- `sdd.draft.md` — intermediate, deleted at approval
+- `sdd-viewer.html` — optional, rendered from `assets/templates/sdd-viewer.html` when user accepts the preview offer; Phase 1 ignores it
 
 If `sdd.md` already exists: skip Phase 0, hand to Phase 1 unchanged.
 
