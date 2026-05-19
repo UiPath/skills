@@ -55,6 +55,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, di
 | Understand the `.flow` JSON format                           | [references/shared/file-format.md](references/shared/file-format.md)                             |
 | Understand variables and `=js:` expressions                  | [references/shared/variables-and-expressions.md](references/shared/variables-and-expressions.md) |
 | Wire one node's output into another node's input             | [references/shared/node-output-wiring.md](references/shared/node-output-wiring.md)               |
+| Look up action-node boilerplate shared across plugin `impl.md`s | [references/shared/action-nodes.md](references/shared/action-nodes.md)                           |
 | Narrate progress to the user + maintain todos                | [references/shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md)       |
 
 ## Critical rules (universal)
