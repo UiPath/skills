@@ -7,15 +7,15 @@ deployment guide flags as required (`name`, `version`, `description`,
 `authors`). Without `authors`, packaging fails with `Project authors
 cannot be empty`.
 
+The `invoke` command's signal is captured by a `command_executed`
+criterion in the YAML — this script focuses on the file artifacts
+produced by pack/deploy.
+
 Checks:
   1. `deploy-smoke/pyproject.toml` has `name`, `version`,
      `description`, and `authors`. No `[build-system]`.
   2. `deploy-smoke/.uipath/` exists and contains a `*.nupkg` file
      (proof that `pack` ran successfully).
-  3. `deploy-smoke/invoke-output.txt` exists, is non-empty, and the
-     `file_contains` criterion in the YAML separately checks that it
-     surfaces an `https://` URL — kept here as a complementary
-     "non-empty" guard.
 """
 
 from __future__ import annotations
@@ -65,22 +65,11 @@ def check_pack_artifacts() -> None:
     print(f"OK: {uipath_dir.name}/{nupkgs[0].name} exists ({len(nupkgs)} package(s) total)")
 
 
-def check_invoke_output() -> None:
-    path = ROOT / "invoke-output.txt"
-    text = _read_text(path)
-    if not text.strip():
-        sys.exit(f"FAIL: {path.name} is empty — `uip codedagent invoke` produced no output")
-    if "https://" not in text:
-        sys.exit(f"FAIL: {path.name} does not contain a monitoring URL (no `https://` substring)")
-    print(f"OK: {path.name} captured {len(text)} bytes of invoke stdout (with monitoring URL)")
-
-
 def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
     check_pyproject()
     check_pack_artifacts()
-    check_invoke_output()
 
 
 if __name__ == "__main__":

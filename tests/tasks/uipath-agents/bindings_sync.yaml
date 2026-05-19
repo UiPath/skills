@@ -11,10 +11,11 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  I have a UiPath coded agent project. Please set up these files, then sync
-  the bindings.json using the bindings skill.
+  I have a UiPath coded agent project with multiple Python modules.
+  Set up the project, then sync the bindings.json to reflect all
+  resource calls across all files.
 
-  Create the following project structure:
+  Project structure:
 
   **pyproject.toml:**
   ```toml
@@ -87,13 +88,8 @@ initial_prompt: |
   {"version": "2.0", "resources": []}
   ```
 
-  After creating these files, sync the bindings.json so it reflects all resource
-  calls found across ALL Python files. The bindings skill should:
-  1. Scan graph.py AND storage.py (not just the main entry point)
-  2. Resolve the BUCKET_NAME constant from storage.py to "invoice-data"
-  3. Resolve the SCRAPER_PROCESS constant from graph.py to "data-scraper"
-  4. Produce bindings for: process (data-scraper), bucket (invoice-data), asset (api-key)
-  5. Bind all resources to the single entrypoint
+  After creating these files, sync the bindings.json so it reflects
+  every resource call across every Python file in the project.
 
   Do NOT create any report file — just update bindings.json.
 
