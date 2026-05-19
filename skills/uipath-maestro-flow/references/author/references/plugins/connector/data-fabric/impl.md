@@ -7,6 +7,23 @@ Step-by-step guide for building Data Fabric connector nodes in a `.flow` file.
 
 ---
 
+## Table of contents
+
+- [Step 1 — Resolve the Connection](#step-1--resolve-the-connection)
+- [Step 2 — Resolve the Entity Name](#step-2--resolve-the-entity-name)
+- [Step 3 — Set Up the Flow File](#step-3--set-up-the-flow-file)
+- [Step 4 — Create `bindings_v2.json`](#step-4--create-bindings_v2json)
+- [Step 5 — Create the Connection Resource File](#step-5--create-the-connection-resource-file)
+- [Step 6 — Write Connector Nodes](#step-6--write-connector-nodes)
+- [Step 7 — Run `node configure` and Restore Configuration](#step-7--run-node-configure-and-restore-configuration)
+- [`inputs.detail` — Data Fabric Specifics](#inputsdetail--data-fabric-specifics)
+- [Configuration Strings](#configuration-strings)
+- [Definitions Templates](#definitions-templates)
+- [Node JSON Templates](#node-json-templates)
+- [Script Nodes That Consume Query Results](#script-nodes-that-consume-query-results)
+
+---
+
 ## Step 1 — Resolve the Connection
 
 Per [parent impl.md § Step 1](../impl.md#step-1--fetch-and-bind-a-connection), filter by `ConnectorKey = "uipath-uipath-dataservice"`. Capture `Id` (→ `<connectionId>`), `FolderKey` (→ `<folderKey>`), and `Name` (→ `<IS connection Name>`).
