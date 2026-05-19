@@ -1,0 +1,57 @@
+task_id: skill-platform-trigger-time-e2e
+description: >
+  E2E: agent uses the `uipath-platform` skill to leave the tenant in a desired
+  state — a time (cron) trigger exists on the seeded process, currently
+  enabled, with a specific cron expression. The check script queries the
+  tenant directly to verify state; the agent's choice of commands is irrelevant.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=trigger-time python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 180
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides: `uuid8` (per-run prefix), `process_key` (the release to
+  schedule), `folder_path` (the folder containing the process — triggers must
+  live in the same folder as the process they reference).
+
+  Goal: leave the tenant in this state — a **time (cron) trigger** exists in
+  `folder_path`, attached to `process_key`, named exactly
+  `e2e-trigger-time-<uuid8>`, currently **enabled**, with cron expression
+  `0 30 4 * * ?` (Quartz syntax). The trigger should exist when you finish —
+  the check script reads tenant state directly.
+
+  Exercise toggling enabled → disabled → enabled at some point so the path
+  through both states is covered; what matters at the end is the desired state
+  above.
+
+  When you create the trigger, append one line to `created-resources.jsonl`
+  so cleanup can find it:
+  ```
+  {"kind": "trigger", "key": "<trigger-key>", "extra": {"type": "time", "folder_path": "<folder_path-from-seed>"}}
+  ```
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: trigger with expected name/cron/enabled exists in folder"
+    command: "python3 $TASK_DIR/check_trigger_time.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

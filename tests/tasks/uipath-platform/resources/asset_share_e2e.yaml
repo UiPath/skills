@@ -1,0 +1,49 @@
+task_id: skill-platform-asset-share-e2e
+description: >
+  E2E: agent leaves the tenant with an asset shared with exactly one folder
+  (created in A, shared with B, then unshared from B — so final state is
+  "asset visible only in A"). Check queries tenant.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, assets]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=asset-share SEED_FOLDERS_COUNT=2 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py"
+    timeout: 60
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8` and two pre-created folders:
+  - `folder_a_path` / `folder_a_key`
+  - `folder_b_path` / `folder_b_key`
+
+  Goal: leave the tenant with an asset named `e2e-asset-share-<uuid8>`
+  visible in folder A only. Achieve this by sharing it with B at some point
+  and then unsharing — the path through the shared state must happen for the
+  test to be meaningful, but the FINAL state is "asset present in A,
+  absent from B".
+
+  Append a manifest record:
+  `{"kind": "asset", "key": "<asset-key>"}`
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: asset visible in folder A; absent from folder B"
+    command: "python3 $TASK_DIR/check_asset_share.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,6 @@
+{
+  "ProjectType": "Process",
+  "Name": "e2e-stub",
+  "Description": null,
+  "MainFile": "Main.xaml"
+}

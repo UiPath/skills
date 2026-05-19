@@ -1,0 +1,47 @@
+task_id: skill-platform-solution-pack-determinism-integration
+description: >
+  Integration test: pack the same solution twice into two output paths,
+  extract both .uipx zips, compare their structural metadata (package name,
+  version, file list). Catches build nondeterminism that would mask
+  regressions in other tests.
+tags: [uipath-platform, integration, mode:build, lifecycle:generate, solution]
+skip: true
+# Blocked: `uip solution pack` from the `tests/fixtures/solutions/e2e-stub/`
+# source (extracted from Studio Web `.uis`) fails with
+# `Solution definition empty or not found`. The Studio-Web-exported source
+# carries a `SolutionId` tied to that specific Studio Web solution; the local
+# `pack` CLI rejects it without that context.
+#
+# To unblock: produce a `uip solution pack`-compatible source dir (likely via
+# `uip solution new` + a freshly created project rather than a Studio Web
+# `.uis` extract). See tests/fixtures/solutions/ README when added.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=pack-determinism python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_solution_fixture.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill. Read `seed.json` for `solution_dir`.
+
+  Steps (use `--output json`):
+  1. `solution pack <solution_dir> ./pack-a.zip` → `pack_a.json`
+  2. `solution pack <solution_dir> ./pack-b.zip` → `pack_b.json`
+  3. Extract both: `unzip -p pack-a.zip '*.nuspec' > a.nuspec; unzip -p pack-b.zip '*.nuspec' > b.nuspec`
+  4. Diff the .nuspec contents (ignoring timestamps if needed). Save result to `diff.txt`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent packed twice"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0

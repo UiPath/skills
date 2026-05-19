@@ -1,0 +1,49 @@
+task_id: skill-platform-job-control-e2e
+description: >
+  E2E: agent starts a job, stops it, then restarts. Check queries tenant
+  jobs list directly to verify both jobs exist on the seeded process and
+  the stopped one is in a stop-related state.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, orchestrator, jobs]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+  turn_timeout: 600  # agent's restart/stop polling can exceed default 300s
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=job-control SEED_PROCESS_LONG=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 180
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `process_key` (a long-running stub) and `folder_path`.
+
+  Goal: leave the tenant in a state where:
+  - Two jobs have run on `process_key`
+  - The first reached a stop-related state (Stopping / Stopped / Faulted /
+    Killed — i.e. it was halted, not allowed to run to natural Successful)
+  - The second is in a terminal state (Successful / Faulted / Stopped)
+
+  Write both job keys to `job_keys.txt`, one per line, in the order they
+  were created. The check script queries tenant for each and verifies the
+  states.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant: 2 jobs on process; first stop-related, second terminal"
+    command: "python3 $TASK_DIR/check_job_control.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

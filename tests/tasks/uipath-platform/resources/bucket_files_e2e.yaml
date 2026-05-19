@@ -1,0 +1,51 @@
+task_id: skill-platform-bucket-files-e2e
+description: >
+  E2E: agent leaves the tenant with a bucket containing a file whose bytes
+  match a locally-generated source (verified by sha256 round-trip through
+  upload/download). Check queries tenant + reads local files.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, buckets]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=bucket-files SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py"
+    timeout: 60
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8`, `folder_a_path`, `folder_a_key`.
+
+  Goal: leave the tenant with a bucket named `e2e-bucket-<uuid8>` in
+  `folder_a_path` that contains a file. Before uploading, save the source
+  binary to `source.bin` in the sandbox (the check script reads it). After
+  uploading, also save a `downloaded.bin` that you downloaded back from the
+  bucket — the check script verifies both files exist and have identical
+  sha256.
+
+  Generate the source binary as ~64 KB of random bytes.
+
+  Append manifest records:
+  - bucket: `{"kind": "bucket", "key": "<bucket-key>", "extra": {"folder_path": "<folder_a_path>"}}`
+  - file: `{"kind": "bucket-file", "key": "<filename>", "extra": {"bucket_key": "<bucket-key>", "folder_path": "<folder_a_path>"}}`
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state + local: bucket has the file; sha256(source)==sha256(downloaded)"
+    command: "python3 $TASK_DIR/check_bucket_files.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

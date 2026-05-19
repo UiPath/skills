@@ -1,0 +1,52 @@
+task_id: skill-platform-folders-hierarchy-e2e
+description: >
+  E2E: agent uses the skill to leave the tenant with a 3-level folder
+  hierarchy under Shared/, with a specific ParentID chain after a folder
+  move. Check queries tenant directly.
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup, orchestrator, folders]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=folders-hierarchy python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8` (per-run prefix).
+
+  Goal: leave the tenant with this folder structure under `Shared/`:
+  - `Shared/e2e-fh-<uuid8>-top` (top folder)
+  - `Shared/e2e-fh-<uuid8>-top/e2e-fh-<uuid8>-A` (child A under top)
+  - `Shared/e2e-fh-<uuid8>-top/e2e-fh-<uuid8>-B` (B originally under A,
+    then **moved** to be a sibling of A directly under `top`)
+
+  All three folders must exist at the end. B's parent must be `top` — the
+  move must actually have happened.
+
+  When you create each folder, append a line to `created-resources.jsonl`:
+  ```
+  {"kind": "folder", "key": "<folder-key>", "extra": {"path": "<full-path>"}}
+  ```
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: 3-level hierarchy with B re-parented to top"
+    command: "python3 $TASK_DIR/check_folders_hierarchy.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

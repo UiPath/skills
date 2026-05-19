@@ -1,0 +1,53 @@
+task_id: skill-platform-assets-crud-e2e
+description: >
+  E2E: agent uses the skill to leave the tenant with 3 typed assets in the
+  seeded folder, with specific values reflecting an earlier update on one.
+  Check queries tenant.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, assets]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=assets-crud SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py"
+    timeout: 60
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8`, `folder_a_path`, `folder_a_key`.
+
+  Goal: leave the tenant with these three assets inside `folder_a_path`:
+
+  | Name | Type | Final value |
+  |------|------|-------------|
+  | `e2e-asset-<uuid8>-text` | Text | `updated-hello` |
+  | `e2e-asset-<uuid8>-int` | Integer | `42` |
+  | `e2e-asset-<uuid8>-bool` | Bool | `true` |
+
+  The Text asset's final value reflects an **update from an earlier value** —
+  create it with something else first (e.g., `hello-world`), then update.
+  Final state is what's verified.
+
+  For each created asset, append a manifest line:
+  `{"kind": "asset", "key": "<asset-key>"}`
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: 3 assets exist with the final expected values"
+    command: "python3 $TASK_DIR/check_assets_crud.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

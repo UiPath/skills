@@ -1,0 +1,45 @@
+task_id: skill-platform-solution-config-e2e
+description: >
+  E2E (local config mutation): agent uses the skill's `solution deploy config`
+  surface to fetch a config file and edit a property — change is verified in
+  the resulting local JSON file. No tenant mutation.
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup, solution]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=config-lifecycle python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8`. The `e2e-stub` solution package is already
+  published on the tenant (or you can publish it from
+  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip` — idempotent).
+
+  Goal: end with a file `config_final.json` in the sandbox that is the result
+  of editing the first resource's `description` property to `e2e-test-edit`
+  via the skill's config commands. Save the chosen resource name to
+  `resource_name.txt`.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Local: config_final.json shows resource description changed"
+    command: "python3 $TASK_DIR/check_config_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

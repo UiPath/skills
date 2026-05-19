@@ -1,0 +1,51 @@
+task_id: skill-platform-role-lifecycle-e2e
+description: >
+  E2E: agent leaves the tenant with a Tenant-scoped role that has exactly
+  one specific permission attached. The agent must have exercised both
+  add-and-remove paths during the run (verified by the agent writing the
+  before/after observation to a file).
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup, orchestrator, roles]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=role-lifecycle python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8`.
+
+  Goal: leave the tenant with a tenant-scoped role named `e2e-role-<uuid8>`
+  that has exactly **one** specific permission granted, of your choice (pick
+  the first permission from the tenant's grantable list — save the chosen
+  name to `permission.txt`).
+
+  Exercise both add and remove during the run (e.g., add permission X, add
+  Y, then remove Y) — the final state must be "X granted, Y absent". The
+  check script reads tenant state and `permission.txt`.
+
+  Append a manifest record:
+  `{"kind": "role", "key": "<role-key>"}`
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: role exists with the granted permission listed in permission.txt"
+    command: "python3 $TASK_DIR/check_role_lifecycle.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

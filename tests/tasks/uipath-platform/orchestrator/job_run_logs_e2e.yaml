@@ -1,0 +1,45 @@
+task_id: skill-platform-job-run-logs-e2e
+description: >
+  E2E: agent runs a job on the seeded process. Check queries tenant state
+  (job state + logs) directly via uip and verifies the job reached terminal
+  and produced log entries. Trace coverage lives in tasks/uipath-platform/
+  traces/traces_e2e.yaml — kept separate because trace ingestion lag
+  (sometimes >3 min) is a platform SLA issue, not a skill signal.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:discover, orchestrator, jobs]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=job-run-logs python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 180
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `process_key` and `folder_path`.
+
+  Goal: run a job on the seeded process to a terminal state. When done, leave
+  the job key in `job_key.txt` (just the GUID on a single line). The check
+  script queries tenant state from that key — it independently verifies the
+  job reached terminal and has log entries.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant: job is terminal with at least one log entry"
+    command: "python3 $TASK_DIR/check_job_run_logs.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

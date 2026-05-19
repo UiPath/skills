@@ -1,0 +1,41 @@
+task_id: skill-platform-audit-logs-e2e
+description: >
+  E2E (read-only): agent uses the skill to answer a compliance-style question
+  by querying the audit log. Verifies the agent invokes the right CLI surface
+  and the result is well-formed.
+tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, orchestrator, audit-logs]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=audit-logs python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_init.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  Goal (read-only — no mutation): answer "what folder-related changes
+  happened in the last 7 days?". Save the unfiltered audit list to
+  `logs_all.json` and the folder-component-filtered list to
+  `logs_folders.json` (both must be the full `--output json` envelope).
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Files written, envelopes Success, folder-filtered entries are coherent"
+    command: "python3 $TASK_DIR/check_audit_logs.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

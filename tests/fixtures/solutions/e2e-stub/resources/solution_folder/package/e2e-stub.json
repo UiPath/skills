@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "e2e-stub",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "37b54143-40dd-47bd-9f42-e6123595b72f",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "e2e-stub",
+      "description": null
+    },
+    "locks": [],
+    "key": "5de82165-dc55-48b5-b63d-e89c8eacdc78"
+  }
+}

@@ -1,0 +1,45 @@
+task_id: skill-platform-asset-scoping-e2e
+description: >
+  E2E: agent leaves the tenant with an asset created in folder A, never
+  shared elsewhere — proves folder scoping by absence in folder B's listing.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, assets]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=asset-scoping SEED_FOLDERS_COUNT=2 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py"
+    timeout: 60
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8`, `folder_a_path`, `folder_b_path` (both
+  pre-created).
+
+  Goal: leave the tenant with an asset named `e2e-asset-scoping-<uuid8>`
+  present in folder A's listing and absent from folder B's listing — i.e.,
+  scoped to folder A only.
+
+  Append a manifest record:
+  `{"kind": "asset", "key": "<asset-key>"}`
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: asset in A, not in B"
+    command: "python3 $TASK_DIR/check_asset_scoping.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

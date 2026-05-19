@@ -1,0 +1,62 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "e2e-stub",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "37b54143-40dd-47bd-9f42-e6123595b72f",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "e2e-stub",
+        "kind": "package"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "entryPointUniqueId": null,
+      "inputArgumentsSchema": null,
+      "outputArgumentsSchema": null,
+      "inputArgumentsSchemaV2": null,
+      "outputArgumentsSchemaV2": null,
+      "type": "Process",
+      "name": "e2e-stub",
+      "description": null,
+      "package": {
+        "key": "5de82165-dc55-48b5-b63d-e89c8eacdc78"
+      },
+      "packageName": "e2e-stub.process.e2e-stub",
+      "packageVersion": null,
+      "entryPointName": null,
+      "inputArguments": "{}",
+      "jobPriority": "Medium",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "jobRecording": "Disabled",
+      "targetFrameworkValue": "Portable",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": null,
+      "connections": null,
+      "tags": []
+    },
+    "locks": [],
+    "key": "a4416f75-3ab9-4d1c-a75c-d330fe39781a"
+  }
+}

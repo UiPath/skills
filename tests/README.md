@@ -193,6 +193,54 @@ initial_prompt: |
   ...
 ```
 
+## Lifecycle E2E tests with `pre_run` seeding (uipath-platform pattern)
+
+`tests/tasks/uipath-platform/{orchestrator,resources,solution}/` use a `pre_run`
++ `post_run` pattern that lets each task self-seed tenant artifacts and clean up
+without leaking state across runs. The seeding stays out of the agent's
+transcript so the test verifies the **operational behavior under test**, not
+setup busywork.
+
+### Shape
+
+```yaml
+pre_run:
+  - command: "TASK_ID=<slug> SEED_FOLDERS_COUNT=N python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py"
+    timeout: 60
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+```
+
+### How it works
+
+- `pre_run` scripts under `tests/tasks/uipath-platform/_shared/` (`seed_init.py`, `seed_folders.py`, `seed_process.py`, `seed_solution_fixture.py`) provision tenant artifacts with names like `e2e-<task_id>-<uuid8>-…`, write keys to `seed.json` in the sandbox, and append to `created-resources.jsonl` so cleanup can find them.
+- The agent reads `seed.json` and operates against those pre-provisioned resources. Every CLI step writes its `--output json` envelope to a per-step sandbox file (`create_queue.json`, `bulk_add.json`, …).
+- A per-test `check_*.py` reads those files and asserts cross-file invariants ("bulk-add count == list count", "sha256(source) == sha256(downloaded)", "ParentID chain holds"). This is the load-bearing verification — `command_executed` regex criteria are lower-weight supporting checks.
+- `post_run` invokes `cleanup_platform_resources.py`, which reads `created-resources.jsonl` and deletes in reverse dependency order. Idempotent (NotFound treated as success), always exits 0.
+
+### Fixtures
+
+`tests/fixtures/` ships source for stub artifacts. `build_fixtures.sh` is the
+expected build entry — currently stubbed:
+
+- `fixtures/packages/e2e-stub/` — coded Python agent (TBD, blocks process-running tests).
+- `fixtures/libraries/e2e-stub-lib/` — minimal library (TBD, blocks R8 library lifecycle).
+- `fixtures/solutions/minimal/` — `uip solution new` scaffold (needs a project added before S1/S2/S3 can pack).
+
+See per-dir READMEs under `fixtures/` for what each is blocked on.
+
+### Tenant prerequisites
+
+The pattern aims for zero pre-seeded state. The only assumption is the default
+`Shared/` folder (present on every UiPath tenant). Tests that start jobs need
+either:
+
+- `TRACES_SMOKE_PROCESS_KEY` env var (CI mode — matches `traces_e2e.yaml` pattern), or
+- The stub package fixtures present (build via `tests/fixtures/build_fixtures.sh` once it's wired).
+
+Tests requiring those fall through to `skip: true` until one of the paths is in place.
+
 ## Adding Tests for a New Skill
 
 1. Create `tests/tasks/<skill-name>/` matching the skill folder name under `skills/`.

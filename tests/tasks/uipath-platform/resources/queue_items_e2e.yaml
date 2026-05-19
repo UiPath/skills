@@ -1,0 +1,45 @@
+task_id: skill-platform-queue-items-lifecycle-e2e
+description: >
+  E2E: agent uses the skill to leave the tenant with a queue containing
+  N items in the seeded folder. Check queries tenant.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, queues]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=queue-items SEED_FOLDERS_COUNT=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_folders.py"
+    timeout: 60
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8`, `folder_a_path`, `folder_a_key`.
+
+  Goal: leave the tenant with a queue named `e2e-queue-<uuid8>` inside
+  `folder_a_path`, containing exactly **5 items** all in `New` state. Item
+  contents can be anything reasonable (e.g. specificContent JSON with an `Id`).
+
+  Append manifest records as you create things so cleanup can find them:
+  - queue: `{"kind": "queue", "key": "<queue-key>"}`
+  - each item: `{"kind": "queue-item", "key": "<item-key>", "extra": {"folder_path": "<folder_a_path>"}}` (optional — deleting the queue also removes items)
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: queue exists with 5 items in New state"
+    command: "python3 $TASK_DIR/check_queue_items.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

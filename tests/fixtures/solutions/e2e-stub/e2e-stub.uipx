@@ -1,0 +1,13 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.04.0",
+  "SolutionId": "cc11a9f5-d3b9-472d-ccac-08deb475dac5",
+  "Projects": [
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "e2e-stub/project.uiproj",
+      "Id": "37b54143-40dd-47bd-9f42-e6123595b72f"
+    }
+  ],
+  "AutomationHubIdeaUrl": null
+}

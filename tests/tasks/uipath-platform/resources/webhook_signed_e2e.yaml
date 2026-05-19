@@ -1,0 +1,54 @@
+task_id: skill-platform-webhook-signed-e2e
+description: >
+  E2E (Confluence S58): agent creates a webhook with a secret, triggers a
+  job, fetches the inbound POST from webhook.site, verifies HMAC SHA-256
+  signature, writes the verification result to a file the check reads.
+  State check + behavioral artifact (signature verification result).
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, webhooks]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+  turn_timeout: 600  # job-completion + webhook-delivery polling > default 300s
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "TASK_ID=webhook-signed python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/seed_process.py"
+    timeout: 180
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/_shared/cleanup_platform_resources.py"
+    timeout: 180
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides `uuid8`, `process_key`, `folder_path` (the deploy folder).
+
+  Goal:
+  1. Leave the tenant with a webhook named `e2e-webhook-signed-<uuid8>`
+     subscribed to `Job.Completed`, with a known secret. URL must point at a
+     fresh webhook.site receiver (GET `https://webhook.site/token` first to
+     get a UUID + URL).
+  2. Trigger a `Job.Completed` event for `process_key`, then fetch the
+     inbound POST from webhook.site's requests API. Verify the
+     `X-UiPath-Signature` header matches `HMAC-SHA256(secret, raw-body)` —
+     write the boolean result to `signature_verified.txt` (just `true` or
+     `false`).
+
+  Append a manifest record for the webhook:
+  `{"kind": "webhook", "key": "<webhook-key>"}`
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: webhook exists; behavioral: signature verified"
+    command: "python3 $TASK_DIR/check_webhook_signed.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

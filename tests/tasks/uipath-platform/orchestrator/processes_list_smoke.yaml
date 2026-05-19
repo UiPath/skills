@@ -15,6 +15,11 @@ initial_prompt: |
   List the processes published in the `Finance/Accounting` folder of the
   current UiPath tenant.
 
+  Note: the folder may not exist on this tenant. We're checking that the
+  CLI invocation has the right shape — an auth/404 response is acceptable.
+  Don't bother enumerating folders first; just run `processes list` against
+  `Finance/Accounting` and report what came back.
+
 success_criteria:
   - type: command_executed
     description: "Agent listed processes via uip or processes list"
