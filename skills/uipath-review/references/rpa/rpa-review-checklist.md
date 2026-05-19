@@ -359,7 +359,7 @@ Windows-Legacy is supported **indefinitely** in Studio LTS:
 - Studio STS does **not** support Legacy — teams using Legacy must stay on LTS
 - **Deprecation means "no new features added to Legacy," not "Legacy will be removed"**
 
-> **NEVER flag Windows-Legacy as Critical based on framework alone.** Route Legacy-specific deep validation to the dedicated `uipath-rpa-legacy` skill.
+> **NEVER flag Windows-Legacy as Critical based on framework alone.** Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode).
 
 ### The Real Question
 

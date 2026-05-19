@@ -1,11 +1,8 @@
----
-name: uipath-rpa-legacy
-description: "Always invoke when `project.json` has `targetFramework: Legacy` or the user mentions legacy XAML / .NET 4.6.1. UiPath legacy RPA (.NET Framework 4.6.1, XAML) via `uip rpa-legacy`. For Windows/cross-platform→uipath-rpa."
----
-
 # Legacy RPA Workflow Architect
 
-> **Preview** — skill is under active development; surface and behavior may change.
+> **Preview** — legacy mode is under active development; surface and behavior may change.
+
+Entry point for the **Legacy** target framework of `uipath-rpa`. Use this guide when `project.json` has `targetFramework: "Legacy"` (or the field is absent — Legacy is the default for older projects).
 
 Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic activities (no "X" suffix). Uses `uip rpa-legacy` CLI (standalone, no Studio IPC needed).
 
@@ -29,19 +26,19 @@ Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic ac
 
 | Request | Action | Key Reference |
 |---------|--------|---------------|
-| Choose architecture | Sequence vs REFramework vs Dispatcher/Performer | [project-organization-guide.md](./references/project-organization-guide.md) |
-| Create workflow | Phase 0 → Discovery → Generate | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) |
-| Edit workflow | Phase 0 → Discovery → Edit | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) |
-| Validate file | `uip rpa-legacy validate "{projectRoot}/File.xaml" --output json` | [validation-and-fixing.md](./references/validation-and-fixing.md) |
-| Validate project | `uip rpa-legacy validate "{projectRoot}" --output json` | [validation-and-fixing.md](./references/validation-and-fixing.md) |
-| Package (optional) | `uip rpa-legacy pack "{projectRoot}" -o "{dir}"` | [cli-reference.md](./references/cli-reference.md) |
-| Debug | `uip rpa-legacy debug "{projectRoot}/File.xaml"` | [cli-reference.md](./references/cli-reference.md) |
-| Create new project | Create project.json with right packages | [project-structure.md](./references/project-structure.md) |
-| Create test data | Generate Excel/CSV/JSON/types for testing | [test-data-guide.md](./references/test-data-guide.md) |
-| Organize project | Folder structure, naming, libraries | [project-organization-guide.md](./references/project-organization-guide.md) |
-| Add error handling | TryCatch, Retry Scope, exception classification | [error-handling-guide.md](./references/error-handling-guide.md) |
-| Fix/build selectors | Selector anatomy, dynamic selectors, anchors | [selector-guide.md](./references/selector-guide.md) |
-| Create tests | Test design, mock testing, verification | [testing-guide.md](./references/testing-guide.md) |
+| Choose architecture | Sequence vs REFramework vs Dispatcher/Performer | [project-organization-guide.md](./project-organization-guide.md) |
+| Create workflow | Phase 0 → Discovery → Generate | [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) |
+| Edit workflow | Phase 0 → Discovery → Edit | [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) |
+| Validate file | `uip rpa-legacy validate "{projectRoot}/File.xaml" --output json` | [validation-and-fixing.md](./validation-and-fixing.md) |
+| Validate project | `uip rpa-legacy validate "{projectRoot}" --output json` | [validation-and-fixing.md](./validation-and-fixing.md) |
+| Package (optional) | `uip rpa-legacy pack "{projectRoot}" -o "{dir}"` | [cli-reference.md](./cli-reference.md) |
+| Debug | `uip rpa-legacy debug "{projectRoot}/File.xaml"` | [cli-reference.md](./cli-reference.md) |
+| Create new project | Create project.json with right packages | [project-structure.md](./project-structure.md) |
+| Create test data | Generate Excel/CSV/JSON/types for testing | [test-data-guide.md](./test-data-guide.md) |
+| Organize project | Folder structure, naming, libraries | [project-organization-guide.md](./project-organization-guide.md) |
+| Add error handling | TryCatch, Retry Scope, exception classification | [error-handling-guide.md](./error-handling-guide.md) |
+| Fix/build selectors | Selector anatomy, dynamic selectors, anchors | [selector-guide.md](./selector-guide.md) |
+| Create tests | Test design, mock testing, verification | [testing-guide.md](./testing-guide.md) |
 
 If unclear which file to edit, **ask the user**.
 
@@ -55,7 +52,7 @@ If unclear which file to edit, **ask the user**.
 4. Note project shape: count `.xaml` files, list `dependencies` keys and versions — use this to avoid re-discovering packages and activities already explored earlier in conversation
 5. Run `uip rpa-legacy validate "{projectRoot}" --output json` to trigger **package restore** (required before `find-activities` works)
 
-No Studio needed. See [environment-setup.md](./references/environment-setup.md) for details.
+No Studio needed. See [environment-setup.md](./environment-setup.md) for details.
 
 ---
 
@@ -63,28 +60,28 @@ No Studio needed. See [environment-setup.md](./references/environment-setup.md) 
 
 **Start with the minimum. Add more only as needed.**
 
-1. Read [_BUILT-IN-ACTIVITIES.md](./references/activity-docs/_BUILT-IN-ACTIVITIES.md) — complete XAML for If, Assign, Sequence, TryCatch, ForEach, While, Switch, Throw, LogMessage, InvokeCode, ForEachRow, etc. **No CLI calls needed for these.**
+1. Read [_BUILT-IN-ACTIVITIES.md](./activity-docs/_BUILT-IN-ACTIVITIES.md) — complete XAML for If, Assign, Sequence, TryCatch, ForEach, While, Switch, Throw, LogMessage, InvokeCode, ForEachRow, etc. **No CLI calls needed for these.**
 
-2. Read [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) — XAML structure, baseline assembly references, safety rules.
+2. Read [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) — XAML structure, baseline assembly references, safety rules.
 
 3. **Only if you need non-built-in activities** (Excel, Mail, HTTP, PDF, etc.):
    - Run `find-activities "{projectRoot}" --query "..." --output json` for each — use returned `XamlSnippet`
    - Run `type-definition` for any enums in the results
-   - Read the relevant package doc ([Excel.md](./references/activity-docs/Excel.md), [Mail.md](./references/activity-docs/Mail.md), etc.) for gotchas
+   - Read the relevant package doc ([Excel.md](./activity-docs/Excel.md), [Mail.md](./activity-docs/Mail.md), etc.) for gotchas
 
-4. **Only if Flowchart/StateMachine**: read [_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md) for ViewState layout
+4. **Only if Flowchart/StateMachine**: read [_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md) for ViewState layout
 
-**Stop here.** Don't read more files unless you hit a problem during validation. Additional references if needed: [_PATTERNS.md](./references/activity-docs/_PATTERNS.md) (VB.NET expressions), [common-pitfalls.md](./references/common-pitfalls.md) (gotchas), [_INVOKE-CODE.md](./references/activity-docs/_INVOKE-CODE.md) (InvokeCode details), [_REFRAMEWORK.md](./references/activity-docs/_REFRAMEWORK.md) (REFramework), `uip docsai ask "..."` (official docs), `WebSearch` (community).
+**Stop here.** Don't read more files unless you hit a problem during validation. Additional references if needed: [_PATTERNS.md](./activity-docs/_PATTERNS.md) (VB.NET expressions), [common-pitfalls.md](./common-pitfalls.md) (gotchas), [_INVOKE-CODE.md](./activity-docs/_INVOKE-CODE.md) (InvokeCode details), [_REFRAMEWORK.md](./activity-docs/_REFRAMEWORK.md) (REFramework), `uip docsai ask "..."` (official docs), `WebSearch` (community).
 
 5. **If the task involves design decisions**, read the relevant guide on demand:
-   - Error handling strategy → [error-handling-guide.md](./references/error-handling-guide.md)
-   - UI selectors → [selector-guide.md](./references/selector-guide.md)
-   - Project structure / libraries → [project-organization-guide.md](./references/project-organization-guide.md)
-   - Advanced data manipulation (RegEx, LINQ, JObject) → [data-manipulation-guide.md](./references/data-manipulation-guide.md)
-   - Orchestrator integration (queues, assets, triggers) → [orchestrator-guide.md](./references/orchestrator-guide.md)
-   - Test design / debugging → [testing-guide.md](./references/testing-guide.md)
+   - Error handling strategy → [error-handling-guide.md](./error-handling-guide.md)
+   - UI selectors → [selector-guide.md](./selector-guide.md)
+   - Project structure / libraries → [project-organization-guide.md](./project-organization-guide.md)
+   - Advanced data manipulation (RegEx, LINQ, JObject) → [data-manipulation-guide.md](./data-manipulation-guide.md)
+   - Orchestrator integration (queues, assets, triggers) → [orchestrator-guide.md](./orchestrator-guide.md)
+   - Test design / debugging → [testing-guide.md](./testing-guide.md)
 
-See [discovery-workflow.md](./references/discovery-workflow.md) for the full step-by-step procedure.
+See [discovery-workflow.md](./discovery-workflow.md) for the full step-by-step procedure.
 
 ---
 
@@ -95,8 +92,8 @@ See [discovery-workflow.md](./references/discovery-workflow.md) for the full ste
 - [ ] Read relevant activity doc (behavioral context)
 - [ ] Run `find-activities` for every activity — use returned `XamlSnippet` + `XmlnsDeclaration` as starting point
 - [ ] Run `type-definition` for every enum/complex type (exact values)
-- [ ] Read [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) for XAML structure
-- [ ] Read [common-pitfalls.md](./references/common-pitfalls.md) for gotchas
+- [ ] Read [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) for XAML structure
+- [ ] Read [common-pitfalls.md](./common-pitfalls.md) for gotchas
 
 ### Choose Workflow Type
 
@@ -110,7 +107,7 @@ See [discovery-workflow.md](./references/discovery-workflow.md) for the full ste
 
 Before writing XAML for Flowchart or StateMachine:
 1. List all nodes and connections
-2. Assign coordinates per layout guide in [_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md)
+2. Assign coordinates per layout guide in [_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md)
 3. Map True/False branch paths (Flowchart) or transition routes (StateMachine)
 
 **ViewState is MANDATORY** — without it, Studio stacks all nodes at (0,0).
@@ -121,11 +118,11 @@ Before writing XAML for Flowchart or StateMachine:
 - [ ] xmlns uses `assembly=mscorlib` (not `System.Private.CoreLib`)
 - [ ] VB.NET: `[bracket]` notation for expressions
 - [ ] Classic activity names (no "X" suffix)
-- [ ] All 16 baseline assembly references present (see [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md))
+- [ ] All 16 baseline assembly references present (see [xaml-basics-and-rules.md](./xaml-basics-and-rules.md))
 - [ ] All 21 baseline namespace imports present
 - [ ] Package-specific assembly refs + namespace imports added for every activity package used
 - [ ] Flowchart/StateMachine: `xmlns:av` declared, ViewState on every node
-- [ ] Scope activities: `ActivityAction<T>` body pattern (see [common-pitfalls.md](./references/common-pitfalls.md))
+- [ ] Scope activities: `ActivityAction<T>` body pattern (see [common-pitfalls.md](./common-pitfalls.md))
 
 ### EDIT Checklist
 
@@ -159,7 +156,7 @@ FINAL (before completing):
 
 When stuck: `docsai ask` → `WebSearch` → ask user.
 
-See [validation-and-fixing.md](./references/validation-and-fixing.md) for detailed procedures and common error scenarios.
+See [validation-and-fixing.md](./validation-and-fixing.md) for detailed procedures and common error scenarios.
 
 ---
 
@@ -190,7 +187,7 @@ uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_FilePath": "C:\\data.xls
 
 **Fix-and-retry loop:** edit XAML → validate → debug again.
 
-See [cli-reference.md](./references/cli-reference.md) for all options.
+See [cli-reference.md](./cli-reference.md) for all options.
 
 ---
 
@@ -221,28 +218,28 @@ See [cli-reference.md](./references/cli-reference.md) for all options.
 | `uip rpa-legacy debug <xaml-path> -i '...'` | Execute via UiRobot |
 | `uip docsai ask "question" --output json` | Search UiPath documentation |
 
-Full reference: [cli-reference.md](./references/cli-reference.md)
+Full reference: [cli-reference.md](./cli-reference.md)
 
 ### Reference Files
 
 | File | Content |
 |------|---------|
-| [cli-reference.md](./references/cli-reference.md) | All CLI commands, parameters, error recovery |
-| [discovery-workflow.md](./references/discovery-workflow.md) | Detailed discovery steps, troubleshooting |
-| [environment-setup.md](./references/environment-setup.md) | Project root detection, legacy verification |
-| [project-structure.md](./references/project-structure.md) | Legacy project layout, project.json schema |
-| [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) | XAML anatomy, expressions, safety rules |
-| [common-pitfalls.md](./references/common-pitfalls.md) | Dangerous defaults, scope patterns, gotchas |
-| [validation-and-fixing.md](./references/validation-and-fixing.md) | Validate & fix loop, error scenarios |
-| [test-data-guide.md](./references/test-data-guide.md) | Excel, CSV, JSON, top 10 file types and UiPath types |
-| [error-handling-guide.md](./references/error-handling-guide.md) | Exception classification, TryCatch patterns, Retry Scope, ContinueOnError |
-| [selector-guide.md](./references/selector-guide.md) | Selector anatomy, dynamic selectors, anchors, validation checklist |
-| [project-organization-guide.md](./references/project-organization-guide.md) | Folder conventions, naming, Config.xlsx, libraries, single responsibility |
-| [data-manipulation-guide.md](./references/data-manipulation-guide.md) | RegEx, advanced LINQ, JObject/JArray, StringBuilder, type conversions |
-| [orchestrator-guide.md](./references/orchestrator-guide.md) | Queue lifecycle, asset types, logging levels, triggers, environments |
-| [testing-guide.md](./references/testing-guide.md) | Test design, verification activities, mock testing, debugging strategy |
+| [cli-reference.md](./cli-reference.md) | All CLI commands, parameters, error recovery |
+| [discovery-workflow.md](./discovery-workflow.md) | Detailed discovery steps, troubleshooting |
+| [environment-setup.md](./environment-setup.md) | Project root detection, legacy verification |
+| [project-structure.md](./project-structure.md) | Legacy project layout, project.json schema |
+| [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) | XAML anatomy, expressions, safety rules |
+| [common-pitfalls.md](./common-pitfalls.md) | Dangerous defaults, scope patterns, gotchas |
+| [validation-and-fixing.md](./validation-and-fixing.md) | Validate & fix loop, error scenarios |
+| [test-data-guide.md](./test-data-guide.md) | Excel, CSV, JSON, top 10 file types and UiPath types |
+| [error-handling-guide.md](./error-handling-guide.md) | Exception classification, TryCatch patterns, Retry Scope, ContinueOnError |
+| [selector-guide.md](./selector-guide.md) | Selector anatomy, dynamic selectors, anchors, validation checklist |
+| [project-organization-guide.md](./project-organization-guide.md) | Folder conventions, naming, Config.xlsx, libraries, single responsibility |
+| [data-manipulation-guide.md](./data-manipulation-guide.md) | RegEx, advanced LINQ, JObject/JArray, StringBuilder, type conversions |
+| [orchestrator-guide.md](./orchestrator-guide.md) | Queue lifecycle, asset types, logging levels, triggers, environments |
+| [testing-guide.md](./testing-guide.md) | Test design, verification activities, mock testing, debugging strategy |
 
-### Activity Docs (`references/activity-docs/`)
+### Activity Docs (`./activity-docs/`)
 
 | File | Content |
 |------|---------|
@@ -256,4 +253,3 @@ Full reference: [cli-reference.md](./references/cli-reference.md)
 | `_DU-PROCESS.md` | Document Understanding pipeline template |
 | `AllActivities.md` | Complete legacy activity catalog |
 | `{Package}.md` | Per-package docs (Excel, Mail, System, UIAutomation, etc.) |
-

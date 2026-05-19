@@ -22,13 +22,19 @@ from pathlib import Path
 # yet (uipath-admin, uipath-ixp) — the gate SKIPs them.
 # uipath-solution is the merged successor of uipath-solution-design + the
 # `uip solution` slice of uipath-platform; rebaseline after the next full run.
+#
+# uipath-rpa: held at the pre-merge modern value of 70 after the
+# uipath-rpa-legacy merge (PILOT-5232). The legacy half's 75% baseline
+# was measured against the dedicated legacy skill description; the
+# merged uipath-rpa description dilutes legacy signals, so the
+# combined recall is expected to land closer to the modern half.
+# Re-baseline after the first full activation run on the merged dataset.
 BASELINES_PCT: dict[str, int] = {
     "uipath-feedback": 90,
     "uipath-data-fabric": 90,
     "uipath-planner": 90,
     "uipath-tasks": 85,
     "uipath-governance": 85,
-    "uipath-rpa-legacy": 75,
     "uipath-platform": 70,
     "uipath-maestro-flow": 70,
     "uipath-human-in-the-loop": 70,
