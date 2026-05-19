@@ -1,0 +1,126 @@
+task_id: skill-case-single-case-management
+description: >
+  Build a Case Management definition from an sdd.md whose only task is a
+  nested case (CASE_MANAGEMENT). The referenced sub-case will not be
+  published on the tenant, so the agent must emit a skeleton task per the
+  skill's unresolved-resource rules — `type: "case-management"` set, no
+  fabricated taskTypeId. Validates the resulting case file.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ParentCaseSingle" containing
+  a project also named "ParentCaseSingle" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — ParentCaseSingle
+
+  Single-stage, single-task case exercising the case-management (nested case) task plugin.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | ParentCaseSingle |
+  | Case Description | Single-node case that spawns a child ChildOnboardingCase as a nested case task. |
+  | Case Identifier | Prefix: PCS, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  |---|---|---|---|---|---|---|
+  | childCaseSpawned | implementation | boolean | false | ChildOnboardingCase spawn flag | delegate.spawnChildOnboardingCase | - |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Delegate (`delegate`)
+  **Type:** Stage
+  **Description:** Spawn the ChildOnboardingCase nested case.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `delegate.spawnChildOnboardingCase` | Spawn ChildOnboardingCase | case-management | System |
+
+  ##### Task 1.1: Spawn ChildOnboardingCase (`delegate.spawnChildOnboardingCase`)
+
+  **Type:** case-management
+  **Description:** Spawn the ChildOnboardingCase as a nested case task.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Case Reference | Name "ChildOnboardingCase", Folder "Shared" |
+  | Component Type | CASE_MANAGEMENT |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass. If the referenced sub-case isn't in the registry, leave
+  it as a skeleton task (`<UNRESOLVED>`) per the skill's rules — do NOT
+  fabricate a taskTypeId. Finish with `uip maestro case validate` passing
+  on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ParentCaseSingle/ParentCaseSingle/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan contains a task with type=\"case-management\""
+    command: "python3 $TASK_DIR/check_case_management_case.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
