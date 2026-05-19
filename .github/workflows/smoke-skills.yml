@@ -292,9 +292,9 @@ jobs:
         working-directory: tests
         id: smoke
         run: |
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags temporary -j $TASK_PARALLELISM"
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml --tags temporary -j "$TASK_PARALLELISM" --run-dir /tmp/runs -v
+            -e experiments/default.yaml --tags smoke -j "$TASK_PARALLELISM" -v
         continue-on-error: true
 
       - name: Summarize results
