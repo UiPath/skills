@@ -42,7 +42,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 
 ## Edit Tooling
 
-Direct JSON edits use four mechanics. Pick by operation class — same pattern, different tool. The CLI has no `node update` command (see [editing-operations-cli.md § Update node inputs](editing-operations-cli.md#update-node-inputs-expression-script-body-label-etc)), so structural mutations of node `inputs`, definition swaps, and array splices are done through direct `.flow` authoring.
+Direct JSON edits use four mechanics. Pick by operation class — same pattern, different tool. The CLI has no `node update` command (see [editing-operations-cli.md § Operations Not Supported by CLI](editing-operations-cli.md#operations-not-supported-by-cli)), so structural mutations of node `inputs`, definition swaps, and array splices are done through direct `.flow` authoring.
 
 | Operation class | Mechanic | When to use |
 |----|----|----|
