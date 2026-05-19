@@ -65,7 +65,7 @@ success_criteria:
 
   - type: file_exists
     description: "LangGraph project config present"
-    path: "langgraph.json"
+    path: "purchase-gate/langgraph.json"
     weight: 1.0
     pass_threshold: 1.0
 
