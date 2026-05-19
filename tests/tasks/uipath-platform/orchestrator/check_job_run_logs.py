@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Query tenant: job is terminal, logs non-empty, traces non-empty.
+"""Query tenant: job reached terminal state + has at least one log entry.
 
-Reads only the job key from `job_key.txt` (agent's only artifact); everything
-else is queried live from Orchestrator."""
+Reads only the job key from `job_key.txt`; everything else queried live."""
 
 import json
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 
@@ -39,8 +37,7 @@ if not job_key:
 env = uip_json("or", "jobs", "get", job_key)
 if env.get("Result") != "Success":
     sys.exit(f"FAIL: jobs get Result={env.get('Result')!r} Message={env.get('Message')!r}")
-data = env.get("Data") or {}
-state = _pick(data, "State")
+state = _pick(env.get("Data") or {}, "State")
 if state not in ("Successful", "Faulted", "Stopped"):
     sys.exit(f"FAIL: job state={state!r}, expected Successful/Faulted/Stopped")
 
@@ -54,20 +51,4 @@ if isinstance(log_data, dict):
 if not log_data:
     sys.exit("FAIL: jobs logs returned empty")
 
-# 3. Traces — best-effort. Platform ingestion can lag well past any reasonable
-#    check timeout (we've seen >3 min in normal load). The test passes if
-#    state + logs are correct; trace presence is informational only.
-spans = []
-for attempt in range(6):
-    tr = uip_json("or", "jobs", "traces", job_key)
-    if tr.get("Result") == "Success":
-        d = tr.get("Data") or []
-        if isinstance(d, dict):
-            d = _pick(d, "Value", "Items", "Results") or []
-        if d:
-            spans = d
-            break
-    time.sleep(15)
-
-trace_note = f"spans={len(spans)}" if spans else "spans=lagging (platform ingestion not flushed; not a test failure)"
-print(f"OK: job {job_key} state={state} logs={len(log_data)} {trace_note}")
+print(f"OK: job {job_key} state={state} logs={len(log_data)}")
