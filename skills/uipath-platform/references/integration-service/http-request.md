@@ -4,7 +4,7 @@ This doc covers two things every agent authoring a Managed HTTP Request needs to
 1. What Managed HTTP Request is, and the two modes it runs in.
 2. How to use the `http-request` CLI command to fill in the values Managed HTTP Request needs.
 
-Consumers: Maestro Flow, Maestro BPMN, Case Management, Coded Agents, RPA workflows, API Workflows, and any other UiPath automation surface that supports HTTP calls. Each consumer surfaces Managed HTTP Request differently (as a node, an activity, a tool call, …) and uses its own type identifier and configuration schema - the concept and the rules below are the same. For the exact node/activity type identifier and how to configure it, see your consumer's own authoring docs.
+Consumers: Maestro Flow, Maestro BPMN, API Workflows, Case Management, etc. Each consumer surfaces Managed HTTP Request differently (as a node, an activity, a tool call, …) and uses its own type identifier and configuration schema - the concept and the rules below are the same. For the exact node/activity type identifier and how to configure it, see your consumer's own authoring docs.
 
 ## What is Managed HTTP Request?
 
