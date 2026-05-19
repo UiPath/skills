@@ -108,9 +108,9 @@ When `uip maestro flow init` is run from inside a solution directory (Step 2b), 
 | `NotInSolution` | The CLI walked all ancestors and found no `.uipx`. Step 2b was run outside any solution directory. | **Delete the partial scaffold and restart from Step 2a.** Do not paper over it with `uip solution project add` — the layout will still be wrong. |
 | `Skipped` | A solution candidate was found but registration was deliberately not attempted (e.g., multiple `.uipx` files in the same directory). | Pick the intended `.uipx` and run the explicit `uip solution project add` (recipe below). |
 | `Failed` | Registration was attempted and the CLI hit a read/write/parse error. | Read `Data.SolutionRegistration.Instructions`, fix the underlying cause, then run the explicit `uip solution project add` (recipe below). |
-| **Field absent** (`Data.SolutionRegistration` is missing) | **You are running a pre-MST-10004 CLI that omits the field when no parent solution is found.** Treat the same as `NotInSolution` *unless* the `.uipx` `Projects[]` array already lists this project — verify manually with `cat <SolutionName>.uipx` (look for `ProjectRelativePath: "<ProjectName>/project.uiproj"`). | If the project is missing from `Projects[]`, **delete the partial scaffold and restart from Step 2a**. Do not proceed with `flow debug` — Studio Web will reject the upload with `Import failed (400): The solution archive does not contain any valid projects.` (MST-10004). |
+| **Field absent** (`Data.SolutionRegistration` is missing) | **You are running a pre-MST-10004 CLI that cannot tell you whether registration happened.** Inspect `<SolutionName>.uipx` manually with `cat <SolutionName>.uipx` and look for `ProjectRelativePath: "<ProjectName>/project.uiproj"`. | If the project is listed, proceed. If the layout is double-nested but the project is missing from `Projects[]`, run the fallback recipe. If there is no `.uipx` or the project is single-nested, delete the partial scaffold and restart from Step 2a. Do not proceed with `flow debug` while `Projects[]` is missing the project — Studio Web will reject the upload with `Import failed (400): The solution archive does not contain any valid projects.` (MST-10004). |
 
-**Fallback recipe** — for `Skipped` / `Failed` only, wire the project manually:
+**Fallback recipe** — for `Skipped`, `Failed`, or absent-field-with-correct-layout, wire the project manually:
 
 ```bash
 uip solution project add \
@@ -118,7 +118,7 @@ uip solution project add \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
-For `NotInSolution` or the absent-field case, **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
+For `NotInSolution`, or for an absent-field result where no `.uipx` exists, **delete the partial scaffold and restart from Step 2a** — do not try to patch a single-nested layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
 
 > **Why this matters.** Studio Web rejects solution archives whose `.uipx` `Projects[]` array does not list every project in the staged folder, returning an opaque `Import failed (400): The solution archive does not contain any valid projects.` The CLI's `uip maestro flow debug` preflight now catches the registration gap locally (MST-10004), but only **before** the upload — if you reach `flow debug` from a wrong Step 2c branch you still waste turns reading network errors. Spend the 1 turn here on the right branch.
 

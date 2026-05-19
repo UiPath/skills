@@ -22,14 +22,15 @@ uip solution init "<SolutionName>" --output json
 #      - "Registered" / "AlreadyRegistered" → done
 #      - "NotInSolution" → cd into the solution dir is missing, restart from step 1
 #      - "Skipped" / "Failed" → fall through to step 3
-#    On pre-MST-10004 CLI versions the field can be absent — treat that the
-#    same as "NotInSolution" unless the `.uipx` Projects[] manifest already
-#    lists your project (verify with `cat <SolutionName>.uipx`).
+#    On pre-MST-10004 CLI versions the field can be absent. Inspect the
+#    `.uipx` Projects[] manifest with `cat <SolutionName>.uipx`: proceed if
+#    it lists `<ProjectName>/project.uiproj`; otherwise use step 3 when the
+#    layout is double-nested, or restart from step 1 when no `.uipx` exists.
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
 # 3. (Fallback only) Wire the project manually if auto-registration was
-#    `Skipped` or `Failed` — typically because init was run outside the
-#    solution dir and produced a single-nested layout.
+#    `Skipped`, `Failed`, or field-absent with a double-nested project whose
+#    `.uipx` Projects[] manifest is missing `<ProjectName>/project.uiproj`.
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx

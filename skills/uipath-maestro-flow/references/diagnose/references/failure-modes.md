@@ -202,7 +202,8 @@ uip maestro flow init <ProjectName> --output json
 # - "NotInSolution"  → the `cd` above did not take effect; restart from `solution init`.
 # - "Skipped" / "Failed" → run `uip solution project add` (see below).
 # - Field absent (pre-MST-10004 CLI) → inspect <SolutionName>.uipx Projects[]
-#   manually; if your project isn't listed, restart from `solution init`.
+#   manually; if your project isn't listed but the double-nested layout exists,
+#   run `uip solution project add`. If no `.uipx` exists, restart.
 #   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 
@@ -254,6 +255,7 @@ The double-nested file layout (`<Solution>/<Project>/<Project>.flow`) looks corr
 `uip maestro flow init` reported a non-`Registered` solution registration outcome — or, on pre-MST-10004 CLIs, omitted the `Data.SolutionRegistration` field entirely — and the scaffold step proceeded anyway. Common triggers:
 
 - `flow init` was run from the parent of the solution, not from inside `<SolutionName>/`. Auto-registration walks ancestors and finds no `.uipx`; on post-MST-10004 CLI you see `Status: "NotInSolution"`, on older CLI you see the absent field.
+- Older CLI builds can omit the field even when the double-nested layout exists; in that case the `.uipx` manifest is the source of truth.
 - The solution directory contained multiple `.uipx` files; auto-registration returns `Status: "Skipped"` and waits for the user to disambiguate.
 - A read/write error during registration (`Status: "Failed"`).
 
@@ -264,8 +266,9 @@ Run `flow init`'s status branch explicitly per [author/greenfield.md — Step 2c
 | Status | Action |
 | --- | --- |
 | `Registered` / `AlreadyRegistered` | Project is in the manifest — debug should succeed. If you still see import 400, your CLI is behind the new preflight; upgrade. |
-| `NotInSolution` *(or absent field on pre-MST-10004 CLI)* | Delete the partial scaffold and restart from `uip solution init` then `cd` into the solution dir before `flow init`. |
+| `NotInSolution` | Delete the partial scaffold and restart from `uip solution init` then `cd` into the solution dir before `flow init`. |
 | `Skipped` / `Failed` | Run `uip solution project add "<ProjectDir>" "<SolutionName>.uipx"` to wire the project manually, then re-run `flow debug`. |
+| Field absent on pre-MST-10004 CLI | Inspect `.uipx` `Projects[]`. If the project is already listed, proceed. If the layout is double-nested but `Projects[]` is empty or missing the project, run `uip solution project add "<ProjectDir>" "<SolutionName>.uipx"`. If no `.uipx` exists or the project is single-nested, restart from `uip solution init`. |
 
 To verify what's actually in `Projects[]` before debug:
 
