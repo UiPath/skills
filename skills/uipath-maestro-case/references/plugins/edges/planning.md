@@ -38,7 +38,7 @@ This constraint is also documented in the [stages plugin](../stages/planning.md#
 |-------|--------|-------|
 | `source` | sdd.md flow arrow origin | Trigger ID or stage name |
 | `target` | sdd.md flow arrow destination | Stage name |
-| `label` | inferred (see § Labels) | Required. Always emit. Auto-derived when sdd.md does not state one. |
+| `label` | inferred (see § Labels) | Optional. Emit when sdd.md states one or an inference rule applies; otherwise leave blank. |
 | `source-handle` | sdd.md (rarely specified) | `right` (default) \| `left` \| `top` \| `bottom` |
 | `target-handle` | sdd.md (rarely specified) | `left` (default) \| `right` \| `top` \| `bottom` |
 
@@ -46,21 +46,20 @@ This constraint is also documented in the [stages plugin](../stages/planning.md#
 
 Edge labels are **display-only** — they do not control routing. Routing conditions live on the source stage's `exitConditions`, not on the edge. Labels annotate intent so the diagram in Studio Web is readable (Studio Web renders this as the connector's "Name").
 
-**Every edge MUST carry a `label`.** sdd.md rarely declares edge labels explicitly, so derive one during planning. Never omit.
+Labels may be blank. Emit one only when sdd.md states it explicitly or an inference rule below applies.
 
 ### Inference rules (apply in order)
 
 1. **TriggerEdge** (source is a Trigger node) → label = `"Start"`. For multi-trigger cases, label = trigger displayName (e.g., `"Manual"`, `"On timer"`, `"On <event>"`).
 2. **Stage→Stage with branching exit conditions in sdd.md** → label = matching branch outcome from the source stage's exit-condition text. Examples: `"Approved"`, `"Rejected"`, `"Timeout"`, `"Escalated"`. One edge per outcome → one label per outcome.
-3. **Stage→Stage, single outbound, no branching** → label = target stage name.
 
-If sdd.md states an explicit edge label, use it verbatim and skip inference.
+If sdd.md states an explicit edge label, use it verbatim and skip inference. Otherwise (e.g., Stage→Stage with single outbound and no branching), leave the label blank.
 
 ### Anti-patterns
 
-- **Do NOT emit an edge T-entry without a `label:` line.**
 - **Do NOT infer from edge index** (`"Edge 1"`, `"Edge 2"`) — meaningless to the user.
 - **Do NOT read exit-condition text from another T-entry** — read directly from sdd.md, preserve plugin isolation.
+- **Do NOT fabricate a label** when no inference rule applies — leave it blank.
 
 ## Handles
 
@@ -76,7 +75,7 @@ Edges are created **after** all stages exist so both endpoints can resolve. Each
 ## T<n>: Add edge "<source>" → "<target>"
 - source: "<trigger-id-or-stage-name>"
 - target: "<stage-name>"
-- label: "<inferred or sdd.md-stated label>"   # required, always present
+- label: "<inferred or sdd.md-stated label>"   # optional, omit line when blank
 - source-handle: right      # optional
 - target-handle: left       # optional
 - order: after T<m>

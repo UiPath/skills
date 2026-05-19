@@ -1,0 +1,101 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-opus-4-6-v1",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 15,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "topic": {
+        "type": "string",
+        "description": "The topic or question to research on the web"
+      },
+      "slackChannel": {
+        "type": "string",
+        "description": "Slack channel ID or name where the briefing will be posted"
+      },
+      "jiraProject": {
+        "type": "string",
+        "description": "Jira project key where a tracking issue will be created (e.g. DEMO)"
+      }
+    },
+    "required": [
+      "topic",
+      "slackChannel",
+      "jiraProject"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "slackMessageTimestamp": {
+        "type": "string",
+        "description": "Timestamp of the posted Slack message"
+      },
+      "jiraIssueKey": {
+        "type": "string",
+        "description": "Key of the created Jira tracking issue (e.g. DEMO-42)"
+      },
+      "sourcesCount": {
+        "type": "integer",
+        "description": "Total number of sources found (web search results + summary citations)"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Web Research Briefing Agent. Execute exactly these 5 tool calls in order — one call each, no repeats:\n\nSTEP 1 — Web Search (call ONCE):\n  Call Web Search with the research topic as the query and num=10.\n  From the response, count how many items are in the `results` array. Call this value SEARCH_COUNT.\n  Do NOT call Web Search again after this step.\n\nSTEP 2 — Web Summary (call ONCE):\n  Call Web Summary with the same research topic.\n  From the response, count how many items are in the `citations` array. Call this value CITATIONS_COUNT.\n  Do NOT call Web Summary again after this step.\n\nSTEP 3 — Count Sources (call ONCE):\n  Call Count Sources with a=SEARCH_COUNT and b=CITATIONS_COUNT.\n  The response gives TOTAL_SOURCES = a + b.\n\nSTEP 4 — Send Slack Message (call ONCE):\n  Call Send message to channel with the channel from the input and a message containing:\n  - Bold header with the research topic\n  - The AI-generated summary from Web Summary\n  - Numbered list of top search results (title + URL) from Web Search\n  - \"Total sources: TOTAL_SOURCES\"\n  Save the timestamp from the response as SLACK_TS.\n\nSTEP 5 — Create Jira Issue (call ONCE):\n  Call Create Issue with a nested 'fields' object:\n  { \"fields\": { \"project\": { \"key\": \"<the jiraProject input value>\" }, \"issuetype\": { \"id\": \"3\" }, \"summary\": \"Research briefing: <topic>\" } }\n  The issuetype id must be the string \"3\" (not a number).\n  Save the issue key from the response as JIRA_KEY.\n\nAfter completing all 5 steps, return: slackMessageTimestamp=SLACK_TS, jiraIssueKey=JIRA_KEY, sourcesCount=TOTAL_SOURCES.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Web Research Briefing Agent. Execute exactly these 5 tool calls in order — one call each, no repeats:\n\nSTEP 1 — Web Search (call ONCE):\n  Call Web Search with the research topic as the query and num=10.\n  From the response, count how many items are in the `results` array. Call this value SEARCH_COUNT.\n  Do NOT call Web Search again after this step.\n\nSTEP 2 — Web Summary (call ONCE):\n  Call Web Summary with the same research topic.\n  From the response, count how many items are in the `citations` array. Call this value CITATIONS_COUNT.\n  Do NOT call Web Summary again after this step.\n\nSTEP 3 — Count Sources (call ONCE):\n  Call Count Sources with a=SEARCH_COUNT and b=CITATIONS_COUNT.\n  The response gives TOTAL_SOURCES = a + b.\n\nSTEP 4 — Send Slack Message (call ONCE):\n  Call Send message to channel with the channel from the input and a message containing:\n  - Bold header with the research topic\n  - The AI-generated summary from Web Summary\n  - Numbered list of top search results (title + URL) from Web Search\n  - \"Total sources: TOTAL_SOURCES\"\n  Save the timestamp from the response as SLACK_TS.\n\nSTEP 5 — Create Jira Issue (call ONCE):\n  Call Create Issue with a nested 'fields' object:\n  { \"fields\": { \"project\": { \"key\": \"<the jiraProject input value>\" }, \"issuetype\": { \"id\": \"3\" }, \"summary\": \"Research briefing: <topic>\" } }\n  The issuetype id must be the string \"3\" (not a number).\n  Save the issue key from the response as JIRA_KEY.\n\nAfter completing all 5 steps, return: slackMessageTimestamp=SLACK_TS, jiraIssueKey=JIRA_KEY, sourcesCount=TOTAL_SOURCES."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Research the following topic and post a briefing:\n\nTopic: {{input.topic}}\nSlack channel: {{input.slackChannel}}\nJira project: {{input.jiraProject}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Research the following topic and post a briefing:\n\nTopic: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.topic"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nSlack channel: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.slackChannel"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nJira project: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.jiraProject"
+        }
+      ]
+    }
+  ],
+  "guardrails": [],
+  "projectId": "d01190b7-425e-4733-acd6-be5f23d49a74"
+}

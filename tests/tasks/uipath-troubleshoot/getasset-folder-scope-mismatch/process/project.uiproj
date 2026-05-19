@@ -1,0 +1,6 @@
+{
+  "Name": "AssetFolderMismatch",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Credential failure caused by a FolderPath property pointing to a folder that doesn't exist in the tenant.",
+  "MainFile": "Main.xaml"
+}

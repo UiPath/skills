@@ -5,12 +5,13 @@ description: >
   agent selects transform nodes over script nodes for standard data wrangling,
   and correctly configures filter conditions and map transformations.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:transform]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:
@@ -21,7 +22,8 @@ initial_prompt: |
   Create a UiPath Flow project named "ReadingList" that curates a reading list
   from a catalog of math and data science books.
 
-  The catalog is this inline JSON array (hardcode it in the flow, no input variables):
+  The catalog is this JSON array. Hardcode it in the flow as static data; do not
+  require the user to provide it as a runtime input.
 
   [
     {"title": "Linear Algebra Done Right", "author": "Axler", "field": "math", "difficulty": 6, "pages": 340},
@@ -39,9 +41,11 @@ initial_prompt: |
   2. Transform the results to show only the book title (uppercased) and author
   3. Output the curated reading list as a result variable
 
-  Use transform nodes for the data operations, not script nodes.
+  Use transform nodes for the data operations, not script nodes. Transform
+  collection inputs must reference a variable path (e.g. `$vars.catalog`), not
+  an inline `=js:[...]` array or `=js:$vars.<path>` expression.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 

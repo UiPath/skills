@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_ImportedBrownfieldPreservation" targetNamespace="http://uipath.com/synthetic/maestro-bpmn/imported-brownfield-preservation">
+  <bpmn:process id="Process_ImportedBrownfieldPreservation" name="Imported Brownfield Preservation" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="Var_LegacyPayload" name="legacyPayload" type="json" elementId="Start_Imported" />
+        <uipath:output id="Var_NormalizedStatus" name="normalizedStatus" type="string" />
+      </uipath:variables>
+      <uipath:migrationVersion version="3" />
+      <uipath:tag key="fixture">imported-brownfield-preservation</uipath:tag>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_Imported" name="Imported Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="Entry_ImportedBrownfieldPreservation" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_To_Script</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Task_PreserveImportedScript" name="Preserve Imported Script" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v2" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context>
+            <uipath:inputSchema><![CDATA[{"type":"object","properties":{"legacyPayload":{"type":"object"}}}]]></uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"legacyPayload":"=vars.Var_LegacyPayload"}]]></uipath:input>
+          <uipath:output name="normalizedStatus" type="string" var="Var_NormalizedStatus" source="=result.response.status" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_To_Script</bpmn:incoming>
+      <bpmn:outgoing>Flow_Script_To_End</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: { status: "preserved-v2" } };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_ImportedDone" name="Imported Done">
+      <bpmn:incoming>Flow_Script_To_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_To_Script" sourceRef="Start_Imported" targetRef="Task_PreserveImportedScript" />
+    <bpmn:sequenceFlow id="Flow_Script_To_End" sourceRef="Task_PreserveImportedScript" targetRef="End_ImportedDone" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_ImportedBrownfieldPreservation">
+    <bpmndi:BPMNPlane id="Plane_ImportedBrownfieldPreservation" bpmnElement="Process_ImportedBrownfieldPreservation">
+      <bpmndi:BPMNShape id="Shape_Start_Imported" bpmnElement="Start_Imported">
+        <dc:Bounds x="120" y="140" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_PreserveImportedScript" bpmnElement="Task_PreserveImportedScript">
+        <dc:Bounds x="220" y="118" width="170" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_ImportedDone" bpmnElement="End_ImportedDone">
+        <dc:Bounds x="460" y="140" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Start_To_Script" bpmnElement="Flow_Start_To_Script">
+        <di:waypoint x="156" y="158" />
+        <di:waypoint x="220" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Script_To_End" bpmnElement="Flow_Script_To_End">
+        <di:waypoint x="390" y="158" />
+        <di:waypoint x="460" y="158" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

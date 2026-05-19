@@ -2,7 +2,7 @@
 
 A connector-based trigger **inside a stage** — waits for an external event before continuing.
 
-The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full 7-step resolution pipeline.
+The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full resolution pipeline (TypeCache lookup → connection pick → `case spec` discovery → reference resolution → required-field gate → SDD mapping → input-values + filter authoring).
 
 ## When to Use
 
@@ -20,7 +20,7 @@ Distinguish from:
 
 ## Resolution Pipeline
 
-Follow the 7-step pipeline in [connector-trigger-common.md](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both in-stage triggers and case-level event triggers.
+Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both in-stage triggers and case-level event triggers.
 
 ## tasks.md Entry Format
 
@@ -32,8 +32,8 @@ Follow the 7-step pipeline in [connector-trigger-common.md](../../../connector-t
 - object-name: <objectName>
 - event-operation: <eventOperation>
 - event-mode: <polling|webhooks>
-- input-values: {"parentFolderId": "AAMkADNm..."}
-- filter: "(contains(subject, 'urgent'))"
+- input-values: {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
+- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}]}
 - isRequired: true
 - runOnlyOnce: false
 - order: after T<m>
@@ -43,9 +43,9 @@ Follow the 7-step pipeline in [connector-trigger-common.md](../../../connector-t
 
 ## Unresolved Fallback
 
-> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector trigger exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to skeleton.
+> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector trigger exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
 
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
 - Omit `input-values:` and `filter:`
-- Execution creates a skeleton task (display-name + type only) per [skeleton-tasks.md](../../../skeleton-tasks.md)
+- Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)

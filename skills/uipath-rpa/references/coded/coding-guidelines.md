@@ -76,6 +76,37 @@ using System.Text.RegularExpressions;  // regex
 2. Add only the `using` statements needed for the types actually referenced in the file
 3. Add the entry point to `project.json` (**Process projects only** — Tests and Library projects do not use `entryPoints`). Add `fileInfoCollection` for test case files (all project types)
 
+## Platform types — do not reinvent
+
+UiPath ships first-class types for the patterns coded workflows most commonly need (exceptions, queue items, credentials, OR descriptors). **Always import the platform type instead of defining a project-local equivalent.** A project-local `BusinessRuleException`, custom queue-item record, or hand-rolled credential helper diverges from Orchestrator behaviour and breaks integration with platform features that expect the canonical types.
+
+| Platform type | Namespace / package | Use for | Do NOT do this instead |
+|---|---|---|---|
+| **`UiPath.Core.BusinessRuleException`** | `UiPath.Core` (in `UiPath.System.Activities`) | Business-rule violations that must NOT be retried by REFramework / Orchestrator (e.g., invalid input data, validation failure, missing required field). Orchestrator marks the queue item as `Failed` with no retry. | Define a project-local `class BusinessRuleException : Exception { … }`. |
+| **`UiPath.Robot.Activities.BusinessException`** | `UiPath.Robot.Activities` | Same role as `BusinessRuleException` in robot-side custom activity packages. | Same — do not define your own. |
+| **`UiPath.Core.Activities.Storage.IResource` / `ILocalResource`** | `UiPath.Core.Activities.Storage` (in `UiPath.System.Activities`) | File / folder handles passed to activities that need an `IResource`. | Pass raw `string` paths or hand-roll a `LocalResource` constructor (the constructor is internal — see § IResource / ILocalResource below). |
+| **`UiPath.Orchestrator.Client.Models.QueueItemDto`** and related | `UiPath.Orchestrator.Client.Models` (in `UiPath.System.Activities`) | Queue-item shape returned by `GetTransactionItem` / pushed via `AddQueueItem`. | Define a project-local queue-item record that diverges from Orchestrator's schema. |
+| **OR descriptors `Descriptors.<App>.<Screen>.<Element>`** | Generated into `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs` | UI element targeting in coded UI automation. | Hand-roll selector strings or `TargetAppModel` instances; bypass the Object Repository. |
+| **`UiPath.CodedWorkflows.CodedWorkflow`** | `UiPath.CodedWorkflows` (built into the runtime) | Base class for `[Workflow]` and `[TestCase]` classes. | Inherit from a custom base; the Studio wrapper generation depends on this exact type. |
+
+### Throwing `BusinessRuleException` correctly
+
+```csharp
+using UiPath.Core;     // brings BusinessRuleException into scope
+
+if (!System.Text.RegularExpressions.Regex.IsMatch(hash, @"^[0-9a-f]{40}$"))
+{
+    throw new BusinessRuleException(
+        $"Computed hash '{hash}' does not match expected SHA1 format (40 lowercase hex chars).");
+}
+```
+
+`BusinessRuleException` is recognised by REFramework's `SetTransactionStatus` and by Orchestrator's queue-item lifecycle — items failed with this exception are marked **Failed** and not retried automatically. A project-local exception with the same name is just an `Exception` from REFramework's point of view and triggers the system-error retry path instead.
+
+### When you MAY define a project-local type
+
+Project-local types are appropriate for **domain DTOs** that have no platform equivalent — `InvoiceLineItem`, `CustomerRecord`, `WorkItem` — and belong in Coded Source Files. The rule above applies to platform-provided types only: do not reinvent exceptions, queue-item shapes, credential handles, file-resource handles, or OR descriptors.
+
 ## Best Practices
 
 ### API Discovery
@@ -83,11 +114,11 @@ using System.Text.RegularExpressions;  // regex
 - Read at least 5 existing workflow files (or all if fewer) to understand project conventions
 - **When writing UI automation code** — follow the **Finding Descriptors** hierarchy (see [ui-automation-guide.md](../ui-automation-guide.md)) in strict order. Do NOT write any UI code until descriptors are resolved:
   1. Read `ObjectRepository.cs` — use existing descriptors if present
-  2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa inspect-package`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
+  2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa packages inspect`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
   3. If descriptors are still missing — use the `uia-configure-target` skill flow (found in the UIA activity-docs) to create targets. This handles capturing the application, discovering elements, generating selectors, improving them, and registering them in the OR. Do NOT manually call the internal `uip rpa uia` CLIs outside of the skill flow. Fallback: the indication commands (see UIA docs) when elements appear only after user interaction (e.g., a compose form that opens after clicking a button)
   4. UITask (ScreenPlay) is ONLY for when selectors are genuinely brittle/unreliable — NEVER as a first approach
   5. NEVER bypass Object Repository by constructing `TargetAppModel` with raw URL/BrowserType
-- Use `uip rpa inspect-package` for API discovery when documentation is unclear
+- Use `uip rpa packages inspect` for API discovery when documentation is unclear
 
 ### IResource / ILocalResource — Converting File Paths
 
@@ -114,13 +145,13 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 
 ### Code Quality
 - **Start simple, iterate** — Create minimal working version first, then refine
-- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
+- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
 - **Only include using statements for packages in project.json** — Adding unused usings causes compile errors
 - **Match input parameter names exactly** — Execute method signature must match `--input` arguments (case-sensitive)
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
 
 ### Validation Loop (Critical Rule #14)
-uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
 @../validation-guide.md
 
 ### Error Handling
@@ -151,13 +182,13 @@ C) <user-driven approach>
 
 ### Project & Code Structure
 
-- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uip rpa create-project` (Critical Rule #1)
+- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uip rpa init` (Critical Rule #1)
 - Never generate C# code without first searching for existing .cs files (API Discovery)
 - Never edit files without reading them first
 - Never skip the `[Workflow]` or `[TestCase]` attribute on the Execute method (Critical Rule #4)
 - Never forget to inherit from `CodedWorkflow` (except Coded Source Files) (Critical Rule #3)
 - Never add `using` statements for packages not in `project.json` — causes CS errors
-- Never guess service method names — verify with existing code or `uip rpa inspect-package`
+- Never guess service method names — verify with existing code or `uip rpa packages inspect`
 
 ### UI Automation
 
@@ -198,12 +229,12 @@ C) <user-driven approach>
 | Issue | Cause | Fix |
 |-------|-------|-----|
 | **"Studio X.X.X does not have interop support"** | Surfaces only when running against Studio Desktop and the auto-detected install is too old (< 26.2). Headless Studio is unaffected. | Pass `--studio-dir "<STUDIO_DIR>"` pointing to a 26.2+ build, or drop the Studio Desktop override and let the command run headless |
-| **No Studio instances found** | Only relevant for `diff` / `focus-activity` — they need Studio Desktop. Every other command runs headless and doesn't need a Desktop instance. | Run `uip rpa start-studio --project-dir "<PROJECT_DIR>"` if you actually need Studio Desktop; otherwise re-run the command — headless Studio relaunches automatically |
+| **No Studio instances found** | Only relevant for `diff` / `focus-activity` — they need Studio Desktop. Every other command runs headless and doesn't need a Desktop instance. | Run `uip rpa studio start --project-dir "<PROJECT_DIR>"` if you actually need Studio Desktop; otherwise re-run the command — headless Studio relaunches automatically |
 | **Stale pipe / ENOENT** | Studio instance crashed or was closed | The tool retries automatically; if persistent, re-run the command (headless) or restart Studio Desktop |
 | **Workflow cannot be found** | Entrypoint not in project.json | Verify project.json entrypoint has the file listed (Process projects only — Tests and Library projects do not use `entryPoints`) |
-| **Service property not available** | Missing package dependency | Add required package to project.json dependencies |
+| **Service property not available** | Missing package dependency | Install the required package via `uip rpa packages install --project-dir "<PROJECT_DIR>" --packages '[{"id":"<PACKAGE_ID>"}]' --output json` (no `add-dependency` command exists; do not hand-edit `project.json`) |
 | **Timeout** | Studio took too long to start. First headless call on a cold NuGet cache can take 30–90 s. | Increase timeout: `--timeout 600` |
 | **"Target name 'X' is not part of the current screen"** | Element descriptor used on wrong screen handle | Use the `UiTargetApp` handle from `Open`/`Attach` for the screen that owns the element |
 | **"Cannot select item. It was not found among existing items"** | `SelectItem` fails on web dropdowns | Use `TypeInto` instead of `SelectItem` for web `<select>` elements |
-| **inspect-package cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
-| **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa create-project` instead of writing `project.json` manually |
+| **`packages inspect` cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
+| **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa init` instead of writing `project.json` manually |

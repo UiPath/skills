@@ -18,9 +18,9 @@ Create storage buckets, upload and download files, and generate presigned URLs f
 
 ```mermaid
 graph LR
-    A[buckets create] --> B[bucket-files write]
+    A[buckets create] --> B[bucket-files upload]
     B --> C[bucket-files list]
-    C --> D[bucket-files read]
+    C --> D[bucket-files download]
     C --> E[bucket-files get-download-url]
     C --> F[bucket-files get-upload-url]
 ```
@@ -66,14 +66,14 @@ uip resource buckets create "cloud-reports" --folder-path "Finance" \
 ### List Buckets
 
 ```bash
-# List buckets in a specific folder
+# List buckets in a specific folder (folder required by default)
 uip resource buckets list --folder-path "Finance" --output json
 
-# List across all accessible folders (with optional name filter)
-uip resource buckets list --name "invoice" --output json
+# List across every accessible folder (with optional name filter)
+uip resource buckets list --all-folders --name "invoice" --output json
 ```
 
-Paginate with `--limit` / `--offset`. Sort with `--order-by`. Use `--exclude-folder-path` to omit a folder from cross-folder listing.
+`buckets list` requires either `--folder-path` / `--folder-key` or `--all-folders`. Paginate with `--limit` / `--offset`. Sort with `--order-by`. With `--all-folders`, use `--exclude-folder-path` / `--exclude-folder-key` to omit a folder.
 
 ### Get, Update, Delete
 
@@ -104,11 +104,11 @@ uip resource buckets unshare <bucket-key> --folder-path "Production" --output js
 ### Upload a File
 
 ```bash
-uip resource bucket-files write <bucket-key> "reports/summary.csv" \
+uip resource bucket-files upload <bucket-key> "reports/summary.csv" \
   --folder-path "Finance" --file ./summary.csv --output json
 
 # Specify content type explicitly
-uip resource bucket-files write <bucket-key> "data/config.json" \
+uip resource bucket-files upload <bucket-key> "data/config.json" \
   --folder-path "Finance" --file ./config.json \
   --content-type "application/json" --output json
 ```
@@ -154,11 +154,11 @@ uip resource bucket-files get <bucket-key> "reports/summary.csv" \
   --folder-path "Finance" --output json
 
 # Download to a local file
-uip resource bucket-files read <bucket-key> "reports/summary.csv" \
+uip resource bucket-files download <bucket-key> "reports/summary.csv" \
   --folder-path "Finance" --destination ./summary.csv --output json
 
 # Write to stdout (pipe to another command)
-uip resource bucket-files read <bucket-key> "reports/summary.csv" \
+uip resource bucket-files download <bucket-key> "reports/summary.csv" \
   --folder-path "Finance" | jq .
 
 # Delete a file
@@ -166,7 +166,7 @@ uip resource bucket-files delete <bucket-key> "reports/summary.csv" \
   --folder-path "Finance" --output json
 ```
 
-Without `--destination`, `read` writes content to stdout. Use `-d` as shorthand.
+Without `--destination`, `download` writes content to stdout. Use `-d` as shorthand.
 
 ---
 
@@ -205,9 +205,9 @@ uip resource buckets create "monthly-reports" \
   --folder-path "Finance" --description "Monthly financial reports" --output json
 
 # 2. Upload files
-uip resource bucket-files write <bucket-key> "2026/04/revenue.csv" \
+uip resource bucket-files upload <bucket-key> "2026/04/revenue.csv" \
   --folder-path "Finance" --file ./revenue.csv --output json
-uip resource bucket-files write <bucket-key> "2026/04/expenses.pdf" \
+uip resource bucket-files upload <bucket-key> "2026/04/expenses.pdf" \
   --folder-path "Finance" --file ./expenses.pdf --output json
 
 # 3. List files in the April directory
@@ -215,7 +215,7 @@ uip resource bucket-files list <bucket-key> \
   --folder-path "Finance" --prefix "2026/04/" --output json
 
 # 4. Download a file
-uip resource bucket-files read <bucket-key> "2026/04/revenue.csv" \
+uip resource bucket-files download <bucket-key> "2026/04/revenue.csv" \
   --folder-path "Finance" --destination ./downloaded-revenue.csv --output json
 
 # 5. Generate a presigned download URL for sharing
@@ -243,8 +243,8 @@ uip resource bucket-files get-download-url <bucket-key> "2026/04/expenses.pdf" \
 
 ### Common Pitfalls
 
-- **`list` without `--folder-path`** returns buckets across all accessible folders -- may return more results than expected.
-- **`read` without `--destination`** writes to stdout. For binary files, always use `--destination`.
+- **`buckets list` requires either `--folder-path`/`--folder-key` or `--all-folders`.** No-flag invocations error out — there is no implicit cross-folder default.
+- **`download` without `--destination`** writes to stdout. For binary files, always use `--destination`.
 - **External providers** (Azure, Amazon) require `--credential-store-key`. Use `uip or credential-stores list` to find keys.
 - **Bucket keys** are GUIDs (the `identifier` field from list/create output). Do not confuse with numeric `id`.
 - **File paths** use forward slashes regardless of OS (e.g., `"reports/2026/summary.csv"`).
@@ -253,6 +253,6 @@ uip resource bucket-files get-download-url <bucket-key> "2026/04/expenses.pdf" \
 
 ## Related
 
-- [resources.md](resources.md) -- Resource tool overview and libraries
-- [Tenant Admin](../orchestrator/tenant-admin.md) -- Credential stores used by external storage providers
-- [Setup Environment](../orchestrator/setup-environment.md) -- Folder setup
+- [resources.md](resources.md) — Resource tool overview and libraries
+- Credential stores used by external storage providers → [`uipath-orchestrator`](../orchestrator/tenant-admin.md)
+- Folder setup → [`uipath-orchestrator`](../orchestrator/setup-environment.md)

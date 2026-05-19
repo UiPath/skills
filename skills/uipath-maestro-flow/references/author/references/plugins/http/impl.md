@@ -6,13 +6,13 @@
 
 > **Always use `core.action.http.v2`** for all HTTP requests. The older `core.action.http` (v1) is deprecated.
 
-## Registry Validation
+## Registry validation
 
 ```bash
 uip maestro flow registry get core.action.http.v2 --output json
 ```
 
-Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the shared implicit `error` port pattern used by all action nodes. See [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes). Model serviceType is `Intsvc.UnifiedHttpRequest`.
+Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the implicit `error` port pattern shared by every action node (see [Action Node Structure](../../../../shared/action-nodes.md)). Model `serviceType` is `Intsvc.UnifiedHttpRequest`.
 
 ## Critical: Use `node configure`
 
@@ -22,10 +22,9 @@ Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `b
 
 ### Step 1 — Add the node
 
-```bash
-uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
-  --label "<Label>" --output json
-```
+Use `Edit` / `Write` to add the `core.action.http.v2` node directly to the `.flow` file. Follow [Edit/Write: Add a node](../../editing-operations-json.md#add-a-node): copy the registry definition into `definitions[]`, add the node instance to `nodes[]`, add `variables.nodes`, and add a placeholder `layout.nodes` entry. Save the node ID for Step 3.
+
+For the node instance shape, follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton) with `type: "core.action.http.v2"` and `typeVersion: "2.0"`. Leave `inputs` empty at this stage — Step 3 populates `inputs.detail` via `uip maestro flow node configure`.
 
 ### Step 2 — Identify target connector and connection (connector mode only)
 
@@ -142,22 +141,46 @@ The managed HTTP node's target port is `input`. Its source ports are:
 - `error` — fires when the HTTP call fails (network error, timeout, non-2xx not caught by a branch); wire this to an error handler to keep the flow from faulting
 - `branch-{id}` — one per entry in `inputs.branches` (Step 4); use the exact `id` you set
 
-```bash
-# Edge into the HTTP node
-uip maestro flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
-  --source-port <port> --target-port input --output json
+Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge add` for this structural wiring. Examples:
 
-# Simple: single outgoing edge on "default"
-uip maestro flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
-  --source-port default --target-port input --output json
+```json
+{
+  "id": "e-<upstreamNodeId>-<nodeId>",
+  "sourceNodeId": "<upstreamNodeId>",
+  "sourcePort": "<port>",
+  "targetNodeId": "<nodeId>",
+  "targetPort": "input"
+}
+```
 
-# With error handler: wire the implicit "error" port
-uip maestro flow edge add <ProjectName>.flow <nodeId> <errorHandlerId> \
-  --source-port error --target-port input --output json
+```json
+{
+  "id": "e-<nodeId>-<downstreamNodeId>",
+  "sourceNodeId": "<nodeId>",
+  "sourcePort": "default",
+  "targetNodeId": "<downstreamNodeId>",
+  "targetPort": "input"
+}
+```
 
-# With conditional branches: one edge per configured branch (default/error still apply)
-uip maestro flow edge add <ProjectName>.flow <nodeId> <hasItemsDownstream> \
-  --source-port branch-hasItems --target-port input --output json
+```json
+{
+  "id": "e-<nodeId>-<errorHandlerId>",
+  "sourceNodeId": "<nodeId>",
+  "sourcePort": "error",
+  "targetNodeId": "<errorHandlerId>",
+  "targetPort": "input"
+}
+```
+
+```json
+{
+  "id": "e-<nodeId>-<hasItemsDownstream>",
+  "sourceNodeId": "<nodeId>",
+  "sourcePort": "branch-hasItems",
+  "targetNodeId": "<hasItemsDownstream>",
+  "targetPort": "input"
+}
 ```
 
 ## Debug

@@ -14,7 +14,7 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Two outcomes:
+Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. **Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
@@ -22,6 +22,14 @@ Before configuring any target or writing any UIA workflow, list top-level window
 Do not re-inspect or keep polling after the initial check — subsequent capture and attach are `uia-configure-target`'s job. This single pre-flight exists only to drive the launch decision.
 
 **Never use `Get-Process`, `tasklist`, `ps`, WMI, window-title scraping, or any other OS-level process command** to infer app state. They report processes, not UIA-visible windows; they miss background apps and name-mismatched binaries; and they produce wrong launch decisions.
+
+---
+
+## Launching, Inspecting & Interacting with GUI apps (uia-interact)
+
+`uia-interact` is the sub-skill for any one-shot UIA action against a live app: launching, advancing UI state between captures, inspecting top-level windows, screenshots, attribute reads, element interaction. It is **not** for authoring workflow activities — those go through `uia-configure-target`.
+
+**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Mandatory before any `uip rpa uia interact` or `uip rpa uia snapshot inspect` call.
 
 ---
 
@@ -55,6 +63,130 @@ When the source is a Test Manager test case, a PDD, or any written list of "Clic
 
 ---
 
+## Placeholder-Selector Stub Pattern
+
+Sometimes you must generate a UI automation workflow without live app access — the app is not installed on the build machine, the agent has no GUI, or the user has explicitly deferred target capture to a developer who will run Indicate later. In that case, the workflow ships with placeholder selectors. The pattern below is the **only** acceptable shape.
+
+### Rule
+
+When live capture is unavailable, write the **real** UIA activity (XAML `<NApplicationCard>` / `<NTypeInto>` / `<NClick>` / `<NGetText>` / etc., or coded `uiAutomation.Open` / `Attach` / `TypeInto` / `Click`) with the target descriptor's selector left as a placeholder and a `TODO Indicate` marker embedded in the activity's `DisplayName` (XAML) or in a `// TODO[Indicate]` comment immediately adjacent to the call (coded).
+
+Do **NOT** replace the activity itself with a `Log` call.
+
+### Why this matters
+
+A `Log("LoginWorkflow: type username")` stub:
+
+- Passes `uip rpa validate` (no UIA activity, no selectors to validate).
+- Passes `uip rpa build` (just a string in a Log activity).
+- Runs cleanly via `uip rpa run` (the Log activity emits a message).
+- **Does nothing.** The workflow looks complete to the validator, looks complete to a CI smoke test, and silently fails to perform the actual automation.
+
+A real `<uix:NTypeInto>` activity with placeholder selector + `TODO Indicate` marker:
+
+- Build/validate may surface "selector incomplete" warnings — useful, since they tell the developer what is left to do.
+- The activity is wired into the workflow's control flow, package dependencies, scope, and OR registration plumbing. The developer's only remaining work is **Indicate**.
+- The TODO marker is visible in Studio's designer pane and grep-able in the file.
+- The cost of "what does this stub actually need from the developer?" drops from "read this carefully and infer" to "click Indicate on the marked activities."
+
+### XAML example
+
+```xml
+<uix:NApplicationCard ApplicationWindow="{x:Null}"
+                      DisplayName="TODO Indicate — Use Application/Browser (ACME WI app)"
+                      sap2010:WorkflowViewState.IdRef="NApplicationCard_1">
+    <uix:NApplicationCard.Body>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+            <uix:NTypeInto DisplayName="TODO Indicate — Type Username"
+                           Text="[in_Username]"
+                           sap2010:WorkflowViewState.IdRef="NTypeInto_1" />
+            <uix:NTypeInto DisplayName="TODO Indicate — Type Password"
+                           Text="[in_Password]"
+                           sap2010:WorkflowViewState.IdRef="NTypeInto_2" />
+            <uix:NClick DisplayName="TODO Indicate — Click Login"
+                        sap2010:WorkflowViewState.IdRef="NClick_1" />
+            <uix:NGetText DisplayName="TODO Indicate — Read WIID field"
+                          Text="[out_WIID]"
+                          sap2010:WorkflowViewState.IdRef="NGetText_1" />
+        </Sequence>
+    </uix:NApplicationCard.Body>
+</uix:NApplicationCard>
+```
+
+What this gives the developer:
+- `NApplicationCard` is in the right place (entry point of the screen).
+- Three `NTypeInto` / `NClick` / `NGetText` are wired into the Sequence in the right order.
+- `Text` arguments are bound to the right input/output variables.
+- Each activity's `DisplayName` is `TODO Indicate — <human description>`. Studio shows this on the canvas; the developer clicks each and runs Indicate.
+- Once Indicate is run, `DisplayName` is updated, `Target` becomes a real descriptor, and the workflow is shippable.
+
+What you must NOT do:
+
+```xml
+<!-- WRONG: replaces the actual activity with a log stub -->
+<ui:LogMessage Message="LoginWorkflow: type username" Level="Info" />
+<!-- TODO[selectors]: replace this with an actual TypeInto activity once capture is done -->
+```
+
+That XAML compiles, validates, runs — and does nothing. A re-run of the build pipeline at a later date silently ships the same broken automation.
+
+### Coded example
+
+```csharp
+[Workflow]
+public void Execute(string in_Username, string in_Password, out string out_WIID)
+{
+    // TODO[Indicate]: attach to the ACME WI app — replace placeholder with Descriptors.<App>.<Screen>
+    using var app = uiAutomation.Open(/* TODO[Indicate]: Descriptors.AcmeWi.Login */);
+
+    // TODO[Indicate]: target the Username field
+    app.TypeInto(/* TODO[Indicate]: Descriptors.AcmeWi.Login.Username */ "username-placeholder", in_Username);
+
+    // TODO[Indicate]: target the Password field
+    app.TypeInto(/* TODO[Indicate]: Descriptors.AcmeWi.Login.Password */ "password-placeholder", in_Password);
+
+    // TODO[Indicate]: target the Login button
+    app.Click(/* TODO[Indicate]: Descriptors.AcmeWi.Login.LoginButton */ "login-button-placeholder");
+
+    // TODO[Indicate]: target the WIID readout field on the next screen
+    using var home = uiAutomation.Attach(/* TODO[Indicate]: Descriptors.AcmeWi.Home */);
+    out_WIID = home.GetText(/* TODO[Indicate]: Descriptors.AcmeWi.Home.WIIDField */ "wiid-field-placeholder");
+}
+```
+
+What this gives the developer:
+- The actual `uiAutomation.Open` / `Attach` / `TypeInto` / `Click` / `GetText` calls are in the right order with the right argument bindings.
+- Every `TODO[Indicate]` marker tells the developer the exact descriptor to wire up.
+- The placeholder string argument lets the project build and `uip rpa packages inspect` succeed; once Indicate runs and `Descriptors.<App>.<Screen>.<Element>` exists, replace the placeholder string with the descriptor reference.
+
+What you must NOT do:
+
+```csharp
+[Workflow]
+public void Execute(string in_Username, string in_Password, out string out_WIID)
+{
+    // TODO[selectors]: replace these with real uiAutomation calls once OR is populated
+    Log("LoginWorkflow: type username " + in_Username);
+    Log("LoginWorkflow: type password");
+    Log("LoginWorkflow: click Login");
+    Log("LoginWorkflow: read WIID");
+    out_WIID = "";
+}
+```
+
+This compiles, validates, runs, and does nothing. It is the most expensive kind of stub.
+
+### When the rule does NOT apply
+
+- **Live capture is available.** Run `uia-configure-target` / Indicate first; the workflow ships with real descriptors. No stub pattern needed.
+- **The activity is not UI.** Logging is fine for actual logging steps (e.g., "Log the transaction ID before processing"). The rule applies only to UI-interaction steps that, in a finished workflow, would be `NTypeInto` / `NClick` / `NGetText` / etc.
+
+### Acceptance check
+
+Before declaring a stub-mode workflow done, re-read every UI-interaction step in the PDD / SDD and confirm that the workflow contains a **real UIA activity** (XAML element or coded `uiAutomation.*` call) for each one — not a Log call. Grep for `Log\(` and `LogMessage` inside the workflow body; for every match, verify it represents an actual logging step, not a substitute for a UI action.
+
+---
+
 ## Mandatory: Generate Targets Before Writing Any UI Code
 
 Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors.App.Screen.Element`) or XAML (`<uix:TargetApp>`, `<uix:TargetAnchorable>`):
@@ -78,6 +210,7 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 - **Hallucinated keyboard shortcuts instead of UIA targets** — do NOT send keyboard shortcuts (`Ctrl+S`, `Alt+F4`, `Tab` navigation, menu mnemonics, etc.) as a substitute for clicking or typing into a real UI element. `Click` and `TypeInto` against configured targets are deterministic, survive layout changes, and are observable in logs; guessed shortcuts depend on focus, locale, and version. Reserve keyboard shortcuts for genuinely hotkey-only operations (commands with no clickable surface) and confirm the shortcut exists in the live app — never infer from OS convention or muscle memory.
 - **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient.
 - **`Cannot send input ... outside of screen bounds` on hover-revealed elements** — pop-up menu items, autocomplete entries, and dropdown rows that only appear after a hover/click frequently fail under the default input method. Switch the affected activity (or its UIA interact CLI counterpart) to a simulated input method. Available input-method values: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+- **`HealingAgentBehavior` enum split between card and child activities.** `NApplicationCard` (Use Application/Browser) accepts `NHealingAgentBehavior` — values `Job`, `Disabled`, `RecommendationOnly`. Child activities (`NClick`, `NTypeInto`, `NCheckState`, etc.) accept `NChildHealingAgentBehavior`, which adds `SameAsCard`. Putting `SameAsCard` on the card itself fails with `Failed to create a 'HealingAgentBehavior' from the text 'SameAsCard'`. When introducing a new card (e.g., a nested card for a sign-in subprocess), set its `HealingAgentBehavior` to `Job`/`Disabled`/`RecommendationOnly` — never copy the value from a child activity. Confirm via `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/common/NHealingAgentBehavior.md` and `NChildHealingAgentBehavior.md`.
 
 ---
 
@@ -159,7 +292,7 @@ Each method on `UiTargetApp` accepts targets in multiple forms:
 Read `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs`. This file contains a `Descriptors` class with the hierarchy `Descriptors.<App>.<Screen>.<Element>`.
 
 > **Generation requires Studio Desktop.** `ObjectRepository.cs` is regenerated only when Studio Desktop detects a coded workflow file (`.cs` with `[Workflow]` / `[TestCase]`) and reconciles it against the OR — `uip rpa build` alone does NOT regenerate it. If the file is missing or stale after registering elements:
-> 1. Confirm Studio Desktop is running against the project (start it with `uip rpa start-studio --project-dir "<PROJECT_DIR>"` if needed).
+> 1. Confirm Studio Desktop is running against the project (start it with `uip rpa studio start --project-dir "<PROJECT_DIR>"` if needed).
 > 2. Ensure at least one `.cs` coded workflow exists in the project — Studio only triggers regeneration when it sees a coded surface that needs descriptors.
 > 3. Save / re-open the project in Studio Desktop to force a regen pass.
 >
@@ -172,7 +305,7 @@ using <ProjectNamespace>.ObjectRepository;
 
 #### Step 2 — Check UILibrary NuGet packages
 
-Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa inspect-package`.
+Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa packages inspect`.
 
 For UILibrary packages, use the **package** namespace, not the project namespace:
 ```csharp
@@ -204,7 +337,7 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 > "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uip rpa uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
-For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `get-errors` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
+For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
 
 ### Key Concepts
 

@@ -1,0 +1,54 @@
+task_id: skill-bpmn-integration-service-boundary
+description: >
+  Integration Service boundary eval: agent creates BPMN source shape and an
+  explicit CLI-enrichment handoff without hand-authoring connector-owned
+  connection metadata or running cloud-side commands.
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, connector, feature:connections]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+
+run_limits:
+  max_turns: 80
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN draft project named "SlackDigestBoundaryBpmn".
+  The intended process is:
+  manual start -> prepare digest -> send Slack digest through Integration
+  Service -> end.
+
+  Requirements:
+  - Author the BPMN source shape, variables, mappings, and diagram geometry.
+  - Represent the Slack Integration Service step only as a draft executable
+    boundary: use a supported BPMN wrapper for Integration Service intent and
+    make clear that connector operation metadata, connection binding, dynamic
+    schemas, generated outputs, `bindings_v2.json`, and package metadata are
+    CLI-owned enrichment.
+  - Add a README or notes file that states the exact CLI-owned enrichment
+    blockers before upload or run.
+  - Do not invent connection IDs, folder keys, tenant URLs, connector resource
+    keys, generated schemas, or package metadata.
+  - Do not upload, publish, deploy, debug, or run the process.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Integration Service draft stays inside the CLI-owned boundary"
+    command: "python3 $TASK_DIR/check_integration_service_boundary.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

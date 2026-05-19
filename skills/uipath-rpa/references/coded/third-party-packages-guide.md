@@ -6,8 +6,8 @@ When a user needs functionality that **no UiPath built-in activity provides** (e
 
 1. **Consider whether a built-in activity or plain .NET is the better fit** — prefer activities for Orchestrator integration, UI automation, and document handling; prefer .NET for data transforms, HTTP to external APIs, parsing, etc.
 2. **If no built-in activity fits** — search for a well-known .NET NuGet package that provides the capability
-3. **Inspect the package** — run the `uip rpa inspect-package` command with the appropriate flags in order to get exact API signatures before writing code
-4. **Add it to `project.json`** — add the package to `dependencies` with bracket-notation version
+3. **Inspect the package** — run the `uip rpa packages inspect` command with the appropriate flags in order to get exact API signatures before writing code
+4. **Install it** — run `uip rpa packages install --project-dir "<PROJECT_DIR>" --packages '[{"id":"<PACKAGE_ID>","version":"<VERSION>"}]' --output json`. Omit `version` to resolve the latest compatible. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command.**
 5. **Write C# code using the package** — use the package's API directly in the `Execute` method (no service proxy needed — just `using` + direct API calls)
 
 ## How Third-Party Packages Differ from UiPath Activity Packages
@@ -64,4 +64,4 @@ With `project.json` dependency:
   - `RestSharp` (REST APIs)
   - `Polly` (retry/resilience patterns)
   - `Newtonsoft.Json` (JSON parsing - already included in most projects)
-- After identifying a package, run the `uip rpa inspect-package` command to discover exact APIs before coding
+- After identifying a package, run the `uip rpa packages inspect` command to discover exact APIs before coding

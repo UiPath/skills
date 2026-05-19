@@ -1,0 +1,10 @@
+{
+  "id": "Fixture.ContractVariants",
+  "version": "1.0.0",
+  "content": [
+    "content/contract-variants.bpmn",
+    "content/bindings_v2.json",
+    "content/entry-points.json",
+    "content/operate.json"
+  ]
+}

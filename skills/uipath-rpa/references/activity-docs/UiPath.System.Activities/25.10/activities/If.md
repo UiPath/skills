@@ -24,5 +24,5 @@ Conditional branching. No namespace prefix.
 
 **Key rules:**
 - Condition is always `InArgument x:TypeArguments="x:Boolean"` — expression must evaluate to bool
-- `If.Then` and `If.Else` each accept **one** child activity — wrap multiple activities in a `<Sequence>`
+- `If.Then` and `If.Else` each wrap content in a `<Sequence>` — even for a single activity. Studio's designer expects the wrap as a drop zone.
 - `If.Else` is optional (can be omitted for if-without-else)

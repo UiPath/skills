@@ -1,0 +1,57 @@
+task_id: skill-gov-aops-policy-catalog-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-governance skill to
+  discover the governance catalog — list AOps products and license types.
+  Tests whether the skill teaches the correct CLI namespace
+  (`uip gov aops-policy`, not the legacy `uip admin aops-policy`), the
+  `--output json` convention, and that `license-type list` is reachable
+  under the current subcommand tree.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip gov aops-policy` commands that hit the service will fail with an
+  auth error. That is acceptable — what matters is that the agent invokes
+  the correct commands with the correct flags.
+tags: [uipath-governance, smoke, catalog]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A tenant admin wants a catalog snapshot of AOps governance before
+  creating any new policies. List every available product and every
+  available license type. Save the command output to ./output.txt for
+  review.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, capture both stdout and stderr to
+    ./output.txt (use `> output.txt 2>&1` for the first command and
+    `>> output.txt 2>&1` for subsequent ones), and move on. Do NOT retry
+    or attempt to login.
+  - Use --output json on every uip gov aops-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip gov aops-policy product list` (or pre-rename `list-products`) with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+(product\s+list|list-products)\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip gov aops-policy license-type list` (or pre-rename `list-license-types`) with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+(license-type\s+list|list-license-types)\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

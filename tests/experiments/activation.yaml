@@ -1,0 +1,41 @@
+experiment_id: skill-activation-default
+description: >
+  Default experiment for skill activation evals. Each row presents a single
+  user prompt; the agent decides whether to invoke a Skill. We measure the
+  classification (precision / recall / F1) per skill.
+
+defaults:
+  # Activation is a one-shot decision per prompt — short timeouts are fine.
+  run_limits:
+    # Activation is a recognition decision, not a work loop — the agent must
+    # decide from the prompt + skill descriptions alone, with zero sandbox
+    # discovery. 1 turn forces invoke-or-don't on the first response. Higher
+    # limits would let the agent compensate for a weak skill description by
+    # exploring, masking the signal we want to measure.
+    max_turns: 1
+    task_timeout: 120
+    turn_timeout: 120
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+    # Skill must be allowed so the agent can invoke a skill when it decides
+    # to. Read/Write/Bash included so the agent isn't starved of basic tools
+    # when it decides NOT to use Skill — removing them would bias the
+    # decision toward "don't invoke".
+    allowed_tools: [Skill, Bash, Read, Write, Edit, Glob, Grep]
+    plugins:
+      - type: local
+        path: $SKILLS_REPO_PATH
+    ignore_patterns: []
+
+  # Drop <sandbox>/{node_modules,.npm-prefix} so preserved artifacts stay slim
+  # and Node module resolution can't leak across concurrent sandboxes
+  # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
+  post_run:
+    - command: "rm -rf node_modules .npm-prefix"
+      timeout: 30
+
+variants:
+  - variant_id: default

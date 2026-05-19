@@ -53,9 +53,17 @@ uip or packages versions <package-id> --output json
 
 # Inspect entry points (key format: PackageId:Version)
 uip or packages entry-points "MyProcess:1.0.0" --output json
+
+# Get one package version's full DTO (description, authors, target framework, ...)
+uip or packages get "MyProcess:1.0.0" --output json
+
+# Download the .nupkg back from the feed
+uip or packages download "MyProcess:1.0.0" --destination ./MyProcess.1.0.0.nupkg --output json
 ```
 
 Entry points show which workflows inside the package can be executed. Multi-entry-point packages require `--entry-point` when creating a process.
+
+`packages get` accepts the `Id:Version` composite key returned by `packages list` / `packages versions`. The `--all-fields` flag returns the raw DTO including `tags`, `targetFramework`, `isCompiled`, etc.
 
 ## Step 3: Create Process
 
@@ -72,13 +80,50 @@ uip or processes create --name "MyProcess" \
 Key options:
 
 | Option | Description |
-|--------|-------------|
-| `--runtime-type` | `Unattended`, `Attended`, `Development`, `NonProduction` |
-| `--entry-point` | Required for multi-entry-point packages |
-| `--auto-update` | Automatically use latest package version |
-| `--job-priority` | `Low`, `Normal`, `High` |
-| `--input-arguments` | Default input arguments (JSON) |
-| `--tags` | Comma-separated tags for filtering |
+|---|---|
+| `--entry-point <path>` | Required for multi-entry-point packages |
+| `--auto-update` / `--no-auto-update` | Auto-pick the latest package version on deploy |
+| `--job-priority <Low\|Normal\|High>` | Default execution priority |
+| `--specific-priority <1-100>` | Numeric priority override (mutually exclusive with `--job-priority`). Use when you need fine-grained ordering inside the same priority bucket. |
+| `--robot-size <Small\|Standard\|Medium\|Large>` | Cloud robot sizing for serverless runtimes |
+| `--input-arguments <json>` | Default input arguments (merged with per-job inputs) |
+| `--environment-variables <json>` | Default environment variables (merged with per-job env) |
+| `--tags <list>` | Comma-separated tags for filtering |
+| `--hidden-for-attended` / `--visible-for-attended` | Toggle visibility to attended robot users |
+| `--auto-create-triggers` / `--no-auto-create-triggers` | Auto-create connected triggers on deploy |
+| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <id>`) | Job retention policy |
+| `--stale-retention-period <days>` + `--stale-retention-action <Delete\|Archive\|None>` | Stale-job retention policy |
+
+> The runtime kind (Unattended / Headless / NonProduction / AgentService / Serverless) is **not** a process-level setting; it's chosen per-job on `jobs start --runtime-type`. The process binds the package to a folder; runtime selection happens at execution time.
+
+#### Inspect / Edit / Roll back / Delete Processes
+
+```bash
+# Get one process by key (cross-folder; resolved through the release lookup)
+uip or processes get <process-key-guid> --output json
+
+# Validation report — what does the runtime see when it tries to start this process?
+# Returns missing tools, missing assets, missing connections, schema mismatches.
+uip or processes resources <process-key-guid> --output json
+
+# Edit fields after creation. Same flag set as `processes create` minus name/package-key/package-version,
+# plus --healing-agent / --no-healing-agent (Autopilot for Robots toggle).
+uip or processes edit <process-key-guid> --description "Updated description" --output json
+
+# Walk the package version history (every package version this release ever pointed at)
+uip or processes version-history <process-key-guid> --output json
+
+# Pin to a specific package version (typically used to roll back after a regression)
+uip or processes update-version <process-key-guid> --package-version 1.0.2 --output json
+
+# Roll back to the previous version recorded in version-history
+uip or processes rollback <process-key-guid> --output json
+
+# Delete the process (release). Package itself stays in the feed.
+uip or processes delete <process-key-guid> --output json
+```
+
+`processes edit` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
 
 ## Step 4: Start Job
 
@@ -94,7 +139,20 @@ uip or jobs start <process-key> --folder-path "Production" \
   --output json
 ```
 
-Key options: `--input-arguments` (JSON), `--input-file` (path), `--attachment`, `--runtime-type`, `--wait-for-completion`, `--timeout` (default 300s), `--poll-interval` (default 5s), `--run-as-me`.
+Key options:
+
+- `--input-arguments <json>` / `--input-file <path>` — pick one. `--input-arguments` inlines a JSON object; `--input-file` uploads a file as the job's `InputFile` argument.
+- `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded.
+- `--runtime-type <type>` — `Unattended`, `Headless`, `NonProduction`, `AgentService`, or `Serverless`. Picks the runtime kind the scheduler will use.
+- `--strategy <strategy>` — `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`).
+- `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool; with `Specific` they're required.
+- `--healing-agent` — enable Autopilot for Robots (Healing Agent) just for this job, regardless of the process-level `--healing-agent` setting on `processes edit`. Useful for one-off self-healing without flipping the process default.
+- `--reference <text>` — user-set reference (free-form string) attached to the job. Useful for correlation with external systems.
+- `--environment-variables <json>` — JSON object of per-job environment variables. Merged on top of folder-/process-level env.
+- `--run-as-me` — run under the caller's identity instead of resolving an unattended robot account in the folder.
+- `--wait-for-completion` + `--timeout <seconds>` (default 300) + `--poll-interval <seconds>` (default 5) — poll until the job reaches a terminal state.
+- `--output-dir <path>` + `--no-download` — when `--wait-for-completion` is set, the CLI downloads the job's `OutputFile` to this directory automatically. Pass `--no-download` to opt out.
+- `--job-priority <Low|Normal|High>` — execution priority on the runtime queue.
 
 ## Step 5: Monitor Job
 
@@ -129,7 +187,7 @@ Retrieve LLM and agentic execution traces for Agent-type processes:
 uip or jobs traces <job-key> --output json
 ```
 
-Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For deeper span-level data, use `uip traces spans get` (see [traces.md](../traces.md)).
+Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For deeper span-level data, use `uip traces spans get [trace-id]` (or `uip traces spans get --job-key <key>`) — see [traces.md](../traces/traces.md).
 
 Traces are cross-folder -- no `--folder-path` required.
 
@@ -195,7 +253,7 @@ uip or packages entry-points "InvoiceProcessor:1.0.0" --output json
 
 uip or processes create --name "InvoiceProcessor" \
   --package-key "InvoiceProcessor" --package-version "1.0.0" \
-  --folder-path "Finance" --runtime-type Unattended --job-priority Normal \
+  --folder-path "Finance" --job-priority Normal \
   --output json
 
 uip or jobs start <process-key> --folder-path "Finance" \
@@ -266,6 +324,6 @@ uip or packages download "MyProcess:1.0.0" --destination ./packages/ --output js
 
 ## Related
 
-- [setup-environment.md](setup-environment.md) -- Folder creation, machine assignment, user setup
-- [traces.md](../traces.md) -- Deep-dive into LLM/agentic traces and spans
-- [Resources](../resources/resources.md) -- Assets, queues, triggers, buckets
+- [setup-environment.md](setup-environment.md) — Folder creation, machine assignment, user setup
+- [traces.md](../traces/traces.md) — Deep-dive into LLM/agentic traces and spans
+- Resources (assets, queues, buckets, triggers, webhooks, libraries) → [`uipath-resources`](../resources/resources.md)

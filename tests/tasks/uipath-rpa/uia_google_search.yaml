@@ -6,54 +6,26 @@ description: >
   Type Into, and Click UIA activities with pre-known selectors. Validates the
   full XAML surface the skill teaches: project.json with VisualBasic expression
   language, ApplicationCard / TypeInto / Click activity XML, and the
-  `uip rpa get-errors` compile gate.
+  `uip rpa validate` compile gate.
 tags: [uipath-rpa, smoke, uia, xaml]
 
 # Standard XAML + UIA activities. First `uip rpa` call restores packages
-# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `get-errors`
+# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `validate`
 # on a XAML workflow with UIA activities can run another ~45s. Budget
 # accordingly.
-task_timeout: 1800
 agent:
   type: claude-code
-  # Bumped from 40 → 60: CI run 24903966636 hit error_max_turns at 40 on
-  # this task after spending many turns on `uip rpa create-project`
-  # auth-retry loops. Prompt now tells the agent to hand-author
-  # project.json directly, but give turn headroom for the XAML
-  # discovery/edit cycles regardless.
-  max_turns: 60
+  # Bumped from 60 → 80: evalboard runs on Linux atm so some turns are
+  # wasted since the UiPath project targets Windows.
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 80
   turn_timeout: 1200
 
 sandbox:
   driver: tempdir
   python: {}
-
-llm_reviewer:
-  enabled: true
-  model: claude-sonnet-4-6
-  temperature: 0.0
-  max_tokens: 600
-  prompt: |
-    Evaluate whether the agent built a correct standard (XAML, VB.NET)
-    UiPath RPA project for this CI task using the canonical skill flow.
-
-    Score on:
-    - GoogleSearch/project.json exists with `"expressionLanguage":
-      "VisualBasic"` and UIA activity packages in dependencies.
-    - GoogleSearch/Main.xaml opens chrome.exe at google.com, types
-      "UiPath automation" into the search box, and clicks the search
-      button, using the three known selectors (chrome.exe URL,
-      textarea name='q', input name='btnK'). Either modern
-      (NApplicationCard + NTypeInto + NClick) or classic
-      (OpenBrowser + TypeInto + Click) is acceptable in CI — the
-      modern Object Repository / configure-target pipeline can't run
-      without an interactive Studio session.
-    - The harness runs `uip rpa build` programmatically; the build's
-      exit code is the compile gate.
-
-    Reply terse, developer-style. Score 1.0 if selectors + query are
-    right and the project compiles.
-
 initial_prompt: |
   Build a standard UiPath RPA project named "GoogleSearch" (XAML
   workflow, VisualBasic expression language) under ./GoogleSearch
@@ -70,19 +42,19 @@ initial_prompt: |
     Input:  webctrl tag='textarea' name='q'
     Button: webctrl tag='input' name='btnK' type='submit'
 
-  Use whichever `UiPath.UIAutomation.Activities` activities you need
-  to open the browser, type the query, and click search — both modern
-  (`NApplicationCard` + `NTypeInto` + `NClick`) and classic
-  (`OpenBrowser` + `TypeInto` + `Click`) shapes are acceptable as long
-  as the project compiles. Author the XAML directly with the selectors
-  above; do NOT engage the multi-phase `uia-configure-target` /
-  Object Repository pipeline — Studio is not running interactively in
-  CI, so its OR registration steps can't complete and will time out.
+  Use the modern `UiPath.UIAutomation.Activities` Nx activities
+  (`NApplicationCard` + `NTypeInto` + `NClick`) to open the browser,
+  type the query, and click search. Do NOT pivot to classic
+  activities; update the package if the Nx classes are missing.
+  Author the XAML directly with the selectors above; do NOT engage
+  the multi-phase `uia-configure-target` / Object Repository
+  pipeline — Studio is not running interactively in CI, so its OR
+  registration steps can't complete and will time out.
 
   Follow the uipath-rpa skill's normal flow for everything else
   (project scaffolding, validation). The `uip` CLI is authenticated
   against the sandbox tenant, so Helm-backed commands
-  (`create-project`, `get-default-activity-xaml`, `get-errors`)
+  (`init`, `activities get-default-xaml`, `validate`)
   work as documented in the skill.
 
   Use `--output json` on any uip commands you run.
@@ -109,7 +81,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Main.xaml contains TypeInto + Click UIA activities (modern or classic)"
+    description: "Main.xaml contains NTypeInto + NClick Nx UIA activities"
     path: "GoogleSearch/Main.xaml"
     includes:
       - "TypeInto"
@@ -127,13 +99,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
+  # Skill-fidelity signal: the skill teaches `uip rpa validate` as
   # the canonical validation step. We don't gate on its exit code —
   # the actual compile gate is the `uip rpa build` run_command below.
   - type: command_executed
-    description: "Agent ran uip rpa get-errors on Main.xaml (skill-canonical validation)"
+    description: "Agent ran uip rpa validate on Main.xaml (skill-canonical validation)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rpa\s+get-errors.*Main\.xaml'
+    command_pattern: 'uip\s+rpa\s+validate.*Main\.xaml'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -143,16 +115,24 @@ success_criteria:
   # the old "did the agent call build" telemetry check — what matters
   # is that the project actually compiles.
   #
-  # Path note: the @uipath/rpa-tool wrapper double-resolves a relative
-  # positional arg (chdir's into the project, then re-resolves the
-  # same relative arg from inside), producing a doubled path
-  # `<sandbox>\GoogleSearch\GoogleSearch` and a
-  # DirectoryNotFoundException out of WorkflowCompiler. Pass an
-  # absolute path via cmd.exe's %CD% to bypass it. coder_eval runs
-  # this through subprocess shell=True, which is cmd.exe on Windows.
+  # Path note: `uip rpa build` requires an absolute project directory.
+  # A relative positional arg trips the @uipath/rpa-tool wrapper's
+  # double-resolve bug (chdir's into the project, re-resolves the arg
+  # from inside → `<sandbox>/GoogleSearch/GoogleSearch`, DirectoryNotFound).
+  # Even `.` after `cd GoogleSearch` fails — WorkflowCompiler's JIT step
+  # builds paths relative to projectDir and feeds them to
+  # `AssemblyLoadContext.LoadFromAssemblyPath`, which rejects any
+  # non-absolute path with `ArgumentException`. Shell-specific cwd
+  # variables (`%CD%` on cmd.exe, `$PWD` on /bin/sh) don't expand on
+  # the other shell, and coder_eval's `run_command` runs through
+  # `subprocess(shell=True)` → cmd.exe on Windows, /bin/sh on Linux.
+  # The Python wrapper below resolves the absolute path via
+  # `os.path.abspath` (cross-platform) and the `uip` shim via
+  # `shutil.which` (handles Windows' `uip.cmd` PATHEXT resolution).
   - type: run_command
     description: "uip rpa build exits 0 against the agent's GoogleSearch project"
-    command: 'uip rpa build "%CD%\GoogleSearch" --output json'
+    command: |-
+      python3 -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('GoogleSearch'), '--output', 'json']))"
     expected_exit_code: 0
     timeout: 180
     weight: 2.0

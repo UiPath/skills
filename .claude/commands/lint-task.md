@@ -158,6 +158,16 @@ Severity:
 
 **Description-rationale carve-out.** If the task's `description` field explicitly documents the rationale for skipping `flow debug` (e.g. "validate-only because no live tenant", "skipping debug due to trigger-fired execution unreliability"), downgrade the severity by one level (High → Medium, Medium → Low) and quote the rationale in the issue. Authors who document deliberate trade-offs should not be punished as harshly as silent omissions.
 
+### Redundant or pinned uip CLI in sandbox
+
+**Raise a High issue if** `sandbox.node.env_packages` contains any entry matching `@uipath/cli` (with or without a version specifier, e.g. `"@uipath/cli"`, `"@uipath/cli@0.1.21"`, `"@uipath/cli@latest"`).
+
+**Why it's wrong:** The GH smoke runner installs `@uipath/cli@latest` globally before any task runs (see `smoke-skills.yml` step "Install uip CLI (public npm @latest)"). Listing it again in `env_packages` is redundant — it installs a second copy into the sandbox's local `node_modules`, potentially shadowing the global one. A pinned version (e.g. `@0.1.21`) is worse: it freezes the CLI at a specific release and silently diverges from the runner's `@latest` install, causing version skew across runs.
+
+**Fix:** Remove the `env_packages` block (or the `@uipath/cli` entry from it). If `node:` has no other packages, collapse to `node: {}`.
+
+Severity: **High** — always. No carve-outs; there is no valid reason to re-install the CLI the runner already provides.
+
 ## Phase 4 — Compose Per-Task Report
 
 For each task, print:

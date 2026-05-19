@@ -1,0 +1,174 @@
+﻿task_id: skill-troubleshoot-getasset-per-robot-no-value
+description: >
+  UiPath diagnostic agent must diagnose a Get Asset failure where the
+  target asset exists in the correct folder and has the right type
+  (Text) for the activity used, but the asset is configured with
+  per-robot value scope and the executing robot has no value entry.
+  Orchestrator returns "The asset 'X' does not have a value associated
+  with this robot." The agent must rule out asset-not-found,
+  folder-scope-mismatch, permission-denied, and wrong-activity-type —
+  and converge on the per-robot value gap.
+
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, per-robot-no-value, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  max_turns: 60
+  turn_timeout: 3600   # 60 min per turn — LLMGW-proxied diagnostic runs observe up to ~30 min per turn
+
+run_limits:
+  task_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    # 1. Shared dispatcher (mocks/uip + mocks/uip.cmd).
+    - type: template_dir
+      path: ../_shared/mock_template
+    # 2. Project source — snapshot of the failing UiPath project.
+    - type: template_dir
+      path: process
+    # 3. Per-scenario fixtures (manifest + canned uip responses).
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My AssetPerRobotNoValue process is faulting in Orchestrator on every
+  run. Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the get-asset-per-robot-no-value playbook AND identified the missing per-robot value entry"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My AssetPerRobotNoValue process is faulting in Orchestrator
+         on every run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/system-activities/playbooks/get-asset-per-robot-no-value.md
+        because the runtime error
+          "The asset 'MyPerRobotConfig' does not have a value associated with this robot."
+        is the verbatim signature of that playbook ("does not have a
+        value associated with this robot" language).
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             get-asset-per-robot-no-value playbook should appear
+             (absolute or relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/system-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             system-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        get-asset-* playbooks (not-found, folder-scope-mismatch,
+        permission-denied, wrong-activity-type) while ruling them out.
+        Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Get Asset activity (`GetRobotAsset`) in Main.xaml
+            targets `AssetName="MyPerRobotConfig"` in folder
+            "Remote Debugging".
+          - The asset exists with `ValueType: "Text"` (correct type
+            for Get Asset) AND `ValueScope: "PerRobot"` — values are
+            stored per-robot, not globally.
+          - The robot account running the job (`RobotUser1`) has no
+            value entry in the asset's per-robot value table.
+          - Orchestrator therefore returns "The asset 'MyPerRobotConfig'
+            does not have a value associated with this robot."
+        The reference fix:
+          - Either: add a value entry for `RobotUser1` in the asset's
+            per-robot value table (Orchestrator UI -> Folder -> Assets
+            -> MyPerRobotConfig -> Manage Values -> Add).
+          - Or: if the same value should be used for every robot,
+            change the asset's value scope from `PerRobot` to `Global`
+            and set a single value.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.asset_name`,
+             `requirements.value_scope`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the per-robot
+             value gap (NOT a missing asset, NOT a missing folder,
+             NOT a permission issue, NOT an activity-type mismatch).
+             Should name both the asset and the executing robot.
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched get-asset-per-robot-no-value AND
+             identified the per-robot value gap explicitly.
+             Conclusion must name the asset
+             (`MyPerRobotConfig`), recognize its scope is per-robot,
+             and recommend either adding a per-robot value or
+             switching to Global scope.
+        0.8  Both partial: e.g., correct playbook but conclusion
+             says "value problem" without naming the per-robot
+             scope; or conclusion names the per-robot scope but
+             matched the system-activities investigation_guide
+             rather than the specific per-robot-no-value playbook.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (asset failure) but neither
+             matched the playbook nor identified the per-robot scope.
+        0.0  Misdiagnosed (e.g., concluded asset-not-found,
+             folder-scope-mismatch, permission-denied, or wrong-
+             activity-type) or got blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

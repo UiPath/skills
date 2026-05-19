@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_LinearProcess" targetNamespace="http://uipath.com/synthetic/maestro-bpmn/linear">
+  <bpmn:process id="Process_Linear" name="Linear Process" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="Var_Request" name="request" type="string" elementId="Start_Manual" />
+        <uipath:output id="Var_Status" name="status" type="string" />
+      </uipath:variables>
+      <uipath:migrationVersion version="2026.1" />
+      <uipath:isTransactionRoot version="v1" value="true" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_Manual" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="Entry_LinearManual" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_To_Task</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_RecordRequest" name="Record Request">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:input name="request" type="string" value="=vars.Var_Request" target="request" />
+          <uipath:output name="status" type="string" var="Var_Status" source="completed" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_To_Task</bpmn:incoming>
+      <bpmn:outgoing>Flow_Task_To_End</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_Done" name="Done">
+      <bpmn:incoming>Flow_Task_To_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_To_Task" sourceRef="Start_Manual" targetRef="Task_RecordRequest" />
+    <bpmn:sequenceFlow id="Flow_Task_To_End" sourceRef="Task_RecordRequest" targetRef="End_Done" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Linear">
+    <bpmndi:BPMNPlane id="Plane_Linear" bpmnElement="Process_Linear">
+      <bpmndi:BPMNShape id="Shape_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="120" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RecordRequest" bpmnElement="Task_RecordRequest">
+        <dc:Bounds x="220" y="98" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Done" bpmnElement="End_Done">
+        <dc:Bounds x="420" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Start_To_Task" bpmnElement="Flow_Start_To_Task">
+        <di:waypoint x="156" y="138" />
+        <di:waypoint x="220" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Task_To_End" bpmnElement="Flow_Task_To_End">
+        <di:waypoint x="350" y="138" />
+        <di:waypoint x="420" y="138" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

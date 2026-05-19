@@ -1,0 +1,6 @@
+{
+  "Name": "AssetSilentFailure",
+  "ProjectType": "Process",
+  "Description": "Reproduces a silent Get Credential failure caused by the UiPath.System.Activities 22.10.x bug — activity completes without exception but output variables remain null, triggering a NullReferenceException downstream.",
+  "MainFile": "Main.xaml"
+}

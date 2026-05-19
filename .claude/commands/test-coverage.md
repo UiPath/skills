@@ -8,7 +8,7 @@ Analyze what a skill teaches vs what its tests verify. Produce a gap analysis wi
 
 **Output:** Markdown report(s) in `tests/reports/<skill-name>.md` (e.g., `tests/reports/uipath-maestro-flow.md`), unless the user specifies a different path. Overwrite existing reports at the same path.
 
-**Feed-forward contract.** This report is the primary input to `/generate-tasks <skill> [focus]`. Write gap titles as short noun phrases and suggested task IDs the way you'd want them typed back as a focus string (e.g. "Brown-field editing of existing flows" → `generate-tasks uipath-maestro-flow Brown-field editing of existing flows`).
+**Feed-forward contract.** This report is the primary input to `/generate-task <description>`. `/generate-task` takes a free-form description and infers the target skill from it — write gap titles as self-contained descriptions that name the skill or its CLI surface, so the reader can paste a gap straight into `/generate-task` (e.g. "Brown-field editing of existing uipath-maestro-flow projects" → `/generate-task Brown-field editing of existing uipath-maestro-flow projects`).
 
 ---
 
@@ -50,9 +50,9 @@ Components are the specific, testable units the skill teaches. What counts as a 
 |---|---|
 | Flow orchestration (`uipath-maestro-flow`) | Node types: `core.action.script`, `core.logic.decision`, `uipath.connector.*`, etc. Find these in SKILL.md Plugin Index tables and `references/plugins/*/planning.md` files. |
 | RPA workflows (`uipath-rpa`) | Workflow modes (Coded C#, XAML), activity types, project types. Found in section headings like "Coded Workflows Quick Reference", "XAML Workflows Quick Reference". |
-| Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip solution`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
+| Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
+| Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate) and PDD → SDD authoring. Found in the Operate half and Design half of the SKILL.md. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
-| Desktop/browser interaction (`interact`) | Command categories (Discover, Interact, Inspect, Manage), input methods, framework types. Found in "Commands" section hierarchy. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
 
 Group components by category. For skills with `references/plugins/` subdirectories (like `uipath-maestro-flow`), each plugin directory is one component — use the planning.md to understand what it covers.
@@ -108,18 +108,16 @@ task_id         — unique test identifier (e.g., "skill-flow-calculator")
 description     — what the test validates
 tags            — array carrying values from the Tag Taxonomy dimensions
                   documented in tests/README.md. Form:
-                  [skill, tier, lifecycle:X, shape:X, node:..., resource, connector, feature:...]
+                  [skill, tier, mode:X, shape:X, node:..., resource, connector, feature:...]
                     skill      — uipath-<name>                                (required, flat)
                     tier       — smoke | integration | e2e                    (required, flat)
-                    lifecycle  — lifecycle:{generate|edit|validate|discover|activate|execute|deploy}
+                    mode       — mode:{build|operate|troubleshoot}                (required)
                     shape      — shape:{single-node|multi-node}              (flow-building tests)
                     node       — node:{decision|switch|subflow|terminate|loop|transform|hitl} (0..n)
                     resource   — flat boolean marker (present iff task uses a resource node) (0..1)
                     connector  — flat boolean marker (present iff task uses any connector)   (0..1)
                     feature    — feature:{http|trigger|registry|transform|approval-gate|
                                  write-back|escalation|…}                     (0..n)
-                  Legacy bare tags (`generate`, `edit`, `green-field`, `hitl`, …)
-                  are still counted for scoring — flag migration gaps in Phase 4j.
                   Record every dimension; Phase 4f keys off all of them, not just tier.
 initial_prompt  — the prompt given to the agent
 success_criteria — array of assertion objects
@@ -191,11 +189,11 @@ Identify paths from SKILL.md and references. Common examples:
 | `uipath-coded-apps` | Coded Web App, Coded Action App |
 | `uipath-human-in-the-loop` | greenfield HITL in `.flow`, brownfield HITL in `.flow`, HITL in coded agents |
 
-A path is "covered" if at least one test exercises it (look at the `authoring`, `lifecycle`, `scenario`, or skill-specific tags on each task, plus the prompt content). For single-path skills, this dimension is **N/A**.
+A path is "covered" if at least one test exercises it (look at the `mode:*`, `node:*`, `feature:*`, or skill-specific tags on each task, plus the prompt content). For single-path skills, this dimension is **N/A**.
 
-### 4e. Anti-patterns (diagnostic, not scored)
+### 4e. Anti-patterns (troubleshooting, not scored)
 
-Report anti-patterns covered in a per-skill table, but do **NOT** include them in the weighted overall score. Across the repo, anti-pattern coverage is effectively 0% everywhere — keeping it at 15% weight was deadweight that compressed scores without adding signal. The "Negative-test gap" signal in Phase 4g already surfaces skills with ≥3 anti-patterns and zero negative tests, which is the actionable version.
+Report anti-patterns covered in a per-skill table, but do **NOT** include them in the weighted overall score. Across the repo, anti-pattern coverage is effectively 0% everywhere — keeping it at 15% weight was deadweight that compressed scores without adding signal. The "Negative-test gap" signal in Phase 4i already surfaces skills with ≥3 anti-patterns and zero negative tests, which is the actionable version.
 
 ### 4f. Weighted overall score
 
@@ -215,14 +213,14 @@ Weights reflect what tests actually catch:
 | Workflow-heavy, multi-path (e.g. `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`) | — | Comp 45% / Steps 25% / Rules 15% / Path 15% |
 | Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
 | Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
-| Planning skills (e.g. `uipath-planner`, `uipath-solution-design`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
-| Agent-orchestration skills (e.g. `uipath-diagnostics`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
+| Planning skills (e.g. `uipath-planner`, `uipath-solution`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
+| Agent-orchestration skills (e.g. `uipath-troubleshoot`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
 
 Formula: `overall = sum(applicable_weight_i * dimension_pct_i) / sum(applicable_weight_i)`
 
 For skills with **no tests**: overall = 0%.
 
-### 4h. Test-density diagnostics (sidecar, not scored)
+### 4g. Test-density troubleshooting (sidecar, not scored)
 
 Report these alongside the Summary table to flag structural fragility that a high coverage score might hide. None of these feed the weighted score — they're red-flag indicators for readers.
 
@@ -231,31 +229,30 @@ Report these alongside the Summary table to flag structural fragility that a hig
 - **Tests per component (max)** — if one component has >50% of the tests, coverage is concentrated and fragile.
 - **Single-test-dominance flag** — emit a warning bullet if any one test task accounts for more than 1/3 of all Direct component hits. That test becomes a single point of failure for the coverage number.
 
-### 4i. Tag-dimension coverage (sidecar diagnostic)
+### 4h. Tag-dimension coverage (sidecar troubleshooting)
 
 For each skill that has at least one test, compute which values from the Tag Taxonomy are exercised. Report the variable dimensions (the `skill` dimension is trivially covered and `tier` is already reported in the Summary table):
 
-- **Lifecycle** — tick each of `lifecycle:generate`, `lifecycle:edit`, `lifecycle:validate`, `lifecycle:discover`, `lifecycle:activate`, `lifecycle:execute`, `lifecycle:deploy` if any test carries that tag.
+- **Mode** — tick each of `mode:build`, `mode:operate`, `mode:diagnose` if any test carries that tag. All three are expected eventually for most skills; missing modes surface as gaps.
 - **Shape** — tick each of `shape:single-node`, `shape:multi-node` (applies to flow-building skills only).
 - **Node** — list values present under `node:*` for skills where that axis applies.
 - **Resource / Connector** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`) for skills where they apply.
 - **Feature** — list `feature:*` tags present vs a reasonable "expected" set for this skill (derived from SKILL.md — e.g. `uipath-human-in-the-loop` should exercise `feature:approval-gate`, `feature:write-back`, `feature:escalation`; `uipath-maestro-flow` should exercise `feature:registry`, `feature:transform`, `feature:http`, …). If the skill's vocabulary is open, list what's present without the ✗ column.
 
-Legacy tests on pre-namespace taxonomy (bare `generate`, `edit`, `green-field`, `hitl`) count toward the same dimension for the scoring — note any that still need migration in the gap section.
+This is structured data for the per-skill report (see template below). It is NOT folded into the weighted overall score — adding it on top of Components/Steps would double-count (a missing edit-scenario test already shows up as a workflow-step gap).
 
-This is structured data for the per-skill report (see template below). It is NOT folded into the weighted overall score — adding it on top of Components/Steps would double-count (a missing `edit` lifecycle already shows up as a workflow-step gap).
-
-### 4j. Automatic gap signals
+### 4i. Automatic gap signals
 
 Run these checks and emit findings into the "Coverage Gaps — Priority Ranked" section with the specified priority. The goal is consistent, data-driven flagging across skills rather than ad-hoc prose:
 
 | Signal | Condition | Priority | Gap title template |
 |---|---|---|---|
-| **Lifecycle gap (edit)** | The skill teaches an edit workflow (it documents modifying an existing artifact — common for `uipath-maestro-flow`, `uipath-rpa`, `uipath-agents`) but no test carries `lifecycle:edit` (or legacy bare `edit`). | **High** | "Editing existing `<artifact>`" |
+| **Edit-scenario gap** | The skill teaches an edit workflow (it documents modifying an existing artifact — common for `uipath-maestro-flow`, `uipath-rpa`, `uipath-agents`) but no test exercises that scenario (no task under `tests/tasks/<skill>/edit/` and no `initial_prompt` describes modifying an existing artifact). | **High** | "Editing existing `<artifact>`" |
+| **Mode gap** | The skill has tests but does not exercise all three modes (`mode:build`, `mode:operate`, `mode:diagnose`) where they're plausibly applicable. Catalog skills may legitimately stop at `mode:operate`; flag for the writer to confirm. | **Medium** | "Missing `<mode>` coverage" |
 | **Negative-test gap** | The skill's SKILL.md lists ≥3 anti-patterns and zero tests assert on any of them. | **High** | "Negative tests for anti-patterns" |
 | **Tier gap** | The skill has tests but is missing a tier (smoke-only, integration-only, or e2e-only). | **High** (if smoke or e2e is missing — those are the minimum bar), **Medium** (integration missing) | "Missing `<tier>` tier" |
 
-Whenever a signal fires, the corresponding recommendation in Phase 5's Recommendations section must include the tag list that would address it (e.g. a "Brown-field modification" recommendation ships with `(e2e, lifecycle:edit, …)`).
+Whenever a signal fires, the corresponding recommendation in the Recommendations section of the per-skill report must include the tag list that would address it (e.g. a "Brown-field modification" recommendation ships with `(e2e, mode:build, …)`).
 
 ## Phase 5 — Write reports
 
@@ -308,7 +305,7 @@ Use this template when the skill has at least one test task.
 
 Anti-patterns are inventoried in the Anti-Patterns section below but are **not** part of the overall score (see Phase 4e).
 
-### Test-density diagnostics
+### Test-density troubleshooting
 
 - Total test tasks: N
 - Median tests per component: X
@@ -321,7 +318,7 @@ Anti-patterns are inventoried in the Anti-Patterns section below but are **not**
 
 | Test ID | Type | Tags | Description | Components Exercised |
 |---------|------|------|-------------|---------------------|
-| skill-flow-calculator | e2e | lifecycle:generate, shape:multi-node | Multiply two inputs via script node | `core.action.script`, input vars, output vars, validate, debug |
+| skill-flow-calculator | e2e | mode:build, shape:multi-node | Multiply two inputs via script node | `core.action.script`, input vars, output vars, validate, debug |
 
 ## Component Coverage
 
@@ -358,7 +355,7 @@ Applicable only when the skill documents ≥2 implementation paths. Otherwise wr
 | Coded (C#) | Yes | skill-rpa-coded-test-case |
 | XAML | No | — |
 
-### Anti-Patterns (X/Y covered — diagnostic only, NOT in overall score)
+### Anti-Patterns (X/Y covered — troubleshooting only, NOT in overall score)
 
 | # | Anti-Pattern | Covered | Test(s) | Notes |
 |---|-------------|---------|---------|-------|
@@ -366,18 +363,15 @@ Applicable only when the skill documents ≥2 implementation paths. Otherwise wr
 
 ### Tag-Dimension Coverage
 
-Sidecar diagnostic — see Phase 4i. Not part of the weighted overall score.
+Sidecar troubleshooting — see Phase 4h. Not part of the weighted overall score.
 
-**Lifecycle**
+**Mode**
 
 | Value | Tests | Status |
 |---|---|---|
-| `lifecycle:discover` | skill-flow-registry-discovery | ✓ |
-| `lifecycle:generate` | skill-flow-calculator, skill-flow-reading-list, … | ✓ |
-| `lifecycle:edit` | skill-flow-add-node, … | ✓ |
-| `lifecycle:validate` | skill-flow-init-validate | ✓ |
-| `lifecycle:execute` | — | ✗ |
-| `lifecycle:deploy` | — | ✗ |
+| `mode:build` | skill-flow-calculator, skill-flow-init-validate, skill-flow-add-node, … | ✓ |
+| `mode:operate` | — | ✗ |
+| `mode:diagnose` | — | ✗ |
 
 **Shape** (flow-building tests only)
 
@@ -411,13 +405,13 @@ Group by theme. Include cross-cutting features (variable management, expression 
 
 ## Coverage Gaps — Priority Ranked
 
-Gap titles are short noun phrases — the exact string a reader would paste into `/generate-tasks <skill> <focus>`. Include entries emitted by the Phase 4g automatic signals (lifecycle gap, scenario gap, negative-test gap, tier gap) alongside skill-specific gaps.
+Gap titles are short descriptions — the exact string a reader would paste into `/generate-task <description>`. Each title must be self-contained enough that `/generate-task` can infer the target skill from it (mention the skill name or its CLI surface). Include entries emitted by the Phase 4i automatic signals (edit-scenario gap, mode gap, negative-test gap, tier gap) alongside skill-specific gaps.
 
 ### High Priority
 
 Gaps where an agent getting it wrong would cause expensive failures or silent bugs.
 
-1. **<Gap title — noun phrase>** — <What's untested, specific risk>. *Suggested test:* `<suggested-task-id>` (tier, lifecycle, scenario, …features) — <one sentence describing the test>.
+1. **<Gap title — noun phrase>** — <What's untested, specific risk>. *Suggested test:* `<suggested-task-id>` (tier, mode:X, shape:X, node:X, …features) — <one sentence describing the test>.
 
 ### Medium Priority
 
@@ -429,10 +423,10 @@ Gaps in edge cases or features that other tests partially cover indirectly.
 
 ## Recommendations
 
-Top 5–10 tests to write next, ordered by how much coverage they add. Each recommendation carries the full proposed tag list so `/generate-tasks` can consume it verbatim.
+Top 5–10 tests to write next, ordered by how much coverage they add. Each recommendation carries the full proposed tag list so `/generate-task` can consume it verbatim.
 
-1. **`<suggested-task-id>`** (e2e, lifecycle:generate, shape:multi-node, node:loop, node:transform) — Covers: `core.logic.loop`, `core.logic.merge`, `core.action.transform`, iteration pattern. *Why:* The entire control-flow family is untested; a single test with a loop-and-merge topology covers 4 components.
-2. **`skill-flow-edit-loop`** (e2e, lifecycle:edit, shape:multi-node, node:loop) — Covers: editing an existing flow, adding a loop node to an existing topology. *Why:* No test carries the `edit` lifecycle or `brown-field` scenario — modifying existing flows is a first-class workflow in this skill.
+1. **`<suggested-task-id>`** (e2e, mode:build, shape:multi-node, node:loop, node:transform) — Covers: `core.logic.loop`, `core.logic.merge`, `core.action.transform`, iteration pattern. *Why:* The entire control-flow family is untested; a single test with a loop-and-merge topology covers 4 components.
+2. **`skill-flow-edit-loop`** (e2e, mode:build, shape:multi-node, node:loop) — Covers: editing an existing flow, adding a loop node to an existing topology. *Why:* No test exercises brown-field modification — modifying existing flows is a first-class workflow in this skill.
 ```
 
 ---
@@ -484,10 +478,10 @@ List all components grouped by category. Use a compact format — no Direct/Indi
 
 ## Recommended Starter Tests
 
-Recommend 2 smoke tests and 2 e2e tests to establish baseline coverage (per CONTRIBUTING.md minimum bar: 1 smoke + 1 e2e). For each, include the full proposed tag list so `/generate-tasks` can consume the recommendation verbatim:
+Recommend 2 smoke tests and 2 e2e tests to establish baseline coverage (per CONTRIBUTING.md minimum bar: 1 smoke + 1 e2e). For each, include the full proposed tag list so `/generate-task` can consume the recommendation verbatim:
 
-1. **`<suggested-task-id>`** (smoke, lifecycle:generate) — Covers: <components, rules>. *Why:* <rationale>. <Infrastructure note if needed.>
-2. **`<suggested-task-id>`** (e2e, lifecycle:generate, shape:multi-node, feature:<X>) — Covers: <…>. *Why:* <…>.
+1. **`<suggested-task-id>`** (smoke, mode:build) — Covers: <components, rules>. *Why:* <rationale>. <Infrastructure note if needed.>
+2. **`<suggested-task-id>`** (e2e, mode:build, shape:multi-node, feature:<X>) — Covers: <…>. *Why:* <…>.
 ```
 
 ---
@@ -585,7 +579,7 @@ Observations that span multiple skills. Look for:
 
 > Every skill must have at least 1 smoke test and 1 e2e test (per CONTRIBUTING.md). This is the **only** place the minimum-bar check lives — per-skill Recommendations sections link back here rather than restating the rule.
 
-The table also surfaces the **tier gap** signal from Phase 4g: a skill with tests but missing a tier (smoke-only, e2e-only) is flagged even if it technically meets the smoke+e2e minimum.
+The table also surfaces the **tier gap** signal from Phase 4i: a skill with tests but missing a tier (smoke-only, e2e-only) is flagged even if it technically meets the smoke+e2e minimum.
 
 | Skill | Smoke | Integration | E2E | Status |
 |-------|-------|-------------|-----|--------|
@@ -595,9 +589,9 @@ The table also surfaces the **tier gap** signal from Phase 4g: a skill with test
 
 ## Top 10 Recommended Tests
 
-Across all skills, prioritized by coverage impact. Prefer tests that are feasible to implement (local-only or cloud-auth-only over platform-specific). Each recommendation carries the full proposed tag list so `/generate-tasks` can lift it verbatim.
+Across all skills, prioritized by coverage impact. Prefer tests that are feasible to implement (local-only or cloud-auth-only over platform-specific). Each recommendation carries the full proposed tag list so `/generate-task` can lift it verbatim.
 
-1. **`skill-<name>-<capability>`** (<skill>, tier, lifecycle, scenario, …features) — <what it covers and why>. <Infra note if needed.>
+1. **`skill-<name>-<capability>`** (<skill>, tier, mode:X, shape:X, node:X, …features) — <what it covers and why>. <Infra note if needed.>
 ```
 
 ---
@@ -614,6 +608,6 @@ Across all skills, prioritized by coverage impact. Prefer tests that are feasibl
 8. **Match recommendations to existing test patterns.** Look at how existing tests are structured (YAML format, check script patterns, tag conventions) and suggest new tests that follow the same patterns. Recommend realistic tests — flag infrastructure dependencies and prefer tests that can run in CI (local-only or cloud-auth-only).
 9. **Anti-patterns come from SKILL.md only.** Count items in the main Anti-Patterns / What NOT to Do section. Do not trawl reference files for additional "never do X" statements — those are implementation-level guidance, not skill-level anti-patterns.
 10. **Flag infrastructure requirements.** Every report should note what environment the skill needs for testing. The summary should include an Infra column so readers can quickly see which skills are CI-testable vs platform-gated.
-11. **Tag every recommendation.** Suggested tests in the Gaps and Recommendations sections must carry the proposed tag list (tier, lifecycle, scenario, features) from the Tag Taxonomy. These recommendations feed `/generate-tasks` — the validated tag set must travel with them so no inference is required downstream.
+11. **Tag every recommendation.** Suggested tests in the Gaps and Recommendations sections must carry the proposed tag list (tier, mode, shape, node, features) from the Tag Taxonomy. These recommendations feed `/generate-task` — the validated tag set must travel with them so no inference is required downstream.
 12. **Minimum bar lives in the summary.** The smoke+e2e minimum-bar check lives in the summary's Minimum Bar Check section and nowhere else. Per-skill reports may note the status but must not restate the rule — link back to the summary instead.
 13. **Planned skills count as 0%.** Every entry in the Planned Skills Registry (Phase 1) whose folder is missing produces a stub report via the planned-skill template AND a row in the summary roll-up at 0% coverage. Do not silently drop them just because there is no SKILL.md to extract from — that is the entire point of the registry. Once `skills/<name>/` exists, the existence check in Phase 1 step 1 routes the skill into the normal templates automatically, with no edit to this command file required. Only edit the registry to add a new planned skill or remove a cancelled one.

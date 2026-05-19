@@ -132,9 +132,9 @@ Data-driven testing executes the same test case multiple times with different in
 
 | Source | Where Data Lives | Best For | Agent Support |
 |--------|-----------------|----------|---------------|
-| **Variations files** | `.variations/` folder in project | File-based test data committed with the project | CLI: `add-test-data-variation` |
-| **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution | CLI: `add-test-data-queue` |
-| **Data Service** | UiPath Automation Cloud | Centralized, secure, shared test data | CLI: `add-test-data-entity` |
+| **Variations files** | `.variations/` folder in project | File-based test data committed with the project | CLI: `test-data add-variation` |
+| **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution | CLI: `test-data add-queue` |
+| **Data Service** | UiPath Automation Cloud | Centralized, secure, shared test data | CLI: `test-data add-entity` |
 
 > For coded data-driven tests using default parameters, see [coded/operations-guide.md § Add a Test Case File](coded/operations-guide.md).
 
@@ -156,10 +156,10 @@ The `.variations/` directory is available in all project types (Process, Tests, 
 
 Three commands attach different data source types to a test case. All three register the data source in project metadata, extract arguments from the source schema, and add them to the test case (via Studio's workflow management API for XAML, via Roslyn for coded test cases).
 
-#### `add-test-data-variation` — File-based (JSON)
+#### `test-data add-variation` — File-based (JSON)
 
 ```bash
-uip rpa add-test-data-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 | Parameter | Required | Description |
@@ -171,15 +171,15 @@ Parses fields from the JSON file and creates one argument per field with matchin
 
 **Example:**
 ```bash
-uip rpa add-test-data-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json --use-studio
 ```
 
-#### `add-test-data-queue` — Orchestrator Test Data Queue
+#### `test-data add-queue` — Orchestrator Test Data Queue
 
 > **Prerequisite:** Use the **uipath-platform** skill to discover queue details (name, ID, folder) before calling this command.
 
 ```bash
-uip rpa add-test-data-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 | Parameter | Required | Description |
@@ -193,19 +193,19 @@ Creates an `IDictionary<string, object>` argument named after the queue (camelCa
 
 **Example:**
 ```bash
-uip rpa add-test-data-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json --use-studio
 ```
 
 > **Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
 
-#### `add-test-data-entity` — Data Service Entity
+#### `test-data add-entity` — Data Service Entity
 
 > **Prerequisites:**
-> 1. **Discover / verify entities** — run `uip rpa list-data-fabric-entities --project-dir "<PROJECT_DIR>" --output json` to see what is installed and what is available in the connected tenant. (Alternatively, the `uipath-platform` skill can discover entities directly in Orchestrator.)
-> 2. **Install the target entity into the project** if not already installed — `uip rpa install-data-fabric-entities --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. `add-test-data-entity` requires the entity's generated type to exist in the project. See [cli-reference.md § Data Fabric Entities](cli-reference.md#commands----data-fabric-entities).
+> 1. **Discover / verify entities** — run `uip rpa data-fabric-entities list --project-dir "<PROJECT_DIR>" --output json` to see what is installed and what is available in the connected tenant. (Alternatively, the `uipath-platform` skill can discover entities directly in Orchestrator.)
+> 2. **Install the target entity into the project** if not already installed — `uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. `test-data add-entity` requires the entity's generated type to exist in the project. See [cli-reference.md § Data Fabric Entities](cli-reference.md#commands----data-fabric-entities).
 
 ```bash
-uip rpa add-test-data-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 | Parameter | Required | Description |
@@ -218,7 +218,7 @@ Creates an argument of the entity type named after the entity (camelCase). Requi
 
 **Example:**
 ```bash
-uip rpa add-test-data-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json --use-studio
 ```
 
 ### Data-Driven Testing Best Practices
@@ -250,7 +250,7 @@ Compares two expressions using a comparison operator from the `Comparison` enum.
 **Properties:**
 - `FirstExpression` — left-hand value (`InArgument<Object>`, the actual)
 - `SecondExpression` — right-hand value / expected (`InArgument<Object>`)
-- `Operator` — `Comparison` enum. Exact supported values: `Equality`, `Inequality`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `Contains`, `RegexMatch`. Any other identifier (e.g. `StartsWith`, `EndsWith`, `DoesNotContain`, `Matches`) is invalid and rejected at `build` time — `get-errors` does NOT catch invalid enum values.
+- `Operator` — `Comparison` enum. Exact supported values: `Equality`, `Inequality`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `Contains`, `RegexMatch`. Any other identifier (e.g. `StartsWith`, `EndsWith`, `DoesNotContain`, `Matches`) is invalid and rejected at `build` time — `validate` does NOT catch invalid enum values.
 - `OutputMessageFormat` — custom format string for the result message; placeholders `{LeftExpression}`, `{LeftExpressionText}`, `{RightExpression}`, `{RightExpressionText}`, `{Result}`, `{Operator}`
 - `TakeScreenshotInCaseOfFailingAssertion` (Boolean) — capture screenshot on assertion failure
 - `TakeScreenshotInCaseOfSucceedingAssertion` (Boolean) — capture screenshot on success

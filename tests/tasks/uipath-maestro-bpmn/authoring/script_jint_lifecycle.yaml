@@ -1,0 +1,59 @@
+task_id: skill-bpmn-script-jint-lifecycle
+description: >
+  Author a complete Maestro BPMN script-task project, covering the full
+  local lifecycle for the Jint-backed script path with package metadata.
+tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:script", "feature:jint"]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a UiPath Maestro BPMN Process Orchestration project at:
+    ScriptNormalizer/ScriptNormalizer
+
+  The main BPMN file must be:
+    ScriptNormalizer/ScriptNormalizer/ScriptNormalizer.bpmn
+
+  Model a public-safe request normalizer:
+  - Manual start with a rawRequest JSON/string input.
+  - A `bpmn:scriptTask` named "Normalize Request".
+  - Set `scriptFormat="JavaScript"` and include `uipath:scriptVersion`
+    value `v3`.
+  - Use deterministic Jint-compatible JavaScript only: no Node.js packages,
+    filesystem, network, browser globals, or long-running async behavior.
+  - Map input into the script and map the returned normalized response to a
+    declared output variable.
+  - End with a success end event and include BPMN DI for visible elements.
+
+  Also create the standard local package files next to the BPMN:
+    project.uiproj, operate.json, entry-points.json, bindings_v2.json,
+    package-descriptor.json
+
+  Do not upload, publish, deploy, debug, run, or call cloud-side UiPath
+  commands. Do not ask for approval or pause for feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "Script BPMN file was created"
+    path: "ScriptNormalizer/ScriptNormalizer/ScriptNormalizer.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Script task uses JavaScript/v3 Jint-safe source and package lifecycle files"
+    command: "python3 $TASK_DIR/check_script_jint_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

@@ -1,7 +1,7 @@
 {
   "name": "uipath",
-  "version": "0.0.25",
-  "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath RPA workflows, UI automation, UI testing, Python coded agents and UiPath diagnostics",
+  "version": "0.0.29",
+  "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath RPA workflows, UI automation, UI testing, Python coded agents and UiPath troubleshoot",
   "author": {
     "name": "UiPath"
   },
@@ -28,7 +28,7 @@
     "langgraph",
     "llamaindex",
     "openai-agents",
-    "diagnostics"
+    "troubleshoot"
   ],
   "skills": "./skills/"
 }

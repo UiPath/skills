@@ -22,7 +22,7 @@ The "Initial Variable Mapping" column sometimes carries an aggregate phrase (e.g
 
 1. **Cross-read the Case Variables table.** Any row with `Produced By: trigger` is an **In argument** even when the trigger row's mapping is aggregate. This is the strongest secondary signal. (Requires `Produced By` column. Canonical per `assets/templates/sdd-template.md`. If absent, skip to step 3.)
 2. **Cross-read Out signal.** A variable consumed only by `case-exit-condition` (Consumed By column) AND not produced by any task may be an **Out argument**. Ambiguous on its own — confirm via AskUserQuestion. (Requires `Consumed By` column. Canonical per `assets/templates/sdd-template.md`. If absent, skip to step 3.)
-3. **Still ambiguous → AskUserQuestion.** Present the variable name + its Produced By / Consumed By cells (or whatever columns the sdd.md provides) + 4 options: `In argument` / `Out argument` / `Variable` / `Skeleton — resolve later`. Never silently default.
+3. **Still ambiguous → AskUserQuestion.** Present the variable name + its Produced By / Consumed By cells (or whatever columns the sdd.md provides) + 4 options: `In argument` / `Out argument` / `Variable` / `Placeholder — resolve later`. Never silently default.
 
 ### Completeness obligation
 
@@ -48,8 +48,6 @@ One T-entry per variable/argument. Place after the case file (T01) and **all** t
 - type: string
 - verify: Confirm entry exists in the variables block (per schema)
 ```
-
-Task-output variables are wired automatically during task creation (§4.6) — no T-entry needed here.
 
 ## Types
 

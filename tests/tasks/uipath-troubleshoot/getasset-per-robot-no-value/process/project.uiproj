@@ -1,0 +1,6 @@
+{
+  "Name": "AssetPerRobotNoValue",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Asset failure caused by a per-robot asset that has no value entry for the executing robot.",
+  "MainFile": "Main.xaml"
+}

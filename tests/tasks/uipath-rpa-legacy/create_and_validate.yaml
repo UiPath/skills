@@ -13,7 +13,6 @@ description: >
   commands to succeed at runtime.
 tags: [uipath-rpa-legacy, smoke, create, validate]
 
-task_timeout: 1200
 agent:
   type: claude-code
   # Historically pinned to Opus to dodge a Sonnet content-filter trip
@@ -25,6 +24,9 @@ agent:
   # the override was dropped. The default Sonnet from default.yaml
   # applies; intermittent content-filter blocks are absorbed by the
   # workflow-level 3-attempt retry on content-filter ERRORs.
+
+run_limits:
+  task_timeout: 1200
   max_turns: 40
   turn_timeout: 900
 

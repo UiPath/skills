@@ -1,0 +1,63 @@
+task_id: skill-admin-audit-login-history-e2e
+description: >
+  End-to-end test: agent runs Investigation 2 from
+  audit-workflow-guide.md ("login history for user X") at ORG scope —
+  cross-tenant / IdP-level login activity. Sequence is: list `org
+  sources` to find the User Login type GUID (Identity →
+  Authentication → User Login), then query `org events` scoped to
+  that user inside a bounded window. Validates the agent goes through
+  the sources-discovery → user-filtered-events chain at org scope
+  rather than blanket scanning all events.
+
+  Command-construction only — no live tenant available for
+  side-effect verification.
+tags: [uipath-admin, e2e, mode:diagnose, audit, investigation, login-history, scope-org]
+max_iterations: 2
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 40
+  turn_timeout: 600
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Show me login attempts for jane.doe@example.com over the last month.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit org sources` to discover the User Login type GUID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+sources\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --user-id (or --search to resolve the user) on the org events call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+events\b(?=.*(?:--user-id\s+\S+|--search\s+\S+))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent kept a bounded time window via --from-date/--to-date on the org events call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+events\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

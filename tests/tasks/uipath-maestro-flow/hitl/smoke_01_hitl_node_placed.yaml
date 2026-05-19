@@ -8,8 +8,10 @@ tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:h
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 80
-  turn_timeout: 600
+  turn_timeout: 900
 
 sandbox:
   driver: tempdir
@@ -27,7 +29,7 @@ initial_prompt: |
 
   Wire the completed handle to an End node.
 
-  Do NOT run flow debug. Validate the flow after building it.
+  Validate the flow after building it.
 
 success_criteria:
   - type: file_exists

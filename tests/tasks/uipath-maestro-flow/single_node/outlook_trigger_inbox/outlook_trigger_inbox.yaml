@@ -12,12 +12,13 @@ description: >
   trigger lookback). Adding a debug E2E requires a dedicated service
   mailbox with no rules; tracked as follow-up.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:
@@ -32,7 +33,7 @@ initial_prompt: |
   then End the flow with a single `out` variable named `matchedSubject` mapped
   from that Script node's output.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a single pass.
 
@@ -69,7 +70,10 @@ success_criteria:
     tool_name: "Bash"
     # `[\s\S]` matches across newlines — agents often split `uip` commands with
     # backslash line-continuation, which `.*` would miss.
-    command_pattern: 'uip\s+is\s+resources\s+execute\s+list[\s\S]+?MailFolder[\s\S]+?--connection-id'
+    # Verb alternation tolerates both the post-rename verb ("run", current)
+    # and the legacy "execute" verb that older CLIs in the sandbox PATH may
+    # still expose (MST-9674).
+    command_pattern: 'uip\s+is\s+resources\s+(?:run|execute)\s+list[\s\S]+?MailFolder[\s\S]+?--connection-id'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

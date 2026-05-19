@@ -84,7 +84,7 @@ Skill folders follow the naming convention: `uipath-<domain>` or `uipath-<tool>`
 
 - Use **kebab-case** (lowercase, hyphens between words)
 - Prefix with `uipath-` for UiPath-related skills
-- Be descriptive but concise: `uipath-rpa`, `uipath-interact`, `uipath-maestro-flow`
+- Be descriptive but concise: `uipath-rpa`, `uipath-platform`, `uipath-maestro-flow`
 
 ### 2. Create the Folder Structure
 
@@ -123,7 +123,7 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 ---
 ```
 
-> **1024-character limit.** Claude Code truncates the combined `description` + `when_to_use` at 1,536 characters in the skill listing ([source](https://code.claude.com/docs/en/skills.md)). This repo caps `description` at 1024 chars to leave headroom and keep descriptions focused; the pre-commit hook enforces it. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters.
+> **1024-character limit.** Claude Code truncates the combined `description` + `when_to_use` at 1,536 characters in the skill listing ([source](https://code.claude.com/docs/en/skills.md)). This repo caps `description` at 1024 chars to leave headroom and keep descriptions focused; the pre-commit hook enforces it. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`) within the first ~100 characters.
 
 **Required frontmatter fields:**
 
@@ -267,16 +267,17 @@ Use the `/test-coverage` slash command to see what a skill's tests cover and whe
 
 This produces a markdown report in `tests/reports/` with component coverage, rule coverage, priority-ranked gaps, and concrete recommendations for new tests to write. Run this before and after adding tests to measure your progress.
 
-### Scaffolding Tests with `/generate-tasks`
+### Scaffolding a Test with `/generate-task`
 
-Use the `/generate-tasks` command to scaffold task YAML files from coverage gaps:
+Use the `/generate-task` command to scaffold a single task YAML from a free-form description. The command always infers the target skill from the description — do not pass a skill name.
 
 ```bash
-/generate-tasks uipath-platform              # generate tasks for highest-priority gaps
-/generate-tasks uipath-platform authentication  # target a specific area
+/generate-task smoke test for folder listing via uip orchestrator
+/generate-task e2e flow that uses HITL with an approval gate and write-back
+/generate-task cover the new uip flow registry get subcommand
 ```
 
-Generated tasks are **starting points for reference only** — review and improve them before relying on them for CI. Verify that CLI commands, success criteria, and prompts match the skill's actual behavior, and adjust weights and thresholds based on what matters most for your skill.
+Generated tasks are **unverified scaffolds**. Before merging, run the task end-to-end with `coder-eval` and add a passing-run claim to the PR description (the lint workflow flags missing claims as High severity). Verify that CLI commands, success criteria, and prompts match the skill's actual behavior, and adjust weights and thresholds based on what matters most for your skill.
 
 ## Quality Checklist
 

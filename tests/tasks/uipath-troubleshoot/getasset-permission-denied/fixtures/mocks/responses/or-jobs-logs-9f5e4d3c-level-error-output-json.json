@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T15:42:20.291Z",
+      "Message": "[Get Credential] Status code: 403 (Forbidden). Orchestrator response: \r\nYou are not authorized! The robot account does not have the required permissions on Assets in this folder. Error code: 0"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T15:42:20.307Z",
+      "Message": "You are not authorized! The robot account does not have the required permissions on Assets in this folder. Error code: 0\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

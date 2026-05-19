@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T10:15:01.215Z",
+      "Message": "Job 'c0a1b2c3-d4e5-4678-9012-3456789abcde' failed to start. System.InvalidOperationException: A foreground process is already running. Only one foreground process can run at a time.\r\n   at UiPath.Robot.Service.Hosting.ForegroundJobGuard.EnsureCanStart(JobStartRequest request)\r\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T10:15:01.190Z",
+      "Message": "[Robot] Cannot start foreground job 'c0a1b2c3-d4e5-4678-9012-3456789abcde' (ReleaseName=ForegroundHolder). Another foreground job ('b0a1b2c3-d4e5-4678-9012-3456789abcde', ReleaseName=ForegroundHolder, started 2026-05-12T10:14:50.000Z) is currently running on this session. Only one foreground process can run at a time."
+    }
+  ]
+}

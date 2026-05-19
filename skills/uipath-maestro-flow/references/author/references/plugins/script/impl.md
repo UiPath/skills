@@ -4,56 +4,40 @@
 
 `core.action.script`
 
-## Registry Validation
+## Registry validation
 
 ```bash
 uip maestro flow registry get core.action.script --output json
 ```
 
-Confirm: input port `input`, output port `success`, required input `script` (string, non-empty).
+Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
 
-## JSON Structure
+## JSON structure
+
+Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
 
 ```json
 {
-  "id": "processData",
-  "type": "core.action.script",
-  "typeVersion": "1.0.0",
-  "display": { "label": "Process Data" },
   "inputs": {
     "script": "const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) => sum + i.amount, 0);\nreturn { total, count: items.length };"
-  },
-  "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the script",
-      "source": "=result.response",
-      "var": "output"
-    },
-    "error": {
-      "type": "object",
-      "description": "Error information if the script fails",
-      "source": "=result.Error",
-      "var": "error"
-    }
   }
 }
 ```
 
-## Adding / Editing
+## Adding and editing
 
-For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
 
-## Script Rules
+## Script rules
 
 1. **Must `return` an object** — `return { key: value }`, not a bare scalar. The return value becomes `$vars.{nodeId}.output`.
 2. **`$vars` is a global** — use it directly: `return { upper: $vars.input1.toUpperCase() }`
-3. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../../../shared/variables-and-expressions.md) for supported features and Jint constraints
+3. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../../../shared/variables-and-expressions.md) for supported features and Jint constraints.
 4. **No `console.log`** — `console` is not available. Use `return { debug: value }` to inspect values.
-5. **No external calls** — use HTTP node or connector nodes for API calls
-6. **30-second timeout** — long-running computations will be killed
+5. **No external calls** — use the HTTP node or a connector node for API calls.
+6. **30-second timeout** — long-running computations will be killed.
 
-## Common Patterns
+## Common patterns
 
 ### Transform and return
 

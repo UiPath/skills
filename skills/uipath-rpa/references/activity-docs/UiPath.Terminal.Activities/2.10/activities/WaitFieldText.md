@@ -44,8 +44,10 @@ At least one of `LabeledBy` or `FollowedBy` must be provided. Both can be specif
 ## XAML Example
 
 ```xml
-<t:TerminalWaitFieldText DisplayName="Wait Field Text"
+<uit:TerminalWaitFieldText DisplayName="Wait Field Text"
                           LabeledBy="[&quot;Status:&quot;]"
                           Text="[&quot;OK&quot;]"
-                          TimeoutMS="[30000]" />
+                          TimeoutMS="[30000]"
+                          WaitType="READY"
+                          DelayMS="300" />
 ```

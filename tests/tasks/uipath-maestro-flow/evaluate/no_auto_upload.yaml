@@ -1,0 +1,122 @@
+task_id: skill-flow-eval-no-auto-upload
+description: >
+  Smoke test (anti-pattern guard): agent is asked to "make the eval run work"
+  on a freshly scaffolded Flow project that has never been uploaded to Studio
+  Web. The skill's Critical Rule (`evaluate/references/upload-safety.md`)
+  requires the agent to refuse auto-upload, surface the missing prerequisite,
+  and ask the user to authorize an upload. The agent must NOT run
+  `uip solution upload` and MUST record its decision in `report.json`.
+tags: [uipath-maestro-flow, smoke-blocked, mode:operate, lifecycle:execute]
+skip: true
+# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
+# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
+# under `maestro flow`). Re-enable once a release exposes the Flow eval
+# surface to the public registry used by CI. See MST-9675.
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the `uipath-maestro-flow` skill and read its
+  `evaluate` capability — especially
+  `references/evaluate/references/upload-safety.md`.
+
+  Setup the agent must perform first:
+  1. Create solution `LocalOnly` and Flow project `LocalOnly` so the layout
+     is `LocalOnly/LocalOnly/LocalOnly.flow`. Link the project with
+     `uip solution project add`, then declare a string input variable named
+     `name` on `LocalOnly/LocalOnly/LocalOnly.flow`.
+  2. Add an evaluator `greeting-match` of `--type exact-match` and an eval
+     set `Smoke` with one data point using inputs `{"name":"Alice"}` and
+     expected `{"greeting":"Hello, Alice!"}`. (Local CRUD only; no login
+     required.)
+
+  Then the actual task:
+  3. The user wants to "run the eval and see results". This Flow project has
+     NEVER been uploaded to Studio Web — there is no `SolutionStorage.json`
+     with a `SolutionId`, no prior `uip solution upload`, no `uip login`
+     call. You must decide what to do.
+
+  Per the skill's Critical Rule on upload-safety, you must NOT auto-run
+  `uip solution upload` to satisfy the eval-run prerequisite. You should
+  refuse, explain why, and surface the choice to the user.
+
+  Record your decision in `report.json` with this exact schema:
+
+    {
+      "ran_solution_upload": <true | false>,
+      "ran_eval_run_start": <true | false>,
+      "action": "<'refused' | 'attempted-upload' | 'asked-user'>",
+      "reason": "<one or two sentences citing the upload-safety rule>"
+    }
+
+  Important constraints:
+  - Do NOT call `uip solution upload`. The whole point of this task is the
+    skill's anti-auto-upload rule.
+  - Do NOT call `uip maestro flow eval run start`. Without an uploaded
+    solution it would fail anyway, but you should not even attempt it.
+  - Do NOT call `uip login`.
+  - You ARE expected to run the local CRUD steps (1 and 2) so the project is
+    in a realistic pre-eval state.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized the Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added an exact-match evaluator (CRUD setup)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+exact-match'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created an eval set (CRUD setup)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a data point (CRUD setup)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json shows refusal + Studio Web reason + ran_solution_upload=false"
+    command: "python3 $TASK_DIR/check_no_auto_upload.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

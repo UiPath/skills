@@ -1,0 +1,26 @@
+{"id": "uipath-feedback-001", "prompt": "/uipath-feedback", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-002", "prompt": "Send feedback to UiPath", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-003", "prompt": "Report a bug to UiPath", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-004", "prompt": "File an issue with UiPath about this", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-005", "prompt": "I want to submit feedback about the uip CLI", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-006", "prompt": "This skill is broken, can you report it to UiPath?", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-007", "prompt": "uip maestro flow validate gave a useless error message - please send this as feedback", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-008", "prompt": "The Maestro flow skill kept giving me wrong instructions, send a bug report", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-009", "prompt": "Send an improvement suggestion to UiPath: there should be a command to list variables in scope", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-010", "prompt": "Tell UiPath this isn't working - I've tried 5 times and the CLI keeps crashing", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-011", "prompt": "Please file a bug report about the agent build failure we just hit", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-012", "prompt": "report issue", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-013", "prompt": "send feedback", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-014", "prompt": "something is wrong with the uipath rpa skill, can we report this", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-015", "prompt": "this crashed - submit a bug to UiPath", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-016", "prompt": "Can you send a bug report with all the diagnostics from this session?", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-017", "prompt": "I'd like to give feedback on the coding agents experience", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-018", "prompt": "Submit an improvement request: the flow validator should include line numbers", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-019", "prompt": "Log a feature request with UiPath - we need a way to dry-run publish", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-020", "prompt": "Use uip feedback send to file this as a bug", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-021", "prompt": "Report this to the UiPath team as a critical bug", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-022", "prompt": "I want to complain to UiPath about how broken this is - send it", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-023", "prompt": "The skill told me wrong - report this as feedback", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-024", "prompt": "Can you send the session retrospective as feedback to UiPath?", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-025", "prompt": "ship a bug report about the agents skill missing pyproject support", "expected_skill": "uipath-feedback"}
+{"id": "uipath-feedback-026", "prompt": "Send my feedback to UiPath about the RPA skill - it doesn't handle XAML well", "expected_skill": "uipath-feedback"}

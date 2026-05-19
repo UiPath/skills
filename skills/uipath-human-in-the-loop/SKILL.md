@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop node for Flow, Maestro, or Coded Agent. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly."
+description: "UiPath Human-in-the-Loop node authoring for Flow, Maestro, or Coded Agent. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly. For operating existing approval/validation tasks in Action Center→uipath-tasks."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -81,12 +81,17 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 **If no `.flow` file exists and surface is Flow**, scaffold solution-first — Flow projects MUST live inside a solution:
 
 ```bash
-uip solution new <SolutionName> --output json
+# Probe the solution verb once per session before scaffolding:
+#   uip solution init --help --output json
+# Success → use `solution init` (post-rename, default).
+# `unknown command` → CLI predates the rename; substitute `uip solution new <SolutionName>` below.
+
+uip solution init <SolutionName> --output json
 cd <SolutionName> && uip maestro flow init <ProjectName>
 # Creates: <SolutionName>/<ProjectName>/<ProjectName>.flow
 ```
 
-The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Running `uip maestro flow init` without first running `uip solution new` produces a broken single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
+The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Running `uip maestro flow init` without first running `uip solution init` produces a broken single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
 
 ---
 

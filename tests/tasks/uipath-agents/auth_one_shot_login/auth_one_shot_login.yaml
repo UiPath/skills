@@ -1,0 +1,84 @@
+task_id: skill-agent-coded-auth-one-shot-login
+description: >
+  Auth-shape integration test. Sandbox starts unauthenticated. The
+  skill must (1) check `uip login status --output json` once and
+  parse its output, (2) issue `uip login` in the one-shot form with
+  BOTH `--organization` and `--tenant` flags — never the interactive
+  picker, never without `--tenant` (Critical Rule 2 in
+  `authentication.md`). **Sandbox must start unauthenticated** for
+  this to be meaningful. The actual `uip login` call is allowed to
+  fail (no browser in the sandbox) — the test asserts COMMAND SHAPE,
+  not auth success.
+tags: [uipath-agents, integration, mode:build, coded, lifecycle:activate, feature:auth]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Connect to UiPath with these details:
+
+    - environment: cloud
+    - organization: acme
+    - tenant: DefaultTenant
+
+  Before doing anything else, capture the current login status
+  output (whatever it says — logged in or not) and save it to
+  `hello/auth-status.txt` so the result is on record.
+
+  Then scaffold a minimal coded agent named `hello` that echoes
+  back a `message` string. Do NOT run, publish, or deploy. Do NOT
+  pause between planning and implementation. Complete in a single
+  pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login state up front (status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip login` with both --organization AND --tenant (one-shot form)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+(?!status|tenant|logout)(?=.*--organization\b)(?=.*--tenant\b)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the hello echo agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Scaffolded coded agent has the expected pyproject.toml"
+    path: "hello/pyproject.toml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Login status output captured to auth-status.txt (proves the agent consumed the JSON, not just ran the command)"
+    path: "hello/auth-status.txt"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "auth-status.txt carries the Status field from `uip login status --output json`"
+    path: "hello/auth-status.txt"
+    includes:
+      - "Status"
+    weight: 1.5
+    pass_threshold: 1.0

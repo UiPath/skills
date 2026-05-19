@@ -2,14 +2,17 @@ task_id: skill-datafabric-smoke-records
 description: >
   Smoke test: agent uses the uipath-data-fabric skill to manage records offline
   — single insert (JSON object), batch insert (2+ element JSON array routes to
-  batch endpoint), filterGroup query, cursor-based pagination (--limit/--cursor),
-  records get by ID, single update (Id required), batch update (Id required in
-  every element), and records delete. Tests the full records command surface
-  and the array-body routing rule in a single pass.
+  batch endpoint), filterGroup query, pagination via --limit/--cursor and the
+  new -o/--offset jump (mutually exclusive with --cursor), records get by ID,
+  single update (Id required), batch update (Id required in every element),
+  and records delete. Tests the full records command surface and the
+  array-body routing rule in a single pass.
 tags: [uipath-data-fabric, smoke, records]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 30
 
 sandbox:
@@ -36,16 +39,25 @@ initial_prompt: |
        - { "Title": "Deploy",     "Priority": 3, "Done": false }
   3. Retrieve the single record from step 1 by ID using records get.
      Use placeholder record ID "id-single" since the CLI is offline.
-  4. Query all records where Done = false.
+  4. Query all records where Done = false with --limit 50 and --offset 100
+     on the same command (filterGroup body + offset CLI flag).
   5. List the first page of all records with --limit 10.
-  6. Update the record from step 1: set Done = true.
+  6. Fetch the next page by passing the previous response's NextCursor
+     verbatim via --cursor. Use placeholder cursor "cursor-page-2".
+  7. Jump directly to the page containing record index 200 using --offset 200
+     with --limit 10. (--offset and --cursor are mutually exclusive — pick
+     one per command, never both.)
+  8. Update the record from step 1: set Done = true.
      Use placeholder record ID "id-single" in the "Id" field of the body.
-  7. Batch-update the 2 records from step 2: set Done = true for each.
+  9. Batch-update the 2 records from step 2: set Done = true for each.
      Use placeholder IDs "id-2" and "id-3".
-  8. Delete the record from step 1 using records delete.
-     Use placeholder record ID "id-single".
+  10. Delete the record from step 1 using records delete.
+      Use placeholder record ID "id-single".
 
-  Additional constraint:
+  Additional constraints:
+  - Pagination MUST use CLI flags (--limit, --cursor, --offset). Do NOT put
+    "start", "limit", "offset", or "pageSize" inside any --body JSON.
+  - Never pass both --offset and --cursor on the same command.
   - Use --output json on every uip df command.
 
 success_criteria:
@@ -87,6 +99,48 @@ success_criteria:
     command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
     min_count: 1
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent paged forward using --cursor on records list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+list\s+.*--cursor'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent jumped to a page using -o/--offset on records list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+list\s+.*(-o\s+\d+|--offset\s+\d+)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --offset on records query"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query\s+.*(-o\s+\d+|--offset\s+\d+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT combine --offset and --cursor on the same command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(list|query)(?=[^\n]*--cursor)(?=[^\n]*(-o\s+\d+|--offset\s+\d+))'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT put pagination keys inside the --body JSON"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*--body.*\"(start|offset|pageSize|limit)\"\s*:'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

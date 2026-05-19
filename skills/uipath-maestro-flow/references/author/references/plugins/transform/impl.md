@@ -22,6 +22,28 @@ Confirm: input port `input`, output ports `output` and `error`, required inputs 
 
 For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structures below for the node-specific `inputs` and `model` fields.
 
+## Collection Input Contract
+
+`inputs.collection` is a transform-specific path field, not a general `=js:` value field. Set it to the variable path that contains the array:
+
+```json
+"collection": "$vars.orders.output.items"
+```
+
+**NEVER** wrap transform `collection` in `=js:`. **NEVER** set it to an inline array literal. Both forms below are wrong:
+
+```json
+"collection": "=js:$vars.orders.output.items"
+```
+
+```json
+"collection": "=js:[{\"title\":\"Example\"}]"
+```
+
+The transform runtime turns the path string into a lookup such as `vars.orders.output.items`. If the string starts with `=js:` or contains an inline JSON/JS literal, that lookup resolves to an empty collection.
+
+For static data, store the array in a workflow variable `defaultValue` or emit it from an upstream static-data/script node, then point `collection` at that variable or node output. Filtering, mapping, and grouping still belong in transform nodes.
+
 ---
 
 ## Generic Transform (`core.action.transform`)
@@ -32,7 +54,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 {
   "id": "transformChain",
   "type": "core.action.transform",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Process Employees" },
   "inputs": {
     "collection": "$vars.fetchData.output.body.employees",
@@ -85,7 +107,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 {
   "id": "filterActive",
   "type": "core.action.transform.filter",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Filter Active Orders" },
   "inputs": {
     "collection": "$vars.orders.output.items",
@@ -136,7 +158,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 {
   "id": "mapFields",
   "type": "core.action.transform.map",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Normalize Names" },
   "inputs": {
     "collection": "$vars.rawData.output.items",
@@ -186,7 +208,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 {
   "id": "groupByDept",
   "type": "core.action.transform.group-by",
-  "typeVersion": "1.0.0",
+  "typeVersion": "1.0",
   "display": { "label": "Group by Department" },
   "inputs": {
     "collection": "$vars.employees.output.items",
@@ -247,6 +269,6 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 | --- | --- | --- |
 | Filter passes all items through | Wrong condition name (e.g. `greater` instead of `greater_than`) | Use exact names: `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null` |
 | Filter silently returns empty array | Filter `value` holds an unresolved expression (`"$vars.x"`, `"=js:..."`, `"{$vars.x}"`) — Transform compares each item against that string literal | Replace with a literal scalar (`"value": 500`); expressions are not evaluated in filter `value`. If the threshold must be dynamic, do the filter in a Script node |
-| Collection is null/empty | `$vars` reference evaluates to null | Check collection expression and upstream output |
+| Collection is null/empty | `collection` was wrapped in `=js:` or set to an inline array literal instead of a plain variable path | Use a path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; keep static arrays in a variable default or upstream node |
 | Map output missing fields | `keepOriginalFields: false` and field not in mappings | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match the group field | Check `groupByField` matches actual field names in the data |

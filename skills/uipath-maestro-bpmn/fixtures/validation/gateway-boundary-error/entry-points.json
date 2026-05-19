@@ -1,0 +1,25 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_GatewayBoundary",
+      "name": "Start",
+      "filePath": "/content/gateway-boundary-error.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestType": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

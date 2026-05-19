@@ -11,6 +11,8 @@ tags: [uipath-human-in-the-loop, e2e, brown-field, multi-hitl, hr-onboarding]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 50
   turn_timeout: 1200
 

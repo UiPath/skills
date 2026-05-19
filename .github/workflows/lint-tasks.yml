@@ -2,10 +2,13 @@ name: Lint coder-eval Tasks
 
 # Runs only on PRs that are out of draft state. Drafts are skipped via the
 # job-level `if` check below; the workflow re-fires on the `ready_for_review`
-# event when the author flips a draft to ready.
+# event when the author flips a draft to ready. `synchronize` is intentionally
+# omitted so the LLM lint does not re-run on every push — matches the trigger
+# set used by `claude-pr-review.yml`. Authors can re-trigger by toggling
+# draft/ready.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - 'tests/tasks/**/*.yaml'
 
