@@ -1,0 +1,118 @@
+task_id: skill-test-integration-tester-uat-blocker-analysis
+description: >
+  Integration test: agent analyzes blocked UAT executions and maps them
+  to open defects. Multiple test cases are blocked due to unresolved
+  defects. Agent needs to summarize blocked executions, correlate with
+  linked Jira defects, and identify business-critical processes at risk.
+  Asserts agent (a) checks auth, (b) discovers CLAIM project,
+  (c) lists test sets and test cases, (d) lists blocked executions,
+  (e) correlates with defects, (f) generates UAT blocker report.
+tags: [uipath-test, integration, mode:diagnose, lifecycle:validate, feature:test-case]
+
+# Project Reference
+# Use CLAIM project (Claims Processing) for this test.
+# Fixture: 10 test cases; 2 test sets (UAT Smoke, UAT Full);
+# 3 test cases marked as blocked; 3 linked Jira defects;
+# 2-3 executions with blocked status per test case.
+
+agent:
+  type: claude-code
+  max_turns: 60
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  **Project Context: CLAIM (Claims Processing)** — use this specific
+  project for all queries.
+
+  I'm a UAT tester for our insurance claims platform. We're in the final
+  UAT week before the Q2 release of the claims-processing module, and
+  I have 4 testers under me running parallel tracks. The release covers
+  three core business processes: **claim submission**, **claim approval
+  routing**, and **claim payout**.
+
+  My problem: half of my team's UAT test cases are stuck in "Blocked"
+  status because they hit unresolved Jira defects (auth token expiry,
+  payout-API 500s, etc.). I need to compile a daily escalation report
+  for the team lead instead of opening every Jira issue myself.
+
+  Please query the **CLAIM** project in Test Manager and:
+
+  - Discover the project and enumerate its test sets (`UAT Smoke Suite`
+    and `UAT Full Suite`)
+  - Pull the latest execution for each test set and inspect every
+    testcase log
+  - List every test case currently in a non-passing terminal state
+    (Failed, Blocked, or Restricted) with its scenario name
+  - For each blocked test case, identify which Jira-linked defect
+    (or error category) is blocking it. If logs mention "auth",
+    "payout API", or "validation", call that out.
+  - Group findings by business process — claim submission, claim
+    approval routing, claim payout — and call out which process has
+    the most exposure today
+  - Recommend whether each business area is **Go**, **At Risk**, or
+    **No-Go** for the release given current blockers
+
+  Save the escalation report as `uat-blocker-report.md` in the current
+  working directory.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rule #1 + #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered Claims Processing project (`project list --filter` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+tm\s+project\s+list\s+.*--filter\s+\S*claim.*--output\s+json|uip\s+tm\s+project\s+list\s+.*--output\s+json.*--filter\s+\S*claim'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test cases (`testcases list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testcases\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved execution history (`executions list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test case logs from executions (`executions testcaselogs list` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+testcaselogs\s+list\s+.*--execution-id.*--output\s+json|uip\s+tm\s+executions\s+testcaselogs\s+list\s+.*--output\s+json.*--execution-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "UAT blocker report generated with blocked test summary, defect correlation, and business-process risk assessment"
+    command: |
+      ls uat-blocker-report.md 2>/dev/null >/dev/null \
+        && grep -qiE 'blocked|block|blocker|fail|restricted' uat-blocker-report.md \
+        && grep -qiE 'defect|jira|linked|issue|auth|payout' uat-blocker-report.md \
+        && grep -qiE 'claim|process|risk|impact|approval|payout' uat-blocker-report.md
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
