@@ -176,7 +176,7 @@ If the probe in Rule #2 shows singular subjects, the CLI predates the closed-ver
   uip tm testsets list-testcases --project-key <PROJECT_KEY> --test-set-key <TEST_SET_KEY> --output json
 
   # Get testexecution
-  uip tm executions list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> --top 100 --output json
+  uip tm executions list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> --limit 100 --output json
 
   # Get testcaselogs in a testexecution
   uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json

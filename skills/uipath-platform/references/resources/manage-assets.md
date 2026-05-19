@@ -85,6 +85,11 @@ uip resource assets list --folder-path "Finance" --name "Api" --output json
 uip resource assets list --folder-path "Finance" --type Secret --output json
 ```
 
+If the user already gives a folder name or path, pass it directly as
+`--folder-path`; do not call `uip or folders list` just to validate it. Stop
+after the `assets list --name ... --folder-path ... --output json` result if
+the asset is not present.
+
 ## Step 3: Get Asset Details
 
 Get full asset metadata by key. Cross-folder -- no `--folder-path` needed.

@@ -35,7 +35,7 @@ What to look for:
 
 1. Get the failing job: `uip or jobs get <job-key> --output json`. Note `MachineName`, `StartTime`, `EndTime`, and `RobotName`.
 2. List recent jobs on the same machine to find an overlapping foreground job:
-   `uip or jobs list --folder-path '<folder>' --top 20 --output json`. Look for any Running job, or a Completed/Faulted job whose `EndTime` is at or after the failing job's `StartTime`.
+   `uip or jobs list --folder-path '<folder>' --limit 20 --output json`. Look for any Running job, or a Completed/Faulted job whose `EndTime` is at or after the failing job's `StartTime`.
 3. Confirm both processes are foreground:
    - Orchestrator UI → Processes → select process → Settings → check "Background Process" is **off** (or `requiresUserInteraction: true`).
 4. Check for orphaned executor processes on the host:

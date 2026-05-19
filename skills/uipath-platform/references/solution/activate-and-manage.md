@@ -89,7 +89,7 @@ View all solution packages that have been published to the feed:
 uip solution packages list --output json
 
 # Paginate and sort
-uip solution packages list --take 20 --order-by "Name" --order-direction "asc" --output json
+uip solution packages list --limit 20 --order-by "Name" --order-direction "asc" --output json
 
 # Filter by name (server-side substring match on the package name)
 uip solution packages list --name "Invoice" --output json
@@ -97,7 +97,7 @@ uip solution packages list --name "Invoice" --output json
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--take <n>` | Number of results to return | 10 |
+| `--limit <n>` | Number of results to return | 10 |
 | `--order-by <field>` | Sort field | -- |
 | `--order-direction <dir>` | `asc` or `desc` | -- |
 
@@ -129,7 +129,7 @@ List deployments, uninstall an old one, and clean up the published package versi
 
 ```bash
 # List current deployments
-uip solution deploy list --take 20 --output json
+uip solution deploy list --limit 20 --output json
 
 # Uninstall the old deployment
 uip solution deploy uninstall "MySolution-v1" --output json

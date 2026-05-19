@@ -13,7 +13,8 @@ sandbox:
 
 initial_prompt: |
   List the processes published in the `Finance/Accounting` folder of the
-  current UiPath tenant.
+  current UiPath tenant. Use that folder path directly when calling the CLI;
+  do not spend time discovering or validating the folder first.
 
 success_criteria:
   - type: command_executed
@@ -39,4 +40,3 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-
