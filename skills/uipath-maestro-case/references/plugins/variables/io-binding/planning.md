@@ -5,11 +5,27 @@ Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.js
 ## Discovering Input/Output Names
 
 1. **SDD per-task tables** — primary source. Each task lists input/output field names, types, and variable bindings.
-2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). When SDD names differ from `tasks describe`, note the mapping:
+2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). When SDD names differ from `tasks describe`:
+
+   **Input-side aliasing** (when SDD's input name differs from the connector/process arg name):
    ```markdown
    - inputs:
      - in_Amount = "=vars.amount"   # SDD calls this "amount", process arg is "in_Amount"
    ```
+
+   **Output-side aliasing** (when SDD's case-variable name differs from the connector/process response field name):
+   ```markdown
+   - outputs:
+     - finalDecision <- Decision         # response field "Decision" → vars.finalDecision
+     - creditScore   <- result.score     # nested response path → vars.creditScore
+     - notes         <- Comments         # display label "Comments" → vars.notes
+     - error                              # bare name = response field "Error" → vars.error (camelCased)
+   ```
+
+   **Notation:** `<sdd-name> <- <response-path>`. Left side becomes `var` / `id` on `task.data.outputs[]` (the case-scope variable name). Right side becomes the `source: "=<response-path>"` extraction. Bare name (no `<-`) defaults to camelCased response field name for both sides.
+
+   **Dot-path support** on the right side: `result.score`, `data.user.email`, etc. Array indexing (`items[0]`) is NOT supported in v1 — fall back to consuming the array variable and using `=js:` expressions downstream.
+
 3. **Unresolved taskTypeId** — `tasks describe` unavailable. Follow [placeholder-tasks](../../../placeholder-tasks.md) — omit `inputs:`/`outputs:`, capture wiring intent in a fenced code block.
 
 Do not fabricate names not in the SDD or `tasks describe`. Do not validate variable existence or scoping — those checks belong in implementation.

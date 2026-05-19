@@ -76,6 +76,14 @@ For each entry in `caseShape.inputs[]`:
 
 For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-common.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers).
 
+**Output aliasing per `<-` notation** (parsed from tasks.md `outputs:` row; documented in [`../../variables/io-binding/planning.md`](../../variables/io-binding/planning.md#discovering-inputoutput-names)):
+
+- For each `caseShape.outputs[]` entry, check whether the SDD's `outputs:` row in tasks.md references it (matched by schema field name in the right side of `<-` or as a bare name).
+- `<sdd-name> <- <response-path>` → override the minted `var/id/target/value` with `<sdd-name>` (uniqueness rule still applies); `source` becomes `"=<response-path>"`. `name` stays as the schema's display name.
+- Bare `<name>` in SDD → match against the schema's field name; if matched, write camelCased name to `var/id/target/value`; `source` stays as the schema's default `"=<schema-field>"`.
+- Schema fields with no SDD reference → fall back to today's minted shape (`var` = camelCased schema name, dedup-suffix on collision).
+- Dot-paths in `<response-path>` are supported for nested response extraction (e.g., `result.score`).
+
 ### Step 7 — Build task and write to caseplan.json
 
 ```json

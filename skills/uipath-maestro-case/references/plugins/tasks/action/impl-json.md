@@ -53,14 +53,13 @@ Fallback: planning-captured schema from tasks.md. If unavailable, placeholder pe
 
 **Step 1 — Root-level bindings:**
 
-Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
+Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
 
-| `propertyAttribute` | `resource` | `resourceSubType` | `default` |
-|---|---|---|---|
-| `"name"` | `"app"` | — | `name` from tasks.md |
-| `"folderPath"` | `"app"` | — | `folder-path` from tasks.md |
+- `resource`: `"app"`
+- `resourceSubType`: omit (no resourceSubType for action tasks)
+- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields
 
-Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate by `default + resource + resourceKey`.
+Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 **Step 2 — Write task:**
 
@@ -68,6 +67,12 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 2. Set `data.taskTitle`, `data.priority`, `data.recipient`, `data.actionCatalogName`, `data.labels` from tasks.md
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
+
+   **Output aliasing per `<-` notation** (parsed from tasks.md `outputs:` row; documented in [`../../variables/io-binding/planning.md`](../../variables/io-binding/planning.md#discovering-inputoutput-names)):
+   - `<sdd-name> <- <response-path>` → `source: "=<response-path>"`, `var/id/target/value: "<sdd-name>"`. `name` stays as the schema's display name.
+   - Bare `<name>` → camelCase the schema field → `var/id/target/value` = camelCased, `source: "=<schema-field-name>"`.
+   - Dot-paths supported on the right side (`result.score`, `data.user.email`). Array indexing not supported in v1.
+   - [Uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) applies to `var/id/target` on collision; `source` is never suffixed.
 5. Append to target stage's `tasks[laneIndex][]`
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).

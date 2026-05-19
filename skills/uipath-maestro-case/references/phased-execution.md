@@ -146,6 +146,7 @@ After re-entry:
    - Task entry conditions (depends on TaskIds from Phase 2)
    - Case exit conditions
 4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
+5. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-3 (=vars.X resolution, Q10 II Out-arg producer presence, type mismatch). AskUserQuestion for unresolved references and pure orphan Out-args; option (d) "continue with best-effort emit" preserves forward progress. Never HALT.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop on Phase 3 exit — agent proceeds directly to Phase 4.
 

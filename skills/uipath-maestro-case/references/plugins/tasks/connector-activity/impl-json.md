@@ -149,6 +149,14 @@ For each entry in `caseShape.inputs[]`:
 For each entry in `caseShape.outputs[]`:
 - Same fields, plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
 
+**Output aliasing per `<-` notation** (parsed from tasks.md `outputs:` row; documented in [`../../variables/io-binding/planning.md`](../../variables/io-binding/planning.md#discovering-inputoutput-names)):
+
+- For each `caseShape.outputs[]` entry, check whether the SDD's `outputs:` row in tasks.md references it (matched by schema field name in the right side of `<-` or as a bare name).
+- `<sdd-name> <- <response-path>` → override the minted `var/id/target/value` with `<sdd-name>` (uniqueness rule still applies); `source` becomes `"=<response-path>"`. `name` stays as the schema's display name.
+- Bare `<name>` in SDD → match against the schema's field name; if matched, write camelCased name to `var/id/target/value`; `source` stays as the schema's default `"=<schema-field>"`.
+- Schema fields with no SDD reference → fall back to today's minted shape (`var` = camelCased schema name, dedup-suffix on collision).
+- Dot-paths in `<response-path>` are supported for nested response extraction (e.g., `result.score`).
+
 ### Step 8 — Build `data` and write to caseplan.json
 
 Generate the task skeleton:
@@ -175,14 +183,14 @@ Append the task to the target stage's `tasks[]` array. Default: own task set (on
 
 ### Step 9 — Append root-level bindings
 
-Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md). Connector tasks use `resource: "Connection"`:
+Read [bindings/impl-json.md § Full binding shape — connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-task value sources:
 
-| Binding | `id` | `name` | `propertyAttribute` | `default` |
-|---|---|---|---|---|
-| ConnectionBinding | `<connBindingId>` (Step 5) | `` `${connectorKey} connection` `` (templated) | `"ConnectionId"` | `connection-id` (tasks.md) |
-| FolderKey | `<folderBindingId>` (Step 5) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — deliberately different from `name`) | `spec.connection.folderKey` (Step 2) |
+- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this task's `tasks.md` entry
+- `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
+- `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
+- Binding IDs `<connBindingId>` / `<folderBindingId>` come from Step 5.
 
-Both share `resourceKey` = `connection-id`. Source of truth for binding shape: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
+Dedup per [§ Deduplication](../../variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 
 ### Step 10 — Sync IS connection cache
 

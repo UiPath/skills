@@ -51,7 +51,101 @@ src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
 
-After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` resolves to an existing ID in: any task `data.outputs[].var`, the variables `inputOutputs[].id`, or the variables `inputs[].id`. Variables array path is schema-dependent — `root.data.uipath.variables.{inputOutputs,inputs}[].id` in v19, top-level `variables.{inputOutputs,inputs}[].id` in v20 (Rule 18).
+After all bindings, run the end-of-Phase-3 validator. It performs three cross-reference checks:
+
+### Check 1 — `=vars.X` reference resolution
+
+Verify every bound input has a non-empty `value`, and every `=vars.X` reference resolves to an existing entry in one of:
+- Any task `data.outputs[].id` (the resolver match key; mirrors `var` under skill convention)
+- Variables `inputOutputs[].id`
+- Variables `inputs[].id`
+
+Variables array path is schema-dependent — `root.data.uipath.variables.{inputOutputs,inputs}[].id` in v19, top-level `variables.{inputOutputs,inputs}[].id` in v20 (Rule 18).
+
+> **Scan key:** match by `.id`, NOT `.var`. The runtime resolver matches on `Variable.id` (`VariablesService.findVariableByVariableId`). Under the skill convention `id === var` on self-declaring outputs, scanning by `.var` is harmless in practice, but `.id` is symmetric with the resolver.
+
+Also scan `=vars.X` references in:
+- Edge guard expressions (`edges[].data.conditionExpression`)
+- Entry / exit condition expressions (stage and task)
+- SLA expressions
+- `=js:` expressions anywhere they appear
+
+Same resolution rule applies — these are read-side consumers of the variable namespace.
+
+### Check 2 — Out-arg producer presence (Q10 Option II)
+
+For every entry in `root.data.uipath.variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end (audit knowledge doc §4.6). Validation gates on whether the SDD declared a `Default`:
+
+| SDD Case Variables row for this Out-arg | Required at validate time | If missing |
+|---|---|---|
+| **Has `Default` value** | `root.inputOutputs[]` companion exists with `id === <var>` AND `default` field is non-empty. (Producer task is OPTIONAL — companion's default is the fallback.) | AskUserQuestion (companion was supposed to be written by variables plugin) |
+| **No `Default` value, and producer alias is declared in SDD on an unresolved (Rule 17 placeholder) task** | n/a — declared-but-unwirable case | **No prompt.** Silent WARN: log to `tasks/build-issues.md` under `## Open Items for User`. Rule 17 already gave the author the choice; this is the placeholder path. |
+| **No `Default` value, and NO producer alias is declared anywhere** | n/a — pure orphan | AskUserQuestion (4 options, see below) |
+
+Pseudocode:
+
+```text
+for entry in root.outputs[]:
+  var = entry.var
+  has_companion_default      = exists(io in root.inputOutputs[] where io.id == var and io.default not empty)
+  has_producer_alias_in_tasks_md = exists in tasks.md any task's T-entry with an `outputs:` line containing `<var> <- <field>`
+  has_producer_wire_in_plan  = exists in caseplan.json any task.data.outputs[] where id == var
+  producer_task_unresolved   = the tasks.md-declared producer task is a Rule 17 placeholder (look up the task in caseplan.json by displayName; check `node.data.uipath` is empty `{}`)
+
+  if tasks_md_row(name=entry.name).default is not empty:
+      # Has Default — companion must exist with default
+      if not has_companion_default: AskUserQuestion("companion missing for Default")
+  else:
+      if has_producer_alias_in_tasks_md and producer_task_unresolved and not has_producer_wire_in_plan:
+          # Declared producer but task is unresolvable — Rule 17 already prompted; just log
+          LOG_OPEN_ITEM("Out-arg with declared but unresolvable producer — runtime undefined until producer is wired")
+      elif not has_producer_alias_in_tasks_md:
+          # Pure orphan — author never declared a producer. Ask.
+          AskUserQuestion("pure orphan", options=(a, b, c, d))
+```
+
+**On AskUserQuestion ("pure orphan" branch):**
+
+```
+Out-argument "<name>" (id <random>, var <var>) has no value source:
+  SDD row Default: <"" | "<value>">
+  Companion root.inputOutputs[].id="<var>": <missing | default="">
+  Producing task.data.outputs[].id="<var>": <missing>
+
+Pick one:
+  (a) Add producer task output — supply the producer task's **display name** as shown in tasks.md (e.g., `Send Slack Message`). If the named task doesn't exist, re-prompt.
+  (b) Add a Default value to the SDD Case Variables row — supply value inline (literal string).
+  (c) Recategorize as Variable (case-internal state) or remove the variable.
+  (d) Continue with best-effort emit (case builds; runtime returns undefined for this Out-arg; entry logged under "Open Items for User" in build-issues.md).
+```
+
+**Skill response per user pick:**
+
+- **(a)** Edit `tasks.md`: append `outputs: <var-name> <- <field>` to the named task's T-entry (use spec-derived field name if available, else `<UNKNOWN>` placeholder). Re-run Phase 1 dispatcher from the modified tasks.md, then retry Step 12.
+- **(b)** Edit `tasks.md`: set `default: "<value>"` on the Out-arg's T-entry. Re-run Phase 1 dispatcher, then retry Step 12.
+- **(c)** Prompt the user inline: `Recategorize as "Variable" or "Remove" the variable?` On `Variable`: edit `tasks.md` Case Variables row Category → Variable, re-run Phase 1 dispatcher, retry Step 12. On `Remove`: delete the row from `tasks.md`, re-run Phase 1 dispatcher, retry Step 12.
+- **(d)** Append the build-issues entry (template below) and continue to Phase 4. No re-run.
+
+Option (d) is the build-with-best escape for cases where the author intends to wire the producer later but wants to keep iterating now — equivalent to the silent-WARN treatment that declared-but-unresolvable producers (T20-style) get automatically.
+
+**Rationale for the split:** real-world authoring is iterative. When an author has already gone through a Rule 17 prompt for the producer task (T20-style), the skill should not pile a second prompt on top — that's the path the author already chose by picking "Skip". But when the author authored a *pure orphan* with no producer declared at all (T14-style — wait-for-timer with no aliasing wire AND no Default), there's no prior signal of intent; the AskUserQuestion is the right surface to ask "did you mean to forget this, or wire it now?" Option (d) preserves the build-with-best escape.
+
+**Build-issues entry template** (both branches log to this, only the AskUserQuestion branch ALSO prompts):
+
+```markdown
+## Open Items for User
+
+- **[Q10 II — Out-arg `<name>` has no value source]** — The Out-argument `<name>` (id `<random>`, var `<var>`) is declared in `variables.outputs[]` but {Default missing companion default | no producer wired AND no Default}. Runtime will return `undefined` for this Out-argument unless one of:
+  - Add an `outputs: <name> <- <connectorField>` row to a task that produces this value (matching `<var>`)
+  - Add a Default value to the SDD Case Variables row
+  - Recategorize the variable as `Variable` or remove it
+```
+
+See [implementation.md § Step 12 — End-of-Phase-3 validator pass](../../../implementation.md) for invocation.
+
+### Check 3 — Type mismatch warnings
+
+Where a `=vars.X` reference resolves to a declaration with a different `type` than the consuming input expects, log WARNING. Proceed (string coercion is common and runtime-tolerant).
 
 ## Connector Tasks
 
@@ -90,7 +184,8 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Placeholder task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
-| `=vars.X` not in any task `outputs[]` or root `inputOutputs[]` | `ERROR` | Skip binding |
+| `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |
+| Out-arg formal entry's `var` doesn't match any task `outputs[].id` AND companion has no `default` | `ERROR` | Log Out-arg producer issue (Check 2 above); AskUserQuestion |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):
