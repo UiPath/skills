@@ -30,8 +30,8 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
-2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle.
+1. **Confirm schema with the user before writing anything for quickform type — unless the context already provides enough information.** If the user's description fully determines the fields, types, directions, and outcomes (nothing is genuinely ambiguous), proceed directly and explain what you designed. Only stop to confirm when a key schema decision cannot be inferred from context. Never ask for confirmation in agentic or automated contexts where no interactive user is present.
+2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle. As of flow-schema MST-9713, `flow validate` raises `HITL_COMPLETED_UNWIRED` (error severity) if the `completed` port has no outgoing edge — validation will fail rather than silently producing a broken flow.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
 4. **Validate after every change.** Run `uip maestro flow validate <file> --output json` after writing the node and edges. The `uip` CLI does not accept `--format`; using it produces `error: unknown option '--format'` and exit code 3.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
@@ -141,6 +141,8 @@ Present the user with three options. Do not choose on their behalf or perform an
 | 2 | **New Coded Action App** | `"custom"` | Scaffold a new React + TypeScript app inside the solution — full UI control |
 | 3 | **Existing Deployed App** | `"custom"` | Reference an app already deployed to Orchestrator |
 
+> **If the user's request is purely business-oriented** (no mention of a deployed app, coded action app, or custom UI): skip the question and proceed directly with QuickForm. Do not ask. Say: "I'll use QuickForm — it's inline, no deployment step needed, and works for most approval and review tasks."
+
 > **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a Coded Action App later."
 
 | User selects | Next step |
@@ -188,6 +190,10 @@ If the user says something like "just add some fields" or "use whatever makes se
 1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file.
 2. Show the proposed schema explicitly before writing: "Here's what I'm proposing — let me know if you want to change anything."
 3. If there are no upstream nodes to bind to (flow is just a trigger), use output-direction fields only and note: "There are no upstream nodes to pull data from, so the reviewer will fill in all fields from scratch."
+
+### Empty field labels block validation
+
+Every field in `inputs.schema.fields` must have a non-empty `label`. As of flow-workbench #1591, `flow validate` emits `HITL_QUICK_FORM_FIELD_LABEL_REQUIRED` (error severity) for each field with an empty or whitespace-only `label` — Debug and Publish are blocked until all labels are filled in. Never generate a field with `"label": ""` or omit the `label` key.
 
 ### Partial confirmation
 

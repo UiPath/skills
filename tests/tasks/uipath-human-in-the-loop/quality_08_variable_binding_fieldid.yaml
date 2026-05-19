@@ -22,7 +22,7 @@ initial_prompt: |
 
   1. Manual trigger
   2. Script node — sets contract context (mock: contractId = "CTR-2026-001", value = 85000)
-  3. HITL node — legal reviewer approves the contract:
+  3. Human approval step — legal reviewer approves the contract:
        - Sees (read-only): contract ID, contract value
        - Fills in: approved (boolean, required), comments (text, optional)
        - The approved field must have id "approved" and variable "legalApproval"
@@ -30,14 +30,8 @@ initial_prompt: |
        - Outcomes: Approve (primary), Reject
   4. Script node — reads the reviewer's decision and logs:
        "Approved: <approved value>, Comments: <comments value>"
-     The script MUST access the fields using the correct runtime variable path
-     based on field IDs ($vars.<nodeId>.output.approved and
-     $vars.<nodeId>.output.reviewcomments), NOT the variable property names.
   5. End node
 
-  Wire: Trigger → Script → HITL →|completed| Script (log) → End
-
-  Use the inline quickform node (uipath.human-in-the-loop).
   Do NOT run flow debug. Validate after building.
 
 success_criteria:

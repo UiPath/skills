@@ -32,10 +32,10 @@ initial_prompt: |
     - Outcomes: Approve (primary), Reject
 
   After insertion the wiring must be:
-    Trigger → extractMeta →|output| HITL →|completed| End
+    Trigger → extractMeta → human review step → End
 
   The original extractMeta → End edge must be removed.
-  The extractMeta → HITL edge and HITL → End edge must be added.
+  The extractMeta → review step edge and review step → End edge must be added.
 
   Validate the flow after building.
 

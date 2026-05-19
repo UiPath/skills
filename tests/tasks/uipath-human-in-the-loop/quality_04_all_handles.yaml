@@ -18,15 +18,14 @@ sandbox:
 initial_prompt: |
   Create a flow called "PurchaseOrderApproval" with the following structure:
   - A manual trigger
-  - A HITL node for purchase order approval (label: "PO Approval")
-  - A script node that reads the human's decision after the HITL step
-    (id: "processResult", label: "Process Result")
+  - A human approval step for purchase order review (label: "PO Approval")
+  - A script node after the approval step that reads the reviewer's decision
+    and logs it (id: "processResult", label: "Process Result")
 
-  Wire the completed handle from the HITL node to processResult. In the
-  processResult script node body, show how to read the human's decision using
-  $vars.<hitl-node-id>.output.
+  The flow should continue to the processResult script after the human
+  finishes the review. The script should log the reviewer's decision.
 
-  Validate after adding and wiring.
+  Validate after building.
 
 success_criteria:
   - type: file_contains

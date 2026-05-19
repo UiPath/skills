@@ -21,18 +21,14 @@ initial_prompt: |
   Build a UiPath Flow named "ExpenseApproval" that:
 
   1. Manual trigger starts the flow
-  2. HITL node — expense review:
+  2. Human review step — expense review:
        - Reviewer sees: expense amount, requester name, category (all read-only)
-       - Reviewer fills in: approved (boolean), comments (text, optional)
+       - Reviewer fills in: approved (yes/no), comments (text, optional)
        - Outcomes: Approve (primary), Reject
-  3. Script node — reads the reviewer's decision from the HITL output and
+  3. Script node — after the reviewer acts, reads their decision and
      logs: "Decision: <approved value>, Comments: <comments value>"
-     The script must reference the HITL output via the correct runtime variable path.
   4. End node
 
-  Wire: Trigger -> HITL ->|completed| Script -> End
-
-  Use the inline quickform node (uipath.human-in-the-loop).
   Validate the flow after building.
 
 success_criteria:

@@ -10,7 +10,7 @@ agent:
   permission_mode: acceptEdits
 
 run_limits:
-  max_turns: 80
+  max_turns: 100
   turn_timeout: 600
 
 sandbox:
@@ -18,22 +18,16 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath Flow named "LeaveRequest" with this structure:
+  Build a UiPath Flow named "LeaveRequest":
 
   1. Manual trigger
-  2. HITL node — manager reviews leave request:
+  2. Manager reviews leave request:
        - Reviewer sees (read-only): employee name, number of days
-       - Reviewer fills in: approved (boolean)
+       - Reviewer fills in: approved (boolean — true means approved)
        - Outcomes: Approve (primary), Reject
-  3. Decision node — branches on the reviewer's approved field from the HITL output
-  4. true branch  → Script node that logs "Leave approved" → End
-  5. false branch → Script node that logs "Leave rejected" → End
-
-  Use the inline quickform HITL node (uipath.human-in-the-loop).
-  Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
-
-  The Decision node condition must reference the HITL output using the
-  correct runtime variable path ($vars.<nodeId>.output.<fieldName>).
+  3. Route based on the reviewer's decision:
+       - Approved → Script node that logs "Leave approved" → End
+       - Not approved → Script node that logs "Leave rejected" → End
 
   Validate the flow after building.
 

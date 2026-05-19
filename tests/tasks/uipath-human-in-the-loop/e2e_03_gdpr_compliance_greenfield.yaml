@@ -25,13 +25,10 @@ initial_prompt: |
   Build a UiPath Flow named "GdprDeletionApproval" that processes GDPR
   data deletion requests. Each request must be reviewed and signed off by
   a privacy officer before the deletion runs — we need an audit trail for
-  every decision. If the officer doesn't respond within 7 days, escalate
-  automatically.
+  every decision. If the officer doesn't respond within 7 days, the request
+  should expire automatically.
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop).
-  Give the privacy officer Approve and Reject outcomes. Configure the node
-  with a 7-day ISO 8601 timeout duration (e.g. "P7D") so the request
-  expires automatically if the officer does not respond.
+  Give the privacy officer Approve and Reject outcomes.
 
   Validate the flow when you're done.
 

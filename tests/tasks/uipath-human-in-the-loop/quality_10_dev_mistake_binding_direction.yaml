@@ -25,26 +25,20 @@ initial_prompt: |
        output.supplierName = "Acme Corp"
        output.riskScore = 72
        output.country = "DE"
-  3. HITL node — compliance officer reviews the supplier:
-       Input fields (read-only, MUST be bound to upstream script output):
-         - Supplier Name: bound to fetchSupplier node's supplierName output
-         - Risk Score:    bound to fetchSupplier node's riskScore output (number)
-         - Country:       bound to fetchSupplier node's country output
-       Output fields (filled by the officer, NO binding — the officer fills these in):
-         - approved (boolean, required)
+  3. Human review step — compliance officer reviews the supplier:
+       Pre-populated from the fetchSupplier script (read-only for the officer):
+         - Supplier Name (from fetchSupplier's supplierName)
+         - Risk Score (from fetchSupplier's riskScore — a numeric score)
+         - Country (from fetchSupplier's country)
+       Filled in by the officer:
+         - approved (yes/no, required)
          - risk_notes (text, optional)
        Outcomes: Approve (primary), Reject
-  4. Decision node — routes on approved field:
-       - true  → Script node that logs "Supplier approved: <supplierName>"
-       - false → Script node that logs "Supplier rejected"
+  4. Decision node — routes based on whether the officer approved:
+       - approved → Script node that logs "Supplier approved: <supplierName>"
+       - rejected → Script node that logs "Supplier rejected"
   5. End nodes for both branches
 
-  Wire: Trigger → Script → HITL →|completed| Decision → both branches → End
-
-  Use the inline quickform node (uipath.human-in-the-loop).
-  Read variables.nodes before writing input field bindings — use the exact
-  $vars path from the node's outputId entry.
-  Output fields must NOT have a binding property.
   Do NOT run flow debug. Validate after building.
 
 success_criteria:
