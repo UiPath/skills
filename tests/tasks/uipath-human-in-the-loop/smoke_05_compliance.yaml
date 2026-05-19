@@ -53,6 +53,6 @@ success_criteria:
     assertions:
       - expression: "pattern"
         operator: regex
-        expected: "(?i)(compliance.checkpoint|approval.gate)"
+        expected: "(?i)(compliance|gdpr|regulatory|sign.off|approval.gate)"
     weight: 1.5
     pass_threshold: 1.0

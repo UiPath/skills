@@ -10,14 +10,15 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath Flow where an AI agent reads incomplete SAP purchase orders,
-  enriches the missing vendor and cost-center fields using company data, and
-  writes the corrected records back to SAP.
+  I'm designing a UiPath Flow where an AI agent reads incomplete SAP purchase
+  orders, enriches the missing vendor and cost-center fields using company
+  data, and writes the corrected records back to SAP.
 
   Analyze whether this flow needs any human checkpoints, explain why,
   and identify where one should go if needed.
 
-  Write your analysis to `recommendation.json`:
+  Do not build or scaffold a project. Write only your analysis to
+  `recommendation.json`:
   {
     "hitl_needed": <true or false>,
     "pattern": "<type of human checkpoint pattern, if applicable>",

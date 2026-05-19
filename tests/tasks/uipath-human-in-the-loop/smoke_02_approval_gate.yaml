@@ -46,7 +46,7 @@ success_criteria:
     path: "recommendation.json"
     assertions:
       - expression: "pattern"
-        operator: equals
+        operator: regex
         expected: "(?i)approval.gate"
     weight: 1.5
     pass_threshold: 1.0

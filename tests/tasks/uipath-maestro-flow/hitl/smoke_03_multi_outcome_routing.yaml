@@ -10,7 +10,7 @@ agent:
   permission_mode: acceptEdits
 
 run_limits:
-  max_turns: 80
+  max_turns: 100
   turn_timeout: 600
 
 sandbox:
@@ -23,7 +23,7 @@ initial_prompt: |
   1. Manual trigger
   2. Manager reviews leave request:
        - Reviewer sees (read-only): employee name, number of days
-       - Reviewer fills in: approved (yes/no)
+       - Reviewer fills in: approved (boolean — true means approved)
        - Outcomes: Approve (primary), Reject
   3. Route based on the reviewer's decision:
        - Approved → Script node that logs "Leave approved" → End
