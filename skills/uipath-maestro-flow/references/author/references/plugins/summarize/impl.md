@@ -21,11 +21,11 @@ Confirm:
   - `content.Citations` — array|null of `{ Ordinal: integer, PageNumber: integer, Source: string, Reference: string }`
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
-If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, the CLI build predates Summarize support or the tenant's `canvas.nodes.summarize` server flag is off. Run `uip cli update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that `canvas.nodes.summarize` is enabled on the tenant.
+If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, the CLI build predates Summarize support or the tenant's `canvas.nodes.summarize` server flag is off. Run `uip tools update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that `canvas.nodes.summarize` is enabled on the tenant.
 
 ## Adding / Editing
 
-Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [author/CAPABILITY.md rule 2](../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the Summarize node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Summarize.
+Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [Author capability, rule 2](../../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the Summarize node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Summarize.
 
 ## Wiring `attachment` — file variable bound to the trigger
 
@@ -111,7 +111,7 @@ Then on the Summarize node:
 
 Notes:
 
-- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [author/CAPABILITY.md rule 16](../../CAPABILITY.md), node instances normally have no `model` block.
+- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [Author capability, rule 16](../../../CAPABILITY.md), node instances normally have no `model` block.
 - **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
 - `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows). Do not rewrite to `=deepRagResult` or similar.
 - `outputs.output.type` is **`"object"`**, with the nested PascalCase schema above.
@@ -119,7 +119,7 @@ Notes:
 
 ## End-node output mapping
 
-If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [author/CAPABILITY.md rule 12](../../CAPABILITY.md), value-field expressions need the `=js:` prefix. Note the **PascalCase** field names:
+If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [Author capability, rule 12](../../../CAPABILITY.md), value-field expressions need the `=js:` prefix. Note the **PascalCase** field names:
 
 ```json
 {
@@ -179,7 +179,7 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | `uip cli update`, `uip maestro flow registry pull --force`; check with admin that `canvas.nodes.summarize` is enabled if still missing |
+| `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | `uip tools update`, `uip maestro flow registry pull --force`; check with admin that `canvas.nodes.summarize` is enabled if still missing |
 | Runtime: synthesis returns empty `content.Text` | Prompt too vague, or attachment unreadable (image-only PDF with no OCR, corrupted file) | Tighten the prompt; confirm the attachment type is supported and has selectable text |
 | `content.Citations` missing even though set `returnCitations: true` | Downstream consumer read the node's `inputDefaults` before the runtime produced the output | Reference `$vars.{nodeId}.output.content.Citations` only in nodes downstream of Summarize; do not precompute |
 | Downstream `result.content.text` / `result.content.citations` is `undefined` | Used lowercase field names — the response shape is PascalCase | Switch to `result.content.Text` / `result.content.Citations` |
