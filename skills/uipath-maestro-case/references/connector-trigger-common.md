@@ -281,14 +281,13 @@ The expression is duplicated in two non-config sinks because both have load-bear
 
 ## Root-level bindings
 
-Create 2 entries in the bindings array — destination path per [bindings/impl-json.md § Schema-dependent destination](plugins/variables/bindings/impl-json.md) (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`):
+Read [bindings/impl-json.md § Full binding shape — connector tasks](plugins/variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-trigger value sources:
 
-| Binding | `id` | `name` | `propertyAttribute` | `default` |
-|---|---|---|---|---|
-| ConnectionBinding | `<connBindingId>` (Step 3) | `` `${connectorKey} connection` `` (templated) | `"ConnectionId"` | `connection-id` (tasks.md) |
-| FolderKey | `<folderBindingId>` (Step 3) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — deliberately different from `name`) | `spec.connection.folderKey` (Step 2) |
+- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's `tasks.md` entry
+- `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
+- `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
 
-Both share `resourceKey` = `connection-id`. Deduplicate against existing root bindings. Source of truth for binding shape: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
+Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 
 After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
 

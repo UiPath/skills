@@ -175,14 +175,14 @@ Append the task to the target stage's `tasks[]` array. Default: own task set (on
 
 ### Step 9 — Append root-level bindings
 
-Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md). Connector tasks use `resource: "Connection"`:
+Read [bindings/impl-json.md § Full binding shape — connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-task value sources:
 
-| Binding | `id` | `name` | `propertyAttribute` | `default` |
-|---|---|---|---|---|
-| ConnectionBinding | `<connBindingId>` (Step 5) | `` `${connectorKey} connection` `` (templated) | `"ConnectionId"` | `connection-id` (tasks.md) |
-| FolderKey | `<folderBindingId>` (Step 5) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — deliberately different from `name`) | `spec.connection.folderKey` (Step 2) |
+- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this task's `tasks.md` entry
+- `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
+- `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
+- Binding IDs `<connBindingId>` / `<folderBindingId>` come from Step 5.
 
-Both share `resourceKey` = `connection-id`. Source of truth for binding shape: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
+Dedup per [§ Deduplication](../../variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 
 ### Step 10 — Sync IS connection cache
 

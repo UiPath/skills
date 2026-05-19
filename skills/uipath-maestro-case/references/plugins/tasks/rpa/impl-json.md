@@ -37,14 +37,13 @@ Fallback: planning-captured schema from tasks.md. If unavailable, placeholder pe
 
 **Step 1 — Root-level bindings:**
 
-Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
+Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
 
-| `propertyAttribute` | `resource` | `resourceSubType` | `default` |
-|---|---|---|---|
-| `"name"` | `"process"` | — | `name` from tasks.md |
-| `"folderPath"` | `"process"` | — | `folder-path` from tasks.md |
+- `resource`: `"process"`
+- `resourceSubType`: omit (no resourceSubType for rpa tasks)
+- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields
 
-Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate by `default + resource + resourceKey`.
+Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 **Step 2 — Write task:**
 

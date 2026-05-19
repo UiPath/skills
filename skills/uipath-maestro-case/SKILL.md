@@ -57,6 +57,8 @@ Up to seven hard stops (Phase 0 + Phase 2 second prompt + Phase 4 conditional): 
 
 Triggered when `sdd.md` absent at resolved path. Read [references/phase-0-interview.md](references/phase-0-interview.md) for round structure, thresholds, soft-redirect contract, and resumption. Produces:
 
+> **Read budget for Phase 0.** Read ONLY `phase-0-interview.md` and `assets/templates/sdd-template.md` to begin the interview. Do NOT preload plugin `impl-json.md` files — those are needed only in Phase 2/3 and pulled in just-in-time per T-entry.
+
 - `sdd.md` — generated via 4-round Q&A, fills `assets/templates/sdd-template.md`
 - `tasks/registry-resolved.json` — per-task registry resolutions from Round 3
 - `sdd.draft.md` — intermediate, deleted on approval
