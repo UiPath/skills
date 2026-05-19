@@ -422,7 +422,6 @@ jobs:
       # always a fail since a truncated run has no meaningful rate.
       - name: Enforce pass-rate threshold (>= 95%)
         if: always()
-        working-directory: tests
         env:
           PASS_RATE_THRESHOLD: "0.95"
         run: |
@@ -433,7 +432,7 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, sys
           threshold = float(os.environ['PASS_RATE_THRESHOLD'])
-          tasks = sorted(pathlib.Path('runs').rglob('task.json'))
+          tasks = sorted(pathlib.Path('/tmp/runs').rglob('task.json'))
           results = [json.loads(p.read_text(encoding='utf-8')) for p in tasks]
           passed = sum(1 for d in results if d.get('final_status') == 'SUCCESS')
           n = len(results)
