@@ -59,8 +59,9 @@ Upload the packed .zip so it appears in the UiPath solution feed:
 ```bash
 uip solution publish ./output/MySolution.2.0.0.zip --output json
 
-# Target a specific tenant
-uip solution publish ./output/MySolution.2.0.0.zip --tenant "Production" --output json
+# Target a specific tenant by switching the active tenant first
+uip login tenant set "Production" --output json
+uip solution publish ./output/MySolution.2.0.0.zip --output json
 ```
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
@@ -108,7 +109,8 @@ Key options:
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
 | `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI proactively refreshes it before the deploy starts. Useful for long deploys close to token expiry. | 10 |
-| `-t, --tenant <name>` | Tenant override | Current tenant |
+
+Tenant-scoped solution commands use the active tenant. Switch with `uip login tenant set <tenant>` before `publish`, `deploy run`, `deploy list`, or `deploy activate`; do not pass per-command `--tenant`.
 
 ## Step 5: Check Deployment Status
 

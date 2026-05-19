@@ -12,7 +12,6 @@ All `uip or` commands share a set of cross-cutting options:
 
 | Flag | Scope | Purpose |
 |------|-------|---------|
-| `--tenant <name>` | All commands | Override the default tenant (set during `uip login tenant set`). |
 | `--output json` | All commands | Emit structured JSON instead of table output. Always use this when parsing output programmatically. |
 | `--limit <n>` | List commands | Number of items to return (default 50). |
 | `--offset <n>` | List commands | Number of items to skip for pagination. |
@@ -48,7 +47,7 @@ Organization (cloud.uipath.com)
               +-- Processes, Jobs, Assets, Queues, Machines, etc.
 ```
 
-All CLI operations happen within a **tenant** context (set via `uip login tenant set` or `--tenant`). Most resource operations also require a **folder** context (`--folder-path` or `--folder-key`).
+All CLI operations happen within the active **tenant** context selected by `uip login` or `uip login tenant set <tenant>`. Do not pass per-command `--tenant`; legacy hidden overrides only exist for backwards compatibility and emit a deprecation warning. Most resource operations also require a **folder** context (`--folder-path` or `--folder-key`).
 
 Tenants provide complete isolation of all Orchestrator entities. Each tenant has its own folders, users, machines, packages, and configuration. A typical setup uses separate tenants for Development, Staging/UAT, and Production.
 

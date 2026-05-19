@@ -323,7 +323,6 @@ uip maestro case process run <process-key> <folder-key> --inputs @inputs.json --
 Options for `list`:
 | Flag | Description |
 |------|-------------|
-| `-t, --tenant <name>` | Tenant name (defaults to authenticated tenant) |
 | `-f, --folder-key <key>` | **(required)** Filter by folder key (GUID) |
 | `--filter <odata>` | Additional OData filter expression |
 | `--login-validity <minutes>` | Minimum minutes before token expiration triggers refresh (default: `10`) |
@@ -333,7 +332,6 @@ Options for `get`:
 |------|-------------|
 | `<process-key>` | **(required)** Process key (from `list`) |
 | `<feed-id>` | **(required)** Feed ID (from `list`) |
-| `-t, --tenant <name>` | Tenant name |
 | `-f, --folder-key <key>` | **(required)** Folder key (GUID) |
 | `--login-validity <minutes>` | Min minutes before token refresh |
 
@@ -343,7 +341,6 @@ Options for `run`:
 | `<process-key>` | **(required)** Process key |
 | `<folder-key>` | **(required)** Folder key (GUID) |
 | `-i, --inputs <json>` | Input parameters as JSON string or `@file.json` (also reads from stdin) |
-| `-t, --tenant <name>` | Tenant name |
 | `--release-key <key>` | Release key (GUID, from `list`) |
 | `--feed-id <id>` | Feed ID for package lookup |
 | `--robot-ids <ids>` | Comma-separated robot IDs |
@@ -351,6 +348,8 @@ Options for `run`:
 | `--login-validity <minutes>` | Min minutes before token refresh |
 
 Output on `run`: `{ jobKey, state, traceId }` — use `jobKey` with `uip maestro case job traces`.
+
+Case process commands use the active tenant selected by `uip login` or `uip login tenant set <tenant>`. Do not pass per-command `--tenant`; legacy hidden overrides only exist for backwards compatibility and emit a deprecation warning.
 
 ---
 
@@ -373,7 +372,6 @@ Options for `traces`:
 | Flag | Description |
 |------|-------------|
 | `<job-key>` | **(required)** Job key (GUID from `process run`) |
-| `-t, --tenant <name>` | Tenant name |
 | `--poll-interval <ms>` | Polling interval in milliseconds (default: `2000`) |
 | `--traces-service <name>` | Traces service name (default: `llmopstenant_`) |
 | `--pretty` | Human-readable trace output instead of raw JSON |
@@ -383,10 +381,11 @@ Options for `status`:
 | Flag | Description |
 |------|-------------|
 | `<job-key>` | **(required)** Job key (GUID from `process run`) |
-| `-t, --tenant <name>` | Tenant name |
 | `--folder-key <key>` | Folder key (GUID, defaults to authenticated folder) |
 | `--detailed` | Show full response with all fields |
 | `--login-validity <minutes>` | Min minutes before token refresh |
+
+Case job commands use the active tenant selected by `uip login` or `uip login tenant set <tenant>`.
 
 ---
 

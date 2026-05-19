@@ -337,7 +337,8 @@ uip docsai ask "REFramework MaxRetryNumber and retry logic" --output json
 | Parameter | Description |
 |-----------|-------------|
 | `<query>` | The question to ask (required, positional) |
-| `-t, --tenant <tenant-name>` | Tenant (optional, defaults to auth value) |
+
+DocsAI queries use the active tenant. Switch with `uip login tenant set <tenant>` before querying another tenant.
 
 **When to use:** Bundled activity docs and `find-activities`/`type-definition` don't cover the topic; you need best practices, guidelines, or troubleshooting from official UiPath documentation; you encounter an unfamiliar error.
 

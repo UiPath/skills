@@ -28,13 +28,13 @@ uip login --authority "https://staging.uipath.com/identity_" --organization "<OR
 uip login --authority "https://alpha.uipath.com/identity_" --organization "<ORG>" --tenant "<TENANT>" --output json
 
 # Service principal (unattended)
-uip login --client-id "<ID>" --client-secret "<SECRET>" --base-url "<URL>" --output json
+uip login --client-id "<ID>" --client-secret "<SECRET>" --authority "<URL>" --tenant "<TENANT>" --output json
 ```
 
 ## Critical Rules
 
 - **`uip login status --output json` once per invocation.** Reports `Status`, `Organization`, `Tenant`, `Expiration Date`. After one `Logged in`, trust the wrapper — it auto-refreshes tokens on forwarded cloud calls. No `uip login refresh` subcommand exists. Re-auth only on a real `401`.
-- **NEVER run `uip login` without `--tenant`.** The interactive tenant picker cannot be driven from Claude's Bash tool.
+- **NEVER run `uip login` without `--tenant` in non-interactive agent workflows.** Login must establish an active tenant before saving credentials, and the interactive tenant picker cannot be driven from Claude's Bash tool.
 - **When auth is needed, ask one question, then stop.** If the status check shows the user is not logged in, your entire response must be exactly this question — no headers, no bullets, no next-steps:
 
   > What is your UiPath **environment** (cloud / staging / alpha), **organization name**, and **tenant name**?
@@ -54,10 +54,10 @@ For on-premise Automation Suite, use `--authority <identity-url>` pointing at yo
 ## Unattended (Service Principal)
 
 ```bash
-uip login --client-id "<ID>" --client-secret "<SECRET>" --base-url "<URL>" --output json
+uip login --client-id "<ID>" --client-secret "<SECRET>" --authority "<URL>" --tenant "<TENANT>" --output json
 ```
 
-Works without a browser. Values for `--client-id` and `--client-secret` can be passed as `env.VAR_NAME` to read from an environment variable.
+Works without a browser. Values for `--client-id` and `--client-secret` can be passed as `env.VAR_NAME` to read from an environment variable. The tenant must be supplied during login so the CLI can establish the active tenant.
 
 ## If the User Doesn't Know Their Tenant
 
@@ -73,7 +73,7 @@ uip login tenant set "<SELECTED>" --output json
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `401 Unauthorized` | Session expired | Re-run the appropriate `uip login` command from the Quick Reference |
-| `No tenant selected` | Ran `uip login` without `--tenant` or `--interactive` | Re-run with `--organization <org> --tenant <tenant>` |
+| `No active tenant selected` | Ran `uip login` without a tenant in a non-interactive context | Re-run with `--organization <org> --tenant <tenant>` |
 | `Tenant not found` | Tenant name misspelled or user lacks access | Run `uip login tenant list --output json` to see exact names (case-sensitive) |
 | Browser does not open | Running under SSH/container without a default browser | Use service-principal flow (`--client-id`, `--client-secret`) |
 
