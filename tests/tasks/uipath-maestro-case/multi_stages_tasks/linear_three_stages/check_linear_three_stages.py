@@ -12,7 +12,7 @@ from _shared.case_check import (  # noqa: E402
     find_stages,
     find_triggers,
     first_rule_of_condition,
-    get_root,
+    get_variables,
     iter_stage_entry_conditions,
     iter_tasks,
     read_caseplan,
@@ -144,8 +144,7 @@ def main():
                 f"'current-stage-entered'; got {rule and rule.get('rule')!r}"
             )
 
-    root = get_root(plan)
-    variables = ((root.get("data") or {}).get("uipath") or {}).get("variables") or {}
+    variables = get_variables(plan)
     io_vars = variables.get("inputOutputs") or []
     in_vars = variables.get("inputs") or []
     out_vars = variables.get("outputs") or []
@@ -153,15 +152,15 @@ def main():
     if not any(v.get("id") == "skipReview" or v.get("name") == "skipReview" for v in io_vars):
         names = [v.get("name") for v in io_vars]
         sys.exit(
-            f"FAIL: root.data.uipath.variables.inputOutputs missing "
-            f"'skipReview' Variable; got {names}"
+            f"FAIL: variables.inputOutputs missing 'skipReview' Variable; "
+            f"got {names}"
         )
 
     if not any(v.get("name") == "caseRef" and v.get("type") == "string" for v in in_vars):
         names = [(v.get("name"), v.get("type")) for v in in_vars]
         sys.exit(
-            f"FAIL: root.data.uipath.variables.inputs missing string In "
-            f"argument 'caseRef'; got {names}"
+            f"FAIL: variables.inputs missing string In argument 'caseRef'; "
+            f"got {names}"
         )
     if not any(v.get("name") == "caseRef" for v in io_vars):
         sys.exit(
@@ -178,8 +177,8 @@ def main():
     if not any(v.get("name") == "finalDecision" and v.get("type") == "string" for v in out_vars):
         names = [(v.get("name"), v.get("type")) for v in out_vars]
         sys.exit(
-            f"FAIL: root.data.uipath.variables.outputs missing string Out "
-            f"argument 'finalDecision'; got {names}"
+            f"FAIL: variables.outputs missing string Out argument 'finalDecision'; "
+            f"got {names}"
         )
     if not any(v.get("name") == "finalDecision" for v in io_vars):
         sys.exit(

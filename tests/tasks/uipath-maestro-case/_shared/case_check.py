@@ -101,6 +101,178 @@ def task_is_skeleton(task: dict) -> bool:
     return not (data.get("name") and data.get("folderPath"))
 
 
+# ── Schema-aware structural helpers ─────────────────────────────────────────
+#
+# v19 wraps case-level metadata under a `root` node; v20 hoists it to the
+# top-level + a `metadata` block. Node and edge internals are identical.
+
+
+def _is_v20(plan: dict) -> bool:
+    """Return True if ``plan`` is v20 schema (top-level metadata)."""
+    if not isinstance(plan, dict):
+        return False
+    version = plan.get("version") or ""
+    if isinstance(version, str) and version.startswith("20"):
+        return True
+    return "metadata" in plan and isinstance(plan.get("metadata"), dict)
+
+
+def assert_count(actual: int, expected: int, what: str) -> None:
+    if actual != expected:
+        _fail(f"expected {expected} {what}, got {actual}")
+
+
+def iter_nodes_of_type(plan: dict, node_type: str):
+    for node in plan.get("nodes") or []:
+        if node.get("type") == node_type:
+            yield node
+
+
+def find_stages(plan: dict, *, include_exception: bool = False) -> list[dict]:
+    types = {"case-management:Stage"}
+    if include_exception:
+        types.add("case-management:ExceptionStage")
+    return [n for n in plan.get("nodes") or [] if n.get("type") in types]
+
+
+def find_triggers(plan: dict) -> list[dict]:
+    return list(iter_nodes_of_type(plan, "case-management:Trigger"))
+
+
+def find_node_by_label(plan: dict, label: str) -> dict:
+    for node in plan.get("nodes") or []:
+        if (node.get("data") or {}).get("label") == label:
+            return node
+    labels = [(n.get("data") or {}).get("label") for n in plan.get("nodes") or []]
+    _fail(f"no node with data.label={label!r}; available labels: {labels}")
+
+
+def find_edges(
+    plan: dict, *, source: str | None = None, target: str | None = None
+) -> list[dict]:
+    out: list[dict] = []
+    for edge in plan.get("edges") or []:
+        if source is not None and edge.get("source") != source:
+            continue
+        if target is not None and edge.get("target") != target:
+            continue
+        out.append(edge)
+    return out
+
+
+def edge_labels_from(plan: dict, source_id: str) -> list[str]:
+    return [
+        (e.get("data") or {}).get("label") or ""
+        for e in find_edges(plan, source=source_id)
+    ]
+
+
+def first_rule_of_condition(cond: dict | None) -> dict | None:
+    """Return the first rule of a DNF condition: ``cond.rules[0][0]``."""
+    if not cond:
+        return None
+    rules = cond.get("rules") or []
+    if not rules:
+        return None
+    first_group = rules[0] or []
+    if not first_group:
+        return None
+    return first_group[0]
+
+
+def iter_stage_entry_conditions(node: dict):
+    for cond in (node.get("data") or {}).get("entryConditions") or []:
+        yield cond
+
+
+def iter_stage_exit_conditions(node: dict):
+    for cond in (node.get("data") or {}).get("exitConditions") or []:
+        yield cond
+
+
+def get_variables(plan: dict) -> dict:
+    """Return ``{inputs, outputs, inputOutputs}`` — top-level in v20, ``root.data.uipath.variables`` in v19."""
+    if _is_v20(plan):
+        return plan.get("variables") or {}
+    root = get_root(plan)
+    return ((root.get("data") or {}).get("uipath") or {}).get("variables") or {}
+
+
+def get_bindings(plan: dict) -> list[dict]:
+    if _is_v20(plan):
+        return plan.get("bindings") or []
+    root = get_root(plan)
+    return ((root.get("data") or {}).get("uipath") or {}).get("bindings") or []
+
+
+def get_case_exit_conditions(plan: dict) -> list[dict]:
+    """v19 ``root.caseExitConditions`` / v20 ``metadata.caseExitRules`` — field rename, identical shape."""
+    if _is_v20(plan):
+        return (plan.get("metadata") or {}).get("caseExitRules") or []
+    root = get_root(plan)
+    return root.get("caseExitConditions") or []
+
+
+def get_sla_rules(target: dict) -> list[dict]:
+    """Return ``slaRules[]`` from a plan (case-level) or a stage node.
+
+    Case-level in v20 lives under ``metadata.slaRules``; v19 under
+    ``root.data.slaRules``. Stage-level lives under ``node.data.slaRules``
+    in both schemas.
+    """
+    if "nodes" in target and isinstance(target.get("nodes"), list):
+        if _is_v20(target):
+            return (target.get("metadata") or {}).get("slaRules") or []
+        root = get_root(target)
+        return ((root.get("data") or {}).get("slaRules")) or []
+    return ((target.get("data") or {}).get("slaRules")) or []
+
+
+def get_default_sla(target: dict) -> dict | None:
+    rules = get_sla_rules(target)
+    if not rules:
+        return None
+    last = rules[-1]
+    return last if (last or {}).get("expression") == "=js:true" else None
+
+
+def get_root(plan: dict) -> dict:
+    """Return root-equivalent dict.
+
+    v19: returns the actual ``case-management:root`` node from ``plan.root``
+    (or ``plan.nodes`` if embedded). v20: synthesizes a v19-shaped dict so
+    legacy paths like ``root.data.uipath.variables`` still resolve.
+    """
+    if _is_v20(plan):
+        metadata = plan.get("metadata") or {}
+        synthesized: dict = {
+            "id": plan.get("id"),
+            "name": plan.get("name"),
+            "description": plan.get("description"),
+            "version": plan.get("version"),
+            "type": "case-management:root",
+            "data": {
+                "slaRules": metadata.get("slaRules") or [],
+                "intsvcActivityConfig": metadata.get("intsvcActivityConfig"),
+                "uipath": {
+                    "bindings": plan.get("bindings") or [],
+                    "variables": plan.get("variables") or {},
+                },
+            },
+            "caseExitConditions": metadata.get("caseExitRules") or [],
+        }
+        for k, v in metadata.items():
+            if k not in {"slaRules", "intsvcActivityConfig", "caseExitRules"}:
+                synthesized.setdefault(k, v)
+        return synthesized
+    if isinstance(plan.get("root"), dict):
+        return plan["root"]
+    for node in plan.get("nodes") or []:
+        if node.get("type") == "case-management:root":
+            return node
+    _fail("no root found in caseplan (neither v19 root node nor v20 metadata)")
+
+
 def _stringify(v: Any) -> str:
     return json.dumps(v, default=str)
 

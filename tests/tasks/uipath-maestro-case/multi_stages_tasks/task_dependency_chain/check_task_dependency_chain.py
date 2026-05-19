@@ -9,10 +9,11 @@ from _shared.case_check import (  # noqa: E402
     find_node_by_label,
     find_stages,
     first_rule_of_condition,
-    get_root,
+    get_variables,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
     read_caseplan,
+    task_is_skeleton,
 )
 
 
@@ -119,12 +120,11 @@ def main():
             f"FAIL: 'Optional Audit' should be a process-typed skeleton task; "
             f"got type={optional_audit.get('type')!r}"
         )
-    oa_data = optional_audit.get("data") or {}
-    oa_ctx = oa_data.get("context") or {}
-    if oa_ctx.get("taskTypeId"):
+    if not task_is_skeleton(optional_audit):
         sys.exit(
-            f"FAIL: 'Optional Audit' is a skeleton task — must NOT have "
-            f"data.context.taskTypeId set; got {oa_ctx.get('taskTypeId')!r}"
+            f"FAIL: 'Optional Audit' must be a v20 skeleton process task — "
+            f"data.name/data.folderPath must be absent; got data keys "
+            f"{sorted((optional_audit.get('data') or {}).keys())}"
         )
 
     fs_data = first_step.get("data") or {}
@@ -173,10 +173,7 @@ def main():
             f"{region_check.get('id')!r}; got {sel_ids}"
         )
 
-    root = get_root(plan)
-    io_vars = (((root.get("data") or {}).get("uipath") or {}).get("variables") or {}).get(
-        "inputOutputs"
-    ) or []
+    io_vars = get_variables(plan).get("inputOutputs") or []
     region = next(
         (v for v in io_vars if v.get("id") == "region" or v.get("name") == "region"),
         None,
@@ -208,7 +205,7 @@ def main():
         "selected-tasks-completed; First Step uses timeDuration+repeat=5; "
         "Second Step uses timeCycle R3/PT2H; root variables 'region' (string) "
         "and 'priorityScore' (number); 'Optional Audit' is a process-typed "
-        "skeleton task with empty data.context"
+        "v20 skeleton task (no data.name / data.folderPath)"
     )
 
 

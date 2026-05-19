@@ -14,6 +14,7 @@ from _shared.case_check import (  # noqa: E402
     first_rule_of_condition,
     iter_stage_entry_conditions,
     read_caseplan,
+    task_is_skeleton,
 )
 
 
@@ -98,13 +99,14 @@ def main():
             )
         for want_type in want_types:
             skeleton = next(t for t in tasks_in_stage if t.get("type") == want_type)
-            data = skeleton.get("data") or {}
-            ctx = data.get("context") or {}
-            if ctx.get("taskTypeId") or data.get("typeId") or data.get("connectionId"):
+            if not task_is_skeleton(skeleton):
+                data = skeleton.get("data") or {}
                 sys.exit(
                     f"FAIL: stage {stage_label!r} task type {want_type!r} should "
-                    f"be a skeleton (empty data) — must NOT have taskTypeId/typeId/"
-                    f"connectionId; got data keys {sorted(data.keys())}"
+                    f"be a v20 skeleton — must NOT carry resource wiring "
+                    f"(data.name/data.folderPath for non-connector tasks; "
+                    f"data.inputs for action; data.typeId/connectionId for "
+                    f"connector tasks); got data keys {sorted(data.keys())}"
                 )
 
     print(

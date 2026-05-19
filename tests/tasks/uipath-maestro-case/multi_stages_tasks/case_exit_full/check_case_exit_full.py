@@ -127,7 +127,7 @@ def main():
 
     print(
         "OK: 3 stages with mixed isRequired (Intake/Archive true, Audit false); "
-        "Audit has wait-for-connector stage-entry; root case-exits cover all 4 "
+        "Audit has wait-for-connector stage-entry; case-level exits cover all 4 "
         "rule-types — required-stages-completed + wait-for-connector cancel "
         "(true); selected-stage-exited Audit + selected-stage-completed "
         "Archive (false)"
