@@ -12,7 +12,9 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
+  task_timeout: 1800
   turn_timeout: 1200
+  max_turns: 40
 
 sandbox:
   driver: tempdir
@@ -20,19 +22,15 @@ sandbox:
 
 initial_prompt: |
   Build a Simple Function UiPath coded agent named
-  `credential-validator` whose `main(input)` validates a username +
-  password pair and returns an auth token. The redaction wiring is
-  the point of the test — implement a stub that treats any non-empty
-  password as valid and returns
+  `credential-validator` that validates a username + password and
+  returns an auth token. Input: `username` (string), `password`
+  (string). Output: `token` (string), `username` (string). Treat
+  any non-empty password as valid and return
   `{"token": f"tok-{username}", "username": username}`.
 
-  Input: `username` (string), `password` (string). Output: `token`
-  (string), `username` (string).
-
-  Add tracing to `main` so the trace store NEVER receives the raw
-  password (input) or the raw token (output) — partial visibility
-  into the other fields is fine. Give the span a stable label so it
-  shows up cleanly in trace search.
+  Add tracing to `main` with redaction so the trace store never
+  captures the raw password or raw token — other fields are fine
+  to record. Make sure each span is identifiable in trace search.
 
   Take the agent through scaffold → init. Do NOT run, publish,
   upload, or deploy. Do NOT pause between planning and

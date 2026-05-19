@@ -12,10 +12,11 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 60
-  turn_timeout: 1200
 
-task_timeout: 1200
+run_limits:
+  task_timeout: 1200
+  turn_timeout: 1200
+  max_turns: 60
 
 sandbox:
   driver: docker
@@ -63,9 +64,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent registered the coded agent project in the solution with uip solution project add"
+    description: "Agent registered the coded agent project in the solution (uip solution project add or import)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+add'
+    command_pattern: 'uip\s+solution\s+project\s+(add|import)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -14,7 +14,9 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
+  task_timeout: 1800
   turn_timeout: 1200
+  max_turns: 40
 
 sandbox:
   driver: tempdir
@@ -22,18 +24,11 @@ sandbox:
 
 initial_prompt: |
   Build a minimal Simple Function UiPath coded agent named
-  `deploy-smoke` whose `main(input)` returns `{"echoed":
-  input.message}`. No LLM. The point is the deployment lifecycle,
-  not the agent logic.
-
-  Take the agent through scaffold → init → run, then deploy it to
-  the user's personal workspace and invoke the published version
-  with `{"message": "deployed"}`.
-
-  After invoke succeeds, write its full stdout (which includes the
-  monitoring URL) to `deploy-smoke/invoke-output.txt` (inside the
-  scaffolded project directory, alongside `pyproject.toml`) so the
-  test harness can verify the URL was surfaced.
+  `deploy-smoke` that echoes the input message. Input: `message`
+  (string). Output: `echoed` (string). Take it through scaffold →
+  init → run, then deploy to the personal workspace and invoke the
+  published version with `{"message": "deployed"}`. The invoke
+  should surface a monitoring URL.
 
   The test harness has UiPath auth pre-configured.
 
