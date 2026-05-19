@@ -19,9 +19,12 @@ Administrative operations on UiPath via `uip admin` — Identity Server (users, 
 - **Manage robot accounts** — create, update, delete unattended robot identities
 - **Manage external apps** — OAuth2 clients, generate/rotate secrets
 - **Onboard human user** — invite, assign to groups
+- **Manage external apps** — OAuth2 clients, secrets, federated credentials
+- **Manage personal access tokens (PATs)** — create, list, revoke, regenerate
+- **Configure SMTP** — get, update, test, delete email settings
+- **Browse OAuth2 scopes** — list available scopes for external apps and PATs
+- **Onboard human user** — invite, assign to groups
 - **Onboard robot account** — create account, assign to groups
-- **Identity concepts** — partitions, organizations, OAuth2 scopes
-- **Generate Client ID/Secret** — credentials for API or robot authentication
 
 ### Audit
 

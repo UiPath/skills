@@ -1,0 +1,62 @@
+task_id: skill-admin-pat-lifecycle-e2e
+description: >
+  End-to-end test: agent creates a PAT with scopes and expiration,
+  then lists tokens to verify it exists. Cleanup revokes the PAT.
+tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a personal access token described as "e2e-test-pat" with
+  read access to Folders, expiring 2027-06-01. Then list my tokens
+  to confirm it was created.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created PAT with --description, --scopes, --expiration"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+pat\s+create\s+.*--description'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed PATs to verify"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+pat\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent consistently used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "PAT 'e2e-test-pat' exists in token list"
+    command: "python3 $TASK_DIR/../_shared/check_pat_created.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $TASK_DIR/../_shared/cleanup_pat.py"
+    timeout: 30
