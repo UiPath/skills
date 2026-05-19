@@ -8,7 +8,7 @@
 
 > **Always use `core.action.http.v2`** for all HTTP requests — both connector-authenticated and manual. The older `core.action.http` (v1) is deprecated and does not pass IS credentials at runtime.
 
-## When to Use a Managed HTTP Request Node in a Flow
+## When to Use a Managed HTTP Request Node
 
 | Situation | Use Managed HTTP? |
 | --- | --- |

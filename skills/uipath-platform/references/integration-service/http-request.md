@@ -19,8 +19,8 @@ A built-in way to make an HTTP call from a UiPath automation when there's no cur
 
 - `url` must be **relative**. Wrong: `"url": "https://example.atlassian.net/rest/api/2/issue"`. Right: `"url": "/issue"`.
 - The connection's base URL is prepended automatically.
-- The auth header is applied automatically - do not set `Authorization` yourself.
-- To get the exact vendor base URL for a connection (so you can compose the relative `url` correctly):
+- The auth header is applied automatically - do not set `Authorization`.
+- Get the exact vendor base URL for a connection via (so you can compose the relative `url` correctly):
 
 ```bash
 uip is connections base-url "<connection-id>" --output json
@@ -29,18 +29,19 @@ uip is connections base-url "<connection-id>" --output json
 
 ## Manual-Mode Rules
 
-- `url` is the **full URL**.
-- No connection is bound - you supply all headers, including auth.
-- Nothing is prepended or injected automatically.
+- `url` is the **fully qualified URL**.
+- No connection is bound - you supply everything needed to make the call: URL, headers (including auth if needed), query params, and body.
 
-## Filling In Values with `http-request`
+## Filling In Values with `http-request` command
 
-Use `http-request` to call any vendor API directly through the connection - same auth, same base URL Managed HTTP Request will use at runtime. Use it during authoring to find anything missing from the Managed HTTP Request payload (IDs, schemas, response shapes, …).
+Authoring a Managed HTTP Request payload requires concrete vendor values - IDs, field names, response shape. Use `http-request` command to call any vendor API directly through the connection - same auth, same base URL the Managed HTTP Request will use at runtime.
 
-### When the Agent Needs This
+### When the Agent Needs `http-request` command
 
-- **Name → ID values** the body needs (project key from a project name, channel ID from a channel name, user ID from email, custom-field IDs, …)
-- **Required / optional fields** the vendor expects in the request body
+Use `http-request` command to resolve any of the following before authoring the Managed HTTP Request payload:
+
+- **Identifier lookups.** Resolve a human-friendly name to the vendor's internal ID. Examples: project key from a project name, channel ID from a channel name, user ID from email/name, custom-field IDs.
+- **Required and optional fields** the vendor expects in the request body
 - **Response shape** so downstream steps can reference `output.<field>` correctly
 - **Endpoint paths, query params, pagination tokens** before committing to a payload
 - **Vendor error responses** for unsupported parameters or permissions
@@ -48,9 +49,9 @@ Use `http-request` to call any vendor API directly through the connection - same
 ### Command
 
 ```bash
-uip is resources run create <target-connector> http-request \
+uip is resources run create "<connector-key>" http-request \
   --connection-id "<id>" \
-  --body '{"method":"GET","url":"/relative/path"}' --output json
+  --body '{"method":"<method>","url":"<relative-path>"}' --output json
 ```
 
 | `body` field | Required | Notes |
@@ -58,19 +59,19 @@ uip is resources run create <target-connector> http-request \
 | `method` | Yes | Uppercase HTTP verb |
 | `url` | Yes | **Relative** to the connection's vendor base URL (same convention as Managed HTTP Request connector mode) |
 | `headers` | No | Extra headers. Do NOT set `Authorization`. |
-| `body` | For POST/PUT/PATCH | **Stringified** JSON for JSON APIs |
+| `body` | For POST/PUT/PATCH | **Stringified** JSON. Only `application/json` is supported today - non-JSON content types (form-urlencoded, XML, multipart, plain text) are not. |
 
-`http-request` uses the same connection that Managed HTTP Request will use at runtime, so auth + base URL are applied automatically - same convention as Managed HTTP Request itself.
+`http-request` command uses the same connection that Managed HTTP Request will use at runtime, so auth + base URL are applied automatically - same convention as Managed HTTP Request itself.
 
 ### Read-Only During Authoring
 
-Use **`GET` only** while authoring Managed HTTP Request. The runtime invocation performs the actual write (`POST` / `PATCH` / `PUT` / `DELETE`) when the automation runs - running the write now via CLI would call the vendor twice (once now, once at runtime). Irreversible for most vendor systems.
+When using the `http-request` command, use `GET` method only, as `POST` / `PATCH` / `PUT` / `DELETE` mutate vendor state, often irreversibly.
 
-CLI writes are allowed only when the user explicitly invokes the CLI as the execution surface ("use `http-request` to create this Jira issue right now"), not during authoring.
+Exception: the user asks you to actually run the operation now, not just author it.
 
 ## Worked Example: Jira Create Issue
 
-User wants to create a Jira issue. Before composing the Managed HTTP Request payload, the agent needs the project key, issue type ID, and required custom fields. All resolved via `http-request` GETs.
+User wants to create a Jira issue. Before composing the Managed HTTP Request payload, the agent needs the project key, issue type ID, and required custom fields. All resolved via `http-request` command GETs.
 
 ```bash
 # 1. Resolve project key (user said "Engineering project").
@@ -108,7 +109,7 @@ uip is resources run create uipath-atlassian-jira http-request \
 
 All steps 1-2 are GETs because we are in the authoring phase. The POST to `/issue` happens at runtime, performed by Managed HTTP Request - never by CLI during authoring.
 
-## Critical Rules - Do NOT
+## Critical Rules
 
 1. **Do NOT set the `Authorization` header manually in connector mode.** Auth is applied automatically by the connection. Setting it yourself can leak or override the token.
 2. **Do NOT use an absolute URL in connector-mode `url`.** Wrong: `"url": "https://example.atlassian.net/rest/api/2/project"`. Right: `"url": "/project"`.
