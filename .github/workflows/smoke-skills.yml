@@ -188,6 +188,7 @@ jobs:
           repository: UiPath/coder_eval
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
+          ref: akshaya/docker_user_shadowing_fix
 
       - uses: actions/setup-python@v5
         with:
@@ -291,18 +292,17 @@ jobs:
         working-directory: tests
         id: smoke
         run: |
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags temporary -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml --tags smoke -j "$TASK_PARALLELISM" -v
+            -e experiments/default.yaml --tags temporary -j "$TASK_PARALLELISM" --run-dir /tmp/runs -v
         continue-on-error: true
 
       - name: Summarize results
         if: always()
-        working-directory: tests
         run: |
           # Find the most recent run directory (tests may not have produced
           # one on catastrophic install failures).
-          run_dir=$(ls -td runs/*/ 2>/dev/null | head -n 1)
+          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1)
           if [ -z "$run_dir" ]; then
             echo "::warning::No run directory found — nothing to summarize"
             exit 0
@@ -313,7 +313,7 @@ jobs:
           python - <<'PY'
           import json
           import pathlib
-          run_dir = sorted(pathlib.Path('runs').glob('*/'))[-1]
+          run_dir = sorted(pathlib.Path('/tmp/runs').glob('*/'))[-1]
           rows = []
           for p in sorted(run_dir.rglob('task.json')):
               d = json.loads(p.read_text(encoding='utf-8'))
@@ -336,24 +336,30 @@ jobs:
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
 
+      - name: Clean up artifacts (remove .venv and node_modules)
+        if: always()
+        run: |
+          find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + 2>/dev/null || true
+
       - name: Upload HTML / JSON eval report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: eval-report-${{ github.run_id }}
           # Use ** so the pattern still matches the replicate-index segment
-          # that coder_eval adds to per-task run dirs (runs/<ts>/<variant>/<task>/<NN>/).
+          # that coder_eval adds to per-task run dirs (/tmp/runs/<ts>/<variant>/<task>/<NN>/).
           path: |
-            tests/runs/*/experiment.html
-            tests/runs/*/experiment.md
-            tests/runs/*/experiment.json
-            tests/runs/*/experiment.log
-            tests/runs/*/*/variant.html
-            tests/runs/*/*/variant.md
-            tests/runs/*/*/variant.json
-            tests/runs/**/task.html
-            tests/runs/**/task.json
-            tests/runs/**/task.log
+            /tmp/runs/*/experiment.html
+            /tmp/runs/*/experiment.md
+            /tmp/runs/*/experiment.json
+            /tmp/runs/*/experiment.log
+            /tmp/runs/*/*/variant.html
+            /tmp/runs/*/*/variant.md
+            /tmp/runs/*/*/variant.json
+            /tmp/runs/**/task.html
+            /tmp/runs/**/task.json
+            /tmp/runs/**/task.log
+            /tmp/runs/**/artifacts
           if-no-files-found: warn
           retention-days: 14
 
@@ -366,7 +372,6 @@ jobs:
       # agent already recovered from without false-failing correct runs.
       - name: Enforce LLM reviewer score threshold (>= 0.7)
         if: always()
-        working-directory: tests
         env:
           REVIEWER_THRESHOLD: "0.7"
         # Single-quoted heredoc keeps Python literals intact. Threshold
@@ -375,7 +380,7 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, sys
           threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          run_dirs = sorted(pathlib.Path('/tmp/runs').glob('*/'))
           if not run_dirs:
               print('::warning::No run directory — skipping reviewer threshold check')
               sys.exit(0)
