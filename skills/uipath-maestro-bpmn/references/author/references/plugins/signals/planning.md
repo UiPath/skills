@@ -1,37 +1,46 @@
 # Signal Planning
 
-Use this reference when planning BPMN signal throw/catch behavior.
+Signals are preserve-only for current Maestro BPMN authoring. Use this
+reference only when inspecting or preserving imported signal throw/catch
+behavior.
 
 ## When to use
 
-- Broadcasting an event to one or more waiting process paths.
-- Starting or resuming a path from a signal.
-- Coordinating between event subprocesses or independent processes.
-- Modeling public-safe cross-process notification without connector metadata.
+- An imported or brownfield BPMN file already contains signal definitions or
+  signal event definitions.
+- The user asks why signal-based behavior is not regenerated.
+- You need to preserve imported signal XML while editing unrelated supported
+  process structure.
 
 ## Planning steps
 
-1. Decide whether the signal is local modeling intent or an executable runtime contract.
-2. Define signal name, payload variables, catch locations, and throw locations.
-3. Plan correlation and idempotency behavior if multiple instances can catch the signal.
-4. Add timeout or fallback paths for waits.
-5. Use signal events where broadcast semantics are intended; use message events for directed correlation.
+1. Identify the existing signal definitions and event references.
+2. Preserve them unchanged unless the user explicitly asks to remove or replace
+   them.
+3. Route new behavior through supported message, timer, receive-task,
+   Integration Service, or gateway patterns instead of adding new signals.
+4. Report that signal regeneration is unsupported until current product and CLI
+   validation confirm it.
 
 ## Executable boundary
 
-Standard BPMN signal XML is the only confirmed model-owned signal contract. Treat executable cross-process signaling as unresolved unless the operator or CLI provides the runtime subscription contract.
+Do not generate new `bpmn:signal` definitions or
+`bpmn:signalEventDefinition` elements in new source.
 
-- Model-owned: `bpmn:signal` definitions, signal event references, local throw/catch topology, public-safe labels, variables, mappings, and diagram geometry.
-- Operator or CLI-owned: runtime subscription registration, cross-process correlation, payload schema versioning, tenant/folder/resource/channel identifiers, and any non-BPMN binding needed for deployed execution.
-- Brownfield rule: preserve imported signal extension payloads or annotations that appear to carry runtime contracts. Do not rewrite them into generated guidance without a fixture-backed validator.
+- Preserve-only: imported `bpmn:signal` definitions, signal event references,
+  local throw/catch topology, labels, variables, mappings, and diagram
+  geometry.
+- Unsupported for regeneration: runtime subscription registration,
+  cross-process correlation, payload schema versioning, tenant/folder/resource
+  identifiers, and any non-BPMN binding needed for deployed execution.
 
 ## Model may draft
 
-- `bpmn:signal` definitions.
-- Signal start, catch, throw, boundary, and end events.
-- Mappings and diagram geometry.
-- Public-safe signal names and payload variables.
+- No new signal BPMN.
+- Only preservation of imported signal XML while applying unrelated supported
+  edits.
 
 ## Stop conditions
 
-Stop before Operate when runtime signal subscription, correlation, payload schema, or cross-process contract is unresolved.
+Stop before Operate when imported signal behavior is expected to execute and no
+current runtime validation evidence is available.

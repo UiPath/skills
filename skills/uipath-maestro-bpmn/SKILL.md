@@ -42,6 +42,8 @@ Guide for authoring, inspecting, validating, packaging, operating, and diagnosin
 | Understand BPMN XML authoring boundaries | [references/shared/bpmn-xml-contract.md](references/shared/bpmn-xml-contract.md) |
 | Copy minimal XML shells per supported wrapper | [references/shared/wrapper-shells.md](references/shared/wrapper-shells.md) |
 | Understand variables, bindings, entry points, and expressions | [references/shared/variables-bindings-expressions.md](references/shared/variables-bindings-expressions.md) |
+| Author lint-compatible runtime expressions | [references/shared/expression-authoring.md](references/shared/expression-authoring.md) |
+| Author Maestro retry and error handling | [references/shared/error-handling.md](references/shared/error-handling.md) |
 | Understand CLI conventions and side-effect boundaries | [references/shared/cli-conventions.md](references/shared/cli-conventions.md) |
 | Keep examples and commits public-safe | [references/shared/public-safety.md](references/shared/public-safety.md) |
 
@@ -65,5 +67,9 @@ Guide for authoring, inspecting, validating, packaging, operating, and diagnosin
 - **Do not rely on BPMN without diagrams for Studio Web import** - a valid diagram and plane are required, and visible elements need shapes or waypoints.
 - **Do not edit derived package files as the primary fix** - fix the BPMN source or rerun the CLI generator/enricher unless the package file itself is the documented source for that field.
 - **Do not include real exported XML snippets in docs or examples** - summarize patterns using public-safe synthetic IDs and placeholder values.
+- **Do not use validation fixtures as greenfield templates** - fixtures are
+  coverage examples, not the authoring source of truth. Use capability docs,
+  shared contracts, wrapper shells, and the specific plugin or task recipe
+  instead.
 
 > Trouble? Send public-safe product feedback through the repository's normal feedback path.

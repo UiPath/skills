@@ -18,8 +18,8 @@
     <bpmn:task id="Task_RecordRequest" name="Record Request">
       <bpmn:extensionElements>
         <uipath:mapping version="v1">
-          <uipath:input name="request" type="string" value="=request" target="request" />
-          <uipath:output name="status" type="string" var="status" source="completed" />
+          <uipath:input name="request" type="string" value="=vars.Var_Request" target="request" />
+          <uipath:output name="status" type="string" var="Var_Status" source="completed" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Start_To_Task</bpmn:incoming>

@@ -1,6 +1,7 @@
 # Agent Job Recipe
 
-Use `bpmn:serviceTask` for agent execution.
+The current supported implementation wrapper for confirmed agent execution is
+`bpmn:serviceTask`.
 
 Supported shells:
 

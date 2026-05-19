@@ -24,6 +24,6 @@ The CLI or operator must resolve:
 ## Validation expectations
 
 - Queue binding expression resolves.
-- Payload fields come from declared variables or literals.
+- Payload fields come from declared variables through `vars.<variableId>` or literals.
 - Outputs map to declared writable variables.
 - Duplicate reference and unavailable-resource paths are modeled when required.

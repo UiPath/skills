@@ -8,7 +8,18 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
   project, keep the BPMN source basename exactly aligned with the project
   directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
   `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
-- `project.uiproj` - UiPath project metadata.
+- `project.uiproj` - UiPath project metadata. Keep it in the same project
+  directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
+  to the project directory.
+
+For a new local project, create a single project directory and place source
+files under it:
+
+```text
+ProjectName/
+  ProjectName.bpmn
+  project.uiproj
+```
 
 ## Generated or CLI-managed package files
 
@@ -18,6 +29,11 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
 - `package-descriptor.json` - package manifest mapping generated files and BPMN content.
 
 Treat these JSON files as derived unless a CLI contract explicitly identifies a field as user-authored. For source fixes, edit BPMN or rerun CLI enrichment rather than patching generated output by hand.
+
+Local packaging requires the generated metadata set to exist. In particular,
+`uip maestro bpmn pack <ProjectDir> <OutputDir> --output json` consumes
+`package-descriptor.json`; it does not create a missing descriptor from only
+the BPMN and `project.uiproj`.
 
 For the regeneration and drift-check contract, see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
 

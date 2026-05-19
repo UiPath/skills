@@ -30,12 +30,14 @@
           <uipath:context>
             <uipath:input name="process" type="resource" value="=bindings.Binding_ReviewProcess" />
           </uipath:context>
-          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestType":"=requestType"}]]></uipath:input>
-          <uipath:output name="JobState" type="string" var="result" source="state" />
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestType":"=vars.Var_RequestType"}]]></uipath:input>
+          <uipath:output name="JobState" type="string" var="Var_Result" source="state" />
         </uipath:activity>
-        <uipath:retry maxAttempts="2" interval="PT30S" />
+        <uipath:retry maxRetryCount="2" retryBackoff="PT30S" retryAllErrors="false">
+          <uipath:errorDefinition errorRef="Error_ServiceUnavailable" />
+        </uipath:retry>
         <uipath:errorMapping version="v1">
-          <uipath:error id="Error_ServiceUnavailable" code="SERVICE_UNAVAILABLE" />
+          <uipath:error id="Mapped_ServiceUnavailable" errorRef="Error_ServiceUnavailable" priority="1" condition="=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;" detail="Service unavailable" retryable="true" />
         </uipath:errorMapping>
         <uipath:tags>
           <uipath:tag key="fixture">gateway-boundary-error</uipath:tag>
@@ -62,7 +64,7 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_Start_To_Gateway" sourceRef="Start_Manual" targetRef="Gateway_RequestType" />
     <bpmn:sequenceFlow id="Flow_Gateway_To_Review" sourceRef="Gateway_RequestType" targetRef="Task_StartReview">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=requestType == "review"</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=vars.Var_RequestType == "review"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_Gateway_To_Archive" sourceRef="Gateway_RequestType" targetRef="Task_Archive" />
     <bpmn:sequenceFlow id="Flow_Review_To_End" sourceRef="Task_StartReview" targetRef="End_Complete" />

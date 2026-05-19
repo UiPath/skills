@@ -13,13 +13,29 @@ Capability index for local BPMN project authoring. Author owns source edits, loc
 - Plan Integration Service nodes/triggers that must be CLI-enriched.
 - Run local validation before handing off to Operate.
 
+## Context budget
+
+For greenfield authoring, read only the files needed for the current step:
+
+1. This capability file.
+2. [shared/project-layout.md](../shared/project-layout.md).
+3. [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md).
+4. [references/planning-arch.md](references/planning-arch.md) for pass 1.
+5. [references/planning-impl.md](references/planning-impl.md) and only the specific plugin or task recipe needed for pass 2.
+6. [references/validation.md](references/validation.md) before reporting done.
+
+Do not bulk-read the full skill tree or validation fixtures during normal
+authoring. Validation fixtures are coverage examples, not greenfield authoring
+templates. Open fixtures only after a validation failure or a directly linked
+guide requires a concrete example, and then read the smallest relevant fixture.
+
 ## Critical rules
 
 1. **Use the two-pass workflow for non-trivial authoring** - first generate or edit a pure BPMN skeleton with readable IDs and diagram geometry, then ask the operator to confirm the process shape, then add UiPath variables, bindings, mappings, entry points, and documented non-Integration-Service extensions.
 2. **Keep pass 1 standard BPMN-first** - pass 1 may include placeholders and annotations for resource intent, but it must not invent `uipath:activity`, `uipath:event`, connector bindings, generated schemas, or package metadata.
 3. **Read the BPMN XML contract before editing** - the Maestro BPMN contract defines which XML the model may author and which pieces require CLI generation or enrichment.
 4. **Default to reviewable file edits for BPMN source** - edit `.bpmn` directly for model-owned XML so diffs stay inspectable.
-5. **Choose BPMN element class before resource recipe** - RPA, agents, and API workflows are service tasks; queue create is a send task; business rules are business rule tasks; HITL is a user task. See [supported-elements.md](references/supported-elements.md).
+5. **Choose BPMN element class before resource recipe** - RPA, agents, and API workflows are service tasks; queue create is a send task; business rules are business rule tasks; HITL is a user task. Task recipes are pass-2 implementation references and assume the skeleton has already been chosen. See [supported-elements.md](references/supported-elements.md).
 6. **Do not hand-author Integration Service details** - use [plugins/integration-service/](references/plugins/integration-service/) for the planning and implementation boundary.
 7. **Keep generated package files derived** - if `bindings_v2.json`, `entry-points.json`, `operate.json`, or `package-descriptor.json` is stale, prefer regeneration or validation over manual patching.
 8. **Every Studio Web-visible element needs diagram geometry** - ensure diagrams, planes, shapes, bounds, edges, and waypoints exist for rendered nodes and flows.
@@ -61,6 +77,8 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 | Create a confirmed BPMN skeleton | [references/planning-arch.md](references/planning-arch.md) + [references/greenfield.md](references/greenfield.md) |
 | Add or revise BPMN structure | [references/brownfield.md](references/brownfield.md) + [references/editing-operations.md](references/editing-operations.md) + [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md) |
 | Add variables, mappings, bindings, or expressions | [references/planning-impl.md](references/planning-impl.md) + [shared/variables-bindings-expressions.md](../shared/variables-bindings-expressions.md) |
+| Add lint-compatible runtime expressions | [shared/expression-authoring.md](../shared/expression-authoring.md) |
+| Add retry, boundary errors, or error mappings | [shared/error-handling.md](../shared/error-handling.md) |
 | Select the right BPMN wrapper for RPA, agent, API workflow, queue, HITL, business rule, or call activity work | [references/supported-elements.md](references/supported-elements.md) + [references/task-recipes/](references/task-recipes/) |
 | Add an Integration Service activity or trigger | [references/plugins/integration-service/](references/plugins/integration-service/) |
 | Add a specific BPMN or UiPath extension element | [Plugin references](#plugin-references) |
@@ -96,7 +114,7 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 Each plugin reference has a `planning.md` for pass 1 shape/resource decisions and an `impl.md` for pass 2 XML ownership and validation boundaries.
 
 - [plugins/start-end-events/](references/plugins/start-end-events/) - start events, end events, intermediate events, and boundary events
-- [plugins/gateways/](references/plugins/gateways/) - exclusive, inclusive, parallel, event-based, and complex gateways
+- [plugins/gateways/](references/plugins/gateways/) - exclusive, inclusive, parallel, and event-based gateways
 - [plugins/sequence-flows/](references/plugins/sequence-flows/) - control-flow edges, conditions, defaults, and diagram waypoints
 - [plugins/service-tasks/](references/plugins/service-tasks/) - base service task boundary; use [task-recipes/](references/task-recipes/) for concrete resource-backed tasks
 - [plugins/connectors/](references/plugins/connectors/) - connector-backed activities, triggers, waits, and dynamic schemas
@@ -109,7 +127,7 @@ Each plugin reference has a `planning.md` for pass 1 shape/resource decisions an
 - [plugins/agents/](references/plugins/agents/) - service task recipes for agent job and A2A execution shells
 - [plugins/rpa-jobs/](references/plugins/rpa-jobs/) - service task recipe for Orchestrator RPA process execution
 - [plugins/api-workflows/](references/plugins/api-workflows/) - service task recipe for API workflow invocation
-- [plugins/signals/](references/plugins/signals/) - signal definitions, throws, catches, waits, and broadcast semantics
+- [plugins/signals/](references/plugins/signals/) - preserve-only signal guidance for imported files
 - [plugins/business-rules/](references/plugins/business-rules/) - business rule task invocation and result routing
 
 ### Cross-capability
@@ -117,5 +135,7 @@ Each plugin reference has a `planning.md` for pass 1 shape/resource decisions an
 - [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md) - model-owned versus CLI-owned XML
 - [shared/project-layout.md](../shared/project-layout.md) - source and generated files
 - [shared/variables-bindings-expressions.md](../shared/variables-bindings-expressions.md) - variables, bindings, mappings, expressions
+- [shared/expression-authoring.md](../shared/expression-authoring.md) - lint-compatible runtime expressions
+- [shared/error-handling.md](../shared/error-handling.md) - Maestro retry, boundary error, event subprocess, and error mapping behavior
 - [shared/cli-conventions.md](../shared/cli-conventions.md) - CLI and side-effect conventions
 - [shared/public-safety.md](../shared/public-safety.md) - sanitization rules
