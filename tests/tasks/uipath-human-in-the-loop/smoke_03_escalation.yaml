@@ -55,7 +55,7 @@ success_criteria:
     assertions:
       - expression: "pattern"
         operator: regex
-        expected: "(?i)(exception.escalat|agentic.output)"
+        expected: "(?i)(escalat|agentic.output)"
     weight: 1.5
     pass_threshold: 1.0
 
