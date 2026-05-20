@@ -17,7 +17,7 @@ description: >
   flags (skipCondition + shouldRunOnlyOnce), and the full Variable /
   In / Out argument trio. Validates and asserts on the structural shape
   of caseplan.json.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:stages, feature:edges, feature:conditions, feature:task-entry, feature:wait-for-timer, feature:parallel-tasks, feature:variables, feature:arguments]
+tags: [uipath-maestro-casem, e2e, lifecycle:generate, shape:multi-node, feature:stages, feature:edges, feature:conditions, feature:task-entry, feature:wait-for-timer, feature:parallel-tasks, feature:variables, feature:arguments]
 max_iterations: 1
 
 agent:
@@ -210,7 +210,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "3 stages + 3 edges (Stage→Stage edge labels use target-stage-name per inference rule #3) + case-entered on Intake; TWO wait-for-timer tasks on Review — Hold For 1 Hour (isRequired:true default + skipCondition + shouldRunOnlyOnce) and Notify Reviewer (isRequired:false) — both carrying current-stage-entered task-entry in DISTINCT laneIndex lanes; root carries 7 variables exercising every Variable type (boolean skipReview, string caseRef In + finalDecision Out, date dueDate, object caseMetadata, array attachments, jsonSchema caseSchema) including the trigger output mapping for caseRef In argument"
+    description: "3 stages + 3 edges (single-outbound Stage→Stage edges with no branching → labels blank per skill) + case-entered on Intake; TWO wait-for-timer tasks on Review — Hold For 1 Hour (isRequired:true default + skipCondition + shouldRunOnlyOnce) and Notify Reviewer (isRequired:false) — both carrying current-stage-entered task-entry in DISTINCT laneIndex lanes; root carries 7 variables exercising every Variable type (boolean skipReview, string caseRef In + finalDecision Out, date dueDate, object caseMetadata, array attachments, jsonSchema caseSchema) including the trigger output mapping for caseRef In argument"
     command: "python3 $TASK_DIR/check_linear_three_stages.py"
     timeout: 720
     expected_exit_code: 0

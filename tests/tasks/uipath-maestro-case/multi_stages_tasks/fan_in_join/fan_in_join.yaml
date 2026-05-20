@@ -15,7 +15,7 @@ description: >
   multi-stage flow. Validates and asserts on edge structure (4
   stage→stage edges into a single target), both entry rules on Join,
   and the five skeleton task types each in its assigned stage.
-tags: [uipath-maestro-casem, e2e, lifecycle:generate, shape:multi-node, feature:edges, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:action, feature:agent, feature:case-management-task]
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:edges, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:action, feature:agent, feature:case-management-task]
 max_iterations: 1
 
 agent:
