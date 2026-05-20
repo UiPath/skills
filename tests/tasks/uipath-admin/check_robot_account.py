@@ -22,5 +22,4 @@ def main():
     ok("Robot account 'smoke-e2e-bot' exists")
 
 
-if __name__ == "__main__":
-    main()
+main()

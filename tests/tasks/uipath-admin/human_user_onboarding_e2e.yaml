@@ -66,5 +66,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-admin/cleanup_invited_user.py"
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_invited_user.py''))"'
     timeout: 30

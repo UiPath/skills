@@ -38,6 +38,5 @@ def main():
             logger.warning("Delete call returned no result for id=%s", group_id)
 
 
-if __name__ == "__main__":
-    main()
-    sys.exit(0)
+main()
+sys.exit(0)

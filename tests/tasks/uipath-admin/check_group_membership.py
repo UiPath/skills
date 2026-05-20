@@ -37,5 +37,4 @@ def main():
     ok(f"Group has {member_count} member(s)")
 
 
-if __name__ == "__main__":
-    main()
+main()

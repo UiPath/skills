@@ -22,5 +22,4 @@ def main():
     ok("john.doe@example.com found in users list")
 
 
-if __name__ == "__main__":
-    main()
+main()
