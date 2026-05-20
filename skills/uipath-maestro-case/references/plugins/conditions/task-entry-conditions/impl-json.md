@@ -65,12 +65,12 @@ Rules use DNF — outer array is OR, inner array is AND.
   {
     "id": "rxxxxxxxx",
     "rule": "adhoc",
-    "conditionExpression": "in.riskScore > 700"
+    "conditionExpression": "=js:vars.riskScore > 700"
   }
 ]]
 ```
 
-Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings-and-expressions.md). Use `=js:(...)` for expressions with operators.
+`conditionExpression` uses bare `=js:<expr>` (no outer parens) — per FE convention for conditions. Operators (`>`, `<`, `===`, etc.) and function calls go inline. For combined boolean expressions, wrap each sub-clause in parens before joining: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### wait-for-connector — external event
 
@@ -79,7 +79,7 @@ Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings
   {
     "id": "rxxxxxxxx",
     "rule": "wait-for-connector",
-    "conditionExpression": "event.type = 'order_received'"
+    "conditionExpression": "=js:event.type === 'order_received'"
   }
 ]]
 ```

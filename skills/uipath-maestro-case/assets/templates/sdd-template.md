@@ -258,7 +258,7 @@ If neither holds, the io-binding validator surfaces the misalignment.
 | Error            | -> sendError                              | ← top-level Error sibling → vars.sendError
 | Action           | -> userDecision                           | ← action task top-level output → vars.userDecision
 | —                | caseStatus = "InReview"                   | ← set caseStatus literally
-| —                | reviewCount = =js:(vars.reviewCount + 1)  | ← increment counter
+| —                | reviewCount = =js:vars.reviewCount + 1    | ← increment counter
 | —                | summary = =vars.response.message.text     | ← copy another variable's sub-field
 ```
 

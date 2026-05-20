@@ -93,7 +93,7 @@ If a reference cannot be resolved, **AskUserQuestion** with the candidates (drop
 This is a hard gate — do NOT proceed to writing tasks.md until every required event parameter has a value.
 
 1. Collect every `inputs.eventParameters[?required]` entry from the spec output.
-2. For each, check whether sdd.md names a value (literal, resolved reference id, or — in `filter:` only — a `=vars.X` runtime reference).
+2. For each, check whether sdd.md names a value (literal, resolved reference id, or — in `filter:` only — a `=vars.X` runtime reference; impl compiles this to `` =js:`...${vars.X}...` `` template-literal form when writing `body.filters.expression`, see § Dynamic variable limitation).
 3. If missing and no `defaultValue`, **AskUserQuestion** — list the missing parameters with their `displayName` and what kind of value is expected.
 4. Free-form input is appropriate when the value space is open-ended (folder names, channel names, IDs); when a finite set of sensible values exists (e.g. an `enum`), present them via AskUserQuestion per the dropdown rule in [SKILL.md](../SKILL.md).
 5. Only after all required event parameters have values, proceed.
@@ -105,7 +105,7 @@ This is a hard gate — do NOT proceed to writing tasks.md until every required 
 SDD input fields don't map 1:1 to the connector's schema. Cross-reference each SDD input against `spec.inputs.eventParameters[]` and `spec.filter.fields[]` from Step 3 to decide where it goes:
 
 - **eventParameters** → configure *what* the trigger monitors. Values must be **static** — resolved to IDs at planning time. Go into `input-values`.
-- **filter fields** → narrow *which* events fire the trigger. Values can be **static** literals or **dynamic** `=vars.X` references resolved at runtime. Go into `filter`.
+- **filter fields** → narrow *which* events fire the trigger. Values can be **static** literals (filter tree `isLiteral: true`) or **dynamic** `=vars.X` references compiled into `` =js:`...${vars.X}...` `` at impl time (see § Dynamic variable limitation). Go into `filter`.
 
 If an SDD input matches an `eventParameters` field name, it's an event parameter. If it matches a `filter.fields[].name`, it's a filter. If it matches neither, **AskUserQuestion** — the SDD may use different naming than the connector.
 
@@ -157,11 +157,82 @@ After the Phase 3 `case spec --input-details` call, both filter sinks contain th
 
 #### Dynamic variable limitation
 
-The filter tree only supports `isLiteral: true` values. When a filter requires runtime case variable references (`=vars.X`), write the `body.filters.expression` JMESPath string directly post-CLI and leave `essentialConfiguration.filter` as `null`. This is a known SDK limitation shared with flow-tool. Practically: pass the literal-only filter to `case spec`, then patch the `=vars.X` reference into the relevant sink afterwards (rare path).
+The CLI's filter compiler only accepts `isLiteral: true` clauses in the FilterTree (`case-spec-input-details.md § WorkflowValue`). When a filter requires runtime case variable references, the impl step writes the canonical FE template-literal form into `body.filters.expression` (and `activityPropertyConfiguration.filterExpression`) directly post-CLI, and leaves `essentialConfiguration.filter` as `null`. This is a known SDK limitation shared with flow-tool.
 
-> **Mandatory-filter clauses survive the patch.** The CLI's mandatory-filter expression (derived from required event-param values, see § Mandatory-filter contract above) is computed at `case spec` time and AND-prefixed onto `body.filters.expression` and `activityPropertyConfiguration.filterExpression`. When you hand-patch a `=vars.X` clause into either sink afterwards, preserve the existing mandatory prefix (`(<mandatory>) && (<your-patched-clause>)`) — overwriting the whole expression strips the required event-param matching and the trigger fires on a wider event set than intended.
+**Planner-side authoring contract.** When translating an SDD filter clause to the `tasks.md` FilterTree, the planner classifies each clause by value shape:
+
+| SDD clause value | Encoded as `WorkflowValue` |
+|---|---|
+| Literal (`"urgent"`, `42`, `true`) | `{ "isLiteral": true, "rawString": "\"urgent\"", "value": "urgent" }` — JSON-encoded `rawString`, unwrapped `value` |
+| Variable reference (`=vars.X`, `=metadata.X`, `=bindings.X`) | `{ "isLiteral": false, "rawString": "=vars.X", "value": "=vars.X" }` — both fields carry the `=`-prefixed reference verbatim |
+| Pre-wrapped expression (`=js:<expr>` on a filter clause value, e.g. `=js:vars.amount > 5000`) | `{ "isLiteral": false, "rawString": "=js:<expr>", "value": "=js:<expr>" }` — same impl treatment as plain refs (stripped from CLI payload; composed into the post-CLI template literal) |
+
+The planner emits a single unified FilterTree containing both clause types. The impl then:
+
+1. Strips `isLiteral: false` entries from the CLI `--input-details.filter` payload (CLI rejects them).
+2. Runs `case spec --input-details` with the literal-only subset.
+3. Composes the canonical `` =js:`...${vars.X}...` `` template-literal form into `body.filters.expression` post-CLI by joining the CLI-compiled literal clauses with each var-bearing clause's translated JMESPath sub-clause (using `${<ref>}` for the `=vars.X` reference). Mandatory-filter prefix from required event-params is preserved.
+
+Example (SDD with mixed literal + var-bearing clauses):
+
+```
+filter: subject contains =vars.urgentKeyword AND from contains "VIP"
+```
+
+Planner emits to `tasks.md`:
+
+```json
+{
+  "filter": {
+    "groupOperator": "And",
+    "filters": [
+      { "id": "subject", "operator": "Contains",
+        "value": { "isLiteral": false, "rawString": "=vars.urgentKeyword", "value": "=vars.urgentKeyword" } },
+      { "id": "from", "operator": "Contains",
+        "value": { "isLiteral": true, "rawString": "\"VIP\"", "value": "VIP" } }
+    ]
+  }
+}
+```
+
+Impl composes (after CLI processes the literal-only subset):
+
+```
+=js:`(parentFolderId == '<inbox-id>') && (contains(subject, '${vars.urgentKeyword}')) && (contains(from, 'VIP'))`
+```
+
+**Canonical filter-expression form with variables** (matches FE `buildFiltersExpression` output at `IntsvcActivityConfigurationUtils.ts:358-371`):
+
+```
+=js:`(<JMESPath clause 1>) && (<JMESPath clause 2 with ${vars.X} interpolation>)`
+```
+
+- Outer wrap: `` =js:`...` `` — JS prefix + template-literal backticks. The template literal evaluates at runtime to a JMESPath string.
+- Sub-clauses each wrapped in parens for operator-precedence grouping.
+- References appear as `${vars.X}` / `${metadata.X}` / `${bindings.X}` template-literal interpolations — NOT as `=vars.X` / `=metadata.X` (plain prefix doesn't get evaluated inside the body sink). All `=js:<ref>` forms get the same transformation via FE's `wrapJsVariablesInTemplateLiteral` (`IntsvcCommonUtils.ts:251-258`).
+- For each `=<prefix>.X` reference in the SDD/tasks.md filter, the impl emits `${<prefix>.X}` inside the appropriate JMESPath clause.
+
+> **String-operand quoting (mandatory).** FE's `wrapJsVariablesInTemplateLiteral` does pure substitution — `=js:vars.X` → `${vars.X}` with NO surrounding quotes added (regex at `IntsvcCommonUtils.ts:257`; behavior confirmed by `IntsvcActivityConfigurationUtils.test.ts:986` → `:996`, which asserts the substituted output is unquoted). For JMESPath string operands (`contains(field, <string>)`, `field == '<string>'`), the impl MUST emit single quotes around the `${vars.X}` substitution. For numeric / boolean / JMESPath-literal-backtick operands, no surrounding quotes. Examples:
+>
+> - String operand: `contains(subject, '${vars.urgentKeyword}')` ✓
+> - Numeric operand: `amount > ${vars.minAmount}` ✓
+> - JMESPath array literal: `` contains(`["Open","Closed"]`, Status) `` ✓ (literal, no substitution)
+>
+> Forgetting quotes on a string operand evaluates at runtime to invalid JMESPath (e.g. `contains(subject, Quarterly Review)` — identifier, not string).
+
+**Worked example.** SDD filter: `subject contains =vars.calendarTitle`. Required event-param `parentFolderId` resolved to an Outlook folder id. The impl writes:
+
+```js
+=js:`(parentFolderId == 'AAMkAD...') && (contains(subject, '${vars.calendarTitle}'))`
+```
+
+Both `body.filters.expression` and `activityPropertyConfiguration.filterExpression` carry this same combined form.
+
+> **Mandatory-filter clauses survive the rewrite.** The CLI's mandatory-filter expression (derived from required event-param values, see § Mandatory-filter contract above) is computed at `case spec` time. When impl writes the canonical template-literal form, it preserves the mandatory prefix: `` =js:`(<mandatory>) && (<your-vars-clause>)` ``. Overwriting the whole expression strips the required event-param matching and the trigger fires on a wider event set than intended.
 
 Only use field names that appear in `spec.filter.fields[]`. If a filter cannot be translated unambiguously, **AskUserQuestion**.
+
+Full per-sink rule and FE source-of-truth: [bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink).
 
 ---
 
