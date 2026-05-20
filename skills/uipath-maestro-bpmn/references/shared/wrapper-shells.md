@@ -469,6 +469,7 @@ return { result: "preserved" };
 
 Rules:
 
+- `<bpmn:script>` bodies on `bpmn:scriptTask` require either `<uipath:scriptVersion>` or a `<uipath:mapping>` containing `<uipath:type value="BPMN.ScriptTask" />` or `<uipath:type value="BPMN.Variables" />`. Without one of those extensions, `uip maestro bpmn validate` rejects the body.
 - `uipath:migrationVersion` is preserve-only. Numeric values such as `5`,
   `11`, and `11.5` carry import migration history; do not delete them.
 - `uipath:scriptVersion value="v2"` is preserve-only on imported scripts.
