@@ -2,9 +2,10 @@
 """Verify SMTP settings were configured (host is non-empty)."""
 
 import logging
+import os
 import sys
 
-sys.path.insert(0, sys.path[0])
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="check_smtp: %(message)s")
@@ -23,5 +24,4 @@ def main():
     ok(f"SMTP configured with host={host}")
 
 
-if __name__ == "__main__":
-    main()
+main()

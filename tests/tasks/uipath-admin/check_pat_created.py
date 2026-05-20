@@ -2,9 +2,10 @@
 """Verify a PAT with description containing 'e2e-test-pat' exists."""
 
 import logging
+import os
 import sys
 
-sys.path.insert(0, sys.path[0])
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="check_pat: %(message)s")
@@ -26,5 +27,4 @@ def main():
     ok("PAT 'e2e-test-pat' exists")
 
 
-if __name__ == "__main__":
-    main()
+main()
