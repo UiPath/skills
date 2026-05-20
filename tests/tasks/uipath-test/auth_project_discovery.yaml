@@ -9,7 +9,7 @@ description: >
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
   node:
     env_packages:

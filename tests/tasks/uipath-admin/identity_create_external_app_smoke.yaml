@@ -6,7 +6,7 @@ description: >
 tags: [uipath-admin, smoke, create]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

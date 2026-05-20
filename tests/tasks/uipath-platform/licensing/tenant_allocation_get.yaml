@@ -7,7 +7,7 @@ description: >
 tags: [uipath-platform, smoke, licensing, tenants]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
   node: {}
 

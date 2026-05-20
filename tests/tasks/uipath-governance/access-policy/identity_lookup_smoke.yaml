@@ -16,7 +16,7 @@ description: >
 tags: [uipath-governance, smoke, access-policy, identity-lookup]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

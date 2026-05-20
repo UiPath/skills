@@ -17,7 +17,7 @@ run_limits:
   max_turns: 30
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
   node:
     env_packages:

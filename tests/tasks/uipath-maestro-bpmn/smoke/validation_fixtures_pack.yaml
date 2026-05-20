@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 900
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
   template_sources:
     - type: template_dir
