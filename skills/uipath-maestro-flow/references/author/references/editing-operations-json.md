@@ -348,60 +348,94 @@ Only `inout` variables can be updated. `in` variables are read-only.
 
 ### Insert a node between two existing nodes
 
-**Tool:** `Edit` × 3 (delete old edge, add new node, add 2 new edges)
+**Tool:** `Edit` (one assistant turn, ~7 parallel calls). All anchors disjoint — see [Batch independent `Edit`s in one turn](editing-operations.md#batch-independent-edits-in-one-turn).
 
-1. Use `Edit` to remove the edge connecting the two nodes from the `edges` array
-2. Use `Edit` to add the new node to `nodes` (with definition in `definitions`)
-3. Use `Edit` to add two new edges:
-   - upstream → new node (using upstream's output port → new node's `input`)
-   - new node → downstream (using new node's output port → downstream's `input`)
+**Prereq turn:** Run `uip maestro flow registry get <NODE_TYPE> --output json` for the new node type (if a definition isn't already in the file).
+
+**Batch turn (parallel `Edit` calls):**
+
+- Remove the old edge from `edges[]` (the one connecting the two existing nodes)
+- Add the new node to `nodes[]`
+- Add its definition to `definitions[]` (if not already present)
+- Add its entry to `variables.nodes[]`
+- Add its layout entry to `layout.nodes`
+- Add two new edges to `edges[]`:
+  - upstream → new node (upstream's output port → new node's `input`)
+  - new node → downstream (new node's output port → downstream's `input`)
+
+**Gate turn:** `uip maestro flow validate` then `uip maestro flow format`.
 
 ### Insert a decision branch
 
-**Tool:** `Edit` × 3 (delete old edge, add decision node, add 3 new edges)
+**Tool:** `Edit` (one assistant turn, ~8 parallel calls). All anchors disjoint — see [Batch independent `Edit`s in one turn](editing-operations.md#batch-independent-edits-in-one-turn).
 
-1. Use `Edit` to remove the edge where the branch should go
-2. Use `Edit` to add the decision node to `nodes` with `inputs.expression`
-3. Use `Edit` to add three edges:
-   - upstream → decision (target port: `input`)
-   - decision → true branch (source port: `true`, target port: `input`)
-   - decision → false branch (source port: `false`, target port: `input`)
+**Prereq turn:** Run `uip maestro flow registry get core.logic.decision --output json` (if a `core.logic.decision` definition isn't already in the file).
+
+**Batch turn (parallel `Edit` calls):**
+
+- Remove the old edge from `edges[]` (the one where the branch should go)
+- Add the decision node to `nodes[]` with `inputs.expression`
+- Add its definition to `definitions[]` (if not already present)
+- Add its entry to `variables.nodes[]`
+- Add its layout entry to `layout.nodes`
+- Add three new edges to `edges[]`:
+  - upstream → decision (target port: `input`)
+  - decision → true branch (source port: `true`, target port: `input`)
+  - decision → false branch (source port: `false`, target port: `input`)
+
+**Gate turn:** `uip maestro flow validate` then `uip maestro flow format`.
 
 ### Remove a node and reconnect
 
-**Tool:** `Edit` × 4 (delete node, sweep edges, prune orphan definitions, add reconnect edge)
+**Tool:** `Edit` (one assistant turn, parallel calls). All anchors disjoint — see [Batch independent `Edit`s in one turn](editing-operations.md#batch-independent-edits-in-one-turn).
 
-1. Record the node's upstream and downstream connections from `edges`
-2. Use `Edit` to remove the node from `nodes`
-3. Use `Edit` to remove all edges referencing the node
-4. Use `Edit` to clean up orphaned definitions
-5. Use `Edit` to add a new edge connecting upstream directly to downstream
+**Prereq turn:** `Read` the `.flow` file once to capture the node's upstream and downstream node IDs from `edges[]` — you'll need both for the reconnect edge.
+
+**Batch turn (parallel `Edit` calls):**
+
+- Remove the node from `nodes[]`
+- Remove all edges referencing the node from `edges[]`
+- Remove the node's entry from `variables.nodes[]`
+- Remove the node's layout entry from `layout.nodes`
+- Prune the orphaned definition from `definitions[]` if no other node uses the same `type` (otherwise skip this call)
+- Add a new edge to `edges[]` connecting upstream directly to downstream
+
+**Gate turn:** `uip maestro flow validate` then `uip maestro flow format`.
 
 ### Replace a mock with a real resource node
 
-**Tool:** `Edit` (multiple calls — replace node, edges, definitions, bindings, variables)
+**Tool:** `Edit` (one assistant turn, parallel calls across all regions: `nodes[]`, `edges[]`, `definitions[]`, `bindings[]`, `variables.nodes[]`, `layout.nodes`). All anchors disjoint — see [Batch independent `Edit`s in one turn](editing-operations.md#batch-independent-edits-in-one-turn).
 
-1. Get the resource node manifest — check in-solution first, then tenant registry:
-   ```bash
-   # In-solution (preferred — no login required):
-   uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --local --output json
+**Prereq turn:** Get the resource node manifest and record the mock's connected edges:
 
-   # Tenant registry (if not in solution):
-   uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --output json
-   ```
-2. Record the mock node's connected edges
-3. Remove the mock node from `nodes`
-4. Remove all edges referencing the mock
-5. Add the real resource node to `nodes` with:
-   - Correct `type` and `typeVersion`
-   - `inputs` with resolved field values
-   - `outputs` block (action nodes: `output` + `error`)
-   - No `model` block — binding/context templates come from the definition
-6. Copy the definition from registry into `definitions`
-7. Add entries to the top-level `bindings[]` array — two per resource (`name` + `folderPath`), with `resourceKey` matching the definition's `model.bindings.resourceKey`
-8. Re-create all edges using the new node's `id`
-9. Add node variables to `variables.nodes`
-10. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
+```bash
+# In-solution (preferred — no login required):
+uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --local --output json
+
+# Tenant registry (if not in solution):
+uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --output json
+```
+
+Then `Read` the `.flow` file once to capture the mock node's connected edges — you'll need their source/target node IDs to rewire on the new node.
+
+Pick the new node's `id` during planning (before the batch turn). Both the node-add `Edit` and the edge re-create `Edit`s reference it — the `id` is a planning artifact you decide once and reuse across batch members, not something the runtime generates mid-batch.
+
+**Batch turn (parallel `Edit` calls):**
+
+- Remove the mock node from `nodes[]`
+- Remove all edges referencing the mock from `edges[]`
+- Add the real resource node to `nodes[]` with:
+  - Correct `type` and `typeVersion`
+  - `inputs` with resolved field values
+  - `outputs` block (action nodes: `output` + `error`)
+  - No `model` block — binding/context templates come from the definition
+- Add the definition from registry to `definitions[]`
+- Add entries to the top-level `bindings[]` array — two per resource (`name` + `folderPath`), with `resourceKey` matching the definition's `model.bindings.resourceKey`
+- Add the node's entry to `variables.nodes[]`
+- Add the node's layout entry to `layout.nodes`
+- Re-create all edges in `edges[]` using the new node's `id`
+
+**Gate turn:** `uip maestro flow validate` then `uip maestro flow format`.
 
 ### Replace manual trigger with scheduled trigger
 
