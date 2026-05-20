@@ -1,0 +1,65 @@
+task_id: skill-test-flaky-tests-analysis
+description: >
+  Integration test: agent uses the uipath-test skill to identify flaky testcases
+  in a test set by analysing multiple executions. Asserts that the agent (a)
+  checks login status with --output json, (b) lists multiple executions for
+  a test set with --test-set-id + --output json, (c) retrieves testcase
+  logs for at least one execution with --execution-id + --output json and (d) fetches
+  assertions for at least one failing testcase log with --test-case-log-id +
+  --output json. The
+  skill — not the prompt — must teach the multi-execution analysis pattern
+  and the --output json flag.
+tags: [uipath-test, integration, mode:operate, lifecycle:triage, feature:execution]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 3
+
+sandbox:
+  driver: docker
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Analyse the top 3 executions with a finished executionStatus of a test
+  set 'UAT Smoke Suite' in my UiPath Test Manager project CLAIM. List testcases that pass and
+  fail intermittently, ranked by flakiness. Also, list the assertions for such testcases.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed executions for a test set with --test-set-id + --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+list\s+.*--test-set-id.*--output\s+json|uip\s+tm\s+executions?\s+list\s+.*--output\s+json.*--test-set-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved testcase logs for at least one execution (--execution-id + --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(executions?\s+testcaselogs\s+list|execution\s+list-testcaselogs)\s+.*--execution-id.*--output\s+json|uip\s+tm\s+(executions?\s+testcaselogs\s+list|execution\s+list-testcaselogs)\s+.*--output\s+json.*--execution-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched assertions for a failing testcase log (--test-case-log-id + --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+list-assertions\s+.*--test-case-log-id.*--output\s+json|uip\s+tm\s+testcaselog\s+list-assertions\s+.*--output\s+json.*--test-case-log-id'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0

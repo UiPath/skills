@@ -1,0 +1,74 @@
+task_id: skill-test-link-automation-and-run
+description: >
+  Integration test: agent uses the uipath-testcloud skill to link a published
+  automation to a Test Manager testcase and trigger an automated execution.
+  Asserts that the agent (a) checks login status with --output json, (b) discovers
+  the folder key via `uip or folders list -n <folder-name> --all`,
+  (c) probes available test entry points with `uip tm testcases list-automations`
+  before linking, (d) links via `uip tm testcases link-automation` with the required
+  flags, and (e) runs the testcase with `uip tm testcases run` using --test-case-id
+  (UUID, not --test-case-key) and --execution-type automated. The skill -- not the
+  prompt -- must teach the discover-before-link pattern, the `folders list -n <folder-name> --all`
+  folder lookup, and the UUID vs ObjKey distinction for the run command.
+tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:link-automation]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 35
+
+sandbox:
+  driver: docker
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Link the testcase "TestCase1" from the orchestrator package "Testcases.with.parameters" published to the Orchestrator folder "uipath-test-folder-feed" to the Test Manager testcase
+  "Claim Approval - Manager Escalation" in the project CLAIM. Then trigger an automated execution of
+  that testcase.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered folder key with `folders list -n <folder-name> --all`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+list\s+-n\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent probed available test entry points via list-automations before linking (Critical Rule #8)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list-automations\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked automation using link-automation with --project-key + --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+link-automation\s+.*--project-key.*--output\s+json|uip\s+tm\s+testcases?\s+link-automation\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran testcase with --test-case-id (UUID) and --execution-type automated (not --test-case-key)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+run\s+.*--test-case-id.*--execution-type\s+automated.*--output\s+json|uip\s+tm\s+testcases?\s+run\s+.*--execution-type\s+automated.*--test-case-id.*--output\s+json|uip\s+tm\s+testcase\s+execute\s+.*--test-case-id.*--execution-type\s+automated.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
