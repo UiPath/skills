@@ -17,7 +17,7 @@ description: >
   flags (skipCondition + shouldRunOnlyOnce), and the full Variable /
   In / Out argument trio. Validates and asserts on the structural shape
   of caseplan.json.
-tags: [uipath-maestro-casem, e2e, lifecycle:generate, shape:multi-node, feature:stages, feature:edges, feature:conditions, feature:task-entry, feature:wait-for-timer, feature:parallel-tasks, feature:variables, feature:arguments]
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:stages, feature:edges, feature:conditions, feature:task-entry, feature:wait-for-timer, feature:parallel-tasks, feature:variables, feature:arguments]
 max_iterations: 1
 
 agent:
