@@ -84,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes against the authored .flow file"
-    command: "uip maestro flow validate GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow --output json"
+    command: "uip flow validate GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

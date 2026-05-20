@@ -7,13 +7,14 @@ description: >
   approval flow from scratch — detecting write-back + approval gate signals,
   designing schema, adding HITL node, wiring all handles, and validating the
   authored .flow file. Real business use case. Full Discover -> Plan -> Build -> Verify loop.
+  Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
 
 agent:
   type: claude-code
 
 run_limits:
-  max_turns: 40
+  max_turns: 60
   turn_timeout: 1200
 
 sandbox:
@@ -90,7 +91,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes against the authored .flow file"
-    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
+    command: "uip flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

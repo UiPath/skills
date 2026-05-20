@@ -1,6 +1,6 @@
 # HITL QuickForm Node — Direct JSON Reference
 
-The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is also available when the user explicitly requests it — see [cli-commands.md — uip maestro flow hitl add](../../../../uipath-maestro-flow/references/shared/cli-commands.md#uip-maestro-flow-hitl-add).
+The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is also available when the user explicitly requests it — see [CLI reference: uip flow hitl add](../../uipath-maestro-flow/references/shared/cli-commands.md#uip-flow-hitl-add).
 
 ---
 
@@ -67,7 +67,7 @@ Also read `workflow.variables.globals`. Each entry has an `id` that maps directl
 | Node output | `vars.<nodeId>.output.<field>` | `=js:$vars.<nodeId>.output.<field>` |
 | Flow global (`direction: "in"`) | `vars.<globalId>` | `=js:$vars.<globalId>` |
 
-For the full variable system, see → [uipath-maestro-flow — variables-and-expressions.md](../../../../uipath-maestro-flow/references/shared/variables-and-expressions.md)
+For the full variable system, see → [How $vars paths are constructed in Flow](../../uipath-maestro-flow/references/shared/variables-and-expressions.md)
 
 ---
 

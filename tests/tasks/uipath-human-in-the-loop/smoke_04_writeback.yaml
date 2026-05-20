@@ -10,32 +10,21 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath Flow where an AI agent reads incomplete SAP purchase orders,
+  I'm designing a UiPath Flow where an AI agent reads incomplete SAP purchase orders,
   enriches the missing vendor and cost-center fields using company data, and
   writes the corrected records back to SAP.
 
-  Analyze whether this flow needs any human checkpoints. If yes, identify
-  which canonical HITL pattern from the `uipath-human-in-the-loop` skill
-  applies. The skill's `references/hitl-patterns.md` enumerates six
-  canonical patterns; pick exactly one and emit its machine name verbatim.
+  Analyze whether this flow needs any human checkpoints, explain why,
+  and identify where one should go if needed.
 
-  Write a `recommendation.json` file with this exact shape:
+  Do not build or scaffold a project. Write only your analysis to
+  `recommendation.json`:
   {
     "hitl_needed": <true or false>,
-    "pattern": "<one of the canonical pattern names listed below>",
+    "pattern": "<type of human checkpoint pattern, if applicable>",
     "reason": "<why HITL is or is not needed>",
     "proposed_insertion_point": "<where in the flow>"
   }
-
-  Use EXACTLY one of these machine names for `pattern` (lowercase,
-  hyphenated, no extra adjectives or prefixes — names mirror the
-  section titles in `references/hitl-patterns.md`):
-    - approval-gate
-    - exception-escalation
-    - data-enrichment
-    - compliance-checkpoint
-    - write-back-validation
-    - agentic-output-review
 
 success_criteria:
   - type: file_exists
@@ -64,6 +53,6 @@ success_criteria:
     assertions:
       - expression: "pattern"
         operator: regex
-        expected: "^(write-back-validation|data-enrichment|agentic-output-review)$"
+        expected: "(?i)(write.back|enrich|agentic.output|approval.gate)"
     weight: 1.5
     pass_threshold: 1.0

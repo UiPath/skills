@@ -41,16 +41,15 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Decision → both branches → End
 
-  Use the inline quickform node (uipath.human-in-the-loop).
   Read variables.nodes before writing input field bindings — use the exact
   $vars path from the node's outputId entry.
   Output fields must NOT have a binding property.
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow --output json"
+    command: "uip flow validate SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
