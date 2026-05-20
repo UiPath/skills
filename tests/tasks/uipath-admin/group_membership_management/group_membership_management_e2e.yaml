@@ -83,13 +83,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Group 'Invoice Processing Team' exists and has at least one member"
-    command: "python3 $TASK_DIR/../_shared/check_group_membership.py"
+    description: "Group 'Invoice Processing Team' exists and has exactly one member"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_group_membership.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $TASK_DIR/../_shared/cleanup_group.py"
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''cleanup_group.py''))"'
     timeout: 30
