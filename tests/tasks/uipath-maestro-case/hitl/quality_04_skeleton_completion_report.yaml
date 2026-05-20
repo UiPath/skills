@@ -1,0 +1,275 @@
+task_id: skill-case-hitl-quality-skeleton-completion-report
+description: >
+  Quality test: when the HITL action-app cannot be resolved from the
+  registry, the agent must (a) write a skeleton action task (type "action"
+  with empty `data: {}` and NO fabricated `taskTypeId`), (b) keep the
+  skeleton TaskId reachable from stage-exit `selected-tasks-completed`
+  rules, and (c) produce a completion report that distinguishes skeleton
+  vs resolved tasks and lists the external resources the user must
+  register before the skeleton can be upgraded. Replaces flow's
+  brownfield-insert test (case skill regenerates from scratch).
+tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl, skeleton]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 110
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Case Management project named "ContractReviewCase" with
+  this shape:
+
+    Manual Trigger
+      → Stage "Extract"  (one process task: extract contract metadata)
+      → Stage "LegalReview" (one HITL action task: legal reviewer approves
+                             the contract; outputs: approved (Boolean),
+                             legal_notes (Text, optional))
+      → Stage "Closed" (no tasks)
+
+  Use the same name for solution and project so the case file lives at
+  ContractReviewCase/ContractReviewCase/caseplan.json.
+
+  This test environment has no live tenant — the action-app for the
+  reviewer step is intentionally unlikely to resolve. When that happens
+  the skill REQUIRES you to write a skeleton action task per
+  references/skeleton-tasks.md:
+  - `type: "action"`
+  - `displayName` set
+  - `id`, `elementId`, `isRequired`, `shouldRunOnlyOnce` set
+  - `data: {}` — NO fabricated `taskTypeId`, NO fabricated input/output schema
+  - The skeleton TaskId MUST still be captured and referenced from the
+    stage-exit rule (`selected-tasks-completed("Approve Contract")`)
+
+  Even if the registry pull surprisingly returns a resolved action-app,
+  treat the task as "resolved" and continue — but report it accurately.
+
+  Write this sdd.md to sdd.md first, then build from it:
+
+  ```
+  # SDD — ContractReviewCase
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |----------|-------|
+  | Case Name | ContractReviewCase |
+  | Case Description | Legal reviewer approves a contract before close. |
+  | Case Identifier | Prefix: CRC, Type: constant |
+  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+
+  ### Case Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |-------------|--------|---------------|-------------------------|
+  | None        | Manual | N/A           | —                        |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |------|-----|------|---------------------|
+  | required-stages-completed | — | Case exited | Yes |
+
+  ### Case Variables
+  | Variable | Type | Default | Description | Produced By | Consumed By |
+  |----------|------|---------|-------------|-------------|-------------|
+  | contractId    | String  | — | Contract identifier.    | Extract Metadata | Approve Contract |
+  | contractValue | Number  | — | Contract dollar value.  | Extract Metadata | Approve Contract |
+  | approved      | Boolean | — | Reviewer decision.      | Approve Contract | computed         |
+  | legal_notes   | String  | — | Reviewer free notes.    | Approve Contract | computed         |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Extract
+  **Type:** Stage
+  **Description:** Extract contract metadata into case variables.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | case-entered | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Extract Metadata | process | Yes | No | — | — |
+
+  ##### Task 1.1: Extract Metadata
+  **Type:** process
+  **Description:** Extracts contract metadata.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  ### Stage 2: LegalReview
+  **Type:** Stage
+  **Description:** Legal reviewer approves the contract.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-completed("Extract") | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | selected-tasks-completed("Approve Contract") | — | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Approve Contract | action | Yes | No | Legal Reviewer | — |
+
+  ##### Task 2.1: Approve Contract
+  **Type:** action
+  **Description:** Legal reviewer approves or rejects the contract.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  **HITL Implementation:** Action App: Approve Contract
+
+  **Input Schema:**
+  | Field         | Type   | Binding        | Required |
+  |---------------|--------|----------------|----------|
+  | contractId    | String | contractId     | Yes |
+  | contractValue | Number | contractValue  | Yes |
+
+  **Output Schema:**
+  | Field       | Type    | Binding |
+  |-------------|---------|---------|
+  | approved    | Boolean | -> approved |
+  | legal_notes | String  | -> legal_notes |
+
+  ### Stage 3: Closed
+  **Type:** Stage
+  **Description:** Case closed.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-completed("LegalReview") | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  (none)
+  ```
+
+  Important:
+  - The `uip` CLI is already available.
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step.
+  - Do NOT fabricate a `taskTypeId` for the action task to silence
+    skeleton warnings. Validation tolerates the skeleton warning; mocks
+    cause harder-to-diagnose failures downstream.
+  - Do NOT run `uip maestro case debug`.
+
+  **REQUIRED — before finishing, write report.json at the sandbox root**:
+  {
+    "caseplan_path": "<path to caseplan.json>",
+    "action_task_id": "<id of Approve Contract>",
+    "action_task_skeleton": <true|false>,
+    "process_task_skeleton": <true|false>,
+    "exit_rule_references_action": <true|false — does Stage LegalReview's
+       exit rule reference the action TaskId via selected-tasks-completed?>,
+    "skeleton_tasks": [
+      { "stage": "<stage name>", "task": "<task name>", "type": "<action|process|...>", "task_id": "<id>" }
+    ],
+    "external_resources_to_register": ["<list of resource references the user must register, e.g. action-apps-index.json — Approve Contract>"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes (skeleton warnings allowed)"
+    command: "uip maestro case validate ContractReviewCase/ContractReviewCase/caseplan.json --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan contains an action-typed task"
+    path: "ContractReviewCase/ContractReviewCase/caseplan.json"
+    includes:
+      - '"type": "action"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Stage LegalReview exit references selected-tasks-completed"
+    path: "ContractReviewCase/ContractReviewCase/caseplan.json"
+    includes:
+      - "selected-tasks-completed"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan does not fabricate a taskTypeId — when skeleton, action task's data must be empty {} (skipped automatically when action-app actually resolved)"
+    command: |
+      python3 -c "
+      import json, sys
+      with open('ContractReviewCase/ContractReviewCase/caseplan.json') as f: cp=json.load(f)
+      with open('report.json') as f: rep=json.load(f)
+      # If reported as skeleton, the action task's data must be empty
+      if rep.get('action_task_skeleton') is True:
+          for n in cp.get('nodes', []):
+              for lane in (n.get('data', {}).get('tasks') or []):
+                  for t in lane:
+                      if t.get('type') == 'action':
+                          d = t.get('data') or {}
+                          # Skeleton: data must be {} (or have only action-only extras per skeleton-tasks.md, never taskTypeId)
+                          ctx = d.get('context') or {}
+                          if ctx.get('taskTypeId'):
+                              print('FAIL: skeleton action task has taskTypeId set'); sys.exit(1)
+      print('OK')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures skeleton/resolved status, exit reference, and external resources list"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "action_task_id"
+        operator: not_equals
+        expected: ""
+      - expression: "exit_rule_references_action"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 0.75
+
+  - type: json_check
+    description: "report.json has external_resources_to_register entry when action task is skeleton"
+    path: "report.json"
+    assertions:
+      - expression: "action_task_skeleton == `false` || length(external_resources_to_register) >= `1`"
+        operator: equals
+        expected: true
+    weight: 1.5
+    pass_threshold: 1.0

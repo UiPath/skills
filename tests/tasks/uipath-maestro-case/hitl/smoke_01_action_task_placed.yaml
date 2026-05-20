@@ -1,0 +1,140 @@
+task_id: skill-case-hitl-smoke-action-task-placed
+description: >
+  Smoke test: agent builds a minimal Case Management project with a manual
+  trigger and a single stage that contains one HITL `action` task. Verifies
+  the action task is written into caseplan.json with type "action" and the
+  case validates. Action-app likely unresolved in test env — skeleton task
+  (empty data) is acceptable.
+tags: [uipath-maestro-case, smoke, lifecycle:generate, shape:single-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 80
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Case Management project named "InvoiceApprovalCase" with a
+  manual trigger and a single stage "Review" that contains one HITL action
+  task where a finance manager approves the invoice.
+
+  Use this sdd.md as the sole input — write it to sdd.md first, then build
+  from it. Use the same name for the solution and the project so the case
+  file lives at InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json.
+
+  ```
+  # SDD — InvoiceApprovalCase
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |----------|-------|
+  | Case Name | InvoiceApprovalCase |
+  | Case Description | Tracks an invoice through manager approval. |
+  | Case Identifier | Prefix: IAC, Type: constant |
+  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+
+  ### Case Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |-------------|--------|---------------|-------------------------|
+  | None        | Manual | N/A           | —                        |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |------|-----|------|---------------------|
+  | required-stages-completed | — | Case exited | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Review
+  **Type:** Stage
+  **Description:** Finance manager reviews and approves the invoice.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | case-entered | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Review Invoice | action | Yes | No | Finance Manager | — |
+
+  ##### Task 1.1: Review Invoice
+  **Type:** action
+  **Description:** Manager reviews the invoice and approves or rejects.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  **HITL Implementation:** Action App: Review Invoice
+  ```
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step (Phase 0, post-tasks.md, or Phase 2a→2b).
+  - If the action-app cannot be resolved from the registry, write a skeleton
+    action task per the skill's skeleton-tasks reference (type "action",
+    empty data) — do NOT fabricate a taskTypeId.
+  - Do NOT run `uip maestro case debug`.
+
+  **REQUIRED — before finishing, write report.json at the sandbox root** with
+  exactly these keys:
+  {
+    "caseplan_path": "<relative path to the caseplan.json file>",
+    "action_task_id": "<id of the action task>",
+    "skeleton": <true|false — true if action-app was unresolved>,
+    "validation_passed": true
+  }
+  The task is NOT complete until `uip maestro case validate` has passed AND
+  report.json exists at the sandbox root.
+
+success_criteria:
+  - type: file_exists
+    description: "caseplan.json was created at the conventional path"
+    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan contains an action-typed task"
+    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json"
+    includes:
+      - '"type": "action"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes"
+    command: "uip maestro case validate InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures action_task_id and validation_passed"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "action_task_id"
+        operator: not_equals
+        expected: ""
+    weight: 2.0
+    pass_threshold: 0.75
