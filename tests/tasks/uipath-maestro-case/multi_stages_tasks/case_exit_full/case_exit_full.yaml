@@ -151,7 +151,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "3 stages with mixed isRequired; Audit has wait-for-connector entry; case has 4 case-exits (v20 metadata.caseExitRules) covering all rule-types (required-stages-completed/wait-for-connector true; selected-stage-exited Audit / selected-stage-completed Archive false)"
+    description: "3 stages with mixed isRequired; Audit has wait-for-connector entry; case has 4 case-exits (metadata.caseExitRules) covering all rule-types (required-stages-completed/wait-for-connector true; selected-stage-exited Audit / selected-stage-completed Archive false)"
     command: "python3 $TASK_DIR/check_case_exit_full.py"
     timeout: 30
     expected_exit_code: 0

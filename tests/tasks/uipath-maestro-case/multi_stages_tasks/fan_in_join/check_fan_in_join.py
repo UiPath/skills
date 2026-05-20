@@ -103,7 +103,7 @@ def main():
                 data = skeleton.get("data") or {}
                 sys.exit(
                     f"FAIL: stage {stage_label!r} task type {want_type!r} should "
-                    f"be a v20 skeleton — must NOT carry resource wiring "
+                    f"be a skeleton — must NOT carry resource wiring "
                     f"(data.name/data.folderPath for non-connector tasks; "
                     f"data.inputs for action; data.typeId/connectionId for "
                     f"connector tasks); got data keys {sorted(data.keys())}"
