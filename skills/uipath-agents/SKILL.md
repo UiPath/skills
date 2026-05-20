@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. Covers DeepRAG (summarize/research PDF or TXT via CreateDeepRag, @durable_interrupt) and BatchTransform (per-row CSV LLM via CreateBatchTransform). For C# or XAML workflows→uipath-rpa."
+description: "UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---
