@@ -2,8 +2,6 @@
 
 Common request shapes that span more than one specialist skill. Use this guide when deciding whether a request is single-skill (load one specialist directly) or multi-skill (emit a plan).
 
-> **Legacy projects:** if the project is legacy (`.NET Framework 4.6.1`, XAML-only, `targetFramework: "Legacy"` or missing in `project.json`), substitute `uipath-rpa-legacy` for `uipath-rpa` in every pattern below.
-
 ## When to emit a multi-skill plan
 
 Emit a multi-skill plan when the request clearly spans more than one specialist. Single-skill tasks (e.g., "create a workflow that sends an email") go directly to the specialist — no plan needed.

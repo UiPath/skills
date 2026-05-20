@@ -1,7 +1,7 @@
 task_id: skill-rpa-legacy-create-and-validate
 description: >
-  Skill-guided evaluation: agent uses the uipath-rpa-legacy skill to create
-  a new legacy UiPath RPA project (.NET Framework 4.6.1) with a simple
+  Skill-guided evaluation: agent uses the uipath-rpa skill (Legacy mode) to
+  create a new legacy UiPath RPA project (.NET Framework 4.6.1) with a simple
   workflow. Tests whether the skill teaches the correct targetFramework
   setting, XAML baseline (VB.NET, mscorlib), CLI flag conventions
   (--output json), and discovery workflow.
@@ -11,7 +11,7 @@ description: >
   This smoke test verifies the skill guides the agent to produce correct
   artifacts and invoke the right commands — it does not require the CLI
   commands to succeed at runtime.
-tags: [uipath-rpa-legacy, smoke, create, validate]
+tags: [uipath-rpa, legacy, smoke, create, validate]
 
 agent:
   type: claude-code

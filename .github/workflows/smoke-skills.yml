@@ -32,11 +32,11 @@ jobs:
         run: |
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
-          # RPA + rpa-legacy skills run on the Windows workflow
+          # RPA skill (modern + legacy) runs on the Windows workflow
           # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
           # the full lifecycle (`uip rpa` / `uip rpa-legacy` CLI) is
           # what's being exercised — so we skip those tasks here.
-          WINDOWS_SKILLS="uipath-rpa uipath-rpa-legacy"
+          WINDOWS_SKILLS="uipath-rpa"
 
           # Opt-in benchmarks live alongside skill tests but are NOT smoke
           # tests — they're large/expensive and run via the dashboard
