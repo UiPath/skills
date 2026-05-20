@@ -12,17 +12,23 @@ Execute approved `tasks.md` plan, building `caseplan.json` via direct JSON edits
 
 Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mechanics (ID generation, Pre-flight Checklist, primitive ops, the canonical write contract) are in [case-editing-operations.md](case-editing-operations.md).
 
-**Per-section batched Edit — mandatory.** Process `tasks.md` one **section** at a time (§4.2.1 vars, §4.3 triggers, §4.4 stages, §4.5 edges, §4.6 task-shapes, §9.7 connector schema, §9.8 I/O binding, §10 conditions, §11 SLA):
+**Per-section batched writes — mandatory.** Process `tasks.md` one **section** at a time (§4.2.1 vars, §4.3 triggers, §4.4 stages, §4.5 edges, §4.6 task-shapes, §9.7 connector schema, §9.8 I/O binding, §10 conditions, §11 SLA):
 
 1. **One Read** of `caseplan.json` at section entry.
-2. **N Edits** in sequence — one per T-entry in the section. Skip the re-Read between sibling Edits.
+2. **Writes sized to section** — pick by T-entry count:
+   - **<10 T-entries** — N Edits in sequence, one per T-entry. Skip the re-Read between sibling Edits.
+   - **≥10 T-entries** — single whole-section Edit or Write replacing the section's container (e.g., `schema.nodes`, `schema.edges`, a stage's `data.tasks`). Compose the complete post-section state in reasoning from the section-entry Read, then emit one write. Untouched siblings (other sections, root fields, unrelated nodes) MUST be copied verbatim — drop nothing.
 3. **One validate** at section boundary.
 
-TodoWrite items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the Edit returns success.
+TaskUpdate items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the write returns success. The audit trail stays T-by-T even when the file diff collapses to one whole-section write.
 
-For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
+**Bundle status text with tool_use.** Any progress text emitted alongside writes MUST share the same assistant turn as the next tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference + full cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. **Hard token cap:** any single text block >200 tokens (or >500 tokens for allow-listed exceptions — completion reports, AskUserQuestion preambles, validate result summaries) is a planning monologue, forbidden regardless of content. **Forbidden announcement verbs** at any length: text blocks starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call. The tool_use input IS the announcement.
 
-Full contract — recovery, tool primitive (Edit, never whole-file Write inside a batch), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building stays per-T-entry per [planning.md §4.0a](planning.md) — this contract is for `caseplan.json` only.
+**Cap single Write at ~15K out tok / ~40KB.** When a section's whole-section Write would exceed this, split into Phase 2 skeleton (root + nodes + edges + vars, empty task `data`) → Phase 3 fill (per-section Edits onto populated nodes). For cases with ≥40 tasks or ≥8 stages, NEVER emit the full populated caseplan.json in one Write — always Phase 2 → Phase 3 split. A single 15K-out-tok Write turn pays ~150s inference; smaller turns let validate gates catch field drops between phases. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) are forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
+
+For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
+
+Full contract — recovery, tool primitive selection (Edit default, whole-section Write at ≥10 T-entries), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-json.md`:
 > - Root case → `plugins/case/impl-json.md`
