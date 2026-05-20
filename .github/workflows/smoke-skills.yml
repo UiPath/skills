@@ -301,6 +301,10 @@ jobs:
             --tags smoke
         continue-on-error: true
 
+      - name: Fix permissions on /tmp/runs
+        if: always()
+        run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
+
       - name: Summarize results
         if: always()
         run: |
