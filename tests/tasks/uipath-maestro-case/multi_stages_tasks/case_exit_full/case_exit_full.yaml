@@ -135,7 +135,7 @@ initial_prompt: |
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
   Before starting, load the uipath-maestro-case skill. Read and follow its
@@ -153,7 +153,7 @@ success_criteria:
   - type: run_command
     description: "3 stages with mixed isRequired; Audit has wait-for-connector entry; case has 4 case-exits (metadata.caseExitRules) covering all rule-types (required-stages-completed/wait-for-connector true; selected-stage-exited Audit / selected-stage-completed Archive false)"
     command: "python3 $TASK_DIR/check_case_exit_full.py"
-    timeout: 30
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

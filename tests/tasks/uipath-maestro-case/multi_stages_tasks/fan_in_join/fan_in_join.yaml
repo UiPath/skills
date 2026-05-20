@@ -15,7 +15,7 @@ description: >
   multi-stage flow. Validates and asserts on edge structure (4
   stage→stage edges into a single target), both entry rules on Join,
   and the five skeleton task types each in its assigned stage.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:edges, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:action, feature:agent, feature:case-management-task]
+tags: [uipath-maestro-casem, e2e, lifecycle:generate, shape:multi-node, feature:edges, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:action, feature:agent, feature:case-management-task]
 max_iterations: 1
 
 agent:
@@ -266,7 +266,7 @@ initial_prompt: |
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
   Before starting, load the uipath-maestro-case skill. Read and follow its
@@ -284,7 +284,7 @@ success_criteria:
   - type: run_command
     description: "Diamond topology: Triage→{Validate,Enrich}→Join with two selected-stage-completed entry rules on Join; FIVE skeleton tasks across 4 stages cover 5 distinct plugin types — Triage:{rpa, api-workflow}, Validate:action, Enrich:agent, Join:case-management — all with empty data (skeleton)"
     command: "python3 $TASK_DIR/check_fan_in_join.py"
-    timeout: 30
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

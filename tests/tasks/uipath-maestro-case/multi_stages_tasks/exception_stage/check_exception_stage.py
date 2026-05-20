@@ -13,7 +13,9 @@ from _shared.case_check import (  # noqa: E402
     iter_nodes_of_type,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
+    payload_contains,
     read_caseplan,
+    start_debug,
 )
 
 
@@ -158,13 +160,18 @@ def main():
             f"'2026-05-01' wait-until datetime; got {ack_date!r}"
         )
 
+    payload = start_debug(timeout=540)
+    payload_contains(payload, "Process", "Issues", "Critical", require_all=False)
+    status = payload.get("finalStatus") or payload.get("status")
+
     print(
         "OK: 2 ExceptionStages (Issues + Critical) with 0 edges each; Issues has "
         "interrupting selected-stage-exited entry referencing Process, "
         "return-to-origin exit, 2h SLA + sla-breached UserGroup escalation, AND a "
         "wait-for-timer task using timeDate (wait until 2026-05-01) with "
         "current-stage-entered task-entry; Critical has interrupting "
-        "wait-for-connector entry on a fault event + return-to-origin exit"
+        f"wait-for-connector entry on a fault event + return-to-origin exit; "
+        f"debug payload returned (status={status})"
     )
 
 

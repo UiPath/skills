@@ -244,7 +244,7 @@ initial_prompt: |
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
   Before starting, load the uipath-maestro-case skill. Read and follow its
@@ -262,7 +262,7 @@ success_criteria:
   - type: run_command
     description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; tasks carry runs-sequentially/adhoc/wait-for-connector/selected-tasks-completed task-entry rules; First Step timer carries bounded repeat=5 (timeDuration); Second Step timer uses timeCycle (R3/PT2H); root has string variable 'region' AND number variable 'priorityScore' (both referenced alongside metadata.tier in Region Check conditionExpression); 'Optional Audit' is a process-typed skeleton task in Finalize"
     command: "python3 $TASK_DIR/check_task_dependency_chain.py"
-    timeout: 30
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

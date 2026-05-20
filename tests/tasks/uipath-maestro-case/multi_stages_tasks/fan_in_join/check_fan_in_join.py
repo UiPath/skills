@@ -13,7 +13,9 @@ from _shared.case_check import (  # noqa: E402
     find_triggers,
     first_rule_of_condition,
     iter_stage_entry_conditions,
+    payload_contains,
     read_caseplan,
+    start_debug,
     task_is_skeleton,
 )
 
@@ -109,12 +111,18 @@ def main():
                     f"connector tasks); got data keys {sorted(data.keys())}"
                 )
 
+    payload = start_debug(timeout=540)
+    payload_contains(
+        payload, "Triage", "Validate", "Enrich", "Join", require_all=False
+    )
+    status = payload.get("finalStatus") or payload.get("status")
+
     print(
         "OK: diamond topology Triage→{Validate,Enrich}→Join with two "
         "selected-stage-completed entry rules on Join referencing both upstream "
         "stages; 5 skeleton tasks across 4 stages cover 5 plugin types "
         "(Triage:{rpa, api-workflow}, Validate:action, Enrich:agent, "
-        "Join:case-management) all with empty data"
+        f"Join:case-management) all with empty data; debug payload returned (status={status})"
     )
 
 

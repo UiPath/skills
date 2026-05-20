@@ -15,7 +15,9 @@ from _shared.case_check import (  # noqa: E402
     get_variables,
     iter_stage_entry_conditions,
     iter_tasks,
+    payload_contains,
     read_caseplan,
+    start_debug,
 )
 
 
@@ -208,6 +210,12 @@ def main():
                 f"got {match.get('type')!r}"
             )
 
+    payload = start_debug(timeout=540)
+    payload_contains(
+        payload, "Intake", "Review", "Decision", require_all=False
+    )
+    status = payload.get("finalStatus") or payload.get("status")
+
     print(
         "OK: 3 stages (Intake → Review → Decision) with single-outbound edge "
         "labels matching target stage names (rule #3); case-entered on Intake; "
@@ -217,7 +225,8 @@ def main():
         "current-stage-entered task-entry; root has all 7 Variable types "
         "(boolean skipReview, string caseRef In + finalDecision Out, date "
         "dueDate, object caseMetadata, array attachments, jsonSchema caseSchema) "
-        "with caseRef bridged through trigger output mapping"
+        f"with caseRef bridged through trigger output mapping; debug payload "
+        f"returned (status={status})"
     )
 
 

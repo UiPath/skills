@@ -14,7 +14,9 @@ from _shared.case_check import (  # noqa: E402
     first_rule_of_condition,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
+    payload_contains,
     read_caseplan,
+    start_debug,
 )
 
 
@@ -131,12 +133,19 @@ def main():
             f"'____top' (custom override); got {tgt_handle!r}"
         )
 
+    payload = start_debug(timeout=540)
+    payload_contains(
+        payload, "Triage", "Approved Path", "Rejected Path", "Pending Path",
+        require_all=False,
+    )
+    status = payload.get("finalStatus") or payload.get("status")
+
     print(
         "OK: Triage WIDE fan-outs to Approved/Rejected/Pending (3 branches); exits "
         "cover wait-for-user + exit-only(marks-complete:false) + exit-only(marks-"
         "complete:TRUE on Pending wait-for-connector); Approved Path has "
         "user-selected-stage entry; all three edge labels present; Triage→Rejected "
-        "uses custom handles (bottom→top)"
+        f"uses custom handles (bottom→top); debug payload returned (status={status})"
     )
 
 
