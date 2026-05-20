@@ -144,7 +144,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "case-level slaRules (v20 metadata.slaRules) has 2 conditional rules in priority order — Urgent (30min, sla-breached UserGroup escalation) then Standard (5d) — followed by default 3w with MULTI-RECIPIENT at-risk escalation (User + UserGroup on one notification); Resolve stage carries its own data.slaRules with default 1m (unit=m) AND data.description set; together SLA units min/d/w/m all exercised"
+    description: "case-level slaRules (metadata.slaRules) has 2 conditional rules in priority order — Urgent (30min, sla-breached UserGroup escalation) then Standard (5d) — followed by default 3w with MULTI-RECIPIENT at-risk escalation (User + UserGroup on one notification); Resolve stage carries its own data.slaRules with default 1m (unit=m) AND data.description set; together SLA units min/d/w/m all exercised"
     command: "python3 $TASK_DIR/check_sla_with_escalation.py"
     timeout: 30
     expected_exit_code: 0

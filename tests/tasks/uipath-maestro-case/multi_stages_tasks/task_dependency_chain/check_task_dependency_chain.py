@@ -122,7 +122,7 @@ def main():
         )
     if not task_is_skeleton(optional_audit):
         sys.exit(
-            f"FAIL: 'Optional Audit' must be a v20 skeleton process task — "
+            f"FAIL: 'Optional Audit' must be a skeleton process task — "
             f"data.name/data.folderPath must be absent; got data keys "
             f"{sorted((optional_audit.get('data') or {}).keys())}"
         )
@@ -205,7 +205,7 @@ def main():
         "selected-tasks-completed; First Step uses timeDuration+repeat=5; "
         "Second Step uses timeCycle R3/PT2H; root variables 'region' (string) "
         "and 'priorityScore' (number); 'Optional Audit' is a process-typed "
-        "v20 skeleton task (no data.name / data.folderPath)"
+        "skeleton task (no data.name / data.folderPath)"
     )
 
 
