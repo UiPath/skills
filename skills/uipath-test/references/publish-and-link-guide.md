@@ -7,10 +7,10 @@ End-to-end pipeline: take a UiPath project's coded `[TestCase]` (or any test ent
 ```
 uip rpa pack            → .nupkg
 uip or packages upload  → package on Orchestrator feed
-uip or folders list-current-user  → folder UUID (the --folder-key value)
+uip or folders list-current-user   → folder UUID (the --folder-key value)
 uip tm testcases list-automations  → test entry point name (the --test-name value)
 uip tm testcases link-automation   → test case is bound
-uip tm testcases run  / testsets run   → run
+uip tm testcases run  / testsets run  → run
 uip tm wait              → block until terminal
 ```
 
@@ -73,9 +73,9 @@ uip tm testcases link-automation \
 
 The output should show `Result: "Linked"`. `link-automation` is idempotent on the `(test-case-key, package-name, test-name)` triple — re-running with the same triple replaces the previous link.
 
-## Step 6 — Execute
+## Step 6 — Run
 
-Two execution modes — pick one:
+Two run modes — pick one:
 
 **Single test case** — uses `--test-case-id <UUID>`, NOT `--test-case-key`. Get the UUID from `uip tm testcases list --output json` (`Id` field):
 
@@ -103,9 +103,9 @@ For result download, attachment download, and report generation: see [/uipath:ui
 
 ## Common pitfalls
 
-- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`).** `link-automation`, `unlink-automation`, `update`, `delete`, `list-testsets` use `--test-case-key`. `run`, `list-steps`, `list-result-history` use `--test-case-id`. They are NOT interchangeable.
+- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`) vs `--test-case-keys` (plural, comma-separated).** Use `--test-case-key` for `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Use `--test-case-id` for `run`, `list-steps`, `list-result-history`. Use `--test-case-keys` (plural) for the bulk-association verbs `testcases add` / `testcases remove`. They are NOT interchangeable.
 - **Wrong folder identifier.** `link-automation` requires the UUID. A folder name or path passed in `--folder-key` fails silently with "folder not found" or links to the wrong folder.
 - **Re-uploading the same package version.** Orchestrator rejects duplicates. Bump `--package-version` (or `project.json` `projectVersion`) on every change.
-- **Linking before upload.** `link-automation` does not validate the package exists on Orchestrator at link time — it only validates at execute time. A stale `--package-name` value silently links to nothing and the next execute fails with `package not found`. Always discover via `list-automations` (Step 4) before linking.
+- **Linking before upload.** `link-automation` does not validate the package exists on Orchestrator at link time — it only validates at run time. A stale `--package-name` value silently links to nothing and the next run fails with `package not found`. Always discover via `list-automations` (Step 4) before linking.
 - **Trying `uip tm testcases link` (no suffix).** The command is `link-automation`. Same for `unlink-automation`. See [/uipath:uipath-test § Anti-patterns](../SKILL.md#anti-patterns).
 - **Using the old singular names (`testcase`, `testset`, `execution`).** They were renamed to plural. See [/uipath:uipath-test § Anti-patterns](../SKILL.md#anti-patterns).
