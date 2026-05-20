@@ -43,7 +43,6 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-troubleshoot": 70,
     "uipath-maestro-bpmn": 60,
     "uipath-coded-apps": 60,
-    "uipath-llm-configuration-byo-connections": 60,
     "uipath-agents": 55,
     "uipath-maestro-case": 45,
     "uipath-review": 20,

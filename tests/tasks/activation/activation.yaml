@@ -20,7 +20,6 @@ dataset:
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
     - uipath-human-in-the-loop.jsonl
-    - uipath-llm-configuration-byo-connections.jsonl
     - uipath-maestro-bpmn.jsonl
     - uipath-maestro-case.jsonl
     - uipath-maestro-flow.jsonl
@@ -72,11 +71,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-human-in-the-loop activation"
     skill_name: uipath-human-in-the-loop
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-  - type: skill_triggered
-    description: "uipath-llm-configuration-byo-connections activation"
-    skill_name: uipath-llm-configuration-byo-connections
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
