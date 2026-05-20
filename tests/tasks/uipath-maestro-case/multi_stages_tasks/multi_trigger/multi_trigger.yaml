@@ -35,27 +35,71 @@ initial_prompt: |
   Write the sdd.md to disk first, then build from it.
 
   ```
-  # MultiTrigger
+  # SDD — MultiTrigger
 
-  ## Triggers
-  - Manual trigger — user-initiated start of the case.
-  - Timer trigger (display-name: "Hourly") — runs every 1 hour (no
-    fixed start time, no repeat count). Use the canonical ISO 8601
-    repeating-interval form "R/PT1H".
-  - Timer trigger (display-name: "Daily 9am Limited") — runs every day
-    at 09:00 UTC, 5 times total. Use the canonical bounded form
-    "R5/2026-04-26T09:00:00.000Z/P1D" — five repetitions starting at
-    2026-04-26T09:00:00 UTC, with a 1-day cadence. This exercises the
-    bounded-count and explicit-start-time branches of the timer
-    plugin's timeCycle composition.
+  **Case Definition Blueprint** · Generic — Multi-Trigger Coverage
 
-  ## Stages
-  - Run (regular stage) — receives the case after any trigger fires.
+  Three case-level triggers — one manual, one infinite timer (R/PT1H), one bounded + scheduled timer (R5/<iso>/P1D) — each with its own outgoing edge to a single Run stage. Exercises the multi-trigger code path (≥3 trigger nodes, three TriggerEdges), the manual trigger plugin's serviceType "None", AND all three forms of the timer plugin's timeCycle composition — infinite (R), bounded (R<n>), and bounded-with-explicit-start-time (R<n>/<iso>/<dur>).
 
-  ## Flow
-  - Manual trigger → Run
-  - Timer trigger "Hourly" → Run
-  - Timer trigger "Daily 9am Limited" → Run
+  Prepared date: 2026-05-19
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | MultiTrigger |
+  | Case Description | Three case-level triggers (manual + two timer triggers) each fire the case into a single Run stage. |
+  | Case Identifier | Prefix: MT, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Display Name | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | (default) | User-initiated start of the case. serviceType "None". | - |
+  | timer | Hourly | timeCycle "R/PT1H" — infinite repeating interval, every 1 hour, no fixed start time, no repeat count. | - |
+  | timer | Daily 9am Limited | timeCycle "R5/2026-04-26T09:00:00.000Z/P1D" — five repetitions starting at 2026-04-26T09:00:00 UTC with a 1-day cadence. Exercises the bounded-count and explicit-start-time branches of the timer plugin's timeCycle composition. | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Run (`run`)
+  **Type:** Stage
+  **Description:** Receives the case after any trigger fires. Each of the three triggers carries its own TriggerEdge to this stage.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the

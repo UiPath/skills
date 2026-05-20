@@ -32,50 +32,105 @@ initial_prompt: |
   Write the sdd.md to disk first, then build from it.
 
   ```
-  # CaseExitFull
+  # SDD — CaseExitFull
 
-  ## Trigger
-  - Manual trigger — user-initiated start of the case.
+  **Case Definition Blueprint** · Generic — Case-Exit Rule Matrix Coverage
 
-  ## Stages
-  - Intake (regular stage, isRequired: true) — must complete for case
-    completion.
-  - Audit (regular stage, isRequired: false) — optional follow-up; gated
-    by an external submission event.
-  - Archive (regular stage, isRequired: true) — terminal stage of the
-    linear flow.
+  A three-stage linear flow exercising every case-exit rule-type plus a wait-for-connector stage-entry. Closes the case-exit rule-type matrix (required-stages-completed, wait-for-connector, selected-stage-exited, selected-stage-completed) across both marks-case-complete shapes.
 
-  ## Flow
-  - Manual trigger → Intake
-  - Intake → Audit
-  - Audit → Archive
+  Prepared date: 2026-05-19
 
-  ## Stage Entry Conditions
-  - Audit — stage entry condition (display-name: "On submission event",
-    rule-type: wait-for-connector,
-    condition-expression: "event.type == 'submission_received'",
-    is-interrupting: false).
+  ## Section 1: Case Definition
 
-  ## Case Exit Conditions
-  - Case-exit condition (display-name: "All required stages done",
-    marks-case-complete: true,
-    rule-type: required-stages-completed). Default completion path —
-    fires when every isRequired:true stage has completed.
-  - Case-exit condition (display-name: "Cancel signal received",
-    marks-case-complete: true,
-    rule-type: wait-for-connector,
-    condition-expression: "event.type == 'case_cancel'"). External
-    cancel/close event.
-  - Case-exit condition (display-name: "Audit aborted",
-    marks-case-complete: false,
-    rule-type: selected-stage-exited,
-    selected-stage: "Audit"). Non-completing exit when Audit exits
-    without completing.
-  - Case-exit condition (display-name: "Archive observed",
-    marks-case-complete: false,
-    rule-type: selected-stage-completed,
-    selected-stage: "Archive"). Non-completing observability hook fired
-    when Archive completes (does NOT close the case).
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | CaseExitFull |
+  | Case Description | Three-stage linear flow with four case-exit conditions covering all rule-types and both marks-case-complete shapes; Audit gated by a wait-for-connector stage-entry. |
+  | Case Identifier | Prefix: CEF, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed ("All required stages done") | - | Default completion path; fires when every isRequired:true stage has completed. | Yes |
+  | wait-for-connector ("Cancel signal received") | =event.type == 'case_cancel' | External cancel/close event closes the case. | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | selected-stage-exited ("Audit aborted") | selected-stage: Audit | Non-completing exit when Audit exits without completing. | No |
+  | selected-stage-completed ("Archive observed") | selected-stage: Archive | Non-completing observability hook fired when Archive completes (does NOT close the case). | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Intake (`intake`)
+  **Type:** Stage
+  **Description:** Initial stage; must complete for case completion.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+
+  ### Stage 2: Audit (`audit`)
+  **Type:** Stage
+  **Description:** Optional follow-up; gated by an external submission event.
+  **Required for Case Completion:** No
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | wait-for-connector ("On submission event") | =event.type == 'submission_received' | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+
+  ### Stage 3: Archive (`archive`)
+  **Type:** Stage
+  **Description:** Terminal stage of the linear flow.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the

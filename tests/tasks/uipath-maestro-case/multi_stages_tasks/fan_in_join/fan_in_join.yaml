@@ -38,58 +38,230 @@ initial_prompt: |
   Write the sdd.md to disk first, then build from it.
 
   ```
-  # FanInJoin
+  # SDD — FanInJoin
 
-  ## Trigger
-  - Manual trigger — user-initiated start of the case.
+  **Case Definition Blueprint** · Generic — Diamond Topology with Five Task-Type Coverage
 
-  ## Stages
-  - Triage (regular stage) — initial stage; fans out to two parallel
-    branches.
-  - Validate (regular stage) — first parallel branch.
-  - Enrich (regular stage) — second parallel branch.
-  - Join (regular stage) — joins both branches; activates after BOTH
-    upstream branches have completed.
+  A diamond topology where Triage splits into two parallel branches (Validate, Enrich) that both feed into a single Join stage. Join carries two selected-stage-completed entry rules. Five non-timer tasks across the four stages cover five distinct plugin types (rpa, api-workflow, action, agent, case-management) — all registry-unresolved skeletons.
 
-  ## Flow
-  - Manual trigger → Triage
-  - Triage → Validate
-  - Triage → Enrich
-  - Validate → Join
-  - Enrich → Join
+  > **Unresolved-fallback rule.** None of the task references below are registered in the tenant. For every task the agent MUST follow the unresolved-fallback rule: leave the identifier (taskTypeId / connection-id) as `<UNRESOLVED: ...>`, omit inputs/outputs/folder fields, and emit a SKELETON task (correct `type` value, empty `data: {}`). DO NOT fabricate a taskTypeId. Each TaskId is still captured.
 
-  ## Stage Entry Conditions
-  - Join — stage entry condition (display-name: "After Validate",
-    rule-type: selected-stage-completed, selected-stage: "Validate",
-    is-interrupting: false). Fires when Validate completes.
-  - Join — stage entry condition (display-name: "After Enrich",
-    rule-type: selected-stage-completed, selected-stage: "Enrich",
-    is-interrupting: false). Fires when Enrich completes.
+  Prepared date: 2026-05-19
 
-  ## Tasks
-  None of the resources below are registered in the tenant. The agent
-  MUST follow the unresolved-fallback rule for every task: leave the
-  identifier (taskTypeId / connection-id) as `<UNRESOLVED: ...>`, omit
-  inputs/outputs/folder fields, and emit a SKELETON task (correct
-  `type` value, empty `data: {}`). DO NOT fabricate a taskTypeId. Each
-  TaskId is still captured.
+  ## Section 1: Case Definition
 
-  - Triage Robot (rpa task) — placed in the "Triage" stage.
-    - Component type: RPA (UiPath robot reference).
-    - RPA Reference: Name "Initial Robot Triage", Folder "Shared".
-  - Triage API (api-workflow task) — placed in the "Triage" stage,
-    sibling of "Triage Robot".
-    - Component type: API_WORKFLOW (UiPath Coded API workflow).
-    - API Workflow Reference: Name "Triage API Workflow", Folder "Shared".
-  - Validate Submission (action task) — placed in the "Validate" stage.
-    - Component type: ACTION (UiPath Action App reference).
-    - Action App Reference: Name "Validate Submission", Folder "Shared".
-  - Enrich Data (agent task) — placed in the "Enrich" stage.
-    - Component type: AGENT (UiPath agent reference).
-    - Agent Reference: Name "Enrichment Agent", Folder "Shared".
-  - Sub-Case Review (case-management task) — placed in the "Join" stage.
-    - Component type: CASE_MANAGEMENT (sub-case task).
-    - Sub-Case Reference: Name "Final Review Sub-Case", Folder "Shared".
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | FanInJoin |
+  | Case Description | Diamond topology Triage → {Validate, Enrich} → Join; five skeleton tasks across four stages cover five distinct plugin types. |
+  | Case Identifier | Prefix: FIJ, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Triage (`triage`)
+  **Type:** Stage
+  **Description:** Initial stage; fans out to two parallel branches. Carries two sibling tasks of different types (rpa + api-workflow).
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `triage.triageRobot` | Triage Robot | rpa | (system-driven, UNRESOLVED) |
+  | 2 | `triage.triageApi` | Triage API | api-workflow | (system-driven, UNRESOLVED) |
+
+  ##### Task 1.1: Triage Robot (`triage.triageRobot`)
+
+  **Type:** rpa
+  **Description:** UiPath robot reference. Registry-unresolved → emit as skeleton (empty `data: {}`).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | RPA (UiPath robot reference) |
+  | RPA Reference (Name) | Initial Robot Triage |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: ...>` (do NOT fabricate) |
+
+  ##### Task 1.2: Triage API (`triage.triageApi`)
+
+  **Type:** api-workflow
+  **Description:** UiPath Coded API workflow reference. Registry-unresolved → emit as skeleton (empty `data: {}`).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | API_WORKFLOW (UiPath Coded API workflow) |
+  | API Workflow Reference (Name) | Triage API Workflow |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: ...>` (do NOT fabricate) |
+
+  ### Stage 2: Validate (`validate`)
+  **Type:** Stage
+  **Description:** First parallel branch.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `validate.validateSubmission` | Validate Submission | action | (UNRESOLVED) |
+
+  ##### Task 2.1: Validate Submission (`validate.validateSubmission`)
+
+  **Type:** action
+  **Description:** UiPath Action App reference. Registry-unresolved → emit as skeleton (empty `data: {}`).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | ACTION (UiPath Action App reference) |
+  | Action App Reference (Name) | Validate Submission |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: ...>` (do NOT fabricate) |
+
+  ### Stage 3: Enrich (`enrich`)
+  **Type:** Stage
+  **Description:** Second parallel branch.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `enrich.enrichData` | Enrich Data | agent | (UNRESOLVED) |
+
+  ##### Task 3.1: Enrich Data (`enrich.enrichData`)
+
+  **Type:** agent
+  **Description:** UiPath agent reference. Registry-unresolved → emit as skeleton (empty `data: {}`).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | AGENT (UiPath agent reference) |
+  | Agent Reference (Name) | Enrichment Agent |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: ...>` (do NOT fabricate) |
+
+  ### Stage 4: Join (`join`)
+  **Type:** Stage
+  **Description:** Joins both branches; activates after BOTH upstream branches have completed.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed ("After Validate") | selected-stage: Validate | No |
+  | selected-stage-completed ("After Enrich") | selected-stage: Enrich | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `join.subCaseReview` | Sub-Case Review | case-management | (UNRESOLVED) |
+
+  ##### Task 4.1: Sub-Case Review (`join.subCaseReview`)
+
+  **Type:** case-management
+  **Description:** Sub-case task referencing another case. Registry-unresolved → emit as skeleton (empty `data: {}`).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | CASE_MANAGEMENT (sub-case task) |
+  | Sub-Case Reference (Name) | Final Review Sub-Case |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: ...>` (do NOT fabricate) |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the

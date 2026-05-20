@@ -37,56 +37,131 @@ initial_prompt: |
   schema. Write the sdd.md to disk first, then build from it.
 
   ```
-  # BranchingExit
+  # SDD — BranchingExit
 
-  ## Trigger
-  - Manual trigger — user-initiated start of the case.
+  **Case Definition Blueprint** · Generic — Wide Fan-Out Routing
 
-  ## Stages
-  - Triage (regular stage) — initial stage that decides routing
-    between THREE downstream branches.
-  - Approved Path (regular stage) — receives approved cases.
-  - Rejected Path (regular stage) — receives rejected cases.
-  - Pending Path (regular stage) — receives cases pending external
-    confirmation; entered when Triage's stage exits as COMPLETE on the
-    pending event.
+  A single Triage stage that wide fan-outs (1→3) to three downstream stages via three stage-exit conditions. Exercises both stage-exit types (wait-for-user + exit-only), the user-selected-stage entry rule, branching edge labels, exitToStageId routing, the edge handle override path, and the exit-only + wait-for-connector + marks-stage-complete:true matrix cell.
 
-  ## Flow
-  - Manual trigger → Triage
-  - Triage → Approved Path  (label: "Approved",
-    source-handle: "right", target-handle: "left" — default horizontal
-    routing).
-  - Triage → Rejected Path  (label: "Rejected",
-    source-handle: "bottom", target-handle: "top" — explicit vertical
-    routing for the rejected branch so the Rejected edge drops down
-    instead of using the default right→left layout).
-  - Triage → Pending Path   (label: "Pending"). Default handles.
+  Prepared date: 2026-05-19
 
-  ## Stage Exit Conditions
-  - Triage — stage exit condition (display-name: "Approved",
-    type: wait-for-user, exit-to-stage: "Approved Path",
-    marks-stage-complete: false, rule-type: wait-for-connector,
-    condition-expression: "decision == 'approved'"). Reviewer manually
-    confirms the routing decision before the case advances.
-  - Triage — stage exit condition (display-name: "Rejected",
-    type: exit-only, exit-to-stage: "Rejected Path",
-    marks-stage-complete: false, rule-type: wait-for-connector,
-    condition-expression: "decision == 'rejected'").
-  - Triage — stage exit condition (display-name: "Pending",
-    type: exit-only, exit-to-stage: "Pending Path",
-    marks-stage-complete: TRUE, rule-type: wait-for-connector,
-    condition-expression: "decision == 'pending'"). Note the
-    marks-stage-complete: TRUE — Triage exits AS COMPLETE on this
-    branch (the Pending event closes Triage), distinct from the other
-    two branches which are non-completing routes. This is the
-    exit-only + wait-for-connector + marks-stage-complete:true matrix
-    cell.
+  ## Section 1: Case Definition
 
-  ## Stage Entry Conditions
-  - Approved Path — stage entry condition (display-name: "User selected",
-    rule-type: user-selected-stage, is-interrupting: false). Required so
-    Approved Path is offered in the picker when Triage exits via the
-    wait-for-user route.
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | BranchingExit |
+  | Case Description | Triage stage routes to one of three downstream branches via stage-exit conditions covering wait-for-user, exit-only with marks-complete:false, and exit-only with marks-complete:true. |
+  | Case Identifier | Prefix: BE, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Triage (`triage`)
+  **Type:** Stage
+  **Description:** Initial stage that decides routing between three downstream branches via three stage-exit conditions.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | wait-for-connector ("Approved") | =decision == 'approved' | wait-for-user | Approved Path | No |
+  | wait-for-connector ("Rejected") | =decision == 'rejected' | exit-only | Rejected Path | No |
+  | wait-for-connector ("Pending") | =decision == 'pending' | exit-only | Pending Path | **Yes** |
+
+  Exit notes:
+  - "Approved" exit — type `wait-for-user`. Reviewer manually confirms the routing decision before the case advances.
+  - "Pending" exit — `marks-stage-complete: TRUE`. Triage exits AS COMPLETE on this branch (the Pending event closes Triage), distinct from the other two branches which are non-completing routes. This is the exit-only + wait-for-connector + marks-stage-complete:true matrix cell.
+
+  Edge handles:
+  - Triage → Approved Path: label "Approved", sourceHandle "right", targetHandle "left" (default horizontal routing).
+  - Triage → Rejected Path: label "Rejected", sourceHandle "bottom", targetHandle "top" (explicit vertical routing so the Rejected edge drops down instead of using the default right→left layout).
+  - Triage → Pending Path: label "Pending". Default handles.
+
+  ### Stage 2: Approved Path (`approvedPath`)
+  **Type:** Stage
+  **Description:** Receives approved cases. Offered in the user picker when Triage exits via the wait-for-user route.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | user-selected-stage ("User selected") | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+
+  ### Stage 3: Rejected Path (`rejectedPath`)
+  **Type:** Stage
+  **Description:** Receives rejected cases via Triage's "Rejected" exit-only route.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+
+  ### Stage 4: Pending Path (`pendingPath`)
+  **Type:** Stage
+  **Description:** Receives cases pending external confirmation. Entered when Triage's stage exits AS COMPLETE on the pending event.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
