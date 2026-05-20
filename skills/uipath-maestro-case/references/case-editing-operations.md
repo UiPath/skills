@@ -155,8 +155,8 @@ Used for: debugging, downstream cross-task reference resolution within the same 
 All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `id-map.json`) MUST go through Claude's built-in tools only:
 
 - **Read** to load the file.
-- **Write** to rewrite the whole file.
-- **Edit** for narrowly-scoped, unambiguous in-place replacements.
+- **Edit** for narrowly-scoped, unambiguous in-place replacements — required for all mutations after T01.
+- **Write** only for the T01 scaffold (initial empty-file creation by the `case` plugin). Never inside a per-section Edit batch — see § Per-section batch write contract.
 
 **Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
@@ -221,7 +221,7 @@ edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 3. For Stages: count existing stages, compute `position.x = 100 + count * 500`, `position.y = 200`.
 4. Generate a fresh node ID.
 5. Append the node to `schema.nodes` (stages use `.unshift()` in the CLI — prepend — but either position works for the frontend; prepend to match CLI output exactly).
-6. Write `caseplan.json`.
+6. Edit `caseplan.json` — narrow slice targeting `schema.nodes`. Never whole-file Write.
 
 ### Add an edge
 
@@ -231,7 +231,7 @@ edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 4. Generate a fresh edge ID.
 5. Construct the edge object with `sourceHandle` and `targetHandle` (4 underscores each side).
 6. Append to `schema.edges`.
-7. Write.
+7. Edit — narrow slice targeting `schema.edges`. Never whole-file Write.
 
 ### Add a task to a stage
 
@@ -243,11 +243,11 @@ edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 6. Build the task object per the plugin's JSON Recipe.
 7. For connector tasks, add the auto-injected default entry condition.
 8. Push onto `stageNode.data.tasks[laneIndex]`.
-9. Write.
+9. Edit — narrow slice targeting that stage node's `data.tasks[laneIndex]`. Never whole-file Write.
 
 ### Bind an input
 
-Variable bindings live on the task's `data.inputs[<index>]` entries — each input has either a literal/expression `value` or a cross-task source reference (`sourceStage`, `sourceTask`, `sourceOutput`). Modify the input entry in place and write.
+Variable bindings live on the task's `data.inputs[<index>]` entries — each input has either a literal/expression `value` or a cross-task source reference (`sourceStage`, `sourceTask`, `sourceOutput`). Modify the input entry in place via Edit — narrow slice targeting that input entry. Never whole-file Write.
 
 Details per plugin — see [bindings-and-expressions.md](bindings-and-expressions.md).
 
@@ -257,13 +257,13 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 2. Remove the node from `schema.nodes` by ID.
 3. Remove every edge where `source` or `target` equals the removed node's ID.
 4. If the node was a stage containing a connector task, prune entries from the bindings array (v19: `root.data.uipath.bindings`; v20: top-level `bindings`) referenced only by that task.
-5. Write.
+5. Edit — separate slices for `schema.nodes`, `schema.edges`, and (if applicable) the bindings array. Never whole-file Write.
 
 ### Delete an edge
 
 1. Read.
 2. Filter `schema.edges` by the edge ID.
-3. Write.
+3. Edit — narrow slice targeting `schema.edges`. Never whole-file Write.
 
 ---
 
@@ -281,7 +281,7 @@ See [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md). The upgra
 
 ### Re-wire a stage's outgoing edge
 
-To re-wire an edge's source/target: delete the edge entry from `schema.edges[]` and write a fresh one. Label/handle changes can be applied in place.
+To re-wire an edge's source/target: delete the edge entry from `schema.edges[]` and Edit in a fresh one. Label/handle changes can be applied in place via Edit.
 
 ---
 
