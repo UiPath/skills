@@ -128,7 +128,7 @@ initial_prompt: |
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
   Before starting, load the uipath-maestro-case skill. Read and follow its
@@ -146,7 +146,7 @@ success_criteria:
   - type: run_command
     description: "case-level slaRules (metadata.slaRules) has 2 conditional rules in priority order — Urgent (30min, sla-breached UserGroup escalation) then Standard (5d) — followed by default 3w with MULTI-RECIPIENT at-risk escalation (User + UserGroup on one notification); Resolve stage carries its own data.slaRules with default 1m (unit=m) AND data.description set; together SLA units min/d/w/m all exercised"
     command: "python3 $TASK_DIR/check_sla_with_escalation.py"
-    timeout: 30
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

@@ -12,7 +12,9 @@ from _shared.case_check import (  # noqa: E402
     first_rule_of_condition,
     get_case_exit_conditions,
     iter_stage_entry_conditions,
+    payload_contains,
     read_caseplan,
+    start_debug,
 )
 
 
@@ -125,12 +127,16 @@ def main():
             f"{archive['id']!r}; got {selected_stage_by_rule.get('selected-stage-completed')}"
         )
 
+    payload = start_debug(timeout=540)
+    payload_contains(payload, "Intake", "Audit", "Archive", require_all=False)
+    status = payload.get("finalStatus") or payload.get("status")
+
     print(
         "OK: 3 stages with mixed isRequired (Intake/Archive true, Audit false); "
         "Audit has wait-for-connector stage-entry; case-level exits cover all 4 "
         "rule-types — required-stages-completed + wait-for-connector cancel "
         "(true); selected-stage-exited Audit + selected-stage-completed "
-        "Archive (false)"
+        f"Archive (false); debug payload returned (status={status})"
     )
 
 

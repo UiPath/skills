@@ -9,7 +9,9 @@ from _shared.case_check import (  # noqa: E402
     find_node_by_label,
     get_default_sla,
     get_sla_rules,
+    payload_contains,
     read_caseplan,
+    start_debug,
 )
 
 
@@ -132,13 +134,17 @@ def main():
             f"(stated in sdd.md); got {resolve_desc!r}"
         )
 
+    payload = start_debug(timeout=540)
+    payload_contains(payload, "Resolve", require_all=False)
+    status = payload.get("finalStatus") or payload.get("status")
+
     print(
         "OK: case-level slaRules has Urgent (30min, sla-breached UserGroup "
         "escalation) → Standard (5d) → default =js:true (3w, at-risk 80% "
         "MULTI-RECIPIENT escalation to User manager@corp.com + UserGroup "
         "Operations Leadership); 'Resolve' stage carries its own data.slaRules "
         "with default 1m AND a non-empty data.description; SLA units "
-        "min/d/w/m all exercised"
+        f"min/d/w/m all exercised; debug payload returned (status={status})"
     )
 
 

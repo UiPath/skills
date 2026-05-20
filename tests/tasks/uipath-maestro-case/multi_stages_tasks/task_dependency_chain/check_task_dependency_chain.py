@@ -12,7 +12,9 @@ from _shared.case_check import (  # noqa: E402
     get_variables,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
+    payload_contains,
     read_caseplan,
+    start_debug,
     task_is_skeleton,
 )
 
@@ -197,6 +199,12 @@ def main():
             f"got {priority.get('type')!r}"
         )
 
+    payload = start_debug(timeout=540)
+    payload_contains(
+        payload, "Process", "Finalize", "Done", require_all=False
+    )
+    status = payload.get("finalStatus") or payload.get("status")
+
     print(
         "OK: Process exit required-tasks-completed; Finalize exit "
         "selected-tasks-completed→Done (marksStageComplete=false); Finalize "
@@ -205,7 +213,8 @@ def main():
         "selected-tasks-completed; First Step uses timeDuration+repeat=5; "
         "Second Step uses timeCycle R3/PT2H; root variables 'region' (string) "
         "and 'priorityScore' (number); 'Optional Audit' is a process-typed "
-        "skeleton task (no data.name / data.folderPath)"
+        f"skeleton task (no data.name / data.folderPath); debug payload "
+        f"returned (status={status})"
     )
 
 

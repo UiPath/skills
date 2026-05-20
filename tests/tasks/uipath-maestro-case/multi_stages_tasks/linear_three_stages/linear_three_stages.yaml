@@ -194,7 +194,7 @@ initial_prompt: |
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
   Before starting, load the uipath-maestro-case skill. Read and follow its
@@ -212,7 +212,7 @@ success_criteria:
   - type: run_command
     description: "3 stages + 3 edges (Stage→Stage edge labels use target-stage-name per inference rule #3) + case-entered on Intake; TWO wait-for-timer tasks on Review — Hold For 1 Hour (isRequired:true default + skipCondition + shouldRunOnlyOnce) and Notify Reviewer (isRequired:false) — both carrying current-stage-entered task-entry in DISTINCT laneIndex lanes; root carries 7 variables exercising every Variable type (boolean skipReview, string caseRef In + finalDecision Out, date dueDate, object caseMetadata, array attachments, jsonSchema caseSchema) including the trigger output mapping for caseRef In argument"
     command: "python3 $TASK_DIR/check_linear_three_stages.py"
-    timeout: 30
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

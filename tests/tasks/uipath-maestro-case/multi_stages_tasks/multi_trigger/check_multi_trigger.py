@@ -9,7 +9,9 @@ from _shared.case_check import (  # noqa: E402
     assert_count,
     find_node_by_label,
     find_triggers,
+    payload_contains,
     read_caseplan,
+    start_debug,
 )
 
 
@@ -80,9 +82,14 @@ def main():
             f"FAIL: TriggerEdge sources {sources} != trigger ids {expected_sources}"
         )
 
+    payload = start_debug(timeout=540)
+    payload_contains(payload, "Run", require_all=False)
+    status = payload.get("finalStatus") or payload.get("status")
+
     print(
         "OK: 3 triggers (manual + infinite hourly R/PT1H + bounded daily "
-        "R5/2026-04-26T09:00:00.000Z/P1D) each with its own TriggerEdge to Run"
+        "R5/2026-04-26T09:00:00.000Z/P1D) each with its own TriggerEdge to Run; "
+        f"debug payload returned (status={status})"
     )
 
 

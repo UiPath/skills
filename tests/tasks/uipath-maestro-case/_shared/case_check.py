@@ -342,6 +342,35 @@ def run_debug(
     Studio Web cannot resolve connector resources and the debug call
     surfaces a "Resource is not configured" warning instead of running.
     """
+    payload = start_debug(
+        timeout=timeout,
+        project_glob=project_glob,
+        solution_glob=solution_glob,
+        refresh_timeout=refresh_timeout,
+    )
+    status = (payload or {}).get("finalStatus")
+    if status != "Completed":
+        _fail(f"Case did not complete (finalStatus={status})\nPayload: {json.dumps(payload, default=str)[:2000]}")
+    return payload
+
+
+def start_debug(
+    *,
+    timeout: int = 540,
+    project_glob: str = "**/project.uiproj",
+    solution_glob: str = "**/*.uipx",
+    refresh_timeout: int = 120,
+) -> dict:
+    """Like ``run_debug`` but does NOT require ``finalStatus == Completed``.
+
+    Use for multi-stage cases whose tasks intentionally suspend (wait-for-timer,
+    wait-for-connector, wait-for-user, SLA) and therefore never reach a
+    Completed status in a single debug run. Returns the parsed ``Data``
+    payload so callers can assert structural debug progress.
+
+    Exits if the debug command fails to launch / does not return parseable
+    JSON. A non-Completed ``finalStatus`` is NOT a failure here.
+    """
     project_dir = find_project_dir(project_glob)
     solution_dir = find_solution_dir(solution_glob)
 
@@ -370,10 +399,30 @@ def run_debug(
     if data is None:
         _fail(f"Could not parse JSON from case debug\n{r.stdout}")
     payload = data.get("Data") if isinstance(data, dict) and "Data" in data else data
-    status = (payload or {}).get("finalStatus")
-    if status != "Completed":
-        _fail(f"Case did not complete (finalStatus={status})\n{r.stdout}")
+    if not isinstance(payload, dict):
+        _fail(f"case debug payload is not a JSON object: {type(payload).__name__}\n{r.stdout[:1000]}")
     return payload
+
+
+def payload_contains(
+    payload: dict, *needles: str, require_all: bool = True
+) -> None:
+    """Assert that each needle appears (case-insensitive) somewhere in the
+    stringified debug payload. Use this for structure-agnostic checks that a
+    given stage / task / variable was referenced by the debug run.
+    """
+    haystack = json.dumps(payload, default=str).lower()
+    missing = [n for n in needles if n.lower() not in haystack]
+    if require_all and missing:
+        _fail(
+            f"debug payload missing references: {missing}\n"
+            f"Payload (first 2000 chars): {haystack[:2000]}"
+        )
+    if not require_all and len(missing) == len(needles):
+        _fail(
+            f"debug payload missing all of: {list(needles)}\n"
+            f"Payload (first 2000 chars): {haystack[:2000]}"
+        )
 
 
 # Keys that hold runtime metadata, not task outputs. Excluded from
