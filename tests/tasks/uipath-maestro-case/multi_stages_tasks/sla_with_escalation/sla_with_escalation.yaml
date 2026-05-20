@@ -43,53 +43,87 @@ initial_prompt: |
   below. Use v20 schema. Write the sdd.md to disk first, then build from it.
 
   ```
-  # SlaWithEscalation
+  # SDD — SlaWithEscalation
 
-  ## Trigger
-  - Manual trigger — user-initiated start of the case.
+  **Case Definition Blueprint** · Generic — SLA Rule & Escalation Coverage
 
-  ## Stages
-  - Resolve (regular stage) — receives the case after the manual trigger.
-    Description: "Active resolution stage; carries its own monthly SLA."
+  Root-level SLA with TWO conditional overrides plus a regular-stage SLA — covering four of the five SLA units (min/d/w/m) in one test. Exercises multiple slaRules in priority order, conditional-rule expression-driven SLA, escalation attached to a conditional rule (not just the default), both escalation trigger types (at-risk + sla-breached), both recipient scopes (User + UserGroup), MULTI-RECIPIENT escalation (≥2 recipients on one notification), and regular-Stage data.slaRules.
 
-  ## Flow
-  - Manual trigger → Resolve
+  > **Unresolved recipients.** Recipient UUIDs are not provided. The agent MUST leave them as UNRESOLVED skeletons per the skill rules; do NOT fabricate UUIDs.
 
-  ## SLA
-  - Default SLA on root case: 3 weeks (unit: w).
-  - Default SLA on stage "Resolve": 1 month (unit: m). Stage-level SLA
-    on a regular Stage — overrides the root default while Resolve is
-    active.
-  - Conditional SLA rule on root case (root-only): when the case priority
-    is "Urgent", override the default SLA to 30 minutes (unit: min).
-    Describe the condition in natural language ("priority is Urgent")
-    — the execution phase translates the expression.
-  - Conditional SLA rule on root case (root-only): when the case
-    priority is "Standard", override the default SLA to 5 days (unit:
-    d). Describe the condition in natural language ("priority is
-    Standard"). Insertion order: AFTER the Urgent rule (Urgent is
-    higher priority and must win when both expressions are truthy).
-    Together with the Urgent (min), root default (w), Resolve default
-    (m), and the Issues-stage SLA in the exception_stage test (h),
-    this covers the full SLA unit set min/h/d/w/m.
-  - Escalation rule on root case (attached to the **default** SLA) —
-    MULTI-RECIPIENT (≥2 recipients on a single notification):
-    - trigger-type: at-risk
-    - at-risk-percentage: 80
-    - recipients:
-      - User: manager@corp.com  (UUID not provided — leave as
-        UNRESOLVED per the skill rules; do NOT fabricate a UUID).
-      - UserGroup: "Operations Leadership"  (UUID not provided —
-        leave as UNRESOLVED per the skill rules; do NOT fabricate a
-        UUID). Both recipients receive the same at-risk notification.
-    - display-name: "Notify Manager + Ops Leadership"
-  - Escalation rule on root case (attached to the **conditional Urgent
-    rule** above, not the default):
-    - trigger-type: sla-breached
-    - recipient-scope: UserGroup
-    - recipient-value: "Incident Response Team"  (UUID not provided —
-      leave as UNRESOLVED per the skill rules).
-    - display-name: "Notify Incident Response"
+  Prepared date: 2026-05-19
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | SlaWithEscalation |
+  | Case Description | Root-level SLA with two conditional overrides (Urgent 30min, Standard 5d) and a default of 3w; Resolve stage carries its own 1m SLA. |
+  | Case Identifier | Prefix: SWE, Type: constant |
+  | Priority | Choiceset: Urgent, Standard - Default: Standard |
+  | Case-Level SLA | 3w (default) |
+  | SLA Type | Conditional (two condition-driven overrides + default) |
+
+  ### 1.2 SLA Escalation
+
+  Case-level slaRules (priority order — first match wins):
+
+  | # | Rule Type | Expression | Duration | Unit | Escalation |
+  |---|---|---|---|---|---|
+  | 1 | Conditional | priority is Urgent | 30 | min | sla-breached → UserGroup "Incident Response Team" (UNRESOLVED). Display name: "Notify Incident Response". |
+  | 2 | Conditional | priority is Standard | 5 | d | - |
+  | 3 | Default | - | 3 | w | at-risk @ 80% → MULTI-RECIPIENT (User manager@corp.com UNRESOLVED + UserGroup "Operations Leadership" UNRESOLVED). Display name: "Notify Manager + Ops Leadership". |
+
+  Insertion order matters — Urgent must precede Standard so Urgent wins when both expressions are truthy.
+
+  Together with the Urgent (min), root default (w), Resolve default (m), and the Issues-stage SLA in the exception_stage test (h), this covers the full SLA unit set min/h/d/w/m.
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Resolve (`resolve`)
+  **Type:** Stage
+  **Description:** Active resolution stage; carries its own monthly SLA. Receives the case after the manual trigger.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  **Stage SLA**
+
+  Stage-level data.slaRules — overrides the root default while Resolve is active. Stage data.description is set to "Active resolution stage; carries its own monthly SLA."
+
+  | # | Rule Type | Duration | Unit | Escalation |
+  |---|---|---|---|---|
+  | 1 | Default | 1 | m | - |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the

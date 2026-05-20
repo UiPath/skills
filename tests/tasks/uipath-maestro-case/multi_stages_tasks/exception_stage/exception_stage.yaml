@@ -39,75 +39,131 @@ initial_prompt: |
   schema. Write the sdd.md to disk first, then build from it.
 
   ```
-  # ExceptionStage
+  # SDD — ExceptionStage
 
-  ## Trigger
-  - Manual trigger — user-initiated start of the case.
+  **Case Definition Blueprint** · Generic — Exception Stage Coverage
 
-  ## Stages
-  - Process (regular stage) — main processing stage.
+  One regular Process stage plus TWO ExceptionStage nodes (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin. Exercises multi-exception flow, no-edges wiring, interrupting entry (selected-stage-exited + wait-for-connector), return-to-origin exit, ExceptionStage SLA with sla-breached escalation, UserGroup recipient scope, a task embedded inside an ExceptionStage, and the wait-for-timer plugin's timeDate branch.
 
-  ## Exception Stages
-  - Issues (exception stage / secondary stage) — handles errors that occur
-    while Process is active. Has no inbound or outbound edges; reached via
-    an interrupting stage-entry condition only.
-  - Critical (exception stage / secondary stage) — handles a hard fault
-    event from the connector. Has no inbound or outbound edges; reached
-    via an interrupting wait-for-connector entry condition only.
+  Prepared date: 2026-05-19
 
-  ## Flow
-  - Manual trigger → Process
-  - (Issues and Critical have no edges — exception stages are detached
-    from the edge graph.)
+  ## Section 1: Case Definition
 
-  ## Tasks
-  - Acknowledge Issue (wait-for-timer) — placed in the "Issues"
-    exception stage.
-    - Component type: TIMER (built-in).
-    - Trigger style: SPECIFIC DATETIME (`at`, not `every`). Wait until
-      2026-05-01T09:00:00.000Z. The plugin should write
-      `data.timerType = "timeDate"` and
-      `data.timeDate = "2026-05-01T09:00:00.000+00:00"` (ISO 8601
-      datetime with timezone offset and milliseconds, per the
-      wait-for-timer impl-json contract). This exercises the
-      timeDate branch of the timer plugin that no other multi_stages_tasks
-      test covers.
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | ExceptionStage |
+  | Case Description | One regular Process stage plus two ExceptionStage nodes (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin. |
+  | Case Identifier | Prefix: ES, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
 
-  ## Task Entry Conditions
-  - Acknowledge Issue — task entry condition (display-name: "On Issues
-    entered", rule-type: current-stage-entered).
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
 
-  ## Stage Entry Conditions
-  - Issues — interrupting entry condition (display-name: "On Process exit",
-    rule-type: selected-stage-exited, selected-stage: "Process",
-    is-interrupting: true). Fires when Process exits and interrupts the
-    active stage.
-  - Critical — interrupting entry condition (display-name: "On fault
-    event", rule-type: wait-for-connector,
-    condition-expression: "event.type == 'critical_fault'",
-    is-interrupting: true). Fires when the connector reports a critical
-    fault event and interrupts the active stage.
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
 
-  ## Stage Exit Conditions
-  - Issues — return-to-origin exit (display-name: "Resume after handling",
-    type: return-to-origin, marks-stage-complete: true,
-    rule-type: wait-for-connector,
-    condition-expression: "issue.resolved == true"). Routes the case back
-    to the originating stage once the issue is resolved.
-  - Critical — return-to-origin exit (display-name: "Resume after
-    fault cleared", type: return-to-origin,
-    marks-stage-complete: true, rule-type: wait-for-connector,
-    condition-expression: "fault.cleared == true"). Routes the case
-    back to the originating stage once the fault clears.
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
 
-  ## SLA
-  - Default SLA on stage "Issues": 2 hours.
-  - Escalation on stage "Issues" (attached to the default SLA):
-    - trigger-type: sla-breached
-    - recipient-scope: UserGroup
-    - recipient-value: "Issue Resolution Team"  (UUID not provided —
-      leave as UNRESOLVED per the skill rules; do NOT fabricate a UUID).
-    - display-name: "Notify Resolution Team"
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Process (`process`)
+  **Type:** Stage
+  **Description:** Main processing stage. Exits trigger the Issues ExceptionStage.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+
+  ### Stage 2: Issues (`issues`)
+  **Type:** ExceptionStage
+  **Description:** Handles errors that occur while Process is active. Has no inbound or outbound edges — exception stages are detached from the edge graph; reached via an interrupting stage-entry condition only.
+  **Required for Case Completion:** No
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-exited ("On Process exit") | selected-stage: Process | **Yes** |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | return-to-origin | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | wait-for-connector ("Resume after handling") | =issue.resolved == true | return-to-origin | (origin) | Yes |
+  **Stage SLA**
+
+  | Threshold | Trigger | Recipient |
+  |---|---|---|
+  | Default | 2h | - |
+  | Breached | sla-breached ("Notify Resolution Team") | UserGroup: Issue Resolution Team (UUID UNRESOLVED per the skill rules; do NOT fabricate) |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `issues.acknowledgeIssue` | Acknowledge Issue | wait-for-timer | (system-driven) |
+
+  ##### Task 2.1: Acknowledge Issue (`issues.acknowledgeIssue`)
+
+  **Type:** wait-for-timer
+  **Description:** Waits until a specific datetime before acknowledging the issue. Exercises the timeDate branch of the timer plugin (specific datetime `at`, not `every`).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered ("On Issues entered") | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Trigger Style | SPECIFIC DATETIME (`at`, not `every`) |
+  | Timer Type | timeDate |
+  | Time Date | 2026-05-01T09:00:00.000+00:00 (ISO 8601 datetime with timezone offset and milliseconds, per the wait-for-timer impl-json contract) |
+
+  ### Stage 3: Critical (`critical`)
+  **Type:** ExceptionStage
+  **Description:** Handles a hard fault event from the connector. Has no inbound or outbound edges; reached via an interrupting wait-for-connector entry condition only.
+  **Required for Case Completion:** No
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | wait-for-connector ("On fault event") | =event.type == 'critical_fault' | **Yes** |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | return-to-origin | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | wait-for-connector ("Resume after fault cleared") | =fault.cleared == true | return-to-origin | (origin) | Yes |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
