@@ -22,7 +22,7 @@ Use a connector trigger node when the flow should **start automatically in respo
 
 ### When NOT to Use
 
-- **No connector exists for the service** — use a scheduled trigger with `core.action.http` polling instead
+- **No connector exists for the service** — use a scheduled trigger with `core.action.http.v2` polling instead
 - **The event is time-based, not data-driven** — use `core.trigger.scheduled`
 - **The flow should be started manually** — use `core.trigger.manual`
 - **You need to react to UiPath Orchestrator queue items** — use a queue trigger (separate mechanism)

@@ -26,7 +26,7 @@ Prefer higher tiers when connecting to external services:
 ### When NOT to Use
 
 - **No connector exists for the service** — use `core.action.http.v2` manual mode instead
-- **Simple GET request with no auth** — `core.action.http` is simpler and faster to configure
+- **Simple GET request with no auth** — `core.action.http.v2` (manual mode) is simpler and faster to configure
 - **The operation needs desktop/browser interaction** — use an RPA resource node
 - **The task requires reasoning or judgment** — use an agent node
 
@@ -118,4 +118,4 @@ Note as `managed-http: <service> — <operation>` during planning.
 
 In the architectural plan, annotate connector nodes as:
 - `connector: <service-name>` with the intended operation (e.g., "connector: Jira — create issue")
-- If discovery found no connector, fall back to `core.action.http` or flag the gap in Open Questions
+- If discovery found no connector, fall back to `core.action.http.v2` (manual mode) or flag the gap in Open Questions
