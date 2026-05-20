@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '_shared'))
 from admin_helpers import run_cli, find_one, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="check_group: %(message)s")
