@@ -7,6 +7,8 @@ tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 50
 
 sandbox:

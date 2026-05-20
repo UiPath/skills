@@ -5,14 +5,15 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
 ## Prerequisites
 
 - Authenticated session
-- A test manager project id
-- A test manager testset id
+- CLI surface probed (see [/uipath:uipath-test § Critical Rules #2](../SKILL.md#critical-rules)). Commands below use the post-rename shape; translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table on a pre-rename CLI.
+- A Test Manager project key
+- A Test Manager test set key
 
 ---
 
 ## Workflow
 
-1. **Fetch test executions from the testset**
+1. **Fetch test executions from the test set**
    - Use options like `status`, `execution-type`, `execution-finished-interval` to filter results as needed
 
 2. **Determine the report persona**
@@ -81,7 +82,7 @@ When the user asks for further details, use this loop:
 
 <!-- | User asks about | Command |
 |---|---|
-| Regression history for a test case | `uip tm testcase list-result-history --project-key <KEY> --test-case-id <ID>` |
+| Regression history for a test case | `uip tm testcases list-result-history --project-key <KEY> --test-case-id <ID>` |
 | Failing assertions for a test case log | `uip tm testcaselog list-assertions --project-key <KEY> --test-case-log-id <ID>` |
 | Attachments for an execution | `uip tm attachment download --execution-id <ID>` | -->
 

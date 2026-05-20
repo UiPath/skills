@@ -1,0 +1,49 @@
+task_id: skill-admin-audit-org-events-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to query
+  ORG-scoped audit events for a bounded window. Mirrors the tenant-events
+  smoke but exercises the `org` code path (different basePath, different
+  event sources). The skill teaches that org-scope is for admin events
+  (memberships, license, tenant lifecycle) and silently rejects
+  --tenant-id — this test verifies the agent picks the right scope from
+  the prompt and does not pass --tenant-id with `org`.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:diagnose, audit, scope-org]
+
+sandbox:
+  driver: docker
+  python: {}
+
+initial_prompt: |
+  An admin wants the 50 most recent organization-level audit events
+  from the last 7 days — they're checking who joined the org and any
+  recent admin-role changes.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit org events` (org scope, not tenant) with --from-date/--to-date"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the events call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+events\b.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

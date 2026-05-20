@@ -1,0 +1,48 @@
+task_id: skill-bpmn-hitl-rpa-wrappers
+description: >
+  Node wrapper eval: agent models HITL and RPA as BPMN-native wrappers using
+  documented non-Integration-Service UiPath activity shells.
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, resource]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+
+run_limits:
+  max_turns: 80
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "EmployeeAccessBpmn" with this flow:
+  manual start -> HITL approval -> RPA provisioning job -> end.
+
+  Requirements:
+  - Model the approval as a `bpmn:userTask` using a documented `Actions.HITL`
+    `uipath:activity` shell.
+  - Model the RPA invocation as a `bpmn:serviceTask` using a documented
+    `Orchestrator.StartJob` `uipath:activity` shell.
+  - Use synthetic placeholder resource names only. Do not include tenant URLs,
+    folder keys, connection IDs, or real user names.
+  - Include BPMN DI for every visible node and sequence flow.
+  - Do not upload, publish, deploy, debug, or run the process.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "EmployeeAccessBpmn/EmployeeAccessBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL and RPA wrappers use the documented BPMN element types"
+    command: "python3 $TASK_DIR/check_hitl_rpa_wrappers.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

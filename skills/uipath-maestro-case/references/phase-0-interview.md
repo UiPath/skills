@@ -1,6 +1,6 @@
 # Phase 0 — Interview Mode (sdd.md generation)
 
-Phase 0 generates `sdd.md` interactively when none is provided. Output is approved by the user, then handed to Phase 1 unchanged. Lightweight by design: complex/multi-product processes redirect to `uipath-solution-design`.
+Phase 0 generates `sdd.md` interactively when none is provided. Output is approved by the user, then handed to Phase 1 unchanged. Lightweight by design: complex/multi-product processes redirect to `uipath-solution`.
 
 > **Authoritative for the interview path only.** Trigger detection, round shape, threshold redirect, hard-stop, resumption. Phase 1 logic stays in [planning.md](planning.md). Phases 2–6 stay in [phased-execution.md](phased-execution.md).
 
@@ -27,9 +27,9 @@ AskUserQuestion (3 options):
 |---|---|
 | `Interview to generate sdd.md` | Begin Round 1. |
 | `I'll provide an sdd.md path` | Re-prompt for path. Loop to Step 3. |
-| `Switch to uipath-solution-design` | Print plain-text suggestion. Exit skill. |
+| `Switch to uipath-solution` | Print plain-text suggestion. Exit skill. |
 
-Never auto-invoke `uipath-solution-design` (Rule 15). Print the skill name and one-line guidance only.
+Never auto-invoke `uipath-solution` (Rule 15). Print the skill name and one-line guidance only.
 
 ## The four rounds
 
@@ -38,7 +38,7 @@ Each round produces or updates `sdd.draft.md`. Final approval renames `sdd.draft
 | Round | Goal | Output | Threshold check |
 |---|---|---|---|
 | 1 — Open describe | Identity + free-text process description + archetype hint + rough counts | In-memory only | Upfront triage (rough counts) |
-| 2 — Skeleton + gap-fill | Drafted `sdd.md` skeleton, blocking gaps resolved | `sdd.draft.md` written | Mid-check (counted from skeleton) |
+| 2 — Placeholder + gap-fill | Drafted `sdd.md` placeholder, blocking gaps resolved | `sdd.draft.md` written | Mid-check (counted from placeholder) |
 | 3 — Registry resolution | Concrete tenant resources picked per task | `sdd.draft.md` updated, `tasks/registry-resolved.json` written | — |
 | 4 — Review + HARD STOP | User approves, edits, restarts, or aborts | `sdd.md` finalized | Re-check on edit |
 
@@ -47,7 +47,7 @@ Each round produces or updates `sdd.draft.md`. Final approval renames `sdd.draft
 Single user-facing message. Three asks bundled:
 
 1. **Free-text description.** "Describe the process. Who starts it? What stages does it go through? Where does it end?"
-2. **Archetype hint** (AskUserQuestion, 4 options — hint only, used to seed stage skeleton). Render each option with its example so the user is not guessing at jargon:
+2. **Archetype hint** (AskUserQuestion, 4 options — hint only, used to seed stage placeholder). Render each option with its example so the user is not guessing at jargon:
    - `Approval` — one decision gate, end-to-end (e.g., expense approval, leave request, PTO)
    - `Intake & Routing` — incoming items get classified, then routed to the right handler (e.g., support ticket triage, lead qualification, IT request routing)
    - `Multi-stage Orchestration` — sequential stages with handoffs across roles or systems (e.g., employee onboarding, candidate interview pipeline, loan origination)
@@ -58,7 +58,7 @@ Single user-facing message. Three asks bundled:
 
 If the rough counts already exceed any threshold (see §Thresholds), trigger soft redirect (§Soft redirect). Do NOT proceed to Round 2 until user picks `Continue lightweight anyway` or `Abort`.
 
-### Round 2 — Skeleton + gap-fill
+### Round 2 — Placeholder + gap-fill
 
 Agent drafts `sdd.draft.md` from Round 1 answers, using `assets/templates/sdd-template.md` as the structural mold. Fill what was provided. Mark the rest:
 
@@ -78,11 +78,11 @@ After writing, inspect blocking gaps. **Required fields (block until answered):*
 
 Ask blocking gaps via AskUserQuestion (multi-choice) or plain-text follow-up (open answer). Update `sdd.draft.md` after each answered gap.
 
-**Stuck-round detector.** If 3 unanswerable / contradictory / off-topic replies accumulate within Round 2, soft prompt (§Soft redirect). User picks `Continue with skeletons` (mark remaining as `<UNRESOLVED>`, proceed) / `Switch to uipath-solution-design` / `Abort`.
+**Stuck-round detector.** If 3 unanswerable / contradictory / off-topic replies accumulate within Round 2, soft prompt (§Soft redirect). User picks `Continue with placeholders` (mark remaining as `<UNRESOLVED>`, proceed) / `Switch to uipath-solution` / `Abort`.
 
 #### Mid-check threshold
 
-After the skeleton is written, count from `sdd.draft.md`:
+After the placeholder is written, count from `sdd.draft.md`:
 
 - Stages
 - Tasks total
@@ -110,7 +110,7 @@ Per-task AskUserQuestion (4 options max):
 |---|---|
 | `<top match — name + version + type>` | Record selection. |
 | `<second match>` (if available) | Record selection. |
-| `Skeleton — resolve later` | Keep `<UNRESOLVED>` marker on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits skeleton task per Rule 8. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` marker on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. |
 | `Something else` | Free-text re-search keyword, retry. |
 
 After all picks, write `tasks/registry-resolved.json` matching the shape Phase 1 produces (search query, all matched results, selected result, rationale per Rule 9). Update `sdd.draft.md` with concrete resource names.
@@ -144,7 +144,7 @@ Threshold status: WITHIN | EXCEEDED (<which>)
 | `Approve and proceed to Phase 1` | Exit Phase 0. Begin [planning.md](planning.md) Step 1. |
 | `I edited sdd.md — re-validate` | Re-read sdd.md. Re-validate structure. Re-run mid-check threshold. If valid + within thresholds → re-show summary + re-ask. If invalid or threshold breached → block with errors / soft redirect. |
 | `Restart interview` | Wipe `sdd.md`, `sdd.draft.md`, `tasks/registry-resolved.json`. Loop to Round 1. |
-| `Abort / switch to uipath-solution-design` | Print suggestion. Exit skill. Leave artifacts in place for the user. |
+| `Abort / switch to uipath-solution` | Print suggestion. Exit skill. Leave artifacts in place for the user. |
 
 #### Edit-loop validation
 
@@ -182,7 +182,7 @@ AskUserQuestion (3 options):
 
 | Option | Effect |
 |---|---|
-| `Switch to uipath-solution-design (recommended)` | Print plain-text suggestion. Exit skill. Preserve `sdd.draft.md`. |
+| `Switch to uipath-solution (recommended)` | Print plain-text suggestion. Exit skill. Preserve `sdd.draft.md`. |
 | `Continue lightweight anyway` | Proceed. **Set warning header in generated sdd.md** (§Warning header). |
 | `Abort` | Exit. No file changes beyond what already exists. |
 
@@ -194,7 +194,7 @@ When user chose override, prepend the following to the generated `sdd.md` immedi
 > **⚠️ Generated lightweight; complexity exceeded thresholds.**
 > Counts at generation time: <stages> stages, <tasks> tasks, <integrations> integrations,
 > <personas> personas, <child-cases> child cases.
-> Review carefully before approving. Consider regenerating via `uipath-solution-design`.
+> Review carefully before approving. Consider regenerating via `uipath-solution`.
 ```
 
 The header is informational. Phase 1 ignores it (markdown comments / blockquotes are not parsed as structural fields).
@@ -221,7 +221,7 @@ AskUserQuestion (4 options):
 | User says "skip" / "I don't know" on optional field | Write `—`. |
 | User says "skip" on required field | Write `<UNRESOLVED: <agent's question>>`. Phase 1 + post-build loop will revisit. |
 | 3 unanswerable replies in single round | Trigger §Soft redirect. |
-| Registry pull fails (CLI error, no auth) | Skip Round 3. All tasks marked `<UNRESOLVED>`. Phase 1 emits skeletons. Inform user. |
+| Registry pull fails (CLI error, no auth) | Skip Round 3. All tasks marked `<UNRESOLVED>`. Phase 1 emits placeholders. Inform user. |
 | User edits `sdd.md` to add stages exceeding threshold | Edit-loop validation fires §Soft redirect. |
 | `sdd.md` already exists at path when interview begins | Should not happen — Step 4 exits Phase 0 first. If it does (race), abort with error. Never overwrite. |
 
@@ -238,7 +238,7 @@ Phase 1 (planning.md Step 2) reads `sdd.md` exactly as it would a user-provided 
 ## Anti-patterns
 
 - **Do NOT overwrite an existing `sdd.md`.** Strict binary trigger; presence = trust-as-written.
-- **Do NOT auto-invoke `uipath-solution-design`.** Print the suggestion; user re-invokes manually (Rule 15).
+- **Do NOT auto-invoke `uipath-solution`.** Print the suggestion; user re-invokes manually (Rule 15).
 - **Do NOT persist Round 1 transcripts.** In-memory only. Restart wipes cleanly.
 - **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md` or `tasks/registry-resolved.json`.** Read + Write/Edit only (Rule 13).
 - **Do NOT silently auto-pick a registry match in Round 3.** AskUserQuestion every task; never infer (Rule 2 spirit).

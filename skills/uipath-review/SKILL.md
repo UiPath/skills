@@ -1,11 +1,13 @@
 ---
 name: uipath-review
-description: "[PREVIEW] Read-only UiPath reviewer — audit structure, quality, best practices for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), coded apps, solutions (.uipx). Does NOT edit files. For building/editing→domain skills."
+description: "UiPath read-only reviewer — audit structure, quality, best practices for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), BPMN (.bpmn), coded apps, solutions (.uipx). Does NOT edit files. For building/editing→domain skills."
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---
 
 # UiPath Solution & Artifact Reviewer
+
+> **Preview** — skill is under active development; review surface and report format may change.
 
 Review UiPath solutions and individual artifacts for structural validity, quality, best practices, optimization, and correctness. Produces a structured review report with findings and recommendations.
 
@@ -20,8 +22,8 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 
 ## Critical Rules
 
-1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-coded-apps, uipath-platform).
-2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa get-errors` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `get-errors` catches structural / analyzer issues, `build` catches compile-time issues `get-errors` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip flow validate` on flows. Report every Error, Warning, and Info result from every command. A review without both `get-errors` AND `build` (for RPA) is incomplete and may ship broken member references.
+1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-coded-apps, uipath-platform, uipath-solution).
+2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip flow validate` on flows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
 5. **Understand business context first.** Before evaluating optimization, ask or infer what the solution is trying to accomplish. A queue-based architecture is not "better" if the use case processes 5 items/day.
@@ -127,7 +129,7 @@ Record the language per project alongside the type (see solution table below).
 |---|---|---|
 | `project.json` + `.cs` files with `[Workflow]` attributes | RPA (Coded) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) |
 | `project.json` + `.xaml` workflow files | RPA (XAML) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) |
-| `project.json` with `expressionLanguage: "VisualBasic"` and no/Legacy `targetFramework` | RPA (Windows-Legacy) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) §10. Also recommend the user invoke the dedicated `uipath-rpa-legacy` skill for Legacy-specific deep validation. Legacy is supported indefinitely in Studio LTS — do NOT flag as Critical. |
+| `project.json` with `expressionLanguage: "VisualBasic"` and no/Legacy `targetFramework` | RPA (Windows-Legacy) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) §10. Also recommend the user invoke `uipath-rpa` (Legacy mode) for Legacy-specific deep validation. Legacy is supported indefinitely in Studio LTS — do NOT flag as Critical. |
 | `project.json` + both `.cs` and `.xaml` | RPA (Hybrid) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) |
 | `project.json` + `.xaml` + DU packages in dependencies (`UiPath.IntelligentOCR.Activities`, `UiPath.DocumentUnderstanding.ML.Activities`) | RPA + Document Understanding | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) + [du-review-checklist.md](references/document-understanding/du-review-checklist.md) |
 | `agent.json` (no `main.py`) | Agent (Low-Code) | [agent-review-checklist.md](references/agents/agent-review-checklist.md) |
@@ -161,21 +163,21 @@ Report **all** results — Errors, Warnings, and Info — in the final review re
 2. For **each** entry point file, run validation yourself:
 
 ```bash
-uip rpa get-errors --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
-3. **Then run a project-level build** to catch what `get-errors` misses (unknown member names like `NGetText.Value`, invalid enum values like `Operator="StartsWith"`, member resolution / CacheMetadata failures, attribute-form C# expression JIT failures):
+3. **Then run a project-level build** to catch what `validate` misses (unknown member names like `NGetText.Value`, invalid enum values like `Operator="StartsWith"`, member resolution / CacheMetadata failures, attribute-form C# expression JIT failures):
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
 4. Collect **all** results from both commands — Errors, Warnings, and Info-level messages
-5. If any entry point has `get-errors` errors **or** the project fails to `build`, the project is **not deployable**
+5. If any entry point has `validate` errors **or** the project fails to `build`, the project is **not deployable**
 
 > Do NOT validate only Main.xaml — validate every file listed in `entryPoints`. A project can have multiple entry points and errors in any of them block deployment.
 
-> Do NOT report a clean review based on `get-errors` alone. `get-errors` is static analysis; it does not catch unknown member names or invalid enum values. A "0 errors" `get-errors` result with a failing `build` is a real bug that ships if the reviewer skips `build`.
+> Do NOT report a clean review based on `validate` alone. `validate` is static analysis; it does not catch unknown member names or invalid enum values. A "0 errors" `validate` result with a failing `build` is a real bug that ships if the reviewer skips `build`.
 
 #### 2b. RPA Projects — Run Workflow Analyzer
 
@@ -185,7 +187,7 @@ The Workflow Analyzer checks code quality rules (ST-NMG naming, ST-DBP design, S
 uip rpa analyze --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
-If `uip rpa analyze` is not available, `uip rpa get-errors` includes Workflow Analyzer results. Check the output for all rule violations:
+If `uip rpa analyze` is not available, `uip rpa validate` includes Workflow Analyzer results. Check the output for all rule violations:
 
 - **Error-level violations** → report as **Critical** findings (e.g., ST-SEC-007 SecureString, ST-ANA-005 missing project.json)
 - **Warning-level violations** → report as **Warning** findings (e.g., ST-DBP-003 empty Catch, ST-MRD-011 Write Line usage, ST-NMG-001 naming)
@@ -212,8 +214,8 @@ For the review report, create a validation summary:
 
 | Project | Command | Errors | Warnings | Info |
 |---|---|---|---|---|
-| InvoiceProcessor | uip rpa get-errors (Main.xaml) | 0 | 3 | 1 |
-| InvoiceProcessor | uip rpa get-errors (Helper.cs) | 1 | 0 | 0 |
+| InvoiceProcessor | uip rpa validate (Main.xaml) | 0 | 3 | 1 |
+| InvoiceProcessor | uip rpa validate (Helper.cs) | 1 | 0 | 0 |
 | InvoiceDispatcher | uip flow validate | 0 | 0 | 0 |
 | ClassifierAgent | uip agent validate | 0 | 1 | 0 |
 
@@ -405,7 +407,7 @@ Output a structured report in chat (do NOT create a file):
 1. NEVER use internal workflow labels in the output. Forbidden terms: "Path A", "Path B", "Step 3a", "Step 0c", "Mismatch"/"Aligned" (use "one-to-one" / "one-to-many" / "unclear"), "disqualifying criteria", "verdict". The report is for the user, not a trace of the skill's internal workflow.
 2. Do NOT create a separate "Unit of Work Analysis" section. The shape observation is a one-liner in the Summary. If the shape analysis produces a concern, it becomes a normal numbered finding.
 3. Size metrics per file type use **activity / variable / node counts**, not "lines". Lines are meaningless for XAML and misleading for any file. See "Structural Metrics" table below.
-4. Validation Status for Legacy projects says "Use `uipath-rpa-legacy` skill for Legacy-specific validation" — it does NOT say "Could not run" or "Failed". Legacy is supported indefinitely in Studio LTS; the `uip rpa` CLI targets Modern projects.
+4. Validation Status for Legacy projects says "Use `uipath-rpa` (Legacy mode) for Legacy-specific validation" — it does NOT say "Could not run" or "Failed". Legacy is supported indefinitely in Studio LTS; the `uip rpa` CLI targets Modern projects (Legacy mode uses the `uip rpa-legacy` CLI internally).
 
 **Structural metrics to report (never "lines"):**
 
@@ -427,7 +429,7 @@ Output a structured report in chat (do NOT create a file):
 - **Business Value:** <1-2 sentence description of what this automation does>
 - **Review Scope:** Single project / Solution (N projects) / Multi-project repo (N executables + M libraries)
 - **Project Types Found:** <list with type and language, e.g., "RPA (XAML, VisualBasic)", "Agent (Coded, Python)">
-- **Validation Status:** <per project: pass with counts, or "Validation via uipath-rpa-legacy skill" for Legacy>
+- **Validation Status:** <per project: pass with counts, or "Validation via uipath-rpa (Legacy mode)" for Legacy>
 - **PDD Available:** Yes (path) / No — business logic alignment not verified
 - **Transaction Shape:** <one line per project, e.g., "Processes 1 invoice per invocation (one-to-one)." or "Processes 1 company per invocation; internally writes N employee enrollments (one-to-many) — see [W-002].">
 
@@ -449,7 +451,7 @@ Output a structured report in chat (do NOT create a file):
 - [V-E-001] <project>/<file>: **<rule-id>** — <message>
 - ...
 
-> For Legacy projects, note: "Validation CLI (`uip rpa get-errors`, `uip rpa analyze`) targets Modern projects. Legacy validation is available via the dedicated `uipath-rpa-legacy` skill."
+> For Legacy projects, note: "Validation CLI (`uip rpa validate`, `uip rpa analyze`) targets Modern projects. Legacy validation runs through `uipath-rpa` Legacy mode (using the `uip rpa-legacy` CLI)."
 
 ### Critical Findings (block deployment)
 1. [C-001] <concise title> — `<project/file>` — <what to check + recommended fix>
@@ -465,7 +467,7 @@ Output a structured report in chat (do NOT create a file):
 |---|---|---|---|---|---|---|
 | ProjectA | RPA (Coded) | CSharp | 42 methods, 1,300 statements | 1 error, 2 warnings | Needs Work | V-E-001, W-001 |
 | ProjectB | Flow | — | 18 nodes, 3 gateways, depth 5 | Pass | Good | I-001 |
-| ProjectC | RPA (XAML) | VisualBasic | 84 activities, 50 vars, depth 12 | Via uipath-rpa-legacy | Needs Improvement | C-002, W-003 |
+| ProjectC | RPA (XAML) | VisualBasic | 84 activities, 50 vars, depth 12 | Via uipath-rpa (Legacy mode) | Needs Improvement | C-002, W-003 |
 
 ### Recommended Next Steps
 
@@ -474,11 +476,12 @@ Route each fix to the appropriate skill:
 | Fix needed | Use skill |
 |---|---|
 | Fix RPA workflow / coded workflow / XAML / project.json | `uipath-rpa` |
-| Fix RPA Windows-Legacy project | `uipath-rpa-legacy` |
+| Fix RPA Windows-Legacy project | `uipath-rpa` (Legacy mode) |
 | Fix agent (coded or low-code) | `uipath-agents` |
 | Fix flow (.flow) | `uipath-maestro-flow` |
 | Fix coded app | `uipath-coded-apps` |
-| Fix Orchestrator resources (assets, queues, folders, deploy) | `uipath-platform` |
+| Fix Orchestrator resources (assets, queues, folders) | `uipath-platform` |
+| Fix `.uipx` solution / pack / publish / deploy lifecycle | `uipath-solution` |
 
 1. Fix [C-001] using `uipath-rpa` — change argument type to SecureString
 2. ...
@@ -527,6 +530,6 @@ Route each fix to the appropriate skill:
 5. **Do not provide a review without severity ratings.** Every finding must be Critical, Warning, or Info. An undifferentiated list of issues is not actionable.
 6. **Do not recommend architecture changes without understanding business context.** Ask about volume, frequency, SLA, and error tolerance before suggesting queue-based processing, parallel execution, or other architectural patterns.
 7. **Do not attempt to fix issues yourself.** Report the issue, suggest the fix, name the skill that can apply it. Stop there.
-8. **Do not flag Windows-Legacy compatibility as Critical.** Legacy is supported **indefinitely** in Studio LTS — 2024.10, 2025.10, 2026.10, and all future LTS releases continue to support creating, opening, editing, running, and deploying Legacy projects. It is NOT a deployment blocker and NOT a mid-term support risk. Deprecation means "no new features added to Legacy," not "Legacy will be removed." Flag as **Warning** (if the project would benefit from capabilities Legacy lacks — see [rpa-review-checklist.md §10](references/rpa/rpa-review-checklist.md) for ranked feature list) or **Info** (if Studio LTS is the organizational standard or SOAP web services are required). When recommending migration, lead with the 2-3 features most relevant to the project's actual pain (typically **Healing Agent**, **Unified Target / Modern UIA**, **Object Repository**, **ScreenPlay**, **coded test cases**, **Autopilot**, **Agents/Maestro**). Route Legacy-specific deep validation to the dedicated `uipath-rpa-legacy` skill.
+8. **Do not flag Windows-Legacy compatibility as Critical.** Legacy is supported **indefinitely** in Studio LTS — 2024.10, 2025.10, 2026.10, and all future LTS releases continue to support creating, opening, editing, running, and deploying Legacy projects. It is NOT a deployment blocker and NOT a mid-term support risk. Deprecation means "no new features added to Legacy," not "Legacy will be removed." Flag as **Warning** (if the project would benefit from capabilities Legacy lacks — see [rpa-review-checklist.md §10](references/rpa/rpa-review-checklist.md) for ranked feature list) or **Info** (if Studio LTS is the organizational standard or SOAP web services are required). When recommending migration, lead with the 2-3 features most relevant to the project's actual pain (typically **Healing Agent**, **Unified Target / Modern UIA**, **Object Repository**, **ScreenPlay**, **coded test cases**, **Autopilot**, **Agents/Maestro**). Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode).
 9. **Do not recommend removing a dependency without grepping for usages.** A package may be the sole supplier of an activity used elsewhere — recommend removal only after confirming no consumers exist.
 10. **Do not flag `-preview` package versions.** Many UiPath packages currently ship preview-by-default during the public preview phase, and resolution defaults to bringing them in with explicit user confirmation. Surface stability concerns through activity-owner channels, not user-facing review reports.

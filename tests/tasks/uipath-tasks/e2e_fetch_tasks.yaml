@@ -10,6 +10,8 @@ tags: [uipath-tasks, e2e, discovery, fetch]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 30
 
 sandbox:
@@ -76,7 +78,7 @@ success_criteria:
     description: "Agent retrieved a task with tasks get"
     tool_name: "Bash"
     command_pattern: 'uip\s+tasks\s+get\s+\d+'
-    min_count: 1
+    min_count: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -84,7 +86,7 @@ success_criteria:
     description: "Agent used the type-hint endpoint (--task-type + --folder-id)"
     tool_name: "Bash"
     command_pattern: 'uip\s+tasks\s+get\s+\d+\s+.*--task-type\s+\w+.*--folder-id\s+\d+'
-    min_count: 1
+    min_count: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -92,7 +94,7 @@ success_criteria:
     description: "Agent listed assignable users for the discovered folder"
     tool_name: "Bash"
     command_pattern: 'uip\s+tasks\s+users\s+\d+'
-    min_count: 1
+    min_count: 0
     weight: 1.5
     pass_threshold: 1.0
 

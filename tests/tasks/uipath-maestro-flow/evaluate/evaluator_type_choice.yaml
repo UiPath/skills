@@ -1,0 +1,127 @@
+task_id: skill-flow-eval-evaluator-type-choice
+description: >
+  Smoke test: agent is given three evaluation goals and must pick the correct
+  `--type` value for each, then actually create the evaluators via
+  `uip maestro flow eval evaluator add` so the skill is genuinely invoked
+  (not just self-reported). Tests that the evaluator taxonomy is internalized
+  — natural-language similarity → llm-judge-output, deterministic JSON shape
+  similarity → json-similarity, substring presence → contains. The
+  `command_executed` regexes pin each `--type` value, so the agent has to
+  both pick correctly and run the CLI to pass.
+tags: [uipath-maestro-flow, smoke-blocked, mode:build, lifecycle:discover]
+skip: true
+# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
+# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
+# under `maestro flow`). Re-enable once a release exposes the Flow eval
+# surface to the public registry used by CI. See MST-9675.
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 50
+
+sandbox:
+  driver: docker
+  python: {}
+
+initial_prompt: |
+  Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a
+  project and add three evaluators — one per goal — picking the correct
+  `--type` for each.
+
+  Step 1 — scaffold the project so `--path` resolves:
+    Solution `EvalTypeChoice`, Flow project `EvalTypeChoice`, double-nested
+    layout `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`. Link via
+    `uip solution project add`.
+
+  Step 2 — for each goal, decide the right `--type` (kebab-case, from the
+  seven valid values: `exact-match`, `json-similarity`, `contains`,
+  `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`,
+  `llm-judge-trajectory-simulation`) and add the evaluator with that type:
+
+    Goal A — `goal-a-evaluator`: score a chatbot's free-text reply against
+      an expected greeting, allowing for paraphrasing (e.g. "Hi Alice!"
+      vs expected "Hello, Alice!"). The judge does not need to inspect
+      tool calls.
+
+    Goal B — `goal-b-evaluator`: score a flow that emits a structured JSON
+      envelope of order details. Expected output is a known object; key
+      ordering and minor whitespace tolerated, but values must match.
+      Deterministic — no LLM.
+
+    Goal C — `goal-c-evaluator`: pass-fail on whether the flow's response
+      contains the literal substring "deployment succeeded" anywhere in
+      the output.
+
+  Step 3 — save your reasoning to `report.json` in the working directory:
+
+    {
+      "goal_a_type": "<the --type you used for goal A>",
+      "goal_a_reason": "<one short sentence>",
+      "goal_b_type": "<the --type you used for goal B>",
+      "goal_b_reason": "<one short sentence>",
+      "goal_c_type": "<the --type you used for goal C>",
+      "goal_c_reason": "<one short sentence>"
+    }
+
+  Important:
+  - Use `--output json` on every `uip maestro flow eval ...` command.
+  - For LLM-judge evaluators, pass `--model gpt-4.1-2025-04-14`.
+  - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call
+    `uip maestro flow eval run *`. Local CRUD only.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized the Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Goal A — agent ran evaluator add with --type llm-judge-output"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+llm-judge-output'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Goal B — agent ran evaluator add with --type json-similarity"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+json-similarity'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Goal C — agent ran evaluator add with --type contains"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+contains'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created (reasoning artifact)"
+    path: "report.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json reasoning matches the chosen types"
+    command: "python3 $TASK_DIR/check_type_choice.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

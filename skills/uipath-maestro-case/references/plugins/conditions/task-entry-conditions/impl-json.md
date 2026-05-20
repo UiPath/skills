@@ -36,17 +36,13 @@ Rules use DNF — outer array is OR, inner array is AND.
 6. Read `rule-type` from tasks.md; pick the recipe below
 7. Append the condition object to `task.entryConditions[]`
 
-> **Connector tasks.** `execute-connector-activity` and `wait-for-connector` tasks already carry an auto-injected `current-stage-entered` default entry condition from task-creation time. Append — never overwrite or remove the default.
-
 ## Rule Types
 
-### current-stage-entered — default gate
+### current-stage-entered
 
 ```json
 "rules": [[ { "id": "rxxxxxxxx", "rule": "current-stage-entered" } ]]
 ```
-
-Matches the shape of the auto-injected default on connector tasks.
 
 ### selected-tasks-completed — sibling task gating
 
@@ -88,6 +84,14 @@ Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings
 ]]
 ```
 
+### runs-sequentially — sequential group with optional parallel siblings
+
+```json
+"rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
+```
+
+**Lane semantics for this rule type:** Among tasks sharing a `runs-sequentially` task-entry condition, group members meant to run in **parallel** with each other MUST share the same `lane` in `stageNode.data.tasks[lane][index]` (shared lane = parallel siblings inside the sequential group, semantic — not just FE layout). Solo members of the group get their own lane. Tasks outside any `runs-sequentially` group still follow the default one-task-per-lane rule with layout-only semantics.
+
 ## Rule-Type Catalog
 
 | `rule` | Required extra field |
@@ -102,4 +106,4 @@ Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` contains the new object with `id` (prefix `c`) and `rules` carrying the expected `rule` value plus any required side field. For connector tasks, verify the auto-injected `current-stage-entered` default is still present and precedes the new condition.
+Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`) and `rules` with the expected `rule` value plus any required side field.

@@ -4,23 +4,22 @@ description: >
   path parameter on the Jira "Get Issue" activity. Project + issue type are
   freely chosen by the agent; the issue key is deterministic so the test can
   verify the path-parameter wiring.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe]
 
-task_timeout: 1500
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
 sandbox:
   driver: tempdir
   python: {}
-  node:
-    # Pin shared across all connector_features tasks — bump in lockstep.
-    env_packages:
-      - "@uipath/cli"
+  node: {}
 initial_prompt: |
   Create a new Flow project called "PathParamsTest" with a manual trigger.
   Build a flow that retrieves a single Jira issue using the Jira "Get Issue"
@@ -38,6 +37,22 @@ initial_prompt: |
   does not expose.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip is connections list` to discover available connections"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+is\\s+connections\\s+list"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tenant has at least one Jira connection (precondition for `node configure`)"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-atlassian-jira"
+    timeout: 35
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "Flow file exists and is valid JSON"
     command: "python3 -c \"import json,glob; flows=glob.glob('**/PathParamsTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))\""
@@ -78,4 +93,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-max_iterations: 1

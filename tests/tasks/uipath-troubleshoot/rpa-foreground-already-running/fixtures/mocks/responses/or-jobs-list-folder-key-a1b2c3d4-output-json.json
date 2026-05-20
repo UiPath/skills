@@ -1,0 +1,35 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Recent jobs in ForegroundDemo. The failing job (c0a1b2c3) was created while the earlier ForegroundHolder run (b0a1b2c3) was still Running — overlap is the key evidence for the foreground-already-running playbook.",
+  "Data": [
+    {
+      "Key": "c0a1b2c3-d4e5-4678-9012-3456789abcde",
+      "State": "Faulted",
+      "ProcessName": "ForegroundHolder",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T10:15:00.500Z",
+      "EndTime": "2026-05-12T10:15:01.218Z",
+      "CreationTime": "2026-05-12T10:15:00.302Z"
+    },
+    {
+      "Key": "b0a1b2c3-d4e5-4678-9012-3456789abcde",
+      "State": "Successful",
+      "ProcessName": "ForegroundHolder",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T10:14:50.000Z",
+      "EndTime": "2026-05-12T10:15:50.412Z",
+      "CreationTime": "2026-05-12T10:14:49.852Z"
+    }
+  ]
+}

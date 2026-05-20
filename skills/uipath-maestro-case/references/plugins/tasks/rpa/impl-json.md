@@ -33,24 +33,25 @@
 uip maestro case tasks describe --type rpa --id "<entityKey>" --output json
 ```
 
-Fallback: planning-captured schema from tasks.md. If unavailable, skeleton per [skeleton-tasks.md](../../../skeleton-tasks.md).
+Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 **Step 1 — Root-level bindings:**
 
-Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
+Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
 
-| `propertyAttribute` | `resource` | `resourceSubType` | `default` |
-|---|---|---|---|
-| `"name"` | `"process"` | — | `name` from tasks.md |
-| `"folderPath"` | `"process"` | — | `folder-path` from tasks.md |
+- `resource`: `"process"`
+- `resourceSubType`: omit (no resourceSubType for rpa tasks)
+- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields
 
-Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate by `default + resource + resourceKey`.
+Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 **Step 2 — Write task:**
 
 1. Generate `id` (`t` + 8 chars) and `elementId` (`<stageId>-<taskId>`)
 2. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
+
+   **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
 4. Append to target stage's `tasks[laneIndex][]`
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
@@ -60,5 +61,5 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 - `type: "rpa"` (NOT `"process"`)
 - `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "process"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
-- `data.inputs` and `data.outputs` populated (unless skeleton)
+- `data.inputs` and `data.outputs` populated (unless placeholder)
 - `id` captured in `id-map.json`

@@ -1,0 +1,68 @@
+task_id: skill-platform-licensing-users-licenses-available
+description: >
+  Smoke test: agent uses the uipath-platform skill to check account-level seat
+  availability for the Attended Named User bundle and reports the result using
+  the friendly-name format mandated by the skill (`<Friendly Name> (<CODE>)`).
+  Verifies (1) the agent invokes `uip platform users licenses available --output json`,
+  (2) it fetches the UiPath docs license-codes page to resolve the code, and
+  (3) the final reply uses the required friendly-name format. CLI auth failure
+  is expected in this offline environment; the friendly-name rule still applies.
+tags: [uipath-platform, smoke-blocked, licensing, users]
+skip: true
+# Blocked: `uip platform users licenses` is not in the public
+# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
+# Re-enable when the CLI ships the users surface. See PLT-103133.
+
+sandbox:
+  driver: docker
+  python: {}
+  node: {}
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  How many Attended Named User seats does this account have available right
+  now? When you reply, refer to the bundle by its friendly name AND its code,
+  per the skill's docs-page resolution rule.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - If the CLI fails, still resolve the bundle name → code mapping from the
+    UiPath docs license-codes page so you can answer in the required format.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran `uip platform users licenses available` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+platform\s+users\s+licenses\s+available.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the UiPath docs license-codes page"
+    tool_name: "WebFetch"
+    command_pattern: 'docs\.uipath\.com.*license-codes'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent's final reply uses the `<Friendly Name> (<CODE>)` format"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply to the user. Score 1.0 if it
+      references the Attended Named User bundle in the form
+      `<Friendly Name> (<CODE>)` — e.g., `Attended Named User (ATTUNU)` or
+      `Attended Named User (`ATTUNU`)`. Score 0.0 if the reply shows only the
+      raw code (`ATTUNU` alone, no friendly name) or only the friendly name
+      without the code. Ignore whether the CLI call succeeded — the rubric is
+      solely about the reporting format.
+    weight: 2.0
+    pass_threshold: 1.0

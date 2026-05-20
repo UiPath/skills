@@ -55,7 +55,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| All referenced packages are installable | Critical | `uip rpa install-or-update-packages --use-studio` |
+| All referenced packages are installable | Critical | `uip rpa packages install --use-studio` |
 | No unused packages | Warning | Workflow Analyzer rule ST-USG-010 |
 | Version constraints use proper syntax (`[1.0.0]`, `[1.0.0, 2.0.0)`) | Warning | Read project.json dependencies |
 | No package version conflicts | Critical | Check for multiple versions of same package family |
@@ -99,7 +99,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| All `.xaml` files pass validation | Critical | `uip rpa get-errors --file-path "<FILE>" --project-dir "<DIR>" --output json --use-studio` |
+| All `.xaml` files pass validation | Critical | `uip rpa validate --file-path "<FILE>" --project-dir "<DIR>" --output json --use-studio` |
 | Expression language in all XAML files matches `project.json` setting | Critical | Check `expressionLanguage` consistency |
 | No C# syntax in VB.NET projects | Warning | If `expressionLanguage` is `VisualBasic`, grep all `.xaml` for C# patterns: `!=`, `&&`, `\|\|`, `null` (VB uses `Nothing`), `$"` (interpolated strings), `=>` (lambda), `//` (comments), `typeof()` (VB uses `GetType()`). These compile-fail or silently misbehave. |
 | No activities with default display names ("Sequence", "Assign", "If") | Warning | Workflow Analyzer rule ST-MRD-002 |
@@ -345,8 +345,8 @@ Run Workflow Analyzer and verify no Error-level violations. Key rules to check:
 | No hardcoded environment-specific values (URLs, paths) | Warning | Grep for hardcoded values |
 | No debug artifacts or test data included | Info | Check for leftover files |
 | Global Exception Handler configured | Info | Check project settings |
-| Project builds and validates clean | Critical | `uip rpa get-errors` returns 0 errors |
-| Smoke test passes | Warning | `uip rpa run-file` completes successfully |
+| Project builds and validates clean | Critical | `uip rpa validate` returns 0 errors |
+| Smoke test passes | Warning | `uip rpa run` completes successfully |
 
 ## 10. Windows-Legacy Compatibility
 
@@ -359,7 +359,7 @@ Windows-Legacy is supported **indefinitely** in Studio LTS:
 - Studio STS does **not** support Legacy — teams using Legacy must stay on LTS
 - **Deprecation means "no new features added to Legacy," not "Legacy will be removed"**
 
-> **NEVER flag Windows-Legacy as Critical based on framework alone.** Route Legacy-specific deep validation to the dedicated `uipath-rpa-legacy` skill.
+> **NEVER flag Windows-Legacy as Critical based on framework alone.** Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode).
 
 ### The Real Question
 

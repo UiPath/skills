@@ -4,6 +4,8 @@ This plugin covers **flow-specific** operations for inline agent nodes: adding t
 
 Node type: `uipath.agent.autonomous`. The agent is bound to a local subdirectory via `inputs.source = <projectId>`. The node's BPMN type and `serviceType` (`Orchestrator.StartInlineAgentJob`) come from the definition in `definitions[]`.
 
+For coded (Python) agents, use the [`agent`](../agent/impl.md) plugin (`uipath.core.agent.{key}`) — inline agents are low-code only.
+
 ## Prerequisite — Scaffold the Inline Agent
 
 ```bash
@@ -193,7 +195,7 @@ Also add:
 
 - A `definitions[]` entry copied verbatim from `uip maestro flow registry get uipath.agent.autonomous --output json` (`Data.Node` or the top-level node object, depending on CLI/plugin version). Set `typeVersion` to the copied definition's exact `version`.
 - `variables.nodes[]` entries for `autonomousAgent1.output` and `autonomousAgent1.error` with `binding.nodeId = "autonomousAgent1"` and matching `binding.outputId` values.
-- A placeholder `layout.nodes.<agentNodeId>` entry; `flow tidy` owns the final position.
+- A placeholder `layout.nodes.<agentNodeId>` entry; `flow format` owns the final position.
 
 ### Wire edges with Edit / Write
 
@@ -383,7 +385,7 @@ uip maestro flow validate <FlowName>.flow --output json
 
 ## Repair Recipes
 
-Use direct JSON edits for inline-agent graph repairs. `uip maestro flow node update` does not exist, and the inline-agent graph is not a Flow CLI carve-out. If a bulk scripted rewrite is explicitly approved, use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); otherwise apply the same transformations through `Edit` / `Write`.
+Use direct JSON edits for inline-agent graph repairs. The Flow CLI has no node-update command (see [editing-operations-cli.md § Operations Not Supported by CLI](../../editing-operations-cli.md#operations-not-supported-by-cli)), and the inline-agent graph is not a Flow CLI carve-out. If a bulk scripted rewrite is explicitly approved, use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); otherwise apply the same transformations through `Edit` / `Write`.
 
 ### Replace a definition entry
 

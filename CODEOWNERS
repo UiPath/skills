@@ -21,12 +21,15 @@
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
-/skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma
+/skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
+/skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
+/tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 
 # Agents skill (coded + low-code)
-/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
+/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
+/tests/tasks/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 
 # Context grounding capabilities (DeepRAG + BatchTransform) — now part of uipath-agents
 /skills/uipath-agents/references/coded/capabilities/deeprag/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
@@ -45,11 +48,16 @@
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 
-# Solution Design skill
-/skills/uipath-solution-design/ @RaduAna-Maria
+# Solution skill (design + uip solution lifecycle)
+/skills/uipath-solution/ @RaduAna-Maria
+/tests/tasks/uipath-solution/ @RaduAna-Maria
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+
+# Maestro BPMN skill
+/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
@@ -57,6 +65,7 @@
 
 # Case Management skill
 /skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
@@ -65,16 +74,17 @@
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
-# Legacy RPA skill
-/skills/uipath-rpa-legacy/ @roalexandru
+# Legacy RPA — merged into uipath-rpa
+/skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 
-# Diagnostics
-/skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
-/tests/tasks/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+# Troubleshooting
+/skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+/tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
 # Governance skill
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
@@ -94,3 +104,12 @@
 # Tasks skill (Action Center Operate)
 /skills/uipath-tasks/ @UiPath/ActionCenterDev
 /tests/tasks/uipath-tasks/ @UiPath/ActionCenterDev
+
+# Admin skill (Identity Server + Audit Service management)
+/skills/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge @yadvender-uipath @CalinMPopa @chandhanshanth
+/tests/tasks/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge @yadvender-uipath @CalinMPopa @chandhanshanth
+
+# IXP skill
+/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+/tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath

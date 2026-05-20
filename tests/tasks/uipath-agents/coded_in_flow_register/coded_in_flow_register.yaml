@@ -1,0 +1,142 @@
+task_id: skill-agent-coded-in-flow-register
+description: >
+  Smoke test: scaffold a UiPath solution containing a Flow project and a
+  sibling Coded Function agent project, then confirm the agent is registered
+  as a local resource in the solution. Verifies `uip solution project add`
+  registers the project and writes a process resource file with a `resource.key`
+  UUID under `resources/solution_folder/process/`, and that
+  `uip solution resource list` surfaces it as a Local resource.
+tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, resource, feature:registry]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 60
+  turn_timeout: 1200
+
+task_timeout: 1200
+
+sandbox:
+  driver: docker
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "ClaimsSol" containing a Flow project
+  "ClaimsFlow" and a sibling Coded Function agent "ClassifierAgent"
+  (Python, simple stub — no LLM call needed, just Input/Output Pydantic
+  models). Register the coded agent in the solution and confirm it is
+  registered as a local resource using `uip solution resource list`.
+
+  Use the Coded Function framework (package: `uipath`) — NOT LangGraph,
+  LlamaIndex, or OpenAI Agents. This keeps setup minimal: one lightweight
+  pip install, no graph wiring needed for the stub.
+
+  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
+  ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in
+  a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the coded agent project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent generated entry-points.json with uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent registered the coded agent project in the solution with uip solution project add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent confirmed local registration with uip solution resource list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent main.py exists"
+    path: "ClaimsSol/ClassifierAgent/main.py"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent entry-points.json exists"
+    path: "ClaimsSol/ClassifierAgent/entry-points.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Local resource file (resource.key) was minted by `uip solution project add` (accepts agent/ or function/ subdirectory)"
+    command: |
+      python3 -c "
+      import os, json, sys
+      base = 'ClaimsSol/resources/solution_folder/process'
+      for root, dirs, files in os.walk(base):
+          for f in files:
+              if f.endswith('.json'):
+                  path = os.path.join(root, f)
+                  try:
+                      with open(path) as fp:
+                          data = json.load(fp)
+                      r = data.get('resource', {})
+                      if r.get('kind') == 'process' and r.get('key'):
+                          print('Found:', path)
+                          sys.exit(0)
+                  except Exception:
+                      pass
+      print('No process resource file with key found under', base)
+      sys.exit(1)
+      "
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Both projects (flow + coded agent) registered in the parent solution .uipx"
+    path: "ClaimsSol/ClaimsSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "ClaimsSol/ClaimsFlow/ClaimsFlow.flow"
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,69 @@
+task_id: skill-bpmn-simple-approval-bpmn
+description: >
+  Authoring eval: agent composes a model-authored simple approval BPMN that
+  combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task,
+  declared root variables, numeric migration metadata, and BPMN DI. Mirrors the
+  manual smoke "simple approval" scenario.
+tags: [uipath-maestro-bpmn, integration, lifecycle:generate, shape:multi-node, node:gateway, node:script, node:service-task, resource]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+
+run_limits:
+  max_turns: 90
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
+  - Manual start with input variable `expenseId` and `amount`, and output
+    variable `decision`.
+  - Service task that calls `Orchestrator.StartAgentJob` to triage the expense
+    via a synthetic placeholder agent reference.
+  - Exclusive gateway routes high-amount requests (`amount >= 1000`) to a
+    `bpmn:sendTask` that creates a queue item via `Orchestrator.CreateQueueItem`,
+    and routes the default branch to a `bpmn:scriptTask` that auto-approves the
+    request and writes to the `decision` output variable.
+  - Both branches converge on a single end event.
+
+  Requirements:
+  - Use synthetic placeholder resource names only. Do not include tenant URLs,
+    folder keys, connection IDs, real queue names, real agent identifiers, or
+    user names.
+  - Declare root `uipath:variables version="v1"` entries for `expenseId`,
+    `amount`, and `decision` with documented types.
+  - Include a numeric `uipath:migrationVersion` element (for example `version`
+    `11` or `11.5`) on the process.
+  - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`, include
+    `uipath:scriptVersion`, prefer `v3`, and keep the script compatible with
+    the Jint runtime (no Node.js, browser, filesystem, or network APIs).
+  - Include BPMN DI shapes for every visible node and BPMN DI edges with
+    waypoints for every sequence flow.
+  - Do not upload, publish, deploy, debug, or run the process.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Project metadata was created"
+    path: "ExpenseApprovalBpmn/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Simple approval BPMN combines StartAgentJob, gateway, CreateQueueItem, script, variables, migration, and DI"
+    command: "python3 $TASK_DIR/check_simple_approval_bpmn.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

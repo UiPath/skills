@@ -33,13 +33,13 @@
 
 | Field | Notes |
 |---|---|
-| `data.taskTitle` | Required, even on skeletons. Validator rejects empty. |
+| `data.taskTitle` | Required on **resolved** action tasks — validator rejects empty. Placeholders omit it (along with every other `data.*` action-specific key); see [placeholder-tasks.md](../../../placeholder-tasks.md). |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
 | `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
 | `data.actionCatalogName` | `deploymentTitle` from tasks.md |
 | `data.labels` | Label set from tasks.md |
 
-`recipient.Type` values: `0` = user ID (sdd `User:`), `1` = group ID (sdd `UserGroup:` / `Role:`), `2` = email address, `3` = `"=vars.<varId>"`. **Fallback when sdd.md value is not a resolved UUID:** write `{ "Type": <picked>, "Value": "<sdd-string-as-is>" }` — schema-conformant skeleton, user resolves Value later. Drop `data.recipient` only when no Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes silently; CLI validate misses it.
+`recipient.Type` values: `0` = user ID (sdd `User:`), `1` = group ID (sdd `UserGroup:` / `Role:`), `2` = email address, `3` = `"=vars.<varId>"`. **Fallback when sdd.md value is not a resolved UUID:** write `{ "Type": <picked>, "Value": "<sdd-string-as-is>" }` — schema-conformant placeholder, user resolves Value later. Drop `data.recipient` only when no Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes silently; CLI validate misses it.
 
 ## Procedure
 
@@ -49,18 +49,17 @@
 uip maestro case tasks describe --type action --id "<action-app-id>" --output json
 ```
 
-Fallback: planning-captured schema from tasks.md. If unavailable, skeleton per [skeleton-tasks.md](../../../skeleton-tasks.md).
+Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 **Step 1 — Root-level bindings:**
 
-Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
+Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
 
-| `propertyAttribute` | `resource` | `resourceSubType` | `default` |
-|---|---|---|---|
-| `"name"` | `"app"` | — | `name` from tasks.md |
-| `"folderPath"` | `"app"` | — | `folder-path` from tasks.md |
+- `resource`: `"app"`
+- `resourceSubType`: omit (no resourceSubType for action tasks)
+- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields
 
-Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate by `default + resource + resourceKey`.
+Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 **Step 2 — Write task:**
 
@@ -68,6 +67,8 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 2. Set `data.taskTitle`, `data.priority`, `data.recipient`, `data.actionCatalogName`, `data.labels` from tasks.md
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
+
+   **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
 5. Append to target stage's `tasks[laneIndex][]`
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
@@ -78,5 +79,5 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 - `data.taskTitle` non-empty
 - `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
-- `data.inputs` and `data.outputs` populated (unless skeleton)
+- `data.inputs` and `data.outputs` populated (unless placeholder)
 - `id` captured in `id-map.json`

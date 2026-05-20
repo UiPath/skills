@@ -1,0 +1,21 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_RecordCreated",
+      "name": "Record Created",
+      "filePath": "/content/integration-service-enriched.bpmn#Start_RecordCreated",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ticketId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

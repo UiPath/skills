@@ -61,7 +61,7 @@ Many activities use `[OverloadGroup]` to define mutually exclusive property sets
 
 ### ItemArgument and `.Item` Child Elements in OverloadGroup Activities
 
-`uip rpa get-default-activity-xaml` returns activities with `.Item` child elements containing `ItemArgument` nodes. These are internal scaffolding for the FileName/ResourceFile overload group switching mechanism. **Do NOT include `.Item` child elements when writing XAML manually.** Simply set the desired overload group property (e.g., `FileName`) directly on the activity element and omit the `.Item` child entirely. Studio will auto-generate the internal `.Item` structure when it loads the workflow.
+`uip rpa activities get-default-xaml` returns activities with `.Item` child elements containing `ItemArgument` nodes. These are internal scaffolding for the FileName/ResourceFile overload group switching mechanism. **Do NOT include `.Item` child elements when writing XAML manually.** Simply set the desired overload group property (e.g., `FileName`) directly on the activity element and omit the `.Item` child entirely. Studio will auto-generate the internal `.Item` structure when it loads the workflow.
 
 **Example — correct (no `.Item` child):**
 ```xml
@@ -69,7 +69,7 @@ Many activities use `[OverloadGroup]` to define mutually exclusive property sets
     FileName="[pdfPath]" ResourceFile="{x:Null}" PageCount="[pageCount]" />
 ```
 
-**Example — avoid (`.Item` child from `get-default-activity-xaml`):**
+**Example — avoid (`.Item` child from `activities get-default-xaml`):**
 ```xml
 <upap:GetPDFPageCount FileName="[pdfPath]" ResourceFile="{x:Null}" PageCount="[pageCount]">
     <upap:GetPDFPageCount.Item>
@@ -214,7 +214,7 @@ The path is relative to the project root directory. Use backslashes for subfolde
 
 ### Arguments Must NOT Use a Dictionary Wrapper
 
-`uip rpa get-default-activity-xaml` returns an empty `scg:Dictionary` as the default container for `InvokeWorkflowFile.Arguments`. This is correct for the **empty state only**. When you populate arguments, drop the Dictionary wrapper and use direct `InArgument`/`OutArgument`/`InOutArgument` child elements instead.
+`uip rpa activities get-default-xaml` returns an empty `scg:Dictionary` as the default container for `InvokeWorkflowFile.Arguments`. This is correct for the **empty state only**. When you populate arguments, drop the Dictionary wrapper and use direct `InArgument`/`OutArgument`/`InOutArgument` child elements instead.
 
 Studio silently clears any Dictionary-wrapped argument entries on load — the arguments appear mapped in the designer but are empty at runtime, with no validation error.
 
@@ -229,7 +229,7 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 </ui:InvokeWorkflowFile>
 ```
 
-**Wrong — Dictionary wrapper (from `get-default-activity-xaml` empty state):**
+**Wrong — Dictionary wrapper (from `activities get-default-xaml` empty state):**
 ```xml
 <ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
     DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)">
@@ -271,7 +271,7 @@ If the caller does not consume an output but the callee declares it as required,
 
 ## Empty Argument Values
 
-`<InArgument>` and `<OutArgument>` with **empty content** pass per-file `uip rpa get-errors` but fail project-level `uip rpa analyze` with `Value for a required activity argument 'Value' was not supplied` — no file or activity pointer.
+`<InArgument>` and `<OutArgument>` with **empty content** pass per-file `uip rpa validate` but fail project-level `uip rpa analyze` with `Value for a required activity argument 'Value' was not supplied` — no file or activity pointer.
 
 **Wrong:**
 ```xml
@@ -407,7 +407,7 @@ Guessed names (e.g. `method`/`path`/`body` for an HTTP operation that actually e
 
 ### `Configuration` Attribute Is Opaque
 
-The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa get-default-activity-xaml --activity-type-id <GUID> --connection-id <GUID>`.
+The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa activities get-default-xaml --activity-type-id <GUID> --connection-id <GUID>`.
 
 ### `FieldObject.Value` Attribute Does Nothing
 
@@ -445,7 +445,7 @@ Activity tag names rarely match Studio display names. Guessing the tag from the 
 Before writing any `<prefix:Tag>` not already in the file:
 
 - **Doc check.** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Tag>.md`, or `references/activity-docs/<PackageId>/<closest-version>/activities/<Tag>.md`. No file → no such tag.
-- **CLI lookup.** `uip rpa find-activities --query "<verb>" --output json` → use the returned `ClassName`.
+- **CLI lookup.** `uip rpa activities find --query "<verb>" --output json` → use the returned `ClassName`.
 
 Skipping both produces `Cannot create unknown type` at `build`.
 
@@ -478,7 +478,7 @@ Skipping both produces `Cannot create unknown type` at `build`.
 | `UiPath.UIAutomation.Activities` | `UiPath.UIAutomationNext.Activities` | Modern UI activities use "Next" namespace |
 | `UiPath.UIAutomation.Activities` (classic) | `UiPath.Core.Activities` | Classic UI activities are in Core |
 
-Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
+Use `uip rpa activities get-default-xaml` to get correct xmlns declarations — never guess namespace mappings.
 
 ### `Delay` — no namespace prefix
 
@@ -490,7 +490,7 @@ Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — ne
 
 `<ui:Delay .../>` fails with `Cannot create unknown type '{...uipath...}Delay'`. The `ui:` prefix maps to `UiPath.Core.Activities`, which has no `Delay` override.
 
-**For other primitives** (`Sequence`, `If`, `Assign`, `ForEach`, `While`, `TryCatch`, `Switch`, …) UiPath provides `ui:`-prefixed overrides for many — which one to use depends on the behavior you want. Check with `uip rpa find-activities --query "<name>"` before assuming MWF or UiPath; don't generalize from `Delay`.
+**For other primitives** (`Sequence`, `If`, `Assign`, `ForEach`, `While`, `TryCatch`, `Switch`, …) UiPath provides `ui:`-prefixed overrides for many — which one to use depends on the behavior you want. Check with `uip rpa activities find --query "<name>"` before assuming MWF or UiPath; don't generalize from `Delay`.
 
 ## Portable vs Windows Framework Limitations
 
@@ -512,12 +512,12 @@ Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — ne
 - **Assert activities** require `BookmarkResumptionHelper` extension (added via `metadata.RequireExtension<BookmarkResumptionHelper>()` in CacheMetadata)
 - **TakeScreenshotInCaseOfSucceedingAssertion** and **TakeScreenshotInCaseOfFailingAssertion** are `[RequiredArgument]` on assert activities even though they default to `false`
 
-## Enum-Valued Properties Are a `get-errors` Blind Spot
+## Enum-Valued Properties Are a `validate` Blind Spot
 
-Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) are checked at compile time against the activity's enum, **not** during `get-errors` static analysis. An invalid identifier on an enum-typed attribute returns "no diagnostics found" from `get-errors` and surfaces only at `build` / `CacheMetadata` time. Two consequences:
+Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) are checked at compile time against the activity's enum, **not** during `validate` static analysis. An invalid identifier on an enum-typed attribute returns "no diagnostics found" from `validate` and surfaces only at `build` / `CacheMetadata` time. Two consequences:
 
 1. Always read `{projectRoot}/.local/docs/packages/<PackageId>/activities/<Activity>.md` for the exact, package-version-specific enum members before authoring an enum-valued attribute. Do not infer values from naming intuition or from prose in this skill.
-2. Always run `uip rpa build` after `get-errors` clears — it is the only validator that catches invalid enum identifiers (see [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop)).
+2. Always run `uip rpa build` after `validate` clears — it is the only validator that catches invalid enum identifiers (see [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop)).
 
 ## Package Version Changes Break XAML
 
@@ -538,9 +538,9 @@ Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`
 2. Remove attributes that don't exist in the target version
 3. Cap `Version` attributes to the maximum supported by the target package
 4. Add `<AssemblyReference>netstandard</AssemblyReference>` if type resolution errors persist
-5. Use `uip rpa get-errors` to validate after changes
+5. Use `uip rpa validate` to validate after changes
 
-**Prevention:** When using `uip rpa get-default-activity-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
+**Prevention:** When using `uip rpa activities get-default-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
 
 ## Expression Language Mismatch
 
@@ -582,7 +582,7 @@ Common validation error: `"The type 'Dictionary<,>' is defined in an assembly th
 <AssemblyReference>System.Collections</AssemblyReference>
 ```
 
-**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages`.
+**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa packages install`.
 
 ## Workflow Argument Declarations Use `<x:Members>`, Not `<Activity.Properties>`
 
@@ -609,7 +609,7 @@ Cannot create unknown type '{http://schemas.microsoft.com/netfx/2009/xaml/activi
 </x:Members>
 ```
 
-This is a hard-load error, not a validation warning — the file cannot even be opened in the designer. If a hand-written or generated workflow shows this symptom, search-and-replace `<Activity.Properties>` → `<x:Members>` and `<Property ` → `<x:Property ` (and the matching closing tags). The `<x:Members>` form appears in every starter from `uip rpa get-default-activity-xaml` and in the canonical anatomy at [xaml-basics-and-rules.md § XAML File Anatomy](xaml-basics-and-rules.md#xaml-file-anatomy).
+This is a hard-load error, not a validation warning — the file cannot even be opened in the designer. If a hand-written or generated workflow shows this symptom, search-and-replace `<Activity.Properties>` → `<x:Members>` and `<Property ` → `<x:Property ` (and the matching closing tags). The `<x:Members>` form appears in every starter from `uip rpa activities get-default-xaml` and in the canonical anatomy at [xaml-basics-and-rules.md § XAML File Anatomy](xaml-basics-and-rules.md#xaml-file-anatomy).
 
 ---
 
@@ -797,7 +797,7 @@ The same registration rules apply to `<upa:ProcessDiagram>` and its node types (
 - `PropertyName="{x:Null}"` explicitly sets a property to null — this is serialized and persisted
 - Omitting a property entirely means "use the default value" — which may or may not be null
 - Some activities behave differently when a property is explicitly null vs absent (e.g., `Filter="{x:Null}"` may disable filtering, while omitting `Filter` uses a default filter)
-- When `uip rpa get-default-activity-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
+- When `uip rpa activities get-default-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
 
 ## Literal Curly Braces in Attribute Values
 
@@ -845,9 +845,9 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 
 ## CLI-Specific Pitfalls
 
-### `get-errors --file-path` requires relative paths
+### `validate --file-path` requires relative paths
 
-The `--file-path` parameter of `uip rpa get-errors` must be a path **relative to the project directory**:
+The `--file-path` parameter of `uip rpa validate` must be a path **relative to the project directory**:
 - Correct: `--file-path "Workflows/SendEmail.xaml"`
 - Wrong: `--file-path "C:\Users\me\Projects\MyProject\Workflows\SendEmail.xaml"`
 
@@ -863,8 +863,8 @@ All `uip rpa` commands default to the current working directory as the project r
 
 1. **Re-run the command.** Headless Studio relaunches automatically on the next call; transient pipe errors clear on retry.
 2. **Raise the timeout for the first call.** Cold NuGet restore of the headless Studio package can take 30–90 s — `uip rpa --timeout 600 <command>`.
-3. **`uip rpa open-project --project-dir "..."`** — open the project explicitly if Studio reports no project loaded.
-4. **Studio Desktop only** — if the failing command is `diff` or `focus-activity` (or the user set `UIPATH_RPA_TOOL_USE_STUDIO=1`), check Studio Desktop with the hidden `uip rpa list-instances --output json` and run `uip rpa start-studio --project-dir "..."` if no instance is up.
+3. **`uip rpa project open --project-dir "..."`** — open the project explicitly if Studio reports no project loaded.
+4. **Studio Desktop only** — if the failing command is `diff` or `focus-activity` (or the user set `UIPATH_RPA_TOOL_USE_STUDIO=1`), check Studio Desktop with the hidden `uip rpa instances list --output json` and run `uip rpa studio start --project-dir "..."` if no instance is up.
 
 ### CLI output format for parsing
 

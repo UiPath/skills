@@ -1,0 +1,87 @@
+task_id: skill-bpmn-imported-xml-inspect
+description: >
+  Inspect-only eval: agent reads the three complex public-safe fixtures
+  (gateway-boundary-error, integration-service-enriched,
+  subprocess-multi-instance) as imported BPMN, summarizes structure, and
+  produces an inspection report without modifying source. Mirrors the manual
+  smoke "review imported BPMN" matrix.
+tags: [uipath-maestro-bpmn, smoke, "lifecycle:inspect", "mode:inspect"]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+
+run_limits:
+  max_turns: 25
+  turn_timeout: 900
+
+sandbox:
+  driver: docker
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Treat the three complex public-safe fixtures below as imported BPMN that you
+  cannot modify. Inspect them and produce a `inspection-report.md` summarizing
+  structure, model/CLI ownership, and any preserve-only payloads.
+
+  Imports under inspection:
+  - `fixtures/validation/gateway-boundary-error/gateway-boundary-error.bpmn`
+  - `fixtures/validation/integration-service-enriched/integration-service-enriched.bpmn`
+  - `fixtures/validation/subprocess-multi-instance/subprocess-multi-instance.bpmn`
+
+  Requirements:
+  - Do not modify any file under `fixtures/validation/`.
+  - Save your inspection report at `inspection-report.md` in the workspace
+    root, with one section per fixture.
+  - Each section must name the fixture's actual `bpmn:process` id and at
+    least one fixture-specific element id or extension token observed in the
+    XML (for example a `bpmn:error` reference, an `Intsvc.*` extension type,
+    or `multiInstance` loop metadata) so the report demonstrates real
+    inspection.
+  - Each section must call out CLI-owned vs. model-owned content where the
+    fixture mixes both, using the skill's documented split.
+  - Do not upload, publish, deploy, debug, run, or pack anything.
+
+success_criteria:
+  - type: file_exists
+    description: "Inspection report was created"
+    path: "inspection-report.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent opened the gateway boundary error BPMN fixture"
+    tool_name: "Read"
+    command_pattern: 'fixtures/validation/gateway-boundary-error/gateway-boundary-error\.bpmn'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent opened the Integration Service enriched BPMN fixture"
+    tool_name: "Read"
+    command_pattern: 'fixtures/validation/integration-service-enriched/integration-service-enriched\.bpmn'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent opened the subprocess multi-instance BPMN fixture"
+    tool_name: "Read"
+    command_pattern: 'fixtures/validation/subprocess-multi-instance/subprocess-multi-instance\.bpmn'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Imported fixtures still parse and remain unmodified"
+    command: "python3 $TASK_DIR/check_imported_xml_inspect.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

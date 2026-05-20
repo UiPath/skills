@@ -4,7 +4,7 @@
 **Minimum version (`<MIN_VERSION>`):** `26.4.1-preview`
 **Source feed:** the official UiPath NuGet feed — the same feed Studio resolves by default. Prerelease / preview builds of `UiPath.UIAutomation.Activities` are published there alongside stable releases. Installing them is a normal supported path, not a third-party workaround.
 
-> **Prerelease required.** `<MIN_VERSION>` is a preview — stable releases of `UiPath.UIAutomation.Activities` do NOT yet ship the `uia-configure-target` skill content. Install the prerelease build explicitly. `uip rpa get-versions` MUST be invoked with `--include-prerelease` (the flag defaults to `false`), otherwise the required preview is filtered out of the listing and the agent will report "no upgrade available" against a feed that actually has it.
+> **Prerelease required.** `<MIN_VERSION>` is a preview — stable releases of `UiPath.UIAutomation.Activities` do NOT yet ship the `uia-configure-target` skill content. Install the prerelease build explicitly. `uip rpa packages versions` MUST be invoked with `--include-prerelease` (the flag defaults to `false`), otherwise the required preview is filtered out of the listing and the agent will report "no upgrade available" against a feed that actually has it.
 
 The `uip rpa uia` CLI used by `uia-configure-target` requires `UiPath.UIAutomation.Activities` at `<MIN_VERSION>` or newer. Before configuring any target, check the installed version in `project.json` under `dependencies`.
 
@@ -13,7 +13,7 @@ The `uip rpa uia` CLI used by `uia-configure-target` requires `UiPath.UIAutomati
 Never upgrade UIA silently. Every upgrade requires explicit user consent before any package mutation. Consent comes from one of:
 
 - **Plan-mode:** approval of a plan whose Task 0 names the upgrade explicitly — both package ID and version. Plan approval IS the consent — do NOT re-ask at execution time.
-- **Interactive mode (no plan):** a direct prompt before `install-or-update-packages` runs.
+- **Interactive mode (no plan):** a direct prompt before `packages install` runs.
 
 | Scenario | Behavior |
 |---|---|
@@ -30,13 +30,13 @@ If the user declines, do NOT install. Warn that `uip rpa uia` commands will fail
 Discovery (non-mutating, no consent required):
 
 ```bash
-uip rpa get-versions --package-id UiPath.UIAutomation.Activities --include-prerelease --project-dir "$PROJECT_DIR" --output json
+uip rpa packages versions --package-id UiPath.UIAutomation.Activities --include-prerelease --project-dir "$PROJECT_DIR" --output json
 ```
 
 Install / upgrade (mutating — only after consent per the table above; substitute `<MIN_VERSION>` with the value declared at the top of this file):
 
 ```bash
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "<MIN_VERSION>"}]' --project-dir "$PROJECT_DIR" --output json
+uip rpa packages install --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "<MIN_VERSION>"}]' --project-dir "$PROJECT_DIR" --output json
 ```
 
-`install-or-update-packages` accepts the beta version directly via the `version` field — no separate prerelease flag is needed once the version string is specified explicitly.
+`packages install` accepts the beta version directly via the `version` field — no separate prerelease flag is needed once the version string is specified explicitly.

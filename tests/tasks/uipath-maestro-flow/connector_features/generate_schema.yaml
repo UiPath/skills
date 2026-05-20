@@ -4,23 +4,22 @@ description: >
   "Create Issue" connector node so that customFieldsRequestDetails captures
   the parent values (project key + issue type id) that drive the schema
   fetch, and bodyParameters carries the required fields.summary value.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe]
 
-task_timeout: 1500
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
 sandbox:
   driver: tempdir
   python: {}
-  node:
-    # Pin shared across all connector_features tasks — bump in lockstep.
-    env_packages:
-      - "@uipath/cli"
+  node: {}
 initial_prompt: |
   Create a new Flow project called "GenerateSchemaTest" with a manual trigger
   that runs the Atlassian Jira "Create Issue" connector activity
@@ -67,4 +66,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-max_iterations: 1

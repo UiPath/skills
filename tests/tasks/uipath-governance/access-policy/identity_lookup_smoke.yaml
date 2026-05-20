@@ -1,0 +1,96 @@
+task_id: skill-gov-access-policy-identity-lookup-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-governance skill's
+  access-policy resource-lookup-guide to resolve a User UUID, a robot's
+  identity UUID, and a Group UUID via Identity Server (`uip admin users`,
+  `uip admin robot-accounts`, `uip admin groups`). Guards against
+  regression to the retired `uip or users list` / `uip or users current`
+  path and the bearer-token sub-shell REST fallback against
+  `orchestrator_/odata/Robots`. Also checks that the agent uses
+  `--output-filter` on `uip admin groups list` (which has no `--search`).
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip admin` commands that hit Identity Server will fail with an auth
+  error. That is acceptable — what matters is that the agent invokes the
+  correct commands with the correct flags.
+tags: [uipath-governance, smoke, access-policy, identity-lookup]
+
+sandbox:
+  driver: docker
+  python: {}
+
+initial_prompt: |
+  I am authoring a UiPath access policy and need three UUIDs for the
+  `actorRule.values[]` array. Resolve each one and save every command's
+  stdout+stderr to ./output.txt (use `> output.txt 2>&1` for the first
+  command and `>> output.txt 2>&1` for subsequent ones).
+
+  1. User UUID for the user with email `alice@example.com`.
+  2. Robot identity UUID for the robot account named `build-bot`.
+  3. Group UUID for a group whose display name contains `Ops`.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in
+    this environment. Commands WILL fail with auth errors — that is
+    expected. Run each command exactly once, capture stdout+stderr to
+    ./output.txt, and move on. Do NOT retry, do NOT attempt to login,
+    do NOT fall back to other lookup paths.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin users list --search` for the email-based user lookup with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+list\s+.*--search\s+["'']?[^"'' ]*alice[^"'' ]*["'']?\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip admin robot-accounts list --search` for the robot lookup with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+list\s+.*--search\s+["'']?[^"'' ]*build-bot[^"'' ]*["'']?\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip admin groups list --output json` and filtered client-side with --output-filter (uip admin groups list has no --search)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+list\s+(?=.*--output\s+json)(?=.*--output-filter).*'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT use the retired `uip or users list` path for User UUID resolution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+list'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT use the retired `uip or users current` subcommand"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+current'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT fall back to the REST `orchestrator_/odata/Robots` lookup (retired in favor of `uip admin robot-accounts`)"
+    tool_name: "Bash"
+    command_pattern: 'odata/Robots'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

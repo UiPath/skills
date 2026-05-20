@@ -6,12 +6,13 @@ description: >
   workflow, the delay branch should be killed before it completes. Exercises
   Terminate as a hard-stop that kills parallel branches.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, node:terminate]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:
@@ -27,7 +28,7 @@ initial_prompt: |
 
   Both branches should start at the same time from the trigger node.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 

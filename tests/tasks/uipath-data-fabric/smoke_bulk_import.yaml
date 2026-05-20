@@ -8,10 +8,12 @@ tags: [uipath-data-fabric, smoke, records, import]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 30
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

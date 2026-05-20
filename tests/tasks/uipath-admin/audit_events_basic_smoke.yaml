@@ -1,0 +1,54 @@
+task_id: skill-admin-audit-events-basic-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to query
+  audit events with a small bounded time window and a small --limit
+  that does NOT trigger client-side pagination. Validates the simpler
+  events form most users will write — `--from-date`/`--to-date` ISO 8601
+  bounds, `--limit <= 200`, `--output json`.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:diagnose, audit]
+
+sandbox:
+  driver: docker
+  python: {}
+
+initial_prompt: |
+  A reviewer wants the most recent 25 tenant audit events from the
+  last 24 hours.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant events` with both --from-date and --to-date ISO 8601 bounds"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --limit with a value <= 200 (single-call form, no pagination needed)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--limit\s+(?:[1-9]|[1-9]\d|1\d\d|200)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the events call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

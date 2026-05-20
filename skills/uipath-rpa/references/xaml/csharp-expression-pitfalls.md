@@ -2,7 +2,7 @@
 
 **Scope:** XAML workflow files in projects whose `project.json` has `expressionLanguage: CSharp`. These rules govern how XAML expressions are authored — they do **not** apply to VB XAML projects, and they do **not** apply to coded workflows (`.cs` files with `[Workflow]` / `[TestCase]`). Coded workflows are plain C# — none of the `CSharpValue` / `CSharpReference` / attribute-form rules below are relevant there.
 
-Failure modes in scope: all pass static `get-errors` validation — they only surface at `CacheMetadata` time under `uip rpa build` or `uip rpa run-file`.
+Failure modes in scope: all pass static `validate` validation — they only surface at `CacheMetadata` time under `uip rpa build` or `uip rpa run`.
 
 For the canonical binding form per property, see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 

@@ -1,0 +1,107 @@
+task_id: skill-bpmn-author-validate-pack
+description: >
+  Skill-guided end-to-end evaluation: agent uses the uipath-maestro-bpmn
+  skill to author a small synthetic BPMN Process Orchestration project,
+  validate it locally, and package it locally. This covers the source-to-package
+  lifecycle without upload, publish, deploy, debug, or run side effects.
+tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 80
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a new synthetic UiPath Maestro BPMN Process Orchestration project
+  called "PurchaseApproval" in a folder named PurchaseApproval. The project
+  should include:
+  - PurchaseApproval.bpmn as the BPMN source of record.
+  - project.uiproj as the UiPath project metadata.
+  - A manual start event, one script task named "Prepare approval summary",
+    one user task named "Manager approval", an exclusive gateway for approved
+    vs rejected outcomes, and two end events.
+  - Valid BPMN DI diagram geometry for each visible node and sequence flow.
+  - Public-safe synthetic IDs, labels, variables, and any generated metadata.
+
+  Keep the scope local:
+  - Validate the BPMN source with `uip maestro bpmn validate PurchaseApproval/PurchaseApproval.bpmn --output json`.
+  - Package the project with `uip maestro bpmn pack PurchaseApproval dist --output json`.
+  - Do not upload, publish, deploy, debug, run a process, ask for approval, or
+    call cloud-side UiPath commands.
+
+  The task is not complete until validation passes and a local package artifact
+  exists under dist.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source file was authored at the expected path"
+    path: "PurchaseApproval/PurchaseApproval.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "UiPath project metadata was authored at the expected path"
+    path: "PurchaseApproval/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN source includes the requested process shape and diagram metadata"
+    path: "PurchaseApproval/PurchaseApproval.bpmn"
+    includes:
+      - "Prepare approval summary"
+      - "Manager approval"
+      - "bpmn:exclusiveGateway"
+      - "bpmndi:BPMNDiagram"
+      - "bpmndi:BPMNShape"
+      - "bpmndi:BPMNEdge"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the BPMN project locally"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+validate\s+PurchaseApproval/PurchaseApproval\.bpmn\s+--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent packaged the BPMN project locally"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+pack\s+PurchaseApproval\s+dist\s+--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN project validates successfully in the scored workspace"
+    command: "uip maestro bpmn validate PurchaseApproval/PurchaseApproval.bpmn --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN project packs successfully in the scored workspace"
+    command: "uip maestro bpmn pack PurchaseApproval dist --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Local package artifact exists under dist"
+    command: "find dist -type f -name '*.nupkg' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

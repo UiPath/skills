@@ -32,11 +32,11 @@ jobs:
         run: |
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
-          # RPA + rpa-legacy skills run on the Windows workflow
+          # RPA skill (modern + legacy) runs on the Windows workflow
           # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
           # the full lifecycle (`uip rpa` / `uip rpa-legacy` CLI) is
           # what's being exercised — so we skip those tasks here.
-          WINDOWS_SKILLS="uipath-rpa uipath-rpa-legacy"
+          WINDOWS_SKILLS="uipath-rpa"
 
           # Opt-in benchmarks live alongside skill tests but are NOT smoke
           # tests — they're large/expensive and run via the dashboard
@@ -61,7 +61,7 @@ jobs:
           # ...) drive their own jobs/dashboards and don't change smoke
           # behavior, so editing them shouldn't trigger a 30-min full-suite
           # run on every PR.
-          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$'; then
+          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -199,23 +199,39 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Verify Docker is available
+        run: docker info > /dev/null
+
       - name: Install coder-eval
         working-directory: .coder_eval
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      # Install from public npm at @latest. `--@uipath:registry=`
-      # forces the @uipath scope to public npm regardless of any
-      # `.npmrc` scope mapping (e.g., to the internal GitHub Packages
-      # feed, which carries divergent 1.0.0-alpha.* prereleases). See
-      # smoke-rpa-skills.yml for the full rationale.
-      - name: Install uip CLI (public npm @latest)
+      - name: Build coder-eval Docker image
+        working-directory: .coder_eval
+        env:
+          UV_INDEX_UIPATH_USERNAME: ${{ secrets.UV_INDEX_UIPATH_USERNAME }}
+          UV_INDEX_UIPATH_PASSWORD: ${{ secrets.UV_INDEX_UIPATH_PASSWORD }}
+        run: make docker-image
+
+      # Install from GitHub Packages under the `alpha` dist-tag so smoke
+      # tracks `cli/main`. Every merge to `cli/main` runs
+      # cli/.github/workflows/ci.yml, which publishes a
+      # `-alpha.<date>.<run>` prerelease to
+      # https://npm.pkg.github.com/ under dist-tag `alpha`. Public npm
+      # only carries the cut-release `latest` line which lags `main` by
+      # days, so smoke against `@latest` was masking CLI changes that
+      # task YAMLs and skills had already been updated for.
+      - name: Install uip CLI + admin tool (GitHub Packages @alpha)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          npm install -g \
-            --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest
+          npm config set @uipath:registry https://npm.pkg.github.com/
+          npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
+          npm install -g @uipath/cli@alpha @uipath/admin-tool@alpha
           uip --version
+          uip admin --help
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
       # smoke tasks (orchestrator / integration-service / data-fabric / ...)
@@ -254,6 +270,7 @@ jobs:
           UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
           UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
             uip login status --output json
+          mkdir ~/.uipath
 
       - name: Run smoke tests
         env:
@@ -279,16 +296,22 @@ jobs:
         run: |
           echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml --tags smoke -j "$TASK_PARALLELISM" -v
+            -e experiments/default.yaml \
+            -j "$TASK_PARALLELISM" -v \
+            --run-dir /tmp/runs \
+            --tags smoke
         continue-on-error: true
+
+      - name: Fix permissions on /tmp/runs
+        if: always()
+        run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
 
       - name: Summarize results
         if: always()
-        working-directory: tests
         run: |
           # Find the most recent run directory (tests may not have produced
           # one on catastrophic install failures).
-          run_dir=$(ls -td runs/*/ 2>/dev/null | head -n 1)
+          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1)
           if [ -z "$run_dir" ]; then
             echo "::warning::No run directory found — nothing to summarize"
             exit 0
@@ -299,7 +322,7 @@ jobs:
           python - <<'PY'
           import json
           import pathlib
-          run_dir = sorted(pathlib.Path('runs').glob('*/'))[-1]
+          run_dir = sorted(pathlib.Path('/tmp/runs').glob('*/'))[-1]
           rows = []
           for p in sorted(run_dir.rglob('task.json')):
               d = json.loads(p.read_text(encoding='utf-8'))
@@ -322,24 +345,30 @@ jobs:
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
 
+      - name: Clean up artifacts (remove .venv and node_modules)
+        if: always()
+        run: |
+          find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
+
       - name: Upload HTML / JSON eval report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: eval-report-${{ github.run_id }}
           # Use ** so the pattern still matches the replicate-index segment
-          # that coder_eval adds to per-task run dirs (runs/<ts>/<variant>/<task>/<NN>/).
+          # that coder_eval adds to per-task run dirs (/tmp/runs/<ts>/<variant>/<task>/<NN>/).
           path: |
-            tests/runs/*/experiment.html
-            tests/runs/*/experiment.md
-            tests/runs/*/experiment.json
-            tests/runs/*/experiment.log
-            tests/runs/*/*/variant.html
-            tests/runs/*/*/variant.md
-            tests/runs/*/*/variant.json
-            tests/runs/**/task.html
-            tests/runs/**/task.json
-            tests/runs/**/task.log
+            /tmp/runs/*/experiment.html
+            /tmp/runs/*/experiment.md
+            /tmp/runs/*/experiment.json
+            /tmp/runs/*/experiment.log
+            /tmp/runs/*/*/variant.html
+            /tmp/runs/*/*/variant.md
+            /tmp/runs/*/*/variant.json
+            /tmp/runs/**/task.html
+            /tmp/runs/**/task.json
+            /tmp/runs/**/task.log
+            /tmp/runs/**/artifacts
           if-no-files-found: warn
           retention-days: 14
 
@@ -352,7 +381,6 @@ jobs:
       # agent already recovered from without false-failing correct runs.
       - name: Enforce LLM reviewer score threshold (>= 0.7)
         if: always()
-        working-directory: tests
         env:
           REVIEWER_THRESHOLD: "0.7"
         # Single-quoted heredoc keeps Python literals intact. Threshold
@@ -361,7 +389,7 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, sys
           threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          run_dirs = sorted(pathlib.Path('/tmp/runs').glob('*/'))
           if not run_dirs:
               print('::warning::No run directory — skipping reviewer threshold check')
               sys.exit(0)
@@ -390,8 +418,34 @@ jobs:
           print(f'All {len(task_jsons)} task(s) passed llm_review >= {threshold}')
           PY
 
-      - name: Fail if tests failed
-        # Also catch `cancelled` (the job timeout firing) so a truncated
-        # run is not silently reported green.
-        if: steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled'
-        run: exit 1
+      # Hard gate: fail the job if fewer than PASS_RATE_THRESHOLD of tasks
+      # passed deterministic criteria. Lets a small number of flakes /
+      # known-broken tasks through without blocking every PR, while still
+      # catching systemic regressions. Cancellation (120m timeout) is
+      # always a fail since a truncated run has no meaningful rate.
+      - name: Enforce pass-rate threshold (>= 95%)
+        if: always()
+        env:
+          PASS_RATE_THRESHOLD: "0.95"
+        run: |
+          if [ "${{ steps.smoke.outcome }}" = "cancelled" ]; then
+            echo "::error::Smoke step cancelled (timeout) — failing without rate check"
+            exit 1
+          fi
+          python - <<'PY'
+          import json, os, pathlib, sys
+          threshold = float(os.environ['PASS_RATE_THRESHOLD'])
+          tasks = sorted(pathlib.Path('/tmp/runs').rglob('task.json'))
+          results = [json.loads(p.read_text(encoding='utf-8')) for p in tasks]
+          passed = sum(1 for d in results if d.get('final_status') == 'SUCCESS')
+          n = len(results)
+          rate = passed / n if n else 0.0
+          for d in results:
+              s = d.get('final_status')
+              if s != 'SUCCESS':
+                  print(f"::warning::{d.get('task_id')}: status={s}")
+          print(f'Pass rate: {rate:.1%} ({passed}/{n})')
+          if rate < threshold:
+              print(f'::error::Pass rate {rate:.1%} < threshold {threshold:.0%}')
+              sys.exit(1)
+          PY

@@ -5,12 +5,13 @@ description: >
   a function that handles sensitive data so both the input and the
   output are redacted before they reach the trace store.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:trace]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

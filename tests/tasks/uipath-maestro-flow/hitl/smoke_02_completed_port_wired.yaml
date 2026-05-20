@@ -8,11 +8,13 @@ tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hi
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 105
   turn_timeout: 600
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -26,7 +28,7 @@ initial_prompt: |
   Wire the HITL node's completed handle to the Script node.
   The Script node logs: "Approval recorded."
 
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: file_exists

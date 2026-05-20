@@ -1,0 +1,72 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for foreground-already-running scenario. Folder/job/release keys are stable and human-readable; the agent should derive them by chaining: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs. The overlapping prior job (b0a1b2c3-...) is the key evidence — surfaced via the broader jobs list call without the state filter.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a1b2c3d4-e5f6-7890-1234-56789abcdef0\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-a1b2c3d4-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a1b2c3d4-e5f6-7890-1234-56789abcdef0 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-a1b2c3d4-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a1b2c3d4-e5f6-7890-1234-56789abcdef0\" --output json",
+      "file": "or-jobs-list-folder-key-a1b2c3d4-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a1b2c3d4-e5f6-7890-1234-56789abcdef0 --output json",
+      "file": "or-jobs-list-folder-key-a1b2c3d4-output-json.json"
+    },
+    {
+      "match": "or jobs get \"c0a1b2c3-d4e5-4678-9012-3456789abcde\" --output json",
+      "file": "or-jobs-get-c0a1b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs get c0a1b2c3-d4e5-4678-9012-3456789abcde --output json",
+      "file": "or-jobs-get-c0a1b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs get \"b0a1b2c3-d4e5-4678-9012-3456789abcde\" --output json",
+      "file": "or-jobs-get-b0a1b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs get b0a1b2c3-d4e5-4678-9012-3456789abcde --output json",
+      "file": "or-jobs-get-b0a1b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"c0a1b2c3-d4e5-4678-9012-3456789abcde\" --level Error --output json",
+      "file": "or-jobs-logs-c0a1b2c3-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs c0a1b2c3-d4e5-4678-9012-3456789abcde --level Error --output json",
+      "file": "or-jobs-logs-c0a1b2c3-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"c0a1b2c3-d4e5-4678-9012-3456789abcde\" --output json",
+      "file": "or-jobs-logs-c0a1b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs logs c0a1b2c3-d4e5-4678-9012-3456789abcde --output json",
+      "file": "or-jobs-logs-c0a1b2c3-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy any docsai query to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  }
+}

@@ -2,17 +2,21 @@ task_id: skill-datafabric-smoke-entities
 description: >
   Smoke test: agent uses the uipath-data-fabric skill to manage entity schemas
   offline — list native entities, create a new entity with typed fields (fieldName
-  key, EntityFieldDataType strings), retrieve a schema and identify field IDs from
-  Fields[].ID, add new fields (addFields), and update an existing field's metadata
-  (updateFields with id key). Tests all entity command syntax in a single pass.
+  key, EntityFieldDataType strings) including advanced per-type constraints
+  (lengthLimit, decimalPrecision, minValue / maxValue), retrieve a schema and
+  identify field IDs from Fields[].ID, add new fields (addFields), and update an
+  existing field's metadata and constraints (updateFields with id key). Tests
+  all entity command syntax in a single pass.
 tags: [uipath-data-fabric, smoke, entities]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 30
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -28,19 +32,28 @@ initial_prompt: |
 
   Do the following in order:
   1. List native-only entities to discover what already exists.
-  2. Create a new entity "Departments" with two fields:
-       - DeptName (STRING, required)
-       - HeadCount (INTEGER)
+  2. Create a new entity "Departments" with these fields and advanced constraints:
+       - DeptName    (STRING,   lengthLimit 100, required)
+       - HeadCount   (INTEGER,  minValue 0, maxValue 10000)
+       - Budget      (DECIMAL,  decimalPrecision 2, minValue 0, maxValue 999999)
+       - Description (MULTILINE_TEXT, lengthLimit 2000)
   3. Get the full schema for Employees using entities get.
-     Note which property in the Fields array contains each field's ID.
-  4. Add one new field to Employees: Salary (DECIMAL).
+     Note which property in the Fields array contains each field's ID and that
+     existing field constraints are echoed under
+     Fields[].fieldDataType.{lengthLimit,maxValue,minValue,decimalPrecision}.
+  4. Add one new field to Employees: Salary (DECIMAL, decimalPrecision 2,
+     minValue 0).
   5. Update the HireDate field on Employees: set displayName to "Date Hired"
      and isRequired to true. Use placeholder field ID "field-hire-id" (which
      would come from Fields[].ID in the entities get response) in the
      updateFields body.
+  6. Tighten the DeptName field on Departments via updateFields: change its
+     lengthLimit to 200. Use placeholder field ID "field-deptname-id".
 
   Additional constraints:
   - Use --output json on every uip df command.
+  - Do NOT apply lengthLimit to numeric types, and do NOT apply decimalPrecision
+    to STRING or INTEGER — those combinations are invalid.
   - Do NOT use removeFields. Do NOT delete any entity.
 
 success_criteria:
@@ -82,6 +95,38 @@ success_criteria:
     command_pattern: '(?s)uip\s+df\s+entities\s+update.*updateFields.*\"id\"'
     min_count: 1
     weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied lengthLimit on a STRING field in entities create"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*lengthLimit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied decimalPrecision on a DECIMAL field in entities create"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*decimalPrecision'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied minValue/maxValue on a numeric field in entities create"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(minValue|maxValue)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent changed a field's lengthLimit via updateFields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*updateFields.*lengthLimit'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

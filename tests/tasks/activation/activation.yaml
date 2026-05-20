@@ -16,27 +16,26 @@ dataset:
     - uipath-agents.jsonl
     - uipath-coded-apps.jsonl
     - uipath-data-fabric.jsonl
-    - uipath-diagnostics.jsonl
+    - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
-    - uipath-gov-access-policy.jsonl
-    - uipath-gov-aops-policy.jsonl
+    - uipath-governance.jsonl
     - uipath-human-in-the-loop.jsonl
-    - uipath-interact.jsonl
+    - uipath-llm-configuration-byo-connections.jsonl
+    - uipath-maestro-bpmn.jsonl
     - uipath-maestro-case.jsonl
     - uipath-maestro-flow.jsonl
     - uipath-planner.jsonl
     - uipath-platform.jsonl
     - uipath-review.jsonl
     - uipath-rpa.jsonl
-    - uipath-rpa-legacy.jsonl
-    - uipath-solution-design.jsonl
+    - uipath-solution.jsonl
     - uipath-tasks.jsonl
     - uipath-test.jsonl
     - negative.jsonl
 
 initial_prompt: "${row.prompt}"
 
-# 19 skill_triggered criteria — one per skill. Each derives expected internally
+# 20 skill_triggered criteria — one per skill. Each derives expected internally
 # from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~900 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
@@ -56,8 +55,8 @@ success_criteria:
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
-    description: "uipath-diagnostics activation"
-    skill_name: uipath-diagnostics
+    description: "uipath-troubleshoot activation"
+    skill_name: uipath-troubleshoot
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
@@ -66,13 +65,8 @@ success_criteria:
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
-    description: "uipath-gov-access-policy activation"
-    skill_name: uipath-gov-access-policy
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-  - type: skill_triggered
-    description: "uipath-gov-aops-policy activation"
-    skill_name: uipath-gov-aops-policy
+    description: "uipath-governance activation"
+    skill_name: uipath-governance
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
@@ -81,8 +75,13 @@ success_criteria:
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
-    description: "uipath-interact activation"
-    skill_name: uipath-interact
+    description: "uipath-llm-configuration-byo-connections activation"
+    skill_name: uipath-llm-configuration-byo-connections
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-maestro-bpmn activation"
+    skill_name: uipath-maestro-bpmn
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
@@ -116,13 +115,8 @@ success_criteria:
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
-    description: "uipath-rpa-legacy activation"
-    skill_name: uipath-rpa-legacy
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-  - type: skill_triggered
-    description: "uipath-solution-design activation"
-    skill_name: uipath-solution-design
+    description: "uipath-solution activation"
+    skill_name: uipath-solution
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered

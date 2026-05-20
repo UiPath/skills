@@ -1,0 +1,35 @@
+task_id: skill-platform-licensing-groups-rules-details
+description: >
+  Smoke test: agent uses the uipath-platform skill to drill into a single
+  group's license-rule details — who in the group holds which bundle.
+  Verifies the agent calls `uip platform groups rules details <group-name>
+  --output json`. CLI auth failure is expected offline.
+tags: [uipath-platform, smoke-blocked, licensing, groups]
+skip: true
+# Blocked: `uip platform groups rules` is not in the public
+# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
+# Re-enable when the CLI ships the groups surface. See PLT-103133.
+
+sandbox:
+  driver: docker
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Who in the "RPA Developers" group currently holds which license bundle?
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran `uip platform groups rules details <group>` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+platform\s+groups\s+rules\s+details\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

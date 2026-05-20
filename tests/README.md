@@ -22,9 +22,20 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
    npm install -g @uipath/cli
    ```
 
+   > **Do not add `@uipath/cli` to `sandbox.node.env_packages` in task YAMLs.** The GH smoke runner installs it globally before any task runs. Listing it in `env_packages` is redundant and, when pinned to a version, causes skew against the runner's `@latest` install.
+
 4. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for environment setup (`.env`, API keys, etc.).
 
 ## Running Tests
+
+> **Platform-specific sandbox driver:**
+> - **Linux smoke tests** use `driver: docker` for better isolation. Build the Docker image once before running:
+>   ```bash
+>   cd .coder_eval
+>   make docker-image
+>   cd ../tests
+>   ```
+> - **Windows RPA tests** use `driver: tempdir` (Docker image not available on Windows runner).
 
 ```bash
 cd tests
@@ -88,8 +99,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 |---|---|---|---|
 | **skill** | flat, required | Skill under test | `uipath-<name>` — must match the skill folder (e.g. `uipath-maestro-flow`) |
 | **tier** | flat, required | Test depth / cost | `smoke`, `integration`, `e2e` |
-| **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build`, `operate`, `diagnose` |
-| **lifecycle** | `lifecycle:X`, required | What the agent is asked to do | `generate`, `edit`, `validate`, `discover`, `activate`, `execute`, `deploy` |
+| **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
 | **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
@@ -98,8 +108,8 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 
 ### Rules
 
-1. **Required on every task: `skill` + `tier` + `mode:*` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
-2. **One value per singular dimension** (`tier`, `mode`, `lifecycle`, `shape`). A task doesn't have two tiers.
+1. **Required on every task: `skill` + `tier` + `mode:*`.** These drive `make` targets, coverage, and evalboard dashboards.
+2. **One value per singular dimension** (`tier`, `mode`, `shape`). A task doesn't have two tiers.
 3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
 4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
 5. **Use only the vocabularies above.** Propose new values in the PR — do not invent tags inline. New values should apply to at least two tasks in practice.
@@ -108,15 +118,15 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 ### Example
 
 ```yaml
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
+tags: [uipath-maestro-flow, e2e, mode:build, shape:multi-node, node:decision, connector, feature:http]
 ```
 
 ### Useful slices this enables
 
 - `make tags TAGS="smoke"` → every skill's entry-gate checks.
 - `make tags TAGS="integration connector"` → connector coverage across skills.
-- `make tags TAGS="e2e lifecycle:generate"` → end-to-end authoring from scratch, across skills.
-- `make tags TAGS="lifecycle:edit"` → modification-on-existing-project behavior.
+- `make tags TAGS="e2e mode:build"` → end-to-end build tasks across skills.
+- `make tags TAGS="mode:diagnose"` → diagnosis-mode coverage across skills.
 - Evalboard: `where tag == "connector"` → pass-rate across all connector-using tasks.
 - Evalboard: `where tag == "shape:multi-node"` → composite-flow reliability.
 
@@ -136,7 +146,7 @@ tests/
 │       ├── smoke/                # Tier: smoke
 │       ├── single_node/          # Tests isolating a single node type (optional)
 │       ├── multi_node/           # Composite-flow tests (optional)
-│       ├── edit/                 # lifecycle:edit tests (optional)
+│       ├── edit/                 # Tests that modify an existing artifact (optional)
 │       └── <other>/              # Skill-specific groupings (e.g. hitl/, connector_features/)
 └── reports/                      # Generated by /test-coverage command
     ├── <skill-name>.md           # Per-skill coverage report
@@ -149,12 +159,14 @@ Groupings under a skill are advisory — pick the ones that map to how the skill
 
 Experiment files define shared agent defaults per test type. Tasks inherit these defaults and should only override what differs.
 
-| Experiment | Used by | max_iterations | max_turns | task_timeout | turn_timeout |
-|------------|---------|----------------|-----------|--------------|--------------|
-| `default.yaml` | Smoke | 1 | 20 | 600s | 300s |
-| `integration.yaml` | Integration | 2 | 30 | 900s | 300s |
-| `e2e.yaml` | E2E | 2 | 40 | 1200s | 300s |
-| `activation.yaml` | Skill activation classifier | 1 | 1 | 120s | 120s |
+Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
+
+| Experiment | Used by | max_turns | task_timeout | turn_timeout |
+|------------|---------|-----------|--------------|--------------|
+| `default.yaml` | Smoke | 40 | 900s | 900s |
+| `integration.yaml` | Integration | 30 | 900s | 300s |
+| `e2e.yaml` | E2E | 200 | 1200s | 300s |
+| `activation.yaml` | Skill activation classifier | 1 | 120s | 120s |
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent for exactly one turn against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
@@ -165,10 +177,10 @@ Task files should **not** duplicate the full `agent:` block — the experiment p
 ```yaml
 # Good — no agent block needed when everything matches the experiment defaults
 task_id: skill-flow-init-validate
-tags: [uipath-maestro-flow, smoke, init, validate]
+tags: [uipath-maestro-flow, smoke, mode:build]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -176,14 +188,14 @@ initial_prompt: |
 
 # Good — only override what differs (max_turns: 14 instead of the default 20)
 task_id: skill-flow-registry-discovery
-tags: [uipath-maestro-flow, smoke, registry]
+tags: [uipath-maestro-flow, smoke, mode:build, feature:registry]
 
 agent:
   type: claude-code
   max_turns: 14
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -195,7 +207,7 @@ initial_prompt: |
 1. Create `tests/tasks/<skill-name>/` matching the skill folder name under `skills/`.
 2. Add at minimum **1 smoke test** and **1 e2e test** (required for every new skill PR).
 3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
-4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier`, plus `lifecycle`, `scenario`, and `feature` where applicable.
+4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier` + `mode:*`, plus optional `shape`, `node`, `resource`, `connector`, and `feature` where applicable.
 5. Stick to the closed-vocabulary values. Propose new tags in the PR — do not invent them inline.
 
 ### Task ID Convention
@@ -216,10 +228,10 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
   a new UiPath Flow project inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate]
+tags: [uipath-maestro-flow, smoke, mode:build]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -292,7 +304,7 @@ success_criteria:
 
 Key patterns to note:
 - **No `agent:` block** — inherits everything from `experiments/default.yaml`
-- **No `max_iterations` or `llm_reviewer`** — inherited from the experiment config
+- **No `run_limits:` block** — inherits turn / timeout caps from the experiment config
 - **Minimal prompt** — describes the goal ("create and validate"), not the steps
 - **Behavior-only criteria** — `command_executed` and `file_exists` verify real operations, not agent self-reports
 - **Weighted scoring** — core commands (`weight: 1.5`) matter more than supporting checks (`weight: 1.0`)
@@ -475,19 +487,19 @@ Reports are written to `tests/reports/<skill-name>.md` and include:
 
 The command is defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
 
-### Generating Test Tasks
+### Generating a Test Task
 
-Use the `/generate-tasks` slash command to scaffold new test tasks based on coverage gaps:
+Use the `/generate-task` slash command to scaffold a single task YAML from a free-form description of the scenario to cover. The command always infers the target skill from the description — do not pass a skill name.
 
 ```bash
-/generate-tasks uipath-platform                      # highest-priority gaps
-/generate-tasks uipath-platform authentication        # specific focus area
-/generate-tasks uipath-maestro-flow smoke             # specific test tier
+/generate-task smoke test for folder listing via uip orchestrator
+/generate-task e2e flow that uses HITL with an approval gate and write-back
+/generate-task cover the new uip flow registry get subcommand
 ```
 
-This generates task YAML files (and optional check scripts) in `tests/tasks/<skill-name>/`. Generated tasks are **starting points for reference only** — review and improve them before relying on them for CI. In particular, verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
+This generates one task YAML (and optional check script) in `tests/tasks/<skill-name>/`. Generated tasks are **unverified scaffolds** — before merging, run the task end-to-end with `coder-eval` and add a passing-run claim to the PR description (the lint workflow flags missing claims as High severity). Verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
 
-The command is defined in [`.claude/commands/generate-tasks.md`](../.claude/commands/generate-tasks.md).
+The command is defined in [`.claude/commands/generate-task.md`](../.claude/commands/generate-task.md).
 
 ## Further Reading
 

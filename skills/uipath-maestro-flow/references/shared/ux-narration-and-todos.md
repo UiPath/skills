@@ -7,7 +7,7 @@ Two always-on rules govern how this skill communicates with the user during work
 ## The two rules
 
 1. **Narrate every logical step in plain English** — one short line before each step explaining what the agent is doing and why, in terms of the user's request. The user should never need to know `bash`, `uip` flags, or `.flow` JSON internals to follow along.
-2. **Maintain a granular `TodoWrite` list** for any journey above the trivial threshold — broken down per-step (~15–25 items for a standard journey), kept current as work proceeds.
+2. **Maintain a granular `TodoWrite` list** for any journey above the trivial threshold — one todo per logical step, kept current as work proceeds. Standard journeys typically land at 10+ items; complex flows go higher. The count emerges from the journey's actual logical steps — do not target a number.
 
 ## What is a "logical step"
 
@@ -62,7 +62,7 @@ Reference table — adapt to context. Add subject (what's being acted on) when s
 | Script body update | "Updating the script body in the `<nodeId>` node." |
 | Resource refresh | "Syncing connection and resource declarations into the solution before upload…" |
 | Validate | "Running validate. This catches missing edges, bad expressions, and wiring mistakes." |
-| Tidy | "Tidying the layout. Studio Web renders nodes correctly only after tidy normalizes their sizes." |
+| Format | "Formatting the layout. Studio Web renders nodes correctly only after format normalizes their sizes." |
 | Studio Web upload | "Pushing to Studio Web. This is the safe path — no execution, just the visual editor." |
 | Pack for Orchestrator | "Packing the solution for Orchestrator deploy…" |
 | Orchestrator publish | "Publishing the package to Orchestrator…" |
@@ -99,7 +99,7 @@ A todo is a **state-changing outcome the user cares about**. One logical step �
 - Edges connected
 - Variables defined and mapped
 - Validate green
-- Tidy applied
+- Format applied
 - Resources refreshed
 - Uploaded to Studio Web
 - Incident fetched and read
@@ -118,9 +118,9 @@ If the user redirects scope mid-journey ("skip the connector — use HTTP instea
 
 1. Narrate the pivot — "Switching from connector to HTTP node. Updating todos."
 2. Update `TodoWrite`:
-   - Mark obsolete todos as no longer needed (remove them from the list).
+   - Mark obsolete in-flight todos as cancelled and drop them from the list.
    - Insert new todos for the new direction at the right spot.
-   - Preserve completed todos as historical record (do not delete).
+   - Leave completed todos in place — they're history, not work.
 3. Continue from the new in-progress todo.
 
 ## Anti-patterns

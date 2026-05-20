@@ -28,14 +28,36 @@ Connections are authenticated sessions for a specific connector. They store cred
 
 **Always present connections to the user** — do not auto-select silently, even if there is only one default enabled connection. Recommend the default but let the user confirm.
 
+### Folder Scoping (`--all-folders`)
+
+`uip is connections list` returns connections from the **active folder only** by default. A "no connections found" result there does NOT mean tenant-wide absence — the connection may exist in another folder you can see.
+
+- Default: active folder only.
+- `--all-folders`: span every folder you have access to. Works with or without a `<connector-key>` positional.
+- **Mutually exclusive with `--folder` / `--folder-key`** — passing both fails with `Result: Failure`, `Message: "Conflicting folder flags..."`, exit code 1.
+
 ### For Native Connectors
 
-1. List connections for the connector
+1. List connections for the connector in the active folder:
+
+   ```bash
+   uip is connections list "<connector-key>" --output json
+   ```
+
 2. Present all enabled connections to the user using **Name, Owner, and Folder** (never UUIDs), **recommending** the default (`IsDefault: Yes`, `State: Enabled`):
    - "I found these connections: 1) **Salesforce Prod** by user@example.com (default, enabled, Shared folder) ← recommended 2) **Salesforce Dev** by admin@example.com (enabled, Shared folder). Which should I use?"
 3. If only one enabled connection exists, still confirm: "I found connection **<Name>** by <Owner> in **<Folder>** folder (default, enabled). Should I use this one?"
 4. If not enabled → prompt user to re-authenticate via `is connections edit <id>`
-5. If no connections exist → retry with `--refresh` (`uip is connections list "<connector-key>" --refresh --output json`) to bypass the CLI cache. If still empty, prompt user to create one via `is connections create "<connector-key>"`.
+5. **No connections in step 1 — widen the search before concluding none exist:**
+   1. Retry across all folders:
+      ```bash
+      uip is connections list "<connector-key>" --all-folders --output json
+      ```
+   2. If still empty, retry with `--refresh` to bypass the CLI cache:
+      ```bash
+      uip is connections list "<connector-key>" --all-folders --refresh --output json
+      ```
+   3. If still empty, prompt user to create one via `uip is connections create "<connector-key>"`.
 
 ### For BYOA Connections (Webhook Triggers)
 
@@ -62,10 +84,16 @@ BYOA (Bring Your Own Account) connections use an OAuth app the customer register
    uip is connections list "<connector-key>" --byoa --output json
    ```
 
-   If empty, retry with `--refresh` to bypass the CLI cache:
+   If empty, widen across folders:
 
    ```bash
-   uip is connections list "<connector-key>" --byoa --refresh --output json
+   uip is connections list "<connector-key>" --byoa --all-folders --output json
+   ```
+
+   If still empty, retry with `--refresh` to bypass the CLI cache:
+
+   ```bash
+   uip is connections list "<connector-key>" --byoa --all-folders --refresh --output json
    ```
 
    If still empty, **stop and tell the user**: "This trigger requires a BYOA connection for `<connector-key>`. None found. Create one in the Integration Service portal or with `uip is connections create "<connector-key>"`, then re-run."
@@ -107,6 +135,28 @@ Match case-insensitively (weak signal — surface as "likely &lt;DB&gt;", never 
 If the user explicitly named a connection in their prompt (e.g. "use the `pat_databricks` connection"), that overrides name-matching — bind it directly.
 
 Used by the [connectors.md — JDBC Gateway](connectors.md#jdbc-gateway--database-sql-intent) decision matrix.
+
+---
+
+## Getting a Connection's Vendor Base URL
+
+`uip is connections base-url <connection-id>` returns the exact vendor base URL the connection uses for proxied calls (e.g., raw `http-request` calls, Managed HTTP Request in connector mode). Manual-mode invocations don't use it. The connection must be Enabled.
+
+```bash
+uip is connections base-url "<connection-id>" --output json
+# → { "Result": "Success", "Code": "ConnectionBaseUrl",
+#     "Data": { "ConnectionId": "<id>", "BaseUrl": "https://..." } }
+```
+
+Examples across connectors:
+
+| Connector | Returned `BaseUrl` |
+|---|---|
+| `uipath-atlassian-jira` | `https://api.atlassian.com/ex/jira/<site-id>/rest/api/2` |
+| `uipath-microsoft-outlook365` | `https://graph.microsoft.com/v1.0` |
+| `uipath-uipath-marketo` | `https://<account>.mktorest.com/rest` |
+
+Use this whenever you need to compose a relative `url` for `http-request` or Managed HTTP Request in connector mode. See [http-request.md](http-request.md).
 
 ---
 

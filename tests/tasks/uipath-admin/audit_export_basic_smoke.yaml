@@ -1,0 +1,47 @@
+task_id: skill-admin-audit-export-basic-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to run
+  a minimal `export` against a small window. Validates the three
+  required flags (`--from-date`, `--to-date`, `--output-file`) and
+  that the agent picks a reasonable output path inside the working
+  directory.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:operate, audit, export]
+
+sandbox:
+  driver: docker
+  python: {}
+
+initial_prompt: |
+  An admin needs a ZIP of all tenant audit events from yesterday for
+  archival. Write the ZIP to ./audit-yesterday.zip in the current
+  working directory.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, AND --output-file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--from-date\s+\S+.*--to-date\s+\S+.*--output-file\s+\S+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent's export targeted the requested ./audit-yesterday.zip path"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\.?/?audit-yesterday\.zip'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

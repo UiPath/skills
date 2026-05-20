@@ -9,7 +9,7 @@ description: >
 tags: [uipath-tasks, smoke, completion]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

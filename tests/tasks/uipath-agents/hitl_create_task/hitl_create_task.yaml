@@ -6,12 +6,13 @@ description: >
   graph with a `MemorySaver` checkpointer, and emits the `app`
   binding for the Action Center app the escalation targets.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:hitl-coded]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

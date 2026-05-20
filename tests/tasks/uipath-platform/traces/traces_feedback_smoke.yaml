@@ -1,0 +1,43 @@
+task_id: skill-platform-traces-feedback-smoke
+description: >
+  Smoke test: agent uses the uipath-platform skill to annotate a trace with
+  positive feedback. Verifies the agent knows to call
+  `uip traces feedback create --trace-id ... --positive --folder-key ...` with --output json.
+  Auth/404 errors are acceptable outcomes — the goal is correct command shape.
+tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  driver: docker
+  python: {}
+
+initial_prompt: |
+  I want to annotate a trace with positive feedback and then list all feedback
+  for that trace. The trace ID is `4bf92f3577b34da6a3ce929d0e0e4736` and the
+  folder key is `11111111-2222-3333-4444-555566667777`.
+
+  Use `--output json` on all uip commands.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created feedback using uip traces feedback create with --positive and --trace-id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+traces\s+feedback\s+create(?=.*--positive)(?=.*--trace-id)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on all uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent included --folder-key on write operations"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+traces\s+feedback\s+create.*--folder-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

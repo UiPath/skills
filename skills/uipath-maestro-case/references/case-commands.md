@@ -10,19 +10,19 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
-| `solution new`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution init`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
 
 ---
 
-## uip solution new
+## uip solution init
 
 Create a new solution directory + `.uipx` file.
 
 ```bash
-uip solution new <SolutionName>
+uip solution init <SolutionName>
 ```
 
 | Flag | Description |
@@ -159,9 +159,40 @@ uip maestro case debug <projectDirectory> --log-level debug --output json
 
 ---
 
+## uip maestro case spec
+
+Read-only unified metadata + scaffold endpoint for connector activities and triggers. **The preferred command for connector tasks** — replaces the legacy `case tasks describe` + `is resources describe` two-call dance with a single normalized response (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` ready for `caseplan.json`).
+
+```bash
+# Planning phase — lean response (no caseShape payload)
+uip maestro case spec --type <activity|trigger> \
+  --activity-type-id <uiPathActivityTypeId> \
+  --connection-id <uuid> \
+  --skip-case-shape --output json
+
+# Phase 3 (implementation) — populated caseShape from --input-details
+uip maestro case spec --type <activity|trigger> \
+  --activity-type-id <uiPathActivityTypeId> \
+  --connection-id <uuid> \
+  --input-details '<json>' --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--type <activity\|trigger>` | **(required)** Whether the typeId is an activity or trigger TypeCache entry. |
+| `--activity-type-id <uuid>` | **(required)** Studio Web `uiPathActivityTypeId` from the relevant TypeCache index. |
+| `--connection-id <uuid>` | **(required)** IS connection UUID. Pick from `case registry get-connection` first. |
+| `--object-name <name>` | Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (`activityType === "Generic"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI fails fast when missing in case (2). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-common.md`](connector-trigger-common.md). |
+| `--skip-case-shape` | Omit `caseShape` from the response. Use during planning for a leaner payload. Mutually exclusive with `--input-details`. |
+| `--input-details <json>` | Pre-fill values into the generated `caseShape`. Activity accepts `{bodyParameters?, queryParameters?, pathParameters?, filter?}`; trigger accepts `{eventParameters?, filter?}`. Connection identity is NOT in input — derived from `--connection-id` and TypeCache. Mutually exclusive with `--skip-case-shape`. Full contract: [`case-spec-input-details.md`](case-spec-input-details.md). |
+
+Returns a `ConnectorTaskSpec` with `identity`, `operation`, `connection`, `inputs`, `outputs`, optional `filter`, `essentialConfiguration`, `references[]` (with pre-built `discoverCommand` strings), `diagnostics`, and (when `--skip-case-shape` is NOT set) `caseShape` with FE-canonical inputs/outputs/context arrays. Webhook URL is intentionally NOT in the output (deterministic from `connectionId` + `elementInstanceId` + `connectorKey` + `eventOperation`); fetch via `getWebhookConfig` for the rare flow that needs it. Filter trees inside `--input-details.filter` compile to CEQL (activity) or JMESPath (trigger) per [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+
+---
+
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution to discover the per-resource schema.
+Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json
@@ -176,7 +207,7 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 
-Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.json`.
+Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.json`. The `connector-activity` / `connector-trigger` flags still work but `case spec` returns a richer, FE-canonical `caseShape` for connector tasks.
 
 ---
 

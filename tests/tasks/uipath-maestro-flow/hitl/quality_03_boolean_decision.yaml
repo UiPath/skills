@@ -9,6 +9,8 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, n
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 110
   turn_timeout: 900
 
@@ -34,7 +36,7 @@ initial_prompt: |
   The Decision node condition MUST use the exact field-level runtime variable
   path — not just $vars.<nodeId>.output but specifically the approved field.
 
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command

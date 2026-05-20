@@ -7,10 +7,11 @@ description: >
   built from flow inputs, the implicit HTTP error port, and a Transform
   filter + aggregate on the response items.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:transform, feature:http]
-max_iterations: 1
 
 agent:
   type: claude-code
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

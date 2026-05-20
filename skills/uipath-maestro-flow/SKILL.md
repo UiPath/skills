@@ -1,12 +1,12 @@
 ---
 name: uipath-maestro-flow
-description: "Always invoke for `.flow` files. UiPath Maestro Flow — build, edit, run, debug, fix. Create, connect nodes; connector, approval, script, subflow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For Python/agent.json→uipath-agents. For Orchestrator/solution lifecycle without Flow→uipath-platform. For Test Manager→uipath-test."
+description: "Always invoke for `.flow` files. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Flow Skill
 
-Comprehensive guide for creating, editing, validating, debugging, publishing, and diagnosing UiPath Flow projects using the `uip` CLI and `.flow` file format. The skill is organized into three capabilities — **Author**, **Operate**, **Diagnose** — each with its own index doc.
+Comprehensive guide for creating, editing, validating, debugging, publishing, diagnosing, and evaluating UiPath Flow projects using the `uip` CLI and `.flow` file format. The skill is organized into four capabilities — **Author**, **Operate**, **Diagnose**, **Evaluate** — each with its own index doc.
 
 ## When to use this skill
 
@@ -15,7 +15,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 - Create a new Flow project (`uip maestro flow init`)
 - Edit a `.flow` file — add nodes, edges, variables, subflows, transforms, triggers
 - Explore available node types via the registry
-- Validate or tidy a Flow file locally
+- Validate or format a Flow file locally
 - Apply required Edit / Write authoring and CLI carve-outs
 - Configure connector, connector-trigger, or managed HTTP nodes; scaffold inline-agent projects
 - Plan a complex flow before building
@@ -35,6 +35,13 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 - Read incidents, runtime variables, deployed BPMN
 - Recognize known failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout)
 
+**Evaluate** — designing and running evaluations against a deployed flow. Read [references/evaluate/CAPABILITY.md](references/evaluate/CAPABILITY.md).
+
+- Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*`) for a Flow project
+- Create eval sets, add data points (test cases), pin entry points
+- Start Studio Web eval runs, poll status, fetch results, compare runs
+- Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first)
+
 ## Capability router
 
 | I want to...                                                 | Read                                                                                             |
@@ -42,11 +49,13 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 | Create a new flow or edit an existing one                    | [references/author/CAPABILITY.md](references/author/CAPABILITY.md)                               |
 | Publish, deploy, debug, or manage a flow's lifecycle         | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md)                             |
 | Diagnose a failed or misbehaving flow run                    | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md)                           |
+| Design and run evaluations (`uip maestro flow eval`)         | [references/evaluate/CAPABILITY.md](references/evaluate/CAPABILITY.md)                           |
 | Look up CLI command syntax                                   | [references/shared/cli-commands.md](references/shared/cli-commands.md)                           |
 | Look up CLI conventions (`--output json`, login, FOLDER_KEY) | [references/shared/cli-conventions.md](references/shared/cli-conventions.md)                     |
 | Understand the `.flow` JSON format                           | [references/shared/file-format.md](references/shared/file-format.md)                             |
 | Understand variables and `=js:` expressions                  | [references/shared/variables-and-expressions.md](references/shared/variables-and-expressions.md) |
 | Wire one node's output into another node's input             | [references/shared/node-output-wiring.md](references/shared/node-output-wiring.md)               |
+| Look up action-node boilerplate shared across plugin `impl.md`s | [references/shared/action-nodes.md](references/shared/action-nodes.md)                           |
 | Narrate progress to the user + maintain todos                | [references/shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md)       |
 
 ## Critical rules (universal)
@@ -64,9 +73,9 @@ These rules apply across all three capabilities. Each capability index adds capa
 
 4. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
 5. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), use the `AskUserQuestion` tool with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue.
-6. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution new <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See [author/greenfield.md](references/author/references/greenfield.md) Step 2.
+6. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution init <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See [author/greenfield.md](references/author/references/greenfield.md) Step 2.
 7. **Always narrate progress in plain English at each logical step boundary.** One short line per step, in user terms ("checking your tenant login", "adding the Slack node and wiring its inputs", "editing the flow JSON to add the new variable", "running validate") — no flag-level or JSON-structure-level detail. Applies uniformly to `uip` CLI calls, shell builtins (`ls`, `cat`, `cd`, `mkdir`, `find`, `grep`), file edits (Read/Write/Edit), and bulk searches (Glob/Grep). The user should never need to know `bash`, `uip` flags, or `.flow` JSON internals to follow along. See [shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md).
-8. **Use `TodoWrite` for any journey above the trivial threshold; keep granularity per-step, not per-phase.** Standard journeys (greenfield, brownfield with multiple nodes, ship, run, full diagnose) require a granular todo list (~15–25 items). One logical step ≈ one todo. Bash plumbing inside a step (registry lookups, JSON parsing, intermediate file reads) is invisible — do not surface as todos. See [shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md) for granularity rules, threshold table, and pivot rules.
+8. **Use `TodoWrite` for any journey above the trivial threshold; keep granularity per-step, not per-phase.** Standard journeys (greenfield, brownfield with multiple nodes, ship, run, full diagnose) require a granular todo list — one logical step ≈ one todo. The count emerges from the journey's actual steps; do not target a number. Bash plumbing inside a step (registry lookups, JSON parsing, intermediate file reads) is invisible — do not surface as todos. See [shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md) for granularity rules, threshold table, and pivot rules.
 9. **Use `Edit` / `Write` for every non-carve-out mutation of a `.flow` file.** The `uip maestro flow node` / `edge` / `variable` CLI is a **carve-out**, not an opt-in alternative. Use Flow mutation CLI only for connector activity, connector-trigger, and managed HTTP workflows where the plugin documents that CLI commands populate product-managed state such as `inputs.detail`, `bindings_v2.json`, or connection resources. For OOTB structural edits — node add/remove, edge add/remove, variables, subflows, trigger swaps, in-place input updates, and inline-agent node/wiring — author the `.flow` JSON directly with `Edit` / `Write`. Inline-agent CLI is limited to agent project lifecycle commands (`uip agent init --inline-in-flow`, `uip agent validate --inline-in-flow`); after the inline agent has a `ProjectId`, add the `uipath.agent.autonomous` node with `inputs.source = <ProjectId>` and wire its edges directly in the `.flow`. Use `Write` for wholesale rewrites only when ≥70% of nodes change. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, inline shell heredocs) are a last resort and require explicit user approval after the trade-offs (state bypass, opaque diff, no interruption point) have been surfaced. See [author/editing-operations.md — Tool Selection Ladder](references/author/references/editing-operations.md#tool-selection-ladder) for the per-operation tool ladder and the rationale.
 
 ## Anti-patterns (universal)

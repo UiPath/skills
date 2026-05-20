@@ -19,7 +19,7 @@ grep -rl "\[Workflow\]\|\[TestCase\]" --include="*.cs" . | while read f; do
 done
 ```
 
-**Fix:** Use `uipath-rpa` skill to regenerate metadata, or run `uip rpa get-errors` which will flag missing metadata.
+**Fix:** Use `uipath-rpa` skill to regenerate metadata, or run `uip rpa validate` which will flag missing metadata.
 
 ### Broken Entry Points
 
@@ -77,7 +77,7 @@ For most real-world migrations (projects with Classic UIA), **Activity Migrator 
 3. Pilot on one project before `bulk`
 4. Prepare ConnectionId config file for M365 mail migration
 
-**Route Legacy-specific deep validation to the `uipath-rpa-legacy` skill.** The standard `uip rpa` tooling targets Windows/Cross-platform projects.
+**Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode).** The standard `uip rpa` tooling targets Windows/Cross-platform projects; Legacy mode in `uipath-rpa` uses the `uip rpa-legacy` CLI internally.
 
 For full severity matrix and post-migration checks, see rpa-review-checklist.md §10 "Windows-Legacy Compatibility".
 

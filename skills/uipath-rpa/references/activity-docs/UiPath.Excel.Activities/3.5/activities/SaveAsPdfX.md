@@ -6,4 +6,4 @@
 |---------------|
 | `Workbook="[Excel]"`, `DestinationPdfPath`, `SaveQuality="StandardQuality"`, `EndPage="{x:Null}"`, `StartPage="{x:Null}"` |
 
-Use `uip rpa get-default-activity-xaml --use-studio` for full XAML.
+Use `uip rpa activities get-default-xaml --use-studio` for full XAML.

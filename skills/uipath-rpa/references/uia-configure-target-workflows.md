@@ -16,7 +16,7 @@ Read the SKILL.md, then execute each step of the internal procedure yourself. On
 
 ## Invocation
 
-The `uia-configure-target` skill lives at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/` — read `SKILL.md` for the internal procedure and `USAGE.md` for invocation modes (TargetAnchorable, TargetApp, and the batch `|` pattern for multiple elements on the same screen). These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool.
+**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` (internal procedure) and `USAGE.md` (invocation modes: TargetAnchorable, TargetApp, and the batch `|` pattern for multiple elements on the same screen). These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool.
 
 Before invoking, check the unsupported-activities list in `USAGE.md`. If the activity you need to target is on that list, skip `uia-configure-target` for it and use the [Indication Fallback](#indication-fallback) instead.
 
@@ -34,7 +34,7 @@ Some UI elements only become visible after interacting with earlier elements (e.
 
 ### Advancing UI State
 
-After registering an element in the Object Repository, interact with it (or a sibling element) to reveal the next screen via the `uip rpa uia interact` CLI. See the skill at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`.
+After registering an element in the Object Repository, interact with it (or a sibling element) to reveal the next screen via the `uip rpa uia interact` CLI. **Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`.
 
 **Reuse refs from the current `uia-configure-target` capture — do not re-inspect.** The `uip rpa uia interact` CLI resolves element refs against the most recent snapshot in memory regardless of which CLI wrote it (the two write to different folders, but the snapshot is shared). Pass the same e-refs (`e28`, `e35`, etc.) directly to `uip rpa uia interact click`/`type`/`select`. Running `uip rpa uia snapshot inspect` just to re-mint refs for an unchanged UI is wasted work — the refs you have are still live.
 
@@ -47,7 +47,7 @@ Re-inspect (or re-run `uip rpa uia snapshot capture`) only when the UI has actua
 3. **Capture the new state:** Run `uia-configure-target` again for elements now visible on the new screen (full skill flow).
 4. **Repeat** until all workflow targets are registered in the OR.
 
-**Do NOT use `uip rpa run-file` with partial workflows to advance UI state** — the workflow lifecycle may close the target application when execution ends. The `uip rpa uia interact` CLI is stateless: it performs one action and leaves the app in the resulting state.
+**Do NOT use `uip rpa run` with partial workflows to advance UI state** — the workflow lifecycle may close the target application when execution ends. The `uip rpa uia interact` CLI is stateless: it performs one action and leaves the app in the resulting state.
 
 ### Per-Screen Batching (call-count discipline)
 
@@ -127,7 +127,7 @@ Wrap the activities that target the helper process in their own `NApplicationCar
 **Rules:**
 
 1. **One `NApplicationCard` per process** — every direct or transitive child activity must target the same `app=` as its enclosing card's `TargetApp`. If activities target two processes, you need two cards.
-2. **Each card has its own `ScopeGuid`.** Child activities reference their card via `ScopeIdentifier="<that-card's-ScopeGuid>"`. When moving an activity from one card to another, update `ScopeIdentifier` — `get-errors` will not catch a mismatched value, but the activity will run against the wrong scope at runtime.
+2. **Each card has its own `ScopeGuid`.** Child activities reference their card via `ScopeIdentifier="<that-card's-ScopeGuid>"`. When moving an activity from one card to another, update `ScopeIdentifier` — `validate` will not catch a mismatched value, but the activity will run against the wrong scope at runtime.
 3. **Card-level `HealingAgentBehavior`** uses `NHealingAgentBehavior` (`Job`/`Disabled`/`RecommendationOnly`) — not `SameAsCard`. See [ui-automation-guide.md § Common UIA Pitfalls](ui-automation-guide.md#common-uia-pitfalls).
 4. **Use `title='*'`** on the helper-process card only when multiple sub-dialogs share the same `app=` and you want a single scope to span them. If sub-dialogs have stable, distinct titles AND only the outer `app=` is shared with the host app (rare), prefer a separate card per dialog so failures localize cleanly.
 
@@ -154,7 +154,7 @@ When generating a new XAML file or editing one that has not been opened in Studi
 
 ### Multi-Screen Workflows
 
-For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Each batch aligns with the Complete-then-advance rule in § Multi-Step UI Flows — everything configured before the next `uip rpa uia interact` advance belongs to one batch. Validate with `get-errors` after each batch. Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Each batch aligns with the Complete-then-advance rule in § Multi-Step UI Flows — everything configured before the next `uip rpa uia interact` advance belongs to one batch. Validate with `validate` after each batch. Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 
 ## CLI Pitfalls
 

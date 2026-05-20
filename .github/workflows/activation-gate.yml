@@ -1,0 +1,107 @@
+name: Skill Activation Gate
+
+# When a SKILL.md frontmatter changes, run the activation eval restricted to
+# that one skill's positives and fail if recall.yes drops more than 15pp
+# below the rounded 2026-05-08 baseline. Cross-fire and negatives stay
+# covered by the manual full run.
+
+concurrency:
+  group: activation-gate-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  # No paths: filter — see smoke-skills.yml for the required-check rationale.
+  # ready_for_review is added so the gate fires the moment a PR exits draft;
+  # the gate job itself is then skipped on drafts (see `if:` below) to keep
+  # iteration-on-draft cheap.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      skills: ${{ steps.detect.outputs.skills }}
+      skip: ${{ steps.detect.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - id: detect
+        # base_ref is empty on workflow_dispatch — fall back to main so manual
+        # re-runs against a feature branch still resolve a sane merge-base.
+        # Block-style env: the inner `'main'` single quotes break flow-mapping
+        # parsing in strict YAML readers.
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          BASE_SHA=$(git merge-base "origin/$BASE_REF" HEAD)
+          extract_fm() { awk '/^---$/{c++;if(c==2)exit;next} c==1{print}'; }
+
+          SKILLS=()
+          for f in $(git diff --name-only "$BASE_SHA"...HEAD | grep -E '^skills/[^/]+/SKILL\.md$' || true); do
+            # Skip deletions — the file is gone from HEAD; nothing to gate.
+            [ -f "$f" ] || continue
+            base_fm=$(git show "$BASE_SHA:$f" 2>/dev/null | extract_fm || true)
+            head_fm=$(extract_fm < "$f" || true)
+            [ "$base_fm" = "$head_fm" ] && continue
+            SKILLS+=("$(echo "$f" | cut -d/ -f2)")
+          done
+
+          if [ ${#SKILLS[@]} -eq 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No frontmatter changes — gate not triggered."
+            exit 0
+          fi
+
+          JSON=$(printf '%s\n' "${SKILLS[@]}" | jq -R . | jq -s -c .)
+          echo "skills=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Will gate: ${SKILLS[*]}"
+
+  gate:
+    needs: detect
+    # Skip drafts to keep iteration cheap; the gate fires on transition to
+    # ready (via the ready_for_review event type above) and on every push to
+    # a ready PR. workflow_dispatch has no draft flag → the != 'true' check
+    # treats undefined as not-draft, so manual dispatch still runs the gate.
+    if: needs.detect.outputs.skip != 'true' && github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    name: ${{ matrix.skill }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        skill: ${{ fromJSON(needs.detect.outputs.skills) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/coder_eval
+          token: ${{ secrets.GH_PAT }}
+          path: .coder_eval
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install coder-eval
+        working-directory: .coder_eval
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system .
+
+      - name: Run activation gate
+        env:
+          # Pass matrix value via env (not direct ${{ }} interpolation in run:)
+          # to avoid shell expansion of any special chars in the skill name.
+          SKILL: ${{ matrix.skill }}
+          SKILLS_REPO_PATH: ${{ github.workspace }}
+          API_BACKEND: bedrock
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+        run: python tests/scripts/activation_gate.py --skill "$SKILL"

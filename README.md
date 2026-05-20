@@ -48,10 +48,10 @@ The repository contains skills for building and managing UiPath automation proje
 |-------|-------------|
 | **uipath-rpa** | Full assistant for UiPath automations — coded workflows (C#) and low-code RPA workflows (XAML). Create, edit, build, run, and debug automation projects |
 | **uipath-maestro-flow** | Create, validate, and debug UiPath Flow projects using the `.flow` JSON format and `uip` CLI |
-| **uipath-platform** | Authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tools |
+| **uipath-platform** | Authentication, Orchestrator management, resources, Integration Service, traces, licensing, and CLI tools |
+| **uipath-solution** | PDD → SDD authoring AND `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` multi-project solutions |
 | **uipath-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
 | **uipath-coded-apps** | Build, sync, package, publish, and deploy UiPath Coded Web Applications — push/pull to Studio Web, pack into .nupkg, publish to Orchestrator, deploy to production |
-| **uipath-interact** | Desktop and browser UI interaction and testing — click, type, read, verify, screenshot, and extract UI elements |
 
 ## Agents
 

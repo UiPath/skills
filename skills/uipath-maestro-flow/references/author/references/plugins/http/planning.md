@@ -1,16 +1,14 @@
 # HTTP Request Node — Planning
 
+> **MUST READ FIRST:** [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md). This file is the flow-specific authoring layer on top.
+
 ## Node Type
 
 `core.action.http.v2` (Managed HTTP Request)
 
 > **Always use `core.action.http.v2`** for all HTTP requests — both connector-authenticated and manual. The older `core.action.http` (v1) is deprecated and does not pass IS credentials at runtime.
 
-## When to Use
-
-Use a managed HTTP node to call a REST API — either with IS connector-managed authentication or with manual auth (raw URL).
-
-### Selection Heuristics
+## When to Use a Managed HTTP Request Node
 
 | Situation | Use Managed HTTP? |
 | --- | --- |
@@ -20,12 +18,7 @@ Use a managed HTTP node to call a REST API — either with IS connector-managed 
 | Connector exists and covers the use case | No — use [Connector Activity](../connector/planning.md) |
 | Target system has no API (desktop app) | No — use [RPA Workflow](../rpa/planning.md) |
 
-### Two Authentication Modes
-
-| Mode | When to use | Key `--detail` fields |
-| --- | --- | --- |
-| **Connector** | A connector exists for the service — uses IS connection for OAuth/API key auth | `authentication: "connector"`, `targetConnector`, `connectionId`, `folderKey`, `url` |
-| **Manual** | No connector, or public API with no auth needed | `authentication: "manual"`, `url` |
+For the two-mode concept (connector vs. manual) and the `url` / auth rules per mode, see the platform doc linked at the top.
 
 ## Ports
 

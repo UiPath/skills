@@ -1001,3 +1001,23 @@ export const TaskEmbed = ({ taskLink, onClose }: TaskEmbedProps) => (
 - **HITL detection**: Use `getVariables()` + `getBpmn()` to detect if the current element is a user task (see "HITL Detection" section above). Do NOT rely on `latestRunStatus`.
 - **Use `apiToCloudUrl()`** — never manually convert API URLs to cloud URLs with string replacement.
 - **Use a modal overlay**: Render the iframe in a modal (like the example above) so the user can close it and return to the app.
+
+## Tabular Data: Don't Dump Every Row in One Scroll
+
+Operational dashboards routinely list 100–10,000+ rows (tickets, jobs, instances, queue items). Rendering all of them as one long scroll makes the table unusable: the user can't see totals, can't navigate to a specific row, and large DOMs slow down sort/filter interactions. Pick one of these patterns:
+
+- **Paginated rows** (default for >50 rows) — page size 25–50 with next/prev/page-number controls and a "Showing X–Y of Z" summary. Works for any tabular data.
+- **Virtualized scroll** (for very large lists, 5k+) — `react-window` or `@tanstack/react-virtual`. Use only if you genuinely have that many rows; otherwise pagination is simpler and faster to ship.
+- **Top-N + "see all"** — when the table is informational rather than navigational (e.g., "Top 10 oldest open"), render only the top N and link to a full view.
+
+For a single screen with mixed panels (KPIs + charts + a table), prefer pagination. The scroll-everything pattern is fine for a CSV export, never for a dashboard.
+
+## Preventing Text Overflow
+
+Long emails, subjects, and choice value names break layouts. Apply these rules whenever rendering dynamic strings:
+
+- **Flex/grid children with text:** add `min-w-0` to the parent AND `truncate` (or `line-clamp-N`) to the text. `truncate` alone does nothing without `min-w-0` because flex children default to intrinsic width.
+- **Pair every truncation with `title={fullValue}`** so the user can hover to read the full string.
+- **Chart axis labels (SVG):** CSS truncation does NOT apply. Shorten via the library's `tickFormatter` and keep the full value in the tooltip. For long choice values, prefer `displayName` over `name`, or switch to a horizontal bar chart.
+- **Tables:** use `table-fixed` + explicit column widths + `max-w-0` on `<td>`, then `truncate` the inner content.
+- **Fixed-height cards:** add `overflow-hidden` on the card and `line-clamp-N` on the text.

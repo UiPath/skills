@@ -8,6 +8,8 @@ tags: [uipath-human-in-the-loop, integration, schema-design, inout, variable-bin
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 90
   turn_timeout: 900
 

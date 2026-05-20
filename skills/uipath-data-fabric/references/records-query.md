@@ -15,6 +15,24 @@ Response: `{ TotalCount, Records, HasNextPage, NextCursor?, CurrentPage?, TotalP
 - Use `HasNextPage` to check if more records exist
 - Pass the `NextCursor` string value to `--cursor` to fetch the next page
 
+## Pagination
+
+Offset-based under the hood. Available on both `records list` and `records query`:
+
+- `-l, --limit <number>` — page size, default `50`, min `1`. Keep constant across a sweep (changing it re-slices the offset and can skip/duplicate records).
+- `--cursor <NextCursor>` — opaque string from previous response. Pass verbatim; never hand-craft.
+- `-o, --offset <number>` — non-negative record index. Rounded down to the nearest page boundary (`jumpToPage = floor(offset / limit) + 1`). **Mutually exclusive with `--cursor`** — passing both errors with *"--offset and --cursor are mutually exclusive"*.
+- Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` are informational.
+
+```bash
+# Sequential sweep
+uip df records list <entity-id> --limit 100 --output json
+uip df records list <entity-id> --limit 100 --cursor "<NextCursor>" --output json
+
+# Jump directly to the page containing record #250 (with --limit 100 → page 3)
+uip df records list <entity-id> --limit 100 --offset 250 --output json
+```
+
 ## Filtered Query
 
 ```bash
@@ -23,7 +41,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Pagination for query also uses `--limit` and `--cursor` flags — not body keys.
+Pagination for query also uses `--limit`, `--cursor`, and `--offset` flags — not body keys.
 
 ```bash
 # Query with pagination
@@ -52,7 +70,7 @@ uip df records query <entity-id> \
 }
 ```
 
-> `start` and `limit` are **not** valid body keys — use `--limit` and `--cursor` CLI flags instead.
+> Pagination is CLI-flag only: `--limit`, `--cursor`, `--offset`. Do not put `start`, `limit`, `offset`, or `pageSize` inside `--body` — the CLI translates these flags into the underlying offset-based API call.
 
 ### Operators
 
@@ -99,6 +117,90 @@ uip df records query <entity-id> \
   }
 }
 ```
+
+## Aggregates (server-side)
+
+Add `aggregates` and optional `groupBy` to the query body to return aggregated rows instead of records. Each entry in `aggregates` produces one column on each result row, keyed by `alias`.
+
+> **Field names are case-sensitive.** Examples below use `Status` as a placeholder — substitute the exact casing from the target entity's schema (`uip df entities get <entity-id>` lists the real names).
+
+```bash
+# Total count of records (no grouping → single result row)
+uip df records query <entity-id> \
+  --body '{"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}]}' \
+  --output json
+```
+
+Response:
+
+```json
+{
+  "Result": "Success",
+  "Code": "RecordQuery",
+  "Data": {
+    "TotalCount": 1,
+    "Records": [{ "total": 250 }],
+    "HasNextPage": false
+  }
+}
+```
+
+```bash
+# Count per group (one result row per distinct value)
+uip df records query <entity-id> \
+  --body '{"selectedFields":["Status"],"groupBy":["Status"],"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}]}' \
+  --output json
+```
+
+Response shape (one row per group, each row contains the group fields + every aggregate alias):
+
+```json
+{
+  "Result": "Success",
+  "Code": "RecordQuery",
+  "Data": {
+    "TotalCount": 2,
+    "Records": [
+      { "Status": "Open",   "total": 12 },
+      { "Status": "Closed", "total":  5 }
+    ],
+    "HasNextPage": false
+  }
+}
+```
+
+### Functions
+
+| `function` | Applies to | Notes |
+|------------|-----------|-------|
+| `COUNT` | Any field | Counts non-null values. For total row count use `field: "Id"` |
+| `SUM`   | Numeric only | |
+| `AVG`   | Numeric only | |
+| `MIN`   | Numeric / date | |
+| `MAX`   | Numeric / date | |
+
+Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
+
+### Aggregate Body Schema
+
+```json
+{
+  "selectedFields": ["Status"],
+  "groupBy": ["Status"],
+  "aggregates": [
+    { "function": "COUNT", "field": "Id",     "alias": "total" },
+    { "function": "AVG",   "field": "amount", "alias": "avgAmount" }
+  ]
+}
+```
+
+- `aggregates[].alias` is optional. When omitted, the server returns the column keyed as `{FUNCTION}_{field}` (for example `COUNT_Id`, `AVG_amount`). Provide an `alias` for stable, readable keys in your downstream code.
+- When `selectedFields` is present alongside `aggregates`, every entry in `selectedFields` must also appear in `groupBy` — otherwise the API rejects the request. The shortcut: use the same array for both, as in the examples above.
+- `groupBy` and `selectedFields` may reference root-entity fields only — expansions are not supported in aggregate mode.
+- The same `filterGroup`, `sortOptions`, and pagination flags (`--limit`, `--cursor`) work alongside aggregates. Filters are applied **before** grouping (SQL `WHERE`).
+- Choice-set fields in `groupBy` / filters require the numeric `numberId`, not the display label. Discover via the choice-set lookup if you need to filter / group by a choice value.
+
+> Tooling requirement: server-side aggregates ship in version `1.0.1`+ of `@uipath/data-fabric-tool` only. Older versions silently strip `aggregates` / `groupBy` from the body (the SDK they bundle prefixes unknown keys with OData `$`, which the API ignores) and the query falls back to a plain record list. If aggregates aren't returning the expected one-row-per-group shape, re-run `uip tools install @uipath/data-fabric-tool@latest` to pick up the latest.
 
 ## Insert Records
 
