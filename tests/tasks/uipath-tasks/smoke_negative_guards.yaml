@@ -10,7 +10,7 @@ description: >
 tags: [uipath-tasks, smoke, negative]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

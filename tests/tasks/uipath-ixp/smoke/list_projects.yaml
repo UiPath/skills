@@ -11,7 +11,7 @@ description: >
 tags: [uipath-ixp, smoke, lifecycle:discover]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

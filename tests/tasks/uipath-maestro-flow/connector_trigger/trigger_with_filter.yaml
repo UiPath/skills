@@ -5,7 +5,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, lifecycle:discover, connector-trigger, uipath-microsoft-outlook365, filter, ipe]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

@@ -12,7 +12,7 @@ description: >
 tags: [uipath-admin, smoke, mode:operate, audit, export, scope-org]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
