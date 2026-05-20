@@ -270,6 +270,7 @@ jobs:
           UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
           UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
             uip login status --output json
+          mkdir ~/.uipath
 
       - name: Run smoke tests
         env:
