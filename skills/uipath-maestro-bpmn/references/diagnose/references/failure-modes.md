@@ -45,13 +45,13 @@ The model may adjust BPMN structure around the connector but must not invent con
 ## Stale generated package files
 
 Generated JSON no longer reflects the BPMN source.
-Regenerate package metadata and verify package descriptor content before upload or deploy.
+Regenerate package metadata and verify package descriptor file mappings before upload or deploy.
 
 Signs:
 
 - `entry-points.json` references an old start event ID or BPMN file.
-- `package-descriptor.json` omits the current BPMN or generated JSON files under `content/`.
-- `operate.json` points at the wrong main file or runtime metadata.
+- `package-descriptor.json` omits the current BPMN or generated JSON file mapping.
+- `operate.json` contains stale runtime metadata.
 - `bindings_v2.json` does not match executable binding references in the BPMN.
 
 Fix ownership: change `.bpmn` only when the source is wrong; otherwise rerun the supported CLI package/enrichment path.

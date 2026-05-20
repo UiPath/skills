@@ -8,7 +8,7 @@ This skill is intended for a public skills repository. Keep all content, example
 - Tenant URLs, organization names, folder keys, connection IDs, release keys, queue IDs, process IDs, user IDs, or email addresses.
 - Private process names, business payloads, screenshots, exported package contents, or traces.
 - Local absolute paths from developer machines.
-- Temporary mission notes, task transcripts, or Rookery-only context.
+- Internal work-tracking notes, task transcripts, or internal-only context.
 - Internal-only repository paths as runtime instructions for the skill user.
 
 ## Use instead

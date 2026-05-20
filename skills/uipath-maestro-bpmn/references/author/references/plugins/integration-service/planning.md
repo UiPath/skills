@@ -22,16 +22,18 @@ draft intent.
 
 1. Identify the connector, operation/event, object, and user-visible intent.
 2. Determine whether the element is a trigger, wait event, connector activity, connector-authenticated HTTP call, or plain connectionless HTTP call.
-3. Check whether the process can proceed with a draft placeholder or must stop until enrichment is available.
-4. Record required user decisions: connector, connection, folder/resource scope, operation, filters, required parameters, and output variables.
-5. Keep the surrounding BPMN structure model-authored: start/event/task placement, sequence flows, gateways, error handling, and diagrams.
-6. Hand the Integration Service element to CLI enrichment before validation for upload/debug/publish.
+3. Run registry and Integration Service discovery far enough to prove that the connector, activity/trigger, object, and required live metadata exist. Use the workflow in [impl.md](impl.md#shared-integration-service-discovery) for commands and fallback rules.
+4. Check whether the process can proceed with a draft placeholder or must stop until enrichment is available.
+5. Record required user decisions: connector, connection, folder/resource scope, operation, filters, required parameters, and output variables.
+6. Keep the surrounding BPMN structure model-authored: start/event/task placement, sequence flows, gateways, error handling, and diagrams.
+7. Hand the Integration Service element to CLI enrichment before validation for upload/debug/publish.
 
 ## Live enrichment expectation
 
 Executable Integration Service nodes require live registry-backed enrichment for the target tenant. Static examples and sanitized fixtures demonstrate shape only; they are not reusable connector metadata.
 
 - Use current CLI/registry data for connector keys, operation/event names, object metadata, connection availability, trigger properties, filters, parameter schemas, and generated output schemas.
+- When registry results look incomplete, refresh before falling back: if search finds connector triggers but no activities for a known connector, or a known connector returns no activity hits, run `uip maestro bpmn registry pull --force --output json` and search again.
 - Treat stale exported metadata, copied tenant identifiers, or fixture values as non-authoritative.
 - If live enrichment is unavailable, keep the node as draft intent and stop before Operate. A draft may include a canonical `uipath:type value="Intsvc.<Variant>"` shell with placeholder strings, but not real connector metadata, connection bindings, dynamic schemas, or generated resource references.
 
@@ -41,11 +43,7 @@ Executable Integration Service nodes require live registry-backed enrichment for
 - A draft `uipath:activity` or `uipath:event` shell carrying `uipath:type value="Intsvc.<Variant>"` and placeholder string `uipath:input` values. See [impl.md](impl.md#safe-placeholder-shape) and [../../../../shared/wrapper-shells.md](../../../../shared/wrapper-shells.md).
 - Public-safe display naming.
 - Surrounding sequence flows, gateways, boundary errors, and variable mappings.
-- A `README.md` (or `notes.md`) inside the project that lists the
-  CLI-owned blockers verbatim. The list must contain at minimum these
-  exact phrases: `connection binding`, `dynamic schemas`,
-  `bindings_v2.json`, and `package metadata`. See
-  [impl.md](impl.md#draft-handoff-notes) for the full template.
+- Handoff notes in the final summary, task report, or an existing project-owned artifact. Do not create a new `README.md`, `notes.md`, or similar file solely for draft blockers unless the user asks for that artifact. Include the blockers from [impl.md](impl.md#draft-handoff-notes), especially `connection binding`, `dynamic schemas`, `bindings_v2.json`, and `package metadata`.
 
 ## CLI must provide
 
@@ -55,6 +53,7 @@ Executable Integration Service nodes require live registry-backed enrichment for
 - Dynamic schemas and generated output metadata.
 - `bindings_v2.json` entries and resource metadata.
 - Validation that the selected connection and operation are available.
+- BPMN XML and generated JSON that agree with the same Integration Service metadata contract used by Flow connector configuration. The storage shape differs, but the connector/resource semantics do not.
 
 ## Stop conditions
 

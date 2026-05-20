@@ -1,6 +1,6 @@
 # CLI Conventions
 
-The BPMN skill assumes a split boundary: model-authored BPMN source plus CLI validation, enrichment, packaging, and cloud lifecycle.
+The BPMN skill assumes a split boundary: model-authored BPMN source plus UiPath `uip` CLI validation, Integration Service enrichment, packaging, and cloud lifecycle.
 
 ## Output parsing
 
@@ -24,6 +24,21 @@ For Integration Service nodes and triggers, use CLI or registry-backed tooling t
 - Generate `bindings_v2.json` resources.
 - Generate dynamic input and output schemas.
 - Validate required context/input fields.
+
+Use the same Integration Service discovery rules as Flow for connector
+selection, connection health, resource metadata, reference resolution,
+FilterBuilder fields, custom-field replay metadata, and trigger BYOA/webhook
+flags. The BPMN storage shape is different: enrichment writes BPMN
+`uipath:activity` / `uipath:event` XML and generated package JSON instead of
+`.flow` node `inputs.detail`. Do not use Flow node JSON or `uip maestro flow
+node configure` as a BPMN authoring shortcut.
+
+For Integration Service resource execution, target the post-rename command
+surface (`uip is resources run <verb> ...`). If the local CLI reports
+`unknown command 'run'`, retry the same call once with the legacy surface
+(`uip is resources execute <verb> ...`). This fallback is only for command
+surface detection; do not hide real auth, permission, validation, or connector
+errors by changing verbs.
 
 If enrichment tooling is unavailable, leave the element as a draft intent and record the open question. Do not hand-author connection IDs or private resource metadata.
 

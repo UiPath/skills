@@ -137,22 +137,23 @@ Keep resource identity fields synthetic or placeholder-based until CLI or user-p
 For copyable minimal XML shells, read [wrapper-shells.md](wrapper-shells.md)
 before authoring a task wrapper.
 
-## CLI-owned or CLI-enriched areas
+## CLI-owned package/lifecycle or CLI-enriched areas
+
+The model authors BPMN source directly except for executable Integration Service payloads. The UiPath `uip` CLI owns Integration Service enrichment, generated package metadata, package identity, validation, and cloud lifecycle.
 
 The CLI must generate, enrich, or validate these before upload, debug, publish, or deploy:
 
 - Integration Service activity operation metadata.
 - Integration Service trigger metadata and trigger property bindings.
 - Connection binding resources and connector metadata.
-- Dynamic input/output schemas for connectors, event triggers, unified HTTP, external agents, external workflows, API workflows, and generated outputs.
+- Dynamic input/output schemas for Integration Service connectors, triggers, and generated connector outputs.
 - `bindings_v2.json`, including deduped resources and metadata.
 - `entry-points.json`, including schema extraction from root variables and entry point file wiring.
-- `operate.json`, including project ID, main file, content type, target framework, and runtime options.
-- `package-descriptor.json`, including manifest entries for BPMN and generated JSON.
+- `operate.json`, including project ID, content type, target framework, and runtime options.
+- `package-descriptor.json`, including file mappings for BPMN and generated JSON.
 - Package identifiers and final package paths.
 - XML parse validation with the UiPath moddle descriptor.
 - Maestro validation parity for connections, gateways, start events, subprocess crossing, boundary errors, required fields, assignment-free expressions, variables, and resource references.
-- Project scaffolding and canonical BPMN filename selection.
 
 ## Validation expectations
 

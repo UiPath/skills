@@ -1,6 +1,13 @@
 # Connector Implementation
 
-This document defines the implementation boundary for connector-backed BPMN elements.
+Connector-backed BPMN elements are Integration Service elements. Use the
+current Integration Service implementation guide for shared Flow/BPMN IS CLI
+behavior, registry fallback, live metadata, connection-scoped references,
+filters, custom fields, trigger metadata, and generated package resources:
+
+- [../integration-service/impl.md](../integration-service/impl.md)
+
+This file remains as a compatibility route for older references.
 
 ## Model-owned implementation
 
@@ -13,13 +20,17 @@ The model may edit:
 
 ## CLI-owned implementation
 
-The CLI or registry-backed tool must generate:
+The CLI or registry-backed tool must generate or enrich:
 
 - `Intsvc.*` `uipath:activity` or `uipath:event` payloads.
 - Connector key, operation/event, object, and version context.
 - Connection binding expressions and `bindings_v2.json` resources.
 - Dynamic input/output schemas and generated output metadata.
 - Trigger property bindings for connector triggers.
+
+Do not copy Flow node JSON or `uip maestro flow node configure` output into
+BPMN. BPMN enrichment must emit BPMN XML plus generated package JSON using the
+same Integration Service metadata contract.
 
 ## Validation expectations
 

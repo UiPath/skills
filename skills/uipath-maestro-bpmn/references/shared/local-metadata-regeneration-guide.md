@@ -7,6 +7,7 @@ Use this guide when BPMN source changed and local package metadata must be refre
 - `.bpmn` is the source of record for process structure, root variables, root bindings, entry point IDs, mappings, diagrams, and documented non-Integration-Service UiPath XML.
 - `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived package metadata unless a CLI contract explicitly marks a field as user-authored.
 - Connector-backed or dynamically schematized `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe instead.
+- Local-only work may use a standalone project directory. Before upload, debug, publish, or run, wrap or register the project in a solution directory.
 
 ## Regeneration Inputs
 
@@ -16,7 +17,7 @@ Local regeneration reads:
 - Root `uipath:variables` for entry point input/output schemas.
 - Root `uipath:bindings` for package resources.
 - Enriched `uipath:activity` and `uipath:event` payloads for `Intsvc.*` context fields, request payloads, output mappings, and schemas.
-- The project main file from `project.uiproj` or the selected BPMN file.
+- The selected BPMN file and project metadata.
 
 Do not derive metadata from stale package files first. Use existing generated files only as a drift comparison or as CLI-owned enrichment input when the CLI explicitly supports that workflow.
 
@@ -35,14 +36,14 @@ Do not derive metadata from stale package files first. Use existing generated fi
    output when parsing command results:
 
    ```bash
-   uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
+   uip maestro bpmn pack <ProjectDir> <OutputDir> --name <ProjectName> --output json
    ```
 
 5. Inspect the package or generated content for:
    - `entry-points.json` entries matching root start events and schemas.
    - `bindings_v2.json` resources matching root bindings and enriched connector metadata.
-   - `operate.json` pointing at the intended BPMN file with `ProcessOrchestration` content type.
-   - `package-descriptor.json` entries for the BPMN file and generated JSON under `content/`.
+   - `operate.json` carrying Process Orchestration runtime metadata.
+   - `package-descriptor.json` `files` mappings for the BPMN file and generated JSON.
 6. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step.
 
 Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run are cloud or runtime actions and still require explicit user consent.
@@ -51,17 +52,16 @@ Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run a
 
 When a local-only synthetic project needs package files and the CLI cannot
 regenerate them in place, use this placeholder-safe shape before running
-`uip maestro bpmn pack`. Replace only the BPMN file name and start event id;
-do not invent `contentFiles` as a substitute for `content`.
+`uip maestro bpmn pack`. This shape matches the current local `uip maestro bpmn init`
+metadata contract. Replace only the BPMN file name, start event id, display
+name, and public-safe project name.
 
 `project.uiproj`:
 
 ```json
 {
-  "projectVersion": "1.0.0",
-  "projectType": "ProcessOrchestration",
-  "name": "SyntheticProject",
-  "main": "SyntheticProject.bpmn"
+  "Name": "SyntheticProject",
+  "ProjectType": "ProcessOrchestration"
 }
 ```
 
@@ -69,8 +69,14 @@ do not invent `contentFiles` as a substitute for `content`.
 
 ```json
 {
-  "main": "SyntheticProject.bpmn",
-  "contentType": "ProcessOrchestration"
+  "$schema": "https://cloud.uipath.com/draft/2024-12/operate",
+  "projectId": "00000000-0000-0000-0000-000000000000",
+  "contentType": "processOrchestration",
+  "targetFramework": "Portable",
+  "runtimeOptions": {
+    "requiresUserInteraction": false,
+    "isAttended": false
+  }
 }
 ```
 
@@ -78,12 +84,22 @@ do not invent `contentFiles` as a substitute for `content`.
 
 ```json
 {
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
   "entryPoints": [
     {
-      "id": "Entry_ManualStart",
       "filePath": "/content/SyntheticProject.bpmn#Start_Manual",
-      "inputSchema": { "type": "object", "properties": {} },
-      "outputSchema": { "type": "object", "properties": {} }
+      "uniqueId": "Entry_ManualStart",
+      "type": "processorchestration",
+      "input": {
+        "type": "object",
+        "properties": {}
+      },
+      "output": {
+        "type": "object",
+        "properties": {}
+      },
+      "displayName": "Manual trigger"
     }
   ]
 }
@@ -93,6 +109,7 @@ do not invent `contentFiles` as a substitute for `content`.
 
 ```json
 {
+  "version": "2.0",
   "resources": []
 }
 ```
@@ -101,12 +118,13 @@ do not invent `contentFiles` as a substitute for `content`.
 
 ```json
 {
-  "content": [
-    "content/SyntheticProject.bpmn",
-    "content/bindings_v2.json",
-    "content/entry-points.json",
-    "content/operate.json"
-  ]
+  "$schema": "https://cloud.uipath.com/draft/2024-12/package-descriptor",
+  "files": {
+    "operate.json": "operate.json",
+    "entry-points.json": "entry-points.json",
+    "bindings.json": "bindings_v2.json",
+    "SyntheticProject.bpmn": "SyntheticProject.bpmn"
+  }
 }
 ```
 
@@ -114,10 +132,10 @@ do not invent `contentFiles` as a substitute for `content`.
 
 For each root start event with `uipath:entryPointId`, generated `entry-points.json` must include:
 
-- `id` equal to the `uipath:entryPointId` value.
+- `uniqueId` equal to the `uipath:entryPointId` value.
 - `filePath` equal to `/content/<bpmn-file>#<start-event-id>`.
-- `inputSchema` from root input variables whose `elementId` matches the start event.
-- `outputSchema` from root output variables.
+- `input` from root input variables whose `elementId` matches the start event.
+- `output` from root output variables.
 
 JSON schema variables use their CDATA body as the property schema. Strip `$schema` from generated package schemas. Other primitive variables map by type, such as `string`, `integer`, `number`, `boolean`, `array`, `object`, or `json`.
 
@@ -150,5 +168,5 @@ If enrichment is unavailable, leave the BPMN element as draft intent. Do not han
 
 - If `entry-points.json` differs from root variables or start event IDs, fix the BPMN source first, then regenerate.
 - If `bindings_v2.json` differs from root bindings or `Intsvc.*` context references, rerun enrichment/generation.
-- If `operate.json` or `package-descriptor.json` points at the wrong BPMN file, refresh package metadata through the CLI path.
+- If `package-descriptor.json` points at the wrong BPMN file or `operate.json` has stale runtime metadata, refresh package metadata through the CLI path.
 - Do not commit private IDs, tenant URLs, connection IDs, folder keys, or copied customer payloads while resolving drift.

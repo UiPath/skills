@@ -1,6 +1,14 @@
 # Connector Planning
 
-Use this reference for connector-backed activities and triggers. Connector execution is Integration Service-owned.
+Connector-backed activities and triggers are Integration Service-owned. Use
+the current Integration Service planning guide for discovery, registry refresh,
+connection checks, object/activity metadata, trigger metadata, and fallback
+rules:
+
+- [../integration-service/planning.md](../integration-service/planning.md)
+- [../integration-service/impl.md](../integration-service/impl.md)
+
+This file is only a compatibility route for older references.
 
 ## When to use
 
@@ -14,9 +22,12 @@ Use this reference for connector-backed activities and triggers. Connector execu
 
 1. Identify connector, operation or event, object, filters, inputs, outputs, and failure behavior.
 2. Decide if the connector is a start trigger, intermediate wait, service task, or boundary behavior.
-3. Plan surrounding BPMN structure and variables.
-4. Record required operator choices: connection, folder scope, operation, filters, and output variable names.
-5. Leave enrichment to the CLI before validation for upload/run.
+3. Follow the Integration Service planning guide linked above for registry
+   fallback, connection verification, activity/object selection, required-field
+   discovery, and trigger metadata.
+4. Plan surrounding BPMN structure and variables.
+5. Record required operator choices: connection, folder scope, operation, filters, and output variable names.
+6. Leave enrichment to the CLI before validation for upload/run.
 
 ## Model may draft
 
