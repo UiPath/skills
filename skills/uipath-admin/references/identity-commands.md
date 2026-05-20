@@ -34,8 +34,8 @@ uip admin users list --output json
 | Flag | Required | Description |
 |------|----------|-------------|
 | `-s, --search <term>` | No | Search by name or email |
-| `--order-by <field>` | No | Sort field (e.g., `UserName`, `Email`) |
-| `--order-direction <asc\|desc>` | No | Sort direction (default: asc) |
+| `--sort-by <field>` | No | Sort field (e.g., `UserName`, `Email`) |
+| `--sort-order <asc\|desc>` | No | Sort direction (default: asc) |
 | `-l, --limit <number>` | No | Items to return (default: 20) |
 | `--offset <number>` | No | Items to skip (default: 0) |
 
@@ -254,8 +254,8 @@ uip admin robot-accounts list --output json
 | Flag | Required | Description |
 |------|----------|-------------|
 | `-s, --search <term>` | No | Search by name |
-| `--order-by <field>` | No | Sort field (e.g., `Name`) |
-| `--order-direction <asc\|desc>` | No | Sort direction (default: asc) |
+| `--sort-by <field>` | No | Sort field (e.g., `Name`) |
+| `--sort-order <asc\|desc>` | No | Sort direction (default: asc) |
 | `-l, --limit <number>` | No | Items to return (default: 20) |
 | `--offset <number>` | No | Items to skip (default: 0) |
 

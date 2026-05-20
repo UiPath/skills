@@ -20,7 +20,7 @@ Returns `Data: [{ Key, Title, Version, Authors }]`. `Key` is `PackageId:Version`
 |------|---------|
 | `--limit <N>` | Items per call (default 50). Use 500 to cover most tenants in one call. |
 | `--offset <N>` | Pagination offset. Use only if `Data.length == --limit`. |
-| `--order-by "<field> <asc\|desc>"` | Sort. Default `Id desc`. |
+| `--sort-by "<field> <asc\|desc>"` | Sort. Default `Id desc`. |
 | `--output-filter "<JMESPath>"` | Global filter, evaluated client-side after the API returns. |
 | `-t, --tenant <name>` | Override default tenant. |
 

@@ -124,10 +124,10 @@ The CLI also falls back to the persistent `searchSearchDeployments22` record if 
 
 ```bash
 uip solution deploy list --output json
-uip solution deploy list --folder-path "Shared" --limit 20 --order-by "Name" --order-direction "asc" --output json
+uip solution deploy list --folder-path "Shared" --limit 20 --sort-by "Name" --sort-order "Ascending" --output json
 ```
 
-Options: `--folder-path`, `--limit` (default 10), `--order-by`, `--order-direction` (`asc`/`desc`).
+Options: `--folder-path`, `--limit` (default 50), `--sort-by`, `--sort-order` (`Ascending`/`Descending`).
 
 ---
 

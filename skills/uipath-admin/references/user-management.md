@@ -92,7 +92,7 @@ Use `create` instead of `invite` when:
 
 ```bash
 uip admin users list --limit 20 --offset 0 --output json
-uip admin users list --order-by "UserName" --order-direction "asc" --output json
+uip admin users list --sort-by "UserName" --sort-order "asc" --output json
 ```
 
 ## Error Handling
