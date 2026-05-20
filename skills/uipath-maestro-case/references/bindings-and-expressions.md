@@ -45,7 +45,7 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 | Path | Trigger | Capabilities |
 |---|---|---|
 | **Lookup** | Value starts with `=vars.<id>` or `=bindings.<id>` | Strip prefix, look up by id, return value. NO operators, NO dotted access, NO `=metadata.` |
-| **JS eval** | Value starts with `=js:<expr>` | Full JS evaluation. `vars`, `metadata`, `bindings`, `response` in scope. Operators, function calls, dotted access all work |
+| **JS eval** | Value starts with `=js:<expr>` | Full JS evaluation. Scope: `vars`, `metadata`, `bindings`, `response`, `event`, `Error`, `datafabric`, `orchestrator`. Operators, function calls, dotted access all work. (`event` available only on `wait-for-connector` rules — bound to the incoming event payload.) |
 
 `data.inputs[].value` on non-connector tasks runs **lookup** when the value matches `^=vars\.\w+$` or `^=bindings\.\w+$`; **JS eval** otherwise. Connector body fields, filter expressions, and condition expressions ALL run **JS eval** — they require `=js:` wrap regardless of value shape.
 
@@ -70,7 +70,7 @@ The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is N
 
 ### Planner-emit form
 
-The planner emits `tasks.md` using SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
+The planner emits `tasks.md` using SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) also pass through to impl for per-sink wrap; see [Expression Prefixes](#expression-prefixes) for the full set. The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
 
 ## Cross-Task References
 
