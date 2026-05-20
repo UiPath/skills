@@ -22,9 +22,14 @@ Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `b
 
 ### Step 1 — Add the node
 
-Use `Edit` / `Write` to add the `core.action.http.v2` node directly to the `.flow` file. Follow [Edit/Write: Add a node](../../editing-operations-json.md#add-a-node): copy the registry definition into `definitions[]`, add the node instance to `nodes[]`, add `variables.nodes`, and add a placeholder `layout.nodes` entry. Save the node ID for Step 3.
+```bash
+uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+  --label "<HTTP node label>" --output json
+```
 
-For the node instance shape, follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton) with `type: "core.action.http.v2"` and `typeVersion` set to the `version` field from the `registry get core.action.http.v2` response above (do not hardcode it — this node has advanced past `2.0`). Leave `inputs` empty at this stage — Step 3 populates `inputs.detail` via `uip maestro flow node configure`.
+The CLI copies the manifest into `definitions[]`, adds the node instance to `nodes[]`, registers the `variables.nodes` entries, and inserts a placeholder in `layout.nodes` — all in code, byte-for-byte from the registry (including `typeVersion`, which the CLI pulls from the manifest's `version` field; do not hardcode it). Save the returned node ID for Step 3. Leave `inputs` empty at this stage — Step 3 populates `inputs.detail` via `uip maestro flow node configure`.
+
+> **Do not hand-author the `core.action.http.v2` definition.** `node configure` reads `form.sections[].fields[].componentProps.connectorDetail.uiPathActivityTypeId` from the manifest to build `inputs.detail`. The ~100-line `form.sections[]` block reads like canvas UI metadata (section IDs, icons, `helpUrlTemplate`, tags) and gets routinely trimmed when round-tripped through `Edit` / `Write` — extractor returns `undefined`, `uiPathActivityTypeId` is silently omitted, `flow validate` and `flow debug` both pass, but Studio Web crashes on canvas open. `node add` is the only safe path: it copies the manifest byte-for-byte in code.
 
 ### Step 2 — Identify target connector and connection (connector mode only)
 
@@ -187,6 +192,7 @@ Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge a
 | --- | --- | --- |
 | `not_authed` or 401/403 | Wrong node type (v1 instead of v2), missing bindings, or expired connection | Verify node type is `core.action.http.v2`, check `bindings_v2.json` exists, ping the connection |
 | `configuration` field missing | Node not configured via CLI | Run `uip maestro flow node configure` — do not hand-write `inputs.detail` |
+| `flow validate` errors with `uiPathActivityTypeId` missing on `core.action.http.v2`, or Studio Web canvas crashes when the flow is opened | Node was added by hand-editing `definitions[]` and the `form` block was paraphrased / trimmed when the registry-get output was round-tripped through `Edit` / `Write`; the extractor in `node configure` returned `undefined` and silently omitted the field | Remove the node and re-add it via `uip maestro flow node add <file> core.action.http.v2 ...` — the CLI copies the manifest byte-for-byte. Then re-run `node configure`. |
 | Connection not found | Wrong connection ID or connector key | Re-run `uip is connections list` for the target connector |
 | Wrong API response | Incorrect `url` or `query` | Check the target service's API documentation |
 | `ImplicitConnection` errors | Manual mode misconfigured | Verify `authentication: "manual"` and `url` is a full URL |
