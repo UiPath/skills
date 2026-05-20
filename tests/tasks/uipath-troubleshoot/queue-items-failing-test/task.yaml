@@ -1,10 +1,10 @@
-task_id: skill-diagnostics-queue-items-failing-test
+task_id: skill-troubleshoot-queue-items-failing-test
 description: >
   Faithful replay of a real UiPath diagnostic investigation. The agent
-  runs the uipath-diagnostics skill against a uip CLI mock whose
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
   responses are the verbatim sub-agent outputs from the real session.
   Success = the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-diagnostics, e2e, faithful-replay]
+tags: [uipath-troubleshoot, e2e, faithful-replay]
 
 agent:
   type: claude-code
@@ -36,9 +36,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-diagnostics skill"
-    skill_name: "uipath-diagnostics"
-    expected_skill: "uipath-diagnostics"
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
   - type: file_exists
