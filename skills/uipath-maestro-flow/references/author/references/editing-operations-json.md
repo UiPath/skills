@@ -92,10 +92,21 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 
 ### Add a node
 
-**Tool:** `Edit` (insert into `nodes[]` + `definitions[]` + `variables.nodes` + `layout.nodes`)
+**Tool:** `Edit` (one assistant turn, parallel calls into `nodes[]` + `definitions[]` + `variables.nodes` + `layout.nodes` + `edges[]` + — for resource nodes — top-level `bindings[]`)
 
-1. Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
-2. Use `Edit` to add a node entry to the `nodes` array:
+**One turn.** After `uip maestro flow registry get` returns the definition, issue **all** of the batch members below as **parallel `Edit` calls in a single assistant turn**. They anchor on disjoint regions of the `.flow` file, so they are safe to batch. Do **not** issue them one per turn — that adds a round-trip per call and is the dominant source of latency in flow authoring. See [Batch independent `Edit`s in one turn](editing-operations.md#batch-independent-edits-in-one-turn).
+
+**Prereq turn:** Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version). Capture the definition's `version` field — you'll set the node instance's `typeVersion` to that exact value.
+
+**Gate turn (after the batch):** Run `uip maestro flow validate` and then `uip maestro flow format`. These read the file from disk and cannot be batch members — see the [validation / format carve-out](editing-operations.md#batch-independent-edits-in-one-turn).
+
+#### Batch members (parallel `Edit` calls in one turn)
+
+> The numbering below is for cross-reference only (e.g., "see batch member 4"). All batch members below are issued in **a single assistant turn as parallel `Edit` calls** — not sequentially. Numbered order is not execution order.
+
+##### 1. Insert into `nodes[]`
+
+Add this node entry to the `nodes` array:
 
 ```json
 {
@@ -123,24 +134,34 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 
 > **`display` is required on every node** — including control-flow nodes (`core.control.end`, `core.logic.terminate`) where it may feel optional. Omitting it produces a vague `[(root)] Schema validation failed: Invalid input: expected object, received undefined` from `uip maestro flow validate`, which does NOT pinpoint the missing field. Always include `"display": { "label": "<label>" }` on every node, even bare end nodes. See [file-format.md — Node instance](../../shared/file-format.md#node-instance) and [MST-9368](https://uipath.atlassian.net/browse/MST-9368) for the validator-error-clarity follow-up.
 
-> **What actually makes `$vars.<sourceNodeId>.output` resolve is `variables.nodes[]` (step 4 below), not the instance `outputs` block.** The BPMN emitter ignores the action-node instance `outputs` block at serialization — it reads the manifest's `outputDefinition` for the activity-side mapping and reads `variables.nodes[]` for the process-level `<uipath:inputOutput>` declarations downstream nodes depend on. Authoring an `outputs` block matching the manifest is fine (the canonical examples include it for documentation), but you can skip it on action and trigger nodes. End / terminate nodes are different — see [end/impl.md](plugins/end/impl.md). The standard patterns are in [file-format.md — Node outputs](../../shared/file-format.md#node-outputs). **Always run `uip maestro flow format` after structural edits — it regenerates `variables.nodes[]` from the current node graph (MST-9972).**
+> **What actually makes `$vars.<sourceNodeId>.output` resolve is `variables.nodes[]` (batch member 4 below), not the instance `outputs` block.** The BPMN emitter ignores the action-node instance `outputs` block at serialization — it reads the manifest's `outputDefinition` for the activity-side mapping and reads `variables.nodes[]` for the process-level `<uipath:inputOutput>` declarations downstream nodes depend on. Authoring an `outputs` block matching the manifest is fine (the canonical examples include it for documentation), but you can skip it on action and trigger nodes. End / terminate nodes are different — see [end/impl.md](plugins/end/impl.md). The standard patterns are in [file-format.md — Node outputs](../../shared/file-format.md#node-outputs). **Always run `uip maestro flow format` in the gate turn after the batch — it regenerates `variables.nodes[]` from the current node graph (MST-9972).**
 
 > **No full `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Most instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers and `color`/`content` for sticky notes. Attached inline-agent resource nodes that declare `model.source: true` use only the minimal instance block `"model": { "source": "<resourceId>" }`. For `uipath.agent.autonomous`, write the inline agent `projectId` at `inputs.source` instead; flow-core hoists source identity into inputs and no instance `model` block is written. See [file-format.md — Instance-specific identity fields](../../shared/file-format.md#instance-specific-identity-fields).
 
-> **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Add a layout entry instead (step 5).
+> **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Use batch member 5 (`layout.nodes`) instead.
 
-3. Add the definition to `definitions` (if this type is not already present):
-   - Paste the returned node definition object from the registry response
-   - Set the node instance `typeVersion` to the pasted definition's exact `version`
-   - One definition per unique `type:typeVersion` — not one per node instance
+##### 2. Insert into `definitions[]`
 
-> **Resource nodes — extra step.** If the node type is one of `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`:
-> 1. The instance stays minimal — just `inputs`/`outputs`/`display`.
-> 2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`): two entries per resource (`name` + `folderPath`) with `resourceKey` exactly matching the definition's `model.bindings.resourceKey`.
->
-> The BPMN emit layer rewrites the definition's `<bindings.{name}>` placeholders to `=bindings.{id}` by matching on `(resourceKey, name)`. Without matching entries in top-level `bindings[]`, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
+If a definition for this `type:typeVersion` is not already present, add one:
 
-4. Add node output variables to `variables.nodes` (REQUIRED — the BPMN emitter reads this to declare process-level variables. `uip maestro flow format` regenerates this block from `nodes[]` + `definitions[]`, so running format after edits will self-heal an omitted entry; running validate alone does not. Without it, downstream `$vars.<sourceNodeId>.output` resolves to `undefined` at runtime — MST-9972):
+- Paste the returned node definition object from the registry response verbatim
+- Set the node instance `typeVersion` (in batch member 1 above) to the pasted definition's exact `version`
+- One definition per unique `type:typeVersion` — not one per node instance
+
+##### 3. (Resource nodes only) Insert into top-level `bindings[]`
+
+Skip this batch member unless the node type is one of `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`.
+
+For resource nodes:
+
+1. The instance (batch member 1) stays minimal — just `inputs`/`outputs`/`display`.
+2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`): two entries per resource (`name` + `folderPath`) with `resourceKey` exactly matching the definition's `model.bindings.resourceKey`.
+
+The BPMN emit layer rewrites the definition's `<bindings.{name}>` placeholders to `=bindings.{id}` by matching on `(resourceKey, name)`. Without matching entries in top-level `bindings[]`, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
+
+##### 4. Insert into `variables.nodes[]`
+
+REQUIRED. The BPMN emitter reads `variables.nodes[]` to declare process-level variables. `uip maestro flow format` (in the gate turn) regenerates this block from `nodes[]` + `definitions[]`, so running format after the batch will self-heal an omitted entry; running validate alone does not. Without it, downstream `$vars.<sourceNodeId>.output` resolves to `undefined` at runtime — MST-9972.
 
 ```json
 [
@@ -165,7 +186,9 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 ]
 ```
 
-5. Add a placeholder layout entry for the node in the top-level `layout.nodes` object — `flow format` rewrites both `position` and `size` on save:
+##### 5. Insert into `layout.nodes`
+
+Add a placeholder layout entry for the node in the top-level `layout.nodes` object. `flow format` (in the gate turn) rewrites both `position` and `size` on save, so any placeholder is fine:
 
 ```json
 "layout": {
@@ -179,7 +202,13 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 }
 ```
 
-**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow format <ProjectName>.flow` after edits. Format arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
+**Layout rule:** Don't compute coordinates by hand — `uip maestro flow format <ProjectName>.flow` in the gate turn arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
+
+##### 6. Insert into `edges[]`
+
+One edge per wiring connection from / to this node. `edges[]` is disjoint from the node-region anchors above, so edge `Edit`s go in the **same parallel batch** as the node inserts. This holds whether one endpoint or both endpoints are being added in this step (e.g., scaffolding a fresh subflow). Always batch edges with the node(s) they wire.
+
+See [Add an edge](#add-an-edge) below for the JSON shape and port rules.
 
 ### Delete a node
 
