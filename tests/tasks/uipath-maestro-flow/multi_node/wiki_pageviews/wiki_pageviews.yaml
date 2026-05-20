@@ -26,8 +26,6 @@ initial_prompt: |
   once to fetch the daily view counts in the range, use a Transform node to
   filter the returned items down to days whose `views` exceed 500, then sum
   the `views` across those matching days and return the total as an integer.
-  Do not omit the literal `/daily/` path segment between `{article}` and
-  `{date1}`; without it Wikimedia returns HTTP 404 "invalid route".
   When the article does not exist and the HTTP call fails, wire the HTTP
   node's `error` output port to an End node that returns the literal string
   `Article not found` instead.
@@ -38,7 +36,6 @@ initial_prompt: |
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
-  Run a debug check with article=UiPath, date1=20240101, date2=20240115 before finishing; if the success path returns 404, inspect the HTTP URL and restore the required `/daily/` segment.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
