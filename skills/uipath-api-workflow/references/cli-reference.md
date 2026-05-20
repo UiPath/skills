@@ -180,13 +180,81 @@ uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
 
 # 4. Drop Data.Activity into the root sequence, fill missing required fields, replace placeholders.
 
-# 5. (Solutions-mode + IntSvc kind) write Solution/resources/solution_folder/connection/<connector-key>/<name>.json
+# 5. (CONDITIONAL: IntSvc kind + Solutions-mode — skip for Http kind / ImplicitConnection / standalone projects)
+#     Emit bindings_v2.json next to the workflow, then sync the Solution catalogue + debug overwrites:
+uip api-workflow bindings sync --workflow Solution/<ProjectName>/Workflow.json --output json
+uip solution resource refresh --solution-folder Solution --output json
 
 # 6. Validate:
 uip api-workflow run ./my-workflow.json --output json
 ```
 
 See [connector-activity-discovery.md](connector-activity-discovery.md) for the full flow, field-shape rules, the Solution-resource file shape, and worked examples.
+
+## `uip api-workflow bindings sync`
+
+Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Pure-local transformation — no auth, no API calls. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resource refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
+
+**When to run.** After every `registry stub --connection-id <uuid>` that adds an IntSvc activity to a workflow inside a `Solution/` tree. Always paired with `uip solution resource refresh` (the next step in the typical sequence).
+
+**When to skip:**
+- **Http-kind-only workflows** — no IntSvc activities to bind. The command will still succeed with `ResourceCount: 0`, but the empty `bindings_v2.json` it writes serves no purpose.
+- **Standalone projects** (no `Solution/` wrapper). StudioWeb doesn't consult a Solution resource tree in this mode; the downstream `solution resource refresh` has no solution to operate on.
+
+```bash
+uip api-workflow bindings sync \
+  --workflow <path-to-Workflow.json> \
+  --output json
+```
+
+| Argument / Flag | Required | Description |
+|--|--|--|
+| `--workflow <path>` | yes | Path to the api-workflow JSON file. The output `bindings_v2.json` is written into the same directory as this file. |
+
+Success output:
+```json
+{
+  "Result": "Success",
+  "Code": "BindingsSync",
+  "Data": {
+    "BindingsPath": "<dir>/bindings_v2.json",
+    "ResourceCount": 1,
+    "ActivitiesVisited": 1,
+    "IntSvcActivities": 1,
+    "DuplicatesCollapsed": 0
+  }
+}
+```
+
+`ResourceCount` is the number of unique connections in the output (one binding per unique UUID). `DuplicatesCollapsed` reports activities that shared a connection — two Outlook activities reading the same mailbox count as 1 binding, with `DuplicatesCollapsed: 1`.
+
+Failure modes:
+- `"Workflow file not found: <path>"` — `--workflow` does not exist. Pass an existing path.
+- `"Workflow file is not valid JSON: <error>"` — the file exists but won't parse. Fix the JSON syntax.
+
+**Idempotency.** Always overwrites the existing `bindings_v2.json`. The output is a pure function of the workflow's IntSvc activities — re-running with the same workflow produces the same file byte-for-byte (modulo trailing newline).
+
+## `uip solution resource refresh`
+
+Re-scan all projects in a solution and sync resource declarations from their `bindings_v2.json` files into the Solution catalogue. Uses `@uipath/resource-builder-sdk` to write the catalogue resource files (`Solution/resources/...*.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`) — the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click. For api-workflow projects, run `uip api-workflow bindings sync` first to generate the `bindings_v2.json` this command consumes.
+
+```bash
+uip solution resource refresh \
+  --solution-folder <path-to-solution-root> \
+  [--login-validity <minutes>] \
+  --output json
+```
+
+| Argument / Flag | Required | Description |
+|--|--|--|
+| `--solution-folder <path>` | no (defaults to cwd) | Path to the solution root folder (the folder containing `.uipx`). |
+| `--login-validity <minutes>` | no | Minimum minutes of token validity before forcing a refresh (default `10`). |
+
+Requires `uip login`. The SDK resolves folder keys via Resource Catalog Service; an authenticated tenant context is required.
+
+**Idempotency.** Import-only by design. First run for a binding triggers `addOrUpdateResourceToSolutionAsync` (status `Added`); subsequent runs skip the binding because its key is already in the solution. Re-running is safe and a no-op when nothing changed.
+
+Lives in `solution-tool`, not `api-workflow-tool`. Full details in the [solution skill](../uipath-platform).
 
 ## `uip is resources describe`
 

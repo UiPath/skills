@@ -423,14 +423,26 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Properties panel: "to debug this resource, select a connection for it from the resource definition page"
 
 - **Symptom:** The workflow runs locally with `uip api-workflow run` AND from "Run" in StudioWeb. Open the activity card in the designer, click the connection field, and the properties panel renders the connection as invalid with the message **"to debug this resource, select a connection for it from the resource definition page."** `bindings_v2.json` contains a correct `Connection` resource entry; `Workflow.json` has `connectionId` / `connectionResourceId` set to the same pinged UUID.
-- **Cause:** **In a Solutions-mode project, every connection used by an activity must ALSO be declared as a Solution resource** in a file at `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`. StudioWeb's properties panel resolves connections from this tree, not from `Workflow.json` or `bindings_v2.json` — and the CLI does not write this file. So a CLI- or skill-generated workflow ends up with the runtime able to resolve the connection (which is why "Run" works) but the panel unable to validate it (which is why the message shows). Distinct from `bindings_v2.json`: that file is StudioWeb-generated and is per-activity binding; the resource file is per-connection and per-Solution.
+- **Cause:** **In a Solutions-mode project, every connection used by an activity must ALSO be declared in two Solution-level artefacts.** The catalogue resource file (`Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`) declares that the Solution uses the connection; the per-user debug overwrites file (`Solution/userProfile/<guid>/debug_overwrites.json`) maps the connection's UUID to a runtime folder+key. StudioWeb's properties panel resolves connections by calling `getResourceDebugReference({ key: <uuid> })` — when that returns null (because either file is missing), `activityState.realConnectionId` becomes null, and the workflow serializer writes `with.connectionId: null` to `Workflow.json` on the next save. The runtime resolves connections from `Workflow.json` directly (which is why "Run" works against a freshly-authored workflow), but the panel resolves via the Solution resource tree (which is why the click breaks). `uip api-workflow registry stub` does not write either file — both are created by the post-authoring sync flow described in the Fix below. Distinct from `bindings_v2.json`: that file is the *input* to the sync (StudioWeb computes it in-memory; the CLI's `bindings sync` emits the same content offline); the catalogue + debug-overwrite files are the *outputs*.
 - **Detection:** Look for the file:
   ```bash
   ls Solution/resources/solution_folder/connection/<connector-key>/ 2>/dev/null
   # → ENOENT or empty → file missing → this is the bug
   ```
   Also check that `bindings_v2.json`'s `"key"` matches `Workflow.json`'s `connectionId` matches the missing resource file's intended `"key"` — same UUID across all three.
-- **Fix:** Author the missing file. Start from [assets/templates/solution-connection-resource-template.json](../assets/templates/solution-connection-resource-template.json) and fill in the placeholders:
+- **Fix (preferred — two CLI commands):**
+  ```bash
+  # 1. Generate bindings_v2.json from Workflow.json (pure local; no auth needed):
+  uip api-workflow bindings sync --workflow <path-to-Workflow.json> --output json
+
+  # 2. Sync catalogue + debug overwrites via @uipath/resource-builder-sdk (requires uip login):
+  uip solution resource refresh --solution-folder <path-to-solution-root> --output json
+  ```
+  Step 1 walks the workflow, extracts IntSvc connector activities, dedupes by connection UUID, and writes the canonical `bindings_v2.json` next to the workflow — what StudioWeb normally produces in-memory on workflow open. Step 2 reads that file, uses the SDK's `addOrUpdateResourceToSolutionAsync` to write the catalogue file, and `editOverwritesAsync` to write the per-user debug overwrites. Both commands are idempotent and safe to re-run.
+
+  Reload the workflow in StudioWeb. The connection pill should resolve to the connection name, the "resource definition page" error should be gone, and clicking the activity should no longer null `with.connectionId`.
+
+- **Fix (hand-authored fallback — when the CLI is unavailable):** Start from [assets/templates/solution-connection-resource-template.json](../assets/templates/solution-connection-resource-template.json) and fill in the placeholders:
   ```json
   {
     "docVersion": "1.0.0",

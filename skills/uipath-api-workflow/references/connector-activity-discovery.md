@@ -248,11 +248,31 @@ uip api-workflow run ./my-workflow.json --output json
 
 For HTTP Request with `connectionId: "ImplicitConnection"` and a public API, `--no-auth` works. For any vendor connector (IntSvc kind), `uip login` is required because the IS proxy needs the bearer token.
 
-### Step 5 — (Solutions-mode, IntSvc kind) declare the connection as a Solution resource
+### Step 5 — (Solutions-mode, IntSvc kind) sync the connection into the Solution catalogue
 
-If the workflow lives in a **Solution** (the project's folder layout is `Solution/<ProjectName>/Workflow.json` + `Solution/resources/solution_folder/`), every vendor connection used by an activity MUST also be declared as a Solution resource. Without this declaration, StudioWeb's properties panel renders the connection as broken with the message **"to debug this resource, select a connection for it from the resource definition page"** — even though the workflow runs cleanly via `uip api-workflow run` and via "Run" in StudioWeb. The runtime resolves connections from `Workflow.json`; the panel resolves them from the Solution resource tree.
+**Skip this step entirely if any of the following are true:**
 
-The CLI does not write this file. The agent must.
+- The activity is **Http kind** (`call: "UiPath.Http"`, connector `uipath-uipath-http`). Its `connectionId` is `"ImplicitConnection"`, a literal sentinel, not a real connection — there's nothing to sync.
+- The activity has **no connection** at all (Sequence, Assign, If, ForEach, TryCatch, Wait, Response, etc.).
+- The project is **standalone** — top-level `project.json`, no `Solution/` wrapper, no `.uipx`. StudioWeb doesn't read a Solution resource tree in this mode; the properties-panel error doesn't fire.
+
+If the workflow lives in a **Solution** (the project's folder layout is `Solution/<ProjectName>/Workflow.json` + `Solution/resources/solution_folder/`), every vendor connection used by an activity MUST be declared in BOTH the Solution catalogue file (`Solution/resources/solution_folder/connection/<connector-key>/<name>.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`). Without this declaration, StudioWeb's properties panel renders the connection as broken with the message **"to debug this resource, select a connection for it from the resource definition page"** — even though the workflow runs cleanly via `uip api-workflow run` and via "Run" in StudioWeb. The runtime resolves connections from `Workflow.json`; the panel resolves them from the Solution resource tree.
+
+**Use the CLI — two commands.** The CLI handles both files via the same machinery StudioWeb's `solution pack` uses:
+
+```bash
+# 1. Emit Solution/<ProjectName>/bindings_v2.json from Workflow.json
+uip api-workflow bindings sync --workflow Solution/<ProjectName>/Workflow.json --output json
+
+# 2. Sync resources + per-user debug overwrites via @uipath/resource-builder-sdk
+uip solution resource refresh --solution-folder Solution --output json
+```
+
+`bindings sync` is pure-local (no auth, no API calls) — it walks `Workflow.json`, extracts IntSvc connector activities, and writes the canonical `bindings_v2.json` next to the workflow (one binding per unique connection UUID — two activities sharing a connection collapse to one entry). This file is what StudioWeb computes in-memory on workflow open; emitting it offline avoids the "open in StudioWeb once first" detour.
+
+`solution resource refresh` then reads every project's `bindings_v2.json`, calls `@uipath/resource-builder-sdk`'s `addOrUpdateResourceToSolutionAsync` to write the catalogue files, and `editOverwritesAsync` to write the per-user debug overwrites. Requires `uip login` (the SDK looks up folder keys via Resource Catalog Service). Idempotent — re-runs only import new resources.
+
+**If you must hand-author** (offline, or the connection isn't reachable via the API), the rest of this section documents the exact file shape.
 
 **Where to write.** `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`.
 
@@ -727,4 +747,4 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 - **Do NOT remove `multipartParameters` from a multipart endpoint** — even for an attachment-less email. The executor's multipart wrapper depends on the declaration; without it, the vendor returns `400 "Unable to parse multipart body"`.
 - **Do NOT trust `registry stub`'s `queryParameters` / `pathParameters` / `bodyParameters` as complete.** The stub drops `required: true` fields. After every stub call, cross-check via `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` (or parse `metadata.configuration.optionalConfiguration.fieldsContainer.inputFields` from the stub output itself) and fill in anything required that's missing. Symptom of skipping: workflow runs locally on stale defaults, fails in cloud with a 4xx, or the StudioWeb properties panel marks the field invalid without a clear error.
 - **Do NOT leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` (or any `<REPLACE_WITH_*>` placeholder) in a generated workflow.** StudioWeb's properties panel renders the literal placeholder string as if it were a real connection name — the connection pill shows `<REPLACE_WITH_VENDOR_C...>` with a red error, and any subsequent run 401s in cloud. The placeholder is meaningful **only** in the template file under `assets/templates/`; the moment you copy the stub's `Data.Activity` into the user's workflow, every placeholder MUST become a real value (UUID from `uip is connections ping`, URL from `--inputs` or the user's request). If you don't have a working UUID, **stop authoring** and ask the user — do not write the sentinel to disk. Re-stubbing with `--connection-id <uuid>` is the cleanest way to avoid the placeholder ever existing in the output.
-- **Do NOT skip the Solution connection-resource file in Solutions-mode projects.** Even when `bindings_v2.json` is correct and the workflow runs, the StudioWeb properties panel reads connection definitions from `Solution/resources/solution_folder/connection/<connector-key>/<name>.json` and flags the activity with "to debug this resource, select a connection for it from the resource definition page" without it. The CLI does not write this file — the agent must, with `resource.key` equal to the connection UUID. See [Step 5](#step-5--solutions-mode-intsvc-kind-declare-the-connection-as-a-solution-resource).
+- **Do NOT skip the Solution catalogue sync in Solutions-mode projects.** Two files MUST exist: the catalogue resource (`Solution/resources/solution_folder/connection/<connector-key>/<name>.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`). Without both, the properties panel flags the activity with "to debug this resource, select a connection for it from the resource definition page" and clicking the activity nulls `with.connectionId`. Run `uip api-workflow bindings sync --workflow <Workflow.json>` followed by `uip solution resource refresh --solution-folder <path>` to write both. See [Step 5](#step-5--solutions-mode-intsvc-kind-sync-the-connection-into-the-solution-catalogue).
