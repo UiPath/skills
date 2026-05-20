@@ -2,9 +2,10 @@
 """Verify 'Invoice Processing Team' group exists and has exactly one member."""
 
 import logging
+import os
 import sys
 
-sys.path.insert(0, sys.path[0])
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, find_one, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="check_group: %(message)s")
@@ -36,5 +37,4 @@ def main():
     ok(f"Group has {member_count} member(s)")
 
 
-if __name__ == "__main__":
-    main()
+main()

@@ -58,13 +58,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Invite was processed — user search returns valid response"
-    command: "python3 $TASK_DIR/../_shared/check_user_invited.py"
+    description: "Invite was processed — user found in list"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_user_invited.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $TASK_DIR/../_shared/cleanup_invited_user.py"
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_invited_user.py''))"'
     timeout: 30

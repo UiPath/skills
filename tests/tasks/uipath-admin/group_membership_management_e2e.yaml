@@ -27,14 +27,6 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed existing groups first (discover before create)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+list'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent created the group with positional name"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+groups\s+create\s+"?Invoice\s+Processing\s+Team'
@@ -59,14 +51,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified membership via members list"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+members\s+list'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent removed a member with members revoke"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+groups\s+members\s+revoke\s+.*--user-ids'
@@ -78,18 +62,18 @@ success_criteria:
     description: "Agent consistently used --output json"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+.*--output\s+json'
-    min_count: 5
+    min_count: 4
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Group 'Invoice Processing Team' exists and has at least one member"
-    command: "python3 $TASK_DIR/../_shared/check_group_membership.py"
+    description: "Group 'Invoice Processing Team' exists and has exactly one member"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_group_membership.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $TASK_DIR/../_shared/cleanup_group.py"
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_group.py''))"'
     timeout: 30

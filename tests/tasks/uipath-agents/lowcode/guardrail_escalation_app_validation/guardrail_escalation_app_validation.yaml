@@ -6,14 +6,12 @@ description: >
   (missing 8 required inputs, 3 required outputs, wrong outcome names).
   The agent must validate the action schema and reject the app with the
   error message instead of writing the guardrail.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, low-code, guardrail]
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
-run_limits:
   max_turns: 40
   turn_timeout: 1200
 

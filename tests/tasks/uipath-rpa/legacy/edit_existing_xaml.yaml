@@ -1,0 +1,174 @@
+task_id: skill-rpa-legacy-edit-existing-xaml
+description: >
+  Skill-guided evaluation: given a pre-existing Legacy project (.NET Framework
+  4.6.1) on disk, the agent must read project.json, detect targetFramework:
+  Legacy, switch to uipath-rpa Legacy mode, and edit Main.xaml using the
+  legacy CLI (`uip rpa-legacy`) — NOT the modern `uip rpa` CLI. Tests the
+  routing decision added when uipath-rpa-legacy was merged into uipath-rpa.
+
+  Platform note: Legacy RPA targets .NET Framework 4.6.1 (Windows-only), so
+  `uip rpa-legacy validate` cannot successfully execute on Linux/Mac CI. The
+  test verifies the skill guides the agent to invoke the right commands and
+  preserve the legacy XAML baseline — it does not require the CLI calls to
+  succeed at runtime.
+tags: [uipath-rpa, legacy, smoke, edit, validate]
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 40
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A legacy UiPath RPA project already exists in this directory. Wrap the
+  existing LogMessage activity in Main.xaml inside a TryCatch that logs the
+  exception message in its Catch block. Follow the skill's full workflow:
+  identify the project type, validate, fix.
+
+  First, create the starter project so it's on disk. Write exactly these two
+  files (do not modify their content while writing — the body is authoritative):
+
+  `./HelloLegacy/project.json`:
+  ```json
+  {
+    "name": "HelloLegacy",
+    "projectId": "11111111-1111-1111-1111-111111111111",
+    "description": "Legacy project for edit smoke test",
+    "main": "Main.xaml",
+    "dependencies": {
+      "UiPath.System.Activities": "[23.4.4]"
+    },
+    "webServices": [],
+    "entitiesStores": [],
+    "schemaVersion": "4.0",
+    "studioVersion": "23.10.0.0",
+    "projectVersion": "1.0.0",
+    "runtimeOptions": {
+      "autoDispose": false,
+      "isAttended": false,
+      "isPausable": true,
+      "requiresUserInteraction": true,
+      "supportsPersistence": false,
+      "workflowSerialization": "DataContract",
+      "excludedLoggedData": [],
+      "executionType": "Workflow",
+      "readyForPiP": false,
+      "startsInPiP": false,
+      "mustRestoreAllDependencies": true,
+      "pipType": "ChildSession"
+    },
+    "designOptions": {
+      "projectProfile": "Developement",
+      "outputType": "Process",
+      "libraryOptions": {
+        "includeOriginalXaml": false,
+        "privateWorkflows": []
+      },
+      "processOptions": {
+        "ignoredIsolatedActivities": []
+      },
+      "fileInfoCollection": [],
+      "saveToCloud": false
+    },
+    "expressionLanguage": "VisualBasic",
+    "targetFramework": "Legacy"
+  }
+  ```
+
+  `./HelloLegacy/Main.xaml`:
+  ```xml
+  <Activity mc:Ignorable="sap sap2010 sads" x:Class="Main" mva:VisualBasic.Settings="{x:Null}" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <TextExpression.NamespacesForImplementation>
+      <scg:List x:TypeArguments="x:String" Capacity="4">
+        <x:String>System</x:String>
+        <x:String>System.Collections.Generic</x:String>
+        <x:String>System.Activities</x:String>
+        <x:String>Microsoft.VisualBasic.Activities</x:String>
+      </scg:List>
+    </TextExpression.NamespacesForImplementation>
+    <TextExpression.ReferencesForImplementation>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+    </TextExpression.ReferencesForImplementation>
+    <Sequence DisplayName="Main">
+      <WriteLine Text="[&quot;Hello from legacy&quot;]" />
+    </Sequence>
+  </Activity>
+  ```
+
+  Then perform the edit: wrap the `WriteLine` inside a `TryCatch`. The
+  TryCatch must catch `System.Exception` and log the exception message in
+  the Catch block.
+
+  Important:
+  - The `uip` CLI is available and authenticated in this sandbox.
+  - Choose the appropriate CLI for this project before running any command.
+  - Do not run debug — validation only.
+
+success_criteria:
+  - type: file_exists
+    description: "Starter project.json was written"
+    path: "HelloLegacy/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Starter Main.xaml was written"
+    path: "HelloLegacy/Main.xaml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked uip rpa-legacy validate (Legacy mode CLI)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT use the modern `uip rpa` CLI on this Legacy project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(?!-legacy)(validate|build|run|init|analyzer-rules|activities|packages)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip rpa-legacy commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Main.xaml has a TryCatch that actually nests the WriteLine inside its Try block"
+    command: "python -c \"import re,sys; s=open('HelloLegacy/Main.xaml',encoding='utf-8').read(); sys.exit(0 if re.search(r'<TryCatch\\b[^>]*>[\\s\\S]*?<TryCatch\\.Try>[\\s\\S]*?<WriteLine\\b[\\s\\S]*?</TryCatch\\.Try>[\\s\\S]*?<TryCatch\\.Catches>[\\s\\S]*?</TryCatch>', s) else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Edited Main.xaml still logs the original message inside the Try"
+    path: "HelloLegacy/Main.xaml"
+    includes:
+      - "Hello from legacy"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Edited Main.xaml preserves the legacy baseline (mscorlib, not System.Private.CoreLib)"
+    path: "HelloLegacy/Main.xaml"
+    includes:
+      - "assembly=mscorlib"
+    excludes:
+      - "System.Private.CoreLib"
+    weight: 1.5
+    pass_threshold: 1.0

@@ -33,9 +33,9 @@ jobs:
           if [ -z "$BASE_REF" ]; then BASE_REF="main"; fi
           CHANGED=$(git diff --name-only origin/$BASE_REF...HEAD)
 
-          # Infra change → run all RPA + rpa-legacy smoke tasks
+          # Infra change → run all RPA smoke tasks (modern + legacy)
           if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-rpa-skills\.yml$'; then
-            echo "task_globs=tasks/uipath-rpa/**/*.yaml tasks/uipath-rpa-legacy/**/*.yaml" >> "$GITHUB_OUTPUT"
+            echo "task_globs=tasks/uipath-rpa/**/*.yaml" >> "$GITHUB_OUTPUT"
             echo "Running all RPA smoke tests (test infrastructure changed)"
             exit 0
           fi
@@ -43,11 +43,6 @@ jobs:
           GLOBS=""
           if echo "$CHANGED" | grep -qE '^(skills/uipath-rpa/|tests/tasks/uipath-rpa/)'; then
             [ -d "tests/tasks/uipath-rpa" ] && GLOBS="tasks/uipath-rpa/**/*.yaml"
-          fi
-          if echo "$CHANGED" | grep -qE '^(skills/uipath-rpa-legacy/|tests/tasks/uipath-rpa-legacy/)'; then
-            if [ -d "tests/tasks/uipath-rpa-legacy" ]; then
-              [ -n "$GLOBS" ] && GLOBS="$GLOBS tasks/uipath-rpa-legacy/**/*.yaml" || GLOBS="tasks/uipath-rpa-legacy/**/*.yaml"
-            fi
           fi
 
           if [ -z "$GLOBS" ]; then
@@ -247,7 +242,7 @@ jobs:
           shopt -s globstar nullglob
           overall_exit=0
           for task in ${{ needs.detect.outputs.task_globs }}; do
-            # TODO(rpa-legacy): Bedrock deprecated Opus 4.6 mid-2026-04
+            # TODO(rpa legacy): Bedrock deprecated Opus 4.6 mid-2026-04
             # and Opus 4.1 IDs return 400 'invalid model identifier'
             # on the EU regional inference profiles we have access to.
             # Sonnet trips Bedrock's content filter on the full legacy
@@ -256,7 +251,7 @@ jobs:
             # task YAML itself is still tracked for local runs and
             # for an eventual model fix.
             case "$task" in
-              *rpa-legacy*)
+              tasks/uipath-rpa/legacy/*)
                 echo "::warning::Skipping $task — pending Bedrock Opus model fix"
                 continue
                 ;;

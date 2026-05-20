@@ -8,19 +8,17 @@ description: >
 # BLOCKED: `uip agent guardrails list` not available in @uipath/cli@latest
 # (currently 0.9.0 on public npm). Re-enable smoke tag once CLI >= 1.0.0
 # is published.
-tags: [uipath-agents, smoke-blocked, low-code]
+tags: [uipath-agents, smoke-blocked, low-code, guardrail]
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
-run_limits:
-  max_turns: 40
+  max_turns: 30
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

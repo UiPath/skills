@@ -2,9 +2,10 @@
 """Verify robot account 'smoke-e2e-bot' exists."""
 
 import logging
+import os
 import sys
 
-sys.path.insert(0, sys.path[0])
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, find_one, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="check_robot: %(message)s")
@@ -21,5 +22,4 @@ def main():
     ok("Robot account 'smoke-e2e-bot' exists")
 
 
-if __name__ == "__main__":
-    main()
+main()

@@ -138,6 +138,28 @@ Used by the [connectors.md — JDBC Gateway](connectors.md#jdbc-gateway--databas
 
 ---
 
+## Getting a Connection's Vendor Base URL
+
+`uip is connections base-url <connection-id>` returns the exact vendor base URL the connection uses for proxied calls (e.g., raw `http-request` calls, Managed HTTP Request in connector mode). Manual-mode invocations don't use it. The connection must be Enabled.
+
+```bash
+uip is connections base-url "<connection-id>" --output json
+# → { "Result": "Success", "Code": "ConnectionBaseUrl",
+#     "Data": { "ConnectionId": "<id>", "BaseUrl": "https://..." } }
+```
+
+Examples across connectors:
+
+| Connector | Returned `BaseUrl` |
+|---|---|
+| `uipath-atlassian-jira` | `https://api.atlassian.com/ex/jira/<site-id>/rest/api/2` |
+| `uipath-microsoft-outlook365` | `https://graph.microsoft.com/v1.0` |
+| `uipath-uipath-marketo` | `https://<account>.mktorest.com/rest` |
+
+Use this whenever you need to compose a relative `url` for `http-request` or Managed HTTP Request in connector mode. See [http-request.md](http-request.md).
+
+---
+
 ## Scope-Related Errors
 
 A connection can be `Enabled` but lack optional OAuth scopes needed for specific activities. This typically surfaces as a **403 Forbidden** error during execute.

@@ -7,7 +7,7 @@ description: >
 tags: [uipath-solution, smoke, lifecycle:generate]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

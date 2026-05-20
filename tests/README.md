@@ -28,6 +28,15 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
 
 ## Running Tests
 
+> **Platform-specific sandbox driver:**
+> - **Linux smoke tests** use `driver: docker` for better isolation. Build the Docker image once before running:
+>   ```bash
+>   cd .coder_eval
+>   make docker-image
+>   cd ../tests
+>   ```
+> - **Windows RPA tests** use `driver: tempdir` (Docker image not available on Windows runner).
+
 ```bash
 cd tests
 
@@ -171,7 +180,7 @@ task_id: skill-flow-init-validate
 tags: [uipath-maestro-flow, smoke, mode:build]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -186,7 +195,7 @@ agent:
   max_turns: 14
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -222,7 +231,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, mode:build]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

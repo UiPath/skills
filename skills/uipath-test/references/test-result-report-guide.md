@@ -6,14 +6,14 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
 
 - Authenticated session
 - CLI surface probed (see [/uipath:uipath-test § Critical Rules #2](../SKILL.md#critical-rules)). Commands below use the post-rename shape; translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table on a pre-rename CLI.
-- A test manager project id
-- A test manager testset id
+- A Test Manager project key
+- A Test Manager test set key
 
 ---
 
 ## Workflow
 
-1. **Fetch test executions from the testset**
+1. **Fetch test executions from the test set**
    - Use options like `status`, `execution-type`, `execution-finished-interval` to filter results as needed
 
 2. **Determine the report persona**

@@ -6,7 +6,7 @@ description: >
 tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

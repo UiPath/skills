@@ -5,13 +5,14 @@ description: >
   channel" (Slack) tool that blocks posts containing forbidden terms before they are sent.
   Verifies that the catalog is fetched, a custom guardrail is written with Tool scope and
   matchNames targeting "Send message to channel", and the guardrail has valid rules.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, low-code, guardrail]
 max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 40
   turn_timeout: 1200
 
 sandbox:
@@ -19,14 +20,13 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: ../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
+      path: ../../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
-  I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
-  I want to make sure it never posts anything marked CONFIDENTIAL to Slack. Can you add
-  a guardrail that blocks the "Send message to channel" tool when the message contains
-  the word CONFIDENTIAL? Use the guardrail catalog to figure out the right guardrail type
-  and configuration, then validate when done.
+  I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent
+  that posts research briefings to Slack. I'm worried it might accidentally publish
+  CONFIDENTIAL content. What guardrail(s) should I add to prevent that, and can you
+  set them up? Validate when done.
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.

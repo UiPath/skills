@@ -54,6 +54,7 @@
 
 # Case Management skill
 /skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
@@ -67,8 +68,8 @@
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
-# Legacy RPA skill
-/skills/uipath-rpa-legacy/ @roalexandru
+# Legacy RPA — merged into uipath-rpa
+/skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil

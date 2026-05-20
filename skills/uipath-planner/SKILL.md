@@ -98,23 +98,6 @@ When triggered: no SDD; user described a task or asked for help planning one.
 
 Full procedure: [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
-## RPA skill routing
-
-Two RPA skills exist. Pick the right one (applies to both lanes):
-
-| Signal | Route to |
-|---|---|
-| `project.json` has `"targetFramework": "Legacy"` or no `targetFramework` field | `uipath-rpa-legacy` |
-| `project.json` has any other `targetFramework` (e.g., `"Portable"`, `"Windows"`) | `uipath-rpa` |
-| No existing project | `uipath-rpa` (default for all new projects) |
-| macOS host | `uipath-rpa` — cross-platform target only (Windows target not available on macOS) |
-| Windows host | `uipath-rpa` — user can choose Windows or cross-platform target |
-
-**Rules:**
-
-1. Never suggest `uipath-rpa-legacy` for new projects unless the user explicitly requests legacy.
-2. On macOS, only cross-platform automation is supported — always route to `uipath-rpa`.
-
 ## Skill capability map
 
 High-level view of what each specialist owns. **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
@@ -122,7 +105,6 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | Skill | What it owns | Handles auth? | Handles deploy? |
 |---|---|---|---|
 | `uipath-rpa` | RPA workflows (XAML and C# coded): create, edit, build, run, debug. Owns **all** UI automation authoring end-to-end, including live-app exploration and probing. | No (relies on Studio) | **No** — defer to `uipath-solution` for `.uipx` multi-project, `uipath-platform` for single non-solution packages |
-| `uipath-rpa-legacy` | Legacy RPA workflows (.NET Framework 4.6.1, XAML only). **Existing legacy projects only** — never for new projects unless user explicitly requests legacy. | No | **No** — defer to `uipath-solution` for `.uipx` multi-project, `uipath-platform` for single non-solution packages |
 | `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — follows plan `Solution scope` (SW or local); `uipath-platform` for Orchestrator |
@@ -152,9 +134,8 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 10. **Adding a third option to the UI-targeting question.** Only two options exist: "I build it, you review it" (default) and "You indicate each element". Never invent a third "build it manually" option — a developer choosing manual authoring wouldn't be using a coding agent.
 11. **Leaking internal jargon or implementation details into user-facing questions.** Never mention "snapshot", "hand-wire", "AutomationId", "selector candidate", "autonomous capture", "target configuration". Speak in plain developer language: "the live app", "Studio", "elements", "selectors", "inspect", "discover".
 12. **Injecting domain or app names into question text.** Ask "What kind of application are we automating?" — not "What kind of HR application…". Domain lives in the plan header, not the questions.
-13. **Routing new projects to `uipath-rpa-legacy`.** Legacy is for existing .NET Framework 4.6.1 projects only. New projects always go to `uipath-rpa` unless the user explicitly asks for legacy.
-14. **Omitting the mandatory Testing task per generation skill.** Every generation skill in the plan gets a `Testing (MANDATORY)` task that routes to that skill's testing references. Never replace it with a `Validate:` sub-step. Never describe test-case authoring / data-driven testing / mock testing in the plan.
-15. **Asking about test coverage depth.** Testing is always thorough. The implementation specialist can scope down at execution time if the user wants a quick MVP; the planner does not offer the option.
-16. **Omitting `Execution autonomy` from the plan header, or leaving `Stop conditions` empty when autonomy is `autonomous`.** Downstream specialists rely on both to decide whether to interrupt. Populate `Stop conditions` with the hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources) — do not leave a generic placeholder.
-17. **Generating an SDD or copying SDD content into the plan.** SDD is owned by `uipath-solution`. The plan references SDD section paths in skill prompts but does not duplicate architecture content.
-18. **Asking the user what the planner / library / filesystem can already answer.** Project type is resolved by explicit naming, keyword signals, and filesystem detection before any prompt fires. Skill capability is fixed in the capability map — never ask "which skill should I use". Existence of a `project.json`, `.flow`, `.uipath/`, or `pyproject.toml` is observable. Default first; ask only when no safe default applies. A user prompt is the most expensive resource the planner has — spend it on decisions only the user can make.
+13. **Omitting the mandatory Testing task per generation skill.** Every generation skill in the plan gets a `Testing (MANDATORY)` task that routes to that skill's testing references. Never replace it with a `Validate:` sub-step. Never describe test-case authoring / data-driven testing / mock testing in the plan.
+14. **Asking about test coverage depth.** Testing is always thorough. The implementation specialist can scope down at execution time if the user wants a quick MVP; the planner does not offer the option.
+15. **Omitting `Execution autonomy` from the plan header, or leaving `Stop conditions` empty when autonomy is `autonomous`.** Downstream specialists rely on both to decide whether to interrupt. Populate `Stop conditions` with the hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources) — do not leave a generic placeholder.
+16. **Generating an SDD or copying SDD content into the plan.** SDD is owned by `uipath-solution`. The plan references SDD section paths in skill prompts but does not duplicate architecture content.
+17. **Asking the user what the planner / library / filesystem can already answer.** Project type is resolved by explicit naming, keyword signals, and filesystem detection before any prompt fires. Skill capability is fixed in the capability map — never ask "which skill should I use". Existence of a `project.json`, `.flow`, `.uipath/`, or `pyproject.toml` is observable. Default first; ask only when no safe default applies. A user prompt is the most expensive resource the planner has — spend it on decisions only the user can make.

@@ -5,9 +5,10 @@ Always exits 0 — failures here never affect pass/fail.
 """
 
 import logging
+import os
 import sys
 
-sys.path.insert(0, sys.path[0])
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, find_all
 
 logging.basicConfig(level=logging.INFO, format="cleanup_group: %(message)s")
@@ -37,6 +38,5 @@ def main():
             logger.warning("Delete call returned no result for id=%s", group_id)
 
 
-if __name__ == "__main__":
-    main()
-    sys.exit(0)
+main()
+sys.exit(0)

@@ -5,7 +5,7 @@ description: >
 tags: [uipath-admin, smoke, list]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -21,3 +21,4 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
+

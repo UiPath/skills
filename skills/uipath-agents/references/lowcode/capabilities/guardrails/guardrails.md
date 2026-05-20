@@ -988,7 +988,15 @@ Use when adding input/output safeguards (PII detection, harmful content blocking
 
 > **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
 >
-> **MANDATORY: Run `uip agent guardrails list --output json` before writing any `builtInValidator` guardrail**, even when you already know the `validatorType`. The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes for that validator — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation.
+> **MANDATORY: Run `uip agent guardrails list --output json` before writing any guardrail**, regardless of type. The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation.
+
+### Step 0 — Fetch available validators (mandatory for ALL guardrail types)
+
+```bash
+uip agent guardrails list --output json
+```
+
+Build a lookup of `{ validatorId: status }` from `Data`. Required for both custom and built-in guardrails — confirms the correct parameter shapes and scope/stage constraints for the guardrail you are about to write.
 
 ### Step 1 — Verify existing agent
 

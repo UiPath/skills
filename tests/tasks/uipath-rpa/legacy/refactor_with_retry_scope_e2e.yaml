@@ -1,0 +1,241 @@
+task_id: skill-rpa-legacy-refactor-with-retry-scope-e2e
+description: >
+  End-to-end skill-guided evaluation: given a pre-existing Legacy project
+  (.NET Framework 4.6.1) on disk, the agent must drive the full legacy
+  lifecycle — identify the project type from project.json, plan the
+  refactor, edit Main.xaml to wrap an Excel read in a Retry Scope, ensure
+  the workspace stays compilable, and validate. Exercises Phases 0-3 of
+  the Legacy-mode workflow (environment → discovery → generate/edit →
+  validate & fix) and the Legacy-vs-modern routing decision added when
+  uipath-rpa-legacy was merged into uipath-rpa.
+
+  Platform note: Legacy RPA targets .NET Framework 4.6.1 (Windows-only),
+  so `uip rpa-legacy validate` may not execute successfully on Linux/Mac
+  CI runners. E2e tests still validate the full CLI invocation surface
+  and edit shape — the agent must produce the right command sequence,
+  preserve baseline assemblies, and emit XAML that matches the legacy
+  schema.
+tags: [uipath-rpa, legacy, e2e, mode:edit-validate]
+max_iterations: 2
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 50
+  turn_timeout: 900
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A legacy UiPath RPA project exists at `./InvoiceReader/`. It currently
+  reads `invoices.xlsx` and logs each row, but Excel sometimes fails
+  intermittently. Refactor the workflow so the Excel read is wrapped in
+  a Retry Scope (max 3 retries, 5-second delay) and so any unhandled
+  exception is logged with `Log Message` at Error severity before
+  rethrowing.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Load the `uipath-rpa` skill and follow its workflow.
+
+  First, scaffold the starting project on disk. Write exactly these two
+  files (their content is authoritative — do not modify while writing):
+
+  `./InvoiceReader/project.json`:
+  ```json
+  {
+    "name": "InvoiceReader",
+    "projectId": "22222222-2222-2222-2222-222222222222",
+    "description": "Legacy invoice reader for refactor smoke test",
+    "main": "Main.xaml",
+    "dependencies": {
+      "UiPath.System.Activities": "[23.4.4]",
+      "UiPath.Excel.Activities": "[2.21.4]"
+    },
+    "webServices": [],
+    "entitiesStores": [],
+    "schemaVersion": "4.0",
+    "studioVersion": "23.10.0.0",
+    "projectVersion": "1.0.0",
+    "runtimeOptions": {
+      "autoDispose": false,
+      "isAttended": false,
+      "isPausable": true,
+      "requiresUserInteraction": true,
+      "supportsPersistence": false,
+      "workflowSerialization": "DataContract",
+      "excludedLoggedData": [],
+      "executionType": "Workflow",
+      "readyForPiP": false,
+      "startsInPiP": false,
+      "mustRestoreAllDependencies": true,
+      "pipType": "ChildSession"
+    },
+    "designOptions": {
+      "projectProfile": "Developement",
+      "outputType": "Process",
+      "libraryOptions": {
+        "includeOriginalXaml": false,
+        "privateWorkflows": []
+      },
+      "processOptions": {
+        "ignoredIsolatedActivities": []
+      },
+      "fileInfoCollection": [],
+      "saveToCloud": false
+    },
+    "expressionLanguage": "VisualBasic",
+    "targetFramework": "Legacy"
+  }
+  ```
+
+  `./InvoiceReader/Main.xaml`:
+  ```xml
+  <Activity mc:Ignorable="sap sap2010 sads" x:Class="Main" mva:VisualBasic.Settings="{x:Null}" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <TextExpression.NamespacesForImplementation>
+      <scg:List x:TypeArguments="x:String" Capacity="6">
+        <x:String>System</x:String>
+        <x:String>System.Collections.Generic</x:String>
+        <x:String>System.Activities</x:String>
+        <x:String>System.Data</x:String>
+        <x:String>Microsoft.VisualBasic.Activities</x:String>
+        <x:String>UiPath.Excel.Activities</x:String>
+      </scg:List>
+    </TextExpression.NamespacesForImplementation>
+    <TextExpression.ReferencesForImplementation>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+    </TextExpression.ReferencesForImplementation>
+    <Sequence DisplayName="Main">
+      <WriteLine Text="[&quot;Reading invoices.xlsx&quot;]" />
+    </Sequence>
+  </Activity>
+  ```
+
+  Then perform the refactor:
+  - Add an Excel Application Scope (or Excel Read Range, classic activity)
+    that reads `invoices.xlsx` into a DataTable.
+  - Wrap the read in a Retry Scope with `NumberOfRetries = 3` and a
+    `RetryInterval` of 5 seconds.
+  - Wrap the whole sequence in a TryCatch that catches
+    `System.Exception` and logs the exception message at Error severity
+    via Log Message, then rethrows.
+  - Add namespace/assembly references for any new activity packages
+    you introduce.
+
+  Then validate the file and the project. If validation reports errors,
+  fix them and re-validate until clean OR until 5 fix attempts have
+  passed.
+
+  Important:
+  - The `uip` CLI is available in this sandbox. Live tenant calls may
+    fail — that is expected. Run each command once and continue.
+  - Choose the appropriate CLI for this project before running any
+    command.
+  - Do not run the legacy debug command — validation only.
+
+success_criteria:
+  # Scaffolded fixture is in place
+  - type: file_exists
+    description: "Starter project.json was written"
+    path: "InvoiceReader/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Starter Main.xaml was written"
+    path: "InvoiceReader/Main.xaml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Routing decision: legacy CLI, not modern
+  - type: command_executed
+    description: "Agent invoked `uip rpa-legacy validate` (Legacy mode CLI)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+validate'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT use the modern `uip rpa` CLI on this Legacy project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(?!-legacy)(validate|build|run|init|analyzer-rules|activities|packages)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Discovery: agent used the legacy CLI's find-activities to look up
+  # the Retry Scope / Excel / Log Message activities before authoring.
+  - type: command_executed
+    description: "Agent ran `uip rpa-legacy find-activities` for discovery before authoring"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+find-activities\b.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # --output json was used somewhere on rpa-legacy
+  - type: command_executed
+    description: "Agent used --output json on uip rpa-legacy commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Edit shape: Retry Scope correctly wraps the Excel read
+  - type: run_command
+    description: "Main.xaml has a Retry Scope that nests the Excel read inside its body"
+    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); sys.exit(0 if re.search(r'<RetryScope\\b[^>]*>[\\s\\S]*?(?:ExcelApplicationScope|ExcelReadRange|<ui:ExcelReadRange|<ui:ExcelApplicationScope)[\\s\\S]*?</RetryScope>', s) else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Retry Scope is configured: 3 retries, 5-second interval (TimeSpan
+  # value "00:00:05" or numeric 5).
+  - type: run_command
+    description: "Retry Scope is configured with NumberOfRetries=3 and a 5-second RetryInterval"
+    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); ok = re.search(r'NumberOfRetries=\\\"[\\[\\(]?\\s*3\\s*[\\]\\)]?\\\"', s) and re.search(r'RetryInterval=\\\"[\\[\\(]?\\s*(?:00:00:05|TimeSpan\\.FromSeconds\\(5\\)|New TimeSpan\\(0,\\s*0,\\s*5\\))[\\]\\)]?\\\"', s); sys.exit(0 if ok else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Edit shape: TryCatch wraps the workflow and catches System.Exception,
+  # with a Log Message and a Rethrow somewhere inside the Catch.
+  - type: run_command
+    description: "Main.xaml has TryCatch around the body, catching System.Exception with a Log Message + Rethrow"
+    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); ok = re.search(r'<TryCatch\\b[\\s\\S]*?<Catch\\s+x:TypeArguments=\\\"s(?:ystem)?:Exception\\\"[\\s\\S]*?(?:LogMessage|<ui:LogMessage)[\\s\\S]*?Rethrow[\\s\\S]*?</TryCatch>', s) or re.search(r'<TryCatch\\b[\\s\\S]*?<Catch[\\s\\S]*?Exception[\\s\\S]*?(?:LogMessage|<ui:LogMessage)[\\s\\S]*?Rethrow[\\s\\S]*?</TryCatch>', s); sys.exit(0 if ok else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Baseline preservation
+  - type: file_contains
+    description: "Edited Main.xaml preserves the legacy baseline (mscorlib, not System.Private.CoreLib)"
+    path: "InvoiceReader/Main.xaml"
+    includes:
+      - "assembly=mscorlib"
+    excludes:
+      - "System.Private.CoreLib"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # targetFramework still Legacy after the edit
+  - type: file_contains
+    description: "project.json still declares targetFramework: Legacy"
+    path: "InvoiceReader/project.json"
+    includes:
+      - '"targetFramework"'
+      - '"Legacy"'
+    weight: 1.0
+    pass_threshold: 1.0
