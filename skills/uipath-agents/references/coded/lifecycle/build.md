@@ -22,6 +22,7 @@ Load capability references **only if the task requires them** — do not preload
 | RAG / context grounding | `../capabilities/context-grounding.md` | agent searches organization documents |
 | Platform API calls | `../capabilities/sdk-services.md` | agent uses UiPath platform services directly |
 | Tracing / monitoring | `../capabilities/tracing.md` | agent needs custom tracing (Coded Function only — LangGraph traces automatically) |
+| File attachments (input or created) | `../capabilities/file-attachments.md` | agent takes a file as input, or creates an attachment |
 
 ## Framework Reference
 
