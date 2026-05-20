@@ -165,6 +165,7 @@ The CLI's filter compiler only accepts `isLiteral: true` clauses in the FilterTr
 |---|---|
 | Literal (`"urgent"`, `42`, `true`) | `{ "isLiteral": true, "rawString": "\"urgent\"", "value": "urgent" }` — JSON-encoded `rawString`, unwrapped `value` |
 | Variable reference (`=vars.X`, `=metadata.X`, `=bindings.X`) | `{ "isLiteral": false, "rawString": "=vars.X", "value": "=vars.X" }` — both fields carry the `=`-prefixed reference verbatim |
+| Pre-wrapped expression (`=js:<expr>` on a filter clause value, e.g. `=js:vars.amount > 5000`) | `{ "isLiteral": false, "rawString": "=js:<expr>", "value": "=js:<expr>" }` — same impl treatment as plain refs (stripped from CLI payload; composed into the post-CLI template literal) |
 
 The planner emits a single unified FilterTree containing both clause types. The impl then:
 
@@ -197,7 +198,7 @@ Planner emits to `tasks.md`:
 Impl composes (after CLI processes the literal-only subset):
 
 ```
-=js:`(parentFolderId == '<inbox-id>') && (contains(subject, ${vars.urgentKeyword})) && (contains(from, 'VIP'))`
+=js:`(parentFolderId == '<inbox-id>') && (contains(subject, '${vars.urgentKeyword}')) && (contains(from, 'VIP'))`
 ```
 
 **Canonical filter-expression form with variables** (matches FE `buildFiltersExpression` output at `IntsvcActivityConfigurationUtils.ts:358-371`):
@@ -211,10 +212,18 @@ Impl composes (after CLI processes the literal-only subset):
 - References appear as `${vars.X}` / `${metadata.X}` / `${bindings.X}` template-literal interpolations — NOT as `=vars.X` / `=metadata.X` (plain prefix doesn't get evaluated inside the body sink). All `=js:<ref>` forms get the same transformation via FE's `wrapJsVariablesInTemplateLiteral` (`IntsvcCommonUtils.ts:251-258`).
 - For each `=<prefix>.X` reference in the SDD/tasks.md filter, the impl emits `${<prefix>.X}` inside the appropriate JMESPath clause.
 
+> **String-operand quoting (mandatory).** FE's `wrapJsVariablesInTemplateLiteral` does pure substitution — `=js:vars.X` → `${vars.X}` with NO surrounding quotes added (regex at `IntsvcCommonUtils.ts:257`; behavior confirmed by `IntsvcActivityConfigurationUtils.test.ts:986` → `:996`, which asserts the substituted output is unquoted). For JMESPath string operands (`contains(field, <string>)`, `field == '<string>'`), the impl MUST emit single quotes around the `${vars.X}` substitution. For numeric / boolean / JMESPath-literal-backtick operands, no surrounding quotes. Examples:
+>
+> - String operand: `contains(subject, '${vars.urgentKeyword}')` ✓
+> - Numeric operand: `amount > ${vars.minAmount}` ✓
+> - JMESPath array literal: `` contains(`["Open","Closed"]`, Status) `` ✓ (literal, no substitution)
+>
+> Forgetting quotes on a string operand evaluates at runtime to invalid JMESPath (e.g. `contains(subject, Quarterly Review)` — identifier, not string).
+
 **Worked example.** SDD filter: `subject contains =vars.calendarTitle`. Required event-param `parentFolderId` resolved to an Outlook folder id. The impl writes:
 
 ```js
-=js:`(parentFolderId == 'AAMkAD...') && (contains(subject, ${vars.calendarTitle}))`
+=js:`(parentFolderId == 'AAMkAD...') && (contains(subject, '${vars.calendarTitle}'))`
 ```
 
 Both `body.filters.expression` and `activityPropertyConfiguration.filterExpression` carry this same combined form.

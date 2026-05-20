@@ -52,9 +52,9 @@ Cross-cutting rules:
 
 For each task input in `tasks.md`:
 
-**Literals/expressions** — write the value string directly to `input.value`:
+**Literals/expressions** — write the value string directly to `input.value`. Values shown are POST-rewrite — impl translates `=metadata.X` from `tasks.md` to `=js:metadata.X` per the [canonical-form table](../../../bindings-and-expressions.md#canonical-form-per-sink) (plain `=metadata.X` is not resolved by the lookup-path evaluator):
 ```
-"=vars.amount"  |  "=metadata.ExternalId"  |  "50"  |  "=js:new Date()"
+"=vars.amount"  |  "=js:metadata.ExternalId"  |  "50"  |  "=js:new Date()"
 ```
 
 **Cross-task references** (`input <- "Stage A"."Task X".outputName`) — resolve first:
