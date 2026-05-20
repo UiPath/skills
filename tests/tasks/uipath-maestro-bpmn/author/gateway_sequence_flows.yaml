@@ -12,9 +12,7 @@ run_limits:
   max_turns: 80
   turn_timeout: 900
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

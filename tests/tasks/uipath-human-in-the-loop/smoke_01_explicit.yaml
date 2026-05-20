@@ -5,9 +5,7 @@ description: >
   direct HITL language and that the agent identifies the correct pattern.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   I have a UiPath Flow. Add a Human-in-the-Loop node before the final data

@@ -21,9 +21,7 @@ agent:
 run_limits:
   max_turns: 50
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a

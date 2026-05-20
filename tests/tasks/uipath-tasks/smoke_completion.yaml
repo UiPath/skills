@@ -8,9 +8,7 @@ description: >
   carry --action and --data. Runs against fake IDs; auth errors expected.
 tags: [uipath-tasks, smoke, completion]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Before starting, load the uipath-tasks skill and follow its workflow.

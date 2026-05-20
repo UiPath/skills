@@ -7,9 +7,7 @@ description: >
   template-detection decision before `init`.
 tags: [uipath-rpa, smoke, lifecycle:generate]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   I want to create a new UiPath REFramework project called "InvoiceREF"

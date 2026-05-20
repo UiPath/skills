@@ -4,9 +4,7 @@ description: >
   Tests correct CLI namespace and --output json convention.
 tags: [uipath-admin, smoke, list]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Show me all groups in my UiPath organization.

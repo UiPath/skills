@@ -8,9 +8,7 @@ description: >
   retry or login.
 tags: [uipath-tasks, smoke, assignment]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Before starting, load the uipath-tasks skill and follow its workflow.

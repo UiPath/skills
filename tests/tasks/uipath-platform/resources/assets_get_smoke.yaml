@@ -9,9 +9,7 @@ description: >
   the asset actually exists in the tenant.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Fetch the metadata for the Orchestrator asset named `ApiBaseUrl` in

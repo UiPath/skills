@@ -14,9 +14,7 @@ agent:
 run_limits:
   max_turns: 30
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.

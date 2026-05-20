@@ -6,9 +6,7 @@ description: >
   outcome — the goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Fetch the metadata for the Orchestrator folder with key

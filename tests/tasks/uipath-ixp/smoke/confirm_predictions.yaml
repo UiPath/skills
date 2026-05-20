@@ -15,9 +15,7 @@ description: >
   command shape with the correct flags.
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Review the IXP model's predictions for document `doc-abc-123` on

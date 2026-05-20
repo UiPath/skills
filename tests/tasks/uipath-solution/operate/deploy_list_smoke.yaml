@@ -6,9 +6,7 @@ description: >
   command shape, not tenant state.
 tags: [uipath-solution, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   List the active solution deployments in the current UiPath tenant.

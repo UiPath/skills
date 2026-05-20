@@ -14,8 +14,6 @@ run_limits:
   max_turns: 20
 
 sandbox:
-  driver: docker
-  python: {}
   template_sources:
     - type: template_dir
       path: ../../../../skills/uipath-maestro-bpmn

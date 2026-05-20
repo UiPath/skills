@@ -14,7 +14,9 @@ defaults:
     turn_timeout: 900
 
   sandbox:
-    driver: tempdir
+    driver: docker
+    python: {}
+    node: {}
     docker:
       env_passthrough_extra:
         - SKILLS_REPO_PATH

@@ -7,9 +7,7 @@ description: >
   state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   List the recently faulted jobs in the Orchestrator folder with key

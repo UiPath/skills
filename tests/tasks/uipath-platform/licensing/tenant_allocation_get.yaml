@@ -6,10 +6,7 @@ description: >
   failure is expected in this offline environment.
 tags: [uipath-platform, smoke, licensing, tenants]
 
-sandbox:
-  driver: docker
-  python: {}
-  node: {}
+sandbox: {}
 
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.

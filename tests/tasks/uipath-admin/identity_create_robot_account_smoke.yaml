@@ -5,9 +5,7 @@ description: >
   correct positional arg for name, and --display-name flag.
 tags: [uipath-admin, smoke, create]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Create a new robot account named "smoke-test-bot" with display name

@@ -14,9 +14,7 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   I have an existing UiPath coded agent that I'm trying to run.

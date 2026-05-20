@@ -15,9 +15,7 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   I'm porting an existing LangGraph agent into UiPath. Recreate the

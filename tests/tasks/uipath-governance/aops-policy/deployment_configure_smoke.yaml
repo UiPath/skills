@@ -18,9 +18,7 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, aops-policy, deployment, configure]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Apply AOps governance policy assignments to two subjects. Save every

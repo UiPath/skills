@@ -6,9 +6,7 @@ description: >
   acceptable; the goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   List the queue items in the Orchestrator folder with key

@@ -4,9 +4,7 @@ description: >
   regulatory language. Verifies the skill fires on audit/sign-off signals.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Automate GDPR data deletion requests. These are subject to regulatory

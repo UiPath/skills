@@ -270,7 +270,7 @@ jobs:
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
               if coder-eval run "$task" \
-                  -e experiments/default.yaml --tags smoke -j 1 -v; then
+                  -e experiments/default_smoke_rpa.yaml --tags smoke -j 1 -v; then
                 break
               fi
               # Only retry on Bedrock content-filter ERRORs (not on real

@@ -7,9 +7,7 @@ description: >
   tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   List the processes published in the `Finance/Accounting` folder of the

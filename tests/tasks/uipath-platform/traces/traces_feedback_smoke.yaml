@@ -6,9 +6,7 @@ description: >
   Auth/404 errors are acceptable outcomes — the goal is correct command shape.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   I want to annotate a trace with positive feedback and then list all feedback

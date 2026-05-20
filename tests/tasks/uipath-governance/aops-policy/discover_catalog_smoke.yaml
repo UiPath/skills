@@ -13,9 +13,7 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, catalog]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   A tenant admin wants a catalog snapshot of AOps governance before

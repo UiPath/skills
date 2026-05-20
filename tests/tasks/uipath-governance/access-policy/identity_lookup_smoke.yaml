@@ -15,9 +15,7 @@ description: >
   correct commands with the correct flags.
 tags: [uipath-governance, smoke, access-policy, identity-lookup]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   I am authoring a UiPath access policy and need three UUIDs for the

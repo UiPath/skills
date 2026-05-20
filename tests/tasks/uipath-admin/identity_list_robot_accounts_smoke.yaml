@@ -4,9 +4,7 @@ description: >
   Tests correct CLI namespace and flag usage.
 tags: [uipath-admin, smoke, list]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   List all robot accounts in my UiPath organization.

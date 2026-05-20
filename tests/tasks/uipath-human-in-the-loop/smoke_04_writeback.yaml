@@ -5,9 +5,7 @@ description: >
   WITHOUT explicitly asking for HITL. Verifies proactive recommendation.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Build a UiPath Flow where an AI agent reads incomplete SAP purchase orders,

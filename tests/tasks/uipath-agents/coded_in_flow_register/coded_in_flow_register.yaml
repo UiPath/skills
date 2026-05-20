@@ -17,9 +17,7 @@ agent:
 
 task_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Create a UiPath solution "ClaimsSol" containing a Flow project

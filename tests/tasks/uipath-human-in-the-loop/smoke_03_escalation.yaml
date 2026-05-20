@@ -5,9 +5,7 @@ description: >
   signals without explicit HITL mention.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   My UiPath Flow has an AI agent that classifies customer complaints.

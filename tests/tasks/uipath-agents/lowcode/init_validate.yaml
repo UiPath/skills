@@ -14,9 +14,7 @@ run_limits:
   max_turns: 30
   turn_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Create a UiPath solution "EchoSol" containing a low-code agent

@@ -12,9 +12,7 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, list]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   A tenant admin wants to see every AOps governance policy registered for

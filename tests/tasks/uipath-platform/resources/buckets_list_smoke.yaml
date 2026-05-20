@@ -10,9 +10,7 @@ description: >
   In CI the plugin auth is provisioned, so this is environment-transparent.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   List the storage buckets defined in the `Finance` folder of the current

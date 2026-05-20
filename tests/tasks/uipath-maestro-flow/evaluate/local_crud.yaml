@@ -19,9 +19,7 @@ agent:
 run_limits:
   max_turns: 60
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Scaffold a UiPath Flow project called "SmokeEval" inside a solution of the

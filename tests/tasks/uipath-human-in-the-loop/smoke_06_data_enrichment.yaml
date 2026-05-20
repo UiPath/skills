@@ -4,9 +4,7 @@ description: >
   human must fill in incomplete extracted data before the flow continues.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   OCR extracted invoice data from a PDF but several fields are blank —

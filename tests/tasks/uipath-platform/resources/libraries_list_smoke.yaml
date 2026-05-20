@@ -6,9 +6,7 @@ description: >
   command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   List the library packages available in the current UiPath tenant.

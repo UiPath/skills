@@ -17,8 +17,6 @@ run_limits:
   max_turns: 30
 
 sandbox:
-  driver: docker
-  python: {}
   node:
     env_packages:
       - "@uipath/test-manager-tool"

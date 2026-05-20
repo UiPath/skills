@@ -11,9 +11,7 @@ agent:
 run_limits:
   max_turns: 28
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   I want to build a UiPath Flow that makes an HTTP request and processes the

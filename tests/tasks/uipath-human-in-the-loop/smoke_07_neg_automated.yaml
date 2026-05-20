@@ -5,9 +5,7 @@ description: >
   the skill does not produce false positives.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Our automated invoice pipeline handles all invoices from a single verified

@@ -11,9 +11,7 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, audit]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   An admin wants to discover what kinds of audit events are visible at

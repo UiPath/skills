@@ -15,20 +15,8 @@ defaults:
 
   sandbox:
     driver: tempdir
-    docker:
-      env_passthrough_extra:
-        - SKILLS_REPO_PATH
-        - BEDROCK_MODEL
-        - TASK_PARALLELISM
-        - UIPATH_CLI_ENABLE_ENV_AUTH
-        - UIPATH_CLI_AUTH_TOKEN
-        - UIPATH_CLI_ORGANIZATION_NAME
-        - UIPATH_CLI_ORGANIZATION_ID
-        - UIPATH_CLI_TENANT_NAME
-        - UIPATH_CLI_TENANT_ID
-        - TRACES_SMOKE_PROCESS_KEY
-      extra_mounts:
-        - ~/.uipath:/.uipath:rw
+    python: {}
+    node: {}
 
   agent:
     type: claude-code

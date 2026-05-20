@@ -5,9 +5,7 @@ description: >
   proactive business-language-based triggering.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Build a UiPath Flow that extracts expense report data and emails it to

@@ -18,9 +18,7 @@ run_limits:
   max_turns: 40
   turn_timeout: 900
 
-sandbox:
-  driver: tempdir
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   A legacy UiPath RPA project already exists in this directory. Wrap the

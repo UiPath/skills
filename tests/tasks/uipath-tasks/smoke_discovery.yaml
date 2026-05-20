@@ -8,9 +8,7 @@ description: >
   is applied consistently. Runs against fake IDs — auth errors are expected.
 tags: [uipath-tasks, smoke, discovery]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Before starting, load the uipath-tasks skill and follow its workflow.

@@ -11,9 +11,7 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:operate, audit, export, scope-org]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   An admin needs a ZIP of all ORGANIZATION-level audit events

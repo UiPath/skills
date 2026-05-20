@@ -22,9 +22,7 @@ run_limits:
   turn_timeout: 60
   max_turns: 1
 
-sandbox:
-  driver: tempdir
-  python: {}
+sandbox: {}
 
 # Run the verification script BEFORE the agent. fail_on_error: true (the
 # default) aborts the task with FinalStatus.ERROR if any mocked uip command

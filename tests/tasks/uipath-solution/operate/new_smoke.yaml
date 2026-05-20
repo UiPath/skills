@@ -7,9 +7,7 @@ description: >
   entirely in the sandbox tempdir — no tenant interaction.
 tags: [uipath-solution, smoke, mode:build, lifecycle:generate]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Create a new empty UiPath solution called "MySolution" in the current

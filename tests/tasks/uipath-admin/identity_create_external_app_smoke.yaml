@@ -5,9 +5,7 @@ description: >
   (Critical Rule #6) and positional name argument.
 tags: [uipath-admin, smoke, create]
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Create a new external app named "Smoke Test App" with application

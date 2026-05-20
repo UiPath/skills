@@ -12,9 +12,7 @@ run_limits:
   task_timeout: 400
   turn_timeout: 400
 
-sandbox:
-  driver: tempdir
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   I have a UiPath coded test project called "LoginTests" that exercises a

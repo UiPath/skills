@@ -12,9 +12,7 @@ agent:
 run_limits:
   max_turns: 30
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.

@@ -19,9 +19,7 @@ agent:
 run_limits:
   max_turns: 50
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   Before starting, load the `uipath-maestro-flow` skill and read its

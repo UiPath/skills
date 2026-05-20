@@ -18,9 +18,7 @@ agent:
 run_limits:
   max_turns: 30
 
-sandbox:
-  driver: docker
-  python: {}
+sandbox: {}
 
 initial_prompt: |
   You have three tasks against IXP project `my_invoices-f1afa9ef-ixp`.
