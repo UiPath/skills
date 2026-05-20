@@ -78,7 +78,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 12. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
-13. **Validate after every plugin's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each plugin completes its mutations. Fixing errors early is cheaper than chasing a cascade.
+13. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each `tasks.md` section batch completes (per § Per-section batch write contract below). One validate per section, not one per T-entry. Fixing errors at the section boundary is cheaper than chasing a cascade.
     - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes + trigger has no outgoing edges). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
     - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no incoming edges yet). The plugin's validation parity is captured in the fixture instead.
 
@@ -155,8 +155,8 @@ Used for: debugging, downstream cross-task reference resolution within the same 
 All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `id-map.json`) MUST go through Claude's built-in tools only:
 
 - **Read** to load the file.
-- **Write** to rewrite the whole file.
-- **Edit** for narrowly-scoped, unambiguous in-place replacements.
+- **Edit** for narrowly-scoped, unambiguous in-place replacements — required for all mutations after T01.
+- **Write** only for the T01 scaffold (initial empty-file creation by the `case` plugin). Never inside a per-section Edit batch — see § Per-section batch write contract.
 
 **Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
@@ -176,11 +176,28 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 
 **Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `edge_`, `c`, `r`, `b`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
 
-### Read → modify → write
+### Per-section batch write contract — canonical
 
-Always read `caseplan.json` fully with the Read tool, modify the in-memory object in reasoning, and write the whole file back with the Write tool. For narrowly-scoped, unambiguous single-field updates, the Edit tool is also acceptable. Re-read before the next mutation; do not hold the parsed object across tool calls.
+`caseplan.json` mutations follow a **per-section batched Edit** contract. The unit is one `tasks.md` section (e.g., §4.4 stages, §4.5 edges, §4.6 task-shapes, §4.7 conditions, §4.8 SLA), not one T-entry.
 
-**One T-entry per cycle.** Each T-entry from `tasks.md` gets its own Read → mutate → Write round-trip. Do not batch multiple T-entries (e.g., "add all 5 stages in one write") — the transcript must show one tool-call pair per declarative unit, so every mutation is independently reviewable and revertable. Within a single T-entry, all fields that logically belong to that entry (a stage node plus its render fields, a task plus its default entry condition, etc.) are written together in that one Write.
+Procedure per section:
+
+1. **One Read** of `caseplan.json` at section entry — authoritative state.
+2. **N Edits** in sequence, one per T-entry in the section. Edit targets the smallest unambiguous slice of JSON the T-entry mutates (one node, one array field, one task's `data.inputs`).
+3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness.
+4. **One `validate`** at section boundary (Pre-flight Item 13 below).
+
+**Tool primitive: Edit only.** Never whole-file Write inside a batch. Edit preserves untouched fields automatically; Write rebuilds the file from agent reasoning and risks silently dropping fields the agent forgot. The 12-item Pre-flight Checklist exists because field drops have happened — Edit is the structural defense.
+
+**Audit trail via TodoWrite.** Reviewers see T-by-T progress in the todo log, not in the file diff. Each plugin seeds TodoWrite items keyed by T-number; mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. The transcript still shows one Edit per T-entry — what changes is the dropped re-Read between siblings.
+
+**CLI-gated sections — gather-then-write.** Where each T-entry needs its own CLI call before its JSON shape is known (Phase 2 §4.6 non-connector `tasks describe`; Phase 3 §9.7 connector `case spec`): run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
+
+**Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.json` + `tasks.md`, scan for next un-applied T-entry, resume from there. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap. The `Schema:` header in `tasks.md` is the v19/v20 recovery beacon (Rule 18).
+
+**Scope.** This contract applies to **`caseplan.json` only**. `tasks.md` (Phase 1) and `registry-resolved.json` continue per-T-entry per [planning.md §4.0a](planning.md) — markdown appends are cheap and the user-visible incremental plan has review value.
+
+**Whole-file Write is only valid for T01.** The `case` plugin scaffolds the file from empty; everything downstream uses Edit.
 
 ### Generate a fresh ID
 
@@ -204,7 +221,7 @@ edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 3. For Stages: count existing stages, compute `position.x = 100 + count * 500`, `position.y = 200`.
 4. Generate a fresh node ID.
 5. Append the node to `schema.nodes` (stages use `.unshift()` in the CLI — prepend — but either position works for the frontend; prepend to match CLI output exactly).
-6. Write `caseplan.json`.
+6. Edit `caseplan.json` — narrow slice targeting `schema.nodes`. Never whole-file Write.
 
 ### Add an edge
 
@@ -214,7 +231,7 @@ edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 4. Generate a fresh edge ID.
 5. Construct the edge object with `sourceHandle` and `targetHandle` (4 underscores each side).
 6. Append to `schema.edges`.
-7. Write.
+7. Edit — narrow slice targeting `schema.edges`. Never whole-file Write.
 
 ### Add a task to a stage
 
@@ -226,11 +243,11 @@ edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 6. Build the task object per the plugin's JSON Recipe.
 7. For connector tasks, add the auto-injected default entry condition.
 8. Push onto `stageNode.data.tasks[laneIndex]`.
-9. Write.
+9. Edit — narrow slice targeting that stage node's `data.tasks[laneIndex]`. Never whole-file Write.
 
 ### Bind an input
 
-Variable bindings live on the task's `data.inputs[<index>]` entries — each input has either a literal/expression `value` or a cross-task source reference (`sourceStage`, `sourceTask`, `sourceOutput`). Modify the input entry in place and write.
+Variable bindings live on the task's `data.inputs[<index>]` entries — each input has either a literal/expression `value` or a cross-task source reference (`sourceStage`, `sourceTask`, `sourceOutput`). Modify the input entry in place via Edit — narrow slice targeting that input entry. Never whole-file Write.
 
 Details per plugin — see [bindings-and-expressions.md](bindings-and-expressions.md).
 
@@ -240,13 +257,13 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 2. Remove the node from `schema.nodes` by ID.
 3. Remove every edge where `source` or `target` equals the removed node's ID.
 4. If the node was a stage containing a connector task, prune entries from the bindings array (v19: `root.data.uipath.bindings`; v20: top-level `bindings`) referenced only by that task.
-5. Write.
+5. Edit — separate slices for `schema.nodes`, `schema.edges`, and (if applicable) the bindings array. Never whole-file Write.
 
 ### Delete an edge
 
 1. Read.
 2. Filter `schema.edges` by the edge ID.
-3. Write.
+3. Edit — narrow slice targeting `schema.edges`. Never whole-file Write.
 
 ---
 
@@ -264,15 +281,15 @@ See [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md). The upgra
 
 ### Re-wire a stage's outgoing edge
 
-To re-wire an edge's source/target: delete the edge entry from `schema.edges[]` and write a fresh one. Label/handle changes can be applied in place.
+To re-wire an edge's source/target: delete the edge entry from `schema.edges[]` and Edit in a fresh one. Label/handle changes can be applied in place via Edit.
 
 ---
 
 ## Validation Cadence
 
-Run `uip maestro case validate <file> --output json` after every plugin's batch of mutations — not after every individual write. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); validate is authoritative at the plugin boundary.
+Run `uip maestro case validate <file> --output json` after each `tasks.md` section's batch completes — not after every Edit. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); validate is authoritative at the section boundary.
 
-On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per plugin; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
+On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per section; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
 
 ---
 
@@ -284,6 +301,7 @@ On failure: fix the reported issue (usually a missing field, malformed handle, o
 - **Do NOT forget `style`/`measured`/`width`/`zIndex` on stages.** Validate passes, but Studio Web renders broken.
 - **Do NOT put `entryConditions`/`exitConditions` on regular Stages.** Only ExceptionStage has them.
 - **Do NOT skip the default entry condition on connector tasks.** The frontend expects it.
-- **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Write (or Edit for narrowly-scoped unambiguous replacements).
-- **Do NOT run validation after every single write.** Validate at plugin boundaries, not per-field.
-- **Do NOT batch multiple T-entries into one JSON write.** Each T-entry from `tasks.md` gets its own Read → mutate → Write cycle. No "compose all stages + edges + tasks in memory, flush once" — that destroys the per-mutation audit trail.
+- **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Edit per the per-section batch contract.
+- **Do NOT run validation after every single Edit.** Validate at section boundaries, not per-T-entry.
+- **Do NOT use whole-file Write inside a batch.** Whole-file Write rebuilds the file from agent reasoning and risks silently dropping fields. Use Edit — it preserves untouched fields. Whole-file Write is only valid at T01 when the `case` plugin scaffolds the file from empty.
+- **Do NOT skip TodoWrite per T-entry.** TodoWrite is the audit trail under the per-section batched contract — reviewers track T-by-T progress there, not in per-T-entry file diffs.
