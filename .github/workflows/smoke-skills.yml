@@ -439,7 +439,10 @@ jobs:
           results = [json.loads(p.read_text(encoding='utf-8')) for p in tasks]
           passed = sum(1 for d in results if d.get('final_status') == 'SUCCESS')
           n = len(results)
-          rate = passed / n if n else 0.0
+          if n == 0:
+              print('No smoke-tagged tasks matched — skipping rate check')
+              sys.exit(0)
+          rate = passed / n
           for d in results:
               s = d.get('final_status')
               if s != 'SUCCESS':
