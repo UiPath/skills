@@ -7,6 +7,28 @@ defaults:
     task_timeout: 1200
     turn_timeout: 300
 
+  # Smoke-tagged tasks under tests/tasks/**/*.yaml use `driver: docker`
+  # (set per-task by skills#856). The daily runner's `--suite skills`
+  # invokes those tasks under this experiment, so the docker mounts +
+  # env passthrough must be configured here too — otherwise the
+  # in-container uip CLI has no auth (host's ~/.uipath isn't bound).
+  # Keep this block in sync with tests/experiments/default.yaml.
+  sandbox:
+    docker:
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - TRACES_SMOKE_PROCESS_KEY
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
+
   agent:
     type: claude-code
     permission_mode: acceptEdits
