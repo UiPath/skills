@@ -1,6 +1,6 @@
 # Variables — Planning
 
-Case-level data lives in the variables block (v19: `root.data.uipath.variables`; v20: top-level `variables` — see Rule 18). Three categories:
+Case-level data lives in the top-level `variables` block. Three categories:
 
 | Category | Arrays touched | When |
 |---|---|---|

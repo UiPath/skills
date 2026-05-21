@@ -99,7 +99,7 @@ Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to 
 
 ## Step 6.2 — Declare global variables and arguments
 
-For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates `root.data.uipath.variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
+For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
 
 ## Step 7 — Add stages
 
@@ -180,8 +180,8 @@ Steps 9.6 onwards wire connector task schemas, input/output values, conditions, 
 
 Before any Phase 3 mutation:
 
-1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`. Recover schema choice from the `Schema:` header (first non-comment line); per Rule 18 it is the source of truth for whether downstream writes target v19 or v20 paths.
-2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index. **Verify schema consistency**: caseplan.json's `version` literal (`"v19"` at `root.version` for v19, `"20.0.0"` at top level for v20) MUST match the tasks.md `Schema:` header. On mismatch, halt with explicit error — never silently re-flip (Rule 18).
+1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
+2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
 3. **Seed Phase 3 progress todos** — call TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Phase 2 todos (if any) are stale — replace, do not append.
    1. Wire connector task schemas (Step 9.7)
    2. Bind task I/O values (Step 9.8)
@@ -230,7 +230,7 @@ One Read of `caseplan.json` at Step 10 entry. Group `tasks.md §4.7` entries by 
 | Stage entry | one stage | `nodes[stage].data.entryConditions` |
 | Stage exit | one stage | `nodes[stage].data.exitConditions` |
 | Task entry | one task | `data.entryConditions` on the task object |
-| Case exit | root | v19: `root.data.caseExitConditions`; v20: `metadata.caseExitRules` |
+| Case exit | root | `metadata.caseExitRules` |
 
 Skip the re-Read between sibling Edits. One validate at section end. Per-scope composition rules live in the matching plugin's `impl-json.md`:
 

@@ -4,7 +4,7 @@ Configure the case-level event trigger by writing directly into the trigger node
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-common.md](../../../connector-trigger-common.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **trigger-node-specific** parts.
 
-> **v20 layout-strip (Rule 19).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shape below shows v19 fields; v20 strips listed render fields and skips position math. Placeholder-fallback logic and `entry-points.json` shape are identical across schemas.
+> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`.
 
 ## Prerequisites from Planning
 
@@ -61,7 +61,7 @@ For each entry in `caseShape.inputs[]` (these are trigger configuration: `eventP
 
 For a **single-trigger case**, configure the existing `trigger_1` node. For **multi-trigger cases**, create a new node:
 - ID: `trigger_` + 6 alphanumeric chars
-- Position: `{ x: -100, y: 620 }` (auto-stack below existing triggers; v19 only)
+- No node-level layout fields (Rule 18 — `position`, `style`, `measured`, etc. omitted)
 
 Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx` in `id-map.json` so the variables plugin can resolve T-number references.
 
@@ -129,9 +129,6 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
 {
   "id": "<trigger_xxxxxx>",
   "type": "case-management:Trigger",
-  "position": { "x": -100, "y": <stateful per §7a> },
-  "style": { "width": 96, "height": 96 },
-  "measured": { "width": 96, "height": 96 },
   "data": {
     "parentElement": { "id": "root", "type": "case-management:root" },
     "label": "<display-name>",

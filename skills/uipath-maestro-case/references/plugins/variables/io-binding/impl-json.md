@@ -78,7 +78,7 @@ Verify every bound input has a non-empty `value`, and every `=vars.X` reference 
 - Variables `inputOutputs[].id`
 - Variables `inputs[].id`
 
-Variables array path is schema-dependent — `root.data.uipath.variables.{inputOutputs,inputs}[].id` in v19, top-level `variables.{inputOutputs,inputs}[].id` in v20 (Rule 18).
+Variables array path is top-level `variables.{inputOutputs,inputs}[].id`.
 
 > **Scan key:** match by `.id`, NOT `.var`. The runtime resolver matches on `Variable.id` (`VariablesService.findVariableByVariableId`). Under the skill convention `id === var` on self-declaring outputs, scanning by `.var` is harmless in practice, but `.id` is symmetric with the resolver.
 
@@ -92,7 +92,7 @@ Same resolution rule applies — these are read-side consumers of the variable n
 
 ### Check 2 — Out-arg producer presence
 
-For every entry in `root.data.uipath.variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the always-emit-companion rule, the companion in `root.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
+For every entry in top-level `variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the always-emit-companion rule, the companion in `variables.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
 
 **The check:** can the Out-arg's slot be populated at runtime? Three populating mechanisms exist:
 

@@ -2,16 +2,7 @@
 
 Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes to the bindings array in `caseplan.json`.
 
-## Schema-dependent source path
-
-Read `Schema:` header from `tasks.md` per Rule 18.
-
-| Schema | Source path in `caseplan.json` |
-|---|---|
-| **v19** | `root.data.uipath.bindings[]` |
-| **v20** | `bindings[]` *(top level)* |
-
-Field shape inside the array is identical across schemas — only the source path for the regeneration read differs. Output `bindings_v2.json` shape is unchanged across schemas.
+Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.json` shape is independent of the source.
 
 ## When to Run
 
@@ -22,17 +13,17 @@ Run at these two points only:
 1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
 2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache
 
-Individual task plugins write bindings to `caseplan.json` per-task as normal (path per § Schema-dependent source path above). The batch regeneration reads the full bindings array once from the schema-appropriate path and converts everything in one pass.
+Individual task plugins write bindings to `caseplan.json` per-task as normal. The batch regeneration reads the full top-level `bindings[]` once and converts everything in one pass.
 
 ---
 
 ## § Regenerate bindings_v2.json
 
-After writing bindings (to the schema-appropriate path), regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
+After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
 
 ### Procedure
 
-1. Read the bindings array from `caseplan.json` — `root.data.uipath.bindings[]` in v19, top-level `bindings[]` in v20
+1. Read top-level `bindings[]` from `caseplan.json`
 2. Group bindings by `resourceKey` — entries sharing the same key belong to one resource
 3. For each group, produce one resource entry using the shapes below
 4. Write the full file (always overwrite, never append) to `<SolutionDir>/<ProjectName>/bindings_v2.json`

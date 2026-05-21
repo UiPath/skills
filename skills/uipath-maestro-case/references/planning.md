@@ -50,8 +50,6 @@ uip maestro case registry pull
 
 If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
-**Capture `Data.BaseUrl` from the `login status` JSON for Step 2.1 tenant-override detection.** If `login status` failed or the field is absent, treat tenant override as unavailable and let Step 2.1 fall through to prompt-phrase detection — do not re-run `login status`.
-
 ## Step 2 — Locate and parse the design document
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
@@ -61,62 +59,6 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 `sdd.md` is the **sole input**. It describes stages, tasks, edges, conditions, SLA, component types, persona information, and provides the search keywords for registry lookups. The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
-
-### Step 2.1 — Detect schema version (Rule 18)
-
-Resolution order (first match wins):
-
-#### 2.1.a — Tenant override (alpha environment)
-
-Read the `Data.BaseUrl` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
-
-```
-> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
-```
-
-Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
-
-If `Data.BaseUrl` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
-
-#### 2.1.b — User-prompt phrase
-
-Scan **only the user message that activated the skill** (the prompt that matched the skill description). Match case-insensitive substrings:
-
-| Phrase (any one matches) |
-|---|
-| `v20 schema` |
-| `schema v20` |
-| `use v20` |
-| `emit v20` |
-| `generate v20` |
-| `unified schema` |
-| `schema 20.0.0` |
-
-- **Match** → schema is `v20`. Print plain-text confirmation BEFORE Step 3 begins:
-  ```
-  > Schema: v20 (skill-emit-only mode — Phase 4 informational; CLI validate / upload / debug may reject downstream)
-  ```
-- **No match** → schema is `v19` (default). No confirmation line.
-
-**Never** scan sdd.md content, file paths, registry-resolved.json, Phase 0 transcripts, or any subsequent user message. Detection happens once, at Phase 1 entry. If the user wants to switch schema mid-build, they must re-run the skill from Phase 1 (Rule 6). The tenant override (2.1.a) is also fixed at Phase 1 entry — switching tenants mid-build does not change `tasks.md`'s `Schema:` header.
-
-### Step 2.2 — Persist schema choice in tasks.md header
-
-When `tasks.md` is written at Step 4, the **first non-comment line** is the schema header:
-
-```markdown
-Schema: v19
-```
-
-or
-
-```markdown
-Schema: v20
-```
-
-Place this line above all `T<n>` headings. Re-entry protocol (Phase 3 Step 9.6, Phase 4) re-reads tasks.md per Rule 7 and recovers the schema choice from this header. caseplan.json self-identifies via its top-level `version` literal as a secondary check.
-
-If the schema header in tasks.md conflicts with an already-written caseplan.json's `version` field at re-entry, **halt with explicit error** — never silently re-flip.
 
 ## Step 3 — Resolve resources
 
@@ -186,7 +128,7 @@ At execution time, unresolved tasks become **placeholder tasks** in `caseplan.js
 
 ## Step 4 — Generate tasks.md and registry-resolved.json
 
-Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. The **first non-comment line is the schema header** (`Schema: v19` or `Schema: v20` per Step 2.1–2.2). Each subsequent section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
+Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. Each section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 
@@ -225,7 +167,7 @@ Counts that don't match the sdd.md → fix before Step 5 hard stop.
 
 Procedure:
 
-1. **Seed.** Write `tasks.md` with header only — `Schema: v19` (or `Schema: v20`), then a `## Inventory` placeholder section. Single Write.
+1. **Seed.** Write `tasks.md` with a `## Inventory` placeholder section only. Single Write.
 2. **Per section.** Sections are §4.2.1 vars → §4.3 triggers → §4.4 stages → §4.5 edges → §4.6 tasks → §4.7 conditions → §4.8 SLA. For each section:
    - **One Read** of `tasks.md` at section entry.
    - **N Edit-appends** in sequence, one per T-entry in the section. Skip the re-Read between sibling Edits — Edit's tool result confirms applied state in context.
@@ -235,7 +177,7 @@ Procedure:
 
 Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 
-**Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (header + Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
+**Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
 
 **Recovery on interruption:** re-Read `tasks.md`, scan for next un-applied T-entry (the audit trail in TaskUpdate identifies it), resume from there. No sidecar checkpoint file.
 

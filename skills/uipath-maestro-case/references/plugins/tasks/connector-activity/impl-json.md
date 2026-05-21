@@ -232,7 +232,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 7. Root bindings exist for ConnectionId + folderKey with the minted ids
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
-10. `bindings_v2.json` `resources` array matches the schema-appropriate bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) after the deferred sync
+10. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 11. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 
 ## What NOT to Do

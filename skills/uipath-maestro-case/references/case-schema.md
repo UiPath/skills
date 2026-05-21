@@ -2,19 +2,7 @@
 
 Structural reference for the case definition JSON. Shared across all node types. Per-task-type and per-condition-type field shapes live in each plugin's `impl-json.md`.
 
-> **Bilingual.** Top-level shape differs between v19 (default) and v20 (opt-in per SKILL.md Rule 18). Per-node and per-edge internal shapes are **identical** across schemas — only the wrapper changes. See § Top-level shape (v19) and § Top-level shape (v20) below.
-
-## Top-level shape (v19 — default)
-
-```json
-{
-  "root": { ... },
-  "nodes": [ ... ],
-  "edges": [ ... ]
-}
-```
-
-## Top-level shape (v20 — opt-in)
+## Top-level shape
 
 ```json
 {
@@ -40,39 +28,11 @@ Structural reference for the case definition JSON. Shared across all node types.
 }
 ```
 
-### v19 → v20 field mapping
+### Layout-strip (Rule 18)
 
-| v19 path | v20 path |
-|---|---|
-| `root.id` (literal `"root"`) | top-level `id` (`case-<10>` generated) |
-| `root.name` | top-level `name` |
-| `root.description` | top-level `description` |
-| `root.caseIdentifier` | `metadata.caseIdentifier` |
-| `root.caseIdentifierType` | `metadata.caseIdentifierType` |
-| `root.caseAppEnabled` | `metadata.caseAppEnabled` |
-| `root.publishVersion` | `metadata.publishVersion` |
-| `root.caseUnifiedSchemaEnabled` | `metadata.caseUnifiedSchemaEnabled` |
-| `root.caseAppConfig` | `metadata.caseAppConfig` |
-| `root.allowAdhocOptionalStageTasks` | `metadata.allowAdhocOptionalStageTasks` |
-| `root.caseExecutionIncludesDebugVariables` | `metadata.caseExecutionIncludesDebugVariables` |
-| `root.caseExecutionUsesSyncCaseTasks` | `metadata.caseExecutionUsesSyncCaseTasks` |
-| `root.caseBpmnUseNewGlobalVariables` | `metadata.caseBpmnUseNewGlobalVariables` |
-| `root.waitForHumanSelectNextStageDFConnector` | `metadata.waitForHumanSelectNextStageDFConnector` |
-| `root.version` (`"v19"`) | top-level `version` (`"20.0.0"`) |
-| `root.data.slaRules` | `metadata.slaRules` |
-| `root.data.uipath.bindings` | top-level `bindings` |
-| `root.data.uipath.variables` | top-level `variables` |
-| `root.caseExitConditions` | `metadata.caseExitRules` *(field renamed)* |
-| `root.data.intsvcActivityConfig` | `metadata.intsvcActivityConfig` |
-| `nodes` | `nodes` *(unchanged shape — see § 2 below)* |
-| `edges` | `edges` *(unchanged shape — see § 3 below)* |
-| — | `layout: {}` *(new top-level — see § 7 below)* |
+Node-level layout fields move to a top-level `layout` block. The frontend transformer `transformCaseInMemoryJsonToDiskJson.ts` does this stripping when round-tripping through canvas; skill emits clean nodes from the start.
 
-### v20 layout-strip (Rule 19)
-
-In v20, node-level layout fields move to a top-level `layout` block. The frontend transformer `transformCaseInMemoryJsonToDiskJson.ts` does this stripping when round-tripping through canvas; skill emits clean nodes from the start.
-
-**Stripped from each node** (skill MUST NOT emit in v20):
+**Stripped from each node** (skill MUST NOT emit):
 - `position`
 - `style`
 - `measured`
@@ -80,12 +40,10 @@ In v20, node-level layout fields move to a top-level `layout` block. The fronten
 - `height`
 - `zIndex`
 
-**Stripped from each edge** (skill MUST NOT emit in v20):
+**Stripped from each edge** (skill MUST NOT emit):
 - `data.waypoints`
 
 **Lifted to** `layout.nodes[<nodeId>] = { position, style, measured, width, height }` and `layout.edges[<edgeId>] = { waypoints }` — but skill emits empty `layout: {}` because FE auto-layouts on canvas load. Skill is not a layout authority.
-
-**v19 mode preserves all current render-field rules** — see [`case-editing-operations.md`](case-editing-operations.md) Pre-flight Checklist Items 3, 4.
 
 ---
 
@@ -107,50 +65,45 @@ In v20, node-level layout fields move to a top-level `layout` block. The fronten
 
 ---
 
-## 1. root (v19) / top-level + metadata (v20)
+## 1. Top-level + metadata
 
-Metadata and configuration for the case definition. **v19** wraps everything under `root`; **v20** flattens to top-level + `metadata` block per the field-mapping table above. Field semantics are identical — only locations change.
+Metadata and configuration for the case definition. Top-level fields (`id`, `version`, `name`, `description`) sit alongside the `metadata` block.
 
 ```json
 {
-  "id": "<shortId>",
+  "id": "case-aBcDeFgHiJ",
+  "version": "20.0.0",
   "name": "Loan Approval",
-  "type": "case-management:root",
-  "caseIdentifier": "LOAN",
-  "caseAppEnabled": false,
-  "caseIdentifierType": "constant",
-  "version": "v19",
-  "publishVersion": 2,
-  "data": {
+  "description": "case description",
+  "metadata": {
+    "caseIdentifier": "LOAN",
+    "caseIdentifierType": "constant",
+    "caseAppEnabled": false,
+    "publishVersion": 2,
+    "caseUnifiedSchemaEnabled": true,
+    "intsvcActivityConfig": "v2",
     "slaRules": [
       { "expression": "=js:true", "count": 5, "unit": "d" }
     ],
-    "intsvcActivityConfig": "v2",
-    "uipath": {
-      "bindings": [],
-      "variables": { "inputs": [], "outputs": [], "inputOutputs": [] }
-    }
-  },
-  "caseExitConditions": [],
-  "description": "case description"
+    "caseExitRules": []
+  }
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique ID (auto-generated) |
+| `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
+| `version` | string | Schema version — `"20.0.0"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
-| `type` | `"case-management:root"` | Literal — do not change |
-| `caseIdentifier` | string | Identifier used at runtime |
-| `caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
-| `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
-| `version` | string | Schema version — `"v19"` for current schema. Emitted by the `case` plugin at T01. |
-| `publishVersion` | number? | Publish version — `2` for current schema |
-| `data.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
-| `data.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
-| `data.uipath` | object? | Variable and binding declarations |
-| `caseExitConditions` | CaseExitCondition[]? | Conditions that mark the case as complete |
 | `description` | string? | Case description |
+| `metadata.caseIdentifier` | string | Identifier used at runtime |
+| `metadata.caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
+| `metadata.caseAppEnabled` | boolean | Whether the Case App UI is enabled |
+| `metadata.publishVersion` | number? | Publish version — `2` for current schema |
+| `metadata.caseUnifiedSchemaEnabled` | boolean? | Unified-schema flag (`true`) |
+| `metadata.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
+| `metadata.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
+| `metadata.caseExitRules` | CaseExitCondition[]? | Conditions that mark the case as complete |
 
 ### CaseExitCondition
 
@@ -177,7 +130,6 @@ Entry point. Written by the triggers plugin at T02. Exactly one per case (single
 {
   "id": "trigger_xY2mNp",
   "type": "case-management:Trigger",
-  "position": { "x": 200, "y": 0 },
   "data": {
     "label": "Start",
     "uipath": { "serviceType": "None" }
@@ -185,9 +137,7 @@ Entry point. Written by the triggers plugin at T02. Exactly one per case (single
 }
 ```
 
-`position` is fixed at `{ x: 200, y: 0 }` — not stateful like Stage.
-
-No `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (unlike Stage).
+No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (Rule 18 layout-strip).
 
 `serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
 
@@ -201,11 +151,6 @@ Standard workflow stage. Contains tasks.
 {
   "id": "Stage_aB3kL9",
   "type": "case-management:Stage",
-  "position": { "x": 100, "y": 200 },
-  "style": { "width": 304, "opacity": 0.8 },
-  "measured": { "width": 304, "height": 128 },
-  "width": 304,
-  "zIndex": 1001,
   "data": {
     "label": "Review Application",
     "description": "...",
@@ -221,15 +166,7 @@ Standard workflow stage. Contains tasks.
 }
 ```
 
-**Top-level node fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `position` | `{x,y}` | Auto-computed by CLI as `{ x: 100 + existingStageCount * 500, y: 200 }`. Direct-JSON-write must count existing stages before writing. |
-| `style` | object | Hard-coded `{ width: 304, opacity: 0.8 }`. |
-| `measured` | object | Hard-coded `{ width: 304, height: 128 }`. |
-| `width` | number | Hard-coded `304` (separate from `style.width` and `measured.width`). |
-| `zIndex` | number | Hard-coded `1001`. |
+No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node level (Rule 18 layout-strip).
 
 **`StageNodeData` fields:**
 
@@ -238,7 +175,7 @@ Standard workflow stage. Contains tasks.
 | `label` | string? | Display label |
 | `description` | string? | Stage description |
 | `isRequired` | boolean? | Whether the stage must complete before case exit (used by case-exit rule `required-stages-completed`) |
-| `parentElement` | `{id,type}` | Always `{ id: "root", type: schema.root.type }` |
+| `parentElement` | `{id,type}` | Always `{ id: "root", type: "case-management:root" }`. The literal `"root"` is canvas-side — there is no `"root"` node on disk. |
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
 | `tasks` | Task[][] | 2D array: `tasks[lane][index]`. Default: one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns; lane is layout-only, sequencing comes from task-entry conditions. Exception: tasks in a `runs-sequentially` group that should execute in parallel share the same lane — there, shared lane carries execution semantics (parallel siblings inside the sequential group). Empty array `[]` when no tasks yet. |
@@ -321,7 +258,7 @@ All conditions share the same shape but attach at different levels. Per-level fi
 
 ### CaseExitCondition (case-level)
 
-See `root.caseExitConditions` (v19) / `metadata.caseExitRules` (v20) in §1.
+See `metadata.caseExitRules` in §1.
 
 ---
 
@@ -507,38 +444,28 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 
 ```json
 {
-  "root": {
-    "id": "root",
-    "name": "Simple Case",
-    "type": "case-management:root",
+  "id": "case-aBcDeFgHiJ",
+  "version": "20.0.0",
+  "name": "Simple Case",
+  "metadata": {
     "caseIdentifier": "Simple Case",
-    "caseAppEnabled": false,
     "caseIdentifierType": "constant",
-    "version": "v19",
+    "caseAppEnabled": false,
     "publishVersion": 2,
-    "data": {
-      "intsvcActivityConfig": "v2",
-      "uipath": {
-        "variables": {},
-        "bindings": []
-      }
-    }
+    "caseUnifiedSchemaEnabled": true,
+    "intsvcActivityConfig": "v2"
   },
+  "bindings": [],
+  "variables": { "inputs": [], "outputs": [], "inputOutputs": [] },
   "nodes": [
     {
       "id": "trigger_xY2mNp",
       "type": "case-management:Trigger",
-      "position": { "x": 200, "y": 0 },
       "data": { "label": "Start" }
     },
     {
       "id": "Stage_aB3kL9",
       "type": "case-management:Stage",
-      "position": { "x": 100, "y": 200 },
-      "style": { "width": 304, "opacity": 0.8 },
-      "measured": { "width": 304, "height": 128 },
-      "width": 304,
-      "zIndex": 1001,
       "data": {
         "label": "Process",
         "parentElement": { "id": "root", "type": "case-management:root" },
@@ -558,6 +485,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
       "targetHandle": "Stage_aB3kL9____target____left",
       "data": {}
     }
-  ]
+  ],
+  "layout": {}
 }
 ```

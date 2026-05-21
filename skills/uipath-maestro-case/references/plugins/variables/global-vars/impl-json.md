@@ -28,9 +28,9 @@ return allVariables.find(v => v.id === variableId);
 
 | Array | Resolves `=vars.X`? | Notes |
 |---|---|---|
-| `root.data.uipath.variables.inputOutputs[]` | YES if `id` present | Canonical declaration site |
-| `root.data.uipath.variables.inputs[]` | YES — by random `id` | Picker-invisible (resolution works, but the FE picker does not surface it); target only via the companion |
-| `root.data.uipath.variables.outputs[]` | YES (the formal entry) | But its `var` points elsewhere — see Out-arg shape below |
+| `variables.inputOutputs[]` *(top level)* | YES if `id` present | Canonical declaration site |
+| `variables.inputs[]` *(top level)* | YES — by random `id` | Picker-invisible (resolution works, but the FE picker does not surface it); target only via the companion |
+| `variables.outputs[]` *(top level)* | YES (the formal entry) | But its `var` points elsewhere — see Out-arg shape below |
 | `task.data.outputs[]` | YES if `id` present | Self-declares — task plugin writes id matching the SDD-given name |
 | `task.data.inputs[]` | YES — by random `id` | Picker-invisible; used for the In-arg formal slot |
 | `triggerNode.data.uipath.outputs[]` | YES if `id` present; **NO if only `var` (no `id`)** | Pattern A entries (`id === var`) self-resolve; Pattern C entries (`var` only) require a companion in `root.inputOutputs[]` |
@@ -43,37 +43,22 @@ Under the B refactor, this plugin is **the sole owner** of:
 
 | Array | Owns? |
 |---|---|
-| `root.data.uipath.variables.inputs[]` | Yes |
-| `root.data.uipath.variables.outputs[]` | Yes |
-| `root.data.uipath.variables.inputOutputs[]` | Yes |
+| `variables.inputs[]` *(top level)* | Yes |
+| `variables.outputs[]` *(top level)* | Yes |
+| `variables.inputOutputs[]` *(top level)* | Yes |
 | `triggerNode.data.uipath.outputs[]` | **Yes** — sole owner under B (was co-mutated with trigger plugin in previous design) |
 | `task.data.outputs[]` | No — task plugins self-declare; this plugin's writes never touch them |
 | `task.data.inputs[].value` | No — io-binding owns this |
-| `root.bindings[]` | No — connector / trigger plugins own resource bindings |
+| top-level `bindings[]` | No — connector / trigger plugins own resource bindings |
 
 ## Target Paths
-
-Read `Schema:` header from `tasks.md` per Rule 18. Trigger output mappings are identical across schemas (node internals untouched by v20).
-
-### v19
-
-| What | JSON path |
-|---|---|
-| In argument inputs | `root.data.uipath.variables.inputs[]` |
-| Out argument outputs | `root.data.uipath.variables.outputs[]` |
-| All internal variables | `root.data.uipath.variables.inputOutputs[]` |
-| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` |
-
-### v20
 
 | What | JSON path |
 |---|---|
 | In argument inputs | `variables.inputs[]` *(top level)* |
 | Out argument outputs | `variables.outputs[]` *(top level)* |
 | All internal variables | `variables.inputOutputs[]` *(top level)* |
-| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` *(unchanged from v19)* |
-
-> v20 hoists `root.data.uipath.variables` to top-level `variables`. Field shape inside is identical — only the destination path changes.
+| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` |
 
 ## Uniqueness Rule
 
@@ -158,7 +143,7 @@ For each variable T-entry in `tasks.md` that has **no `sourceTrigger` / `sourceT
 SDD row: `Category=Variable`, no `sourceTriggers`, optional `Default`.
 
 ```json
-// root.data.uipath.variables.inputOutputs[]
+// variables.inputOutputs[]
 { "id": "caseStatus", "name": "caseStatus", "type": "string",
   "custom": true, "elementId": "root", "default": "Open" }
 ```
@@ -175,7 +160,7 @@ SDD row: `Category=Variable`, `sourceTriggers: T02`, `sourceFields: response.sub
   "source": "=response.subject", "type": "string", "value": "calendarTitle" }
 // No `id`, no `elementId` — FE auto-emit convention. `name` is the last segment of sourceField path.
 
-// root.data.uipath.variables.inputOutputs[]
+// variables.inputOutputs[]
 { "id": "calendarTitle", "name": "calendarTitle", "type": "string",
   "elementId": "root", "custom": true }
 ```
@@ -244,12 +229,12 @@ SDD row: `Category=Out`. **Companion is ALWAYS emitted at write time** (per FE c
 Same shape regardless of Default presence (two entries):
 
 ```json
-// 1. root.data.uipath.variables.outputs[]  — formal Out-arg pointer
+// 1. variables.outputs[]  — formal Out-arg pointer
 { "id": "<random9>", "name": "finalDecision", "type": "string",
   "var": "finalDecision" }
 // var is a POINTER — at case end, engine reads vars.finalDecision via this pointer
 
-// 2. root.data.uipath.variables.inputOutputs[]  — companion (always written)
+// 2. variables.inputOutputs[]  — companion (always written)
 { "id": "finalDecision", "name": "finalDecision", "type": "string",
   "default": "<value or empty string>", "elementId": "root" }
 // no custom — argument companions are NOT custom per FE convention

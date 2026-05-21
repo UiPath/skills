@@ -128,4 +128,4 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 4. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`)
 5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` is empty `[]`
 6. Each entry in `data.inputs[]` / `data.outputs[]` has `var` / `id` / `elementId` minted; uniqueness rule applied for outputs
-7. `bindings_v2.json` `resources` array matches the schema-appropriate bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) after the deferred sync
+7. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
