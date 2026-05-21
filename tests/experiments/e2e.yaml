@@ -9,6 +9,7 @@ defaults:
 
   sandbox:
     docker:
+      image: skills-image:latest
       env_passthrough_extra:
         - SKILLS_REPO_PATH
         - BEDROCK_MODEL

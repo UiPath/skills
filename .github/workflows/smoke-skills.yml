@@ -225,7 +225,7 @@ jobs:
           docker build \
             --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
-            -t skills-smoke-image:latest \
+            -t skills-image:latest \
             -f .github/docker/Dockerfile.smoke \
             .
 
