@@ -120,6 +120,16 @@ When the request is "automate this dialog/form" or "build a UI test from these m
 
 Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation).
 
+## Session Pre-warm
+
+First heavy `uip rpa` call pays a ~22s Studio host cold-start (shared across `validate`/`build`/`run`/`activities get-default-xaml`/`analyzer-rules list`). When more than one is expected this session, background a cheap warm-up at session start so the tax hides behind planning:
+
+```bash
+uip rpa activities find --query log --output json > /dev/null 2>&1 &
+```
+
+**Skip** when 0 or 1 heavy `uip rpa` calls are expected (read-only Q&A, single-file inspection) — the warm-up doesn't reclaim its cost.
+
 ## Critical Rules
 
 ### Common Rules (Both Modes)
@@ -134,14 +144,13 @@ Skip this path when the task has no UI surface (data transforms, IS connector ca
    - Built-in `--template-id` keywords map without a search: `library` → `LibraryProcessTemplate`, `test automation` / `test project` → `TestAutomationProjectTemplate`, otherwise `BlankTemplate`. When `--template-package-id` is set, `--template-id` is ignored. Full decision flow: [environment-setup.md § Template selection](references/environment-setup.md#template-selection).
 3. **Phase-gated validation: analyzer rules run at AUTHORING-phase start, not session start.** Three-phase validation:
    - **Authoring-phase start** (immediately before creating or editing any workflow file — `.cs` with `[Workflow]`/`[TestCase]`, or `.xaml`): `uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` to list the enabled Workflow Analyzer rules. Apply every `error` and `warning` rule during authoring so generated code passes `analyze` and `build` on the first attempt. Run once at this point; re-run only when project dependencies change. **DO NOT run at session start** — the call can take a minute or more (use `--scope <Activity|Workflow|Coded Workflow|Project>` to narrow if it times out, see [cli-reference.md § analyzer-rules list](references/cli-reference.md)). For capture-first tasks (target capture from manual test steps, dialog automation), this prerequisite is deferred until capture is complete — see § Capture-First Fast Path below.
-   - **Per-file** (after every create or edit): run **both** validators in sequence — they catch disjoint error classes, neither alone is sufficient.
-     1. `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Catches: structural XAML, missing references, analyzer rules, schema violations.
-     2. Then `uip rpa build "<PROJECT_DIR>" --output json` until clean. Catches what `validate` misses: **unknown member names** (`NGetText.Value` when the property is `Text`), **invalid enum values** (`Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` reports them at compile time.
-     3. Cap the combined loop at 5 fix attempts. Fix one thing per iteration; re-run both validators.
-   - **Project-level end-goal** (before reporting done): the per-file step's project-level `build` already establishes compilability. A successful `uip rpa run` smoke test covers this too. Skip the standalone end-goal `build` only if the per-file `build` already passed clean on the project's current state.
+   - **Per-file** (after every create or edit): `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Catches structural XAML, missing references, analyzer rules, schema violations. Fix one thing per iteration.
+   - **Project-level build** (after per-file `validate` is clean across all files in the edit session, and before declaring done): `uip rpa build "<PROJECT_DIR>" --output json` until clean. Catches what `validate` misses (unknown members, invalid enums, CacheMetadata / member resolution, attribute-form C# JIT) — full list at [validation-guide.md § Errors `build` catches that `validate` misses](references/validation-guide.md#errors-build-catches-that-validate-misses). If `build` errors, identify the offending file from the output and re-run `validate --file-path` on it.
+   - **5-attempt cap per loop** — 5 attempts for each file's per-file `validate` loop; a separate 5 attempts for the project-level `build` loop. Fix one root cause per iteration.
+   - **Smoke-test shortcut:** A successful `uip rpa run` substitutes for the standalone end-of-session `build` — `run` compiles internally. Prefer `run --skip-build` when `build` has just passed; see [validation-guide.md § Smoke Test](references/validation-guide.md#smoke-test).
 
    See [references/validation-guide.md](references/validation-guide.md).
-4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** After every create or edit: per-file `validate` to clean **and** project-level `build` to clean — both, in that order. `validate` clean alone is not "validated"; it cannot see member or enum errors. See [references/validation-guide.md](references/validation-guide.md).
+4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** After every create or edit: per-file `validate` to clean. Project-level `build` runs once at the end of the edit session (or at any compile-verification gate) — not after every Edit, because `build` is project-scoped and rebuilds the entire project regardless of which file changed. `validate` clean alone is not "validated"; it cannot see member or enum errors — the project-level `build` is mandatory before declaring done. See [references/validation-guide.md](references/validation-guide.md).
 5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
