@@ -15,8 +15,6 @@ description: >
   correct commands with the correct flags.
 tags: [uipath-governance, smoke, access-policy, identity-lookup]
 
-sandbox: {}
-
 initial_prompt: |
   I am authoring a UiPath access policy and need three UUIDs for the
   `actorRule.values[]` array. Resolve each one and save every command's

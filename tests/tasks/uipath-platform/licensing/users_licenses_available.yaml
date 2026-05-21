@@ -13,8 +13,6 @@ skip: true
 # @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
 # Re-enable when the CLI ships the users surface. See PLT-103133.
 
-sandbox: {}
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
 

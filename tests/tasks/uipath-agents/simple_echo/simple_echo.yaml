@@ -21,8 +21,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 1200
 
-sandbox: {}
-
 initial_prompt: |
   Build a Simple Function UiPath coded agent named `echo-agent` whose
   `main(input)` echoes `input.message` repeated `input.repeat` times

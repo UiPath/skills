@@ -13,8 +13,6 @@ run_limits:
   max_turns: 105
   turn_timeout: 600
 
-sandbox: {}
-
 initial_prompt: |
   Build a UiPath Flow named "PurchaseApproval" with this structure:
     Manual Trigger -> HITL (manager approves purchase) -> Script (log approval) -> End

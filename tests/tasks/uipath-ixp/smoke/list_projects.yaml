@@ -10,8 +10,6 @@ description: >
   command with the correct flags.
 tags: [uipath-ixp, smoke, lifecycle:discover]
 
-sandbox: {}
-
 initial_prompt: |
   A document automation engineer wants to see every IXP project on the
   tenant before deciding which one to iterate on.

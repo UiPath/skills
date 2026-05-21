@@ -5,8 +5,6 @@ description: >
   the skill teaches the correct solution-first workflow and CLI usage.
 tags: [uipath-maestro-flow, smoke, lifecycle:generate]
 
-sandbox: {}
-
 initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.

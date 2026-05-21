@@ -7,8 +7,6 @@ description: >
   (both require browser interaction).
 tags: [uipath-platform, smoke, integration-service, connections]
 
-sandbox: {}
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

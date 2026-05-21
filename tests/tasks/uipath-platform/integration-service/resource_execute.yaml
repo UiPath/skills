@@ -6,8 +6,6 @@ description: >
   complete 6-step workflow and correct execute syntax with --body.
 tags: [uipath-platform, smoke, integration-service, resources, execute]
 
-sandbox: {}
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

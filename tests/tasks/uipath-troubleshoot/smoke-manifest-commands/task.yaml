@@ -22,8 +22,6 @@ run_limits:
   turn_timeout: 60
   max_turns: 1
 
-sandbox: {}
-
 # Run the verification script BEFORE the agent. fail_on_error: true (the
 # default) aborts the task with FinalStatus.ERROR if any mocked uip command
 # is not reachable in the locally installed CLI — the agent never runs.

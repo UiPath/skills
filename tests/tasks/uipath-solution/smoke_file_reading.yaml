@@ -6,8 +6,6 @@ description: >
   file. No analysis, no SDD generation.
 tags: [uipath-solution, smoke, lifecycle:generate]
 
-sandbox: {}
-
 initial_prompt: |
   Step 1 — Write the following content to `pdd.md` using the Write tool.
   Use the exact content; do not modify, summarise, or add anything.

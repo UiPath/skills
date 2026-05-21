@@ -14,8 +14,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, template, bootstrap]
 
-sandbox: {}
-
 initial_prompt: |
   I am starting a new AOps governance policy authoring session. Bootstrap
   the policy-form templates for every product into `./session/products/`

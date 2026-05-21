@@ -12,8 +12,6 @@ run_limits:
   max_turns: 60
   turn_timeout: 900
 
-sandbox: {}
-
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
