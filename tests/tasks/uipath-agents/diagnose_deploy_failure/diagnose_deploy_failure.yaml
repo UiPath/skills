@@ -1,0 +1,108 @@
+task_id: skill-agent-coded-diagnose-deploy-failure
+description: >
+  Diagnose-mode coverage for the coded path's deploy lifecycle. The
+  Quickstart Troubleshooting table documents `Project authors cannot
+  be empty` as the canonical pyproject hygiene rejection on
+  `uip codedagent deploy`. This seeds a coded agent project whose
+  `pyproject.toml` is missing the `authors` entry and expects the
+  skill to (1) diagnose the rejection from the error wording, (2)
+  add a valid `authors = [...]` entry, and (3) successfully re-ship
+  to the user's personal workspace. **Cloud auth pre-configured.**
+tags: [uipath-agents, e2e, coded, mode:diagnose, feature:deploy]
+max_iterations: 1
+task_timeout: 2100
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 60
+  turn_timeout: 2100
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Recreate the Simple Function UiPath coded agent under
+  `daily-digest/` from the snapshot below. Shipping it to the
+  personal workspace with `uip codedagent deploy --my-workspace`
+  fails with:
+
+      Project authors cannot be empty
+
+  Fix what's blocking the deploy and ship it to the personal
+  workspace.
+
+  **daily-digest/pyproject.toml**:
+  ```toml
+  [project]
+  name = "daily-digest"
+  version = "0.0.1"
+  description = "Returns today's date as a one-line digest"
+  requires-python = ">=3.11"
+  dependencies = ["uipath"]
+
+  [dependency-groups]
+  dev = ["uipath-dev"]
+  ```
+
+  **daily-digest/main.py**:
+  ```python
+  from datetime import datetime
+  from pydantic import BaseModel
+  from uipath.tracing import traced
+
+
+  class Input(BaseModel):
+      label: str = "digest"
+
+
+  class Output(BaseModel):
+      digest: str
+
+
+  @traced()
+  async def main(input: Input) -> Output:
+      today = datetime.utcnow().strftime("%Y-%m-%d")
+      return Output(digest=f"{input.label}: {today}")
+  ```
+
+  **daily-digest/uipath.json**:
+  ```json
+  {"functions": {"main": "main.py:main"}}
+  ```
+
+  The test harness has UiPath auth pre-configured. Do NOT rewrite
+  the agent — it works as-is. Complete it in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init to refresh entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deployed to personal workspace after fixing pyproject"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--my-workspace'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Seeded agent code preserved (no rewrite)"
+    path: "daily-digest/main.py"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "pyproject.toml now has authors, code preserved, pack artifact exists"
+    command: "python3 $TASK_DIR/check_diagnose_deploy_failure.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

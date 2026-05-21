@@ -1,0 +1,81 @@
+task_id: skill-agent-coded-deploy-tenant
+description: >
+  Coded-agent deploy to the **tenant feed** with `packOptions`. The
+  other two deploy targets (`--my-workspace` and `--folder`) are
+  already covered; `--tenant` is the only documented target with zero
+  coverage. The agent also has to keep a non-source directory
+  (`data/`) out of the package, exercising
+  `packOptions.directoriesExcluded` in `uipath.json` — the documented
+  knob for controlling package contents. **Cloud auth + tenant-level
+  publish permission required** for the host running coder-eval.
+tags: [uipath-agents, e2e, coded, mode:build, feature:deploy]
+max_iterations: 1
+task_timeout: 1500
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 60
+  turn_timeout: 1500
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a Simple Function UiPath coded agent named `tenant-echo`
+  that takes a `message` (string) and returns
+  `{"echoed": message}`. No LLM, no SDK calls.
+
+  Alongside the source, the project includes a `data/` directory
+  with fixture JSON used during local development only — create it
+  as `tenant-echo/data/fixtures.json` containing
+  `{"sample": "value"}`. The `data/` directory must NOT end up in
+  the published package.
+
+  Take the agent through scaffold → init → run locally, then ship
+  it to the tenant feed. The host has UiPath auth pre-configured
+  with permission to publish to the tenant feed.
+
+  Do NOT publish to the personal workspace or to a folder feed.
+  Complete it in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deployed to the tenant feed"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--tenant\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent project exists"
+    path: "tenant-echo/pyproject.toml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "pyproject.toml + packOptions excludes data/ + .nupkg artifact present"
+    command: "python3 $TASK_DIR/check_deploy_tenant.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
