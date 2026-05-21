@@ -232,6 +232,12 @@ Three entries — formal slot + companion + bridge:
 
 > **Placeholder trigger interaction:** if the trigger is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.uipath.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
 
+**File-type In-arg carve-out:** when `type === "file"`:
+- Formal slot (entry 1) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` (see [`## file type`](#file-type)) — drives entry-points.json `$ref: "#/definitions/job-attachment"` at packaging
+- Companion (entry 2) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` — drives FE picker sub-field navigation (`=vars.<id>.FullName`)
+- Bridge (entry 3) unchanged — no `target` on the bridge; the runtime caller has already uploaded the bytes via JobAttachments API before case-start
+- `default` MUST stay `""` — FE rejects any other value for file Variables (`InputOutputArgumentsDialog.tsx:148`)
+
 ### Out argument
 
 SDD row: `Category=Out`. **Companion is ALWAYS emitted at write time** (per FE convention — `UnifiedBuildCaseDataManager.tsx:298-324` always writes the companion when an Out-arg is created). The BPMN packager's `collapseArgumentCompanions` (`CaseManagementRootConverterUtils.ts:211-237`) may collapse the companion at packaging time, but that's downstream of the skill.
