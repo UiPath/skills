@@ -8,6 +8,9 @@ defaults:
     turn_timeout: 300
 
   sandbox:
+    driver: docker
+    python: {}
+    node: {}
     docker:
       image: skills-image:latest
       env_passthrough_extra:
