@@ -34,9 +34,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent created the solution with uip solution new"
+    description: "Agent created the solution with uip solution new/init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
+    command_pattern: 'uip\s+solution\s+(new|init)\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

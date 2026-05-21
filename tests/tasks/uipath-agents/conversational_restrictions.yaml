@@ -37,9 +37,17 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent scaffolded with uip agent init"
+    description: "Agent scaffolded the solution with uip solution new/init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init'
+    command_pattern: 'uip\s+solution\s+(new|init)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
