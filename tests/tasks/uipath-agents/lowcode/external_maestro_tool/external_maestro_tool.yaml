@@ -29,7 +29,7 @@ initial_prompt: |
   Create a UiPath solution "ProcurementSol" containing a single
   low-code agent "ProcurementAgent". The agent accepts a required
   `productId` (number) and returns a boolean `status`. It must
-  determine the status by delegating to a Maestro / agentic process
+  determine the status by delegating to an Agentic process
   named "ProcurementProcess" that is already deployed in the
   tenant — not by reasoning about the answer itself.
 

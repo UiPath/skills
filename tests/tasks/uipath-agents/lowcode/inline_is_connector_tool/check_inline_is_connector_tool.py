@@ -30,7 +30,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.inline_wiring import find_inline_resource  # noqa: E402
 
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
