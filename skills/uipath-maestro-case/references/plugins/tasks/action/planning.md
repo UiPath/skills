@@ -38,6 +38,15 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 
 See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for the fallback rationale.
 
+## Always-Emitted Outputs
+
+`tasks describe --type action` returns two synthetic outputs on every action task in addition to the action-app's declared outputs:
+
+- **`Action`** — outcome dropdown. Carries `options: [{value, label}, ...]` with the action-app's outcome names (e.g., `Approve`, `Reject`). Downstream tasks can bind `=vars.<actionVar>.Action` and the SDD can validate the value against the enum.
+- **`hitlTask`** — full Orchestrator task record. Type `object` with PascalCase sub-fields: `Id`, `Key`, `Title`, `Status`, `Priority`, `AssignedToUser.{UserName,EmailAddress,...}`, `CompletedByUser.{...}`, `CreationTime`, `CompletionTime`, plus SLA / source / metadata. Bind sub-fields directly via `=vars.<hitlVar>.AssignedToUser.UserName`.
+
+Both are discoverable in the Step 0 schema — no special SDD declaration needed.
+
 ## Unresolved Fallback
 
 Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.

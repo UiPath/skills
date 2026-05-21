@@ -41,6 +41,8 @@ For each entry in the Step 0 schema, check whether the SDD's `outputs:` row in t
 - **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it.
 - **Schema fields with no SDD reference** → fall back to auto-mint shape (`var` = camelCased schema name). Connector plugins additionally apply the [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) dedup-suffix on collision (e.g., `response` → `response2`).
 
+> **Preserve schema-provided extras.** Step 0 schema entries may carry fields beyond the shape rules above (e.g., `_jsonSchema` on complex outputs, `options` on `Action`, `body`, `displayName`). Round-trip them verbatim onto the emitted output — the field list in each plugin's task-write template is a minimum, not a maximum. Skill never strips schema-provided fields.
+
 Cross-cutting rules:
 
 - Expression values for `=`: literal (`"InReview"`, `5`, `true`), computed (`=js:vars.x + 1`), or variable reference (`=vars.X.Y.Z`).
