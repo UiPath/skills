@@ -196,7 +196,7 @@ DO NOT include in Configuration:
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| {camelCase name} | {In \| Out \| Variable} | {string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
+| {camelCase name} | {In \| Out \| Variable} | {string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
 
 **Category semantics (author-facing summary; canonical definition in [`global-vars/impl-json.md` § Pattern shapes by category](../../references/plugins/variables/global-vars/impl-json.md)):**
 

@@ -331,6 +331,40 @@ Custom outputs are an existing task-plugin concept, unchanged by B's redesign. T
   "_jsonSchema": { "type": "object", "properties": { "status": { "type": "string" } } } }
 ```
 
+## file type
+
+File Variables hold a JobAttachment record (`{ID, FullName, MimeType, Metadata}`), not a path or bytes. Runtime writes the record when the producing task completes.
+
+`body` MUST be the FILE_TYPE_JSON_SCHEMA constant verbatim — `x-uipath-resource-kind: "JobAttachment"` is what activates the FE picker.
+
+```json
+{ "id": "evidenceDoc", "name": "evidenceDoc", "type": "file",
+  "body": {
+    "type": "object",
+    "required": ["ID"],
+    "x-uipath-resource-kind": "JobAttachment",
+    "properties": {
+      "ID":       { "type": "string" },
+      "FullName": { "type": "string" },
+      "MimeType": { "type": "string" },
+      "Metadata": { "type": "object" }
+    }
+  },
+  "default": "", "custom": true, "elementId": "root" }
+```
+
+## date / datetime types
+
+Primitive — no body, no target. FE renders DatePicker / DateTimePicker based on the type.
+
+```json
+{ "id": "submittedOn", "name": "submittedOn", "type": "date",
+  "default": "", "custom": true, "elementId": "root" }
+
+{ "id": "lastSeen", "name": "lastSeen", "type": "datetime",
+  "default": "=js:new Date().toISOString()", "custom": true, "elementId": "root" }
+```
+
 ## Expression Syntax
 
 See [`../../../bindings-and-expressions.md`](../../../bindings-and-expressions.md). Key rule: plain reads use `=vars.x`, comparisons use `=js:vars.x === 'val'`. Never use `$vars.x`.
