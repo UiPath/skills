@@ -49,14 +49,16 @@ def load(path: Path) -> dict:
 def assert_context_resource(resource: dict) -> None:
     rtype = resource.get("$resourceType")
     if rtype != "context":
-        sys.exit(f'FAIL: resource.json $resourceType should be "context", got {rtype!r}')
+        sys.exit(
+            f'FAIL: resource.json $resourceType should be "context", got {rtype!r}'
+        )
     ctype = resource.get("contextType")
     if ctype != "index":
         sys.exit(f'FAIL: resource.json contextType should be "index", got {ctype!r}')
     name = resource.get("name")
     if name != EXPECTED_INDEX_NAME:
         sys.exit(
-            f'FAIL: resource.json name should be {EXPECTED_INDEX_NAME!r} '
+            f"FAIL: resource.json name should be {EXPECTED_INDEX_NAME!r} "
             f"(matching the deployed index), got {name!r}"
         )
     index_name = resource.get("indexName")
@@ -119,10 +121,14 @@ def assert_input_shape(schema: dict) -> None:
         )
     q = props["question"]
     if not isinstance(q, dict) or q.get("type") != "string":
-        sys.exit(f"FAIL: inputSchema.properties.question.type should be 'string', got {q!r}")
+        sys.exit(
+            f"FAIL: inputSchema.properties.question.type should be 'string', got {q!r}"
+        )
     required = schema.get("required")
     if not isinstance(required, list) or "question" not in required:
-        sys.exit(f"FAIL: inputSchema.required must contain 'question', got {required!r}")
+        sys.exit(
+            f"FAIL: inputSchema.required must contain 'question', got {required!r}"
+        )
     print("OK: inputSchema declares required question:string")
 
 
@@ -134,7 +140,9 @@ def assert_output_shape(schema: dict) -> None:
         )
     a = props["answer"]
     if not isinstance(a, dict) or a.get("type") != "string":
-        sys.exit(f"FAIL: outputSchema.properties.answer.type should be 'string', got {a!r}")
+        sys.exit(
+            f"FAIL: outputSchema.properties.answer.type should be 'string', got {a!r}"
+        )
     print("OK: outputSchema declares answer:string")
 
 
@@ -143,7 +151,9 @@ def assert_bindings_index(bindings: dict) -> None:
     if not isinstance(resources, list):
         sys.exit(f"FAIL: bindings_v2.json resources must be a list, got {resources!r}")
 
-    index_bindings = [r for r in resources if isinstance(r, dict) and r.get("resource") == "index"]
+    index_bindings = [
+        r for r in resources if isinstance(r, dict) and r.get("resource") == "index"
+    ]
     if not index_bindings:
         sys.exit(
             'FAIL: bindings_v2.json has no resource entry with resource="index". '
@@ -164,10 +174,14 @@ def assert_bindings_index(bindings: dict) -> None:
 
     value = binding.get("value")
     if not isinstance(value, dict):
-        sys.exit(f"FAIL: bindings_v2.json index binding value must be an object, got {value!r}")
+        sys.exit(
+            f"FAIL: bindings_v2.json index binding value must be an object, got {value!r}"
+        )
 
     name_field = value.get("name") or {}
-    name_default = name_field.get("defaultValue") if isinstance(name_field, dict) else None
+    name_default = (
+        name_field.get("defaultValue") if isinstance(name_field, dict) else None
+    )
     if name_default != EXPECTED_INDEX_NAME:
         sys.exit(
             f"FAIL: bindings_v2.json index binding value.name.defaultValue should be "
@@ -175,7 +189,9 @@ def assert_bindings_index(bindings: dict) -> None:
         )
 
     folder_field = value.get("folderPath") or {}
-    folder_default = folder_field.get("defaultValue") if isinstance(folder_field, dict) else None
+    folder_default = (
+        folder_field.get("defaultValue") if isinstance(folder_field, dict) else None
+    )
     if folder_default != EXPECTED_FOLDER_PATH:
         sys.exit(
             f"FAIL: bindings_v2.json index binding value.folderPath.defaultValue should be "

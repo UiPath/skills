@@ -58,7 +58,9 @@ def assert_tool_header(resource: dict) -> None:
         got = resource.get(key)
         if got != want:
             sys.exit(f"FAIL: resource.json {key!r} should be {want!r}, got {got!r}")
-    print('OK: resource.json is $resourceType="tool", type="agent", location="external"')
+    print(
+        'OK: resource.json is $resourceType="tool", type="agent", location="external"'
+    )
 
 
 def assert_properties(resource: dict) -> None:
@@ -94,12 +96,16 @@ def assert_identity_and_schemas(resource: dict) -> None:
             f"from `uip solution resource list`'s `Key`, got {rkey!r}"
         )
     if not resource.get("isEnabled"):
-        sys.exit(f"FAIL: resource.isEnabled must be truthy, got {resource.get('isEnabled')!r}")
+        sys.exit(
+            f"FAIL: resource.isEnabled must be truthy, got {resource.get('isEnabled')!r}"
+        )
     if not isinstance(resource.get("inputSchema"), dict):
         sys.exit("FAIL: resource.inputSchema must be an object")
     if not isinstance(resource.get("outputSchema"), dict):
         sys.exit("FAIL: resource.outputSchema must be an object")
-    print(f"OK: resource has id={rid}, referenceKey={rkey}, isEnabled=true, and input/output schemas")
+    print(
+        f"OK: resource has id={rid}, referenceKey={rkey}, isEnabled=true, and input/output schemas"
+    )
 
 
 def assert_bindings_process(bindings: dict) -> None:
@@ -110,12 +116,14 @@ def assert_bindings_process(bindings: dict) -> None:
     process_bindings = [
         r
         for r in resources
-        if isinstance(r, dict) and r.get("resource") == "process" and r.get("key") == EXPECTED_PROCESS_NAME
+        if isinstance(r, dict)
+        and r.get("resource") == "process"
+        and r.get("key") == EXPECTED_PROCESS_NAME
     ]
     if not process_bindings:
         sys.exit(
             f'FAIL: bindings_v2.json has no resource entry with resource="process" '
-            f'and key={EXPECTED_PROCESS_NAME!r}. `uip agent validate` should emit '
+            f"and key={EXPECTED_PROCESS_NAME!r}. `uip agent validate` should emit "
             "one for the external agent tool."
         )
     if len(process_bindings) > 1:
@@ -127,10 +135,14 @@ def assert_bindings_process(bindings: dict) -> None:
 
     value = binding.get("value")
     if not isinstance(value, dict):
-        sys.exit(f"FAIL: bindings_v2.json process binding value must be an object, got {value!r}")
+        sys.exit(
+            f"FAIL: bindings_v2.json process binding value must be an object, got {value!r}"
+        )
 
     name_field = value.get("name") or {}
-    name_default = name_field.get("defaultValue") if isinstance(name_field, dict) else None
+    name_default = (
+        name_field.get("defaultValue") if isinstance(name_field, dict) else None
+    )
     if name_default != EXPECTED_PROCESS_NAME:
         sys.exit(
             f"FAIL: bindings_v2.json process binding value.name.defaultValue should be "
@@ -138,7 +150,9 @@ def assert_bindings_process(bindings: dict) -> None:
         )
 
     folder_field = value.get("folderPath") or {}
-    folder_default = folder_field.get("defaultValue") if isinstance(folder_field, dict) else None
+    folder_default = (
+        folder_field.get("defaultValue") if isinstance(folder_field, dict) else None
+    )
     if folder_default != EXPECTED_FOLDER_PATH:
         sys.exit(
             f"FAIL: bindings_v2.json process binding value.folderPath.defaultValue should be "

@@ -49,7 +49,9 @@ def main() -> None:
     assert_metadata_field(index, field="ActivityName", expected="retrieve_async")
     # connection
     connection = find_resource(doc, resource="connection", key="salesforce-prod-conn")
-    assert_value_field(connection, field="ConnectionId", expected="salesforce-prod-conn")
+    assert_value_field(
+        connection, field="ConnectionId", expected="salesforce-prod-conn"
+    )
     assert_metadata_field(connection, field="UseConnectionService", expected="True")
     # mcpServer
     mcp = find_resource(doc, resource="mcpServer", key="weather-mcp.Tools")
@@ -61,7 +63,9 @@ def main() -> None:
         n = count_resources_by_type(doc, kind)
         if n != 1:
             sys.exit(f"FAIL: expected exactly 1 `{kind}` binding entry, got {n}")
-    print("OK: each of queue/app/index/connection/mcpServer has exactly one binding entry")
+    print(
+        "OK: each of queue/app/index/connection/mcpServer has exactly one binding entry"
+    )
 
 
 if __name__ == "__main__":

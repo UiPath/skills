@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assert spans.json (raw uip traces spans get output) has Data with >= 1 span."""
+
 import json
 import sys
 from pathlib import Path

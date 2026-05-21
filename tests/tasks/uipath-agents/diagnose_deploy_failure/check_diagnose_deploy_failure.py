@@ -48,7 +48,9 @@ def check_pyproject() -> None:
     if "[project]" not in text:
         sys.exit("FAIL: pyproject.toml has no [project] section")
 
-    authors_match = re.search(r"^\s*authors\s*=\s*\[(.*?)\]", text, re.DOTALL | re.MULTILINE)
+    authors_match = re.search(
+        r"^\s*authors\s*=\s*\[(.*?)\]", text, re.DOTALL | re.MULTILINE
+    )
     if not authors_match:
         sys.exit(
             "FAIL: pyproject.toml has no `authors = [...]` entry — "
@@ -63,9 +65,9 @@ def check_pyproject() -> None:
         )
     if "name" not in inner:
         sys.exit(
-            f'FAIL: pyproject.toml `authors` entry does not contain a '
+            f"FAIL: pyproject.toml `authors` entry does not contain a "
             f'`name` field. Expected something like `[{{ name = "..." }}]`. '
-            f'Got: {inner!r}'
+            f"Got: {inner!r}"
         )
 
     for needle in ("name", "version", "description", "dependencies"):

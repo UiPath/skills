@@ -37,11 +37,17 @@ def fail(msg: str) -> None:
 def main() -> None:
     # --- Studio Web ownership preserved ---
     if not SW_MARKER.is_file():
-        fail(f"missing Studio Web detection marker {SW_MARKER} — Local Workspace identity lost")
+        fail(
+            f"missing Studio Web detection marker {SW_MARKER} — Local Workspace identity lost"
+        )
     if not FOLDER_LOCK.is_file():
-        fail(f"missing Studio Web folder lock {FOLDER_LOCK} — Local Workspace identity lost")
+        fail(
+            f"missing Studio Web folder lock {FOLDER_LOCK} — Local Workspace identity lost"
+        )
     if not PROJECT_UIPROJ.is_file():
-        fail(f"{PROJECT_UIPROJ} missing — Local Workspace anti-pattern: do not delete project.uiproj")
+        fail(
+            f"{PROJECT_UIPROJ} missing — Local Workspace anti-pattern: do not delete project.uiproj"
+        )
     print("OK: Studio Web markers and project.uiproj are intact")
 
     # --- UIPATH_PROJECT_ID sentinel untouched ---
@@ -60,7 +66,9 @@ def main() -> None:
         fail(f"missing {MAIN}")
     main_text = MAIN.read_text(encoding="utf-8")
     if "category" not in main_text:
-        fail("main.py does not mention a `category` field — the requested behavior is missing")
+        fail(
+            "main.py does not mention a `category` field — the requested behavior is missing"
+        )
     print("OK: main.py declares the `category` field")
 
     # --- entry-points.json regenerated to advertise the new output ---
@@ -87,12 +95,18 @@ def main() -> None:
         fail(f"outputs.json is not valid JSON: {exc}")
     flat = json.dumps(outs).lower()
     if "tiny" not in flat:
-        fail("outputs.json does not mention a `tiny` result — value=2 run not captured or wrong branch")
+        fail(
+            "outputs.json does not mention a `tiny` result — value=2 run not captured or wrong branch"
+        )
     if "huge" not in flat:
-        fail("outputs.json does not mention a `huge` result — value=150 run not captured or wrong branch")
+        fail(
+            "outputs.json does not mention a `huge` result — value=150 run not captured or wrong branch"
+        )
     print("OK: outputs.json captured both `tiny` and `huge` branches")
 
-    print("OK: Local Workspace iteration completed without violating ownership invariants")
+    print(
+        "OK: Local Workspace iteration completed without violating ownership invariants"
+    )
 
 
 if __name__ == "__main__":

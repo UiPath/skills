@@ -48,7 +48,7 @@ _JSONSTRING_PREFIX = "=jsonString:"
 
 _EXPECTED_BODY = {
     "to": "baishali13@gmail.com",
-    "importance": "medium", # this is the enum field under test
+    "importance": "medium",  # this is the enum field under test
 }
 
 
@@ -121,10 +121,7 @@ def _check_control(flow_path: str, flow: dict[str, Any]) -> None:
 
 def main() -> None:
     if len(sys.argv) != 3:
-        _fail(
-            "usage: check_enum_flow.py <flow_glob> "
-            "<structure|body_params|control>"
-        )
+        _fail("usage: check_enum_flow.py <flow_glob> <structure|body_params|control>")
 
     flow_path, flow = _load_flow(sys.argv[1])
     check_name = sys.argv[2]

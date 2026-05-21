@@ -64,7 +64,9 @@ def main() -> None:
         fail(f"entry-points.json is not valid JSON: {exc}")
     serialized = json.dumps(ep_payload)
     if "mood" not in serialized:
-        fail("entry-points.json does not advertise the original `mood` field — schema may have been clobbered")
+        fail(
+            "entry-points.json does not advertise the original `mood` field — schema may have been clobbered"
+        )
     if "confidence" not in serialized:
         fail(
             "entry-points.json does not advertise the new `confidence` field. "
@@ -84,17 +86,23 @@ def main() -> None:
     print("OK: main.py preserves the original `mood` field")
 
     if "confidence" not in main_text:
-        fail("main.py does not contain the new `confidence` field — the feature was not added")
+        fail(
+            "main.py does not contain the new `confidence` field — the feature was not added"
+        )
     print("OK: main.py adds the new `confidence` field")
 
     if not re.search(r"^\s*graph\s*=\s*", main_text, re.M):
-        fail("main.py no longer exports a top-level `graph =` variable — LangGraph entrypoint broken")
+        fail(
+            "main.py no longer exports a top-level `graph =` variable — LangGraph entrypoint broken"
+        )
     print("OK: top-level `graph` variable still exported")
 
     if not PYPROJECT.is_file():
         fail(f"missing {PYPROJECT}")
     if re.search(r"^\s*\[build-system\]", PYPROJECT.read_text(encoding="utf-8"), re.M):
-        fail("pyproject.toml gained a [build-system] section — Critical Rule C1 violation")
+        fail(
+            "pyproject.toml gained a [build-system] section — Critical Rule C1 violation"
+        )
     print("OK: pyproject.toml still has no [build-system] section")
 
     print("OK: existing-coded resume completed without clobbering")

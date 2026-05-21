@@ -34,7 +34,9 @@ def _check_subflow_structure(project_dir):
         (n for n in flow.get("nodes", []) if n.get("type") == "core.subflow"), None
     )
     if not subflow_node:
-        _fail(f"No Subflow node found. Types: {[n.get('type') for n in flow.get('nodes', [])]}")
+        _fail(
+            f"No Subflow node found. Types: {[n.get('type') for n in flow.get('nodes', [])]}"
+        )
 
     sid = subflow_node["id"]
     if not subflow_node.get("inputs"):
@@ -43,12 +45,16 @@ def _check_subflow_structure(project_dir):
     # Verify the subflows section
     sf = flow.get("subflows", {}).get(sid)
     if not sf:
-        _fail(f"No subflows.{sid} section found. Keys: {list(flow.get('subflows', {}).keys())}")
+        _fail(
+            f"No subflows.{sid} section found. Keys: {list(flow.get('subflows', {}).keys())}"
+        )
 
     sf_nodes = sf.get("nodes", [])
     sf_edges = sf.get("edges", [])
     if len(sf_nodes) < 3:
-        _fail(f"Subflow needs at least 3 nodes (start, logic, end), found {len(sf_nodes)}")
+        _fail(
+            f"Subflow needs at least 3 nodes (start, logic, end), found {len(sf_nodes)}"
+        )
     if len(sf_edges) < 2:
         _fail(f"Subflow needs at least 2 edges, found {len(sf_edges)}")
 
@@ -75,7 +81,9 @@ def _check_subflow_structure(project_dir):
         if n.get("type") == "core.control.end" and not n.get("outputs"):
             _fail(f"Subflow End node '{n['id']}' has no output mappings")
 
-    print(f"OK: Subflow '{sid}' structure valid ({len(sf_nodes)} nodes, {len(in_vars)} in, {len(out_vars)} out)")
+    print(
+        f"OK: Subflow '{sid}' structure valid ({len(sf_nodes)} nodes, {len(in_vars)} in, {len(out_vars)} out)"
+    )
 
 
 def main():

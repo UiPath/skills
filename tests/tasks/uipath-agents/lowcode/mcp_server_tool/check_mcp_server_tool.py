@@ -43,7 +43,9 @@ def assert_mcp_resource(resource: dict) -> None:
     if not isinstance(description, str) or not description.strip():
         sys.exit(f"FAIL: MCP resource description missing or empty: {description!r}")
     if not resource.get("isEnabled"):
-        sys.exit(f"FAIL: MCP resource isEnabled must be truthy, got {resource.get('isEnabled')!r}")
+        sys.exit(
+            f"FAIL: MCP resource isEnabled must be truthy, got {resource.get('isEnabled')!r}"
+        )
     rid = resource.get("id")
     if not isinstance(rid, str) or "-" not in rid:
         sys.exit(f"FAIL: MCP resource id missing or malformed: {rid!r}")
@@ -52,7 +54,7 @@ def assert_mcp_resource(resource: dict) -> None:
         sys.exit(f"FAIL: MCP resource tools must be a list, got {tools!r}")
     print(
         f'OK: resource.json is $resourceType="mcp", name="GitHubMcp", '
-        f'id={rid}, isEnabled=true, tools list present ({len(tools)} entries)'
+        f"id={rid}, isEnabled=true, tools list present ({len(tools)} entries)"
     )
 
 

@@ -39,7 +39,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
 
-UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
 HELP_TIMEOUT_S = 30
 
 
@@ -165,15 +167,21 @@ def arg_count(help_payload: dict) -> int:
     return len(data.get("Arguments") or [])
 
 
-GLOBAL_FLAGS = frozenset({
-    # CLI-wide flags accepted by every subcommand, even when leaf help doesn't
-    # relist them. Root `uip --help` doesn't include these either — they're
-    # surfaced only on intermediate command-group help. Hardcoded so we don't
-    # depend on a particular intermediate level being scraped.
-    "--output", "--output-filter",
-    "--log-level", "--log-file",
-    "-h", "--help", "--help-all",
-})
+GLOBAL_FLAGS = frozenset(
+    {
+        # CLI-wide flags accepted by every subcommand, even when leaf help doesn't
+        # relist them. Root `uip --help` doesn't include these either — they're
+        # surfaced only on intermediate command-group help. Hardcoded so we don't
+        # depend on a particular intermediate level being scraped.
+        "--output",
+        "--output-filter",
+        "--log-level",
+        "--log-file",
+        "-h",
+        "--help",
+        "--help-all",
+    }
+)
 
 
 def validate_match(
@@ -195,17 +203,26 @@ def validate_match(
             # dep, etc.). Can't introspect further; treat as plausibly
             # valid so the smoke isn't gated on upstream tool-packaging
             # issues. The runtime e2e tests still exercise the real call.
-            return True, f"WARN: could not fetch help for 'uip {' '.join(parent)}' — skipping deeper validation"
+            return (
+                True,
+                f"WARN: could not fetch help for 'uip {' '.join(parent)}' — skipping deeper validation",
+            )
         result = help_payload.get("Result")
         if result == "ConfigError":
             # Tool failed to load at runtime (e.g., missing peer dep like
             # @uipath/auth on traces-tool). Same tolerance as above.
-            return True, f"WARN: parent 'uip {' '.join(parent)}' returned ConfigError — skipping deeper validation"
+            return (
+                True,
+                f"WARN: parent 'uip {' '.join(parent)}' returned ConfigError — skipping deeper validation",
+            )
         if result != "Success":
             return False, f"parent 'uip {' '.join(parent)}' returned {result}"
         subs = subcommand_names(help_payload)
         if token not in subs:
-            return False, f"'{token}' is not a subcommand of 'uip {' '.join(parent) or '(root)'}'"
+            return (
+                False,
+                f"'{token}' is not a subcommand of 'uip {' '.join(parent) or '(root)'}'",
+            )
 
     # 2. Leaf-level flag validation (per-command flags + inherited global flags)
     leaf_help = fetch_help(uip_bin, tuple(path))
@@ -215,7 +232,10 @@ def validate_match(
     allowed_flags = flag_names(leaf_help) | GLOBAL_FLAGS
     bad_flags = [f for f in set(used_flags) if f not in allowed_flags]
     if bad_flags:
-        return False, f"unknown flag(s) on 'uip {' '.join(path)}': {', '.join(sorted(bad_flags))}"
+        return (
+            False,
+            f"unknown flag(s) on 'uip {' '.join(path)}': {', '.join(sorted(bad_flags))}",
+        )
 
     # 3. Argument count check (informational — many commands accept varargs)
     expected_args = arg_count(leaf_help)
@@ -235,7 +255,11 @@ def walk_manifests(root: Path) -> Iterable[dict]:
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            yield {"scenario": scenario, "manifest": manifest_path, "parse_error": str(exc)}
+            yield {
+                "scenario": scenario,
+                "manifest": manifest_path,
+                "parse_error": str(exc),
+            }
             continue
         for idx, rule in enumerate(manifest.get("rules", [])):
             yield {
@@ -255,7 +279,9 @@ def main(argv: list[str] | None = None) -> int:
         default=Path(__file__).resolve().parents[2],
         help="troubleshoot task root (default: parent of _shared/scripts)",
     )
-    parser.add_argument("--uip", default="uip", help="uip binary (default: uip on PATH)")
+    parser.add_argument(
+        "--uip", default="uip", help="uip binary (default: uip on PATH)"
+    )
     args = parser.parse_args(argv)
 
     if not args.root.exists():
@@ -312,7 +338,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print()
-    print("OK — every mocked command, flag, and positional shape is valid against the installed uip CLI.")
+    print(
+        "OK — every mocked command, flag, and positional shape is valid against the installed uip CLI."
+    )
     return 0
 
 

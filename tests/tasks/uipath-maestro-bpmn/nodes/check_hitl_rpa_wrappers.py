@@ -18,7 +18,9 @@ from _shared.bpmn_check import (  # noqa: E402
 def main() -> None:
     path, root = parse_bpmn("EmployeeAccessBpmn")
     hitl = [
-        task for task in elements(root, "userTask") if has_uipath_extension(task, "Actions.HITL")
+        task
+        for task in elements(root, "userTask")
+        if has_uipath_extension(task, "Actions.HITL")
     ]
     rpa = [
         task
@@ -28,7 +30,9 @@ def main() -> None:
     if not hitl:
         fail("missing bpmn:userTask with Actions.HITL uipath:activity shell")
     if not rpa:
-        fail("missing bpmn:serviceTask with Orchestrator.StartJob uipath:activity shell")
+        fail(
+            "missing bpmn:serviceTask with Orchestrator.StartJob uipath:activity shell"
+        )
     require_no_private_connector_values(root)
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)

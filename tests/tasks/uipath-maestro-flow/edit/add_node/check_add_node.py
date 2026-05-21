@@ -39,7 +39,10 @@ def _assert_edge_exists(source_id: str, target_id: str) -> None:
         with open(path) as f:
             flow = json.load(f)
         for edge in flow.get("edges") or []:
-            if edge.get("sourceNodeId") == source_id and edge.get("targetNodeId") == target_id:
+            if (
+                edge.get("sourceNodeId") == source_id
+                and edge.get("targetNodeId") == target_id
+            ):
                 return
     sys.exit(f"FAIL: no edge from '{source_id}' to '{target_id}'")
 

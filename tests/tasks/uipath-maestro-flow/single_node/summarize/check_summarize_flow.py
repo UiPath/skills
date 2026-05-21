@@ -35,7 +35,9 @@ EXPECTED_OUTPUT_SOURCE = "=response"
 _ATTACHMENT_REF = re.compile(
     r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.([A-Za-z_][A-Za-z0-9_]*)\s*$"
 )
-_OUTPUT_MAPPING_BASE = re.compile(r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.content\.")
+_OUTPUT_MAPPING_BASE = re.compile(
+    r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.content\."
+)
 
 
 def _fail(msg: str) -> NoReturn:
@@ -65,7 +67,9 @@ def _find_node(flow: dict) -> dict:
 
 def _check_attachment_canonical(flow: dict, attachment) -> None:
     if not isinstance(attachment, str) or not attachment.strip():
-        _fail("inputs.attachment missing or empty — wire it to the trigger output binding")
+        _fail(
+            "inputs.attachment missing or empty — wire it to the trigger output binding"
+        )
     m = _ATTACHMENT_REF.match(attachment.strip())
     if not m:
         _fail(
@@ -85,7 +89,10 @@ def _check_attachment_canonical(flow: dict, attachment) -> None:
             f"inputs.attachment references `$vars.{trigger_id}.output...` but no node with "
             f"id={trigger_id!r} exists in the flow."
         )
-    if not isinstance(trigger_node.get("type"), str) or "trigger" not in trigger_node["type"]:
+    if (
+        not isinstance(trigger_node.get("type"), str)
+        or "trigger" not in trigger_node["type"]
+    ):
         _fail(
             f"node id={trigger_id!r} has type={trigger_node.get('type')!r}; expected a trigger."
         )
@@ -147,13 +154,17 @@ def _check_pascal_output_mappings(flow: dict, dr_node_id: str) -> None:
     """
     globals_ = (flow.get("variables") or {}).get("globals") or []
     for var_id in ("summary", "citations"):
-        if not any(v.get("id") == var_id and v.get("direction") == "out" for v in globals_):
+        if not any(
+            v.get("id") == var_id and v.get("direction") == "out" for v in globals_
+        ):
             _fail(
                 f"flow has no `out` variable with id={var_id!r}. The task prompt asks for "
                 f"`{var_id}` to be surfaced as a flow output."
             )
 
-    end_nodes = [n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"]
+    end_nodes = [
+        n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"
+    ]
     if not end_nodes:
         _fail("flow has no End node — required to terminate the path and map outputs")
 

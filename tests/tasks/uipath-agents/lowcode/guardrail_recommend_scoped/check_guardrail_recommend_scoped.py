@@ -86,22 +86,16 @@ def main() -> None:
     # selector.scopes contains "Tool"
     scopes = (g.get("selector") or {}).get("scopes") or []
     if "Tool" not in scopes:
-        sys.exit(
-            f'FAIL: guardrail selector.scopes must contain "Tool", got {scopes!r}'
-        )
+        sys.exit(f'FAIL: guardrail selector.scopes must contain "Tool", got {scopes!r}')
     print(f"OK: selector.scopes includes 'Tool': {scopes}")
 
     # rules array
     rules = g.get("rules")
     if not isinstance(rules, list) or len(rules) == 0:
-        sys.exit(
-            f"FAIL: guardrail.rules must be a non-empty array, got {rules!r}"
-        )
+        sys.exit(f"FAIL: guardrail.rules must be a non-empty array, got {rules!r}")
     for i, rule in enumerate(rules):
         if not rule.get("$ruleType"):
-            sys.exit(
-                f"FAIL: rules[{i}] missing $ruleType discriminator. rule={rule!r}"
-            )
+            sys.exit(f"FAIL: rules[{i}] missing $ruleType discriminator. rule={rule!r}")
     print(f"OK: rules array has {len(rules)} rule(s), all have $ruleType")
 
     print("OK: custom tool-scoped guardrail check passed")

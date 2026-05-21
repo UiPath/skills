@@ -241,7 +241,7 @@ def main() -> int:
 
         errors: list[str] = []
         if payload.get("finalStatus") != "Completed":
-            errors.append(f"finalStatus != Completed")
+            errors.append("finalStatus != Completed")
 
         print()
         for eid, path, matcher, fmt in LEGS:

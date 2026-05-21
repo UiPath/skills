@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 
@@ -63,13 +63,15 @@ def analyze_replicate(rep_dir: Path) -> dict:
         pat = spec.get("pattern", "")
         minimum = spec.get("min", 1)
         hits = sum(1 for c in calls if pat in c.get("args", ""))
-        expected_status.append({
-            "pattern": pat,
-            "min": minimum,
-            "hits": hits,
-            "satisfied": hits >= minimum,
-            "description": spec.get("description", ""),
-        })
+        expected_status.append(
+            {
+                "pattern": pat,
+                "min": minimum,
+                "hits": hits,
+                "satisfied": hits >= minimum,
+                "description": spec.get("description", ""),
+            }
+        )
 
     # Rule usage
     rule_counts: Counter = Counter()
@@ -87,7 +89,9 @@ def analyze_replicate(rep_dir: Path) -> dict:
     rec["unmocked"] = unmocked
     rec["rule_hits"] = dict(rule_counts.most_common())
     if expected_status:
-        rec["match_rate"] = sum(1 for e in expected_status if e["satisfied"]) / len(expected_status)
+        rec["match_rate"] = sum(1 for e in expected_status if e["satisfied"]) / len(
+            expected_status
+        )
 
     return rec
 
@@ -98,8 +102,10 @@ def write_outputs(rep_dir: Path, rec: dict) -> None:
     lines.append(f"Coverage report for replicate {rec['replicate']}")
     lines.append(f"  total uip calls : {len(rec['calls'])}")
     if rec["match_rate"] is not None:
-        lines.append(f"  expected hit-rate: {rec['match_rate']*100:.0f}% "
-                     f"({len(rec['expected']) - len(rec['missing_expected'])}/{len(rec['expected'])})")
+        lines.append(
+            f"  expected hit-rate: {rec['match_rate'] * 100:.0f}% "
+            f"({len(rec['expected']) - len(rec['missing_expected'])}/{len(rec['expected'])})"
+        )
     if rec["missing_expected"]:
         lines.append("  MISSING expected:")
         for e in rec["missing_expected"]:
@@ -126,7 +132,9 @@ def main(run_dir_arg: str) -> int:
         return 2
 
     print(f"Coverage report for {run_dir}\n")
-    print(f"{'rep':>4}  {'calls':>5}  {'expected':>14}  {'unmocked':>8}  {'top exploration':<60}")
+    print(
+        f"{'rep':>4}  {'calls':>5}  {'expected':>14}  {'unmocked':>8}  {'top exploration':<60}"
+    )
     print("-" * 100)
     for rep_dir in rep_dirs:
         rec = analyze_replicate(rep_dir)
@@ -136,15 +144,20 @@ def main(run_dir_arg: str) -> int:
         write_outputs(rep_dir, rec)
         nm = len(rec["expected"]) - len(rec["missing_expected"])
         tot = len(rec["expected"])
-        rate = f"{nm}/{tot} ({(rec['match_rate'] or 0)*100:.0f}%)"
+        rate = f"{nm}/{tot} ({(rec['match_rate'] or 0) * 100:.0f}%)"
         top_unmocked = rec["unmocked"][0] if rec["unmocked"] else ""
-        print(f"{rep_dir.name:>4}  {len(rec['calls']):>5}  {rate:>14}  {len(rec['unmocked']):>8}  {top_unmocked[:60]}")
+        print(
+            f"{rep_dir.name:>4}  {len(rec['calls']):>5}  {rate:>14}  {len(rec['unmocked']):>8}  {top_unmocked[:60]}"
+        )
 
     return 0
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python tmp/coverage_report.py <run_dir>/default/<task_id>", file=sys.stderr)
+        print(
+            "Usage: python tmp/coverage_report.py <run_dir>/default/<task_id>",
+            file=sys.stderr,
+        )
         sys.exit(2)
     sys.exit(main(sys.argv[1]))

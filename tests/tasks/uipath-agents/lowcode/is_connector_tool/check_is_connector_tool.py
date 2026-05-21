@@ -80,7 +80,9 @@ def assert_bindings_v2_authored() -> Path:
     except json.JSONDecodeError as e:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
     if not isinstance(data, dict) and not isinstance(data, list):
-        sys.exit(f"FAIL: {path} root is neither object nor array: {type(data).__name__}")
+        sys.exit(
+            f"FAIL: {path} root is neither object nor array: {type(data).__name__}"
+        )
     print(f"OK: bindings_v2.json authored at {path.relative_to(SOLUTION.parent)}")
     return path
 
@@ -119,7 +121,9 @@ def main() -> None:
     if not isinstance(rid, str) or "-" not in rid:
         sys.exit(f"FAIL: IS tool id missing or malformed: {rid!r}")
     if not tool.get("isEnabled"):
-        sys.exit(f"FAIL: IS tool isEnabled must be truthy, got {tool.get('isEnabled')!r}")
+        sys.exit(
+            f"FAIL: IS tool isEnabled must be truthy, got {tool.get('isEnabled')!r}"
+        )
     print(f"OK: IS tool has id={rid}, isEnabled=true")
 
     assert_bindings_v2_authored()

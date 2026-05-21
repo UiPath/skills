@@ -57,7 +57,9 @@ def main() -> None:
     print(f"OK: .env still pins UIPATH_PROJECT_ID={EXPECTED_PROJECT_ID}")
 
     if not PULLED.is_dir():
-        fail(f"missing pulled sibling directory {PULLED} — agent did not pull a fresh copy")
+        fail(
+            f"missing pulled sibling directory {PULLED} — agent did not pull a fresh copy"
+        )
     if not PULLED_MAIN.is_file():
         fail(f"missing {PULLED_MAIN} — pulled copy is incomplete")
     pulled_text = PULLED_MAIN.read_text(encoding="utf-8")

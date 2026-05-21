@@ -56,17 +56,29 @@ def _manual_trigger_with_graph_replies() -> tuple[list[Node], list[Edge]]:
         {
             "id": "reply_vip",
             "type": "core.action.http.v2",
-            "inputs": {"detail": {"url": "https://graph.microsoft.com/v1.0/me/messages/{id}/reply"}},
+            "inputs": {
+                "detail": {
+                    "url": "https://graph.microsoft.com/v1.0/me/messages/{id}/reply"
+                }
+            },
         },
         {
             "id": "reply_standard",
             "type": "core.action.http.v2",
-            "inputs": {"detail": {"url": "https://graph.microsoft.com/v1.0/me/messages/{id}/reply"}},
+            "inputs": {
+                "detail": {
+                    "url": "https://graph.microsoft.com/v1.0/me/messages/{id}/reply"
+                }
+            },
         },
         {
             "id": "slack",
             "type": "core.action.http.v2",
-            "inputs": {"detail": {"bodyParameters": {"targetConnector": "uipath-salesforce-slack"}}},
+            "inputs": {
+                "detail": {
+                    "bodyParameters": {"targetConnector": "uipath-salesforce-slack"}
+                }
+            },
         },
         {"id": "end", "type": "core.control.end"},
     ]
@@ -79,12 +91,21 @@ def _manual_trigger_with_graph_replies() -> tuple[list[Node], list[Edge]]:
 
 def _outlook_connector_shape() -> tuple[list[Node], list[Edge]]:
     nodes = [
-        {"id": "start", "type": "uipath.connector.trigger.uipath-microsoft-outlook365.email-received"},
+        {
+            "id": "start",
+            "type": "uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+        },
         {"id": "urgency", "type": "core.action.script"},
         {"id": "vip", "type": "core.action.script"},
         {"id": "decide", "type": "core.logic.decision"},
-        {"id": "reply", "type": "uipath.connector.uipath-microsoft-outlook365.send-reply"},
-        {"id": "slack", "type": "uipath.connector.uipath-salesforce-slack.send-direct-message"},
+        {
+            "id": "reply",
+            "type": "uipath.connector.uipath-microsoft-outlook365.send-reply",
+        },
+        {
+            "id": "slack",
+            "type": "uipath.connector.uipath-salesforce-slack.send-direct-message",
+        },
         {"id": "end", "type": "core.control.end"},
     ]
     edges = [
@@ -121,7 +142,10 @@ def test_missing_outlook_reference_fails(tmp_path: Path) -> None:
     _write_flow(tmp_path, nodes, edges)
     result = _run(tmp_path)
     assert result.returncode != 0
-    assert "non-trigger Outlook reply reference" in result.stderr or "non-trigger Outlook reply reference" in result.stdout
+    assert (
+        "non-trigger Outlook reply reference" in result.stderr
+        or "non-trigger Outlook reply reference" in result.stdout
+    )
 
 
 def test_no_trigger_fails(tmp_path: Path) -> None:

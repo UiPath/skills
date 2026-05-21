@@ -51,16 +51,19 @@ def find_resource_jsons() -> list:
 
 def is_builtin_tool(resource: dict) -> bool:
     return (
-        resource.get("$resourceType") == "tool"
-        and resource.get("type") == "internal"
+        resource.get("$resourceType") == "tool" and resource.get("type") == "internal"
     )
 
 
 def assert_builtin_shape(path: Path, resource: dict) -> str:
     if resource.get("$resourceType") != "tool":
-        sys.exit(f'FAIL: {path} $resourceType should be "tool", got {resource.get("$resourceType")!r}')
+        sys.exit(
+            f'FAIL: {path} $resourceType should be "tool", got {resource.get("$resourceType")!r}'
+        )
     if resource.get("type") != "internal":
-        sys.exit(f'FAIL: {path} type should be "internal" for a built-in tool, got {resource.get("type")!r}')
+        sys.exit(
+            f'FAIL: {path} type should be "internal" for a built-in tool, got {resource.get("type")!r}'
+        )
     if resource.get("referenceKey") is not None:
         sys.exit(
             f"FAIL: {path} referenceKey should be null for a built-in tool "
@@ -101,7 +104,7 @@ def assert_builtin_tool_enabled() -> None:
         sys.exit(
             f'FAIL: prompt asked for the "Analyze Files" built-in tool '
             f'(toolType "analyze-attachments"), but none was enabled. '
-            f'Got toolTypes: {builtin_tool_types_seen}'
+            f"Got toolTypes: {builtin_tool_types_seen}"
         )
     print('OK: "Analyze Files" (toolType="analyze-attachments") is enabled')
 
@@ -120,7 +123,7 @@ def assert_job_attachment_input(agent: dict) -> None:
     if ja_def.get("type") != "object":
         sys.exit(
             'FAIL: inputSchema.definitions["job-attachment"] must be an object '
-            f'schema, got type={ja_def.get("type")!r}'
+            f"schema, got type={ja_def.get('type')!r}"
         )
     print('OK: inputSchema.definitions["job-attachment"] is defined')
 
@@ -143,9 +146,7 @@ def assert_job_attachment_input(agent: dict) -> None:
     missing = []
     for name in refs:
         # Match {{ input.<name> }} with any internal whitespace.
-        pattern = re.compile(
-            r"\{\{\s*input\." + re.escape(name) + r"\s*\}\}"
-        )
+        pattern = re.compile(r"\{\{\s*input\." + re.escape(name) + r"\s*\}\}")
         if not any(pattern.search(body) for body in bodies):
             missing.append(name)
     if missing:

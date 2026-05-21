@@ -79,7 +79,9 @@ def main() -> None:
         fail("Flow must contain nodes[] and edges[]")
 
     if len(nodes) < 5:
-        fail(f"Expected >=5 nodes (trigger + 2 scripts + decision + branch action(s)), found {len(nodes)}")
+        fail(
+            f"Expected >=5 nodes (trigger + 2 scripts + decision + branch action(s)), found {len(nodes)}"
+        )
 
     triggers = [n for n in nodes if is_trigger(n)]
     if not triggers:
@@ -89,7 +91,9 @@ def main() -> None:
 
     scripts = [n for n in nodes if node_type(n) == "core.action.script"]
     if len(scripts) < 2:
-        fail(f"Expected >=2 core.action.script nodes (urgency + VIP classifier), found {len(scripts)}")
+        fail(
+            f"Expected >=2 core.action.script nodes (urgency + VIP classifier), found {len(scripts)}"
+        )
 
     decisions = [n for n in nodes if node_type(n) == "core.logic.decision"]
     if len(decisions) != 1:
@@ -99,19 +103,27 @@ def main() -> None:
         fail("Decision node missing id")
 
     out_edges = [
-        e for e in edges
-        if decision_id in (e.get("sourceNodeId"), e.get("source"), e.get("from"), e.get("sourceId"))
+        e
+        for e in edges
+        if decision_id
+        in (e.get("sourceNodeId"), e.get("source"), e.get("from"), e.get("sourceId"))
     ]
     if len(out_edges) < 2:
-        fail(f"Decision node must have >=2 outgoing edges (VIP + standard), found {len(out_edges)}")
+        fail(
+            f"Decision node must have >=2 outgoing edges (VIP + standard), found {len(out_edges)}"
+        )
 
     if not any(references(n, "slack") for n in nodes):
-        fail("No Slack connector reference found anywhere in flow (VIP branch should DM via Slack)")
+        fail(
+            "No Slack connector reference found anywhere in flow (VIP branch should DM via Slack)"
+        )
 
     outlook_needles = ("outlook", "office365", "graph.microsoft.com")
     non_trigger_outlook = [
-        n for n in nodes
-        if not is_trigger(n) and any(references(n, needle) for needle in outlook_needles)
+        n
+        for n in nodes
+        if not is_trigger(n)
+        and any(references(n, needle) for needle in outlook_needles)
     ]
     if not non_trigger_outlook:
         fail(

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assert feedback round-trip: create → get returns same ID with IsPositive=True, SpanId=agent span."""
+
 import json
 import sys
 from pathlib import Path
@@ -18,12 +19,15 @@ def load(path: str) -> dict:
 def get_id(data: dict) -> str | None:
     return data.get("Id") or data.get("id")
 
+
 def get_span_id(data: dict) -> str | None:
     return data.get("SpanId") or data.get("spanId")
+
 
 def get_is_positive(data: dict) -> bool | None:
     v = data.get("IsPositive")
     return v if v is not None else data.get("isPositive")
+
 
 def normalize_span_id(span_id: str) -> str:
     """Normalize span ID to 32-char hex for comparison.
@@ -34,6 +38,7 @@ def normalize_span_id(span_id: str) -> str:
     Both represent the same span — backend zero-pads hex into GUID form.
     """
     return span_id.replace("-", "").lower().zfill(32)
+
 
 def find_agent_span(span_list: list) -> tuple[dict | None, str]:
     """Return (span, reason) for the best agent-level span to attach feedback to.
@@ -79,7 +84,9 @@ if not agent_span_id:
 
 create = load("feedback_create.json")
 if create.get("Result") != "Success":
-    sys.exit(f"FAIL: feedback create Result={create.get('Result')!r}, Message={create.get('Message')!r}")
+    sys.exit(
+        f"FAIL: feedback create Result={create.get('Result')!r}, Message={create.get('Message')!r}"
+    )
 
 feedback_id = get_id(create.get("Data") or {})
 if not feedback_id:
@@ -93,7 +100,7 @@ got_id = get_id(got_feedback)
 if got_id != feedback_id:
     sys.exit(f"FAIL: ID mismatch — create={feedback_id!r}, get={got_id!r}")
 if get_is_positive(got_feedback) is not True:
-    sys.exit(f"FAIL: IsPositive not True in feedback_get.json")
+    sys.exit("FAIL: IsPositive not True in feedback_get.json")
 
 got_span_id = get_span_id(got_feedback)
 if got_span_id and normalize_span_id(got_span_id) != normalize_span_id(agent_span_id):
@@ -104,5 +111,7 @@ if got_span_id and normalize_span_id(got_span_id) != normalize_span_id(agent_spa
 
 span_note = f"SpanId={got_span_id!r}" if got_span_id else "SpanId not returned by API"
 span_name = agent_span.get("Name", "unknown")
-print(f"OK: round-trip verified (id={feedback_id}, IsPositive=True, {span_note}, "
-      f"agent_span='{span_name}' [{selection_reason}])")
+print(
+    f"OK: round-trip verified (id={feedback_id}, IsPositive=True, {span_note}, "
+    f"agent_span='{span_name}' [{selection_reason}])"
+)

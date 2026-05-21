@@ -39,7 +39,9 @@ def main(run_dir_arg: str) -> int:
     #               billed at ~0.1x fresh rate -- effectively "free" relative to NEW.
     #   "out"     — model-generated output (parent + sub-agents).
     # The bill is dominated by NEW + Output. REUSED is the cheap leg of the cost.
-    print(f"{'rep':>3} {'sc':>4} {'sec':>6} | {'NEW':>7} {'(uncached/cached)':>19} {'REUSED':>10} {'out':>6} | {'$cost':>6}")
+    print(
+        f"{'rep':>3} {'sc':>4} {'sec':>6} | {'NEW':>7} {'(uncached/cached)':>19} {'REUSED':>10} {'out':>6} | {'$cost':>6}"
+    )
     print("-" * 80)
     sums = {"fresh": 0, "cache_c": 0, "cache_r": 0, "out": 0, "cost": 0.0, "dur": 0.0}
     for r in results:
@@ -74,48 +76,72 @@ def main(run_dir_arg: str) -> int:
     )
     if n:
         avg_new = new_total // n
-        avg_fresh = sums['fresh'] // n
-        avg_cc = sums['cache_c'] // n
+        avg_fresh = sums["fresh"] // n
+        avg_cc = sums["cache_c"] // n
         print(
-            f"{'avg':>3} {'':>4} {sums['dur']/n:>6.1f} | "
+            f"{'avg':>3} {'':>4} {sums['dur'] / n:>6.1f} | "
             f"{avg_new:>7,} ({avg_fresh:>3,}/{avg_cc:>7,}) "
-            f"{sums['cache_r']//n:>10,} {sums['out']//n:>6,} | "
-            f"{sums['cost']/n:>5.3f}"
+            f"{sums['cache_r'] // n:>10,} {sums['out'] // n:>6,} | "
+            f"{sums['cost'] / n:>5.3f}"
         )
 
     if not in_total_all:
         return 0
 
     print("\n=== Cost-driving tokens (NEW input + Output) ===")
-    print(f"  NEW input (full price)   : {new_total:>10,}  -- this is what you actually pay full rate for")
-    print(f"      uncached fresh tail  : {sums['fresh']:>10,}  ({100*sums['fresh']/new_total:>5.2f}% of NEW)  -- 1.0x fresh rate")
-    print(f"      new->cache write     : {sums['cache_c']:>10,}  ({100*sums['cache_c']/new_total:>5.2f}% of NEW)  -- 1.25x fresh rate")
-    print(f"  Output                   : {sums['out']:>10,}  -- billed at output rate (5x fresh)")
+    print(
+        f"  NEW input (full price)   : {new_total:>10,}  -- this is what you actually pay full rate for"
+    )
+    print(
+        f"      uncached fresh tail  : {sums['fresh']:>10,}  ({100 * sums['fresh'] / new_total:>5.2f}% of NEW)  -- 1.0x fresh rate"
+    )
+    print(
+        f"      new->cache write     : {sums['cache_c']:>10,}  ({100 * sums['cache_c'] / new_total:>5.2f}% of NEW)  -- 1.25x fresh rate"
+    )
+    print(
+        f"  Output                   : {sums['out']:>10,}  -- billed at output rate (5x fresh)"
+    )
     print()
-    print(f"  REUSED input (discounted): {sums['cache_r']:>10,}  -- 0.1x fresh rate; effectively the 'free' leg")
+    print(
+        f"  REUSED input (discounted): {sums['cache_r']:>10,}  -- 0.1x fresh rate; effectively the 'free' leg"
+    )
     print()
-    print(f"Per-replicate avg of cost-driving content (NEW + Output):")
-    print(f"  NEW input  : {new_total//n:>6,} tokens/rep")
-    print(f"  Output     : {sums['out']//n:>6,} tokens/rep")
-    print(f"  Sum        : {(new_total + sums['out'])//n:>6,} tokens/rep at full-or-output rate")
+    print("Per-replicate avg of cost-driving content (NEW + Output):")
+    print(f"  NEW input  : {new_total // n:>6,} tokens/rep")
+    print(f"  Output     : {sums['out'] // n:>6,} tokens/rep")
+    print(
+        f"  Sum        : {(new_total + sums['out']) // n:>6,} tokens/rep at full-or-output rate"
+    )
 
     print("\nDerived ratios:")
     if sums["out"]:
         print(f"  input  / output (in:out) : {in_total_all // sums['out']}:1")
     if sums["cache_c"]:
-        print(f"  reads-per-cache-write    : {sums['cache_r'] / sums['cache_c']:.1f}x   (how many turns reuse each cache entry)")
+        print(
+            f"  reads-per-cache-write    : {sums['cache_r'] / sums['cache_c']:.1f}x   (how many turns reuse each cache entry)"
+        )
 
-    print(f"\nSDK-reported cost: ${sums['cost']:.2f} for {n} replicate(s)  =  ${sums['cost']/n:.3f}/rep")
-    print("  These figures come straight from total_token_usage.total_cost_usd written by the Anthropic SDK")
-    print("  and account for parent + all sub-agent inference. They are the authoritative cost.")
+    print(
+        f"\nSDK-reported cost: ${sums['cost']:.2f} for {n} replicate(s)  =  ${sums['cost'] / n:.3f}/rep"
+    )
+    print(
+        "  These figures come straight from total_token_usage.total_cost_usd written by the Anthropic SDK"
+    )
+    print(
+        "  and account for parent + all sub-agent inference. They are the authoritative cost."
+    )
 
     # Per-rep variance
     if n > 1:
         costs = [r["cost"] for r in results]
         in_tot = [r["fresh"] + r["cache_c"] + r["cache_r"] for r in results]
-        print(f"\nPer-rep variance:")
-        print(f"  cost      min={min(costs):.3f}  max={max(costs):.3f}  range={max(costs)-min(costs):.3f}")
-        print(f"  cache_r   min={min(r['cache_r'] for r in results):,}  max={max(r['cache_r'] for r in results):,}")
+        print("\nPer-rep variance:")
+        print(
+            f"  cost      min={min(costs):.3f}  max={max(costs):.3f}  range={max(costs) - min(costs):.3f}"
+        )
+        print(
+            f"  cache_r   min={min(r['cache_r'] for r in results):,}  max={max(r['cache_r'] for r in results):,}"
+        )
         print(f"  in_total  min={min(in_tot):,}  max={max(in_tot):,}")
 
     return 0
@@ -123,6 +149,9 @@ def main(run_dir_arg: str) -> int:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python tmp/token_usage.py <run_dir>/default/<task_id>", file=sys.stderr)
+        print(
+            "Usage: python tmp/token_usage.py <run_dir>/default/<task_id>",
+            file=sys.stderr,
+        )
         sys.exit(2)
     sys.exit(main(sys.argv[1]))

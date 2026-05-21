@@ -77,7 +77,11 @@ def find_create_task_call(tree: ast.Module) -> ast.Call | None:
         if not node.args:
             continue
         inner = node.args[0]
-        if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name) and inner.func.id == "CreateTask":
+        if (
+            isinstance(inner, ast.Call)
+            and isinstance(inner.func, ast.Name)
+            and inner.func.id == "CreateTask"
+        ):
             return inner
     return None
 
@@ -97,7 +101,9 @@ def main() -> None:
         fail("missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
 
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateTask\b", text):
+    if not re.search(
+        r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateTask\b", text
+    ):
         fail(
             "missing `from uipath.platform.common import CreateTask`. "
             "The scenario opens a new Action Center task — use `CreateTask`."
@@ -124,7 +130,9 @@ def main() -> None:
         got = resolve_kwarg(kwargs[kw], consts)
         if got != want:
             fail(f"`CreateTask({kw}=...)` resolves to {got!r}, expected {want!r}")
-    print('OK: CreateTask targets app_name="RefundReview" / app_folder_path="Compliance"')
+    print(
+        'OK: CreateTask targets app_name="RefundReview" / app_folder_path="Compliance"'
+    )
 
     if not re.search(r"^\s*graph\s*=\s*", text, re.M):
         fail("main.py does not export a top-level `graph =` variable")

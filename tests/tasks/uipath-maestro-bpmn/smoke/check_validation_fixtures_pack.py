@@ -57,7 +57,9 @@ def main() -> None:
             f"FAIL: package artifacts were written under fixture folders: {fixture_package_paths}"
         )
 
-    print(f"OK: {len(EXPECTED)} fixture BPMN files parse and {len(packages)} packages exist")
+    print(
+        f"OK: {len(EXPECTED)} fixture BPMN files parse and {len(packages)} packages exist"
+    )
 
 
 if __name__ == "__main__":

@@ -99,7 +99,12 @@ def test_missing_binding_fails(tmp_path: Path) -> None:
 def test_binding_without_resource_key_fails(tmp_path: Path) -> None:
     payload = _well_formed()
     payload["bindings"] = [
-        {"id": "b1", "resource": "process", "resourceSubType": "Api", "resourceKey": ""},
+        {
+            "id": "b1",
+            "resource": "process",
+            "resourceSubType": "Api",
+            "resourceKey": "",
+        },
     ]
     _write_flow(tmp_path, payload)
     result = _run(tmp_path)

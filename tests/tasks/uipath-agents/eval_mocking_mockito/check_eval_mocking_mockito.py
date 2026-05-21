@@ -117,8 +117,8 @@ def check_json_similarity_evaluator() -> str:
             matched_ids.append(doc.get("id") or path.stem)
     if not matched_ids:
         sys.exit(
-            "FAIL: no evaluator with `evaluatorTypeId == \"uipath-json-"
-            "similarity\"` found. The agent emits structured JSON output; "
+            'FAIL: no evaluator with `evaluatorTypeId == "uipath-json-'
+            'similarity"` found. The agent emits structured JSON output; '
             "JsonSimilarityEvaluator is the documented fit for this shape."
         )
     print(f"OK: JsonSimilarityEvaluator wired (ids: {matched_ids})")
@@ -133,7 +133,11 @@ def _has_mockito_with_return(case: dict) -> bool:
         if not isinstance(b, dict):
             continue
         for step in b.get("then") or []:
-            if isinstance(step, dict) and step.get("type") == "return" and step.get("value") is not None:
+            if (
+                isinstance(step, dict)
+                and step.get("type") == "return"
+                and step.get("value") is not None
+            ):
                 return True
     return False
 
@@ -144,8 +148,7 @@ def check_eval_set() -> int:
     doc = _load_json(path)
     if doc.get("version") != "1.0":
         sys.exit(
-            f'FAIL: {path.name} version should be "1.0", '
-            f'got {doc.get("version")!r}'
+            f'FAIL: {path.name} version should be "1.0", got {doc.get("version")!r}'
         )
     cases = doc.get("evaluations") or []
     if not cases:
@@ -153,10 +156,10 @@ def check_eval_set() -> int:
     cases_with_mocks = [c for c in cases if _has_mockito_with_return(c)]
     if not cases_with_mocks:
         sys.exit(
-            f'FAIL: no test case in {path.name} carries a '
+            f"FAIL: no test case in {path.name} carries a "
             f'`mockingStrategy.type == "mockito"` with a non-empty return. '
-            f'The asset retrieval must be mocked declaratively for offline '
-            f'evals to pass.'
+            f"The asset retrieval must be mocked declaratively for offline "
+            f"evals to pass."
         )
     print(
         f"OK: {path.name} carries declarative mockito mocks on "
@@ -170,8 +173,7 @@ def check_results(expected_case_count: int) -> None:
     doc = _load_json(path)
     if not isinstance(doc, dict):
         sys.exit(
-            f"FAIL: {path.name} top-level should be an object, "
-            f"got {type(doc).__name__}"
+            f"FAIL: {path.name} top-level should be an object, got {type(doc).__name__}"
         )
     cases = doc.get("evaluationSetResults")
     if not isinstance(cases, list) or not cases:

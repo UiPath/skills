@@ -35,14 +35,16 @@ import ast
 import sys
 from pathlib import Path
 
-DEFAULT_LLM_CLASS_NAMES = frozenset({
-    "UiPath",
-    "UiPathAzureChatOpenAI",
-    "UiPathChat",
-    "UiPathChatOpenAI",
-    "UiPathOpenAIEmbeddings",
-    "UiPathAzureOpenAIEmbeddings",
-})
+DEFAULT_LLM_CLASS_NAMES = frozenset(
+    {
+        "UiPath",
+        "UiPathAzureChatOpenAI",
+        "UiPathChat",
+        "UiPathChatOpenAI",
+        "UiPathOpenAIEmbeddings",
+        "UiPathAzureOpenAIEmbeddings",
+    }
+)
 
 
 def _called_class_name(node: ast.Call) -> str | None:

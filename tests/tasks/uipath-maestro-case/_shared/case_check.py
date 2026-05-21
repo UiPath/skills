@@ -69,7 +69,9 @@ def assert_validate_passes(caseplan_path: str, *, timeout: int = 60) -> None:
         )
 
 
-def assert_task_type_present(task_type: str, *, caseplan_path: str | None = None) -> dict:
+def assert_task_type_present(
+    task_type: str, *, caseplan_path: str | None = None
+) -> dict:
     plan = read_caseplan(caseplan_path)
     matches = find_tasks_of_type(plan, task_type)
     if not matches:
@@ -127,7 +129,7 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
         joined = "\n  - ".join(candidates)
         _fail(
             f"No Case project.uiproj found matching {pattern} — "
-            f"candidates exist but none declare ProjectType=\"CaseManagement\":"
+            f'candidates exist but none declare ProjectType="CaseManagement":'
             f"\n  - {joined}"
         )
     if len(case_projects) > 1:
@@ -174,11 +176,18 @@ def run_debug(
     solution_dir = find_solution_dir(solution_glob)
 
     refresh_cmd = [
-        "uip", "solution", "resource", "refresh",
-        "--solution-folder", solution_dir,
-        "--output", "json",
+        "uip",
+        "solution",
+        "resource",
+        "refresh",
+        "--solution-folder",
+        solution_dir,
+        "--output",
+        "json",
     ]
-    r = subprocess.run(refresh_cmd, capture_output=True, text=True, timeout=refresh_timeout)
+    r = subprocess.run(
+        refresh_cmd, capture_output=True, text=True, timeout=refresh_timeout
+    )
     if r.returncode != 0:
         _fail(
             f"solution resource refresh exit {r.returncode}\n"
@@ -186,14 +195,19 @@ def run_debug(
         )
 
     debug_cmd = [
-        "uip", "maestro", "case", "debug", project_dir,
-        "--log-level", "debug", "--output", "json",
+        "uip",
+        "maestro",
+        "case",
+        "debug",
+        project_dir,
+        "--log-level",
+        "debug",
+        "--output",
+        "json",
     ]
     r = subprocess.run(debug_cmd, capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0:
-        _fail(
-            f"case debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}"
-        )
+        _fail(f"case debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from case debug\n{r.stdout}")
@@ -208,13 +222,31 @@ def run_debug(
 # output extraction so GUID / timestamp / status digits do not falsely
 # match small expected values (e.g. an integer in [0, 120] would match
 # any 1-3 digit chunk of an instanceId UUID).
-_METADATA_KEYS = frozenset({
-    "jobKey", "instanceId", "runId", "solutionId", "finalStatus",
-    "status", "studioWebUrl", "createdAt", "startedAt", "endedAt",
-    "elementId", "id", "uniqueId", "projectId", "tenantId", "folderId",
-    "uipathActivityTypeId", "taskTypeId", "elementInstanceId",
-    "timestamp", "occurredAt",
-})
+_METADATA_KEYS = frozenset(
+    {
+        "jobKey",
+        "instanceId",
+        "runId",
+        "solutionId",
+        "finalStatus",
+        "status",
+        "studioWebUrl",
+        "createdAt",
+        "startedAt",
+        "endedAt",
+        "elementId",
+        "id",
+        "uniqueId",
+        "projectId",
+        "tenantId",
+        "folderId",
+        "uipathActivityTypeId",
+        "taskTypeId",
+        "elementInstanceId",
+        "timestamp",
+        "occurredAt",
+    }
+)
 
 
 def collect_outputs(payload: dict) -> list[Any]:
@@ -311,8 +343,7 @@ def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
     hits = [int(m) for m in re.findall(r"-?\d+", haystack) if lo <= int(m) <= hi]
     if not hits:
         _fail(
-            f"No integer in [{lo}, {hi}] found in outputs\n"
-            f"Outputs: {haystack[:1000]}"
+            f"No integer in [{lo}, {hi}] found in outputs\nOutputs: {haystack[:1000]}"
         )
     return hits[0]
 

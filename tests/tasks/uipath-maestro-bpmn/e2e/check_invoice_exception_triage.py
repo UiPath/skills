@@ -62,7 +62,13 @@ def main() -> int:
 
     elements = list(process)
     element_types = {local(elem.tag) for elem in elements}
-    for expected in ["startEvent", "scriptTask", "exclusiveGateway", "userTask", "endEvent"]:
+    for expected in [
+        "startEvent",
+        "scriptTask",
+        "exclusiveGateway",
+        "userTask",
+        "endEvent",
+    ]:
         if expected not in element_types:
             fail(f"missing BPMN element type {expected}")
 
@@ -76,7 +82,8 @@ def main() -> int:
     if len(sequence_flows) < 4:
         fail("expected at least four sequence flows")
     if not any(
-        flow.attrib.get("sourceRef", "").lower().find("route") >= 0 for flow in sequence_flows
+        flow.attrib.get("sourceRef", "").lower().find("route") >= 0
+        for flow in sequence_flows
     ):
         fail("gateway outgoing sequence flows should use a readable routeByRisk id")
 

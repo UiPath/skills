@@ -21,7 +21,9 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
@@ -66,7 +68,9 @@ def main() -> None:
         if data.get("$resourceType") != "tool" or data.get("type") != "internal":
             continue
         if data.get("referenceKey") is not None:
-            sys.exit(f"FAIL: {path} referenceKey should be null for a built-in tool, got {data.get('referenceKey')!r}")
+            sys.exit(
+                f"FAIL: {path} referenceKey should be null for a built-in tool, got {data.get('referenceKey')!r}"
+            )
         props = data.get("properties") or {}
         tool_type = props.get("toolType")
         if tool_type not in BUILTIN_TOOL_TYPES:
@@ -87,9 +91,11 @@ def main() -> None:
         sys.exit(
             f'FAIL: prompt asked for "Analyze Files" (toolType '
             f'"analyze-attachments"), but it was not enabled. '
-            f'Got toolTypes: {seen_tool_types}'
+            f"Got toolTypes: {seen_tool_types}"
         )
-    print('OK: "Analyze Files" (toolType="analyze-attachments") is enabled on the inline agent')
+    print(
+        'OK: "Analyze Files" (toolType="analyze-attachments") is enabled on the inline agent'
+    )
 
 
 if __name__ == "__main__":

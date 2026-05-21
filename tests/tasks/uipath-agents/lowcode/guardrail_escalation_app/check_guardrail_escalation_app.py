@@ -63,7 +63,8 @@ def main() -> None:
 
     # --- find builtInValidator with pii_detection and escalate action ---
     escalation_candidates = [
-        g for g in guardrails
+        g
+        for g in guardrails
         if g.get("$guardrailType") == "builtInValidator"
         and g.get("validatorType") == "pii_detection"
         and isinstance(g.get("action"), dict)
@@ -71,8 +72,11 @@ def main() -> None:
     ]
     if not escalation_candidates:
         found = [
-            (g.get("$guardrailType"), g.get("validatorType"),
-             (g.get("action") or {}).get("$actionType"))
+            (
+                g.get("$guardrailType"),
+                g.get("validatorType"),
+                (g.get("action") or {}).get("$actionType"),
+            )
             for g in guardrails
         ]
         sys.exit(
@@ -124,7 +128,9 @@ def main() -> None:
     if folder_id:
         print(f"OK: action.app.folderId = {folder_id!r}")
     if app.get("id"):
-        print(f"OK: action.app.id = {app['id']!r} (optional, populated from resource lookup)")
+        print(
+            f"OK: action.app.id = {app['id']!r} (optional, populated from resource lookup)"
+        )
 
     # --- action.recipient ---
     recipient = action.get("recipient")
@@ -154,7 +160,9 @@ def main() -> None:
         sys.exit(f"FAIL: guardrail.selector must be an object, got {selector!r}")
     scopes = selector.get("scopes")
     if not isinstance(scopes, list) or len(scopes) == 0:
-        sys.exit(f"FAIL: guardrail.selector.scopes must be a non-empty array, got {scopes!r}")
+        sys.exit(
+            f"FAIL: guardrail.selector.scopes must be a non-empty array, got {scopes!r}"
+        )
     invalid = [s for s in scopes if s not in VALID_SCOPES]
     if invalid:
         sys.exit(
@@ -183,7 +191,9 @@ def main() -> None:
         )
     entities_value = entities_param.get("value")
     if not isinstance(entities_value, list):
-        sys.exit(f"FAIL: entities parameter.value must be an array, got {entities_value!r}")
+        sys.exit(
+            f"FAIL: entities parameter.value must be an array, got {entities_value!r}"
+        )
     entities_set = set(entities_value)
     missing = REQUIRED_ENTITIES - entities_set
     if missing:
@@ -191,7 +201,9 @@ def main() -> None:
             f"FAIL: entities parameter.value must include {sorted(REQUIRED_ENTITIES)}, "
             f"missing: {sorted(missing)}. Got: {entities_value}"
         )
-    snake = [e for e in entities_value if "_" in e or (isinstance(e, str) and e[0].islower())]
+    snake = [
+        e for e in entities_value if "_" in e or (isinstance(e, str) and e[0].islower())
+    ]
     if snake:
         sys.exit(
             f"FAIL: entity names must be PascalCase (not snake_case). "

@@ -92,7 +92,9 @@ def main() -> int:
     threshold = threshold_pct / 100.0
 
     repo_root = Path(__file__).resolve().parents[2]
-    dataset = (repo_root / "tests" / "tasks" / "activation" / f"{skill}.jsonl").resolve()
+    dataset = (
+        repo_root / "tests" / "tasks" / "activation" / f"{skill}.jsonl"
+    ).resolve()
     if not dataset.is_file():
         print(f"ERROR: dataset {dataset} missing", file=sys.stderr)
         return 1
@@ -105,12 +107,18 @@ def main() -> int:
 
         result = subprocess.run(
             [
-                "coder-eval", "run", str(task_yaml),
-                "-e", "tests/experiments/activation.yaml",
-                "-j", "4",
-                "--run-dir", str(run_dir),
+                "coder-eval",
+                "run",
+                str(task_yaml),
+                "-e",
+                "tests/experiments/activation.yaml",
+                "-j",
+                "4",
+                "--run-dir",
+                str(run_dir),
             ],
-            cwd=repo_root, check=False,
+            cwd=repo_root,
+            check=False,
         )
         # coder-eval exits non-zero whenever any individual task fails its
         # criteria. That's exactly the case DROP_PP is designed to absorb —
@@ -123,16 +131,20 @@ def main() -> int:
                 file=sys.stderr,
             )
 
-        suite_json = run_dir / "default" / f"skill-activation-gate-{skill}" / "suite.json"
+        suite_json = (
+            run_dir / "default" / f"skill-activation-gate-{skill}" / "suite.json"
+        )
         if not suite_json.is_file():
             print(f"ERROR: {suite_json} missing", file=sys.stderr)
             return 2
 
         data = json.loads(suite_json.read_text(encoding="utf-8"))
         recall = next(
-            (agg["metrics"]["recall.yes"]
-             for agg in data.get("criterion_aggregates", [])
-             if agg.get("criterion_type") == "skill_triggered"),
+            (
+                agg["metrics"]["recall.yes"]
+                for agg in data.get("criterion_aggregates", [])
+                if agg.get("criterion_type") == "skill_triggered"
+            ),
             None,
         )
         if recall is None:

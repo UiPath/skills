@@ -9,6 +9,7 @@ Reads `report.json` written by the agent and asserts:
 
 Each goal must use the kebab-case spelling exactly as the CLI accepts it.
 """
+
 from __future__ import annotations
 
 import json
@@ -39,7 +40,9 @@ def main() -> None:
 
     if failures:
         sys.exit("FAIL: " + " | ".join(failures))
-    print(f"OK: all 3 evaluator-type choices match expected ({list(EXPECTED.values())})")
+    print(
+        f"OK: all 3 evaluator-type choices match expected ({list(EXPECTED.values())})"
+    )
 
 
 if __name__ == "__main__":

@@ -25,9 +25,7 @@ import sys
 from pathlib import Path
 
 SOLUTION_DIR = Path(os.getcwd()) / "OrchestratorSol"
-RESOURCE = (
-    SOLUTION_DIR / "ParentAgent" / "resources" / "ToolAgent" / "resource.json"
-)
+RESOURCE = SOLUTION_DIR / "ParentAgent" / "resources" / "ToolAgent" / "resource.json"
 TOOL_AGENT = SOLUTION_DIR / "ToolAgent" / "agent.json"
 PARENT_AGENT = SOLUTION_DIR / "ParentAgent" / "agent.json"
 
@@ -67,7 +65,9 @@ def assert_resource_fields(resource: dict) -> None:
         got = resource.get(key)
         if got != want:
             sys.exit(f"FAIL: resource.json {key!r} should be {want!r}, got {got!r}")
-    print('OK: resource.json has $resourceType="tool", type="agent", location="solution"')
+    print(
+        'OK: resource.json has $resourceType="tool", type="agent", location="solution"'
+    )
 
     props = resource.get("properties")
     if not isinstance(props, dict):
@@ -118,7 +118,9 @@ def assert_schemas_match_tool_agent(resource: dict, tool: dict) -> None:
                 f"  resource.{label}:\n{json.dumps(r_shape, sort_keys=True, indent=2)}\n"
                 f"  tool.{label}:\n{json.dumps(t_shape, sort_keys=True, indent=2)}"
             )
-        print(f"OK: resource.json.{label} is shape-equivalent to ToolAgent/agent.json.{label}")
+        print(
+            f"OK: resource.json.{label} is shape-equivalent to ToolAgent/agent.json.{label}"
+        )
 
 
 def main() -> None:

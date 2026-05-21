@@ -118,9 +118,7 @@ def check_entry_points() -> None:
             "`x-uipath-resource-kind: JobAttachment` — `uip codedagent init` "
             "did not emit the job-attachment schema."
         )
-    print(
-        "OK: entry-points.json carries x-uipath-resource-kind=JobAttachment"
-    )
+    print("OK: entry-points.json carries x-uipath-resource-kind=JobAttachment")
 
 
 def main() -> None:

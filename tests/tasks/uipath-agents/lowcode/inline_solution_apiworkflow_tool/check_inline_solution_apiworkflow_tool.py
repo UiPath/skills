@@ -22,7 +22,9 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
@@ -63,13 +65,15 @@ def main() -> None:
         description='solution API workflow tool "CalculateShippingRate"',
     )
     print(
-        f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
+        f"OK: {resource_path.relative_to(Path(os.getcwd()))} is "
         f'$resourceType="tool", type="api", location="solution"'
     )
 
     props = resource.get("properties") or {}
     if props.get("folderPath") != "solution_folder":
-        sys.exit(f'FAIL: properties.folderPath should be "solution_folder", got {props.get("folderPath")!r}')
+        sys.exit(
+            f'FAIL: properties.folderPath should be "solution_folder", got {props.get("folderPath")!r}'
+        )
     print('OK: properties.folderPath="solution_folder"')
 
 

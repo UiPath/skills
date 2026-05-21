@@ -50,12 +50,17 @@ def main() -> None:
     main_py = ROOT / "main.py"
     text = _read_text(main_py)
     if "from uipath.tracing import traced" not in text:
-        sys.exit("FAIL: main.py must import `traced` via `from uipath.tracing import traced`")
+        sys.exit(
+            "FAIL: main.py must import `traced` via `from uipath.tracing import traced`"
+        )
     print("OK: main.py imports `traced` from uipath.tracing")
     tree = ast.parse(text, filename=str(main_py))
     main_func: ast.AsyncFunctionDef | ast.FunctionDef | None = None
     for node in ast.walk(tree):
-        if isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef)) and node.name == "main":
+        if (
+            isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef))
+            and node.name == "main"
+        ):
             main_func = node
             break
     if main_func is None:
@@ -71,7 +76,9 @@ def main() -> None:
             "*call form* — `@traced` without parentheses cannot pass kwargs)."
         )
     if len(decorated_calls) > 1:
-        sys.exit(f"FAIL: `main` has {len(decorated_calls)} `@traced(...)` decorators; expected 1")
+        sys.exit(
+            f"FAIL: `main` has {len(decorated_calls)} `@traced(...)` decorators; expected 1"
+        )
     call = decorated_calls[0]
     kwargs = {kw.arg: kw for kw in call.keywords if kw.arg is not None}
     for required in ("name", "input_processor", "output_processor"):
@@ -80,7 +87,9 @@ def main() -> None:
                 f"FAIL: `@traced(...)` on `main` is missing required kwarg "
                 f"`{required}=`. Got kwargs: {sorted(kwargs)}"
             )
-    print("OK: `@traced(...)` on `main` carries name + input_processor + output_processor")
+    print(
+        "OK: `@traced(...)` on `main` carries name + input_processor + output_processor"
+    )
     for forbidden in ("hide_input", "hide_output"):
         if forbidden in kwargs:
             kw = kwargs[forbidden]
@@ -91,7 +100,9 @@ def main() -> None:
                     "input/output processors. The skill recommends processors "
                     "over `hide_*` so partial visibility is preserved — pick one."
                 )
-    print("OK: no conflicting `hide_input=True` / `hide_output=True` on the same decorator")
+    print(
+        "OK: no conflicting `hide_input=True` / `hide_output=True` on the same decorator"
+    )
 
 
 if __name__ == "__main__":

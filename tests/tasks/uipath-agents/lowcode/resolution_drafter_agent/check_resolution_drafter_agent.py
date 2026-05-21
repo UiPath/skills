@@ -112,7 +112,9 @@ def get_user_message(agent: dict) -> dict:
     messages = agent.get("messages")
     if not isinstance(messages, list):
         sys.exit(f"FAIL: agent.json.messages is not a list: {messages!r}")
-    user_messages = [m for m in messages if isinstance(m, dict) and m.get("role") == "user"]
+    user_messages = [
+        m for m in messages if isinstance(m, dict) and m.get("role") == "user"
+    ]
     if not user_messages:
         sys.exit("FAIL: agent.json.messages has no entry with role == 'user'")
     return user_messages[0]
@@ -139,7 +141,7 @@ def assert_user_message_inlines(agent: dict) -> None:
                 f"input.{field}\n  expected: {expected}\n"
                 f"  got tokens: {json.dumps(tokens, indent=2)}"
             )
-    print(f"OK: user message inlines all 4 inputs with matching contentTokens")
+    print("OK: user message inlines all 4 inputs with matching contentTokens")
 
 
 def main() -> None:

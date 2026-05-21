@@ -117,9 +117,9 @@ def detect_fix_a() -> bool:
                 keys = set((case.get("evaluationCriterias") or {}).keys())
                 if not (keys & set(contains_ids)):
                     sys.exit(
-                        f'FAIL: eval-set case `{case.get("id")}` does not key '
-                        f'its evaluationCriterias on the ContainsEvaluator '
-                        f'id(s) {contains_ids}. Got keys: {sorted(keys)}'
+                        f"FAIL: eval-set case `{case.get('id')}` does not key "
+                        f"its evaluationCriterias on the ContainsEvaluator "
+                        f"id(s) {contains_ids}. Got keys: {sorted(keys)}"
                     )
     if not refs_match:
         sys.exit(
@@ -138,7 +138,9 @@ def detect_fix_b() -> bool:
     has_traced = any(hint in text for hint in UIPATH_TRACING_HINTS)
     if not has_traced:
         return False
-    print("OK: Fix B detected — @traced() decorator from uipath.tracing wired into main.py")
+    print(
+        "OK: Fix B detected — @traced() decorator from uipath.tracing wired into main.py"
+    )
     return True
 
 

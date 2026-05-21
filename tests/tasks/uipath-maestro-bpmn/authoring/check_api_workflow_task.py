@@ -29,10 +29,14 @@ EXPECTED_TYPE = "Orchestrator.ExecuteApiWorkflowAsync"
 def main() -> None:
     root = load_bpmn(str(PROJECT / BPMN_NAME))
     service_tasks = [
-        task for task in elements(root, "serviceTask") if activity_type(task) == EXPECTED_TYPE
+        task
+        for task in elements(root, "serviceTask")
+        if activity_type(task) == EXPECTED_TYPE
     ]
     if len(service_tasks) != 1:
-        fail(f"expected exactly one serviceTask with {EXPECTED_TYPE}, found {len(service_tasks)}")
+        fail(
+            f"expected exactly one serviceTask with {EXPECTED_TYPE}, found {len(service_tasks)}"
+        )
     task = service_tasks[0]
 
     wrong_wrappers = []
@@ -52,13 +56,20 @@ def main() -> None:
         fail("API workflow task should map invocation/status/result outputs")
 
     declared = variable_ids(root)
-    output_targets = {out.attrib.get("var") or out.attrib.get("target") for out in outputs}
-    missing = sorted(target for target in output_targets if target and target not in declared)
+    output_targets = {
+        out.attrib.get("var") or out.attrib.get("target") for out in outputs
+    }
+    missing = sorted(
+        target for target in output_targets if target and target not in declared
+    )
     if missing:
         fail(f"API workflow outputs target undeclared variables: {missing}")
 
     boundary_events = elements(root, "boundaryEvent")
-    if not any(event.attrib.get("attachedToRef") == task.attrib["id"] for event in boundary_events):
+    if not any(
+        event.attrib.get("attachedToRef") == task.attrib["id"]
+        for event in boundary_events
+    ):
         fail("API workflow serviceTask should have an attached boundary error path")
     assert_has_shape(root, task.attrib["id"])
 

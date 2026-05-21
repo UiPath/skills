@@ -43,7 +43,17 @@ def main() -> None:
 
     try:
         proc = subprocess.run(
-            [uip, "is", "connections", "list", connector_key, "--all-folders", "--refresh", "--output", "json"],
+            [
+                uip,
+                "is",
+                "connections",
+                "list",
+                connector_key,
+                "--all-folders",
+                "--refresh",
+                "--output",
+                "json",
+            ],
             capture_output=True,
             text=True,
             timeout=30,

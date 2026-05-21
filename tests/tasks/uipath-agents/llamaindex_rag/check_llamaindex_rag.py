@@ -23,7 +23,6 @@ import json
 import os
 import re
 import sys
-from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
@@ -41,7 +40,11 @@ def fail(msg: str) -> None:
 
 def find_call(tree: ast.Module, func_name: str) -> ast.Call | None:
     for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == func_name:
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == func_name
+        ):
             return node
     return None
 
@@ -71,28 +74,41 @@ def main() -> None:
     except SyntaxError as exc:
         fail(f"main.py has a syntax error: {exc}")
 
-    if not re.search(r"from\s+llama_index\.core\.workflow\s+import\s+[^\n]*\bWorkflow\b", text):
+    if not re.search(
+        r"from\s+llama_index\.core\.workflow\s+import\s+[^\n]*\bWorkflow\b", text
+    ):
         fail("main.py does not import `Workflow` from `llama_index.core.workflow`")
-    if not re.search(r"from\s+llama_index\.core\.workflow\s+import\s+[^\n]*\bstep\b", text):
+    if not re.search(
+        r"from\s+llama_index\.core\.workflow\s+import\s+[^\n]*\bstep\b", text
+    ):
         fail("main.py does not import `step` from `llama_index.core.workflow`")
     if not re.search(r"@step\b", text):
-        fail("main.py has no `@step` decorator — the workflow nodes must be marked with @step")
+        fail(
+            "main.py has no `@step` decorator — the workflow nodes must be marked with @step"
+        )
     print("OK: LlamaIndex Workflow shape (Workflow import + @step decorator) present")
 
-    if not re.search(r"from\s+uipath_llamaindex\.query_engines\s+import\s+[^\n]*\bContextGroundingQueryEngine\b", text):
+    if not re.search(
+        r"from\s+uipath_llamaindex\.query_engines\s+import\s+[^\n]*\bContextGroundingQueryEngine\b",
+        text,
+    ):
         fail(
             "main.py does not import `ContextGroundingQueryEngine` from "
             "`uipath_llamaindex.query_engines`. That is the UiPath RAG primitive "
             "for LlamaIndex — use it to ground answers in the index."
         )
-    print("OK: imports ContextGroundingQueryEngine from uipath_llamaindex.query_engines")
+    print(
+        "OK: imports ContextGroundingQueryEngine from uipath_llamaindex.query_engines"
+    )
 
     call = find_call(tree, "ContextGroundingQueryEngine")
     if call is None:
         fail("no `ContextGroundingQueryEngine(...)` call site found")
     kwargs = {kw.arg: kw.value for kw in call.keywords if kw.arg is not None}
     name_node = kwargs.get("index_name")
-    if name_node is None or not (isinstance(name_node, ast.Constant) and name_node.value == "hr-policy"):
+    if name_node is None or not (
+        isinstance(name_node, ast.Constant) and name_node.value == "hr-policy"
+    ):
         got = getattr(name_node, "value", name_node)
         fail(
             f"`ContextGroundingQueryEngine(index_name=...)` resolves to {got!r}, "

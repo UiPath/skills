@@ -74,8 +74,14 @@ def has_uipath_extension(element: ET.Element, token: str) -> bool:
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:
-    shaped = {shape.attrib.get("bpmnElement") for shape in root.findall(".//bpmndi:BPMNShape", NS)}
-    edged = {edge.attrib.get("bpmnElement") for edge in root.findall(".//bpmndi:BPMNEdge", NS)}
+    shaped = {
+        shape.attrib.get("bpmnElement")
+        for shape in root.findall(".//bpmndi:BPMNShape", NS)
+    }
+    edged = {
+        edge.attrib.get("bpmnElement")
+        for edge in root.findall(".//bpmndi:BPMNEdge", NS)
+    }
     nodes = [
         *elements(root, "startEvent"),
         *elements(root, "endEvent"),
@@ -91,11 +97,15 @@ def require_di_for_visible_elements(root: ET.Element) -> None:
         *elements(root, "parallelGateway"),
         *elements(root, "inclusiveGateway"),
     ]
-    missing_shapes = [attr(node, "id") for node in nodes if attr(node, "id") not in shaped]
+    missing_shapes = [
+        attr(node, "id") for node in nodes if attr(node, "id") not in shaped
+    ]
     if missing_shapes:
         fail(f"visible BPMN elements missing BPMNShape: {missing_shapes}")
     missing_edges = [
-        attr(flow, "id") for flow in elements(root, "sequenceFlow") if attr(flow, "id") not in edged
+        attr(flow, "id")
+        for flow in elements(root, "sequenceFlow")
+        if attr(flow, "id") not in edged
     ]
     if missing_edges:
         fail(f"sequence flows missing BPMNEdge: {missing_edges}")
@@ -107,7 +117,9 @@ def require_sequence_integrity(root: ET.Element) -> None:
         source = attr(flow, "sourceRef")
         target = attr(flow, "targetRef")
         if source not in ids or target not in ids:
-            fail(f"sequence flow {attr(flow, 'id')} has unresolved refs {source!r}->{target!r}")
+            fail(
+                f"sequence flow {attr(flow, 'id')} has unresolved refs {source!r}->{target!r}"
+            )
 
 
 def require_no_private_connector_values(root: ET.Element) -> None:

@@ -31,7 +31,9 @@ from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E
 CWD = Path(os.getcwd())
 SOL = CWD / "GreeterSol"
 FLOW = SOL / "GreeterFlow" / "GreeterFlow.flow"
-CODED_RESOURCE = SOL / "resources" / "solution_folder" / "process" / "agent" / "InputProcessor.json"
+CODED_RESOURCE = (
+    SOL / "resources" / "solution_folder" / "process" / "agent" / "InputProcessor.json"
+)
 CODED_MAIN = SOL / "InputProcessor" / "main.py"
 
 AGENT_NODE_TYPE_PREFIX = "uipath.core.agent."
@@ -62,9 +64,13 @@ def main() -> None:
     nodes = flow.get("nodes") or []
     bindings = flow.get("bindings") or []
 
-    agent_nodes = [n for n in nodes if isinstance(n, dict)
-                   and isinstance(n.get("type"), str)
-                   and n["type"].startswith(AGENT_NODE_TYPE_PREFIX)]
+    agent_nodes = [
+        n
+        for n in nodes
+        if isinstance(n, dict)
+        and isinstance(n.get("type"), str)
+        and n["type"].startswith(AGENT_NODE_TYPE_PREFIX)
+    ]
     if len(agent_nodes) != 1:
         sys.exit(
             f"FAIL: expected exactly one `{AGENT_NODE_TYPE_PREFIX}<key>` node "
@@ -73,7 +79,7 @@ def main() -> None:
         )
     print(f"OK: flow has {len(agent_nodes)} agent node")
 
-    suffixes = {n["type"][len(AGENT_NODE_TYPE_PREFIX):] for n in agent_nodes}
+    suffixes = {n["type"][len(AGENT_NODE_TYPE_PREFIX) :] for n in agent_nodes}
     if coded_key not in suffixes:
         sys.exit(
             f"FAIL: no flow node with type `{AGENT_NODE_TYPE_PREFIX}{coded_key}` "
@@ -81,12 +87,12 @@ def main() -> None:
         )
     print(f"OK: flow node binds the coded agent via type suffix {coded_key}")
 
-    agent_bindings = [b for b in bindings
-                      if isinstance(b, dict) and b.get("resourceKey") == coded_key]
+    agent_bindings = [
+        b for b in bindings if isinstance(b, dict) and b.get("resourceKey") == coded_key
+    ]
     if not agent_bindings:
         sys.exit(
-            f"FAIL: top-level bindings[] has no entry with "
-            f"resourceKey=={coded_key!r}"
+            f"FAIL: top-level bindings[] has no entry with resourceKey=={coded_key!r}"
         )
     print(f"OK: bindings[] has {len(agent_bindings)} entry/entries for the coded agent")
 
@@ -107,7 +113,9 @@ def main() -> None:
             "node instances referencing the same agent must reuse the same "
             "bindings[].id."
         )
-    print(f"OK: bindings[] has no duplicate (resourceKey, propertyAttribute) pairs ({len(seen)} unique)")
+    print(
+        f"OK: bindings[] has no duplicate (resourceKey, propertyAttribute) pairs ({len(seen)} unique)"
+    )
 
     violations = find_module_level_llm_clients(CODED_MAIN)
     if violations:

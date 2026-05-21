@@ -18,12 +18,13 @@ Privacy: never logs folder display names. Only counts + truncated IDs.
 
 import glob
 import json
-import os
 import subprocess
 import sys
 
 CONNECTOR_KEY = "uipath-microsoft-outlook365"
-TRIGGER_TYPE_MARKER = "uipath.connector.trigger.uipath-microsoft-outlook365.email-received"
+TRIGGER_TYPE_MARKER = (
+    "uipath.connector.trigger.uipath-microsoft-outlook365.email-received"
+)
 TEST_FOLDER_PATH = "Shared/uipath-maestro-flow"
 
 
@@ -47,7 +48,9 @@ def _parse_uip_stdout(args: list[str], result: subprocess.CompletedProcess) -> d
 def _uip_json(args: list[str]) -> dict:
     """Run a uip CLI command and return parsed JSON. Fails the test on
     non-zero exit or invalid JSON."""
-    return _parse_uip_stdout(args, subprocess.run(args, capture_output=True, text=True, timeout=120))
+    return _parse_uip_stdout(
+        args, subprocess.run(args, capture_output=True, text=True, timeout=120)
+    )
 
 
 def _uip_resources_run(tail_args: list[str]) -> dict:
@@ -63,9 +66,8 @@ def _uip_resources_run(tail_args: list[str]) -> dict:
     """
     primary = ["uip", "is", "resources", "run", *tail_args]
     result = subprocess.run(primary, capture_output=True, text=True, timeout=120)
-    needs_fallback = (
-        result.returncode != 0
-        and "unknown command 'run'" in (result.stdout + result.stderr)
+    needs_fallback = result.returncode != 0 and "unknown command 'run'" in (
+        result.stdout + result.stderr
     )
     if needs_fallback:
         legacy = ["uip", "is", "resources", "execute", *tail_args]
@@ -83,7 +85,9 @@ def _read_flow() -> tuple[dict, str]:
 
 
 def _find_test_folder_key() -> str:
-    resp = _uip_json(["uip", "or", "folders", "get", TEST_FOLDER_PATH, "--output", "json"])
+    resp = _uip_json(
+        ["uip", "or", "folders", "get", TEST_FOLDER_PATH, "--output", "json"]
+    )
     key = resp.get("Data", {}).get("Key")
     if not key:
         sys.exit(f"FAIL: no '{TEST_FOLDER_PATH}' folder in Orchestrator")
@@ -96,8 +100,15 @@ def _find_default_outlook_connection() -> tuple[str, str, str]:
     folder_key = _find_test_folder_key()
     conns_raw = _uip_json(
         [
-            "uip", "is", "connections", "list", CONNECTOR_KEY,
-            "--folder-key", folder_key, "--output", "json",
+            "uip",
+            "is",
+            "connections",
+            "list",
+            CONNECTOR_KEY,
+            "--folder-key",
+            folder_key,
+            "--output",
+            "json",
         ]
     ).get("Data", [])
     if not isinstance(conns_raw, list) or not conns_raw:
@@ -105,7 +116,11 @@ def _find_default_outlook_connection() -> tuple[str, str, str]:
             f"FAIL: no {CONNECTOR_KEY} connection in folder {TEST_FOLDER_PATH}. "
             f"Provision an Outlook connection in the test tenant first."
         )
-    defaults = [c for c in conns_raw if c.get("IsDefault") == "Yes" and c.get("State") == "Enabled"]
+    defaults = [
+        c
+        for c in conns_raw
+        if c.get("IsDefault") == "Yes" and c.get("State") == "Enabled"
+    ]
     chosen = defaults[0] if defaults else conns_raw[0]
     return chosen["Id"], folder_key, chosen.get("Name", "")
 
@@ -127,7 +142,11 @@ def _extract_list_items(resp: dict) -> list[dict]:
     if isinstance(data, list):
         return [x for x in data if isinstance(x, dict)]
     if isinstance(data, dict):
-        return [x for x in (data.get("items") or data.get("Items") or []) if isinstance(x, dict)]
+        return [
+            x
+            for x in (data.get("items") or data.get("Items") or [])
+            if isinstance(x, dict)
+        ]
     return []
 
 
@@ -152,7 +171,15 @@ def check_folder_id_fresh():
 
     conn_id, _folder_key, _conn_name = _find_default_outlook_connection()
     live = _uip_resources_run(
-        ["list", CONNECTOR_KEY, "MailFolder", "--connection-id", conn_id, "--output", "json"]
+        [
+            "list",
+            CONNECTOR_KEY,
+            "MailFolder",
+            "--connection-id",
+            conn_id,
+            "--output",
+            "json",
+        ]
     )
     live_ids = {f.get("id") for f in _extract_list_items(live)}
     if not live_ids:
@@ -168,7 +195,9 @@ def check_folder_id_fresh():
             f"the {len(live_ids)} MailFolder IDs on the current connection. The agent "
             f"reused a reference ID from another connection or session."
         )
-    print(f"OK: parentFolderId resolves on current connection ({len(live_ids)} folders checked)")
+    print(
+        f"OK: parentFolderId resolves on current connection ({len(live_ids)} folders checked)"
+    )
 
 
 DISPATCH = {

@@ -54,21 +54,23 @@ def assert_pattern_2_not_pattern_1(flow_path: Path) -> dict:
             f"{flow_path} contains no `uipath.core.agent.<resourceKey>` node — "
             "the flow must reference the published agent"
         )
-    print(f"OK: flow references a uipath.core.agent.<key> node ({len(agent_nodes)} occurrence(s))")
+    print(
+        f"OK: flow references a uipath.core.agent.<key> node ({len(agent_nodes)} occurrence(s))"
+    )
 
     if '"In this solution"' in text:
         fail(
-            f"{flow_path} references the agent with `section: \"In this solution\"` — "
+            f'{flow_path} references the agent with `section: "In this solution"` — '
             "that is Pattern 1 (in-solution). This test verifies Pattern 2 (Published). "
             "The agent must be referenced as a Published resource."
         )
 
     if '"Published"' not in text:
         fail(
-            f"{flow_path} does not contain `section: \"Published\"` for the agent node. "
+            f'{flow_path} does not contain `section: "Published"` for the agent node. '
             "Pattern 2 requires the agent node's model.section to be 'Published'."
         )
-    print("OK: agent node carries `section: \"Published\"` (Pattern 2)")
+    print('OK: agent node carries `section: "Published"` (Pattern 2)')
 
     return doc
 
@@ -86,7 +88,9 @@ def assert_not_in_solution_sibling() -> None:
             + " — these indicate Pattern 1 (in-solution), not Pattern 2 (published). "
             "The coded agent must NOT be registered as a sibling of the flow."
         )
-    print("OK: no in-solution resource manifest exists (correctly publishes as Pattern 2)")
+    print(
+        "OK: no in-solution resource manifest exists (correctly publishes as Pattern 2)"
+    )
 
 
 def main() -> None:
@@ -101,7 +105,9 @@ def main() -> None:
             f"coded agent project `{AGENT_PROJECT_HINT}` is missing its langgraph.json "
             "— the agent must be a LangGraph project before it can be deployed and referenced"
         )
-    print(f"OK: coded agent LangGraph marker present at {agent_marker.relative_to(CWD)}")
+    print(
+        f"OK: coded agent LangGraph marker present at {agent_marker.relative_to(CWD)}"
+    )
 
     print("OK: Pattern 2 (Published coded agent) wiring verified")
 

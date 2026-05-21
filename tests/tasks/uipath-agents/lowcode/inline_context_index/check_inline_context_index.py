@@ -28,7 +28,9 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
@@ -38,9 +40,13 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "KnowledgeFlowSol" / "KnowledgeFlow" / "KnowledgeFlow.flow"
+FLOW_PATH = (
+    Path(os.getcwd()) / "KnowledgeFlowSol" / "KnowledgeFlow" / "KnowledgeFlow.flow"
+)
 CONTEXT_INDEX_NODE_TYPE_PREFIX = "uipath.agent.resource.context.index."
-UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
 
 EXPECTED_INDEX_NAME = "UiPathAgentsProductKnowledge"
 EXPECTED_FOLDER_PATH = "Shared/uipath-agents"
@@ -56,10 +62,14 @@ def assert_input_shape(schema: dict) -> None:
         )
     q = props["question"]
     if not isinstance(q, dict) or q.get("type") != "string":
-        sys.exit(f"FAIL: agent.json inputSchema.properties.question.type should be 'string', got {q!r}")
+        sys.exit(
+            f"FAIL: agent.json inputSchema.properties.question.type should be 'string', got {q!r}"
+        )
     required = schema.get("required")
     if not isinstance(required, list) or "question" not in required:
-        sys.exit(f"FAIL: agent.json inputSchema.required must contain 'question', got {required!r}")
+        sys.exit(
+            f"FAIL: agent.json inputSchema.required must contain 'question', got {required!r}"
+        )
     print("OK: agent.json inputSchema declares required question:string")
 
 
@@ -72,14 +82,18 @@ def assert_output_shape(schema: dict) -> None:
         )
     a = props["answer"]
     if not isinstance(a, dict) or a.get("type") != "string":
-        sys.exit(f"FAIL: agent.json outputSchema.properties.answer.type should be 'string', got {a!r}")
+        sys.exit(
+            f"FAIL: agent.json outputSchema.properties.answer.type should be 'string', got {a!r}"
+        )
     print("OK: agent.json outputSchema declares answer:string")
 
 
 def main() -> None:
     flow = load_json(FLOW_PATH)
     agent_node = find_autonomous_agent_node(flow)
-    context_node = find_resource_node(flow, node_type_prefix=CONTEXT_INDEX_NODE_TYPE_PREFIX)
+    context_node = find_resource_node(
+        flow, node_type_prefix=CONTEXT_INDEX_NODE_TYPE_PREFIX
+    )
     print(f"OK: flow has {agent_node['type']} and {context_node['type']} nodes")
 
     agent_source = (agent_node.get("inputs") or {}).get("source")
@@ -94,7 +108,9 @@ def main() -> None:
             f"FAIL: inputs.source UUID {agent_source!r} does not match "
             f"the inline agent sub-folder name {agent_dir.name!r}"
         )
-    print(f"OK: autonomous node inputs.source={agent_source!r} matches inline agent sub-folder")
+    print(
+        f"OK: autonomous node inputs.source={agent_source!r} matches inline agent sub-folder"
+    )
 
     context_source = (context_node.get("model") or {}).get("source")
     if not isinstance(context_source, str) or not UUID_RE.match(context_source):

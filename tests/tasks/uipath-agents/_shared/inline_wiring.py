@@ -75,9 +75,9 @@ def find_resource_node(
         descriptor = f"type {node_type!r}"
     elif node_type_prefix is not None:
         matches = [
-            n for n in nodes
-            if isinstance(n.get("type"), str)
-            and n["type"].startswith(node_type_prefix)
+            n
+            for n in nodes
+            if isinstance(n.get("type"), str) and n["type"].startswith(node_type_prefix)
         ]
         descriptor = f"type starting with {node_type_prefix!r}"
     else:
@@ -158,7 +158,8 @@ def assert_edge(
     """Assert that an edge wires source_id:source_port -> target_id:target_port."""
     edges = flow.get("edges") or []
     matches = [
-        e for e in edges
+        e
+        for e in edges
         if e.get("sourceNodeId") == source_id
         and e.get("sourcePort") == source_port
         and e.get("targetNodeId") == target_id

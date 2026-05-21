@@ -21,7 +21,6 @@ Also runs the lazy-LLM-init AST scan as a hygiene check.
 from __future__ import annotations
 
 import ast
-import json
 import os
 import re
 import sys
@@ -102,7 +101,9 @@ def check_imports_and_calls(text: str, tree: ast.Module) -> None:
     if not re.search(r"from\s+langgraph\.types\s+import\s+[^\n]*\binterrupt\b", text):
         sys.exit("FAIL: missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateEscalation\b", text):
+    if not re.search(
+        r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateEscalation\b", text
+    ):
         sys.exit(
             "FAIL: missing `from uipath.platform.common import CreateEscalation`. "
             "The prompt describes an explicit escalation — the skill prescribes "
@@ -118,11 +119,11 @@ def check_imports_and_calls(text: str, tree: ast.Module) -> None:
     expected = {"app_name": "ExpenseReview", "app_folder_path": "Finance"}
     for kw, want in expected.items():
         if kw not in kwargs:
-            sys.exit(f'FAIL: `CreateEscalation(...)` is missing `{kw}=`')
+            sys.exit(f"FAIL: `CreateEscalation(...)` is missing `{kw}=`")
         got = _resolve_kwarg(kwargs[kw], consts)
         if got != want:
             sys.exit(
-                f'FAIL: `CreateEscalation({kw}=...)` resolves to {got!r}, expected {want!r}.'
+                f"FAIL: `CreateEscalation({kw}=...)` resolves to {got!r}, expected {want!r}."
             )
     print('OK: escalation targets app_name="ExpenseReview" / app_folder_path="Finance"')
 

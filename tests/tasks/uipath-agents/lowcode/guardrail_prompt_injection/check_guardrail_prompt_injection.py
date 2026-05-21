@@ -49,21 +49,21 @@ def main() -> None:
 
     # --- find prompt_injection validator ---
     pi = [
-        g for g in guardrails
+        g
+        for g in guardrails
         if g.get("$guardrailType") == "builtInValidator"
         and g.get("validatorType") == "prompt_injection"
     ]
     if not pi:
-        types = [
-            (g.get("$guardrailType"), g.get("validatorType"))
-            for g in guardrails
-        ]
+        types = [(g.get("$guardrailType"), g.get("validatorType")) for g in guardrails]
         sys.exit(
-            f"FAIL: no guardrail with $guardrailType == \"builtInValidator\" "
-            f"and validatorType == \"prompt_injection\". Got: {types}"
+            f'FAIL: no guardrail with $guardrailType == "builtInValidator" '
+            f'and validatorType == "prompt_injection". Got: {types}'
         )
     g = pi[0]
-    print('OK: found builtInValidator guardrail with validatorType == "prompt_injection"')
+    print(
+        'OK: found builtInValidator guardrail with validatorType == "prompt_injection"'
+    )
 
     # --- id is UUID-shaped ---
     gid = g.get("id")
@@ -85,7 +85,7 @@ def main() -> None:
     if bad:
         sys.exit(
             f"FAIL: prompt_injection guardrail must NOT include {bad} in scopes. "
-            f"Only \"Llm\" is supported. Got scopes: {scopes}"
+            f'Only "Llm" is supported. Got scopes: {scopes}'
         )
     if "Llm" not in scopes:
         sys.exit(
@@ -95,8 +95,7 @@ def main() -> None:
     # Check PascalCase
     if scopes != ["Llm"]:
         sys.exit(
-            f'FAIL: prompt_injection scopes should be exactly ["Llm"]. '
-            f"Got: {scopes}"
+            f'FAIL: prompt_injection scopes should be exactly ["Llm"]. Got: {scopes}'
         )
     print('OK: selector.scopes == ["Llm"] (correct Llm-only constraint)')
 
@@ -138,8 +137,7 @@ def main() -> None:
         sys.exit(f"FAIL: threshold parameter.value must be a number, got {val!r}")
     if not (0.0 <= val <= 1.0):
         sys.exit(
-            f"FAIL: threshold parameter.value must be between 0.0 and 1.0, "
-            f"got {val}"
+            f"FAIL: threshold parameter.value must be between 0.0 and 1.0, got {val}"
         )
     print(f"OK: threshold parameter = {val} (number, in range)")
 

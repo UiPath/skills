@@ -36,7 +36,9 @@ exits 1.
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
     assert_output_value,
@@ -85,11 +87,15 @@ def main():
 
     if case == "uipath_success":
         lo, hi = SUCCESS_RANGE
-        print(f"[{case}] Injecting inputs: {inputs} (expect numeric leaf in [{lo}, {hi}])")
+        print(
+            f"[{case}] Injecting inputs: {inputs} (expect numeric leaf in [{lo}, {hi}])"
+        )
         payload = run_debug(inputs=inputs, timeout=300)
         match = _find_numeric_leaf_in_range(payload, lo, hi)
         if match is None:
-            sys.exit(f"FAIL: No numeric output in [{lo}, {hi}]\nOutputs: {list(collect_outputs(payload))}")
+            sys.exit(
+                f"FAIL: No numeric output in [{lo}, {hi}]\nOutputs: {list(collect_outputs(payload))}"
+            )
         print(f"OK: [{case}] output {match} in [{lo}, {hi}]")
     else:
         print(f"[{case}] Injecting inputs: {inputs} (expect {ERROR_STRING!r})")

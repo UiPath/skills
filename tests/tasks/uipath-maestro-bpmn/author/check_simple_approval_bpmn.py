@@ -27,7 +27,9 @@ def main() -> None:
         if has_uipath_extension(task, "Orchestrator.StartAgentJob")
     ]
     if not agent_jobs:
-        fail("missing bpmn:serviceTask with Orchestrator.StartAgentJob uipath:activity shell")
+        fail(
+            "missing bpmn:serviceTask with Orchestrator.StartAgentJob uipath:activity shell"
+        )
 
     queue_sends = [
         task
@@ -35,7 +37,9 @@ def main() -> None:
         if has_uipath_extension(task, "Orchestrator.CreateQueueItem")
     ]
     if not queue_sends:
-        fail("missing bpmn:sendTask with Orchestrator.CreateQueueItem uipath:activity shell")
+        fail(
+            "missing bpmn:sendTask with Orchestrator.CreateQueueItem uipath:activity shell"
+        )
 
     exclusive = one_or_more(root, "exclusiveGateway")
     if not any(attr(gateway, "default") for gateway in exclusive):
@@ -67,9 +71,12 @@ def main() -> None:
             fail(f"missing root variable named {required!r}")
 
     migration_versions = {
-        elem.attrib.get("version") for elem in root.findall(".//uipath:migrationVersion", NS)
+        elem.attrib.get("version")
+        for elem in root.findall(".//uipath:migrationVersion", NS)
     }
-    numeric_versions = {v for v in migration_versions if v and any(ch.isdigit() for ch in v)}
+    numeric_versions = {
+        v for v in migration_versions if v and any(ch.isdigit() for ch in v)
+    }
     if not numeric_versions:
         fail('missing numeric uipath:migrationVersion (e.g. version="11" or "11.5")')
 

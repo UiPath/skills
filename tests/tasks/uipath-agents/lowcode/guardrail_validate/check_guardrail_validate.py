@@ -46,21 +46,21 @@ def main() -> None:
 
     # Find harmful_content guardrail
     harmful = [
-        g for g in guardrails
+        g
+        for g in guardrails
         if g.get("$guardrailType") == "builtInValidator"
         and g.get("validatorType") == "harmful_content"
     ]
     if not harmful:
-        types = [
-            (g.get("$guardrailType"), g.get("validatorType"))
-            for g in guardrails
-        ]
+        types = [(g.get("$guardrailType"), g.get("validatorType")) for g in guardrails]
         sys.exit(
-            f"FAIL: no guardrail with validatorType == \"harmful_content\" found. "
+            f'FAIL: no guardrail with validatorType == "harmful_content" found. '
             f"Got: {types}"
         )
     g = harmful[0]
-    print('OK: found builtInValidator guardrail with validatorType == "harmful_content"')
+    print(
+        'OK: found builtInValidator guardrail with validatorType == "harmful_content"'
+    )
 
     params = g.get("validatorParameters")
     if not isinstance(params, list):

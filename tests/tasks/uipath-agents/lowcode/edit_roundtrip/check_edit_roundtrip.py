@@ -71,7 +71,9 @@ def assert_input_fields(in_schema: dict) -> None:
     for f in INPUT_FIELDS:
         ftype = props[f].get("type") if isinstance(props[f], dict) else None
         if ftype != "string":
-            sys.exit(f"FAIL: inputSchema.properties.{f}.type should be 'string', got {ftype!r}")
+            sys.exit(
+                f"FAIL: inputSchema.properties.{f}.type should be 'string', got {ftype!r}"
+            )
     required = in_schema.get("required")
     if not isinstance(required, list):
         sys.exit(f"FAIL: inputSchema.required must be a list, got {required!r}")
@@ -92,7 +94,9 @@ def assert_output_field(out_schema: dict) -> None:
         )
     g = props["greeting"]
     if not isinstance(g, dict) or g.get("type") != "string":
-        sys.exit(f"FAIL: outputSchema.properties.greeting.type should be 'string', got {g!r}")
+        sys.exit(
+            f"FAIL: outputSchema.properties.greeting.type should be 'string', got {g!r}"
+        )
     print("OK: outputSchema declares greeting:string")
 
 
@@ -100,7 +104,9 @@ def assert_user_message_inlines_both(agent: dict) -> None:
     messages = agent.get("messages")
     if not isinstance(messages, list):
         sys.exit(f"FAIL: agent.json.messages is not a list: {messages!r}")
-    user_messages = [m for m in messages if isinstance(m, dict) and m.get("role") == "user"]
+    user_messages = [
+        m for m in messages if isinstance(m, dict) and m.get("role") == "user"
+    ]
     if not user_messages:
         sys.exit("FAIL: agent.json.messages has no entry with role == 'user'")
     user = user_messages[0]

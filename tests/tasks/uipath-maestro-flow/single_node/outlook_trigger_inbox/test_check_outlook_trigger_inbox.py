@@ -19,7 +19,9 @@ CHECKER = Path(__file__).with_name("check_outlook_trigger_inbox.py")
 
 
 def _load_checker():
-    spec = importlib.util.spec_from_file_location("check_outlook_trigger_inbox", CHECKER)
+    spec = importlib.util.spec_from_file_location(
+        "check_outlook_trigger_inbox", CHECKER
+    )
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -44,8 +46,12 @@ def _patch_static(monkeypatch, checker, folder_id: str = "mail-folder-1") -> Non
     )
 
 
-def _fake_proc(returncode: int, stdout: str = "", stderr: str = "") -> subprocess.CompletedProcess[str]:
-    return subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout, stderr=stderr)
+def _fake_proc(
+    returncode: int, stdout: str = "", stderr: str = ""
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.CompletedProcess(
+        args=[], returncode=returncode, stdout=stdout, stderr=stderr
+    )
 
 
 def _success_payload(folder_id: str = "mail-folder-1") -> str:
@@ -81,7 +87,10 @@ def test_falls_back_to_execute_on_unknown_command_run(monkeypatch) -> None:
             return _fake_proc(
                 1,
                 stdout=json.dumps(
-                    {"Result": "ValidationError", "Message": "error: unknown command 'run'"}
+                    {
+                        "Result": "ValidationError",
+                        "Message": "error: unknown command 'run'",
+                    }
                 ),
             )
         return _fake_proc(0, stdout=_success_payload())

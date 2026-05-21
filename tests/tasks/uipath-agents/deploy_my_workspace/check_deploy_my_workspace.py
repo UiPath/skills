@@ -53,8 +53,7 @@ def check_pack_artifacts() -> None:
     uipath_dir = ROOT / ".uipath"
     if not uipath_dir.is_dir():
         sys.exit(
-            f"FAIL: {uipath_dir} does not exist — `uip codedagent pack` "
-            "did not run."
+            f"FAIL: {uipath_dir} does not exist — `uip codedagent pack` did not run."
         )
     nupkgs = sorted(uipath_dir.glob("*.nupkg"))
     if not nupkgs:
@@ -62,17 +61,25 @@ def check_pack_artifacts() -> None:
             f"FAIL: no .nupkg file in {uipath_dir} — pack did not produce "
             "the expected package artifact."
         )
-    print(f"OK: {uipath_dir.name}/{nupkgs[0].name} exists ({len(nupkgs)} package(s) total)")
+    print(
+        f"OK: {uipath_dir.name}/{nupkgs[0].name} exists ({len(nupkgs)} package(s) total)"
+    )
 
 
 def check_invoke_output() -> None:
     path = ROOT / "invoke-output.txt"
     text = _read_text(path)
     if not text.strip():
-        sys.exit(f"FAIL: {path.name} is empty — `uip codedagent invoke` produced no output")
+        sys.exit(
+            f"FAIL: {path.name} is empty — `uip codedagent invoke` produced no output"
+        )
     if "https://" not in text:
-        sys.exit(f"FAIL: {path.name} does not contain a monitoring URL (no `https://` substring)")
-    print(f"OK: {path.name} captured {len(text)} bytes of invoke stdout (with monitoring URL)")
+        sys.exit(
+            f"FAIL: {path.name} does not contain a monitoring URL (no `https://` substring)"
+        )
+    print(
+        f"OK: {path.name} captured {len(text)} bytes of invoke stdout (with monitoring URL)"
+    )
 
 
 def main() -> None:

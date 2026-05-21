@@ -83,7 +83,9 @@ def _assert_filter_tree_shape(tree, *, source: str) -> None:
         )
 
     values = [_leaf_value(n) for n in leaves]
-    if not any(isinstance(v, str) and v.strip().lower() == EXPECTED_VALUE for v in values):
+    if not any(
+        isinstance(v, str) and v.strip().lower() == EXPECTED_VALUE for v in values
+    ):
         sys.exit(
             f"FAIL: {source} has no leaf with value '{EXPECTED_VALUE}' "
             f"(found values: {[v for v in values if v is not None]})"

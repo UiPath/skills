@@ -45,7 +45,9 @@ def _assert_main_flow_nodes_removed(flow: dict) -> None:
     main_ids = {n.get("id") for n in flow.get("nodes") or []}
     for removed in ("getWeather", "formatSummary"):
         if removed in main_ids:
-            sys.exit(f"FAIL: '{removed}' should have been moved to subflow but is still in main flow nodes")
+            sys.exit(
+                f"FAIL: '{removed}' should have been moved to subflow but is still in main flow nodes"
+            )
 
 
 def main():

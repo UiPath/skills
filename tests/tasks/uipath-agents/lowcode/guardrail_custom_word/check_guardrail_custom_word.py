@@ -82,12 +82,14 @@ def main() -> None:
         sys.exit(f"FAIL: guardrail.selector must be an object, got {selector!r}")
     scopes = selector.get("scopes")
     if not isinstance(scopes, list) or len(scopes) == 0:
-        sys.exit(f"FAIL: guardrail.selector.scopes must be a non-empty array, got {scopes!r}")
+        sys.exit(
+            f"FAIL: guardrail.selector.scopes must be a non-empty array, got {scopes!r}"
+        )
     invalid = [s for s in scopes if s not in VALID_SCOPES]
     if invalid:
         sys.exit(
             f"FAIL: guardrail.selector.scopes contains invalid values {invalid}. "
-            f'Valid PascalCase values: {sorted(VALID_SCOPES)}'
+            f"Valid PascalCase values: {sorted(VALID_SCOPES)}"
         )
     print(f"OK: selector.scopes = {scopes} (all PascalCase)")
 
@@ -100,8 +102,7 @@ def main() -> None:
     rule = rules[0]
     if rule.get("$ruleType") != "word":
         sys.exit(
-            f'FAIL: rules[0].$ruleType must be "word", '
-            f"got {rule.get('$ruleType')!r}"
+            f'FAIL: rules[0].$ruleType must be "word", got {rule.get("$ruleType")!r}'
         )
     print('OK: rules[0].$ruleType == "word"')
 
@@ -120,16 +121,14 @@ def main() -> None:
     # --- operator == "contains" ---
     if rule.get("operator") != "contains":
         sys.exit(
-            f'FAIL: rules[0].operator must be "contains", '
-            f"got {rule.get('operator')!r}"
+            f'FAIL: rules[0].operator must be "contains", got {rule.get("operator")!r}'
         )
     print('OK: rules[0].operator == "contains"')
 
     # --- value == "CONFIDENTIAL" ---
     if rule.get("value") != "CONFIDENTIAL":
         sys.exit(
-            f'FAIL: rules[0].value must be "CONFIDENTIAL", '
-            f"got {rule.get('value')!r}"
+            f'FAIL: rules[0].value must be "CONFIDENTIAL", got {rule.get("value")!r}'
         )
     print('OK: rules[0].value == "CONFIDENTIAL"')
 

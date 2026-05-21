@@ -34,12 +34,19 @@ def main() -> None:
         if glob.glob(f"**/{name}", recursive=True)
     ]
     if generated:
-        fail(f"draft boundary should not hand-author generated package files: {generated}")
+        fail(
+            f"draft boundary should not hand-author generated package files: {generated}"
+        )
     notes = "\n".join(
         Path(p).read_text(encoding="utf-8")
         for p in glob.glob("SlackDigestBoundaryBpmn/**/*.md", recursive=True)
     )
-    required = ["connection binding", "dynamic schemas", "bindings_v2.json", "package metadata"]
+    required = [
+        "connection binding",
+        "dynamic schemas",
+        "bindings_v2.json",
+        "package metadata",
+    ]
     missing = [token for token in required if token.lower() not in notes.lower()]
     if missing:
         fail(f"boundary notes missing CLI-owned blockers: {missing}")

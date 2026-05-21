@@ -80,7 +80,9 @@ def main() -> None:
             "patch was bumped — bump the version in pyproject.toml between the "
             "two deploys."
         )
-    print(f"OK: version {version} is greater than the scaffold default 0.0.1 — re-deploy bump happened")
+    print(
+        f"OK: version {version} is greater than the scaffold default 0.0.1 — re-deploy bump happened"
+    )
 
     if not MAIN.is_file():
         fail(f"missing {MAIN}")

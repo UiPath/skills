@@ -50,7 +50,9 @@ def main() -> None:
         root = tree.getroot()
         process = root.find("bpmn:process", NS)
         if process is None or process.attrib.get("id") != signature["process_id"]:
-            failures.append(f"{rel}: process id changed; expected {signature['process_id']!r}")
+            failures.append(
+                f"{rel}: process id changed; expected {signature['process_id']!r}"
+            )
             continue
         for kind in signature["elements"]:
             if not root.findall(f".//bpmn:{kind}", NS):
@@ -58,13 +60,18 @@ def main() -> None:
         body = ET.tostring(root, encoding="unicode")
         for token in signature["uipath_tokens"]:
             if token not in body:
-                failures.append(f"{rel}: expected uipath token {token!r} no longer present")
+                failures.append(
+                    f"{rel}: expected uipath token {token!r} no longer present"
+                )
 
     if failures:
         sys.exit(
-            "FAIL: imported fixture inspection drift detected:\n  - " + "\n  - ".join(failures)
+            "FAIL: imported fixture inspection drift detected:\n  - "
+            + "\n  - ".join(failures)
         )
-    print(f"OK: {len(EXPECTED_SIGNATURES)} imported fixtures retain expected structural signatures")
+    print(
+        f"OK: {len(EXPECTED_SIGNATURES)} imported fixtures retain expected structural signatures"
+    )
 
 
 if __name__ == "__main__":

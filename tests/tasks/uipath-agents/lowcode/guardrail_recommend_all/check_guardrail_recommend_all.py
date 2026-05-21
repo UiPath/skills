@@ -101,12 +101,15 @@ def main() -> None:
 
     # Check for Llm-scoped protection
     llm_guards = [
-        g for g in guardrails
+        g
+        for g in guardrails
         if g.get("$guardrailType") == "builtInValidator"
         and "Llm" in ((g.get("selector") or {}).get("scopes") or [])
     ]
     if not llm_guards:
-        validators_found = [get_validator_type(g) for g in guardrails if get_validator_type(g)]
+        validators_found = [
+            get_validator_type(g) for g in guardrails if get_validator_type(g)
+        ]
         sys.exit(
             f"FAIL: no Llm-scoped builtInValidator guardrail found. "
             f"Expected a builtInValidator with scope 'Llm' "
@@ -118,8 +121,7 @@ def main() -> None:
 
     # Check for content-safety guardrail
     content_guards = [
-        g for g in guardrails
-        if get_validator_type(g) in CONTENT_SAFETY_VALIDATORS
+        g for g in guardrails if get_validator_type(g) in CONTENT_SAFETY_VALIDATORS
     ]
     if not content_guards:
         sys.exit(

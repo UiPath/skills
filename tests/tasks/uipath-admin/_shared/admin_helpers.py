@@ -5,7 +5,6 @@ import json
 import logging
 import subprocess
 import sys
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +14,15 @@ def run_cli(args: list[str], timeout: int = 30) -> dict | None:
     try:
         result = subprocess.run(
             ["uip", *args, "--output", "json"],
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
         )
         if result.returncode != 0:
             logger.warning(
                 "CLI returned exit code %d: %s",
-                result.returncode, result.stderr.strip() or result.stdout.strip(),
+                result.returncode,
+                result.stderr.strip() or result.stdout.strip(),
             )
             return None
         return json.loads(result.stdout)

@@ -36,8 +36,12 @@ def load_bindings(path: Path | str = "bindings.json") -> dict:
         sys.exit(f'FAIL: bindings.json version should be "2.0", got {version!r}')
     resources = doc.get("resources")
     if not isinstance(resources, list):
-        sys.exit(f"FAIL: bindings.json resources must be a list, got {type(resources).__name__}")
-    print(f'OK: bindings.json envelope is version="2.0" with {len(resources)} resource(s)')
+        sys.exit(
+            f"FAIL: bindings.json resources must be a list, got {type(resources).__name__}"
+        )
+    print(
+        f'OK: bindings.json envelope is version="2.0" with {len(resources)} resource(s)'
+    )
     return doc
 
 
@@ -54,10 +58,9 @@ def find_resource(
     """
     resources = doc.get("resources") or []
     matches = [
-        r for r in resources
-        if isinstance(r, dict)
-        and r.get("resource") == resource
-        and r.get("key") == key
+        r
+        for r in resources
+        if isinstance(r, dict) and r.get("resource") == resource and r.get("key") == key
     ]
     if not matches:
         sys.exit(
@@ -91,13 +94,11 @@ def assert_value_field(
         sys.exit(f"FAIL: entry value must be an object, got {value!r}")
     block = value.get(field)
     if not isinstance(block, dict):
-        sys.exit(f'FAIL: entry value.{field} must be an object, got {block!r}')
+        sys.exit(f"FAIL: entry value.{field} must be an object, got {block!r}")
     actual = block.get(inner)
     if actual != expected:
-        sys.exit(
-            f'FAIL: value.{field}.{inner} should be {expected!r}, got {actual!r}'
-        )
-    print(f'OK: value.{field}.{inner} == {expected!r}')
+        sys.exit(f"FAIL: value.{field}.{inner} should be {expected!r}, got {actual!r}")
+    print(f"OK: value.{field}.{inner} == {expected!r}")
 
 
 def assert_metadata_field(entry: dict, *, field: str, expected: Any) -> None:
@@ -107,10 +108,8 @@ def assert_metadata_field(entry: dict, *, field: str, expected: Any) -> None:
         sys.exit(f"FAIL: entry metadata must be an object, got {metadata!r}")
     actual = metadata.get(field)
     if actual != expected:
-        sys.exit(
-            f'FAIL: metadata.{field} should be {expected!r}, got {actual!r}'
-        )
-    print(f'OK: metadata.{field} == {expected!r}')
+        sys.exit(f"FAIL: metadata.{field} should be {expected!r}, got {actual!r}")
+    print(f"OK: metadata.{field} == {expected!r}")
 
 
 def assert_entrypoint_link(
@@ -131,31 +130,31 @@ def assert_entrypoint_link(
     if isinstance(uid_block, dict):
         if uid_block.get("defaultValue") != unique_id:
             sys.exit(
-                f'FAIL: EntryPointUniqueId.defaultValue should be {unique_id!r}, '
-                f'got {uid_block.get("defaultValue")!r}'
+                f"FAIL: EntryPointUniqueId.defaultValue should be {unique_id!r}, "
+                f"got {uid_block.get('defaultValue')!r}"
             )
         if uid_block.get("displayName") != file_path:
             sys.exit(
-                f'FAIL: EntryPointUniqueId.displayName must equal the entrypoint '
-                f'filePath ({file_path!r}), got {uid_block.get("displayName")!r}'
+                f"FAIL: EntryPointUniqueId.displayName must equal the entrypoint "
+                f"filePath ({file_path!r}), got {uid_block.get('displayName')!r}"
             )
         print(
-            f'OK: entry bound to entrypoint uniqueId={unique_id!r} '
-            f'(displayName={file_path!r})'
+            f"OK: entry bound to entrypoint uniqueId={unique_id!r} "
+            f"(displayName={file_path!r})"
         )
         return
     path_block = value.get("EntryPointPath")
     if isinstance(path_block, dict):
         if path_block.get("defaultValue") != file_path:
             sys.exit(
-                f'FAIL: EntryPointPath.defaultValue should be {file_path!r}, '
-                f'got {path_block.get("defaultValue")!r}'
+                f"FAIL: EntryPointPath.defaultValue should be {file_path!r}, "
+                f"got {path_block.get('defaultValue')!r}"
             )
-        print(f'OK: entry bound to entrypoint filePath={file_path!r} (fallback)')
+        print(f"OK: entry bound to entrypoint filePath={file_path!r} (fallback)")
         return
     sys.exit(
-        f'FAIL: entry has neither EntryPointUniqueId nor EntryPointPath; expected '
-        f'a binding to entrypoint uniqueId={unique_id!r} (filePath={file_path!r})'
+        f"FAIL: entry has neither EntryPointUniqueId nor EntryPointPath; expected "
+        f"a binding to entrypoint uniqueId={unique_id!r} (filePath={file_path!r})"
     )
 
 
@@ -163,6 +162,7 @@ def count_resources_by_type(doc: dict, resource_type: str) -> int:
     """Return the number of entries with `resource == resource_type`."""
     resources = doc.get("resources") or []
     return sum(
-        1 for r in resources
+        1
+        for r in resources
         if isinstance(r, dict) and r.get("resource") == resource_type
     )

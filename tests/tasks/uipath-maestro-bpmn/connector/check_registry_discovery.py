@@ -61,7 +61,9 @@ def main() -> None:
     if leaks:
         sys.exit(f"FAIL: registry evidence contains concrete private values: {leaks}")
 
-    print(f"OK: registry-evidence covers agent/queue/connector wrappers across {len(files)} files")
+    print(
+        f"OK: registry-evidence covers agent/queue/connector wrappers across {len(files)} files"
+    )
 
 
 if __name__ == "__main__":

@@ -30,7 +30,9 @@ def main() -> None:
     task = one_element(root, "businessRuleTask")
 
     if activity_type(task) != "Orchestrator.BusinessRules":
-        fail("businessRuleTask must contain uipath:activity type Orchestrator.BusinessRules")
+        fail(
+            "businessRuleTask must contain uipath:activity type Orchestrator.BusinessRules"
+        )
     for service_task in elements(root, "serviceTask"):
         if activity_type(service_task) == "Orchestrator.BusinessRules":
             fail("Orchestrator.BusinessRules must not be modeled as bpmn:serviceTask")
@@ -42,8 +44,12 @@ def main() -> None:
         fail("businessRuleTask should map rule outputs")
 
     declared = variable_ids(root)
-    output_targets = {out.attrib.get("var") or out.attrib.get("target") for out in outputs}
-    missing = sorted(target for target in output_targets if target and target not in declared)
+    output_targets = {
+        out.attrib.get("var") or out.attrib.get("target") for out in outputs
+    }
+    missing = sorted(
+        target for target in output_targets if target and target not in declared
+    )
     if missing:
         fail(f"rule outputs target undeclared variables: {missing}")
 

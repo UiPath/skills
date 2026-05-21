@@ -61,12 +61,20 @@ def check_imports_and_calls(text: str) -> None:
             "FAIL: ContextGroundingRetriever must be imported from "
             "`uipath_langchain.retrievers` — the canonical path the skill teaches."
         )
-    print("OK: main.py imports ContextGroundingRetriever from uipath_langchain.retrievers")
+    print(
+        "OK: main.py imports ContextGroundingRetriever from uipath_langchain.retrievers"
+    )
     if not re.search(r'index_name\s*=\s*["\']company_docs["\']', text):
-        sys.exit('FAIL: ContextGroundingRetriever call does not pass index_name="company_docs"')
+        sys.exit(
+            'FAIL: ContextGroundingRetriever call does not pass index_name="company_docs"'
+        )
     if not re.search(r'folder_path\s*=\s*["\']Shared["\']', text):
-        sys.exit('FAIL: ContextGroundingRetriever call does not pass folder_path="Shared"')
-    print('OK: retriever is constructed with index_name="company_docs" / folder_path="Shared"')
+        sys.exit(
+            'FAIL: ContextGroundingRetriever call does not pass folder_path="Shared"'
+        )
+    print(
+        'OK: retriever is constructed with index_name="company_docs" / folder_path="Shared"'
+    )
 
 
 def check_index_binding() -> None:

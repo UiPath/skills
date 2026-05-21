@@ -112,7 +112,7 @@ def _extract_uip_args(command: str) -> str:
     after it.
     """
     m = UIP_INVOCATION_RE.search(command)
-    stripped = command[m.end():] if m else command
+    stripped = command[m.end() :] if m else command
     stripped = TRAILING_REDIRECT_RE.sub("", stripped)
     return stripped.strip()
 
@@ -195,7 +195,9 @@ def parse_transcript(path: Path) -> dict:
             user_initial_prompt = result["first_user_text"]
 
     inferred = (
-        _slugify(inferred_release_name) if inferred_release_name else "troubleshooting-scenario"
+        _slugify(inferred_release_name)
+        if inferred_release_name
+        else "troubleshooting-scenario"
     )
 
     return {
@@ -267,7 +269,10 @@ def _parse_one(path: Path) -> dict:
                 for block in content:
                     if not isinstance(block, dict):
                         continue
-                    if block.get("type") == "tool_use" and block.get("name") in ("Bash", "PowerShell"):
+                    if block.get("type") == "tool_use" and block.get("name") in (
+                        "Bash",
+                        "PowerShell",
+                    ):
                         cmd = (block.get("input") or {}).get("command", "")
                         if _is_uip_call(cmd):
                             pending_tool_uses[block["id"]] = {
@@ -309,7 +314,13 @@ def _parse_one(path: Path) -> dict:
                     elif block.get("is_error"):
                         exit_code = 1
                     if project_release_name is None:
-                        for field in ("ReleaseName", "processKey", "ProcessKey", "processName", "ProcessName"):
+                        for field in (
+                            "ReleaseName",
+                            "processKey",
+                            "ProcessKey",
+                            "processName",
+                            "ProcessName",
+                        ):
                             rel = re.search(rf'"{field}"\s*:\s*"([^"]+)"', stdout)
                             if rel:
                                 project_release_name = rel.group(1)

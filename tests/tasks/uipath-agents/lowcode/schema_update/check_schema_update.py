@@ -41,10 +41,14 @@ def assert_input_shape(schema: dict, label: str) -> None:
         sys.exit(f"FAIL: {label}.type should be 'object', got {schema.get('type')!r}")
     props = schema.get("properties")
     if not isinstance(props, dict) or "userQuery" not in props:
-        sys.exit(f"FAIL: {label}.properties missing 'userQuery': got {list(props) if isinstance(props, dict) else props!r}")
+        sys.exit(
+            f"FAIL: {label}.properties missing 'userQuery': got {list(props) if isinstance(props, dict) else props!r}"
+        )
     uq = props["userQuery"]
     if not isinstance(uq, dict) or uq.get("type") != "string":
-        sys.exit(f"FAIL: {label}.properties.userQuery.type should be 'string', got {uq!r}")
+        sys.exit(
+            f"FAIL: {label}.properties.userQuery.type should be 'string', got {uq!r}"
+        )
     required = schema.get("required")
     if not isinstance(required, list) or "userQuery" not in required:
         sys.exit(f"FAIL: {label}.required must contain 'userQuery', got {required!r}")
@@ -58,10 +62,14 @@ def assert_output_shape(schema: dict, label: str) -> None:
         sys.exit(f"FAIL: {label}.type should be 'object', got {schema.get('type')!r}")
     props = schema.get("properties")
     if not isinstance(props, dict) or "reply" not in props:
-        sys.exit(f"FAIL: {label}.properties missing 'reply': got {list(props) if isinstance(props, dict) else props!r}")
+        sys.exit(
+            f"FAIL: {label}.properties missing 'reply': got {list(props) if isinstance(props, dict) else props!r}"
+        )
     reply = props["reply"]
     if not isinstance(reply, dict) or reply.get("type") != "string":
-        sys.exit(f"FAIL: {label}.properties.reply.type should be 'string', got {reply!r}")
+        sys.exit(
+            f"FAIL: {label}.properties.reply.type should be 'string', got {reply!r}"
+        )
     print(f"OK: {label} declares reply:string (matches prompt)")
 
 
@@ -69,7 +77,9 @@ def assert_user_message_inlines_variable(agent: dict, field: str) -> None:
     messages = agent.get("messages")
     if not isinstance(messages, list):
         sys.exit(f"FAIL: agent.json.messages is not a list: {messages!r}")
-    user_messages = [m for m in messages if isinstance(m, dict) and m.get("role") == "user"]
+    user_messages = [
+        m for m in messages if isinstance(m, dict) and m.get("role") == "user"
+    ]
     if not user_messages:
         sys.exit("FAIL: agent.json.messages has no entry with role == 'user'")
     user = user_messages[0]
@@ -77,7 +87,9 @@ def assert_user_message_inlines_variable(agent: dict, field: str) -> None:
     placeholder = "{{input." + field + "}}"
     content = user.get("content", "")
     if placeholder not in content:
-        sys.exit(f"FAIL: user message content does not inline {placeholder}: content={content!r}")
+        sys.exit(
+            f"FAIL: user message content does not inline {placeholder}: content={content!r}"
+        )
 
     tokens = user.get("contentTokens")
     if not isinstance(tokens, list):
@@ -89,7 +101,9 @@ def assert_user_message_inlines_variable(agent: dict, field: str) -> None:
             f"  expected token: {expected}\n"
             f"  got tokens:     {json.dumps(tokens, indent=2)}"
         )
-    print(f"OK: user message inlines {placeholder} with a matching variable contentToken")
+    print(
+        f"OK: user message inlines {placeholder} with a matching variable contentToken"
+    )
 
 
 def main() -> None:

@@ -32,7 +32,10 @@ def _load(name: str) -> dict | None:
 
 def _check_envelope(name: str, data: dict) -> bool:
     if data.get("Result") != "Success":
-        print(f"FAIL: {name} Result != 'Success' (got {data.get('Result')!r})", file=sys.stderr)
+        print(
+            f"FAIL: {name} Result != 'Success' (got {data.get('Result')!r})",
+            file=sys.stderr,
+        )
         return False
     if "Data" not in data:
         print(f"FAIL: {name} missing 'Data' field", file=sys.stderr)
@@ -50,7 +53,10 @@ def main() -> int:
 
     available = _load("available.json")
     if available is not None and not available.get("Data"):
-        print("FAIL: available.json Data is empty — expected at least one user bundle", file=sys.stderr)
+        print(
+            "FAIL: available.json Data is empty — expected at least one user bundle",
+            file=sys.stderr,
+        )
         errors += 1
 
     rules = _load("rules.json")
@@ -59,7 +65,10 @@ def main() -> int:
         if details is None or not _check_envelope("details.json", details):
             errors += 1
     else:
-        print("INFO: skipping details.json check — rules.json has no groups", file=sys.stderr)
+        print(
+            "INFO: skipping details.json check — rules.json has no groups",
+            file=sys.stderr,
+        )
 
     if errors:
         return 1

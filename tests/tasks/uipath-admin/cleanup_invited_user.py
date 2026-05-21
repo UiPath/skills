@@ -8,7 +8,7 @@ import logging
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "_shared"))
 from admin_helpers import run_cli, find_all
 
 logging.basicConfig(level=logging.INFO, format="cleanup_user: %(message)s")
@@ -33,7 +33,11 @@ def main():
         logger.info("Deleting user (id=%s)", user_id)
         result = run_cli(["admin", "users", "delete", user_id])
         if result:
-            logger.info("Delete result: %s — %s", result.get("Result"), result.get("Message", ""))
+            logger.info(
+                "Delete result: %s — %s",
+                result.get("Result"),
+                result.get("Message", ""),
+            )
         else:
             logger.warning("Delete call returned no result for id=%s", user_id)
 

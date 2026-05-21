@@ -37,7 +37,9 @@ import sys
 from pathlib import Path
 from typing import Any, NoReturn
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 from _shared.flow_check import assert_flow_has_node_type  # noqa: E402
 
 
@@ -63,9 +65,12 @@ def load_flow() -> dict[str, Any]:
 def assert_api_workflow_binding(flow: dict[str, Any]) -> None:
     bindings = flow.get("bindings")
     if not isinstance(bindings, list) or not bindings:
-        fail("Flow has no top-level bindings[] — API workflow resource is not wired up.")
+        fail(
+            "Flow has no top-level bindings[] — API workflow resource is not wired up."
+        )
     api_bindings = [
-        b for b in bindings
+        b
+        for b in bindings
         if isinstance(b, dict)
         and b.get("resource") == "process"
         and b.get("resourceSubType") == "Api"
@@ -84,19 +89,24 @@ def assert_name_input(flow: dict[str, Any]) -> None:
     if not isinstance(nodes, list):
         fail("Flow has no nodes[] array.")
     api_nodes = [
-        n for n in nodes
+        n
+        for n in nodes
         if isinstance(n, dict)
         and isinstance(n.get("type"), str)
         and n["type"].lower().startswith(API_WORKFLOW_NODE_PREFIX)
     ]
     if not api_nodes:
-        fail(f"No api-workflow node (type starts with '{API_WORKFLOW_NODE_PREFIX}') found.")
+        fail(
+            f"No api-workflow node (type starts with '{API_WORKFLOW_NODE_PREFIX}') found."
+        )
     for node in api_nodes:
         inputs = node.get("inputs") or {}
         name = inputs.get("name")
         if isinstance(name, str) and name.strip().lower() == "tomasz":
             return
-    fail("API workflow node does not set inputs.name = 'tomasz' as the prompt requires.")
+    fail(
+        "API workflow node does not set inputs.name = 'tomasz' as the prompt requires."
+    )
 
 
 def main() -> None:
@@ -104,7 +114,9 @@ def main() -> None:
     flow = load_flow()
     assert_api_workflow_binding(flow)
     assert_name_input(flow)
-    print("OK: API workflow node present, published binding wired, inputs.name='tomasz'")
+    print(
+        "OK: API workflow node present, published binding wired, inputs.name='tomasz'"
+    )
 
 
 if __name__ == "__main__":

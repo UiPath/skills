@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Delete the feedback record created during the e2e run."""
+
 import json
 import subprocess
 import sys
@@ -32,4 +33,6 @@ result = subprocess.run(cmd, capture_output=True, text=True)
 if result.returncode == 0:
     print(f"OK: deleted feedback {feedback_id}")
 else:
-    print(f"WARN: delete returned exit {result.returncode}: {result.stdout.strip() or result.stderr.strip()}")
+    print(
+        f"WARN: delete returned exit {result.returncode}: {result.stdout.strip() or result.stderr.strip()}"
+    )

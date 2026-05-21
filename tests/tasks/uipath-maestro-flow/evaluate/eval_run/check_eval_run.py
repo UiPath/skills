@@ -17,6 +17,7 @@ The CLI's exact field names may evolve; we tolerate both `EvaluatorScores`
 (list/dict of evaluator entries) and a flat per-row `Score` field. Anything
 that surfaces a numeric score gets checked.
 """
+
 from __future__ import annotations
 
 import json
@@ -48,7 +49,7 @@ def _extract_rows(doc: dict) -> list[dict]:
     if code != "MaestroFlowEvalRunResults":
         _fail(
             f'eval-results.json `Code` should be "MaestroFlowEvalRunResults", '
-            f'got {code!r}'
+            f"got {code!r}"
         )
     data = doc.get("Data") or {}
     for key in ("Results", "DataPoints", "Rows"):
@@ -56,8 +57,8 @@ def _extract_rows(doc: dict) -> list[dict]:
         if isinstance(rows, list) and rows:
             return rows
     _fail(
-        f'eval-results.json has no Results/DataPoints/Rows list under Data. '
-        f'Top-level keys: {list(doc.keys())}, Data keys: {list(data.keys())}'
+        f"eval-results.json has no Results/DataPoints/Rows list under Data. "
+        f"Top-level keys: {list(doc.keys())}, Data keys: {list(data.keys())}"
     )
     return []  # unreachable
 
@@ -118,9 +119,7 @@ def main() -> None:
             continue
         bad = [s for s in scores if s != 1.0]
         if bad:
-            failures.append(
-                f"{name!r}: scored {bad!r} (expected 1.0 from exact-match)"
-            )
+            failures.append(f"{name!r}: scored {bad!r} (expected 1.0 from exact-match)")
 
     if failures:
         _fail(" | ".join(failures))

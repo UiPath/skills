@@ -52,16 +52,18 @@ def main() -> None:
         metadata = entry.get("metadata") or {}
         actual = metadata.get("SubType")
         if actual is None:
-            print(f'OK: {name} asset binding has no SubType (acceptable fallback)')
+            print(f"OK: {name} asset binding has no SubType (acceptable fallback)")
             continue
         if actual == expected_subtype:
-            print(f'OK: {name} asset binding has SubType={actual!r} (high-confidence inference)')
+            print(
+                f"OK: {name} asset binding has SubType={actual!r} (high-confidence inference)"
+            )
             continue
         sys.exit(
-            f'FAIL: {name} asset binding has SubType={actual!r}, expected '
-            f'either {expected_subtype!r} (from annotation) or omitted. '
-            f'Wrong SubType is worse than no SubType — `uipath push` would '
-            f'create the wrong placeholder kind.'
+            f"FAIL: {name} asset binding has SubType={actual!r}, expected "
+            f"either {expected_subtype!r} (from annotation) or omitted. "
+            f"Wrong SubType is worse than no SubType — `uipath push` would "
+            f"create the wrong placeholder kind."
         )
 
 

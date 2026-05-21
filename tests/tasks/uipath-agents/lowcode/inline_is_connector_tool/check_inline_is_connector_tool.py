@@ -58,13 +58,12 @@ def assert_agent_and_connector_nodes(flow: dict) -> tuple:
     nodes = flow.get("nodes") or []
     agent_nodes = [n for n in nodes if n.get("type") == INLINE_AGENT_NODE_TYPE]
     if not agent_nodes:
-        sys.exit(
-            f"FAIL: flow has no node of type {INLINE_AGENT_NODE_TYPE!r}"
-        )
+        sys.exit(f"FAIL: flow has no node of type {INLINE_AGENT_NODE_TYPE!r}")
     agent_node = agent_nodes[0]
 
     connector_nodes = [
-        n for n in nodes
+        n
+        for n in nodes
         if isinstance(n.get("type"), str)
         and n["type"].startswith(CONNECTOR_TOOL_NODE_TYPE_PREFIX)
     ]
@@ -79,7 +78,7 @@ def assert_agent_and_connector_nodes(flow: dict) -> tuple:
     if not agent_node.get("id"):
         sys.exit(f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no id")
     if not connector_node.get("id"):
-        sys.exit(f"FAIL: connector tool node has no id")
+        sys.exit("FAIL: connector tool node has no id")
 
     print(
         f"OK: flow has {INLINE_AGENT_NODE_TYPE!r} and connector tool node "
@@ -111,7 +110,8 @@ def assert_agent_source_dir(agent_node: dict) -> Path:
 def assert_tool_edge(flow: dict, agent_id: str, connector_id: str) -> None:
     edges = flow.get("edges") or []
     matching = [
-        e for e in edges
+        e
+        for e in edges
         if e.get("sourceNodeId") == agent_id
         and e.get("sourcePort") == "tool"
         and e.get("targetNodeId") == connector_id
@@ -159,7 +159,9 @@ def assert_bindings_v2_authored() -> None:
     except json.JSONDecodeError as e:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
     if not isinstance(data, (dict, list)):
-        sys.exit(f"FAIL: {path} root is neither object nor array: {type(data).__name__}")
+        sys.exit(
+            f"FAIL: {path} root is neither object nor array: {type(data).__name__}"
+        )
     print(f"OK: bindings_v2.json authored at {path.relative_to(SOLUTION.parent)}")
 
 

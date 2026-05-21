@@ -120,6 +120,7 @@ def assert_package_lifecycle(project_dir: Path, bpmn_name: str, start_id: str) -
 
     expected_file_path = f"/content/{bpmn_name}#{start_id}"
     if not any(
-        ep.get("filePath") == expected_file_path for ep in entry_points.get("entryPoints", [])
+        ep.get("filePath") == expected_file_path
+        for ep in entry_points.get("entryPoints", [])
     ):
         fail(f"entry-points.json missing filePath {expected_file_path}")

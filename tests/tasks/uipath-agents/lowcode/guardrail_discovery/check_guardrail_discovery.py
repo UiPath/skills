@@ -49,8 +49,7 @@ def main() -> None:
 
     # --- find builtInValidator ---
     validators = [
-        g for g in guardrails
-        if g.get("$guardrailType") == "builtInValidator"
+        g for g in guardrails if g.get("$guardrailType") == "builtInValidator"
     ]
     if not validators:
         types = [g.get("$guardrailType") for g in guardrails]
@@ -64,7 +63,9 @@ def main() -> None:
     # --- validatorType is a non-empty string ---
     vt = g.get("validatorType")
     if not isinstance(vt, str) or not vt:
-        sys.exit(f"FAIL: guardrail.validatorType must be a non-empty string, got {vt!r}")
+        sys.exit(
+            f"FAIL: guardrail.validatorType must be a non-empty string, got {vt!r}"
+        )
     print(f"OK: validatorType = {vt!r}")
 
     # --- id is UUID-shaped ---
@@ -90,7 +91,9 @@ def main() -> None:
         sys.exit(f"FAIL: guardrail.selector must be an object, got {selector!r}")
     scopes = selector.get("scopes")
     if not isinstance(scopes, list) or len(scopes) == 0:
-        sys.exit(f"FAIL: guardrail.selector.scopes must be a non-empty array, got {scopes!r}")
+        sys.exit(
+            f"FAIL: guardrail.selector.scopes must be a non-empty array, got {scopes!r}"
+        )
     invalid = [s for s in scopes if s not in VALID_SCOPES]
     if invalid:
         sys.exit(

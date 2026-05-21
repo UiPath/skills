@@ -64,12 +64,7 @@ def main() -> None:
         )
 
     jira_nodes = [n for n in flow["nodes"] if n.get("type") == JIRA_NODE_TYPE]
-    body = (
-        jira_nodes[0]
-        .get("inputs", {})
-        .get("detail", {})
-        .get("bodyParameters", {})
-    )
+    body = jira_nodes[0].get("inputs", {}).get("detail", {}).get("bodyParameters", {})
     summary = body.get("fields.summary")
     if not summary:
         _fail(f"fields.summary missing or empty in bodyParameters: {body}")

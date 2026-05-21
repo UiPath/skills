@@ -26,11 +26,11 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import subprocess
 import sys
 from collections import OrderedDict
 from pathlib import Path
+
 
 def _find_repo_root() -> Path:
     """Walk up from this file until we find the repo's `.git` marker."""
@@ -40,6 +40,7 @@ def _find_repo_root() -> Path:
             return p
         p = p.parent
     raise RuntimeError("Could not locate repo root (no .git ancestor found)")
+
 
 REPO_ROOT = _find_repo_root()
 EXTRACT_SCRIPT = Path(__file__).with_name("extract_session.py")
@@ -67,13 +68,13 @@ EMPTY_STDOUT_PATTERNS = (
     r"^\(Bash completed with no output\)\s*$",
     r"^\(PowerShell completed with no output\)\s*$",
     r"^EXIT_CODE=\d+\s*$",
-    r"^[A-Z][A-Z0-9_]*=\d+\s*$",       # generic `EXIT=N`, `TRACES=N`, `RC=N`
+    r"^[A-Z][A-Z0-9_]*=\d+\s*$",  # generic `EXIT=N`, `TRACES=N`, `RC=N`
     r"^Exit:\s*\d+\s*$",
     r"^Exit\s+code\s+\d+\s*$",
     r"^FAILED\s*$",
     r"^OK\s*$",
     r"^exit=(?:True|False)\s*$",
-    r"^[A-Za-z_]+:\d+\s*$",            # PowerShell `get:0`, `logs:0` trailers
+    r"^[A-Za-z_]+:\d+\s*$",  # PowerShell `get:0`, `logs:0` trailers
 )
 EMPTY_STDOUT_RE = re.compile("|".join(EMPTY_STDOUT_PATTERNS), re.IGNORECASE)
 
@@ -250,9 +251,11 @@ PROJECT_SNAPSHOT_IGNORE_SUFFIXES = {".pyc", ".pdb"}
 
 # ---------- helpers ----------
 
+
 def _slugify(text: str) -> str:
     out = re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-").lower()
     return out or "troubleshooting-scenario"
+
 
 def _backfill_redirect_stdouts(uip_calls: list[dict], investigation: Path) -> dict:
     """For calls with empty stdout and a redirect target, load the file.
@@ -297,21 +300,27 @@ def _backfill_redirect_stdouts(uip_calls: list[dict], investigation: Path) -> di
                     loaded = None
         if loaded is not None:
             call["stdout"] = loaded
-            call["_backfilled_from"] = str(target_path) if target_path.is_file() else str(by_basename.get(target_path.name))
+            call["_backfilled_from"] = (
+                str(target_path)
+                if target_path.is_file()
+                else str(by_basename.get(target_path.name))
+            )
             backfilled += 1
         else:
             missing += 1
     return {"backfilled": backfilled, "missing": missing, "skipped": skipped}
+
 
 def _is_empty_stdout(stdout: str) -> bool:
     """True if `stdout` is just bash-trailer noise (no real content)."""
     if not stdout.strip():
         return True
     # If every non-empty line matches a trailer pattern, treat as empty.
-    lines = [l for l in stdout.splitlines() if l.strip()]
+    lines = [line for line in stdout.splitlines() if line.strip()]
     if not lines:
         return True
-    return all(EMPTY_STDOUT_RE.fullmatch(l.strip()) for l in lines)
+    return all(EMPTY_STDOUT_RE.fullmatch(line.strip()) for line in lines)
+
 
 def _run_extract(transcript: Path) -> dict:
     """Invoke extract_session.py as a subprocess and return its parsed JSON."""
@@ -324,6 +333,7 @@ def _run_extract(transcript: Path) -> dict:
     if proc.returncode != 0:
         raise RuntimeError(f"extract_session.py failed: {proc.stderr.strip()}")
     return json.loads(proc.stdout)
+
 
 def _detect_scrub_map(samples: list[str]) -> "OrderedDict[str, str]":
     """Auto-detect emails and personal Windows paths across all sampled text.
@@ -352,7 +362,9 @@ def _detect_scrub_map(samples: list[str]) -> "OrderedDict[str, str]":
                 seen_emails.append(full)
             idx = seen_emails.index(full)
             placeholder = (
-                placeholders[idx] if idx < len(placeholders) else f"user{idx + 1}@test.com"
+                placeholders[idx]
+                if idx < len(placeholders)
+                else f"user{idx + 1}@test.com"
             )
             mapping[full] = placeholder
             # Also map the bare local-part if it has structure (looks like a real name).
@@ -391,17 +403,26 @@ def _detect_scrub_map(samples: list[str]) -> "OrderedDict[str, str]":
                 continue
             if lower not in user_placeholders:
                 idx = len(user_placeholders) + 1
-                placeholder = "replacement_user" if idx == 1 else f"replacement_user{idx}"
+                placeholder = (
+                    "replacement_user" if idx == 1 else f"replacement_user{idx}"
+                )
                 user_placeholders[lower] = placeholder
         for m in WIN_DOMAIN_USER_RE.finditer(text):
-            domain, user = m.group(1), m.group(2)
+            user = m.group(2)
             # Skip well-known service accounts.
-            if user.upper() in {"SYSTEM", "ADMINISTRATOR", "NETWORKSERVICE", "LOCALSERVICE"}:
+            if user.upper() in {
+                "SYSTEM",
+                "ADMINISTRATOR",
+                "NETWORKSERVICE",
+                "LOCALSERVICE",
+            }:
                 continue
             lower = user.lower()
             if lower not in user_placeholders:
                 idx = len(user_placeholders) + 1
-                placeholder = "replacement_user" if idx == 1 else f"replacement_user{idx}"
+                placeholder = (
+                    "replacement_user" if idx == 1 else f"replacement_user{idx}"
+                )
                 user_placeholders[lower] = placeholder
 
     # Add username substitutions in both case forms.
@@ -414,6 +435,7 @@ def _detect_scrub_map(samples: list[str]) -> "OrderedDict[str, str]":
 
     return mapping
 
+
 def _apply_scrub(text: str, mapping: "OrderedDict[str, str]") -> str:
     if not isinstance(text, str):
         return text
@@ -423,11 +445,13 @@ def _apply_scrub(text: str, mapping: "OrderedDict[str, str]") -> str:
         out = out.replace(key, mapping[key])
     return out
 
+
 def _scrub_path(path: Path, mapping: "OrderedDict[str, str]") -> Path:
     """Apply scrub mapping to each path component (filenames containing real emails)."""
     parts = list(path.parts)
     new_parts = [_apply_scrub(p, mapping) for p in parts]
     return Path(*new_parts) if new_parts else path
+
 
 def _build_manifest_rules(uip_calls: list[dict]) -> tuple[list[dict], dict[str, str]]:
     """One rule per unique `args`. Returns (rules, fixture_filename_by_args).
@@ -456,6 +480,7 @@ def _build_manifest_rules(uip_calls: list[dict]) -> tuple[list[dict], dict[str, 
             rule["exit_code"] = call["exit_code"]
         rules.append(rule)
     return rules, fixture_by_args
+
 
 def _snapshot_project(
     src: Path, dst: Path, mapping: "OrderedDict[str, str] | None" = None
@@ -508,6 +533,7 @@ def _snapshot_project(
             plan.append((scrubbed_rel, p.read_bytes()))
     return plan
 
+
 def _format_initial_prompt(extracted: dict, scenario_name: str) -> str:
     """Indented YAML block for task.yaml's initial_prompt field.
 
@@ -521,6 +547,7 @@ def _format_initial_prompt(extracted: dict, scenario_name: str) -> str:
             f"(Generated for scenario {scenario_name} — review and customize.)"
         )
     return "\n".join("  " + line for line in body.splitlines())
+
 
 def _build_resolution_md(extracted: dict, resolution_arg: Path | None) -> str:
     if resolution_arg is not None:
@@ -536,12 +563,15 @@ def _build_resolution_md(extracted: dict, resolution_arg: Path | None) -> str:
         text = "# Final Resolution\n\n" + text.lstrip()
     return text.rstrip() + "\n"
 
+
 def _build_readme_md(scenario_name: str, summary: str) -> str:
     return README_TEMPLATE.format(
         scenario_title=scenario_name.replace("-", " ").title(),
         slug=scenario_name,
-        summary=summary or "_Add a 1–3 sentence summary of the original investigation here._",
+        summary=summary
+        or "_Add a 1–3 sentence summary of the original investigation here._",
     )
+
 
 def _build_task_yaml(
     scenario_name: str, initial_prompt_indented: str, has_project: bool
@@ -555,7 +585,9 @@ def _build_task_yaml(
         process_source_block=process_source_block,
     )
 
+
 # ---------- main pipeline ----------
+
 
 def plan_scenario(args: argparse.Namespace) -> dict:
     """Build the in-memory plan. Pure: no file writes."""
@@ -570,7 +602,11 @@ def plan_scenario(args: argparse.Namespace) -> dict:
         raise FileNotFoundError(f"project not found: {project}")
 
     extracted = _run_extract(transcript)
-    scenario_name = args.scenario_name or extracted.get("inferred_scenario_name") or "troubleshooting-scenario"
+    scenario_name = (
+        args.scenario_name
+        or extracted.get("inferred_scenario_name")
+        or "troubleshooting-scenario"
+    )
     scenario_name = _slugify(scenario_name)
 
     # Backfill empty stdouts from the investigation's saved files. The
@@ -594,9 +630,9 @@ def plan_scenario(args: argparse.Namespace) -> dict:
 
     # Build readme.
     summary = (extracted.get("presenter_output") or "").splitlines()
-    summary_oneline = next((s.strip() for s in summary if s.strip().startswith("**")), "") or (
-        summary[0].strip() if summary else ""
-    )
+    summary_oneline = next(
+        (s.strip() for s in summary if s.strip().startswith("**")), ""
+    ) or (summary[0].strip() if summary else "")
     readme_md = _build_readme_md(scenario_name, summary_oneline)
 
     # Build task.yaml.
@@ -620,7 +656,9 @@ def plan_scenario(args: argparse.Namespace) -> dict:
         project_plan = []
 
     if args.scrub_map:
-        scrub_map = OrderedDict(json.loads(Path(args.scrub_map).read_text(encoding="utf-8")))
+        scrub_map = OrderedDict(
+            json.loads(Path(args.scrub_map).read_text(encoding="utf-8"))
+        )
     else:
         scrub_map = _detect_scrub_map(samples)
 
@@ -634,11 +672,15 @@ def plan_scenario(args: argparse.Namespace) -> dict:
     for rel, content in project_plan:
         rel_scrubbed = _scrub_path(rel, scrub_map)
         if isinstance(content, str):
-            project_plan_scrubbed.append((rel_scrubbed, _apply_scrub(content, scrub_map)))
+            project_plan_scrubbed.append(
+                (rel_scrubbed, _apply_scrub(content, scrub_map))
+            )
         else:
             project_plan_scrubbed.append((rel_scrubbed, content))
 
-    out_base = Path(args.output) if args.output else (DEFAULT_OUTPUT_BASE / scenario_name)
+    out_base = (
+        Path(args.output) if args.output else (DEFAULT_OUTPUT_BASE / scenario_name)
+    )
 
     return {
         "scenario_name": scenario_name,
@@ -662,6 +704,7 @@ def plan_scenario(args: argparse.Namespace) -> dict:
         "task_yaml": task_yaml,
         "project_files": project_plan_scrubbed,
     }
+
 
 def render_dry_run(plan: dict) -> str:
     out: list[str] = []
@@ -696,15 +739,24 @@ def render_dry_run(plan: dict) -> str:
     out.append("")
     out.append("Files that would be written:")
     base = plan["output_dir"]
-    out.append(f"  {base / 'task.yaml'}                             ({len(plan['task_yaml'])} bytes)")
-    out.append(f"  {base / 'README.md'}                             ({len(plan['readme_md'])} bytes)")
-    out.append(f"  {base / 'RESOLUTION.md'}                         ({len(plan['resolution_md'])} bytes)")
+    out.append(
+        f"  {base / 'task.yaml'}                             ({len(plan['task_yaml'])} bytes)"
+    )
+    out.append(
+        f"  {base / 'README.md'}                             ({len(plan['readme_md'])} bytes)"
+    )
+    out.append(
+        f"  {base / 'RESOLUTION.md'}                         ({len(plan['resolution_md'])} bytes)"
+    )
     out.append(f"  {base / 'fixtures' / 'mocks' / 'responses' / 'manifest.json'}")
-    out.append(f"  {base / 'fixtures' / 'mocks' / 'responses' / '<rule>.json'} x {len(plan['fixtures'])}")
+    out.append(
+        f"  {base / 'fixtures' / 'mocks' / 'responses' / '<rule>.json'} x {len(plan['fixtures'])}"
+    )
     out.append(f"  {base / 'process' / '<files>'} x {len(plan['project_files'])}")
     out.append("")
     out.append("(dry-run — no files written. Pass --apply to write.)")
     return "\n".join(out)
+
 
 def apply_plan(plan: dict) -> None:
     base: Path = plan["output_dir"]
@@ -735,11 +787,20 @@ def apply_plan(plan: dict) -> None:
         else:
             target.write_bytes(content)
 
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--investigation", required=True)
-    parser.add_argument("--project", default=None, help="Optional. UiPath project dir to snapshot into process/.")
-    parser.add_argument("--transcript", required=True, help="JSONL file or directory containing main + subagent transcripts.")
+    parser.add_argument(
+        "--project",
+        default=None,
+        help="Optional. UiPath project dir to snapshot into process/.",
+    )
+    parser.add_argument(
+        "--transcript",
+        required=True,
+        help="JSONL file or directory containing main + subagent transcripts.",
+    )
     parser.add_argument("--resolution", default=None)
     parser.add_argument("--scenario-name", default=None)
     parser.add_argument("--output", default=None)
@@ -769,6 +830,7 @@ def main(argv: list[str]) -> int:
 
     print(render_dry_run(plan))
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

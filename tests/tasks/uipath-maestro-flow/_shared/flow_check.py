@@ -265,7 +265,9 @@ def _iter_flow_nodes(project_glob: str):
 
 
 def _non_empty_binding_value(value: Any) -> bool:
-    return isinstance(value, str) and bool(value.strip()) and value != "ImplicitConnection"
+    return (
+        isinstance(value, str) and bool(value.strip()) and value != "ImplicitConnection"
+    )
 
 
 def _find_project(pattern: str) -> str:
@@ -288,7 +290,7 @@ def _find_project(pattern: str) -> str:
         joined = "\n  - ".join(candidates)
         _fail(
             f"No Flow project.uiproj found matching {pattern} — "
-            f"candidates exist but none declare ProjectType=\"Flow\":\n  - {joined}"
+            f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
         joined = "\n  - ".join(flow_projects)

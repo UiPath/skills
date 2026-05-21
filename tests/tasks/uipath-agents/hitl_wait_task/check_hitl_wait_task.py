@@ -51,7 +51,11 @@ def has_interrupt_wait_task(tree: ast.Module) -> bool:
         if not node.args:
             continue
         inner = node.args[0]
-        if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name) and inner.func.id == "WaitTask":
+        if (
+            isinstance(inner, ast.Call)
+            and isinstance(inner.func, ast.Name)
+            and inner.func.id == "WaitTask"
+        ):
             return True
     return False
 
@@ -71,7 +75,9 @@ def main() -> None:
         fail("missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
 
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bWaitTask\b", text):
+    if not re.search(
+        r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bWaitTask\b", text
+    ):
         fail(
             "missing `from uipath.platform.common import WaitTask`. "
             "The scenario is `WaitTask` (wait on an existing Action Center task), "
@@ -86,13 +92,17 @@ def main() -> None:
         )
     print("OK: graph node calls interrupt(WaitTask(...))")
 
-    if re.search(r"\bCreateTask\s*\(", text) or re.search(r"\bCreateEscalation\s*\(", text):
+    if re.search(r"\bCreateTask\s*\(", text) or re.search(
+        r"\bCreateEscalation\s*\(", text
+    ):
         fail(
             "main.py invokes `CreateTask(...)` or `CreateEscalation(...)`. "
             "Those open a NEW Action Center task — the scenario is monitoring an "
             "ALREADY-CREATED task via `WaitTask`. Use `WaitTask` only."
         )
-    print("OK: no CreateTask / CreateEscalation usage (scenario is monitor-existing-task)")
+    print(
+        "OK: no CreateTask / CreateEscalation usage (scenario is monitor-existing-task)"
+    )
 
     if not re.search(r"^\s*graph\s*=\s*", text, re.M):
         fail("main.py does not export a top-level `graph =` variable")

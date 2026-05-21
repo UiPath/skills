@@ -18,8 +18,12 @@ from pathlib import Path
 ROOT = Path(os.getcwd()) / "bad-import"
 MAIN = ROOT / "main.py"
 
-WRONG = re.compile(r"^\s*from\s+uipath\s+import\s+(?:[^,\n]*,\s*)*UiPath(?:\s*,|$)", re.M)
-RIGHT = re.compile(r"^\s*from\s+uipath\.platform\s+import\s+(?:[^,\n]*,\s*)*UiPath\b", re.M)
+WRONG = re.compile(
+    r"^\s*from\s+uipath\s+import\s+(?:[^,\n]*,\s*)*UiPath(?:\s*,|$)", re.M
+)
+RIGHT = re.compile(
+    r"^\s*from\s+uipath\.platform\s+import\s+(?:[^,\n]*,\s*)*UiPath\b", re.M
+)
 
 
 def main() -> None:
@@ -37,7 +41,9 @@ def main() -> None:
             "FAIL: main.py does not import UiPath from `uipath.platform`. "
             "Add `from uipath.platform import UiPath`."
         )
-    print("OK: main.py imports UiPath from `uipath.platform` (no `from uipath import UiPath`)")
+    print(
+        "OK: main.py imports UiPath from `uipath.platform` (no `from uipath import UiPath`)"
+    )
 
 
 if __name__ == "__main__":

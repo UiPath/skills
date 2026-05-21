@@ -90,33 +90,34 @@ def check_uipath_json() -> None:
     if main_entry not in ("main.py:main", "./main.py:main"):
         sys.exit(
             f'FAIL: uipath.json functions.main should be "main.py:main", '
-            f'got {main_entry!r}'
+            f"got {main_entry!r}"
         )
-    print(f'OK: uipath.json registers functions.main -> {main_entry!r}')
+    print(f"OK: uipath.json registers functions.main -> {main_entry!r}")
 
 
 def check_entry_points() -> None:
     doc = _load_json(ROOT / "entry-points.json")
     entrypoints = doc.get("entryPoints") or []
     if not entrypoints:
-        sys.exit("FAIL: entry-points.json has no entryPoints — `uip codedagent init` did not run successfully")
-    matches = [
-        ep for ep in entrypoints
-        if ep.get("filePath") in ("main", "main.py")
-    ]
+        sys.exit(
+            "FAIL: entry-points.json has no entryPoints — `uip codedagent init` did not run successfully"
+        )
+    matches = [ep for ep in entrypoints if ep.get("filePath") in ("main", "main.py")]
     if not matches:
         paths = [ep.get("filePath") for ep in entrypoints]
         sys.exit(f'FAIL: no entrypoint with filePath "main" or "main.py"; got {paths}')
     ep = matches[0]
     if not ep.get("uniqueId"):
-        sys.exit("FAIL: entrypoint is missing `uniqueId` — `uip codedagent init` did not generate it")
+        sys.exit(
+            "FAIL: entrypoint is missing `uniqueId` — `uip codedagent init` did not generate it"
+        )
     raw = json.dumps(ep)
     for field in ("message", "repeat", "echoed", "length"):
         if field not in raw:
             sys.exit(
-                f'FAIL: entrypoint schema does not mention `{field}` — '
-                f'agent.json ↔ entry-points.json schema sync failed. '
-                f'Got: {raw}'
+                f"FAIL: entrypoint schema does not mention `{field}` — "
+                f"agent.json ↔ entry-points.json schema sync failed. "
+                f"Got: {raw}"
             )
     print(
         "OK: entry-points.json has one `main` entrypoint with all four "
@@ -128,7 +129,16 @@ def check_bindings() -> None:
     doc = load_bindings(ROOT / "bindings.json")
     total = sum(
         count_resources_by_type(doc, t)
-        for t in ("asset", "queue", "process", "bucket", "app", "index", "connection", "mcpServer")
+        for t in (
+            "asset",
+            "queue",
+            "process",
+            "bucket",
+            "app",
+            "index",
+            "connection",
+            "mcpServer",
+        )
     )
     if total != 0:
         sys.exit(
@@ -147,7 +157,9 @@ def main() -> None:
     check_entry_points()
     check_bindings()
     if not (ROOT / "run_marker.txt").is_file():
-        sys.exit(f"FAIL: {ROOT}/run_marker.txt does not exist — `uip codedagent run` likely never finished")
+        sys.exit(
+            f"FAIL: {ROOT}/run_marker.txt does not exist — `uip codedagent run` likely never finished"
+        )
     print("OK: run_marker.txt exists (run completed cleanly)")
 
 

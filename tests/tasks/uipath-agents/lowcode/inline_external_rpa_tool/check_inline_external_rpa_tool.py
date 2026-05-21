@@ -26,7 +26,9 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 from _shared.inline_wiring import (  # noqa: E402
     assert_edge,
     find_autonomous_agent_node,
@@ -36,9 +38,13 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "FibonacciFlowSol" / "FibonacciFlow" / "FibonacciFlow.flow"
+FLOW_PATH = (
+    Path(os.getcwd()) / "FibonacciFlowSol" / "FibonacciFlow" / "FibonacciFlow.flow"
+)
 RPA_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.process."
-UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
 
 EXPECTED_PROCESS_NAME = "FibonacciRPA"
 EXPECTED_FOLDER_PATH = "Shared/uipath-agents/FibonacciRPA"
@@ -62,7 +68,9 @@ def main() -> None:
             f"FAIL: inputs.source UUID {agent_source!r} does not match "
             f"the inline agent sub-folder name {agent_dir.name!r}"
         )
-    print(f"OK: autonomous node inputs.source={agent_source!r} matches inline agent sub-folder")
+    print(
+        f"OK: autonomous node inputs.source={agent_source!r} matches inline agent sub-folder"
+    )
 
     tool_source = (tool_node.get("model") or {}).get("source")
     if not isinstance(tool_source, str) or not UUID_RE.match(tool_source):
@@ -100,7 +108,7 @@ def main() -> None:
         f"({resource_path.relative_to(Path(os.getcwd()))})"
     )
     print(
-        f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
+        f"OK: {resource_path.relative_to(Path(os.getcwd()))} is "
         f'$resourceType="tool", type="process", location="external"'
     )
 
@@ -111,7 +119,9 @@ def main() -> None:
             f"FAIL: properties.folderPath should be {EXPECTED_FOLDER_PATH!r} "
             f"(the deployed Orchestrator folder of FibonacciRPA), got {fpath!r}"
         )
-    print(f'OK: properties.processName={EXPECTED_PROCESS_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}')
+    print(
+        f"OK: properties.processName={EXPECTED_PROCESS_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
+    )
 
     rkey = resource.get("referenceKey")
     if not isinstance(rkey, str) or "-" not in rkey:
