@@ -11,7 +11,9 @@
         "DisplayLabel": "Review Process",
         "SolutionsSupport": "Required",
         "SubType": "process"
-      }
+      },
+      "resource": "ReviewProcess",
+      "resourceSubType": "process"
     }
   ]
 }

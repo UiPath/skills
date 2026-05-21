@@ -59,8 +59,8 @@ do not invent `contentFiles` as a substitute for `content`.
 ```json
 {
   "projectVersion": "1.0.0",
-  "projectType": "ProcessOrchestration",
-  "name": "SyntheticProject",
+  "ProjectType": "ProcessOrchestration",
+  "Name": "SyntheticProject",
   "main": "SyntheticProject.bpmn"
 }
 ```

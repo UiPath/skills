@@ -20,6 +20,9 @@ shown in
 [../../../shared/wrapper-shells.md](../../../shared/wrapper-shells.md#orchestratorstartagentjob-folder-deployed-agent--coded-python-or-low-code)
 and in the
 [agent-invocation fixture](../../../../fixtures/validation/agent-invocation/).
+Put the `JobArguments` input payload and `Process response` output payload as
+direct children of `uipath:activity`; do not put them in a sibling
+`uipath:mapping`.
 
 The model may draft:
 

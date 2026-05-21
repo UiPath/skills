@@ -32,6 +32,8 @@
             <uipath:input name="name" type="string" value="=bindings.Binding_AgentName" />
             <uipath:input name="folderPath" type="string" value="=bindings.Binding_AgentFolderPath" />
           </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_Result" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Start_To_AgentJob</bpmn:incoming>

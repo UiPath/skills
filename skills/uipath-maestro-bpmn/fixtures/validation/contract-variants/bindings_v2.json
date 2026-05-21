@@ -12,7 +12,10 @@
         "SolutionsSupport": "Required",
         "SubType": "Agent",
         "PropertyAttribute": "name"
-      }
+      },
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "name"
     },
     {
       "id": "Binding_AgentFolderPath",
@@ -25,7 +28,10 @@
         "SolutionsSupport": "Required",
         "SubType": "Agent",
         "PropertyAttribute": "folderPath"
-      }
+      },
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "folderPath"
     },
     {
       "id": "Binding_EventConnection",
@@ -38,7 +44,9 @@
         "SolutionsSupport": "Required",
         "SubType": "connection",
         "Connector": "synthetic-events"
-      }
+      },
+      "resource": "SyntheticEvents",
+      "resourceSubType": "connection"
     },
     {
       "id": "Binding_EventTrigger",
@@ -52,7 +60,9 @@
         "SubType": "eventTrigger",
         "Connector": "synthetic-events",
         "EventName": "external-signal"
-      }
+      },
+      "resource": "SyntheticEvents.ExternalSignal",
+      "resourceSubType": "eventTrigger"
     }
   ]
 }

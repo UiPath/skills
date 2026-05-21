@@ -4,6 +4,9 @@
     {
       "id": "Binding_AgentName",
       "kind": "process",
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "name",
       "name": "Synthetic Agent",
       "resourceKey": "synthetic-agent",
       "metadata": {
@@ -17,6 +20,9 @@
     {
       "id": "Binding_AgentFolderPath",
       "kind": "process",
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "folderPath",
       "name": "Synthetic Agent",
       "resourceKey": "synthetic-agent",
       "metadata": {

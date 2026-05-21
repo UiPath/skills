@@ -12,7 +12,10 @@
         "SolutionsSupport": "Required",
         "SubType": "Agent",
         "PropertyAttribute": "name"
-      }
+      },
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "name"
     },
     {
       "id": "Binding_AgentFolderPath",
@@ -25,7 +28,10 @@
         "SolutionsSupport": "Required",
         "SubType": "Agent",
         "PropertyAttribute": "folderPath"
-      }
+      },
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "folderPath"
     },
     {
       "id": "Binding_ApiWorkflow",
@@ -37,7 +43,9 @@
         "DisplayLabel": "Synthetic API Workflow",
         "SolutionsSupport": "Required",
         "SubType": "apiWorkflow"
-      }
+      },
+      "resource": "SyntheticApiWorkflow",
+      "resourceSubType": "apiWorkflow"
     },
     {
       "id": "Binding_BusinessRule",
@@ -49,7 +57,9 @@
         "DisplayLabel": "Synthetic Business Rule",
         "SolutionsSupport": "Required",
         "SubType": "businessRules"
-      }
+      },
+      "resource": "SyntheticBusinessRule",
+      "resourceSubType": "businessRules"
     },
     {
       "id": "Binding_Queue",
@@ -61,7 +71,9 @@
         "DisplayLabel": "Synthetic Queue",
         "SolutionsSupport": "Required",
         "SubType": "queue"
-      }
+      },
+      "resource": "SyntheticQueue",
+      "resourceSubType": "queue"
     },
     {
       "id": "Binding_CaseProcess",
@@ -73,7 +85,9 @@
         "DisplayLabel": "Synthetic Case Process",
         "SolutionsSupport": "Required",
         "SubType": "caseManagement"
-      }
+      },
+      "resource": "SyntheticCaseProcess",
+      "resourceSubType": "caseManagement"
     },
     {
       "id": "Binding_WaitConnection",
@@ -86,7 +100,9 @@
         "SolutionsSupport": "Required",
         "SubType": "connection",
         "Connector": "synthetic-connector"
-      }
+      },
+      "resource": "SyntheticConnector",
+      "resourceSubType": "connection"
     },
     {
       "id": "Binding_WaitTrigger",
@@ -100,7 +116,9 @@
         "SubType": "eventTrigger",
         "Connector": "synthetic-connector",
         "EventName": "CaseUpdated"
-      }
+      },
+      "resource": "SyntheticConnector.CaseUpdated",
+      "resourceSubType": "eventTrigger"
     }
   ]
 }

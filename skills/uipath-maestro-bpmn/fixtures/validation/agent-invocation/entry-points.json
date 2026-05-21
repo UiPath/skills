@@ -14,11 +14,7 @@
       },
       "outputSchema": {
         "type": "object",
-        "properties": {
-          "status": {
-            "type": "string"
-          }
-        }
+        "properties": {}
       }
     }
   ]

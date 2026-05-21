@@ -42,6 +42,7 @@ The model may edit:
 
   ```xml
   <uipath:mapping version="v1">
+    <uipath:type value="BPMN.ScriptTask" version="v1" />
     <uipath:input name="args"><![CDATA[
       {"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}
     ]]></uipath:input>
@@ -67,7 +68,7 @@ and the output maps back through `=result.<field>`.
   <bpmn:extensionElements>
     <uipath:scriptVersion value="v3" />
     <uipath:mapping version="v1">
-      <uipath:type value="BPMN.Variables" version="v1" />
+      <uipath:type value="BPMN.ScriptTask" version="v1" />
       <uipath:context>
         <uipath:inputSchema><![CDATA[{"type":"object","properties":{"amount":{"type":"number"},"daysOverdue":{"type":"number"}}}]]></uipath:inputSchema>
       </uipath:context>

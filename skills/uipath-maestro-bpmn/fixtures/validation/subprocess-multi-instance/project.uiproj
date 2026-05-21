@@ -1,7 +1,7 @@
 {
   "projectVersion": "1.0.0",
-  "projectType": "ProcessOrchestration",
-  "name": "SubprocessMultiInstance",
+  "ProjectType": "ProcessOrchestration",
+  "Name": "SubprocessMultiInstance",
   "description": "Synthetic subprocess and multi-instance validation fixture.",
   "main": "subprocess-multi-instance.bpmn"
 }

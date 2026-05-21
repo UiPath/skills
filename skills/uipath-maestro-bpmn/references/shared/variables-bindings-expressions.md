@@ -27,7 +27,7 @@ Variable elements may include:
 - `internal`
 - CDATA body for schema-like variable content
 
-Entry point inputs use `elementId` to scope an input variable to the corresponding root-level start event. Root output variables become entry point output schema properties. JSON schema variables carry the schema body in CDATA; generated entry-point schema should strip `$schema`.
+Entry point inputs use `elementId` to scope an input or input-output variable to the corresponding root-level start event. Root output variables become entry point output schema properties. JSON schema variables carry the schema body in CDATA; generated entry-point schema should strip `$schema`.
 
 Maestro exports commonly model trigger-bound values as `uipath:inputOutput`
 variables scoped with `elementId`. Prefer that shape for new runtime-oriented
@@ -37,34 +37,25 @@ Subprocesses can carry scoped `uipath:variables` in subprocess extension element
 
 Author variables in pass 2 after the BPMN skeleton and entry points are stable. If an entry point changes during pass 1, update every variable whose `elementId` points at the old start event.
 
-### Projecting entry-point inputs for downstream use
+### Entry-point inputs used downstream
 
 A `uipath:input` is read-only and scoped to the start event it declares
-(`elementId`). Downstream nodes cannot dereference it directly — every
-`=vars.<inputId>` reference outside the start event reports
-`Unknown identifier '<inputId>'` at runtime even though `uip maestro bpmn pack`
-and `uip solution pack` accept the source. This is a required idiom, not a
-style choice.
+(`elementId`). If downstream nodes need to read or mutate the value, model it
+as a start-scoped `uipath:inputOutput` instead of a read-only input.
 
-To make an entry-point input readable downstream, declare a sibling
-`uipath:inputOutput` variable and copy the input into it through a
-`BPMN.Variables` mapping on the start event:
+Use the same `elementId` as the root start event so the value remains part of
+the entry-point input schema while also being readable later through
+`=vars.<variableId>`:
 
 ```xml
 <uipath:variables version="v1">
-  <uipath:input id="Var_RequestInput" name="request" type="json"
-                elementId="Start_Manual" />
-  <uipath:inputOutput id="Var_Request" name="requestState" type="json" />
+  <uipath:inputOutput id="Var_Request" name="request" type="json"
+                      elementId="Start_Manual" />
 </uipath:variables>
 
 <bpmn:startEvent id="Start_Manual" name="Start">
   <bpmn:extensionElements>
     <uipath:entryPointId value="Entry_Example" />
-    <uipath:mapping version="v1">
-      <uipath:type value="BPMN.Variables" version="v1" />
-      <uipath:output name="requestState" type="json" var="Var_Request"
-                     source="=vars.Var_RequestInput" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:outgoing>Flow_Start_To_Next</bpmn:outgoing>
 </bpmn:startEvent>
@@ -99,7 +90,8 @@ Integration Service connection bindings, trigger property bindings, connector re
 
 ## Mappings
 
-Use `uipath:mapping version="v1"` for `BPMN.Variables` input/output mapping on tasks, start/end events, script tasks, and subprocesses.
+Use `uipath:mapping version="v1"` for `BPMN.Variables` input/output mapping on
+plain `bpmn:task` elements. Use `BPMN.ScriptTask` mappings for script tasks.
 
 Output mappings should target declared root or scoped variables. Missing variables should be fixed in the BPMN source before package generation.
 
@@ -120,8 +112,8 @@ Gateway conditions belong on outgoing sequence flows. Service skip conditions be
 
 Output mappings should target mutable variables: `uipath:inputOutput` or
 `uipath:output`. Do not write task outputs back to read-only `uipath:input`
-variables. If a caller-provided input must also become mutable state, declare a
-separate `uipath:inputOutput` variable and map the entry input into it.
+variables. If a caller-provided input must also become mutable state, model the
+entry value as a start-scoped `uipath:inputOutput`.
 
 ## Script tasks
 
@@ -135,6 +127,7 @@ as `=result.response`:
 
 ```xml
 <uipath:mapping version="v1">
+  <uipath:type value="BPMN.ScriptTask" version="v1" />
   <uipath:input name="args"><![CDATA[
     {"caseId":"=vars.Var_CaseId"}
   ]]></uipath:input>

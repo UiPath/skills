@@ -17,9 +17,9 @@ Anchors of every shell:
 - `uipath:activity` or `uipath:event` carries the wrapper kind through
   `<uipath:type value="..." version="v1" />`.
 - Do not use legacy shorthand such as `<uipath:activity type="...">` in new XML.
-- Keep wrapper identity and resource context in `uipath:activity` or
-  `uipath:event`. Put variable payload inputs and outputs in a sibling
-  `uipath:mapping version="v1"` element.
+- Keep wrapper identity, resource context, and contract payload inputs/outputs
+  in `uipath:activity` or `uipath:event`. Use `uipath:mapping version="v1"`
+  for `BPMN.Variables` tasks and script-task mappings.
 - Every expression that references a root variable uses
   `=vars.<variableId>`, not bare names.
 - Every visible flow node and sequence flow needs matching `bpmndi:BPMNShape`
@@ -53,13 +53,11 @@ Namespace baseline for greenfield files:
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartJob" version="v1" />
       <uipath:context>
-        <uipath:input name="processName" type="string" value="Synthetic Process" />
+        <uipath:input name="name" type="string" value="Synthetic Process" />
       </uipath:context>
+      <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_JobResult" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="inArgs" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="JobId" type="string" var="Var_JobId" source="id" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_RpaJob</bpmn:incoming>
   <bpmn:outgoing>Flow_RpaJob_Out</bpmn:outgoing>
@@ -94,13 +92,9 @@ Required binding shape (enforced by the Maestro BPMN packager validator — `uip
         <uipath:input name="name" type="string" value="=bindings.Binding_AgentName" />
         <uipath:input name="folderPath" type="string" value="=bindings.Binding_AgentFolderPath" />
       </uipath:context>
-    </uipath:activity>
-    <uipath:mapping version="v1">
       <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="JobId" type="string" var="Var_AgentJobId" source="id" />
-      <uipath:output name="Status" type="string" var="Var_AgentJobStatus" source="status" />
-      <uipath:output name="Result" type="json" var="Var_AgentJobResult" source="result" />
-    </uipath:mapping>
+      <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgentJobResult" />
+    </uipath:activity>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_AgentJob</bpmn:incoming>
   <bpmn:outgoing>Flow_AgentJob_Out</bpmn:outgoing>
@@ -114,6 +108,9 @@ Required binding shape (enforced by the Maestro BPMN packager validator — `uip
   "id": "Binding_AgentName",
   "name": "Synthetic Agent",
   "kind": "process",
+  "resource": "process",
+  "resourceSubType": "Agent",
+  "propertyAttribute": "name",
   "resourceKey": "synthetic-agent",
   "metadata": {
     "BindingsVersion": "v1",
@@ -125,9 +122,9 @@ Required binding shape (enforced by the Maestro BPMN packager validator — `uip
 }
 ```
 
-`Var_RequestId` must already exist as a `uipath:inputOutput` variable readable at the task — see [variables-bindings-expressions.md](variables-bindings-expressions.md#projecting-entry-point-inputs-for-downstream-use) for the required entry-point projection idiom.
+`Var_RequestId` must already exist as a `uipath:inputOutput` variable readable at the task — see [variables-bindings-expressions.md](variables-bindings-expressions.md#entry-point-inputs-used-downstream) for the start-scoped input pattern.
 
-For the full runnable end-to-end fixture (BPMN + bindings + entry-point projection), see [../../fixtures/validation/agent-invocation/](../../fixtures/validation/agent-invocation/).
+For the full runnable end-to-end fixture (BPMN + bindings + start-scoped entry input), see [../../fixtures/validation/agent-invocation/](../../fixtures/validation/agent-invocation/).
 
 ## A2A.AgentExecution (external A2A agent addressed by URL)
 
@@ -139,10 +136,9 @@ For the full runnable end-to-end fixture (BPMN + bindings + entry-point projecti
     <uipath:activity version="v1">
       <uipath:type value="A2A.AgentExecution" version="v1" />
       <uipath:context />
+      <uipath:input name="body" type="json" target="body"><![CDATA[{"input":"Summarize the synthetic request."}]]></uipath:input>
+      <uipath:output name="a2aResponse" type="A2A.AgentExecution" var="Var_A2AResponse" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="Prompt" type="string" value="Summarize the synthetic request." />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_A2A</bpmn:incoming>
   <bpmn:outgoing>Flow_A2A_Out</bpmn:outgoing>
@@ -161,13 +157,9 @@ For the full runnable end-to-end fixture (BPMN + bindings + entry-point projecti
       <uipath:context>
         <uipath:input name="name" type="string" value="Synthetic API Workflow" />
       </uipath:context>
-    </uipath:activity>
-    <uipath:mapping version="v1">
       <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="InvocationId" type="string" var="Var_ApiWorkflowInvocationId" source="id" />
-      <uipath:output name="Status" type="string" var="Var_ApiWorkflowStatus" source="status" />
-      <uipath:output name="Result" type="json" var="Var_ApiWorkflowResult" source="result" />
-    </uipath:mapping>
+      <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ApiWorkflowResult" />
+    </uipath:activity>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_ApiWorkflow</bpmn:incoming>
   <bpmn:outgoing>Flow_ApiWorkflow_Out</bpmn:outgoing>
@@ -186,12 +178,9 @@ For the full runnable end-to-end fixture (BPMN + bindings + entry-point projecti
       <uipath:context>
         <uipath:input name="name" type="string" value="Synthetic Rule" />
       </uipath:context>
+      <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="Execute business rule [Preview]" type="Orchestrator.BusinessRules" var="Var_RuleResult" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="facts" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="Outcome" type="string" var="Var_RuleOutcome" source="outcome" />
-      <uipath:output name="Diagnostics" type="json" var="Var_RuleDiagnostics" source="diagnostics" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_BusinessRule</bpmn:incoming>
   <bpmn:outgoing>Flow_BusinessRule_Out</bpmn:outgoing>
@@ -210,11 +199,9 @@ For the full runnable end-to-end fixture (BPMN + bindings + entry-point projecti
       <uipath:context>
         <uipath:input name="queueName" type="string" value="SyntheticQueue" />
       </uipath:context>
+      <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_WorkItem" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="itemData" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="QueueItemId" type="string" var="Var_WorkItemId" source="id" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_CreateQueue</bpmn:incoming>
   <bpmn:outgoing>Flow_CreateQueue_Out</bpmn:outgoing>
@@ -231,11 +218,12 @@ process waits for completion.
   <bpmn:extensionElements>
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.CreateAndWaitForQueueItem" version="v1" />
-      <uipath:context />
+      <uipath:context>
+        <uipath:input name="queueName" type="string" value="SyntheticQueue" />
+      </uipath:context>
+      <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_WorkItem" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="reference" type="string" value="=vars.Var_WorkItemId" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_WaitQueue</bpmn:incoming>
   <bpmn:outgoing>Flow_WaitQueue_Out</bpmn:outgoing>
@@ -411,11 +399,9 @@ CLI or operator.
     <uipath:activity version="v1">
       <uipath:type value="Actions.HITL" version="v1" />
       <uipath:context />
+      <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="Process response" type="Actions.HITL" var="Var_ActionResult" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="TaskData" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="Outcome" type="string" var="Var_Outcome" source="outcome" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_Review</bpmn:incoming>
   <bpmn:outgoing>Flow_Review_Out</bpmn:outgoing>
@@ -437,10 +423,8 @@ connection binding, dynamic schemas, and operation metadata.
         <uipath:input name="connectorKey" type="string" value="placeholder-connector" />
         <uipath:input name="activity" type="string" value="placeholder-operation" />
       </uipath:context>
-    </uipath:activity>
-    <uipath:mapping version="v1">
       <uipath:input name="Body" type="json" target="bodyField"><![CDATA[{"value":"=vars.Var_RequestId"}]]></uipath:input>
-    </uipath:mapping>
+    </uipath:activity>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_ConnectorActivity</bpmn:incoming>
   <bpmn:outgoing>Flow_ConnectorActivity_Out</bpmn:outgoing>
@@ -512,8 +496,7 @@ Rules:
 
 - `<bpmn:script>` bodies on `bpmn:scriptTask` require either
   `<uipath:scriptVersion>` or a `<uipath:mapping>` containing
-  `<uipath:type value="BPMN.ScriptTask" version="v1" />` or
-  `<uipath:type value="BPMN.Variables" version="v1" />`. Without one of those
+  `<uipath:type value="BPMN.ScriptTask" version="v1" />`. Without one of those
   extensions, `uip maestro bpmn validate` rejects the body.
 - `uipath:migrationVersion` is preserve-only. Numeric values such as `5`,
   `11`, and `11.5` carry import migration history; do not delete them.
