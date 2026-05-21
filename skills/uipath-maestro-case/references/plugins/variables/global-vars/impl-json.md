@@ -111,6 +111,10 @@ For each trigger in `trigger-spec-cache.json`:
 | Referenced as `Category=In` | — (In doesn't reference a payload field; the value comes from caller or Default at fire) | Bridge entry per § In argument below — `{name: <sdd-name>, type: <sdd-row.type>, source: "=vars.<inputId>", var: <sdd-name>}`. Works on ANY trigger type (manual, timer, event). For event triggers, the bridge propagates the formal slot's `default` to the companion at trigger fire (no caller-override path, but mechanics are identical). | per § In argument below | — | per § In argument below |
 | Referenced as `Category=Out` | — | **REJECT** (direction mismatch — Out-args flow case→caller) | — | — | — |
 
+**File-type carve-out:** when the spec output's `type` is `"file"` (or `"octet-stream"` — normalize to `"file"`), both rows above additionally require:
+- `triggerNode.outputs[]` entry: add `target: "=orchestrator.JobAttachments"` — runtime persists attachment bytes via this expression. Without it, the JobAttachment record is never written.
+- `root.inputOutputs[]` companion: add `body: <FILE_TYPE_JSON_SCHEMA verbatim>` (see [`## file type`](#file-type)). Pattern C companions normally have no body, but file-type companions MUST carry the FILE_TYPE_JSON_SCHEMA so the FE picker can navigate `=vars.<id>.FullName` sub-fields and activate the JobAttachment widget.
+
 **Dedup rule:** if multiple SDD rows reference the same trigger spec output (rare, but possible across multi-trigger cases), each writes its own `triggerNode.outputs[]` entry but they share one `root.inputOutputs[]` declaration (first-write-wins on type / default; Phase 2 validator rejects conflicts).
 
 **Top-level match semantics:** matching is by **top-level spec output name only** (i.e., the `name` field of an entry in `caseShape.outputs[]` — `response`, `Error`, etc.). When an SDD row's Name equals the top-level spec name, the SDD-named entry **replaces** the would-be plain-name auto-emit for that exact entry; do not write both.
@@ -335,20 +339,25 @@ Custom outputs are an existing task-plugin concept, unchanged by B's redesign. T
 
 File Variables hold a JobAttachment record (`{ID, FullName, MimeType, Metadata}`), not a path or bytes. Runtime writes the record when the producing task completes.
 
-`body` MUST be the FILE_TYPE_JSON_SCHEMA constant verbatim — `x-uipath-resource-kind: "JobAttachment"` is what activates the FE picker.
+`body` MUST be the FILE_TYPE_JSON_SCHEMA constant **byte-for-byte** (matches FE `VariableConstants.ts:10-36`). The `x-uipath-resource-kind: "JobAttachment"` marker activates the FE picker; missing `description` / `additionalProperties` fields cause round-trip drift on FE re-save.
+
+Normalize `"octet-stream"` → `"file"` before emitting. The FE's `isFileType` accepts both, but only `"file"` round-trips through CLI emission.
 
 ```json
 { "id": "evidenceDoc", "name": "evidenceDoc", "type": "file",
   "body": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["ID"],
-    "x-uipath-resource-kind": "JobAttachment",
     "properties": {
-      "ID":       { "type": "string" },
-      "FullName": { "type": "string" },
-      "MimeType": { "type": "string" },
-      "Metadata": { "type": "object" }
-    }
+      "ID":       { "type": "string", "description": "Orchestrator attachment key" },
+      "FullName": { "type": "string", "description": "File name" },
+      "MimeType": { "type": "string", "description": "The MIME type of the content, such as application/json or image/png" },
+      "Metadata": { "type": "object",
+                    "description": "Dictionary<string, string> of metadata",
+                    "additionalProperties": { "type": "string" } }
+    },
+    "required": ["ID"],
+    "x-uipath-resource-kind": "JobAttachment"
   },
   "default": "", "custom": true, "elementId": "root" }
 ```
