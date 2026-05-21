@@ -48,11 +48,17 @@ The solution and flow project already exist (created by [`uipath-maestro-flow`](
    ```bash
    mkdir <CodedAgentProject>
    cd <CodedAgentProject>
-   uv sync
+   uv venv --python 3.13
    source .venv/bin/activate       # .venv/Scripts/activate on Windows
-   uip codedagent setup --output json
+   uv pip install <FRAMEWORK_PACKAGE>   # e.g. uipath for Coded Function
+   uip codedagent setup --force
    uip codedagent new <agent-name>
+   uv sync
    ```
+
+   For a simple stub with no LLM call, use the Coded Function framework
+   (`uipath` package). This avoids downloading the full LangGraph or
+   LlamaIndex stack and keeps the setup fast.
 
 2. Implement `main.py`. Use lazy LLM initialization (create clients inside functions, never at module level).
 

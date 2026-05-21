@@ -14,11 +14,9 @@ tags: [uipath-ixp, smoke, lifecycle:execute]
 
 agent:
   type: claude-code
-  max_turns: 30
 
-sandbox:
-  driver: tempdir
-  python: {}
+run_limits:
+  max_turns: 30
 
 initial_prompt: |
   You have three tasks against IXP project `my_invoices-f1afa9ef-ixp`.

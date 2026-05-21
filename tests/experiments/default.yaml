@@ -13,6 +13,23 @@ defaults:
     task_timeout: 900
     turn_timeout: 900
 
+  sandbox:
+    driver: tempdir
+    docker:
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - TRACES_SMOKE_PROCESS_KEY
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
+
   agent:
     type: claude-code
     permission_mode: acceptEdits
@@ -24,6 +41,13 @@ defaults:
       - type: "local"
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
+
+  # Drop <sandbox>/{node_modules,.npm-prefix} so preserved artifacts stay slim
+  # and Node module resolution can't leak across concurrent sandboxes
+  # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
+  post_run:
+    - command: "rm -rf node_modules .npm-prefix"
+      timeout: 30
 
 variants:
   - variant_id: default

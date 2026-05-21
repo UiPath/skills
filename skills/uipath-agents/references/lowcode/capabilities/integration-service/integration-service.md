@@ -203,15 +203,16 @@ The activity metadata's `fields.<name>.enum` already has this exact shape — co
 
 **Auto-generated.** Do not create them manually. After creating the agent-level `resource.json`:
 
-1. Run `uip agent validate` — generates `bindings_v2.json` in the agent project directory
-2. Run `uip solution resource refresh` from the solution root — auto-generates `resources/solution_folder/connection/{connectorKey}/` files and `debug_overwrites.json`
+1. Run `uip agent validate` — read-only check.
+2. Run `uip agent migrate` — generates `bindings_v2.json` in the agent project directory.
+3. Run `uip solution resource refresh` from the solution root — auto-generates `resources/solution_folder/connection/{connectorKey}/` files and `debug_overwrites.json`.
 
 **`location` and `folderPath`:**
 
 | `location` | `folderPath` | Meaning |
 |------------|-------------|---------|
 | `"solution"` | `"solution_folder"` | Resource is another project within this same solution. Creating this agent-level resource.json is sufficient. |
-| `"external"` | `"solution_folder"` | Resource is already deployed in Orchestrator, outside this solution. Write the agent-level resource.json, then run `uip agent validate` followed by `uip solution resource refresh` — refresh auto-generates the solution-level process declaration, package declaration, and `debug_overwrites.json` entry. |
+| `"external"` | `"solution_folder"` | Resource is already deployed in Orchestrator, outside this solution. Write the agent-level resource.json, then run `uip agent validate` → `uip agent migrate` → `uip solution resource refresh` — refresh auto-generates the solution-level process declaration, package declaration, and `debug_overwrites.json` entry. |
 
 ### Connection Definition (refresh fallback)
 
@@ -219,7 +220,7 @@ The activity metadata's `fields.<name>.enum` already has this exact shape — co
 
 Provisions an Integration Service connection as part of the solution. Required when an agent has an integration tool (`type: "integration"`). One per connector — all tools using the same connector share this connection resource.
 
-**Auto-generated:** Do not create these files manually. After creating the agent-level integration tool `resource.json`, run `uip agent validate` (generates `bindings_v2.json`) then `uip solution resource refresh` (auto-generates connection resources and `debug_overwrites.json` from `bindings_v2.json`).
+**Auto-generated:** Do not create these files manually. After creating the agent-level integration tool `resource.json`, run `uip agent validate` (read-only check), `uip agent migrate` (generates `bindings_v2.json`), then `uip solution resource refresh` (auto-generates connection resources and `debug_overwrites.json` from `bindings_v2.json`).
 
 **Cross-reference:** The connection resource `key` matches the `solutionProperties.resourceKey` in integration tool resources that use this connector.
 
@@ -310,11 +311,15 @@ If no `--connection-id` is available (e.g., the connector auto-provisions connec
 
 Build the `resource.json` from the metadata. See § Agent-Level Resource Shape above for the full template and field mapping.
 
-### Step 8 — Validate and refresh solution resources
+### Step 8 — Validate, migrate, and refresh solution resources
 
 ```bash
-# Validate — generates bindings_v2.json in the agent project directory
+# Validate — read-only check.
 uip agent validate "<AGENT_NAME>" --output json
+
+# Migrate — generates bindings_v2.json in the agent project directory
+# and regenerates .agent-builder/.
+uip agent migrate "<AGENT_NAME>" --output json
 
 # Refresh solution resources — auto-generates solution-level connection
 # resources and debug_overwrites from bindings_v2.json

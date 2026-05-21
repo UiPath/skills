@@ -7,9 +7,10 @@ description: >
   hooks pattern and the coded test case workflow in one task.
 tags: [uipath-rpa, smoke, coded, hooks, test-case]
 
-sandbox:
-  driver: tempdir
-  python: {}
+run_limits:
+  max_turns: 70
+  task_timeout: 400
+  turn_timeout: 400
 
 initial_prompt: |
   I have a UiPath coded test project called "LoginTests" that exercises a

@@ -20,25 +20,30 @@ from pathlib import Path
 # Rounded recall.yes baseline (in %) per skill, from the 2026-05-08 full
 # activation run. Nearest 5%. Skills omitted have no activation test set
 # yet (uipath-admin, uipath-ixp) — the gate SKIPs them.
+# uipath-solution is the merged successor of uipath-solution-design + the
+# `uip solution` slice of uipath-platform; rebaseline after the next full run.
+#
+# uipath-rpa: held at the pre-merge modern value of 70 after the
+# uipath-rpa-legacy merge (PILOT-5232). The legacy half's 75% baseline
+# was measured against the dedicated legacy skill description; the
+# merged uipath-rpa description dilutes legacy signals, so the
+# combined recall is expected to land closer to the modern half.
+# Re-baseline after the first full activation run on the merged dataset.
 BASELINES_PCT: dict[str, int] = {
     "uipath-feedback": 90,
     "uipath-data-fabric": 90,
-    "uipath-interact": 90,
     "uipath-planner": 90,
     "uipath-tasks": 85,
     "uipath-governance": 85,
-    "uipath-rpa-legacy": 75,
     "uipath-platform": 70,
     "uipath-maestro-flow": 70,
     "uipath-human-in-the-loop": 70,
     "uipath-test": 70,
     "uipath-rpa": 70,
-    "uipath-diagnostics": 70,
+    "uipath-troubleshoot": 70,
     "uipath-maestro-bpmn": 60,
     "uipath-coded-apps": 60,
-    "uipath-llm-configuration-byo-connections": 60,
     "uipath-agents": 55,
-    "uipath-solution-design": 50,
     "uipath-maestro-case": 45,
     "uipath-review": 20,
 }
@@ -107,12 +112,16 @@ def main() -> int:
             ],
             cwd=repo_root, check=False,
         )
+        # coder-eval exits non-zero whenever any individual task fails its
+        # criteria. That's exactly the case DROP_PP is designed to absorb —
+        # the threshold check below is the single source of truth. Only
+        # treat the run as broken if suite.json never materialised.
         if result.returncode != 0:
             print(
-                f"ERROR: coder-eval exited with code {result.returncode}",
+                f"::notice::coder-eval exited with code {result.returncode} "
+                f"(per-task failures expected; deferring to threshold check)",
                 file=sys.stderr,
             )
-            return 2
 
         suite_json = run_dir / "default" / f"skill-activation-gate-{skill}" / "suite.json"
         if not suite_json.is_file():

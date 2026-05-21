@@ -56,8 +56,9 @@ The authoring flow below (agent-level `resource.json` with `type: "internal"` + 
 ## Lifecycle
 
 1. **Author** the agent-level `resources/{ToolName}/resource.json` with the canonical shape from the per-tool walkthrough.
-2. **Validate** with `uip agent validate "<AGENT_NAME>" --output json`.
-3. **Bundle and upload** the solution. No solution-resource refresh needed.
+2. **Validate** with `uip agent validate "<AGENT_NAME>" --output json` (read-only check).
+3. **Migrate** with `uip agent migrate "<AGENT_NAME>" --output json` — regenerates `.agent-builder/`.
+4. **Bundle and upload** the solution. No solution-resource refresh needed.
 
 ## Tool Registry
 

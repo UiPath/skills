@@ -13,10 +13,6 @@ description: >
   command in the documented heredoc shape.
 tags: [uipath-ixp, smoke, lifecycle:edit]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   The InvoiceNumber field on IXP project `my_invoices-f1afa9ef-ixp` is
   scoring poorly. Validation shows the model is confusing the Purchase

@@ -1,0 +1,113 @@
+task_id: skill-admin-authz-role-lifecycle-tenant-e2e
+description: >
+  End-to-end test: full lifecycle of a Tenant-scope custom role bound
+  to one specific tenant — discovers Tenant-shape permissions,
+  resolves the login tenant's UUID, creates with `--scope Tenant`
+  AND `--tenant-id <UUID>`, verifies, deletes.
+
+  Validates: `--scope Tenant`, presence of `--tenant-id` (binding to
+  one tenant), tenant resolution before create, cleanup.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, e2e, authz, role-lifecycle, scope:tenant]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a read-only Studio role called "TenantStudioReader" that
+  only applies to the tenant I'm currently logged into — not the
+  whole organization, not other tenants.
+
+  After it's created, show me the role's contents so I can verify it.
+  Then please remove it and confirm it's gone.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent resolved the current login tenant's UUID before binding the role"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(?:login\s+status|admin\s+tenants\s+(?:list|get))'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed Tenant-shape Studio permissions"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\s+.*--service\s+studio'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked name collision via `roles list --filter`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--filter\s+\S*TenantStudioReader'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent wrote an actions.json file"
+    tool_name: "Write"
+    command_pattern: 'actions\.json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the role with --scope Tenant, --tenant-id <UUID>, and --name TenantStudioReader"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Tenant\b.*--tenant-id\s+[a-f0-9-]{8,}.*--name\s+\S*TenantStudioReader.*--file\s+\S+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the new role via `roles get <id>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+[a-f0-9-]{8,}'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cleaned up by calling `roles delete <id>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+delete\s+[a-f0-9-]{8,}'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the role was removed"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get\s+[a-f0-9-]{8,}|list\s+.*--filter\s+\S*TenantStudioReader)'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use --scope TenantGlobal when binding to one specific tenant"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+TenantGlobal\b'
+    weight: 1.5

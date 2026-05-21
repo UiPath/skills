@@ -21,7 +21,7 @@ If the change feels too tangled for a sequence of `Edit` calls, use `Write` for 
 
 ## Required Strategy
 
-> **Use Edit / Write for all non-carve-out `.flow` edits.** Flow CLI is not an opt-in alternative for OOTB structural edits. Use CLI only for connector activity, connector-trigger, and managed HTTP carve-outs. Inline-agent project lifecycle commands (`uip agent init --inline-in-flow`, `uip agent validate --inline-in-flow`) are allowed for the agent project, but the `uipath.agent.autonomous` flow node and edges are authored directly in `.flow` JSON.
+> **Use Edit / Write for all non-carve-out `.flow` edits.** Flow CLI is not an opt-in alternative for OOTB structural edits. Use CLI only for connector activity, connector-trigger, and managed HTTP carve-outs. Inline-agent project lifecycle commands (`uip agent init --inline-in-flow`, `uip agent validate --inline-in-flow`, `uip agent migrate --inline-in-flow`) are allowed for the agent project, but the `uipath.agent.autonomous` flow node and edges are authored directly in `.flow` JSON.
 
 | Strategy | Guide | When to use |
 |----------|-------|-------------|
@@ -76,9 +76,9 @@ These apply regardless of which strategy you use.
 
 ### Layout
 
-- Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow tidy` — do not hand-compute coordinates
-- When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save
-- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [cli-commands.md](../../shared/cli-commands.md#uip-maestro-flow-tidy)
+- Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow format` — do not hand-compute coordinates
+- When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); format rewrites it on save
+- Run `uip maestro flow format <file>.flow` after edits and before publish/debug — see [cli-commands.md](../../shared/cli-commands.md#uip-maestro-flow-format)
 
 ### Edge rules
 

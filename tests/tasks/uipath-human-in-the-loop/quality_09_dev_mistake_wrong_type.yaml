@@ -8,6 +8,8 @@ tags: [uipath-human-in-the-loop, integration, schema-design, developer-mistake]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 75
   turn_timeout: 900
 

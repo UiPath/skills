@@ -1,0 +1,73 @@
+task_id: skill-agent-coded-llamaindex-rag
+description: >
+  LlamaIndex Workflow + UiPath Context Grounding RAG. Verifies the
+  skill picks LlamaIndex for a RAG scenario, scaffolds the project,
+  wires `ContextGroundingQueryEngine` from
+  `uipath_llamaindex.query_engines`, and binds it to the named
+  index in the prompt. The framework choice is a deliberate test of
+  the skill's framework-selection logic — the prompt names neither
+  the framework nor the RAG primitive.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-llamaindex, feature:rag-coded]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath coded agent named `hr-helper` that answers
+  employee questions about HR policy. The agent reads the
+  question, looks up the relevant passages in the company
+  knowledge base, and returns an answer grounded in what it
+  found.
+
+  The knowledge base is already set up as an index named
+  `hr-policy` inside the `Shared` folder.
+
+  Inputs:
+    - `question` (string)
+
+  Outputs:
+    - `answer` (string)
+
+  Take the agent through scaffold → schema sync. Do NOT run,
+  publish, upload, or deploy. Do NOT call `uip login`. Do NOT
+  pause between planning and implementation. Complete end-to-end
+  in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent regenerated schemas from the code"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "LlamaIndex framework marker present (proves framework selection)"
+    path: "llama_index.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "LlamaIndex Workflow shape + UiPath ContextGroundingQueryEngine wired to the `hr-policy` index"
+    command: "python3 $TASK_DIR/check_llamaindex_rag.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

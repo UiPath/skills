@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "8e3f4d5c-2b1a-4c9d-7e6f-1a2b3c4d5e6f",
+      "State": "Faulted",
+      "ProcessName": "AssetNetworkConnectivity",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T19:18:42.105Z",
+      "EndTime": "2026-05-13T19:19:13.812Z",
+      "CreationTime": "2026-05-13T19:18:41.864Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

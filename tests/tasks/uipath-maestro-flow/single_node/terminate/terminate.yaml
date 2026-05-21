@@ -6,12 +6,13 @@ description: >
   workflow, the delay branch should be killed before it completes. Exercises
   Terminate as a hard-stop that kills parallel branches.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, node:terminate]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 sandbox:

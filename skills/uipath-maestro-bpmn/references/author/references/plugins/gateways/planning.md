@@ -4,7 +4,7 @@ Use this reference when planning BPMN routing, branching, and joining.
 
 ## When to use
 
-- Exclusive, inclusive, parallel, event-based, or complex decisions.
+- Exclusive, inclusive, parallel, or event-based decisions.
 - Merging alternative paths.
 - Joining parallel or inclusive work.
 - Waiting for one of several events.
@@ -29,3 +29,6 @@ Use this reference when planning BPMN routing, branching, and joining.
 ## Stop conditions
 
 Stop for user input when branch conditions are ambiguous, defaults are unknown, or a join can deadlock because the triggering split semantics are unclear.
+
+Do not plan new `bpmn:complexGateway` paths. Preserve imported complex gateways
+and report them as unsupported for regeneration.

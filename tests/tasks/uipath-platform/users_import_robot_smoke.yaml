@@ -1,0 +1,67 @@
+task_id: skill-platform-users-import-robot-smoke
+description: >
+  Smoke test: agent uses the uipath-platform skill to import a robot
+  account into the Orchestrator tenant. Verifies the agent (a) finds the
+  IS UUID via `admin robot-accounts list --search` (or remembers it from
+  a prior `admin robot-accounts create`), and (b) calls
+  `uip or users import --directory-id <uuid> --type DirectoryRobot
+  --domain autogen` with all three flags. Without --directory-id the
+  CLI rejects with "Missing --directory-id"; without --type the CLI
+  errors on a required option. Auth/404 errors are acceptable — goal is
+  correct command shape.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup]
+
+initial_prompt: |
+  I created a robot account in Identity Service called "InvoiceRunner"
+  with id `f1b2c3d4-0000-0000-0000-000000000001`. I want to import it
+  into the Orchestrator tenant so I can later assign it to folders.
+
+  Use `--output json` on all uip commands.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent called `uip or users import` (the single IS→tenant integration point)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+import'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --type DirectoryRobot"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+import.*--type\s+DirectoryRobot'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --directory-id (required for Robot — server-side Key check)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+import.*--directory-id'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --domain (required; 'autogen' for Robot)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+import.*--domain\s+autogen'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+import.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT omit --type (would default to DirectoryUser → silent corruption)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+users\s+import(?!.*--type)'
+    weight: 2.0
+    pass_threshold: 1.0

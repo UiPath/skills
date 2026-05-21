@@ -6,13 +6,6 @@ description: >
   fallback strategy when no native connector exists.
 tags: [uipath-platform, smoke, integration-service, connectors]
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node:
-    env_packages:
-      - "@uipath/cli"
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

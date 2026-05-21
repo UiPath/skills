@@ -5,18 +5,17 @@ description: >
   diagnostic priority ladder, and recommends the safe next operate action
   without performing lifecycle mutations.
 tags: [uipath-maestro-bpmn, smoke, "mode:diagnose", "lifecycle:execute"]
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   max_turns: 20
   turn_timeout: 900
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
       path: ../../../../skills/uipath-maestro-bpmn

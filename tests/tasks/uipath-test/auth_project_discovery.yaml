@@ -9,11 +9,8 @@ description: >
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover]
 
 sandbox:
-  driver: tempdir
-  python: {}
   node:
     env_packages:
-      - "@uipath/cli"
       - "@uipath/test-manager-tool"
 
 initial_prompt: |

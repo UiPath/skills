@@ -36,17 +36,13 @@ Rules use DNF — outer array is OR, inner array is AND.
 6. Read `rule-type` from tasks.md; pick the recipe below
 7. Append the condition object to `task.entryConditions[]`
 
-> **Connector tasks.** `execute-connector-activity` and `wait-for-connector` tasks already carry an auto-injected `current-stage-entered` default entry condition from task-creation time. Append — never overwrite or remove the default.
-
 ## Rule Types
 
-### current-stage-entered — default gate
+### current-stage-entered
 
 ```json
 "rules": [[ { "id": "rxxxxxxxx", "rule": "current-stage-entered" } ]]
 ```
-
-Matches the shape of the auto-injected default on connector tasks.
 
 ### selected-tasks-completed — sibling task gating
 
@@ -69,12 +65,12 @@ Matches the shape of the auto-injected default on connector tasks.
   {
     "id": "rxxxxxxxx",
     "rule": "adhoc",
-    "conditionExpression": "in.riskScore > 700"
+    "conditionExpression": "=js:vars.riskScore > 700"
   }
 ]]
 ```
 
-Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings-and-expressions.md). Use `=js:(...)` for expressions with operators.
+`conditionExpression` uses bare `=js:<expr>` (no outer parens) — per FE convention for conditions. Operators (`>`, `<`, `===`, etc.) and function calls go inline. For combined boolean expressions, wrap each sub-clause in parens before joining: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### wait-for-connector — external event
 
@@ -83,7 +79,7 @@ Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings
   {
     "id": "rxxxxxxxx",
     "rule": "wait-for-connector",
-    "conditionExpression": "event.type = 'order_received'"
+    "conditionExpression": "=js:event.type === 'order_received'"
   }
 ]]
 ```
@@ -110,4 +106,4 @@ Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` contains the new object with `id` (prefix `c`) and `rules` carrying the expected `rule` value plus any required side field. For connector tasks, verify the auto-injected `current-stage-entered` default is still present and precedes the new condition.
+Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`) and `rules` with the expected `rule` value plus any required side field.

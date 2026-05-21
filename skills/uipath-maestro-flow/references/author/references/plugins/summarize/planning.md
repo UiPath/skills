@@ -44,23 +44,28 @@ No artifact ports. Pattern-style nodes do not wire to resource files — the pro
 
 ## Output Variables
 
-- `$vars.{nodeId}.output` — an object with:
-  - `id` — the result identifier
-  - `content.text` — the synthesized prose
-  - `content.citations` — optional array (present only when `returnCitations: true`) of `{ ordinal, page, source }` pointing back to the attachment
-- `$vars.{nodeId}.error` — populated on failure: `{ code, message, detail, category, status }`.
+`$vars.{nodeId}.output` is an object whose schema is published on the OOTB definition (also mirrored on the node instance's `outputs.output.schema`):
+
+- `id` — string, the result identifier
+- `content` — `object | null`
+  - `content.Text` — string, the synthesized prose
+  - `content.Citations` — `array | null`, present only when `returnCitations: true`. Each entry: `{ Ordinal: integer, PageNumber: integer, Source: string, Reference: string }`
+
+Note the **PascalCase** field names (`Text`, `Citations`, `Ordinal`, `PageNumber`, `Source`, `Reference`) — the runtime emits them this way to match the engine response shape; lowercase variants (`text`, `citations`, `page`) are wrong.
+
+`$vars.{nodeId}.error` — populated on failure: `{ code, message, detail, category, status }`.
 
 ## Key Inputs
 
 | Input | Required | Type | Description |
 | --- | --- | --- | --- |
-| `attachment` | Yes | object (full Flow Attachment) | The full Flow Attachment object for the document — shape `{ FullName, Id, Metadata, MimeType }`. Source it as a flow-level `in` variable of `type: "object"` populated by `uip maestro flow debug --file <name>=<path>`, or from an upstream node that emits a Flow Attachment. Reference the **whole object** with `=js:$vars.<name>` — never `.Id`, a GUID literal, URL, or path. The OOTB schema says `string` and Studio Web shows a file picker, but at runtime the engine deserializes the slot back to the object. |
+| `attachment` | Yes | full Flow Attachment | The runtime engine wants the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. Source it as a flow-level `in` variable of `type: "file"` bound to the trigger via `triggerNodeId: "<triggerId>"`. The variable's payload is populated by `uip maestro flow debug --attachment <fileVarId>=<path>` (repeatable; `<fileVarId>=` must match the variable's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight)). Reference it on the Summarize node as `=js:$vars.<triggerId>.output.<fileVarId>` — that path resolves to the whole Attachment object at runtime. The OOTB `inputDefinition.attachment` declares `type: "string"` because Studio Web's file-picker form serializes the object into that string slot at save time; the engine deserializes it back. **Never** wire a bare GUID, URL, byte stream, file path, or `.ID`/`.FullName` subfield. |
 | `prompt` | Yes | string | The task instruction — e.g., "Write a 3-paragraph executive summary", "List every SLA penalty clause", "Answer: what is the termination notice period?". |
-| `returnCitations` | No | boolean | When `true`, the `content.citations` array is populated with per-claim page references. Default `false`. |
+| `returnCitations` | No | boolean | When `true`, the `content.Citations` array is populated with per-claim page references. Default `false`. |
 
 ## Planning Annotation
 
 In the architectural plan:
 
-- `pattern: summarize — <one-line purpose>` with a placeholder for the attachment source (usually a `$vars.<upstream>.output.*` file handle) and a short summary of the prompt.
+- `pattern: summarize — <one-line purpose>` with a placeholder for the attachment source (a `=js:$vars.<triggerId>.output.<fileVarId>` reference to a trigger-bound `in` variable of `type: "file"`) and a short summary of the prompt.
 - If the downstream step needs to display or audit sources, call out `returnCitations: true` explicitly in the node table; otherwise leave it `false`.

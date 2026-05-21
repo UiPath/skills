@@ -111,8 +111,12 @@ For each required field in spec.inputs.*, there must be a matching SDD input. If
 Values can be:
 - **Static literals** — `"Payment__c"`, `"Text"`, `42`
 - **Resolved reference IDs** — from Step 4
-- **Case variable references** — `=vars.X` for runtime values
-- **Expressions** — `=js:()` only when operators are needed
+- **Case variable references** — `=vars.X` (impl wraps as `=js:(vars.X)` for the connector body sink before passing to the CLI)
+- **Metadata references** — `=metadata.X` (impl wraps as `=js:(metadata.X)`)
+- **Pre-wrapped operator expressions** — `=js:(vars.amount > 5000)` (already canonical — pass-through)
+- **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves to `=vars.<outputVar>` then wraps)
+
+> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### 7. Optional — author a server-side filter
 
@@ -167,7 +171,7 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 }
 ```
 
-**Never** emit a key with literal `[*]` in `bodyParameters`. The CLI accepts it (well-formed JSON) and validate passes; runtime APIs (Microsoft Graph, Slack, etc.) reject with HTTP 400 `UnableToDeserializePostBody`. Pre-input scan in [`impl-json.md` § Step 1.a](impl-json.md#step-1a--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
+**Never** emit a key with literal `[*]` in `bodyParameters`. The CLI accepts it (well-formed JSON) and validate passes; runtime APIs (Microsoft Graph, Slack, etc.) reject with HTTP 400 `UnableToDeserializePostBody`. Pre-input scan in [`impl-json.md` § Step 1.b](impl-json.md#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
 
 ## tasks.md Entry Format
 

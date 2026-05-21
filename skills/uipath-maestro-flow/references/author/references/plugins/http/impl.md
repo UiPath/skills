@@ -6,13 +6,13 @@
 
 > **Always use `core.action.http.v2`** for all HTTP requests. The older `core.action.http` (v1) is deprecated.
 
-## Registry Validation
+## Registry validation
 
 ```bash
 uip maestro flow registry get core.action.http.v2 --output json
 ```
 
-Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the shared implicit `error` port pattern used by all action nodes. See [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes). Model serviceType is `Intsvc.UnifiedHttpRequest`.
+Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the implicit `error` port pattern shared by every action node (see [Action Node Structure](../../../../shared/action-nodes.md)). Model `serviceType` is `Intsvc.UnifiedHttpRequest`.
 
 ## Critical: Use `node configure`
 
@@ -24,31 +24,7 @@ Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `b
 
 Use `Edit` / `Write` to add the `core.action.http.v2` node directly to the `.flow` file. Follow [Edit/Write: Add a node](../../editing-operations-json.md#add-a-node): copy the registry definition into `definitions[]`, add the node instance to `nodes[]`, add `variables.nodes`, and add a placeholder `layout.nodes` entry. Save the node ID for Step 3.
 
-Minimum node instance shape:
-
-```json
-{
-  "id": "<nodeId>",
-  "type": "core.action.http.v2",
-  "typeVersion": "2.0",
-  "display": { "label": "<Label>" },
-  "inputs": {},
-  "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the HTTP request.",
-      "source": "=result.response",
-      "var": "output"
-    },
-    "error": {
-      "type": "object",
-      "description": "Error information if the HTTP request fails.",
-      "source": "=result.Error",
-      "var": "error"
-    }
-  }
-}
-```
+For the node instance shape, follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton) with `type: "core.action.http.v2"` and `typeVersion: "2.0"`. Leave `inputs` empty at this stage — Step 3 populates `inputs.detail` via `uip maestro flow node configure`.
 
 ### Step 2 — Identify target connector and connection (connector mode only)
 
@@ -73,6 +49,8 @@ Record the `Id` and `FolderKey` from the connection.
 > **A healthy connection is required for connector mode.** If `uip is connections list` returns empty, retry once with `--refresh`. If still empty, **STOP** — the node cannot be configured without a real connection ID. Use `AskUserQuestion` to present the path forward: **Create a new connection now** (`uip is connections create "<target-connector-key>"` starts the OAuth flow — user completes browser auth themselves, then re-run `uip is connections list` to pick up the new connection) / **Switch this node to manual mode** / **Skip this node** / **Something else**. Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node without explicit user selection. See [/uipath:uipath-platform — connections.md — For Native Connectors](../../../../../../uipath-platform/references/integration-service/connections.md#for-native-connectors) and the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md).
 
 ### Step 3 — Configure the node
+
+> **Find missing values first.** Before composing `url` / `query` / `body`, resolve any values the agent doesn't have (IDs from names, required body fields, response shape, …). See [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md).
 
 **Connector mode** (IS connection auth):
 

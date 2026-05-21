@@ -9,11 +9,11 @@ tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:validate", connector
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 20
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
       path: ../../../../skills/uipath-maestro-bpmn

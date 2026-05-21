@@ -1,0 +1,65 @@
+task_id: skill-platform-licensing-users-licenses-set
+description: >
+  Smoke test: agent uses the uipath-platform skill to assign two user bundles
+  (Attended Named User + Automation Developer Named User) to a specific user.
+  Verifies (1) the agent fetches the docs page to resolve product names to
+  codes, (2) writes a JSON input file containing the resolved codes, and
+  (3) calls `uip platform users licenses set <user> --input <path>
+  --output json`. CLI auth failure is expected; this validates command shape
+  only — no live write.
+tags: [uipath-platform, smoke-blocked, licensing, users]
+skip: true
+# Blocked: `uip platform users licenses` is not in the public
+# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
+# Re-enable when the CLI ships the users surface. See PLT-103133.
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Assign two licenses to user `dan.dinu@uipath.com`:
+  - Attended Named User
+  - Automation Developer Named User
+
+  Save the input JSON file as `user-licenses.json` in the current directory,
+  then run the assignment command.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Resolve product names to codes from the UiPath docs license-codes page
+    before writing the input file.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the UiPath docs license-codes page"
+    tool_name: "WebFetch"
+    command_pattern: 'docs\.uipath\.com.*license-codes'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote the input file at user-licenses.json"
+    path: "user-licenses.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Input JSON contains the resolved ATTUNU and RPADEVPRONU codes"
+    path: "user-licenses.json"
+    includes: ["ATTUNU", "RPADEVPRONU"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip platform users licenses set` with --input and --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+platform\s+users\s+licenses\s+set\s+\S+.*--input\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

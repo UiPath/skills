@@ -7,18 +7,19 @@ End-to-end pipeline: take a UiPath project's coded `[TestCase]` (or any test ent
 ```
 uip rpa pack            → .nupkg
 uip or packages upload  → package on Orchestrator feed
-uip or folders list-current-user  → folder UUID (the --folder-key value)
-uip tm testcase list-automations  → test entry point name (the --test-name value)
-uip tm testcase link-automation   → test case is bound
-uip tm testcase execute  / testset execute   → run
+uip or folders list -n <folder-name> --all  → folder UUID (the 'Key' value)
+uip tm testcases list-automations  → test entry point name (the --test-name value)
+uip tm testcases link-automation   → test case is bound
+uip tm testcases run  / testsets run  → run
 uip tm wait              → block until terminal
 ```
 
 ## Prerequisites
 
 - Logged in: `uip login status --output json`. If not, `uip login`.
+- CLI surface probed (see [/uipath:uipath-test § Critical Rules #2](../SKILL.md#critical-rules)). Commands below use the post-rename shape; on a pre-rename CLI, translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table (`testcases` → `testcase`, `run` → `execute`, etc.) before each call.
 - Project builds clean: `uip rpa build "<PROJECT_DIR>" --output json` returns `Result: "Success"`.
-- Test case exists in Test Manager: `uip tm testcase list --project-key <PROJECT_KEY> --output json`. Capture the `ObjKey` (e.g. `DEMO:1`) — it is the `--test-case-key` value.
+- Test case exists in Test Manager: `uip tm testcases list --project-key <PROJECT_KEY> --output json`. Capture the `ObjKey` (e.g. `DEMO:1`) — it is the `--test-case-key` value.
 
 ## Step 1 — Pack
 
@@ -41,19 +42,19 @@ Capture the returned `Id` (the package name) and `Version` from the JSON output.
 `link-automation` requires `--folder-key <UUID>` (NOT `--folder-path`). Discover it:
 
 ```bash
-uip or folders list-current-user --output json
+uip or folders list -n <folder-name> --all --output json
 ```
 
 Filter for the folder that owns the package. The `Key` field is the UUID.
 
-> **Use `list-current-user`, not `list`.** `list` may omit personal workspaces and solution folders. `list-current-user` returns every folder the authenticated user can target.
+> Use `--type <folder type> ` option to include folders of type personal, solution or standard.
 
 ## Step 4 — Find the test entry point name
 
 A single package can expose multiple test entry points (one per `[TestCase]` method or test workflow). `link-automation` needs the exact `--test-name`. Discover it:
 
 ```bash
-uip tm testcase list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_UUID> --output json
+uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_UUID> --output json
 ```
 
 Optional filter: `--package-name <PACKAGE_ID>` (case-insensitive substring) when many packages live in the same folder. Pick the row whose `PackageName` matches the `Id` from Step 2 and note its `TestName`.
@@ -61,7 +62,7 @@ Optional filter: `--package-name <PACKAGE_ID>` (case-insensitive substring) when
 ## Step 5 — Link the automation
 
 ```bash
-uip tm testcase link-automation \
+uip tm testcases link-automation \
   --project-key <PROJECT_KEY> \
   --test-case-key <TEST_CASE_KEY> \
   --folder-key <FOLDER_UUID> \
@@ -72,20 +73,20 @@ uip tm testcase link-automation \
 
 The output should show `Result: "Linked"`. `link-automation` is idempotent on the `(test-case-key, package-name, test-name)` triple — re-running with the same triple replaces the previous link.
 
-## Step 6 — Execute
+## Step 6 — Run
 
-Two execution modes — pick one:
+Two run modes — pick one:
 
-**Single test case** — uses `--test-case-id <UUID>`, NOT `--test-case-key`. Get the UUID from `uip tm testcase list --output json` (`Id` field):
+**Single test case** — uses `--test-case-id <UUID>`, NOT `--test-case-key`. Get the UUID from `uip tm testcases list --output json` (`Id` field):
 
 ```bash
-uip tm testcase execute --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_UUID> --execution-type automated --output json
+uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_UUID> --execution-type automated --output json
 ```
 
 **Whole test set** — uses `--test-set-key`:
 
 ```bash
-uip tm testset execute --test-set-key <TEST_SET_KEY> --execution-type automated --output json
+uip tm testsets run --test-set-key <TEST_SET_KEY> --execution-type automated --output json
 ```
 
 Capture the returned `ExecutionId`.
@@ -102,8 +103,9 @@ For result download, attachment download, and report generation: see [/uipath:ui
 
 ## Common pitfalls
 
-- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`).** `link-automation`, `unlink-automation`, `update`, `delete`, `list-testsets` use `--test-case-key`. `execute`, `list-steps`, `list-result-history` use `--test-case-id`. They are NOT interchangeable.
+- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`) vs `--test-case-keys` (plural, comma-separated).** Use `--test-case-key` for `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Use `--test-case-id` for `run`, `list-steps`, `list-result-history`. Use `--test-case-keys` (plural) for the bulk-association verbs `testcases add` / `testcases remove`. They are NOT interchangeable.
 - **Wrong folder identifier.** `link-automation` requires the UUID. A folder name or path passed in `--folder-key` fails silently with "folder not found" or links to the wrong folder.
 - **Re-uploading the same package version.** Orchestrator rejects duplicates. Bump `--package-version` (or `project.json` `projectVersion`) on every change.
-- **Linking before upload.** `link-automation` does not validate the package exists on Orchestrator at link time — it only validates at execute time. A stale `--package-name` value silently links to nothing and the next execute fails with `package not found`. Always discover via `list-automations` (Step 4) before linking.
-- **Trying `uip tm testcase link` (no suffix).** The command is `link-automation`. Same for `unlink-automation`. See [/uipath:uipath-test § Anti-patterns](../SKILL.md#anti-patterns).
+- **Linking before upload.** `link-automation` does not validate the package exists on Orchestrator at link time — it only validates at run time. A stale `--package-name` value silently links to nothing and the next run fails with `package not found`. Always discover via `list-automations` (Step 4) before linking.
+- **Trying `uip tm testcases link` (no suffix).** The command is `link-automation`. Same for `unlink-automation`. See [/uipath:uipath-test § Anti-patterns](../SKILL.md#anti-patterns).
+- **Using the old singular names (`testcase`, `testset`, `execution`).** They were renamed to plural. See [/uipath:uipath-test § Anti-patterns](../SKILL.md#anti-patterns).

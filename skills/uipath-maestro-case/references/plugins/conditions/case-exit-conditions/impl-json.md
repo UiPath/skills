@@ -72,7 +72,7 @@ Requires `marksCaseComplete: false`. Swap `rule` to `selected-stage-exited` for 
   {
     "id": "Rule_xxxxxx",
     "rule": "wait-for-connector",
-    "conditionExpression": "event.type = 'case_closed'"
+    "conditionExpression": "=js:event.type === 'case_closed'"
   }
 ]]
 ```
@@ -89,7 +89,7 @@ Valid for both `marksCaseComplete: true` and `false`.
 | `false` | `selected-stage-exited` | `selectedStageId` |
 | `false` | `wait-for-connector` | — |
 
-`conditionExpression` is optional on every rule — add it to any rule to further gate when it fires.
+`conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## Post-Write Verification
 

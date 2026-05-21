@@ -41,14 +41,14 @@ No artifact ports. Pattern-style nodes do not wire to resource files — the pro
 
 ## Output Variables
 
-- `$vars.{nodeId}.output` — file handle of the result CSV: `{ id, fileName, mimeType }`. Pass this to downstream nodes that consume files (e.g., another Batch Transform, a connector that uploads the result).
+- `$vars.{nodeId}.output` — the result file handle. The OOTB definition declares `outputDefinition.output.type: "file"` (no nested schema today), and `source: "=response"` — i.e. the BPMN engine returns its result wrapped under the `response` key. Pass `$vars.{nodeId}.output` to downstream nodes that consume files (e.g., another Batch Transform, a connector that uploads the result, a Script that fetches and parses).
 - `$vars.{nodeId}.error` — populated on failure: `{ code, message, detail, category, status }`.
 
 ## Key Inputs
 
 | Input | Required | Type | Description |
 | --- | --- | --- | --- |
-| `attachment` | Yes | object (full Flow Attachment) | The full Flow Attachment object for the source CSV — shape `{ FullName, Id, Metadata, MimeType }`. Source it as a flow-level `in` variable of `type: "object"` populated by `uip maestro flow debug --file <name>=<path>`, or from an upstream node that emits a Flow Attachment. Reference the **whole object** with `=js:$vars.<name>` — never `.Id`, a GUID literal, URL, or path. The OOTB schema says `string` and Studio Web shows a file picker, but at runtime the engine deserializes the slot back to the object. |
+| `attachment` | Yes | full Flow Attachment | The runtime engine wants the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. Source it as a flow-level `in` variable of `type: "file"` bound to the trigger via `triggerNodeId: "<triggerId>"`. The variable's payload is populated by `uip maestro flow debug --attachment <fileVarId>=<path>` (repeatable; `<fileVarId>=` must match the variable's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight)). Reference it on the Batch Transform node as `=js:$vars.<triggerId>.output.<fileVarId>` — that path resolves to the whole Attachment object at runtime. The OOTB `inputDefinition.attachment` declares `type: "string"` because Studio Web's file-picker form serializes the object into that string slot at save time; the engine deserializes it back. **Never** wire a bare GUID, URL, byte stream, file path, or `.ID`/`.FullName` subfield. |
 | `prompt` | Yes | string | The instruction describing what each output column should contain. Can reference column names from the source via natural language ("summarize the `Description` field"). |
 | `outputColumns` | Yes | array of `{ name, description }` | The columns to produce. Max 10. `name` is the column header; `description` tells the LLM what to put in it. |
 | `enableWebSearchGrounding` | No | boolean | When `true`, the LLM can issue web searches per row to ground its answer. Slower and costlier — use only when rows need external facts. Default `false`. |

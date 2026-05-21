@@ -1,0 +1,135 @@
+task_id: skill-case-single-api-workflow
+description: >
+  Build a Case Management definition from an sdd.md whose only task is an
+  API workflow. Exercises the api-workflow plugin, registry resolution via
+  api-index.json, and direct caseplan.json write of a `type: "api-workflow"`
+  task. Validates the resulting case file and runs `uip maestro case debug`
+  end-to-end, asserting only that the case finalStatus is `Completed`.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ApiWorkflowSingleCase"
+  containing a project also named "ApiWorkflowSingleCase" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — ApiWorkflowSingleCase
+
+  Single-stage, single-task case exercising the api-workflow task plugin end-to-end.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | ApiWorkflowSingleCase |
+  | Case Description | Single-node case that invokes the NameToAgeFixed2 API workflow with a fixed name. |
+  | Case Identifier | Prefix: AWS, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  |---|---|---|---|---|---|---|
+  | name | input | string | tomasz | Input name passed to the NameToAgeFixed2 API workflow | trigger:Manual | lookup.lookupAge |
+  | age | implementation | number | - | Predicted age returned by the API workflow | lookup.lookupAge | - |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Lookup (`lookup`)
+  **Type:** Stage
+  **Description:** Invoke the NameToAgeFixed2 API workflow on the input name.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | System |
+
+  ##### Task 1.1: Lookup age via NameToAgeFixed2 API workflow (`lookup.lookupAge`)
+
+  **Type:** api-workflow
+  **Description:** Call the NameToAgeFixed2 API workflow and return the predicted age.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | API Workflow Reference | Name "NameToAgeFixed2", Folder "Shared" |
+  | Component Type | API_WORKFLOW |
+
+  **Inputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | name | string | "tomasz" |
+
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | age | number | -> EstimatedAge |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ApiWorkflowSingleCase/ApiWorkflowSingleCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan has an api-workflow task and debug completes successfully"
+    command: "python3 $TASK_DIR/check_api_workflow_case.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

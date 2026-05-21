@@ -1,0 +1,45 @@
+task_id: skill-platform-orchestrator-jobs-list
+description: >
+  Smoke test: agent uses the uipath-platform skill to list Orchestrator jobs
+  scoped to a folder via `uip or jobs list --folder-(key|path) ... --output
+  json`. Prompt passes a placeholder folder key — the CLI returning Auth/404
+  is an acceptable outcome; the goal is correct command shape, not tenant
+  state.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
+
+initial_prompt: |
+  List the recently faulted jobs in the Orchestrator folder with key
+  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed jobs via uip or jobs list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+jobs\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scoped the list to a folder via --folder-key or --folder-path"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+jobs\s+list.*--folder-(key|path)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent filtered server-side with --state Faulted (server-side filter — server has a flag for state, so client-side --output-filter is the wrong tool here)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+jobs\s+list.*--state\s+Faulted'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

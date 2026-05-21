@@ -6,13 +6,6 @@ description: >
   for field-level detail, and always passing --connection-id.
 tags: [uipath-platform, smoke, integration-service, resources, describe]
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node:
-    env_packages:
-      - "@uipath/cli"
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

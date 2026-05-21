@@ -12,10 +12,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, deployed-policy]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Determine which AOps governance policy is currently in effect for the
   caller identity with license type `Attended`, product `StudioX`, and

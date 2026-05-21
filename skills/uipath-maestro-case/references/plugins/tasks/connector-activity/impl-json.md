@@ -25,16 +25,17 @@ The `tasks.md` entry provides:
 
 ### Step 1 — Build `--input-details` JSON from tasks.md
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object from `tasks.md`, rewriting every value containing a reference to its canonical sink form (connector body fields use `=js:(<expr>)`):
 
 ```jsonc
 {
-    // bodyParameters from tasks.md input-values.bodyParameters (dotted keys preserved)
-    "bodyParameters": "<input-values.bodyParameters or omit>",
-    // queryParameters from tasks.md input-values.queryParameters (or omit)
-    "queryParameters": "<input-values.queryParameters or omit>",
-    // pathParameters from tasks.md input-values.pathParameters (or omit)
-    "pathParameters":  "<input-values.pathParameters or omit>",
+    // bodyParameters from tasks.md input-values.bodyParameters (dotted keys preserved;
+    // each value rewritten to canonical form per Step 1.a)
+    "bodyParameters": "<input-values.bodyParameters with values rewritten>",
+    // queryParameters from tasks.md input-values.queryParameters (same rewrite rule)
+    "queryParameters": "<input-values.queryParameters with values rewritten>",
+    // pathParameters from tasks.md input-values.pathParameters (same rewrite rule)
+    "pathParameters":  "<input-values.pathParameters with values rewritten>",
     // filter — FilterTree object from tasks.md (or omit when not authored)
     "filter": "<filter from tasks.md or omit>"
 }
@@ -44,7 +45,23 @@ Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-requ
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
-#### Step 1.a — Array-of-object body fields: pre-input scan (MANDATORY)
+#### Step 1.a — Rewrite references to canonical sink form
+
+Connector body sinks (`bodyParameters`, `queryParameters`, `pathParameters`) require `=js:(...)` wrap for every reference. Resolve cross-task refs first, then apply the wrap:
+
+| Value in tasks.md | Value passed to CLI |
+|---|---|
+| `"=vars.X"` | `"=js:(vars.X)"` |
+| `"=metadata.X"` | `"=js:(metadata.X)"` |
+| `"=bindings.X"` | `"=js:(bindings.X)"` |
+| `"=<other-prefix>.X"` (e.g. `=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments[0]`) | `"=js:(<other-prefix>.X)"` — strip leading `=`, wrap in `=js:(...)` |
+| `"<- "Stage"."Task".out"` | resolve to `"=vars.<outputVar>"` → `"=js:(vars.<outputVar>)"` |
+| `"=js:(<expr>)"` (pre-wrapped operator expression) | pass-through unchanged |
+| `"<literal value>"` (no leading `=`) | pass-through unchanged |
+
+Full per-sink rule and FE source-of-truth: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+
+#### Step 1.b — Array-of-object body fields: pre-input scan (MANDATORY)
 
 Before passing `bodyParameters` to the CLI, scan for keys containing literal `[*]`. Halt if any are present — the binding is malformed.
 
@@ -149,6 +166,8 @@ For each entry in `caseShape.inputs[]`:
 For each entry in `caseShape.outputs[]`:
 - Same fields, plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
 
+**Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
+
 ### Step 8 — Build `data` and write to caseplan.json
 
 Generate the task skeleton:
@@ -175,14 +194,14 @@ Append the task to the target stage's `tasks[]` array. Default: own task set (on
 
 ### Step 9 — Append root-level bindings
 
-Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md). Connector tasks use `resource: "Connection"`:
+Read [bindings/impl-json.md § Full binding shape — connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-task value sources:
 
-| Binding | `id` | `name` | `propertyAttribute` | `default` |
-|---|---|---|---|---|
-| ConnectionBinding | `<connBindingId>` (Step 5) | `` `${connectorKey} connection` `` (templated) | `"ConnectionId"` | `connection-id` (tasks.md) |
-| FolderKey | `<folderBindingId>` (Step 5) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — deliberately different from `name`) | `spec.connection.folderKey` (Step 2) |
+- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this task's `tasks.md` entry
+- `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
+- `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
+- Binding IDs `<connBindingId>` / `<folderBindingId>` come from Step 5.
 
-Both share `resourceKey` = `connection-id`. Source of truth for binding shape: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
+Dedup per [§ Deduplication](../../variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 
 ### Step 10 — Sync IS connection cache
 
@@ -214,7 +233,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
 10. `bindings_v2.json` `resources` array matches the schema-appropriate bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) after the deferred sync
-11. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.a translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
+11. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 
 ## What NOT to Do
 
@@ -226,7 +245,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.
-- **Do NOT pass literal `field[*]` keys in `bodyParameters`.** The `[*]` in `inputs.bodyFields[].name` is JSONPath-style schema notation meaning "array of"; it is NOT a valid input key. Express array-of-object body fields as real JSON arrays under the parent name (see [planning.md](planning.md)). Pre-input scan in [Step 1.a](#step-1a--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
+- **Do NOT pass literal `field[*]` keys in `bodyParameters`.** The `[*]` in `inputs.bodyFields[].name` is JSONPath-style schema notation meaning "array of"; it is NOT a valid input key. Express array-of-object body fields as real JSON arrays under the parent name (see [planning.md](planning.md)). Pre-input scan in [Step 1.b](#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
 - **Do NOT auto-inject `entryConditions`.** Step 10 in [implementation.md](../../../implementation.md) handles them — injecting here creates duplicates.
 - **Never reuse a reference ID from a prior case or session.** Reference IDs (e.g., Jira project keys, Slack channel IDs) are scoped to the authenticated account behind each connection. Always resolve fresh via `uip is resources run list` against the current `--connection-id`. See [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 - **Do NOT call legacy `uip maestro case tasks describe` or `uip is resources describe`.** `case spec --input-details` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` / placeholders.

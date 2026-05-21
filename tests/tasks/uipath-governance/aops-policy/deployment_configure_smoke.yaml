@@ -18,10 +18,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, aops-policy, deployment, configure]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Apply AOps governance policy assignments to two subjects. Save every
   command's stdout+stderr to ./output.txt (use `> output.txt 2>&1` for

@@ -1,0 +1,1508 @@
+<!doctype html>
+<!--
+  SDD Viewer — interactive preview of a UiPath Case Management SDD.
+
+  Generation contract (Phase 0 / Approve mode):
+    1. Read this file.
+    2. Replace the sentinel token in the <script id="sdd-data"> block
+       with a JSON object matching the schema documented in the JS section below.
+       The token appears exactly once — inside that script tag only — so any
+       string-replace or Edit-tool swap is unambiguous.
+    3. Write the populated file to ./sdd-viewer.html in the working directory.
+    4. Tell the user: "Generated ./sdd-viewer.html — open it in a browser to review."
+
+  No external dependencies — the file is self-contained. Open via file:// URI.
+  Edits to this template must keep CSS, HTML, and JS inline (single-file portability).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SDD Preview</title>
+  <style>
+    /* ---------- reset + base ---------- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    :root {
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --surface-2: #fafbfc;
+      --border: #e3e6ea;
+      --border-strong: #cdd2d9;
+      --text: #1a1f2e;
+      --text-muted: #6b7280;
+      --text-subtle: #9ca3af;
+      --accent: #fa4616;
+      --accent-light: #fff1ea;
+      --accent-strong: #c93a12;
+      --warn-bg: #fff8e1;
+      --warn-border: #f59e0b;
+      --warn-text: #92400e;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, .04);
+      --shadow-md: 0 6px 20px rgba(15, 23, 42, .08);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+
+      /* Task type accents — colored left border + badge background tint */
+      --t-action:                     #8b5cf6;
+      --t-agent:                      #0891b2;
+      --t-process:                    #2563eb;
+      --t-rpa:                        #f59e0b;
+      --t-api-workflow:               #10b981;
+      --t-execute-connector-activity: #ec4899;
+      --t-wait-for-connector:         #6366f1;
+      --t-wait-for-timer:             #6b7280;
+      --t-case-management:            #ef4444;
+    }
+
+    /* ---------- topbar ---------- */
+    .topbar {
+      position: sticky; top: 0; z-index: 30;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 12px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 600; font-size: 13px;
+      color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .brand::before {
+      content: ""; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+    }
+    .case-title {
+      font-weight: 600; font-size: 16px; color: var(--text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .case-title small {
+      font-weight: 400; font-size: 13px; color: var(--text-muted);
+      margin-left: 8px;
+    }
+    .controls { display: flex; gap: 8px; align-items: center; }
+    .controls input[type="search"] {
+      width: 240px;
+      padding: 7px 10px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font: inherit; color: var(--text);
+      background: var(--surface);
+    }
+    .controls input[type="search"]:focus {
+      outline: 2px solid var(--accent-light);
+      border-color: var(--accent);
+    }
+    .controls button {
+      padding: 7px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font: inherit; color: var(--text);
+      cursor: pointer;
+    }
+    .controls button:hover { background: var(--surface-2); border-color: var(--border-strong); }
+    .controls button[aria-pressed="true"] {
+      background: var(--accent); color: white; border-color: var(--accent);
+    }
+
+    /* ---------- layout ---------- */
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - 57px);
+    }
+    .sidebar {
+      position: sticky; top: 57px;
+      align-self: start;
+      height: calc(100vh - 57px);
+      overflow-y: auto;
+      padding: 20px 16px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+    main { padding: 24px 32px 80px; max-width: 1100px; }
+
+    /* ---------- toc ---------- */
+    .toc h4 {
+      margin: 0 0 8px;
+      font-size: 11px; font-weight: 600; letter-spacing: .06em;
+      color: var(--text-subtle); text-transform: uppercase;
+    }
+    .toc ul { list-style: none; padding: 0; margin: 0 0 16px; }
+    .toc li { margin: 0; }
+    .toc a {
+      display: block;
+      padding: 6px 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+    }
+    .toc a:hover { color: var(--text); background: var(--surface-2); }
+    .toc a.active { color: var(--accent); background: var(--accent-light); font-weight: 500; }
+    .toc .toc-sub { margin-left: 12px; }
+    .toc .toc-sub a { font-size: 12px; padding: 4px 8px; }
+
+    /* ---------- sections ---------- */
+    section { margin-bottom: 48px; scroll-margin-top: 80px; }
+    section > h2 {
+      margin: 0 0 16px;
+      font-size: 20px; font-weight: 600; color: var(--text);
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+    section > h2 .count {
+      font-size: 13px; font-weight: 400; color: var(--text-muted);
+      margin-left: 8px;
+    }
+    h3 { font-size: 16px; font-weight: 600; margin: 24px 0 12px; }
+    h4 { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin: 16px 0 8px; }
+
+    /* ---------- cards / tables ---------- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    .meta-row {
+      display: flex; gap: 8px 16px; flex-wrap: wrap;
+      font-size: 13px;
+    }
+    .meta-row .k { color: var(--text-muted); margin-right: 4px; }
+    .meta-row .v { color: var(--text); font-weight: 500; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 8px 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      font-weight: 600; color: var(--text-muted);
+      background: var(--surface-2);
+      font-size: 12px; text-transform: uppercase; letter-spacing: .03em;
+    }
+    tr:last-child td { border-bottom: none; }
+    td code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+    /* ---------- stage cards ---------- */
+    .stage {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .stage.collapsed .stage-body { display: none; }
+    .stage-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      cursor: pointer;
+      user-select: none;
+      background: var(--surface);
+    }
+    .stage-header:hover { background: var(--surface-2); }
+    .stage-header .twirl {
+      width: 16px; text-align: center;
+      transition: transform .15s;
+      color: var(--text-muted);
+    }
+    .stage.collapsed .twirl { transform: rotate(-90deg); }
+    .stage-title {
+      display: flex; align-items: baseline; gap: 8px;
+      font-size: 16px; font-weight: 600;
+    }
+    .stage-title .seq {
+      font-size: 12px; color: var(--text-subtle); font-weight: 400;
+      font-variant-numeric: tabular-nums;
+    }
+    .stage-type {
+      font-size: 11px; padding: 2px 8px; border-radius: 999px;
+      background: var(--surface-2); color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .03em;
+    }
+    .stage.exception .stage-type { background: #fef2f2; color: #b91c1c; }
+    .stage-summary {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .stage-summary .pill {
+      padding: 2px 8px; border-radius: 999px;
+      background: var(--surface-2); border: 1px solid var(--border);
+    }
+    .stage-body { padding: 4px 20px 20px; border-top: 1px solid var(--border); background: var(--surface-2); }
+
+    /* ---------- task rows ---------- */
+    .tasks { margin: 16px 0 0; }
+    .task {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left-width: 4px;
+      border-radius: var(--radius-md);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: border-color .12s, transform .12s;
+    }
+    .task:hover { border-color: var(--border-strong); transform: translateX(2px); }
+    .task .num {
+      font-variant-numeric: tabular-nums;
+      color: var(--text-subtle); font-size: 12px;
+      text-align: right;
+    }
+    .task .name { font-weight: 500; }
+    .task .meta {
+      font-size: 12px; color: var(--text-muted);
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .task .badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+    /* per-type accent */
+    .task[data-type="action"]                     { border-left-color: var(--t-action); }
+    .task[data-type="agent"]                      { border-left-color: var(--t-agent); }
+    .task[data-type="process"]                    { border-left-color: var(--t-process); }
+    .task[data-type="rpa"]                        { border-left-color: var(--t-rpa); }
+    .task[data-type="api-workflow"]               { border-left-color: var(--t-api-workflow); }
+    .task[data-type="execute-connector-activity"] { border-left-color: var(--t-execute-connector-activity); }
+    .task[data-type="wait-for-connector"]         { border-left-color: var(--t-wait-for-connector); }
+    .task[data-type="wait-for-timer"]             { border-left-color: var(--t-wait-for-timer); }
+    .task[data-type="case-management"]            { border-left-color: var(--t-case-management); }
+
+    /* ---------- badges ---------- */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 500;
+      background: var(--surface-2); color: var(--text-muted);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .badge.type-action                     { background: color-mix(in srgb, var(--t-action) 12%, white); color: var(--t-action); border-color: color-mix(in srgb, var(--t-action) 25%, transparent); }
+    .badge.type-agent                      { background: color-mix(in srgb, var(--t-agent) 12%, white); color: var(--t-agent); border-color: color-mix(in srgb, var(--t-agent) 25%, transparent); }
+    .badge.type-process                    { background: color-mix(in srgb, var(--t-process) 12%, white); color: var(--t-process); border-color: color-mix(in srgb, var(--t-process) 25%, transparent); }
+    .badge.type-rpa                        { background: color-mix(in srgb, var(--t-rpa) 12%, white); color: var(--t-rpa); border-color: color-mix(in srgb, var(--t-rpa) 25%, transparent); }
+    .badge.type-api-workflow               { background: color-mix(in srgb, var(--t-api-workflow) 12%, white); color: var(--t-api-workflow); border-color: color-mix(in srgb, var(--t-api-workflow) 25%, transparent); }
+    .badge.type-execute-connector-activity { background: color-mix(in srgb, var(--t-execute-connector-activity) 12%, white); color: var(--t-execute-connector-activity); border-color: color-mix(in srgb, var(--t-execute-connector-activity) 25%, transparent); }
+    .badge.type-wait-for-connector         { background: color-mix(in srgb, var(--t-wait-for-connector) 12%, white); color: var(--t-wait-for-connector); border-color: color-mix(in srgb, var(--t-wait-for-connector) 25%, transparent); }
+    .badge.type-wait-for-timer             { background: color-mix(in srgb, var(--t-wait-for-timer) 15%, white); color: var(--t-wait-for-timer); border-color: color-mix(in srgb, var(--t-wait-for-timer) 30%, transparent); }
+    .badge.type-case-management            { background: color-mix(in srgb, var(--t-case-management) 12%, white); color: var(--t-case-management); border-color: color-mix(in srgb, var(--t-case-management) 25%, transparent); }
+    .badge.unresolved {
+      background: var(--warn-bg); color: var(--warn-text); border-color: var(--warn-border);
+    }
+    .badge.persona { background: var(--accent-light); color: var(--accent-strong); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+    .badge.sla { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .badge.runonce { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+
+    /* filter pills (top of stages section) */
+    .filters {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+    .filter-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .filter-group .filter-label {
+      font-size: 12px; color: var(--text-muted); font-weight: 500;
+      text-transform: uppercase; letter-spacing: .04em;
+      margin-right: 4px;
+    }
+    .filter-chip {
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 12px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer; user-select: none;
+    }
+    .filter-chip[aria-pressed="true"] {
+      background: var(--accent); color: white; border-color: var(--accent);
+    }
+    .filter-chip:hover:not([aria-pressed="true"]) { border-color: var(--border-strong); color: var(--text); }
+
+    /* unresolved markers in body */
+    .unresolved-text {
+      background: var(--warn-bg); color: var(--warn-text);
+      padding: 1px 5px; border-radius: var(--radius-sm);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+    }
+
+    /* schema-name tooltips */
+    body.schema-on .schema-name {
+      display: inline; color: var(--text-subtle);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      margin-left: 4px;
+    }
+    .schema-name { display: none; }
+
+    /* warning banner (lightweight-override) */
+    .banner-warn {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      color: var(--warn-text);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+    .banner-warn strong { font-weight: 600; }
+
+    /* ---------- detail panel ---------- */
+    .detail-panel {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 480px; max-width: 100vw;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: -8px 0 24px rgba(15, 23, 42, .12);
+      transform: translateX(100%);
+      transition: transform .2s ease-out;
+      overflow-y: auto;
+      z-index: 50;
+      padding: 24px 28px 48px;
+    }
+    .detail-panel[data-open="true"] { transform: translateX(0); }
+    .detail-panel .close {
+      position: absolute; top: 12px; right: 12px;
+      width: 32px; height: 32px;
+      background: transparent; border: none; cursor: pointer;
+      font-size: 22px; color: var(--text-muted);
+      border-radius: var(--radius-sm);
+    }
+    .detail-panel .close:hover { background: var(--surface-2); color: var(--text); }
+    .detail-panel h2 { font-size: 18px; margin: 0 0 4px; padding: 0; border: none; }
+    .detail-panel .crumb { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+    .detail-panel .description { color: var(--text-muted); margin: 12px 0 16px; }
+
+    /* ---------- flow diagram ---------- */
+    .flow-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      box-shadow: var(--shadow-sm);
+    }
+    .flow-wrap-empty { color: var(--text-subtle); font-style: italic; padding: 8px 4px; }
+    .flow-legend {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      font-size: 11px; color: var(--text-muted);
+      margin: 8px 4px 0;
+    }
+    .flow-legend .swatch {
+      display: inline-block; width: 12px; height: 12px;
+      border-radius: 3px; vertical-align: middle; margin-right: 6px;
+      border: 1px solid var(--border-strong);
+    }
+    .flow-node-group { cursor: pointer; }
+    .flow-node-group:hover .flow-node-rect { filter: brightness(0.96); }
+    .flow-node-rect { transition: filter .12s; }
+    .flow-node-active .flow-node-rect { stroke-width: 2.5; }
+
+    /* ---------- print ---------- */
+    @media print {
+      .topbar, .sidebar, .detail-panel, .filters, .controls, #toggle-collapse-all { display: none !important; }
+      .layout { grid-template-columns: 1fr; }
+      .stage.collapsed .stage-body { display: block !important; }
+      main { padding: 0; max-width: none; }
+      .card, .stage, .task { break-inside: avoid; box-shadow: none; border-color: #ccc; }
+      body { background: white; color: black; font-size: 11pt; }
+    }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .controls input[type="search"] { width: 140px; }
+      .detail-panel { width: 100vw; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">SDD Preview</div>
+    <div class="case-title" id="case-title">—</div>
+    <div class="controls">
+      <input type="search" id="search" placeholder="Search stages, tasks, variables…" aria-label="Search">
+      <button id="toggle-unresolved" aria-pressed="false" title="Show only items with unresolved markers">Unresolved only</button>
+      <button id="toggle-schema" aria-pressed="false" title="Show schema field names">Schema view</button>
+      <button id="toggle-collapse-all" title="Collapse or expand all stages">Collapse all</button>
+      <button id="print" title="Print or save as PDF">Print</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <nav class="toc" id="toc" aria-label="Table of contents"></nav>
+    </aside>
+    <main id="main">
+      <div id="banner-mount"></div>
+      <section id="case-definition" data-section><h2>1. Case Definition</h2><div id="case-body"></div></section>
+      <section id="stages-tasks" data-section><h2>2. Stages &amp; Tasks <span class="count" id="stage-count"></span></h2>
+        <div id="flow-diagram"></div>
+        <div class="filters" id="filters"></div>
+        <div id="stages-body"></div>
+      </section>
+      <section id="personas" data-section><h2>3. Personas &amp; App Views</h2><div id="personas-body"></div></section>
+      <section id="integrations" data-section><h2>4. Integrations</h2><div id="integrations-body"></div></section>
+    </main>
+  </div>
+
+  <aside class="detail-panel" id="detail-panel" data-open="false" aria-hidden="true">
+    <button class="close" id="close-detail" aria-label="Close detail panel">×</button>
+    <div id="detail-body"></div>
+  </aside>
+
+  <!--
+    SDD data — populated by the Phase 0 generator. Swap the sentinel token in
+    the script tag below with a JSON object that matches this shape (fields
+    marked optional may be omitted or set to null; unknown values render as
+    "—" or are hidden by the renderer):
+
+    {
+      "case": {
+        "name": string,                       // PascalCase
+        "description": string,
+        "prefix": string,                     // 2-4 UPPER
+        "identifierType": "constant" | "external",
+        "priority": { "values": string[], "default": string } | null,
+        "sla": { "count": number, "unit": "h"|"d"|"w"|"m", "type": "Static"|"Variable" } | null,
+        "slaEscalation": [{ "status": "At-Risk"|"Breached", "threshold": string, "action": string }],
+        "variableSla": [{ "expression": string, "sla": number, "unit": string }],
+        "triggers": [{ "type": string, "source": string, "config": string, "mappings": [{"from": string, "to": string}] }],
+        "exitConditions": [{ "when": string, "if": string, "then": string, "marksComplete": "Yes"|"No" }],
+        "variables": [{ "name": string, "type": string, "default": string, "description": string, "producedBy": string, "consumedBy": string[] }]
+      },
+      "stages": [
+        {
+          "name": string,
+          "type": "Stage" | "ExceptionStage",
+          "description": string,
+          "requiredForCompletion": boolean,
+          "interrupting": boolean | null,     // ExceptionStage only
+          "entryConditions": [{ "when": string, "if": string, "interrupting": "Yes"|"No" }],
+          "exitConditions":  [{ "when": string, "if": string, "exitType": string, "marksComplete": "Yes"|"No" }],
+          "sla": { "count": number, "unit": string, "atRiskPct": string, "atRiskAction": string, "breachAction": string } | null,
+          "tasks": [
+            {
+              "name": string,
+              "type": "action"|"agent"|"process"|"rpa"|"api-workflow"|"wait-for-timer"|"wait-for-connector"|"execute-connector-activity"|"case-management",
+              "required": boolean,
+              "runOnlyOnce": boolean,
+              "persona": string | null,
+              "sla": { "count": number, "unit": string } | null,
+              "description": string,
+              "entryCondition": { "when": string, "if": string },
+              "details": { ... }              // shape varies by type — see renderTaskDetail below
+            }
+          ]
+        }
+      ],
+      "personas":   [{ "name": string, "stageScope": string[]|"All", "permissions": string[], "description": string }],
+      "appViews":   [{ "app": string, "view": string, "persona": string, "purpose": string, "components": string }],
+      "integrations": [{ "connector": string, "system": string, "authMethod": string, "operations": [{ "name": string, "method": string, "inputs": string, "outputs": string }], "usedByTasks": string[] }],
+      "externalAgents": [{ "name": string, "serviceType": string, "endpoint": string, "usedByTasks": string[] }],
+      "warningHeader": string | null          // populated when soft-redirect was overridden
+    }
+  -->
+  <script id="sdd-data" type="application/json">__SDD_DATA__</script>
+
+  <script>
+  (function () {
+    "use strict";
+
+    // ---------- data ----------
+    let data;
+    try {
+      const raw = document.getElementById("sdd-data").textContent.trim();
+      data = JSON.parse(raw);
+    } catch (e) {
+      document.getElementById("main").innerHTML =
+        '<div class="banner-warn"><strong>Failed to load SDD data.</strong> ' +
+        'The <code>__SDD_DATA__</code> placeholder was not replaced with valid JSON. ' +
+        'Error: ' + (e && e.message ? e.message : String(e)) + '</div>';
+      return;
+    }
+
+    // ---------- state ----------
+    const state = {
+      filters: { personas: new Set(), types: new Set() },
+      unresolvedOnly: false,
+      schemaOn: false,
+      search: "",
+      collapsedStages: new Set(),
+      allCollapsed: false
+    };
+
+    // ---------- helpers ----------
+    const $ = (sel, root) => (root || document).querySelector(sel);
+    const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+    const el = (tag, attrs, children) => {
+      const node = document.createElement(tag);
+      if (attrs) for (const k in attrs) {
+        if (k === "class") node.className = attrs[k];
+        else if (k === "html") node.innerHTML = attrs[k];
+        else if (k.startsWith("on") && typeof attrs[k] === "function") node.addEventListener(k.slice(2), attrs[k]);
+        else if (k === "dataset" && attrs[k]) Object.assign(node.dataset, attrs[k]);
+        else if (attrs[k] !== null && attrs[k] !== undefined) node.setAttribute(k, attrs[k]);
+      }
+      if (children) (Array.isArray(children) ? children : [children]).forEach(c => {
+        if (c === null || c === undefined) return;
+        node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+      });
+      return node;
+    };
+    const txt = (s) => (s === null || s === undefined || s === "" ? "—" : String(s));
+    const isUnresolved = (s) => typeof s === "string" && /<UNRESOLVED:/i.test(s);
+    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const renderInline = (s) => {
+      if (s === null || s === undefined || s === "") return "—";
+      const escaped = escapeHtml(String(s));
+      return escaped.replace(/&lt;UNRESOLVED:([^&]*?)&gt;/gi, (_, q) => `<span class="unresolved-text">&lt;UNRESOLVED:${q}&gt;</span>`);
+    };
+    const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const schemaTag = (name) => `<span class="schema-name">(${escapeHtml(name)})</span>`;
+
+    function badge(label, cls) {
+      return el("span", { class: "badge " + (cls || "") }, label);
+    }
+
+    function pluralize(n, single, plural) {
+      return `${n} ${n === 1 ? single : (plural || single + "s")}`;
+    }
+
+    // ---------- title ----------
+    function renderTitle() {
+      const c = data.case || {};
+      const t = $("#case-title");
+      t.innerHTML = "";
+      t.appendChild(document.createTextNode(c.name || "Untitled Case"));
+      if (c.prefix) {
+        const s = document.createElement("small");
+        s.textContent = "prefix " + c.prefix;
+        t.appendChild(s);
+      }
+      document.title = "SDD — " + (c.name || "Preview");
+    }
+
+    // ---------- warning banner ----------
+    function renderBanner() {
+      const mount = $("#banner-mount");
+      mount.innerHTML = "";
+      if (data.warningHeader) {
+        mount.appendChild(el("div", { class: "banner-warn", html: "<strong>⚠ Generated lightweight.</strong> " + escapeHtml(data.warningHeader) }));
+      }
+    }
+
+    // ---------- toc ----------
+    function renderTOC() {
+      const toc = $("#toc");
+      toc.innerHTML = "";
+      const groups = [
+        { id: "case-definition", label: "1. Case Definition", subs: [] },
+        {
+          id: "stages-tasks", label: "2. Stages & Tasks",
+          subs: (data.stages || []).map((s, i) => ({ id: "stage-" + slug(s.name) || "stage-" + i, label: `${i + 1}. ${s.name || "(unnamed)"}` }))
+        },
+        { id: "personas", label: "3. Personas & App Views", subs: [] },
+        { id: "integrations", label: "4. Integrations", subs: [] }
+      ];
+      groups.forEach(g => {
+        const sectionHeader = el("h4", null, g.label.split(". ")[0] + ". Section");
+        if (g.id === "stages-tasks") sectionHeader.textContent = "Stages";
+        else sectionHeader.textContent = g.label;
+        const ul = el("ul");
+        ul.appendChild(el("li", null, el("a", { href: "#" + g.id, "data-jump": g.id }, g.label)));
+        if (g.subs.length) {
+          const sub = el("ul", { class: "toc-sub" });
+          g.subs.forEach(s => {
+            sub.appendChild(el("li", null, el("a", { href: "#" + s.id, "data-jump": s.id }, s.label)));
+          });
+          ul.appendChild(sub);
+        }
+        toc.appendChild(ul);
+      });
+      // smooth scroll
+      $$(".toc a").forEach(a => a.addEventListener("click", (e) => {
+        const id = a.getAttribute("href").slice(1);
+        const tgt = document.getElementById(id);
+        if (tgt) { e.preventDefault(); tgt.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      }));
+    }
+
+    // ---------- case definition ----------
+    function renderCase() {
+      const c = data.case || {};
+      const mount = $("#case-body");
+      mount.innerHTML = "";
+
+      const meta = el("div", { class: "card" });
+      meta.appendChild(el("h3", null, "Metadata"));
+      const rows = [
+        ["Case Name", c.name],
+        ["Description", c.description],
+        ["Identifier", c.prefix ? `${c.prefix} (${c.identifierType || "constant"})` : null],
+        ["Priority", c.priority ? `${(c.priority.values || []).join(", ")} — default ${c.priority.default || "—"}` : null],
+        ["Case-Level SLA", c.sla ? `${c.sla.count} ${c.sla.unit} — ${c.sla.type || "Static"}` : null]
+      ];
+      const tbl = el("table");
+      rows.forEach(([k, v]) => {
+        tbl.appendChild(el("tr", null, [el("th", { style: "width:180px" }, k), el("td", { html: renderInline(v) })]));
+      });
+      meta.appendChild(tbl);
+      mount.appendChild(meta);
+
+      if ((c.slaEscalation || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, "SLA Escalation Rules"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "Status"), el("th", null, "Threshold"), el("th", null, "Action")]));
+        c.slaEscalation.forEach(r => t.appendChild(el("tr", null, [el("td", { html: renderInline(r.status) }), el("td", { html: renderInline(r.threshold) }), el("td", { html: renderInline(r.action) })])));
+        card.appendChild(t);
+        mount.appendChild(card);
+      }
+
+      if ((c.variableSla || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, "Variable SLA Rules"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "Expression"), el("th", null, "SLA"), el("th", null, "Unit")]));
+        c.variableSla.forEach(r => t.appendChild(el("tr", null, [el("td", { html: '<code>' + escapeHtml(r.expression || "—") + '</code>' }), el("td", { html: renderInline(r.sla) }), el("td", { html: renderInline(r.unit) })])));
+        card.appendChild(t);
+        mount.appendChild(card);
+      }
+
+      if ((c.triggers || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, "Triggers" + " " + schemaTag("triggers")));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "Type"), el("th", null, "Source"), el("th", null, "Configuration"), el("th", null, "Mappings")]));
+        c.triggers.forEach(tr => {
+          const mapStr = (tr.mappings || []).map(m => `${m.from} → ${m.to}`).join("<br>") || "—";
+          t.appendChild(el("tr", null, [
+            el("td", { html: renderInline(tr.type) }),
+            el("td", { html: renderInline(tr.source) }),
+            el("td", { html: renderInline(tr.config) }),
+            el("td", { html: mapStr })
+          ]));
+        });
+        card.appendChild(t);
+        mount.appendChild(card);
+      }
+
+      if ((c.exitConditions || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, "Case Exit Conditions"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "THEN"), el("th", null, "Marks Case Complete" + schemaTag("markCaseComplete"))]));
+        c.exitConditions.forEach(r => t.appendChild(el("tr", null, [
+          el("td", { html: '<code>' + escapeHtml(r.when || "—") + '</code>' }),
+          el("td", { html: '<code>' + escapeHtml(r.if || "—") + '</code>' }),
+          el("td", { html: renderInline(r.then) }),
+          el("td", { html: renderInline(r.marksComplete) })
+        ])));
+        card.appendChild(t);
+        mount.appendChild(card);
+      }
+
+      if ((c.variables || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, `Case Variables (${c.variables.length})`));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "Variable"), el("th", null, "Type"), el("th", null, "Default"), el("th", null, "Description"), el("th", null, "Produced By"), el("th", null, "Consumed By")]));
+        c.variables.forEach(v => t.appendChild(el("tr", null, [
+          el("td", null, el("code", null, v.name || "—")),
+          el("td", { html: renderInline(v.type) }),
+          el("td", { html: renderInline(v.default) }),
+          el("td", { html: renderInline(v.description) }),
+          el("td", { html: renderInline(v.producedBy) }),
+          el("td", { html: renderInline((v.consumedBy || []).join(", ") || "—") })
+        ])));
+        card.appendChild(t);
+        mount.appendChild(card);
+      }
+    }
+
+    // ---------- filters ----------
+    function renderFilters() {
+      const mount = $("#filters");
+      mount.innerHTML = "";
+
+      const allPersonas = new Set();
+      const allTypes = new Set();
+      (data.stages || []).forEach(s => (s.tasks || []).forEach(t => {
+        if (t.persona) allPersonas.add(t.persona);
+        if (t.type) allTypes.add(t.type);
+      }));
+
+      const personaGroup = el("div", { class: "filter-group" });
+      personaGroup.appendChild(el("span", { class: "filter-label" }, "Persona:"));
+      Array.from(allPersonas).sort().forEach(p => {
+        const chip = el("span", { class: "filter-chip", "aria-pressed": "false", "data-persona": p }, p);
+        chip.addEventListener("click", () => toggleSet(state.filters.personas, p, chip));
+        personaGroup.appendChild(chip);
+      });
+      if (allPersonas.size === 0) personaGroup.appendChild(el("span", { class: "filter-chip", "aria-pressed": "false" }, "(none)"));
+
+      const typeGroup = el("div", { class: "filter-group" });
+      typeGroup.appendChild(el("span", { class: "filter-label" }, "Task type:"));
+      Array.from(allTypes).sort().forEach(typ => {
+        const chip = el("span", { class: "filter-chip", "aria-pressed": "false", "data-type": typ }, typ);
+        chip.addEventListener("click", () => toggleSet(state.filters.types, typ, chip));
+        typeGroup.appendChild(chip);
+      });
+
+      mount.appendChild(personaGroup);
+      mount.appendChild(typeGroup);
+    }
+
+    function toggleSet(set, val, chip) {
+      if (set.has(val)) { set.delete(val); chip.setAttribute("aria-pressed", "false"); }
+      else { set.add(val); chip.setAttribute("aria-pressed", "true"); }
+      applyFilters();
+    }
+
+    // ---------- flow diagram ----------
+    function renderFlowDiagram() {
+      const mount = $("#flow-diagram");
+      mount.innerHTML = "";
+      const stages = data.stages || [];
+      const triggers = (data.case && data.case.triggers) || [];
+      if (!stages.length) {
+        mount.appendChild(el("div", { class: "flow-wrap flow-wrap-empty" }, "No stages to diagram."));
+        return;
+      }
+
+      const wrap = el("div", { class: "flow-wrap" });
+      mount.appendChild(wrap);
+
+      // ----- build graph -----
+      const triggerNodes = triggers.map((t, i) => ({
+        id: "t-" + i, kind: "trigger",
+        label: (t.type === "Manual" ? "Manual" : (t.source || t.type || "Trigger")),
+        sub: t.type === "Manual" ? "manual" : (t.type || ""),
+        level: 0
+      }));
+      const stageNodes = stages.map((s, i) => ({
+        id: "s-" + i,
+        kind: s.type === "ExceptionStage" ? "exception" : "stage",
+        label: s.name || "(unnamed)",
+        sub: pluralize((s.tasks || []).length, "task") + (s.sla ? ` · SLA ${s.sla.count}${s.sla.unit}` : ""),
+        stageIdx: i,
+        level: -1,
+        predecessors: []
+      }));
+      const allNodes = triggerNodes.concat(stageNodes);
+      const byId = Object.create(null);
+      allNodes.forEach(n => { byId[n.id] = n; });
+
+      function findStageIdxByTaskName(taskName) {
+        const lower = String(taskName || "").toLowerCase();
+        for (let i = 0; i < stages.length; i++) {
+          if ((stages[i].tasks || []).some(t => (t.name || "").toLowerCase() === lower)) return i;
+        }
+        return -1;
+      }
+      function findStageIdxByName(name) {
+        const lower = String(name || "").toLowerCase();
+        return stages.findIndex(s => (s.name || "").toLowerCase() === lower);
+      }
+
+      // resolve predecessors from entry conditions
+      stageNodes.forEach((sn, i) => {
+        const conds = stages[i].entryConditions || [];
+        const preds = new Set();
+        conds.forEach(c => {
+          const when = String(c.when || "");
+          if (/case-entered|adhoc/i.test(when)) {
+            triggerNodes.forEach(t => preds.add(t.id));
+          }
+          const ms = when.match(/selected-stage-(?:completed|exited)\("([^"]+)"\)/i);
+          if (ms) {
+            const idx = findStageIdxByName(ms[1]);
+            if (idx >= 0 && idx !== i) preds.add("s-" + idx);
+          }
+          const mt = when.match(/selected-tasks-completed\("([^"]+)"\)/i);
+          if (mt) {
+            const idx = findStageIdxByTaskName(mt[1]);
+            if (idx >= 0 && idx !== i) preds.add("s-" + idx);
+          }
+          const mr = when.match(/required-stages-completed/i);
+          if (mr) {
+            stageNodes.forEach((other, oi) => {
+              if (oi < i && other.kind !== "exception" && (stages[oi].requiredForCompletion !== false)) {
+                preds.add(other.id);
+              }
+            });
+          }
+        });
+        if (preds.size === 0) {
+          if (i === 0) triggerNodes.forEach(t => preds.add(t.id));
+          else preds.add("s-" + (i - 1));
+        }
+        sn.predecessors = Array.from(preds);
+      });
+
+      // compute levels — longest path from any trigger
+      triggerNodes.forEach(t => { t.level = 0; });
+      let changed = true, iters = 0;
+      while (changed && iters < 100) {
+        changed = false; iters++;
+        stageNodes.forEach(sn => {
+          let maxPred = -1;
+          (sn.predecessors || []).forEach(pid => {
+            const p = byId[pid];
+            if (p && typeof p.level === "number" && p.level >= 0 && p.level > maxPred) maxPred = p.level;
+          });
+          const next = maxPred + 1;
+          if (next !== sn.level) { sn.level = next; changed = true; }
+        });
+      }
+      // any node still negative (cycle / orphan) → put at level 0
+      allNodes.forEach(n => { if (n.level < 0) n.level = 0; });
+
+      // group by level
+      const byLevel = {};
+      allNodes.forEach(n => { (byLevel[n.level] = byLevel[n.level] || []).push(n); });
+      const levelKeys = Object.keys(byLevel).map(Number).sort((a, b) => a - b);
+      // sort each level: stages before exceptions, original order otherwise
+      levelKeys.forEach(lv => {
+        byLevel[lv].sort((a, b) => {
+          const ka = a.kind === "exception" ? 2 : (a.kind === "trigger" ? 0 : 1);
+          const kb = b.kind === "exception" ? 2 : (b.kind === "trigger" ? 0 : 1);
+          if (ka !== kb) return ka - kb;
+          return (a.stageIdx !== undefined ? a.stageIdx : 0) - (b.stageIdx !== undefined ? b.stageIdx : 0);
+        });
+      });
+
+      // layout constants
+      const colW = 200, rowH = 78, nodeW = 168, nodeH = 56, padX = 24, padY = 24;
+      const maxLevel = levelKeys[levelKeys.length - 1] || 0;
+      const maxPerLevel = Math.max(1, ...levelKeys.map(k => byLevel[k].length));
+      const svgW = (maxLevel + 1) * colW + padX * 2 + 20;
+      const svgH = maxPerLevel * rowH + padY * 2 + 8;
+
+      levelKeys.forEach(lv => {
+        const col = byLevel[lv];
+        // center the column vertically
+        const usedH = col.length * rowH;
+        const offset = (maxPerLevel * rowH - usedH) / 2;
+        col.forEach((n, idx) => {
+          n.x = padX + lv * colW;
+          n.y = padY + offset + idx * rowH;
+        });
+      });
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(SVG_NS, "svg");
+      svg.setAttribute("viewBox", `0 0 ${svgW} ${svgH}`);
+      svg.setAttribute("width", svgW);
+      svg.setAttribute("height", svgH);
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", "Case flow diagram");
+
+      // defs: arrow markers
+      const defs = document.createElementNS(SVG_NS, "defs");
+      defs.innerHTML =
+        '<marker id="arrow"    viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#9ca3af"/></marker>' +
+        '<marker id="arrow-ex" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#ef4444"/></marker>';
+      svg.appendChild(defs);
+
+      // edges
+      const edgesGroup = document.createElementNS(SVG_NS, "g");
+      edgesGroup.setAttribute("class", "flow-edges");
+      stageNodes.forEach(n => {
+        (n.predecessors || []).forEach(pid => {
+          const p = byId[pid];
+          if (!p) return;
+          const x1 = p.x + nodeW;
+          const y1 = p.y + nodeH / 2;
+          const x2 = n.x;
+          const y2 = n.y + nodeH / 2;
+          const dx = Math.max(40, (x2 - x1) / 2);
+          const path = document.createElementNS(SVG_NS, "path");
+          const isExceptionEdge = n.kind === "exception";
+          path.setAttribute("d", `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`);
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke", isExceptionEdge ? "#ef4444" : "#9ca3af");
+          path.setAttribute("stroke-width", "1.5");
+          if (isExceptionEdge) path.setAttribute("stroke-dasharray", "5 4");
+          path.setAttribute("marker-end", isExceptionEdge ? "url(#arrow-ex)" : "url(#arrow)");
+          edgesGroup.appendChild(path);
+        });
+      });
+      svg.appendChild(edgesGroup);
+
+      // nodes
+      allNodes.forEach(n => {
+        const g = document.createElementNS(SVG_NS, "g");
+        g.setAttribute("class", "flow-node-group");
+        if (n.stageIdx !== undefined) g.setAttribute("data-stage-jump", "stage-" + slug(n.label));
+
+        let fill = "#ffffff";
+        let stroke = "#cdd2d9";
+        if (n.kind === "trigger") { fill = "#fff1ea"; stroke = "#fa4616"; }
+        if (n.kind === "exception") { fill = "#fef2f2"; stroke = "#ef4444"; }
+
+        const rect = document.createElementNS(SVG_NS, "rect");
+        rect.setAttribute("class", "flow-node-rect");
+        rect.setAttribute("x", n.x);
+        rect.setAttribute("y", n.y);
+        rect.setAttribute("width", nodeW);
+        rect.setAttribute("height", nodeH);
+        rect.setAttribute("rx", 10);
+        rect.setAttribute("fill", fill);
+        rect.setAttribute("stroke", stroke);
+        rect.setAttribute("stroke-width", "1.5");
+        g.appendChild(rect);
+
+        // type icon / glyph in top-left
+        const glyph = document.createElementNS(SVG_NS, "text");
+        glyph.setAttribute("x", n.x + 12);
+        glyph.setAttribute("y", n.y + 18);
+        glyph.setAttribute("font-size", "11");
+        glyph.setAttribute("fill", stroke);
+        glyph.setAttribute("font-weight", "600");
+        glyph.setAttribute("text-transform", "uppercase");
+        glyph.textContent = n.kind === "trigger" ? "TRIGGER" : (n.kind === "exception" ? "EXCEPTION" : "STAGE");
+        g.appendChild(glyph);
+
+        // label
+        const label = document.createElementNS(SVG_NS, "text");
+        label.setAttribute("x", n.x + 12);
+        label.setAttribute("y", n.y + 36);
+        label.setAttribute("font-size", "13");
+        label.setAttribute("font-weight", "600");
+        label.setAttribute("fill", "#1a1f2e");
+        label.textContent = n.label.length > 22 ? (n.label.slice(0, 21) + "…") : n.label;
+        g.appendChild(label);
+
+        // sub-label
+        if (n.sub) {
+          const sub = document.createElementNS(SVG_NS, "text");
+          sub.setAttribute("x", n.x + 12);
+          sub.setAttribute("y", n.y + 50);
+          sub.setAttribute("font-size", "11");
+          sub.setAttribute("fill", "#6b7280");
+          sub.textContent = n.sub;
+          g.appendChild(sub);
+        }
+
+        // tooltip
+        const title = document.createElementNS(SVG_NS, "title");
+        title.textContent = n.label + (n.sub ? " — " + n.sub : "");
+        g.appendChild(title);
+
+        if (n.stageIdx !== undefined) {
+          g.addEventListener("click", () => {
+            const tgt = document.getElementById("stage-" + slug(n.label));
+            if (tgt) tgt.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }
+
+        svg.appendChild(g);
+      });
+
+      wrap.appendChild(svg);
+
+      // legend
+      const legend = el("div", { class: "flow-legend" });
+      legend.innerHTML =
+        '<span><span class="swatch" style="background:#fff1ea;border-color:#fa4616"></span>Trigger</span>' +
+        '<span><span class="swatch" style="background:#ffffff;border-color:#cdd2d9"></span>Stage</span>' +
+        '<span><span class="swatch" style="background:#fef2f2;border-color:#ef4444"></span>Exception stage</span>' +
+        '<span><span class="swatch" style="background:transparent;border-color:transparent;border-bottom:2px dashed #ef4444"></span>Interrupting edge</span>' +
+        '<span style="color:var(--text-subtle)">· Click a stage to jump to its detail card.</span>';
+      wrap.appendChild(legend);
+    }
+
+    // ---------- stages ----------
+    function renderStages() {
+      const mount = $("#stages-body");
+      mount.innerHTML = "";
+      const stages = data.stages || [];
+      $("#stage-count").textContent = `(${pluralize(stages.length, "stage")})`;
+      stages.forEach((s, i) => mount.appendChild(renderStage(s, i)));
+    }
+
+    function renderStage(stage, idx) {
+      const id = "stage-" + slug(stage.name) || "stage-" + idx;
+      const isException = stage.type === "ExceptionStage";
+      const collapsed = state.collapsedStages.has(idx);
+      const root = el("div", {
+        class: "stage" + (isException ? " exception" : "") + (collapsed ? " collapsed" : ""),
+        id: id,
+        "data-stage-idx": idx
+      });
+
+      const header = el("div", { class: "stage-header" });
+      header.appendChild(el("div", { class: "twirl" }, "▾"));
+
+      const titleWrap = el("div");
+      const title = el("div", { class: "stage-title" }, [
+        el("span", { class: "seq" }, "Stage " + (idx + 1) + " ·"),
+        document.createTextNode(stage.name || "(unnamed)"),
+        el("span", { class: "stage-type" }, isException ? "Exception" : "Stage")
+      ]);
+      titleWrap.appendChild(title);
+      const summary = el("div", { class: "stage-summary" });
+      summary.appendChild(el("span", { class: "pill" }, pluralize((stage.tasks || []).length, "task")));
+      if (stage.sla) summary.appendChild(el("span", { class: "pill" }, `SLA ${stage.sla.count}${stage.sla.unit}`));
+      summary.appendChild(el("span", { class: "pill" }, "Required: " + (stage.requiredForCompletion ? "Yes" : "No")));
+      if (stage.description) summary.appendChild(el("span", { class: "pill", style: "max-width:540px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" }, stage.description));
+      titleWrap.appendChild(summary);
+      header.appendChild(titleWrap);
+
+      header.appendChild(el("div", { class: "stage-toggle-spacer" }));
+
+      header.addEventListener("click", () => {
+        root.classList.toggle("collapsed");
+        if (root.classList.contains("collapsed")) state.collapsedStages.add(idx);
+        else state.collapsedStages.delete(idx);
+      });
+      root.appendChild(header);
+
+      const body = el("div", { class: "stage-body" });
+
+      if (stage.description) body.appendChild(el("p", { html: renderInline(stage.description), style: "color:var(--text-muted);margin:8px 0 12px" }));
+
+      if ((stage.entryConditions || []).length) {
+        body.appendChild(el("h4", null, "Entry"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "Interrupting")]));
+        stage.entryConditions.forEach(c => t.appendChild(el("tr", null, [
+          el("td", { html: '<code>' + escapeHtml(c.when || "—") + '</code>' }),
+          el("td", { html: '<code>' + escapeHtml(c.if || "—") + '</code>' }),
+          el("td", { html: renderInline(c.interrupting) })
+        ])));
+        body.appendChild(t);
+      }
+
+      if ((stage.exitConditions || []).length) {
+        body.appendChild(el("h4", null, "Exit"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "Exit Type"), el("th", null, "Marks Stage Complete" + schemaTag("markStageComplete"))]));
+        stage.exitConditions.forEach(c => t.appendChild(el("tr", null, [
+          el("td", { html: '<code>' + escapeHtml(c.when || "—") + '</code>' }),
+          el("td", { html: '<code>' + escapeHtml(c.if || "—") + '</code>' }),
+          el("td", { html: renderInline(c.exitType) }),
+          el("td", { html: renderInline(c.marksComplete) })
+        ])));
+        body.appendChild(t);
+      }
+
+      if (stage.sla) {
+        body.appendChild(el("h4", null, "Stage SLA"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "SLA"), el("th", null, "Unit"), el("th", null, "At-Risk"), el("th", null, "At-Risk Action"), el("th", null, "Breach Action")]));
+        t.appendChild(el("tr", null, [
+          el("td", { html: renderInline(stage.sla.count) }),
+          el("td", { html: renderInline(stage.sla.unit) }),
+          el("td", { html: renderInline(stage.sla.atRiskPct) }),
+          el("td", { html: renderInline(stage.sla.atRiskAction) }),
+          el("td", { html: renderInline(stage.sla.breachAction) })
+        ]));
+        body.appendChild(t);
+      }
+
+      body.appendChild(el("h4", null, "Tasks"));
+      const tasks = el("div", { class: "tasks" });
+      (stage.tasks || []).forEach((task, ti) => tasks.appendChild(renderTaskRow(task, idx, ti)));
+      if ((stage.tasks || []).length === 0) tasks.appendChild(el("div", { style: "color:var(--text-subtle);font-style:italic" }, "No tasks defined."));
+      body.appendChild(tasks);
+
+      root.appendChild(body);
+      return root;
+    }
+
+    function renderTaskRow(task, stageIdx, taskIdx) {
+      const hasUnresolved = isUnresolved(task.name) || isUnresolved(task.persona) || isUnresolved(JSON.stringify(task.details || {}));
+      const row = el("div", {
+        class: "task",
+        "data-type": task.type || "process",
+        "data-task-idx": taskIdx,
+        "data-stage-idx": stageIdx,
+        "data-persona": task.persona || "",
+        "data-unresolved": hasUnresolved ? "true" : "false",
+        "data-search-text": [task.name, task.type, task.persona, task.description].filter(Boolean).join(" ").toLowerCase()
+      });
+      row.appendChild(el("div", { class: "num" }, String(taskIdx + 1)));
+
+      const middle = el("div");
+      middle.appendChild(el("div", { class: "name", html: renderInline(task.name) }));
+      const meta = el("div", { class: "meta" });
+      if (task.persona) meta.appendChild(el("span", null, "👤 " + task.persona));
+      if (task.required) meta.appendChild(el("span", null, "Required"));
+      if (task.runOnlyOnce) meta.appendChild(el("span", null, "Run once"));
+      if (task.sla) meta.appendChild(el("span", null, `SLA ${task.sla.count}${task.sla.unit}`));
+      middle.appendChild(meta);
+      row.appendChild(middle);
+
+      const badges = el("div", { class: "badges" });
+      if (task.type) badges.appendChild(badge(task.type, "type-" + task.type));
+      if (hasUnresolved) badges.appendChild(badge("UNRESOLVED", "unresolved"));
+      row.appendChild(badges);
+
+      row.addEventListener("click", () => openDetail(stageIdx, taskIdx));
+      return row;
+    }
+
+    // ---------- personas & app views ----------
+    function renderPersonas() {
+      const mount = $("#personas-body");
+      mount.innerHTML = "";
+
+      if ((data.personas || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, "Personas"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "Persona"), el("th", null, "Stage Scope"), el("th", null, "Permissions"), el("th", null, "Description")]));
+        data.personas.forEach(p => t.appendChild(el("tr", null, [
+          el("td", null, el("strong", null, p.name || "—")),
+          el("td", { html: renderInline(Array.isArray(p.stageScope) ? p.stageScope.join(", ") : p.stageScope) }),
+          el("td", { html: renderInline((p.permissions || []).join(", ")) }),
+          el("td", { html: renderInline(p.description) })
+        ])));
+        card.appendChild(t);
+        mount.appendChild(card);
+      }
+
+      if ((data.appViews || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, "Process App Views"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "App"), el("th", null, "View"), el("th", null, "Persona"), el("th", null, "Purpose"), el("th", null, "Key Components")]));
+        data.appViews.forEach(v => t.appendChild(el("tr", null, [
+          el("td", { html: renderInline(v.app) }),
+          el("td", { html: renderInline(v.view) }),
+          el("td", { html: renderInline(v.persona) }),
+          el("td", { html: renderInline(v.purpose) }),
+          el("td", { html: renderInline(v.components) })
+        ])));
+        card.appendChild(t);
+        mount.appendChild(card);
+      }
+
+      if (!(data.personas || []).length && !(data.appViews || []).length) {
+        mount.appendChild(el("div", { class: "card", style: "color:var(--text-subtle);font-style:italic" }, "No personas or app views defined."));
+      }
+    }
+
+    // ---------- integrations ----------
+    function renderIntegrations() {
+      const mount = $("#integrations-body");
+      mount.innerHTML = "";
+
+      if ((data.integrations || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, "Integration Service Connectors"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "Connector"), el("th", null, "System"), el("th", null, "Auth"), el("th", null, "Operations"), el("th", null, "Used By Tasks")]));
+        data.integrations.forEach(intg => t.appendChild(el("tr", null, [
+          el("td", null, el("strong", null, intg.connector || "—")),
+          el("td", { html: renderInline(intg.system) }),
+          el("td", { html: renderInline(intg.authMethod) }),
+          el("td", { html: renderInline((intg.operations || []).map(o => o.name).join(", ")) }),
+          el("td", { html: renderInline((intg.usedByTasks || []).join(", ")) })
+        ])));
+        card.appendChild(t);
+        mount.appendChild(card);
+
+        // Per-connector operation detail
+        data.integrations.forEach(intg => {
+          if (!(intg.operations || []).length) return;
+          const c = el("div", { class: "card" });
+          c.appendChild(el("h3", null, intg.connector + " — Operations"));
+          const tt = el("table");
+          tt.appendChild(el("tr", null, [el("th", null, "Operation"), el("th", null, "Method"), el("th", null, "Inputs"), el("th", null, "Outputs")]));
+          intg.operations.forEach(o => tt.appendChild(el("tr", null, [
+            el("td", { html: renderInline(o.name) }),
+            el("td", { html: renderInline(o.method) }),
+            el("td", { html: '<code>' + escapeHtml(o.inputs || "—") + '</code>' }),
+            el("td", { html: '<code>' + escapeHtml(o.outputs || "—") + '</code>' })
+          ])));
+          c.appendChild(tt);
+          mount.appendChild(c);
+        });
+      }
+
+      if ((data.externalAgents || []).length) {
+        const card = el("div", { class: "card" });
+        card.appendChild(el("h3", null, "External Agents"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "Agent"), el("th", null, "Service Type"), el("th", null, "Endpoint"), el("th", null, "Used By Tasks")]));
+        data.externalAgents.forEach(a => t.appendChild(el("tr", null, [
+          el("td", null, el("strong", null, a.name || "—")),
+          el("td", { html: renderInline(a.serviceType) }),
+          el("td", { html: '<code>' + escapeHtml(a.endpoint || "—") + '</code>' }),
+          el("td", { html: renderInline((a.usedByTasks || []).join(", ")) })
+        ])));
+        card.appendChild(t);
+        mount.appendChild(card);
+      }
+
+      if (!(data.integrations || []).length && !(data.externalAgents || []).length) {
+        mount.appendChild(el("div", { class: "card", style: "color:var(--text-subtle);font-style:italic" }, "No integrations defined."));
+      }
+    }
+
+    // ---------- task detail panel ----------
+    function openDetail(stageIdx, taskIdx) {
+      const stage = (data.stages || [])[stageIdx];
+      if (!stage) return;
+      const task = (stage.tasks || [])[taskIdx];
+      if (!task) return;
+
+      const body = $("#detail-body");
+      body.innerHTML = "";
+
+      body.appendChild(el("div", { class: "crumb" }, `Stage ${stageIdx + 1} · ${stage.name || ""}`));
+      body.appendChild(el("h2", { html: renderInline(task.name) }));
+      const top = el("div", { class: "meta-row", style: "margin: 6px 0 16px" });
+      if (task.type) top.appendChild(badge(task.type, "type-" + task.type));
+      if (task.persona) top.appendChild(badge("👤 " + task.persona, "persona"));
+      if (task.sla) top.appendChild(badge(`SLA ${task.sla.count}${task.sla.unit}`, "sla"));
+      if (task.runOnlyOnce) top.appendChild(badge("Run once", "runonce"));
+      if (task.required === false) top.appendChild(badge("Optional"));
+      body.appendChild(top);
+
+      if (task.description) body.appendChild(el("div", { class: "description", html: renderInline(task.description) }));
+
+      if (task.entryCondition) {
+        body.appendChild(el("h4", null, "Entry condition"));
+        const t = el("table");
+        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF")]));
+        t.appendChild(el("tr", null, [
+          el("td", { html: '<code>' + escapeHtml(task.entryCondition.when || "—") + '</code>' }),
+          el("td", { html: '<code>' + escapeHtml(task.entryCondition.if || "—") + '</code>' })
+        ]));
+        body.appendChild(t);
+      }
+
+      renderTaskDetail(body, task);
+
+      const panel = $("#detail-panel");
+      panel.setAttribute("data-open", "true");
+      panel.setAttribute("aria-hidden", "false");
+    }
+
+    function renderTaskDetail(mount, task) {
+      const d = task.details || {};
+
+      function ioTable(label, rows, withBinding) {
+        if (!rows || !rows.length) return;
+        mount.appendChild(el("h4", null, label));
+        const t = el("table");
+        const headers = withBinding === "out"
+          ? [el("th", null, "Field"), el("th", null, "Type"), el("th", null, "→ Binding")]
+          : withBinding === "in"
+            ? [el("th", null, "Field"), el("th", null, "Type"), el("th", null, "Binding"), el("th", null, "Required")]
+            : [el("th", null, "Field"), el("th", null, "Type"), el("th", null, "Binding")];
+        t.appendChild(el("tr", null, headers));
+        rows.forEach(r => {
+          const cells = [
+            el("td", { html: '<code>' + escapeHtml(r.field || r.name || "—") + '</code>' }),
+            el("td", { html: renderInline(r.type) }),
+            el("td", { html: renderInline(r.binding) })
+          ];
+          if (withBinding === "in") cells.push(el("td", { html: renderInline(r.required) }));
+          t.appendChild(el("tr", null, cells));
+        });
+        mount.appendChild(t);
+      }
+
+      switch (task.type) {
+        case "action":
+          if (d.hitlImplementation) mount.appendChild(el("div", { class: "meta-row", style: "margin:8px 0" }, [
+            el("span", null, [el("span", { class: "k" }, "HITL:"), el("span", { class: "v" }, " " + d.hitlImplementation)])
+          ]));
+          ioTable("Input schema", d.inputs, "in");
+          ioTable("Output schema", d.outputs, "out");
+          if ((d.actions || []).length) {
+            mount.appendChild(el("h4", null, "Actions"));
+            const t = el("table");
+            t.appendChild(el("tr", null, [el("th", null, "Button"), el("th", null, "Maps To"), el("th", null, "Behavior")]));
+            d.actions.forEach(a => t.appendChild(el("tr", null, [
+              el("td", { html: renderInline(a.button) }),
+              el("td", { html: '<code>' + escapeHtml(a.mapsTo || "—") + '</code>' }),
+              el("td", { html: renderInline(a.behavior) })
+            ])));
+            mount.appendChild(t);
+          }
+          break;
+        case "wait-for-connector":
+        case "execute-connector-activity":
+          mount.appendChild(el("div", { class: "meta-row", style: "margin:8px 0 12px" }, [
+            d.connector  ? el("span", null, [el("span", { class: "k" }, "Connector:"),   el("span", { class: "v" }, " " + d.connector)])   : null,
+            d.connection ? el("span", null, [el("span", { class: "k" }, "Connection:"),  el("span", { class: "v" }, " " + d.connection)])  : null,
+            d.authMethod ? el("span", null, [el("span", { class: "k" }, "Auth:"),        el("span", { class: "v" }, " " + d.authMethod)])  : null,
+            d.endpoint   ? el("span", null, [el("span", { class: "k" }, "Endpoint:"),    el("span", { class: "v" }, " " + d.endpoint)])    : null,
+            d.operation  ? el("span", null, [el("span", { class: "k" }, "Operation:"),   el("span", { class: "v" }, " " + d.operation)])   : null,
+            d.trigger    ? el("span", null, [el("span", { class: "k" }, "Trigger:"),     el("span", { class: "v" }, " " + d.trigger)])     : null
+          ].filter(Boolean)));
+          ioTable("Inputs", d.inputs);
+          ioTable("Outputs", d.outputs, "out");
+          break;
+        case "wait-for-timer":
+          mount.appendChild(el("div", { class: "meta-row", style: "margin:8px 0" }, [
+            d.timer ? el("span", null, [el("span", { class: "k" }, "Timer:"), el("span", { class: "v" }, " " + d.timer)]) : null,
+            d.value ? el("span", null, [el("span", { class: "k" }, "Value:"), el("span", { class: "v" }, " "), el("code", null, d.value)]) : null
+          ].filter(Boolean)));
+          break;
+        case "case-management":
+          mount.appendChild(el("div", { class: "meta-row", style: "margin:8px 0" }, [
+            d.childCase ? el("span", null, [el("span", { class: "k" }, "Child Case:"), el("span", { class: "v" }, " " + d.childCase)]) : null,
+            d.waitForCompletion !== undefined ? el("span", null, [el("span", { class: "k" }, "Wait for completion:"), el("span", { class: "v" }, " " + (d.waitForCompletion ? "Yes" : "No"))]) : null
+          ].filter(Boolean)));
+          if ((d.dataIn || []).length) {
+            mount.appendChild(el("h4", null, "Data passed (parent → child)"));
+            const t = el("table"); t.appendChild(el("tr", null, [el("th", null, "Parent variable"), el("th", null, "Child variable")]));
+            d.dataIn.forEach(r => t.appendChild(el("tr", null, [el("td", { html: renderInline(r.parent) }), el("td", { html: renderInline(r.child) })])));
+            mount.appendChild(t);
+          }
+          if ((d.dataOut || []).length) {
+            mount.appendChild(el("h4", null, "Data returned (child → parent)"));
+            const t = el("table"); t.appendChild(el("tr", null, [el("th", null, "Child variable"), el("th", null, "Parent variable")]));
+            d.dataOut.forEach(r => t.appendChild(el("tr", null, [el("td", { html: renderInline(r.child) }), el("td", { html: renderInline(r.parent) })])));
+            mount.appendChild(t);
+          }
+          break;
+        default:
+          // process / agent / rpa / api-workflow
+          ioTable("Inputs", d.inputs);
+          ioTable("Outputs", d.outputs, "out");
+      }
+    }
+
+    function closeDetail() {
+      const panel = $("#detail-panel");
+      panel.setAttribute("data-open", "false");
+      panel.setAttribute("aria-hidden", "true");
+    }
+
+    // ---------- filtering & search ----------
+    function applyFilters() {
+      const personas = state.filters.personas;
+      const types = state.filters.types;
+      const search = (state.search || "").toLowerCase().trim();
+      const unresolvedOnly = state.unresolvedOnly;
+
+      $$(".stage").forEach(stageEl => {
+        const tasks = $$(".task", stageEl);
+        let visibleTasks = 0;
+        tasks.forEach(t => {
+          const taskPersona = t.getAttribute("data-persona") || "";
+          const taskType = t.getAttribute("data-type") || "";
+          const taskUnresolved = t.getAttribute("data-unresolved") === "true";
+          const taskText = t.getAttribute("data-search-text") || "";
+
+          const personaOk = personas.size === 0 || personas.has(taskPersona);
+          const typeOk = types.size === 0 || types.has(taskType);
+          const unresolvedOk = !unresolvedOnly || taskUnresolved;
+          const searchOk = !search || taskText.includes(search);
+
+          const ok = personaOk && typeOk && unresolvedOk && searchOk;
+          t.style.display = ok ? "" : "none";
+          if (ok) visibleTasks++;
+        });
+
+        // hide stage entirely if filters + search rule out all its tasks AND stage name doesn't match search
+        const stageName = (stageEl.querySelector(".stage-title")?.textContent || "").toLowerCase();
+        const stageMatches = !search || stageName.includes(search);
+        stageEl.style.display = (visibleTasks > 0 || (stageMatches && !unresolvedOnly && personas.size === 0 && types.size === 0)) ? "" : "none";
+      });
+    }
+
+    // ---------- listeners ----------
+    function attachListeners() {
+      $("#search").addEventListener("input", (e) => { state.search = e.target.value; applyFilters(); });
+      $("#toggle-unresolved").addEventListener("click", (e) => {
+        state.unresolvedOnly = !state.unresolvedOnly;
+        e.currentTarget.setAttribute("aria-pressed", String(state.unresolvedOnly));
+        applyFilters();
+      });
+      $("#toggle-schema").addEventListener("click", (e) => {
+        state.schemaOn = !state.schemaOn;
+        e.currentTarget.setAttribute("aria-pressed", String(state.schemaOn));
+        document.body.classList.toggle("schema-on", state.schemaOn);
+      });
+      $("#toggle-collapse-all").addEventListener("click", (e) => {
+        state.allCollapsed = !state.allCollapsed;
+        e.currentTarget.textContent = state.allCollapsed ? "Expand all" : "Collapse all";
+        $$(".stage").forEach((s, i) => {
+          if (state.allCollapsed) { s.classList.add("collapsed"); state.collapsedStages.add(i); }
+          else { s.classList.remove("collapsed"); state.collapsedStages.delete(i); }
+        });
+      });
+      $("#print").addEventListener("click", () => window.print());
+      $("#close-detail").addEventListener("click", closeDetail);
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDetail(); });
+
+      // active TOC link on scroll
+      const sections = $$("section[data-section]");
+      const tocLinks = $$(".toc a[data-jump]");
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(en => {
+          if (en.isIntersecting) {
+            const id = en.target.id;
+            tocLinks.forEach(a => a.classList.toggle("active", a.getAttribute("data-jump") === id));
+          }
+        });
+      }, { rootMargin: "-40% 0px -55% 0px", threshold: 0 });
+      sections.forEach(s => obs.observe(s));
+    }
+
+    // ---------- init ----------
+    function renderAll() {
+      renderTitle();
+      renderBanner();
+      renderTOC();
+      renderCase();
+      renderFlowDiagram();
+      renderFilters();
+      renderStages();
+      renderPersonas();
+      renderIntegrations();
+      attachListeners();
+    }
+
+    renderAll();
+  })();
+  </script>
+</body>
+</html>

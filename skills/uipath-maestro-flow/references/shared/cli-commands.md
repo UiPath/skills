@@ -2,7 +2,7 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
 ## uip maestro flow init
 
@@ -10,7 +10,7 @@ Scaffold a new Flow project directory. **Always create a solution first** (see t
 
 ```bash
 # 1. Create solution first
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 
 # 2. Init the flow project inside the solution folder.
 #    When run from inside a solution directory, `flow init` auto-registers
@@ -56,16 +56,16 @@ Exit code 0 = valid, 1 = invalid.
 
 Validates agent nodes against organization governance policies fetched from the platform. Requires `uip login`. When governance data cannot be fetched (no login, platform unreachable), the command exits with a failure. Omit `--governance` to run local-only schema validation without auth.
 
-## uip maestro flow tidy
+## uip maestro flow format
 
-Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without tidy, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
+Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without format, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
 
 ```bash
-uip maestro flow tidy <path/to/file.flow>
-uip maestro flow tidy <path/to/file.flow> --output json
+uip maestro flow format <path/to/file.flow>
+uip maestro flow format <path/to/file.flow> --output json
 ```
 
-Tidy:
+Format:
 - Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved
 - Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }` — preserving sticky-note custom sizes
 - Recurses into subflows and rewrites `subflows[<id>].layout` for each
@@ -86,7 +86,7 @@ uip maestro flow pack <ProjectDir> <OutputDir> --output json
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
-> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
+> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.
 
 ## uip solution resource refresh
 
@@ -120,13 +120,31 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 # Pass input arguments to the flow
 UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
+
+# Bind local files to file-typed input variables (repeatable).
+# Replace <variableId> and <localPath> with your own values.
+UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+  --attachment <variableId>=<localPath> \
+  --attachment <variableId>=<localPath>
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. Always run `uip maestro flow validate` first.
 
 Use `--inputs` to pass a JSON object of input arguments when the flow has input parameters (e.g. trigger inputs or workflow arguments).
 
-Run `uip maestro flow debug --help` to discover additional options.
+Use `--attachment <variableId>=<localPath>` to upload a local file and bind it to a file-typed input variable. Repeat the flag for multiple files. The `<variableId>` (left of `=`) is required and must match the `id` of an entry in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [Pre-flight](#attachment-preflight). A bare path with no `<variableId>=` prefix is rejected.
+
+<a id="attachment-preflight"></a>
+
+#### Pre-flight: `--attachment` binding
+
+The CLI does not validate `<variableId>` — a mismatch uploads successfully then faults at runtime when the binding resolves to undefined.
+
+1. Read `<flow>.flow` (it is plain JSON) and inspect `variables.globals[]`. Valid `<variableId>` values are entries where `direction` is `"in"` and `type` is `"file"`.
+2. Confirm each `<variableId>` passed to `--attachment` appears in that list.
+3. If none exist, add one to `variables.globals[]`: `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`.
+
+Run `uip maestro flow debug --help` for other options.
 
 ### Reporting the run back to the user
 
@@ -148,9 +166,23 @@ Manage deployed Flow processes in Orchestrator. **Requires `uip login`.**
 ```bash
 uip maestro flow process list --output json
 uip maestro flow process run <process-key> <folder-key> --output json
+
+# Pass input arguments (JSON or @file.json)
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --inputs '{"numberA": 5, "numberB": 7}'
+
+# Bind local files to file-typed input variables (repeatable).
+# Replace <variableId> and <localPath> with your own values.
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --attachment <variableId>=<localPath>
 ```
 
-Run `uip maestro flow process --help` for all subcommands and options.
+`--attachment <variableId>=<localPath>` uploads a local file and binds it to a file-typed input variable. The `<variableId>` must match the `id` of an entry in `variables.globals[]` with `direction:"in"` and `type:"file"` — see [Pre-flight](#attachment-preflight). Repeat the flag for multiple files. Two `flow process run`-specific behaviors:
+
+- **Precedence on key collision:** when `--inputs` and `--attachment` both supply the same key, `--attachment` wins and the CLI logs an override warning.
+- **`--validate` accepts pre-uploaded attachment references** for file-typed slots — the flag's JSON-schema check passes even though the slot's nominal type is `string`.
+
+Run `uip maestro flow process --help` for other subcommands.
 
 ## uip maestro flow job
 
@@ -234,7 +266,7 @@ See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-
 
 ## uip maestro flow node / uip maestro flow edge
 
-See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
+See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/remove/list/configure` and `edge add/remove/list` syntax, flags, and auto-managed behaviors.
 
 ## uip maestro flow eval
 

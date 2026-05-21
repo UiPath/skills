@@ -8,11 +8,9 @@ tags: [uipath-data-fabric, smoke, records, import]
 
 agent:
   type: claude-code
-  max_turns: 30
 
-sandbox:
-  driver: tempdir
-  python: {}
+run_limits:
+  max_turns: 30
 
 initial_prompt: |
   OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.

@@ -107,7 +107,7 @@ Wrapper-level `apiVersion` is `"ecs.uipath.com/v2"` — matches what refresh wri
 
 ## Solution-Level Files
 
-For `contextType: "index"` with a StorageBucket-backed ECS index, `uip agent validate` emits:
+For `contextType: "index"` with a StorageBucket-backed ECS index, `uip agent migrate` emits:
 
 ```json
 {
@@ -220,13 +220,14 @@ All failures (index not found, ambiguous name match, non-StorageBucket data sour
 
 See § Agent-Level Resource Shape above for the full field reference, including the three variants (`index`/`attachments`/`datafabricentityset`) and per-`retrievalMode` settings (`citationMode` for `deeprag`, `webSearchGrounding` + `outputColumns` for `batchtransform`).
 
-### Step 5 — Validate
+### Step 5 — Validate and migrate
 
 ```bash
 uip agent validate "<AGENT_NAME>" --output json
+uip agent migrate  "<AGENT_NAME>" --output json
 ```
 
-Confirm `Validated.resources` includes the context, and inspect the emitted binding:
+Validate is read-only. Migrate writes the binding. Confirm `Validated.resources` includes the context, then inspect the emitted binding:
 
 ```bash
 cat "<AGENT_NAME>/bindings_v2.json"

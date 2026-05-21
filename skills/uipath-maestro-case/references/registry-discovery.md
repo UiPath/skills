@@ -164,3 +164,7 @@ After registry pull, `uip maestro case spec` is the unified metadata endpoint fo
 ## Output Contract
 
 The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so `tasks.md` can reference it. The implementation agent writes this identifier into `data.context.taskTypeId` (or `data.typeId` for connectors) on the task node.
+
+### `registry-resolved.json` content discipline
+
+Structured log only — per Rule 9, each entry is `{search query, matches, selected, rationale}`. The file is re-ingested as a perf cache on subsequent runs (planning.md § Phase 0 carryover), so any free-form prose written here gets parroted back into `tasks.md`. `rationale` MUST explain the selection choice (e.g., `"exact name match in caseManagement folder"`); never use it for verify-text drafts, SDD-vs-spec field translations, or downstream-plugin-behavior claims.

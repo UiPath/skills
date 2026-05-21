@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "b2c8cb22-2ebc-4c27-87f3-05efe701af1c",
+      "Name": "original_email@test.com's workspace",
+      "Path": "original_email@test.com's workspace",
+      "Description": "",
+      "Type": "Personal",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b2c3d4e5-f6a7-8901-2345-6789abcdef01",
+      "Name": "ComputeJobs",
+      "Path": "ComputeJobs",
+      "Description": "Folder hosting compute-heavy automations including the (misconfigured) MisconfiguredForeground process and the foreground ForegroundHolder process.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "e0772cbe-c19c-4d5f-926c-043c2d2d300a",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

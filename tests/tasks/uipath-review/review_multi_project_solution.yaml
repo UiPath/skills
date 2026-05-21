@@ -18,6 +18,8 @@ tags: [uipath-review, e2e, multi-project]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 60
 
 sandbox:

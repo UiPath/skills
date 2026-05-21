@@ -22,9 +22,20 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
    npm install -g @uipath/cli
    ```
 
+   > **Do not add `@uipath/cli` to `sandbox.node.env_packages` in task YAMLs.** The GH smoke runner installs it globally before any task runs. Listing it in `env_packages` is redundant and, when pinned to a version, causes skew against the runner's `@latest` install.
+
 4. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for environment setup (`.env`, API keys, etc.).
 
 ## Running Tests
+
+> **Platform-specific sandbox driver:**
+> - **Linux smoke tests** use `driver: docker` for better isolation. Build the Docker image once before running:
+>   ```bash
+>   cd .coder_eval
+>   make docker-image
+>   cd ../tests
+>   ```
+> - **Windows RPA tests** use `driver: tempdir` (Docker image not available on Windows runner).
 
 ```bash
 cd tests
@@ -169,7 +180,7 @@ task_id: skill-flow-init-validate
 tags: [uipath-maestro-flow, smoke, mode:build]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -184,7 +195,7 @@ agent:
   max_turns: 14
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |
@@ -220,7 +231,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, mode:build]
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 initial_prompt: |

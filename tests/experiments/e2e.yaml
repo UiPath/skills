@@ -7,6 +7,22 @@ defaults:
     task_timeout: 1200
     turn_timeout: 300
 
+  sandbox:
+    docker:
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - TRACES_SMOKE_PROCESS_KEY
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
+
   agent:
     type: claude-code
     permission_mode: acceptEdits
@@ -19,11 +35,15 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
-  # Append default post_run to every e2e task: delete Studio Web solutions
-  # uploaded by `uip maestro flow debug` (no-op for tasks that don't produce .uipx).
+  # Append default post_run to every e2e task. Order matters: solution cleanup
+  # talks to the tenant (still needs npm-installed CLIs), then sandbox-local
+  # cleanup wipes <sandbox>/{node_modules,.npm-prefix} so preserved artifacts
+  # stay slim (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
   post_run:
     - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
       timeout: 120
+    - command: "rm -rf node_modules .npm-prefix"
+      timeout: 30
 
 variants:
   - variant_id: default

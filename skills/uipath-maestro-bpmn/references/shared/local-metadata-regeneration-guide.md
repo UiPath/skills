@@ -6,7 +6,7 @@ Use this guide when BPMN source changed and local package metadata must be refre
 
 - `.bpmn` is the source of record for process structure, root variables, root bindings, entry point IDs, mappings, diagrams, and documented non-Integration-Service UiPath XML.
 - `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived package metadata unless a CLI contract explicitly marks a field as user-authored.
-- `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources.
+- Connector-backed or dynamically schematized `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe instead.
 
 ## Regeneration Inputs
 
@@ -24,20 +24,91 @@ Do not derive metadata from stale package files first. Use existing generated fi
 
 1. Edit `.bpmn` first.
 2. Run local validation for XML, diagrams, entry point IDs, variables, mappings, binding references, and package metadata drift.
-3. If generated package JSON is stale, regenerate it with the supported local CLI path. For package-shape verification, use the local pack command and request JSON output when parsing command results:
+3. Before running `pack`, verify the project directory contains the full local
+   metadata set: `project.uiproj`, `operate.json`, `entry-points.json`,
+   `bindings_v2.json`, and `package-descriptor.json`. The pack command
+   consumes these files; it does not synthesize a missing package descriptor.
+4. If generated package JSON is stale, regenerate it with the supported local
+   CLI path. If no generator is available for a local-only synthetic project,
+   write the minimal placeholder-safe shape below before packing. For
+   package-shape verification, use the local pack command and request JSON
+   output when parsing command results:
 
    ```bash
    uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
    ```
 
-4. Inspect the package or generated content for:
+5. Inspect the package or generated content for:
    - `entry-points.json` entries matching root start events and schemas.
    - `bindings_v2.json` resources matching root bindings and enriched connector metadata.
    - `operate.json` pointing at the intended BPMN file with `ProcessOrchestration` content type.
    - `package-descriptor.json` entries for the BPMN file and generated JSON under `content/`.
-5. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step.
+6. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step.
 
 Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run are cloud or runtime actions and still require explicit user consent.
+
+## Minimal Local Metadata Shape
+
+When a local-only synthetic project needs package files and the CLI cannot
+regenerate them in place, use this placeholder-safe shape before running
+`uip maestro bpmn pack`. Replace only the BPMN file name and start event id;
+do not invent `contentFiles` as a substitute for `content`.
+
+`project.uiproj`:
+
+```json
+{
+  "projectVersion": "1.0.0",
+  "projectType": "ProcessOrchestration",
+  "name": "SyntheticProject",
+  "main": "SyntheticProject.bpmn"
+}
+```
+
+`operate.json`:
+
+```json
+{
+  "main": "SyntheticProject.bpmn",
+  "contentType": "ProcessOrchestration"
+}
+```
+
+`entry-points.json`:
+
+```json
+{
+  "entryPoints": [
+    {
+      "id": "Entry_ManualStart",
+      "filePath": "/content/SyntheticProject.bpmn#Start_Manual",
+      "inputSchema": { "type": "object", "properties": {} },
+      "outputSchema": { "type": "object", "properties": {} }
+    }
+  ]
+}
+```
+
+`bindings_v2.json`:
+
+```json
+{
+  "resources": []
+}
+```
+
+`package-descriptor.json`:
+
+```json
+{
+  "content": [
+    "content/SyntheticProject.bpmn",
+    "content/bindings_v2.json",
+    "content/entry-points.json",
+    "content/operate.json"
+  ]
+}
+```
 
 ## Entry Point Rules
 

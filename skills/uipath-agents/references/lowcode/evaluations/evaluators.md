@@ -17,7 +17,7 @@ How to add each type:
 
 - **Studio Web UI** — Evaluators tab → **Create New** → Add evaluator dialog → pick any of the four. UI is the canonical surface and supports all four with no special steps.
 - **CLI** — `uip agent eval evaluator add <name> --type <flag>` for `semantic-similarity` or `trajectory`. The CLI does not have a `--type` value for Exact match or JSON similarity; create those in the UI or hand-write the JSON.
-- **Hand-write JSON** — drop a file in `evals/evaluators/` matching the schema below; run `uip agent validate --output json`; reference the new `id` from your eval set's `evaluatorRefs`. Useful when you want to pin a specific model and prompt for the LLM-based types, or when you're scaffolding eval files programmatically.
+- **Hand-write JSON** — drop a file in `evals/evaluators/` matching the schema below; run `uip agent validate --output json` to confirm schema validity (then `uip agent migrate --output json` if validate reports `MigrationPending: true`); reference the new `id` from your eval set's `evaluatorRefs`. Useful when you want to pin a specific model and prompt for the LLM-based types, or when you're scaffolding eval files programmatically.
 
 ### Why fewer than coded?
 
@@ -108,7 +108,7 @@ The CLI's `evaluator add --type semantic-similarity` writes a shorter prompt; ha
 }
 ```
 
-After hand-writing any evaluator, run `uip agent validate --output json` to confirm the file passes schema migration. Then reference the new evaluator's `id` from your eval set's `evaluatorRefs`. Watch for: `id` collisions with existing evaluators, missing required fields, and ISO-8601 formatting on the timestamps.
+After hand-writing any evaluator, run `uip agent validate --output json` to confirm the file passes schema validation; if validate reports `MigrationPending: true`, run `uip agent migrate --output json` to apply it. Then reference the new evaluator's `id` from your eval set's `evaluatorRefs`. Watch for: `id` collisions with existing evaluators, missing required fields, and ISO-8601 formatting on the timestamps.
 
 ## Coded-only evaluators (NOT available on low-code)
 

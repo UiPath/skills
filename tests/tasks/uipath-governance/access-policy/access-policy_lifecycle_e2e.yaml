@@ -26,6 +26,8 @@ tags: [uipath-governance, e2e, access-policy, mode:build]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 40
 
 sandbox:

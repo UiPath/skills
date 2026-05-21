@@ -142,17 +142,17 @@ Emission rules:
 
 ## Unresolved recipients (placeholder-style)
 
-When sdd gives an email but no UUID, emit the recipient with a sentinel `target`:
+Phase 1 runs the identity resolver (see [`planning.md` § Identity Resolution](planning.md#identity-resolution)) and normally writes a UUID into `tasks.md`. When `tasks.md` still carries an `<UNRESOLVED: ...>` sentinel for a recipient (resolver failed, user declined, or sdd input was unresolvable), emit the recipient with a sentinel `target`:
 
 ```json
 { "scope": "User", "target": "<UNRESOLVED: user-uuid for manager@corp.com>", "value": "manager@corp.com" }
 ```
 
-List every unresolved recipient in the completion report (per SKILL.md § Completion Output step 4) so the user can patch externally. Do not call an identity service from the JSON path — that capability is out of scope for this milestone.
+List every unresolved recipient in the completion report (per SKILL.md § Completion Output step 4) so the user can patch externally. Do not call an identity service from the JSON path — resolution is Phase 1's responsibility; Phase 3 just transcribes whatever `tasks.md` carries.
 
 ## Expression translation
 
-`tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). Common patterns: `=js:<javascript>` for arbitrary boolean, `=vars.<id> === "<literal>"` for variable comparison, `=metadata.<field>` for case metadata. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
+`tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink). Common patterns: `=js:vars.<id> === "<literal>"` for variable comparison, `=js:metadata.<field> === "<literal>"` for case metadata comparison, `=js:true` for the default rule, `=js:(vars.X === 'foo') && (vars.Y > 5)` for combined boolean (each sub-clause parenthesized for operator precedence). If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
 
 ## Post-write validation
 

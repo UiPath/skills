@@ -76,6 +76,37 @@ using System.Text.RegularExpressions;  // regex
 2. Add only the `using` statements needed for the types actually referenced in the file
 3. Add the entry point to `project.json` (**Process projects only** — Tests and Library projects do not use `entryPoints`). Add `fileInfoCollection` for test case files (all project types)
 
+## Platform types — do not reinvent
+
+UiPath ships first-class types for the patterns coded workflows most commonly need (exceptions, queue items, credentials, OR descriptors). **Always import the platform type instead of defining a project-local equivalent.** A project-local `BusinessRuleException`, custom queue-item record, or hand-rolled credential helper diverges from Orchestrator behaviour and breaks integration with platform features that expect the canonical types.
+
+| Platform type | Namespace / package | Use for | Do NOT do this instead |
+|---|---|---|---|
+| **`UiPath.Core.BusinessRuleException`** | `UiPath.Core` (in `UiPath.System.Activities`) | Business-rule violations that must NOT be retried by REFramework / Orchestrator (e.g., invalid input data, validation failure, missing required field). Orchestrator marks the queue item as `Failed` with no retry. | Define a project-local `class BusinessRuleException : Exception { … }`. |
+| **`UiPath.Robot.Activities.BusinessException`** | `UiPath.Robot.Activities` | Same role as `BusinessRuleException` in robot-side custom activity packages. | Same — do not define your own. |
+| **`UiPath.Core.Activities.Storage.IResource` / `ILocalResource`** | `UiPath.Core.Activities.Storage` (in `UiPath.System.Activities`) | File / folder handles passed to activities that need an `IResource`. | Pass raw `string` paths or hand-roll a `LocalResource` constructor (the constructor is internal — see § IResource / ILocalResource below). |
+| **`UiPath.Orchestrator.Client.Models.QueueItemDto`** and related | `UiPath.Orchestrator.Client.Models` (in `UiPath.System.Activities`) | Queue-item shape returned by `GetTransactionItem` / pushed via `AddQueueItem`. | Define a project-local queue-item record that diverges from Orchestrator's schema. |
+| **OR descriptors `Descriptors.<App>.<Screen>.<Element>`** | Generated into `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs` | UI element targeting in coded UI automation. | Hand-roll selector strings or `TargetAppModel` instances; bypass the Object Repository. |
+| **`UiPath.CodedWorkflows.CodedWorkflow`** | `UiPath.CodedWorkflows` (built into the runtime) | Base class for `[Workflow]` and `[TestCase]` classes. | Inherit from a custom base; the Studio wrapper generation depends on this exact type. |
+
+### Throwing `BusinessRuleException` correctly
+
+```csharp
+using UiPath.Core;     // brings BusinessRuleException into scope
+
+if (!System.Text.RegularExpressions.Regex.IsMatch(hash, @"^[0-9a-f]{40}$"))
+{
+    throw new BusinessRuleException(
+        $"Computed hash '{hash}' does not match expected SHA1 format (40 lowercase hex chars).");
+}
+```
+
+`BusinessRuleException` is recognised by REFramework's `SetTransactionStatus` and by Orchestrator's queue-item lifecycle — items failed with this exception are marked **Failed** and not retried automatically. A project-local exception with the same name is just an `Exception` from REFramework's point of view and triggers the system-error retry path instead.
+
+### When you MAY define a project-local type
+
+Project-local types are appropriate for **domain DTOs** that have no platform equivalent — `InvoiceLineItem`, `CustomerRecord`, `WorkItem` — and belong in Coded Source Files. The rule above applies to platform-provided types only: do not reinvent exceptions, queue-item shapes, credential handles, file-resource handles, or OR descriptors.
+
 ## Best Practices
 
 ### API Discovery

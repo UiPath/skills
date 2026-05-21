@@ -7,11 +7,9 @@ tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
 
 agent:
   type: claude-code
-  max_turns: 28
 
-sandbox:
-  driver: tempdir
-  python: {}
+run_limits:
+  max_turns: 28
 
 initial_prompt: |
   I want to build a UiPath Flow that makes an HTTP request and processes the

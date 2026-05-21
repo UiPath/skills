@@ -30,16 +30,16 @@ uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
 |------|----------|-------------|
 | `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
 | `--label` | No | Display label shown on the canvas |
-| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow tidy` rewrites positions on save. |
+| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow format` rewrites positions on save. |
 | `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file and pass `--input "$(cat /tmp/input.json)"`.
 
-### Delete a node
+### Remove a node
 
 ```bash
-uip maestro flow node delete <ProjectName>.flow <NODE_ID>
-uip maestro flow node delete <ProjectName>.flow <NODE_ID> --output json
+uip maestro flow node remove <ProjectName>.flow <NODE_ID>
+uip maestro flow node remove <ProjectName>.flow <NODE_ID> --output json
 ```
 
 **What the CLI handles automatically:**
@@ -55,7 +55,7 @@ uip maestro flow node delete <ProjectName>.flow <NODE_ID> --output json
 uip maestro flow node list <ProjectName>.flow --output json
 ```
 
-Returns all nodes with their `id`, `type`, and `display.label`. Use this to discover node IDs before wiring edges or deleting nodes.
+Returns all nodes with their `id`, `type`, and `display.label`. Use this to discover node IDs before wiring edges or removing nodes.
 
 ### Add an edge
 
@@ -71,11 +71,11 @@ uip maestro flow edge add <ProjectName>.flow <SOURCE_NODE_ID> <TARGET_NODE_ID> -
 
 See each plugin's `planning.md` or [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type.
 
-### Delete an edge
+### Remove an edge
 
 ```bash
-uip maestro flow edge delete <ProjectName>.flow <EDGE_ID>
-uip maestro flow edge delete <ProjectName>.flow <EDGE_ID> --output json
+uip maestro flow edge remove <ProjectName>.flow <EDGE_ID>
+uip maestro flow edge remove <ProjectName>.flow <EDGE_ID> --output json
 ```
 
 ### List edges
@@ -148,9 +148,9 @@ These combine primitives only for workflows that are themselves carve-outs. Do n
 
 ### Replace manual trigger with connector trigger
 
-1. Delete the manual trigger (also removes its edges and orphaned definition):
+1. Remove the manual trigger (also removes its edges and orphaned definition):
    ```bash
-   uip maestro flow node delete <ProjectName>.flow start --output json
+   uip maestro flow node remove <ProjectName>.flow start --output json
    ```
 2. Add the connector trigger node:
    ```bash

@@ -1,0 +1,55 @@
+experiment_id: skill-tests-default
+description: "Default experiment for smoke tests — loads the full UiPath skills plugin"
+
+defaults:
+  run_limits:
+    # Coded RPA tasks (hooks setup + test case + project.json edits +
+    # `uip rpa` calls) routinely take 25-30 turns end-to-end. 20 was
+    # cutting before/after-hooks and coded-test-case off mid-task.
+    max_turns: 40
+    # Helm-backed `uip rpa` ops (install-or-update-packages, get-analyzer-rules,
+    # build) regularly take 30-90s each on a cold runner. The before/after-hooks
+    # task chains several such calls, so the agent's single turn needs headroom.
+    task_timeout: 900
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    python: {}
+    node: {}
+    docker:
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - TRACES_SMOKE_PROCESS_KEY
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+  # Drop <sandbox>/{node_modules,.npm-prefix} so preserved artifacts stay slim
+  # and Node module resolution can't leak across concurrent sandboxes
+  # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
+  post_run:
+    - command: "rm -rf node_modules .npm-prefix"
+      timeout: 30
+
+variants:
+  - variant_id: default

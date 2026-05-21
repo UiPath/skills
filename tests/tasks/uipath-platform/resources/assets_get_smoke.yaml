@@ -1,0 +1,31 @@
+task_id: skill-platform-resources-assets-get
+description: >
+  Smoke test: real user asks for an asset by name. The agent's job is to
+  realize `uip resource assets get` takes a GUID, so it must first run
+  `assets list` to find the key. Verifies the agent does the resolve step
+  (any form of `assets list`) — no specific filter flag enforced.
+  If the named asset doesn't exist, the agent reporting "not found" after
+  list is the correct outcome; the `assets get` follow-up only fires when
+  the asset actually exists in the tenant.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
+
+initial_prompt: |
+  Fetch the metadata for the Orchestrator asset named `ApiBaseUrl` in
+  the current UiPath tenant.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent did the resolve step with the --name filter (server-side, by name)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+assets\s+list.*(-n|--name)\s+["\047]?ApiBaseUrl'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

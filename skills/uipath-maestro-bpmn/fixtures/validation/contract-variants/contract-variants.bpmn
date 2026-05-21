@@ -50,7 +50,7 @@
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
           <uipath:context />
-          <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{"requestId":"=requestId"}]]></uipath:input>
+          <uipath:input name="payload" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_A2A_To_ApiWorkflow</bpmn:incoming>
@@ -61,7 +61,7 @@
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.BusinessRules" version="v1" />
           <uipath:context />
-          <uipath:input name="facts" type="json" target="bodyField"><![CDATA[{"requestId":"=requestId"}]]></uipath:input>
+          <uipath:input name="facts" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ApiWorkflow_To_BusinessRule</bpmn:incoming>
@@ -72,8 +72,8 @@
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.CreateQueueItem" version="v1" />
           <uipath:context />
-          <uipath:input name="itemData" type="json" target="bodyField"><![CDATA[{"requestId":"=requestId"}]]></uipath:input>
-          <uipath:output name="QueueItemId" type="string" var="workItemId" source="id" />
+          <uipath:input name="itemData" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+          <uipath:output name="QueueItemId" type="string" var="Var_WorkItemId" source="id" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_BusinessRule_To_CreateQueue</bpmn:incoming>
@@ -84,7 +84,7 @@
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.CreateAndWaitForQueueItem" version="v1" />
           <uipath:context />
-          <uipath:input name="reference" type="string" value="=workItemId" />
+          <uipath:input name="reference" type="string" value="=vars.Var_WorkItemId" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_CreateQueue_To_WaitQueue</bpmn:incoming>
@@ -153,7 +153,7 @@
           <uipath:type value="Maestro.SendMessageEvent" version="v1" />
           <uipath:context>
             <uipath:input name="messageName" type="string" value="SyntheticReply" />
-            <uipath:input name="payload" type="json"><![CDATA[{"requestId":"=requestId","result":"=result"}]]></uipath:input>
+            <uipath:input name="payload" type="json"><![CDATA[{"requestId":"=vars.Var_RequestId","result":"=vars.Var_Result"}]]></uipath:input>
           </uipath:context>
         </uipath:event>
       </bpmn:extensionElements>

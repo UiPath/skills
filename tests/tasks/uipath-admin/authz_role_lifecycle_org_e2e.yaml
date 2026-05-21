@@ -1,0 +1,113 @@
+task_id: skill-admin-authz-role-lifecycle-org-e2e
+description: >
+  End-to-end test: full lifecycle of an Organization-scope custom
+  role — discover org-shape permissions, check for name collision,
+  create the role with `--scope Organization`, verify via `roles get`,
+  then delete and verify removal.
+
+  Validates: `--scope Organization`, actions.json uses permission
+  `name` strings (not UUIDs), positional id on get/delete, cleanup at
+  end of test.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, e2e, authz, role-lifecycle, scope:organization]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I need a read-only role that applies to my whole organization — not
+  to any single tenant — for auditors who should only be able to view
+  identity-related records (users, groups). Call it "OrgAuditor".
+
+  Once you've made it, show me the role's contents so I can confirm
+  it looks right. Then please clean up by removing the role and
+  confirming it's gone.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed Organization-scope permissions to discover the catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\s+.*(?:--scope\s+Organization\b|--service\s+identity\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked name collision via `roles list --filter`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--filter\s+\S*OrgAuditor'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent wrote an actions.json file (action-name array)"
+    tool_name: "Write"
+    command_pattern: 'actions\.json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the role with --scope Organization and --name OrgAuditor"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Organization\b.*--name\s+\S*OrgAuditor.*--file\s+\S+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the new role via `roles get <id>` (positional id)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+[a-f0-9-]{8,}'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cleaned up by calling `roles delete <id>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+delete\s+[a-f0-9-]{8,}'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the role was removed (second `roles get` or `roles list --filter`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get\s+[a-f0-9-]{8,}|list\s+.*--filter\s+\S*OrgAuditor)'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT pass --tenant-id on an Organization-scope role"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Organization\b.*--tenant-id'
+    weight: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use --scope Folder (invalid for role creation)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Folder\b'
+    weight: 1.0

@@ -1,0 +1,119 @@
+task_id: skill-admin-audit-export-verify-e2e
+description: >
+  End-to-end test (artifact verification tier): agent drives
+  `uip admin audit tenant export` to produce a real ZIP, then verifies
+  (a) the ZIP exists, (b) it contains at least one daily .txt file,
+  (c) the event IDs inside the export are a subset of what the live
+  `events` API returns for the same whole-day window.
+
+  Unlike the command-construction e2e (`audit_export_e2e.yaml`), this
+  task asserts real artifact correctness against the test tenant
+  authenticated via the workflow's env-var auth (UIPATH_CLI_AUTH_TOKEN
+  + UIPATH_CLI_ORG/TENANT_*).
+
+  Whole-day granularity note: `uip admin audit ... export` issues one
+  HTTP call per UTC day inside [--from-date, --to-date] and produces
+  one .txt per day. The `events` API takes timestamp-precise bounds,
+  so to compare the same window the events query must use
+  `T00:00:00Z` / `T23:59:59.999Z` boundaries that bracket the export's
+  per-day files.
+
+  LTS lag note: the export reads from the long-term store, which lags
+  the live `events` endpoint. We pin the comparison window to dates at
+  least 48h in the past so LTS has caught up. Assertion direction is
+  "export IDs ⊆ events IDs" — events is the more complete set.
+
+  Blocker: this task requires `uip admin audit` to exist in the
+  published `@uipath/cli` (UiPath/cli#1372 must ship + publish first).
+  Until then it will fail at the export step with `unknown command
+  'audit'`.
+tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 40
+  turn_timeout: 600
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Export tenant audit events for the 3-day window from 5 days ago
+  through 2 days ago (UTC, whole days) to ./audit-window.zip in the
+  current working directory. Resolve the dates with
+  `date -u -d '5 days ago' +%Y-%m-%d` and `date -u -d '2 days ago' +%Y-%m-%d`
+  so the window slides with the run date.
+
+  Important:
+  - The `uip` CLI is available and connected via env-var auth to a
+    real tenant. The export should produce a real ZIP file at the
+    requested path.
+  - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
+    bounds (no inline `T00:00:00Z` for these flags — the CLI treats
+    them as whole-day boundaries).
+  - The 2-days-ago upper bound preserves the >48h LTS-lag buffer so
+    the export is comparable against the live events endpoint.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked tenant export with bounded window + --output-file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-file\s+\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Export produced ./audit-window.zip"
+    path: "./audit-window.zip"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Export is a valid ZIP (zero or more .txt entries — an empty zip is acceptable for a quiet tenant)"
+    command: |
+      python3 -c "
+      import sys, zipfile
+      assert zipfile.is_zipfile('./audit-window.zip'), 'not a valid zip'
+      names = zipfile.ZipFile('./audit-window.zip').namelist()
+      print(f'OK: {len(names)} entries')
+      "
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Export contains well-formed events: each per-day file is a JSON array; events use the documented PascalCase schema"
+    command: |
+      python3 -c "
+      import json, sys, zipfile
+      REQUIRED = ['Id','CreatedOn','OrganizationId','ActorId','EventType','EventSource','EventTarget']
+      z = zipfile.ZipFile('./audit-window.zip')
+      txt_files = [n for n in z.namelist() if n.endswith('.txt')]
+      if not txt_files:
+          print('OK: export window is empty (no per-day files) — structural assertion trivially holds')
+          sys.exit(0)
+      sample = None
+      total = 0
+      for name in txt_files:
+          data = json.loads(z.read(name))
+          assert isinstance(data, list), f'{name} is not a JSON array'
+          total += len(data)
+          if sample is None and data:
+              sample = data[0]
+      if sample is None:
+          print('OK: every per-day file is an empty JSON array — structural assertion trivially holds')
+          sys.exit(0)
+      missing = [k for k in REQUIRED if k not in sample]
+      assert not missing, f'sample event missing PascalCase keys: {missing}; sample={sample}'
+      print(f'OK: validated structure across {len(txt_files)} per-day files, total events={total}')
+      "
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

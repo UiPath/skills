@@ -72,17 +72,22 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks. See [`uipath-
 
 ## Solution (`uip solution`)
 
-Create, pack, publish, and deploy solutions. See [`uipath-solution`](solution/solution.md).
+`uip solution` (init/new, project add|remove|import, resource list|refresh|get, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
+
+---
+
+## Platform Tool (`uip platform`)
+
+Manage organization-level licensing — tenant allocations, user/group bundle assignments, and consumables reporting. See [`licensing/licensing.md`](licensing/licensing.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Lifecycle** | `new`, `delete`, `upload`, `download` | [Develop Solution](solution/develop-solution.md) |
-| **Project** | `add`, `remove`, `import`, `list` | [Develop Solution](solution/develop-solution.md) |
-| **Resource** | `list`, `refresh`, `get` | [Develop Solution](solution/develop-solution.md) |
-| **Pack/Publish** | `pack`, `publish` | [Pack & Deploy](solution/pack-and-deploy.md) |
-| **Deploy** | `run`, `status`, `list`, `activate`, `uninstall` | [Pack & Deploy](solution/pack-and-deploy.md) |
-| **Deploy Config** | `config get`, `config set`, `config link`, `config unlink` | [Pack & Deploy](solution/pack-and-deploy.md) |
-| **Packages** | `list`, `delete`, `download` | [Activate & Manage](solution/activate-and-manage.md) |
+| **Tenants Licenses** | `tenants licenses get <tenant-key>`, `tenants licenses set <tenant-key> --input <path>` | [Tenant Allocations](licensing/tenant-allocations.md) |
+| **Users Licenses** | `users licenses available`, `users licenses get <user>`, `users licenses set <user> --input <path>` | [User & Group Licenses](licensing/user-licenses-allocations.md) |
+| **Groups Rules** | `groups rules get [--limit --offset --sort-by --sort-order]`, `groups rules details <group>`, `groups rules set <group> --input <path>` | [User & Group Licenses](licensing/user-licenses-allocations.md) |
+| **Consumables** | `licenses consumables get --mode {summary\|daily\|folders} [--tenant --unit --start-date --end-date]` | [Consumables Report](licensing/consumables-report.md) |
+
+All `uip platform` commands accept `--organization <account-id>` to override the org from the current login.
 
 ---
 
@@ -113,3 +118,10 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |
 | **Coded Agents** | `uip codedagent --help` | Python agent development |
 | **Tools** | `uip tools list/search/install` | CLI tool management |
+
+---
+
+## Naming gotchas
+
+- Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never singular, never `queueitems`/`bucketfiles`.
+- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist).

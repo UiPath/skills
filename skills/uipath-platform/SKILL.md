@@ -1,17 +1,17 @@
 ---
 name: uipath-platform
-description: "UiPath platform ops via the uip CLI — use this skill for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / Solutions. Load BEFORE writing any code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, bucket files, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, solution pack/publish/deploy/activate, traces. For workflow code (.xaml/.cs)→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
-when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / 'uip' CLI / solution / package / agent / process / workflow / asset / queue / bucket / library / webhook / trigger / connector / connection / activity / pack / publish / deploy / activate / tenant / folder / robot. Also any 'upload to UiPath', 'create asset', 'start job', 'list queues', 'deploy to Orchestrator', 'IS connection', 'OAuth2 token', or 'uipath.com REST' phrasing. Load BEFORE composing any HTTP request — almost every UiPath task has a `uip` command that does it correctly."
+description: "UiPath platform ops via the uip CLI — use this skill for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / LLM Gateway. Load BEFORE writing any code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, bucket files, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, BYO LLM product configurations (`uip llm-configuration byo-connections` — register tenant-owned OpenAI / Azure OpenAI / Bedrock / Vertex / Anthropic keys against UiPath products), traces, licensing. For `uip solution` lifecycle and PDD/SDD authoring→uipath-solution. For workflow code (.xaml/.cs)→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
+when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / LLM Gateway / 'uip' CLI / package / agent / process / workflow / asset / queue / bucket / library / webhook / trigger / connector / connection / activity / tenant / folder / robot / BYO LLM / bring-your-own LLM / tenant-owned OpenAI/Azure OpenAI/Bedrock/Vertex/Anthropic key / `llm-configuration byo-connections`. Also any 'upload to UiPath', 'create asset', 'start job', 'list queues', 'deploy a single package to Orchestrator', 'IS connection', 'OAuth2 token', 'register my own LLM key', 'configure a model substitution for a UiPath product feature', or 'uipath.com REST' phrasing. Load BEFORE composing any HTTP request — almost every UiPath task has a `uip` command that does it correctly. For `uip solution` ops or `.uipx` deploys→uipath-solution."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # UiPath Platform — uip CLI Assistant
 
-Comprehensive guide for UiPath Cloud / Orchestrator / Studio Web / Integration Service / Solutions, end-to-end via the `uip` CLI.
+Comprehensive guide for UiPath Cloud / Orchestrator / Studio Web / Integration Service, end-to-end via the `uip` CLI. For `uip solution` lifecycle and PDD/SDD authoring, load [`uipath-solution`](/uipath:uipath-solution).
 
 ## Use the CLI. Don't roll your own REST.
 
-**Always reach for `uip` CLI commands first.** The CLI covers auth, Orchestrator (folders, processes, jobs, machines, users, roles, sessions, calendars, settings, audit logs, credential stores, feeds, attachments), resources (assets, queues, queue items, storage buckets, bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), and solution lifecycle (new, pack, publish, deploy, activate, uninstall) end-to-end.
+**Always reach for `uip` CLI commands first.** The CLI covers auth, Orchestrator (folders, processes, jobs, machines, users, roles, sessions, calendars, settings, audit logs, credential stores, feeds, attachments), resources (assets, queues, queue items, storage buckets, bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), traces, and licensing end-to-end.
 
 Hand-rolling HTTP calls — reading `~/.uipath/.auth` and POSTing to `/odata/...` or `/orchestrator_/...` — almost always misses something the CLI gets right: the `X-UIPATH-OrganizationUnitId` folder header, OData filter shape (`Key eq '...'` with escaped single quotes), pagination envelope, retry semantics, validation error shape, or `Result/Code/Data` output contract. **Reach for raw REST only after you've searched [`references/uip-commands.md`](references/uip-commands.md) for your task and confirmed no `uip` command covers it.** The CLI is the source of truth.
 
@@ -21,7 +21,6 @@ If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Se
 - "create an asset" → `uip resource assets create` (NOT a `POST /odata/Assets`)
 - "start a job for a process" → `uip or jobs start <process-key>` (NOT `POST /odata/Jobs/UiPath.Server.Configuration.OData.StartJobs`)
 - "configure an Integration Service connection" → `uip is connections create <connector-key>` (NOT a hand-rolled OAuth flow)
-- "deploy a solution" → `uip solution deploy run` (NOT a `pipelinesInstall` direct call)
 
 ## When to Use This Skill
 
@@ -31,10 +30,12 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 - **Orchestrator core**: folders (`list/get/create/edit/move/delete/runtimes`), processes/releases, jobs (`start/stop/logs/traces/healing-data`), packages (`upload/download/versions`), machines, users / roles / sessions (incl. DirectoryUser/DirectoryGroup/DirectoryRobot/DirectoryExternalApplication), licenses, calendars, settings, audit logs, credential stores, feeds, attachments
 - **Resources (Orchestrator-scoped)**: assets (text/integer/bool/credential), queues + queue items, storage buckets + bucket files (`upload/download/get-download-url/get-upload-url`), libraries (`.nupkg`), webhooks (HMAC signing), triggers (time/queue/api)
 - **Integration Service**: connectors, connections (OAuth flow), activities, IS triggers, agent-workflow reference resolution
-- **Solutions**: `solution new/pack/publish/deploy run/deploy activate/deploy status/deploy uninstall/upload/resource list/refresh/get`, deploy config
+- **LLM Gateway — BYO product configurations**: `uip llm-configuration byo-connections` (`list / get / create / update / delete / list-product-configs`). Register tenant-owned OpenAI / Azure OpenAI / AWS Bedrock / Google Vertex / Anthropic / OpenAI-compatible keys against UiPath product features (agents, agenthub, jarvis, IXP, agent builder, ECS). Two input shapes: single-mapping (for `AnyModelWithOwnAdditions` features) and repeated `--mapping` (required for `AllModels` / `AnyModel`). Server-side validation is mandatory.
 - **Traces**: `uip traces spans get [trace-id]` (LLM/agentic execution observability)
-- **CI/CD**: pipeline that builds, publishes, and deploys UiPath solutions
+- **Platform licensing**: tenant license allocations, user/group bundle assignments, consumables reporting (`uip platform tenants licenses`, `users licenses`, `groups rules`, `licenses consumables`)
 - **CLI tooling itself**: `uip tools list/search/install`, `uip mcp serve`
+
+For `uip solution` lifecycle (init / pack / publish / deploy / activate / upload) and CI/CD pipelines that build and deploy UiPath solutions, load [`uipath-solution`](/uipath:uipath-solution).
 
 ## Auth token location
 
@@ -92,9 +93,9 @@ List folders to orient yourself:
 uip or folders list --output json
 ```
 
-### Step 4 — Work with Solutions or Orchestrator Resources
+### Step 4 — Work with Orchestrator Resources
 
-Choose the appropriate operation from the Task Navigation table below.
+Choose the appropriate operation from the Task Navigation table below. For `uip solution` ops, load [`uipath-solution`](/uipath:uipath-solution).
 
 ## Task Navigation
 
@@ -110,13 +111,15 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Work with queues and queue items** | [references/resources/process-queues.md](references/resources/process-queues.md) |
 | **Work with storage buckets and files** | [references/resources/work-with-storage.md](references/resources/work-with-storage.md) |
 | **Set up triggers and webhooks** | [references/resources/triggers-and-webhooks.md](references/resources/triggers-and-webhooks.md) |
-| **Develop a solution** | [references/solution/develop-solution.md](references/solution/develop-solution.md) |
-| **Pack, publish, deploy solutions** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
-| **Activate / uninstall deployments** | [references/solution/activate-and-manage.md](references/solution/activate-and-manage.md) |
-| **Set up CI/CD pipeline** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
+| **Develop / pack / publish / deploy / activate solutions; set up CI/CD** | [/uipath:uipath-solution](/uipath:uipath-solution) |
 | **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
 | **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
 | **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
+| **Configure BYO LLM keys (OpenAI / Azure OpenAI / Bedrock / Vertex / Anthropic)** | [references/llmgateway/byo-connections.md](references/llmgateway/byo-connections.md) |
+| **Allocate licenses to tenants** | [references/licensing/tenant-allocations.md](references/licensing/tenant-allocations.md) |
+| **Assign user/group license bundles** | [references/licensing/user-licenses-allocations.md](references/licensing/user-licenses-allocations.md) |
+| **Report on license consumption** | [references/licensing/consumables-report.md](references/licensing/consumables-report.md) |
+| **Understand licensing concepts** | [references/licensing/licensing.md](references/licensing/licensing.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
@@ -204,7 +207,6 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 | **Authentication** | `login`, `logout` | OAuth2, client credentials, PAT, tenant management | Available |
 | **Orchestrator** | `or` | Folders, jobs, processes, releases | Available |
 | **Resource** | `resource` | Assets, queues, queue items, storage buckets, bucket files | Available |
-| **Solutions** | `solution` | Create, pack, publish, deploy solutions | Available |
 | **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
 | **Test Manager** | `tm` | Test projects, test sets, test cases, executions, reports | Available |
 | **Tools** | `tools` | CLI tool extension management | Available |
@@ -226,24 +228,14 @@ Every `uip` command accepts:
 
 > **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
 >
-> **Use `--output-filter` to extract specific fields** instead of piping output to `python3`, `jq`, or other post-processing tools. The filter uses [JMESPath](https://jmespath.org/) syntax. Example: `--output json --output-filter "Data[].{id: id, name: name}"`
+> **To narrow `list` results, use the noun's own filter flag** (`--state Faulted`, `--type Text`, `--status New`, `--name`, `--process-name`, `--search`). The backend filters before sending; pagination stays correct. Per-noun flags: [references/uip-commands.md](references/uip-commands.md). Never list-everything-then-filter-mentally.
+>
+> **Use `--output-filter` (JMESPath) for output reshaping** or for fields with no server-side flag — e.g., `--output-filter "Data[].{id: id, name: name}"`, or filtering by a derived/computed value. Don't reach for it when the server already has a filter for that attribute.
 
-## Deployment Lifecycle
-
-The typical deployment workflow for a UiPath automation:
-
-```
-1. Develop    → Create/edit coded workflows or RPA projects locally
-2. Validate   → uip rpa validate --use-studio
-3. Pack       → uip solution pack
-4. Login      → uip login
-5. Publish    → uip solution publish
-6. Deploy     → uip solution deploy run -n "<NAME>" -c "<CONFIG_KEY>"
-```
-
-### Practical Deployment Notes
+## Deployment Notes
 
 - **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
+- **For `uip solution` pack / publish / deploy / activate flows, load [`uipath-solution`](/uipath:uipath-solution).** This skill owns the auth and Orchestrator surface those flows depend on; the solution skill owns the lifecycle commands.
 - **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
 
 ## Orchestrator REST API (Fallback)
@@ -281,10 +273,12 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[CLI Command Reference](references/uip-commands.md)** — Every `uip` command with workflow links
 - **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
 - **[Resources](references/resources/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
-- **[Solutions](references/solution/solution.md)** — Solution lifecycle: create, pack, publish, deploy
+- **[Solutions](/uipath:uipath-solution)** — Solution lifecycle (`uip solution init/pack/publish/deploy/activate`) and PDD/SDD authoring
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
 - **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources
+- **[LLM Gateway — BYO Connections](references/llmgateway/byo-connections.md)** — Register tenant-owned LLM keys against UiPath products
+- **[Licensing](references/licensing/licensing.md)** — Tenant allocations, user/group bundles, consumables reporting
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

@@ -1,0 +1,29 @@
+task_id: skill-platform-orchestrator-folders-get
+description: >
+  Smoke test: agent uses the uipath-platform skill to fetch a single Orchestrator
+  folder by key via `uip or folders get <key> --output json`.
+  A 404 response (folder key does not exist in the tenant) is an acceptable
+  outcome — the goal is correct command shape, not tenant state.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
+
+initial_prompt: |
+  Fetch the metadata for the Orchestrator folder with key
+  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the folder via uip or folders get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+get\s+\S'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+

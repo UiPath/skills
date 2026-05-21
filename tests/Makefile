@@ -28,7 +28,10 @@ all:  ## Run all tests (smoke + integration + e2e) in a single run
 	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml -j $(TASK_PARALLELISM) -v
 
 smoke:  ## Run all smoke tests
-	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags smoke -j $(TASK_PARALLELISM) -v
+	$(CODER_EVAL) run $(TASKS) -e experiments/default_smoke.yaml --tags smoke -j $(TASK_PARALLELISM) -v
+
+smoke_rpa:  ## Run all RPA smoke tests
+	$(CODER_EVAL) run $(TASKS) -e experiments/default_smoke_rpa.yaml --tags smoke -j $(TASK_PARALLELISM) -v
 
 integration:  ## Run all integration tests
 	$(CODER_EVAL) run $(TASKS) -e experiments/integration.yaml --tags integration -j $(TASK_PARALLELISM) -v

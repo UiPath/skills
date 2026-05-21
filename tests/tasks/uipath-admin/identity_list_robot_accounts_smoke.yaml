@@ -1,30 +1,15 @@
 task_id: skill-admin-identity-list-robot-accounts-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-admin skill to list
-  robot accounts. Tests correct CLI namespace and flag usage.
-
-  Platform note: runs without an authenticated tenant — commands will
-  fail with auth errors. That is acceptable.
+  Smoke test: agent uses the uipath-admin skill to list robot accounts.
+  Tests correct CLI namespace and flag usage.
 tags: [uipath-admin, smoke, list]
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   List all robot accounts in my UiPath organization.
 
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-
   - type: command_executed
     description: "Agent ran robot-accounts list with --output json"
     tool_name: "Bash"

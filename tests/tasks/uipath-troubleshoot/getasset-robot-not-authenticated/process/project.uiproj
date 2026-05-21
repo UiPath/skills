@@ -1,0 +1,6 @@
+{
+  "Name": "AssetRobotUnlicensed",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Credential failure caused by the robot account being unlicensed (Connected but Unlicensed in Orchestrator).",
+  "MainFile": "Main.xaml"
+}

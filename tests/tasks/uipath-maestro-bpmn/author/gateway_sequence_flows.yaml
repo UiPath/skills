@@ -7,12 +7,10 @@ tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:multi-n
 agent:
   type: claude-code
   permission_mode: acceptEdits
+
+run_limits:
   max_turns: 80
   turn_timeout: 900
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

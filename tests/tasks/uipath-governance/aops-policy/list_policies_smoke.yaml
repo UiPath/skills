@@ -12,10 +12,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, list]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   A tenant admin wants to see every AOps governance policy registered for
   the `AITrustLayer` product, ordered by priority ascending. Save the

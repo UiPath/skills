@@ -1,19 +1,18 @@
 task_id: skill-admin-identity-human-onboarding
 description: >
   End-to-end test: agent performs a human user onboarding flow.
-  Invites a user by email, then assigns them to a group. Validates
-  the agent follows the onboarding workflow from the skill.
-  Command-construction only — no live tenant available for
-  side-effect verification.
+  Invites a user by email with name, then assigns them to a group.
+  Validates the agent follows the onboarding workflow from the skill.
 tags: [uipath-admin, e2e, onboarding]
-max_iterations: 2
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   max_turns: 40
   turn_timeout: 600
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 sandbox:
   driver: tempdir
@@ -23,26 +22,11 @@ initial_prompt: |
   Onboard john.doe@example.com (John Doe) and add them to the
   "Automation Developer" group once provisioned.
 
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent invited user with correct email and name"
+    description: "Agent invited user with correct email and --name/--surname"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+users\s+invite\s+.*--email.*john\.doe@example\.com.*--name'
     min_count: 1
@@ -55,14 +39,6 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+groups\s+list'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent searched for user to resolve their ID"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+users\s+list'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -80,3 +56,15 @@ success_criteria:
     min_count: 3
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Invite was processed — user found in list"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_user_invited.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_invited_user.py''))"'
+    timeout: 30

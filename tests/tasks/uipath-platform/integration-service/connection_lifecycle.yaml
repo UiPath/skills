@@ -7,13 +7,6 @@ description: >
   (both require browser interaction).
 tags: [uipath-platform, smoke, integration-service, connections]
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node:
-    env_packages:
-      - "@uipath/cli"
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

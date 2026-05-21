@@ -1,101 +1,169 @@
 # Phase 0 — Interview Mode (sdd.md generation)
 
-Phase 0 generates `sdd.md` interactively when none is provided. Output is approved by the user, then handed to Phase 1 unchanged. Lightweight by design: complex/multi-product processes redirect to `uipath-solution-design`.
+This file is a **thinking guide** for the agent: principles for how to listen, infer, ask, and resolve when no `sdd.md` is provided. Phase 0 produces an `sdd.md` that Phase 1 reads exactly as if a user wrote it.
 
-> **Authoritative for the interview path only.** Trigger detection, round shape, threshold redirect, hard-stop, resumption. Phase 1 logic stays in [planning.md](planning.md). Phases 2–6 stay in [phased-execution.md](phased-execution.md).
+> **Authoritative for the interview path only.** Trigger detection, mode behavior, threshold handling, hard stop, resumption, output contract. **Content rules** (authority hierarchy, task-type override priority, render-required fields, variable lineage, review items, source ledger) live in [sdd-generation-rules.md](sdd-generation-rules.md). Phase 1 logic lives in [planning.md](planning.md). Phases 2–6 live in [phased-execution.md](phased-execution.md).
+
+## Goal
+
+Produce a `sdd.md` shaped by [`assets/templates/sdd-template.md`](../assets/templates/sdd-template.md). After approval, Rule 2 applies: trust as written, no further gap-fill.
+
+Phase 0 also writes:
+
+- `tasks/registry-resolved.json` — one entry per task (search query, all matches, selected, rationale).
+- `sdd.draft.md` — intermediate; deleted atomically at approval.
+- `sdd-viewer.html` — optional, written only if the user accepts the preview offer (§HTML preview).
 
 ## When Phase 0 runs
 
-Strict binary trigger. **Any `.md` candidate (basename contains `sdd`, case-insensitive) present at the resolved path → no interview; if basename ≠ `sdd.md`, copy contents to `./sdd.md` (preserve original) so Round 4 / Phase 1 / output-contract artifacts stay canonical** (Phase 1 trusts the file as written, Rule 2).
-```
-Step 1. Skill invoked.
-Step 2. Determine SDD candidate path:
-        Step 2a. If user prompt names a `.md` path or filename whose basename contains `sdd` (case-insensitive), treat it as the candidate. Examples that count: `sdd.md`, `loan-sdd.md`, `case_demo_sdd.md`, `./specs/onboarding-sdd.md`. Resolve relative paths against cwd. Plain `.md` references without `sdd` in the name are ignored — they are not SDD candidates.
-        Step 2b. If no qualifying `.md` reference in prompt, default candidate = `./sdd.md`. Ask user to confirm or supply different path before proceeding.
-Step 3. Resolve path. Stat the file.
-Step 4. File exists → if basename ≠ `sdd.md`, copy contents to `./sdd.md` (preserve the original file at its path; do not move/rename). Exit Phase 0. Hand to Phase 1, which reads `./sdd.md`.
-Step 5. File absent →
-        Step 5a. Check for `sdd.draft.md` at cwd. If present → resume prompt (§Resumption).
-        Step 5b. No draft → entry prompt (§Entry).
-```
+Strict binary trigger. Look for an `.md` file at the resolved path whose basename (case-insensitive) contains `sdd`. Examples that count: `sdd.md`, `loan-sdd.md`, `case_demo_sdd.md`, `./specs/onboarding-sdd.md`. Plain `.md` references without `sdd` in the name don't count.
 
-### Entry prompt
+| State | Action |
+|---|---|
+| File present, basename = `sdd.md` | Skip Phase 0. Hand to Phase 1. |
+| File present, basename ≠ `sdd.md` | Copy contents to `./sdd.md` (preserve original at its path). Skip Phase 0. Hand to Phase 1. |
+| File absent, `sdd.draft.md` present | Resume (§Resumption). |
+| File absent, no draft | Run Phase 0 from scratch (§Entry). |
 
-AskUserQuestion (3 options):
+If the user prompt names no `.md` reference, default candidate is `./sdd.md`. Ask the user to confirm or supply a different path before assuming.
+
+## Entry
+
+When Phase 0 runs from scratch, AskUserQuestion (3 options):
 
 | Option | Effect |
 |---|---|
-| `Interview to generate sdd.md` | Begin Round 1. |
-| `I'll provide an sdd.md path` | Re-prompt for path. Loop to Step 3. |
-| `Switch to uipath-solution-design` | Print plain-text suggestion. Exit skill. |
+| `Interview to generate sdd.md` | Begin interview (§Modes). |
+| `I'll provide an sdd.md path` | Re-prompt for path. Re-check trigger. |
+| `Abort` | Exit skill. No file changes. |
 
-Never auto-invoke `uipath-solution-design` (Rule 15). Print the skill name and one-line guidance only.
+## Modes
 
-## The four rounds
+Phase 0 moves through five modes of attention. Listen / Sketch / Ask loop freely as the conversation unfolds and new context lands. Resolve and Approve are gates.
 
-Each round produces or updates `sdd.draft.md`. Final approval renames `sdd.draft.md` → `sdd.md` (atomic). The `assets/templates/sdd-template.md` is the structural reference — fill its sections from interview answers.
+### Listen
 
-| Round | Goal | Output | Threshold check |
-|---|---|---|---|
-| 1 — Open describe | Identity + free-text process description + archetype hint + rough counts | In-memory only | Upfront triage (rough counts) |
-| 2 — Placeholder + gap-fill | Drafted `sdd.md` placeholder, blocking gaps resolved | `sdd.draft.md` written | Mid-check (counted from placeholder) |
-| 3 — Registry resolution | Concrete tenant resources picked per task | `sdd.draft.md` updated, `tasks/registry-resolved.json` written | — |
-| 4 — Review + HARD STOP | User approves, edits, restarts, or aborts | `sdd.md` finalized | Re-check on edit |
+The opening move. One message, one prompt:
 
-### Round 1 — Open describe
+> Tell me about the case you want to build. What kicks it off, what stages does it move through, and how does it close out? Drop in any docs you have — paths, paste, or attach.
 
-Single user-facing message. Three asks bundled:
+What the agent does as the user responds:
 
-1. **Free-text description.** "Describe the process. Who starts it? What stages does it go through? Where does it end?"
-2. **Archetype hint** (AskUserQuestion, 4 options — hint only, used to seed stage placeholder). Render each option with its example so the user is not guessing at jargon:
-   - `Approval` — one decision gate, end-to-end (e.g., expense approval, leave request, PTO)
-   - `Intake & Routing` — incoming items get classified, then routed to the right handler (e.g., support ticket triage, lead qualification, IT request routing)
-   - `Multi-stage Orchestration` — sequential stages with handoffs across roles or systems (e.g., employee onboarding, candidate interview pipeline, loan origination)
-   - `Other / not sure` — describe in free-text (Round 1 ask 1); agent infers shape from description
-3. **Upfront triage counts.** "Roughly how many stages? How many systems integrated? How many distinct user roles?"
+- **Reads everything mentioned.** If the user types a path, drags a file, or names a doc, read it immediately. Don't ask permission — the user shared it intentionally.
+- **Reads in parallel** when the user names multiple docs (parallel Read tool calls in one message).
+- **Globs work.** "Everything in `~/process-docs/`" → list with `ls`, read each with Read.
+- **Narrates content, not filenames.** As each doc lands, post one short line about *what's in it*, not "Reading X…":
+  > `vendor-onboarding.md — 4 stages (Intake → Compliance → Finance → Activation), 2 personas, 8-hour SLA on Compliance.`
+- **Partial reads for huge docs.** Past ~2000 lines, read the first chunk, narrate the signal, decide if more is needed. Don't grind silently through 50 pages.
+- **Unreadable formats** (`.docx`, `.pptx`, scanned image PDFs) → ask the user to paste the relevant section. PDFs up to 10 pages are read directly; larger PDFs need explicit page ranges.
+- **Mid-flow docs are first-class.** If the user drops a new doc during Sketch or Ask, re-read, update inferences, narrate the delta:
+  > `Got the SLA spec. The Compliance SLA is 8 hours, not the 4-hour default I was about to use.`
+- **Verbal-only is fine.** A user who describes the process with no attachment is treated the same way — listen, narrate inferences.
 
-#### Upfront triage redirect
+Listen does not ask shaping questions — those belong in Ask. The single exception is technical: when a referenced doc is unreadable (see `.docx` / `.pptx` / scanned-PDF row above), request a paste so Listen can keep reading. Inferences are private to the sketch.
 
-If the rough counts already exceed any threshold (see §Thresholds), trigger soft redirect (§Soft redirect). Do NOT proceed to Round 2 until user picks `Continue lightweight anyway` or `Abort`.
+### Sketch
 
-### Round 2 — Placeholder + gap-fill
+The agent privately fills out the SDD shape against [`sdd-template.md`](../assets/templates/sdd-template.md). When picking a value for any field, follow the priority order in [sdd-generation-rules.md § Content authority hierarchy](sdd-generation-rules.md#content-authority-hierarchy) — platform schema and compliance constraints override user preference.
 
-Agent drafts `sdd.draft.md` from Round 1 answers, using `assets/templates/sdd-template.md` as the structural mold. Fill what was provided. Mark the rest:
+- Fields from Listen → recorded.
+- Inferrable fields → recorded with a one-line narration AND a source-ledger entry per [sdd-generation-rules.md § Source ledger](sdd-generation-rules.md#source-ledger-provenance):
+  > `Inferring case prefix: VNDR (source: mechanical:PascalCase→prefix).`
+  > `Defaulting to single "Process Owner" persona (source: inferred-default:no roles mentioned).`
+- Required fields still missing → marked as gaps to Ask.
+- Optional fields still missing → marked `—` in the draft. No question.
 
-- Optional fields the user did not touch → `—` (template-native placeholder).
-- **Required-but-unknown** fields → `<UNRESOLVED: question>` marker.
-
-After writing, inspect blocking gaps. **Required fields (block until answered):**
+**Required fields (block until answered):**
 
 | Field | Source |
 |---|---|
-| Case Name (PascalCase) | Round 1 free-text |
-| Case Identifier prefix (2-4 char UPPER) | Ask if absent |
-| ≥1 Trigger (Manual / Timer / Connector Event) | Ask if absent |
-| ≥1 Stage with name | Round 1 free-text |
-| ≥1 Task per stage with name + type | Walk stages, ask per stage |
-| ≥1 Case exit condition | Ask if absent |
+| Case Name (PascalCase) | Listen / Ask |
+| Case Identifier prefix (2-4 char UPPER) | Listen / inferred / Ask |
+| ≥1 Trigger (Manual / Timer / Connector Event) | Listen / Ask |
+| ≥1 Stage with name | Listen |
+| ≥1 Task per stage with name + type | Listen / Ask per stage |
+| ≥1 Case exit condition | Listen / Ask |
 
-Ask blocking gaps via AskUserQuestion (multi-choice) or plain-text follow-up (open answer). Update `sdd.draft.md` after each answered gap.
+Write `sdd.draft.md` as the sketch firms up. Update in place each time a gap closes — one Read → mutate → Write/Edit cycle per change (Rule 13).
 
-**Stuck-round detector.** If 3 unanswerable / contradictory / off-topic replies accumulate within Round 2, soft prompt (§Soft redirect). User picks `Continue with placeholders` (mark remaining as `<UNRESOLVED>`, proceed) / `Switch to uipath-solution-design` / `Abort`.
+### Ask
 
-#### Mid-check threshold
+Only for required gaps. **One question at a time**, ranked by information value. Each ask is a single AskUserQuestion or plain-text follow-up. Update `sdd.draft.md` after each answer lands. Never bundle three asks into one message.
 
-After the placeholder is written, count from `sdd.draft.md`:
+#### When to Ask vs Default
 
-- Stages
-- Tasks total
-- Distinct integrations (connectors mentioned)
-- Distinct personas
-- `case-management` tasks (child cases)
-- Exception stages — **counted but never triggers redirect** (allowed regardless of count)
+**Default to Ask when in doubt.** Ask is cheap (~30s). A wrong default is expensive: the user scans the Approve summary fast, the default may survive, Rule 2 locks the file, and a Phase 1 re-run is forced.
 
-If any quantitative threshold breached → §Soft redirect.
+**Default with narration** ONLY when ALL three high-confidence criteria hold for the field:
 
-### Round 3 — Registry resolution
+1. **Verbatim or one-step mechanical.** The value is either (a) written verbatim by the user, (b) lifted from a doc the user shared and currently in your context, or (c) a one-step mechanical derivation. Allowed derivations: `PascalCase → 2–4 letter prefix`; `no roles mentioned → persona=Process Owner`; user said `"I kick it off"` / `"we run it manually"` / `"ad-hoc"` → `trigger=Manual`.
+2. **No interpretation step.** If you have to choose between two plausible meanings, it's interpretation — Ask.
+3. **Field is not on the Always-Ask list below.**
 
-For each task in `sdd.draft.md`, search the matching cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
+**Always-Ask** (never default — these change case shape, wrong defaults force Phase 1 rework):
+
+| Field | Why never default |
+|---|---|
+| Trigger type when ANY external system, portal, form, schedule, signup, or inbound event is mentioned | `Timer` / `Connector Event` change generation path. "Vendor signs up" → portal/event, NOT Manual. |
+| Task type on ambiguous verbs (`review`, `approve`, `check`, `validate`, `process`, `assess`, `sign off`, `decide`) | `action` (HITL) vs `agent` (LLM) generate different shapes. The verb alone is not enough. |
+| Task type when a **compliance trigger phrase** is in the transcript (ECOA, NCQA, HIPAA, SOC 2, FCRA, FINRA, "licensed X", "fiduciary review", etc.) AND user proposed non-`action` | Tier 2 of the authority hierarchy forces `action`; do not silently accept user's stated type. See [sdd-generation-rules.md § Task-type override priority](sdd-generation-rules.md#task-type-override-priority). |
+| Case exit condition | Wrong exit traps the case open or closes prematurely. |
+| Stage exit `Marks Stage Complete` ↔ WHEN pairing | Mismatched pairing fails Phase 4 validate per [sdd-template.md](../assets/templates/sdd-template.md) Key Rule 4. |
+| SLA value (if user mentioned timing at all) | Mishearing "about a day" as 3 days creates an SLA breach on every run. |
+
+**Mark `—`** for optional fields the user didn't touch. No question.
+
+> **Never silent.** Every defaulted value gets (a) a one-line narration when recorded in Sketch *and* (b) an entry in the Approve summary's `Inferred / defaulted` block. "Default with narration" is not "default silently."
+
+#### Red flags — STOP and Ask
+
+These thoughts mean STOP and use AskUserQuestion before continuing:
+
+| Thought | Reality |
+|---|---|
+| "I'm confident enough about the trigger." | Trigger ≠ Manual the moment a portal, form, schedule, or external system is mentioned. Always-Ask. |
+| "The user said 'review' — probably an `action` task." | `review` is on the Always-Ask list. Ask. |
+| "User said 'I'll fix it later' — defaulting is sanctioned." | User-permission to default ≠ permission to skip Ask. Rule 2 locks the file post-Approve. Wrong defaults survive. |
+| "User is in a hurry, don't burn turns." | One Ask costs 30s. One wrong default costs a Phase 4 retry loop. Ask. |
+| "Edit at Approve is a first-class escape hatch — defaults are cheap to fix." | Only if the user notices. Plan for the case where they don't. Ask now. |
+| "Five of six required fields are confident; only one is shaky." | Skip Ask requires ALL fields confident. One shaky field = Ask. |
+| "The file lists this exact default as an example, so I'm allowed." | The example only applies when ALL three high-confidence criteria above are met. Re-check before defaulting. |
+
+#### Stuck detector
+
+If 3 stuck replies accumulate within a single Ask, trigger §Soft redirect. Counter is per-field; a new Ask resets it. An **answered** reply resets the counter to 0, even if prior replies tripped it — a late genuine answer cancels the strike (do not trigger Soft redirect if reply N is `answered`, regardless of N−1, N−2, N−3 classifications).
+
+Classification of each reply:
+
+| Class | Definition | Counts toward stuck? |
+|---|---|---|
+| **answered** | Reply proposes ONE concrete value for the field asked, AS the answer. A value named in passing inside a different question (e.g., capability / integration / scope question) is NOT `answered` — the user must offer it as their decision. | No — resets counter to 0 |
+| **unanswerable** | User explicitly says they don't know, can't decide, or "you pick" / "whichever" / "you decide". (Punting the choice to the agent → `unanswerable`, not `answered`.) | Yes |
+| **contradictory** | Reply offers two or more candidate values without resolution. Trigger phrases: "either A or B", "either of those", "either one", "A or maybe B", "A — actually no, B". A user who lists candidates and does not pick is `contradictory`. | Yes |
+| **off-topic** | Reply does not address the field asked. Includes: history, context, questions back at the agent, integration / scope / capability questions, unrelated tangents. "Related to the case" is NOT enough — must address the specific field as the user's chosen answer. A capability question that *incidentally mentions* the asked field's domain (e.g., "do you support X when the case closes?") is still off-topic — the mention is context, not a proposal. | Yes |
+
+**Worked examples** (Ask: "How should this case close out?"):
+
+| User reply | Class | Why |
+|---|---|---|
+| "When funding is disbursed." | `answered` | One concrete value, proposed as the answer. |
+| "I guess when funding is disbursed — or after LOS confirms. Either of those." | `contradictory` | Two values, "either of those" = explicit non-choice. |
+| "You pick whichever is standard." | `unanswerable` | Explicit punt. |
+| "Do you support webhook callbacks to our LOS when origination closes?" | `off-topic` | Capability question; the closing event is mentioned as context, not proposed as the answer. |
+| "Historically we had files stay open for weeks. The 2023 audit was rough." | `off-topic` | History, no value proposed. |
+
+#### Threshold check
+
+After Sketch + Ask close out, count from `sdd.draft.md`:
+
+- Stages, Tasks total, Distinct integrations, Distinct personas, `case-management` tasks (child cases).
+- Exception stages — counted but never triggers redirect.
+
+Breach any quantitative cap → §Soft redirect.
+
+### Resolve
+
+For each task in `sdd.draft.md`, find the matching registry resource. Search the cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
 
 - `process-index.json`, `agent-index.json`, `api-index.json`, `processOrchestration-index.json`, `caseManagement-index.json` — `<type>-index.json` shape
 - `action-apps-index.json` — kebab + plural for HITL action apps
@@ -104,23 +172,33 @@ For each task in `sdd.draft.md`, search the matching cache file under `~/.uip/ca
 
 Run `uip maestro case registry pull` first if cache absent. See [registry-discovery.md § Cache File Index](registry-discovery.md#cache-file-index) for the authoritative file list, identifier fields, and cross-type fallback rules.
 
-Per-task AskUserQuestion (4 options max):
+**Narrate the search before presenting matches.** Don't drop the AskUserQuestion cold:
+
+> `Searching registry for "InvoiceValidation"… 2 matches.`
+
+Then per-task AskUserQuestion (4 options max):
 
 | Option | Effect |
 |---|---|
 | `<top match — name + version + type>` | Record selection. |
 | `<second match>` (if available) | Record selection. |
-| `Placeholder — resolve later` | Keep `<UNRESOLVED>` marker on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. |
 | `Something else` | Free-text re-search keyword, retry. |
 
-After all picks, write `tasks/registry-resolved.json` matching the shape Phase 1 produces (search query, all matched results, selected result, rationale per Rule 9). Update `sdd.draft.md` with concrete resource names.
+**Empty registry match** across the batch → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` (Rule 17), applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
+
+After all picks, write `tasks/registry-resolved.json` (Rule 9 shape). Update `sdd.draft.md` with concrete resource names. Any unresolved task carries a paired `review_items[]` entry in the same JSON.
 
 > **Phase 1 handoff.** Phase 1 reads `tasks/registry-resolved.json` and skips re-search for resolved entries. It still extends the file with any resolutions Phase 0 deferred. No artifact replay; sdd.md is the contract.
 
-### Round 4 — Review + HARD STOP
+### Approve
 
-1. Rename `sdd.draft.md` → `sdd.md`. Atomic.
-2. Print plain-text summary:
+Before renaming, run the **Finalization checks** in [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization): schema check, render-required check, variable-lineage check, override-conflict check, review-items high-severity acknowledgment, source-ledger check. Any failure blocks the rename and routes back to `Re-edit` / `Restart` / `Abort`.
+
+On pass:
+
+1. Atomic rename `sdd.draft.md` → `sdd.md`.
+2. Print concise summary (not the full document):
 
 ```
 Phase 0 complete.
@@ -135,32 +213,80 @@ Integrations: N
 Personas:     N
 Child cases:  N
 Threshold status: WITHIN | EXCEEDED (<which>)
+Review items:    high=N  medium=N  low=N
+
+Inferred / defaulted (please confirm — these were NOT stated verbatim):
+  - <field>: <value>  (<source>)
+  - <field>: <value>  (<source>)
+  ...
 ```
 
-3. AskUserQuestion (4 options):
+The **`Inferred / defaulted` block is mandatory** whenever Sketch defaulted ANY field. List every defaulted value with source attribution. Omit the block only if zero fields were defaulted. This is the user's last chance to catch wrong defaults before Rule 2 locks the file — never collapse to counts alone when defaults exist.
+
+Source-attribution examples: `(PascalCase derivation)`, `(no roles mentioned → Process Owner)`, `(no SLA stated → 3-day default)`, `(verb "review" — defaulted to action)`, `(user said "ad-hoc" → trigger=Manual)`.
+
+3. AskUserQuestion (4 options — base set; if any `high` review items exist, replace `Approve and proceed to Phase 1` with `Approve despite N high-severity items` populated with the count):
 
 | Option | Next |
 |---|---|
 | `Approve and proceed to Phase 1` | Exit Phase 0. Begin [planning.md](planning.md) Step 1. |
-| `I edited sdd.md — re-validate` | Re-read sdd.md. Re-validate structure. Re-run mid-check threshold. If valid + within thresholds → re-show summary + re-ask. If invalid or threshold breached → block with errors / soft redirect. |
-| `Restart interview` | Wipe `sdd.md`, `sdd.draft.md`, `tasks/registry-resolved.json`. Loop to Round 1. |
-| `Abort / switch to uipath-solution-design` | Print suggestion. Exit skill. Leave artifacts in place for the user. |
+| `Generate HTML preview` | Write `./sdd-viewer.html` (§HTML preview). Re-show this prompt. |
+| `Edit and re-validate` | Free-text correction → update affected section of `sdd.md` → re-run Finalization checks → re-show summary. |
+| `Restart or abort` | Follow-up AskUserQuestion (`Restart interview` / `Abort`). Restart wipes `sdd.md`, `sdd.draft.md`, `tasks/registry-resolved.json` and returns to §Entry. Abort exits skill, leaves artifacts in place. |
 
-#### Edit-loop validation
+**Free-text corrections are first-class refines.** A message like "actually the SLA on Compliance is 8 hours not 4" is treated as an edit — update the section in `sdd.md`, narrate the change, return to Approve. The user does not need to pick the `Edit` option to make corrections.
 
-On `Re-validate`, structural checks:
+#### Edit validation
 
-- Required fields per Round 2 §Required (case name, prefix, ≥1 trigger, ≥1 stage, ≥1 task per stage with type, ≥1 case exit)
-- Every stage has ≥1 task entry
-- Every task has a `Type:` from the closed 9-value schema enum (`process` | `agent` | `rpa` | `action` | `api-workflow` | `case-management` | `execute-connector-activity` | `wait-for-connector` | `wait-for-timer`). Reject `external-agent`, `connector-activity`, `connector-trigger`, or any other value (SKILL.md Rule 16).
-- Every task has at minimum a `Description:` line
-- **Exit Condition WHEN ↔ Marks Complete pairing** (sdd-template.md Key Rule 4 — applies to both stage exit and case exit):
+Structural checks before re-approve:
+
+- All required fields present (case name, prefix, ≥1 trigger, ≥1 stage, ≥1 task per stage with type, ≥1 case exit).
+- Every stage has ≥1 task entry.
+- Every task has `Type:` from the closed 9-value enum (Rule 16): `process` | `agent` | `rpa` | `action` | `api-workflow` | `case-management` | `execute-connector-activity` | `wait-for-connector` | `wait-for-timer`. Reject `external-agent`, `connector-activity`, `connector-trigger`, or any other value.
+- Every task has at minimum a `Description:` line.
+- **Exit Condition WHEN ↔ Marks Complete pairing** ([sdd-template.md](../assets/templates/sdd-template.md) Key Rule 4 — applies to both stage exit and case exit):
   - **Stage exit:** `Marks Stage Complete: Yes` → must use `required-tasks-completed` / `required-stages-completed`; `No` → may use `selected-tasks-completed(...)`. Flag any `Yes + selected-tasks-completed` pair as error.
   - **Case exit:** `Marks Case Complete: Yes` → must use `required-stages-completed` / `wait-for-connector`; `No` → may use `selected-stage-completed(...)` / `selected-stage-exited(...)` / `wait-for-connector`. Flag any `Yes + selected-stage-*` pair as error.
 
-Validation fail → list specific issues, AskUserQuestion `Re-edit and re-validate` / `Restart interview` / `Abort`.
+Validation fail → list specific issues, AskUserQuestion `Re-edit` / `Restart` / `Abort`.
 
 Threshold breach on edit → §Soft redirect (user can override or switch).
+
+## HTML preview
+
+Optional. Offered at Approve. The viewer is a self-contained HTML file the user opens locally — no server, no internet.
+
+### What it shows
+
+Reads the same case structure used to render `sdd.md` and renders four sections matching `sdd-template.md`:
+
+1. **Case Definition** — name, prefix, SLA, triggers, exit conditions, variables.
+2. **Stages & Tasks** — each stage as a collapsible card; tasks listed inside with type badges; click for full detail panel.
+3. **Personas & App Views** — personas with stage scope + permissions; process app views.
+4. **Integrations** — connectors with operations; external agents.
+
+### Interactive elements
+
+- Sticky sidebar TOC; click to jump; active section highlights on scroll.
+- Stage cards expand/collapse; "Collapse all" toggle for skim review.
+- Click any task → side panel with full detail (entry condition, I/O bindings, action buttons, connector config, timer value, child-case data flow — whatever fits the type).
+- Filter task lists by persona (multi-select pills) and by task type.
+- "Unresolved only" toggle — hides everything without `<UNRESOLVED>` markers.
+- "Schema view" toggle — surfaces schema field names alongside human labels (e.g., `Marks Stage Complete (markStageComplete)`).
+- Free-text search across stage / task / variable names.
+- Print / save-as-PDF button (uses a print stylesheet that hides controls and forces all stages expanded).
+
+### Generation
+
+Read [`assets/templates/sdd-viewer.html`](../assets/templates/sdd-viewer.html). It contains a `<script id="sdd-data" type="application/json">__SDD_DATA__</script>` block. Replace the `__SDD_DATA__` token with a JSON object matching the schema documented inline in the template's header comment. The agent has this structured data in working memory from Sketch — serialize it directly. Do NOT re-parse `sdd.md`.
+
+Write the populated file to `./sdd-viewer.html` (Read + Write only, Rule 13). Tell the user:
+
+> `Generated ./sdd-viewer.html — open it in a browser to review.`
+
+Re-show the Approve prompt. The viewer is a review aid, not a checkpoint — it does not replace the Approve gate.
+
+If the user edits `sdd.md` after a preview is generated, the existing `sdd-viewer.html` is stale. Either regenerate it (re-pick `Generate HTML preview` at Approve) or leave it — Phase 1 ignores the file either way.
 
 ## Thresholds
 
@@ -178,69 +304,85 @@ Hard quantitative caps. Breach triggers §Soft redirect (not hard refuse).
 
 ## Soft redirect
 
-AskUserQuestion (3 options):
+AskUserQuestion (2 options):
 
 | Option | Effect |
 |---|---|
-| `Switch to uipath-solution-design (recommended)` | Print plain-text suggestion. Exit skill. Preserve `sdd.draft.md`. |
-| `Continue lightweight anyway` | Proceed. **Set warning header in generated sdd.md** (§Warning header). |
-| `Abort` | Exit. No file changes beyond what already exists. |
+| `Continue with warning header` | Proceed. Set warning header in generated `sdd.md` (§Warning header). |
+| `Abort` | Exit. No file changes beyond what already exists. Preserve `sdd.draft.md` so the user can resume after manually trimming scope. |
 
 ### Warning header
 
-When user chose override, prepend the following to the generated `sdd.md` immediately under the H1 title:
+When user overrode, prepend immediately under the H1 in `sdd.md`:
 
 ```markdown
 > **⚠️ Generated lightweight; complexity exceeded thresholds.**
 > Counts at generation time: <stages> stages, <tasks> tasks, <integrations> integrations,
 > <personas> personas, <child-cases> child cases.
-> Review carefully before approving. Consider regenerating via `uipath-solution-design`.
+> Review carefully before approving. Consider splitting into smaller cases or trimming scope.
 ```
 
-The header is informational. Phase 1 ignores it (markdown comments / blockquotes are not parsed as structural fields).
+Phase 1 ignores it (blockquote, not a structural field). The HTML viewer surfaces it as a banner.
 
 ## Resumption
 
-When `sdd.draft.md` is detected at Step 5a:
-
-AskUserQuestion (4 options):
+When `sdd.draft.md` is present at trigger time, AskUserQuestion (4 options):
 
 | Option | Effect |
 |---|---|
-| `Resume from draft (round N)` | Re-read `sdd.draft.md`, infer last completed round (presence of all required fields = Round 2 done; presence of `tasks/registry-resolved.json` = Round 3 done). Continue from next round. |
-| `Discard draft, restart` | Delete `sdd.draft.md` + `tasks/registry-resolved.json`. Begin Round 1. |
-| `Use draft as-is, finalize` | Run Round 4 hard-stop on the draft as it stands. Edit-loop validation may flag missing required fields. |
+| `Resume from where I left off` | Re-read `sdd.draft.md`. Infer position (all required fields present = Sketch + Ask done; `tasks/registry-resolved.json` present = Resolve done). Continue from the next mode. |
+| `Discard draft, restart` | Delete `sdd.draft.md` + `tasks/registry-resolved.json`. Return to §Entry. |
+| `Use draft as-is, finalize` | Run Approve gate on the draft as-is. Edit validation may flag missing required fields. |
 | `Abort` | Exit. No file changes. |
 
-**Round 1 is in-memory only — never persisted.** Resumption can only resume from Round 2 onward.
+Listen output is never persisted. Resumption picks up from Sketch onward.
+
+## Forbidden vocabulary (user-visible output)
+
+The user sees a conversation that produces a document. They don't see the machinery. Never surface in chat or in `sdd.md`:
+
+- `sdd.draft.md`, `tasks/registry-resolved.json`, internal filenames. (**Exception:** `sdd-viewer.html` is intentionally user-visible — the user opens it in a browser, so the filename must be named at generation time. Do not surface it anywhere else.)
+- `<UNRESOLVED>` markers in narration (they may appear in the file; never in chat lines).
+- `Listen`, `Sketch`, `Ask`, `Resolve`, `Approve`, `Round 1`, `Round 2`, `Round 3`, `Round 4` — these are agent-facing mode names, not user-facing.
+- `the validator`, `the schema check`, `structural validation`, `edit-loop validation`.
+- `the cache`, `the registry index`, `~/.uip/`, `~/.uipath/`.
+- `interview answers`, `from cache`, `from the registry`, `from state.*`, `REVIEW:`, `wiki/`, `PDD`, `pdd.md`, or any chain-of-thought explanation of how a value was derived (echoes [`sdd-template.md`](../assets/templates/sdd-template.md) Output Rules).
+
+If the user asks how something works, explain in their language (cases, stages, tasks, triggers, SLAs, personas, connectors, exceptions) — never file names or internal mechanisms.
 
 ## Failure modes
 
 | Symptom | Action |
 |---|---|
-| User says "skip" / "I don't know" on optional field | Write `—`. |
-| User says "skip" on required field | Write `<UNRESOLVED: <agent's question>>`. Phase 1 + post-build loop will revisit. |
-| 3 unanswerable replies in single round | Trigger §Soft redirect. |
-| Registry pull fails (CLI error, no auth) | Skip Round 3. All tasks marked `<UNRESOLVED>`. Phase 1 emits placeholders. Inform user. |
-| User edits `sdd.md` to add stages exceeding threshold | Edit-loop validation fires §Soft redirect. |
-| `sdd.md` already exists at path when interview begins | Should not happen — Step 4 exits Phase 0 first. If it does (race), abort with error. Never overwrite. |
+| User says "skip" / "I don't know" on optional field | Write `—` in the draft. |
+| User says "skip" on required field | Write `<UNRESOLVED: <agent's question>>` in the draft. Phase 1 + post-build loop will revisit. |
+| 3 stuck replies in single Ask (per-field counter, reset on `answered` — see §Ask Stuck detector for classification) | Trigger §Soft redirect. |
+| Registry pull fails (CLI error, no auth) | Skip Resolve. All tasks marked `<UNRESOLVED>`. Phase 1 emits placeholders. Inform user. |
+| User edits `sdd.md` to add stages exceeding threshold | Edit validation fires §Soft redirect. |
+| `sdd.md` already exists at path when interview begins | Should not happen — trigger detection exits Phase 0 first. If race, abort with error. Never overwrite. |
+| HTML preview generation fails (template missing, write error) | Inform user, fall back to text summary only. Approve gate is unaffected. |
 
 ## Output contract — what Phase 1 sees
 
-After Phase 0 approval, the working directory contains:
+After Approve:
 
-- `sdd.md` — fully written, may include warning header, may contain `<UNRESOLVED>` markers, may contain `—` placeholders.
-- `tasks/registry-resolved.json` — resolutions persisted from Round 3 (matches Phase 1's artifact shape per Rule 9).
-- `sdd.draft.md` — deleted (renamed to `sdd.md` at Round 4 step 1).
+- `sdd.md` — always present. May include warning header, `<UNRESOLVED>` markers, or `—` placeholders.
+- `tasks/registry-resolved.json` — **present only if Resolve ran successfully.** Absent when Resolve was skipped (registry pull failed, no auth, or the cache was unreachable — see Failure modes). Phase 1 ([planning.md § Step 3](planning.md)) handles both cases: if the file exists, it reads carry-over picks and skips re-search for resolved entries; if absent, it runs full discovery from scratch. Either way, format matches Phase 1's artifact shape (Rule 9) when written.
+- `sdd-viewer.html` — present only if user generated the preview. Phase 1 ignores it.
+- `sdd.draft.md` — deleted (atomic rename at Approve).
 
-Phase 1 (planning.md Step 2) reads `sdd.md` exactly as it would a user-provided file. Rule 2 applies from this point: trust as written, no further gap-fill.
+Phase 1 ([planning.md](planning.md) Step 2) reads `sdd.md` exactly as a user-provided file. Rule 2 applies from this point: trust as written, no further gap-fill.
 
 ## Anti-patterns
 
 - **Do NOT overwrite an existing `sdd.md`.** Strict binary trigger; presence = trust-as-written.
-- **Do NOT auto-invoke `uipath-solution-design`.** Print the suggestion; user re-invokes manually (Rule 15).
-- **Do NOT persist Round 1 transcripts.** In-memory only. Restart wipes cleanly.
-- **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md` or `tasks/registry-resolved.json`.** Read + Write/Edit only (Rule 13).
-- **Do NOT silently auto-pick a registry match in Round 3.** AskUserQuestion every task; never infer (Rule 2 spirit).
-- **Do NOT proceed past upfront triage when counts already exceed thresholds.** Force soft-redirect prompt before drafting.
+- **Do NOT suggest or invoke any other skill on threshold breach or stuck detection.** Phase 0 stays self-contained — surface the warning header, give the user `Continue` / `Abort`, never push a redirect.
+- **Do NOT persist Listen output as a transcript.** Inferences live in the draft (the sketch), not in a separate file.
+- **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md`, `sdd.md`, `tasks/registry-resolved.json`, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
+- **Do NOT bundle questions in Ask.** One per message. Bundles re-introduce the form-feel Phase 0 is reframed to avoid.
+- **Do NOT silently auto-pick a registry match in Resolve.** AskUserQuestion every task; never infer (Rule 2 spirit).
+- **Do NOT proceed past the threshold check when counts already exceed thresholds.** Force soft-redirect prompt before continuing.
 - **Do NOT skip the warning header when user overrode threshold.** Future agents reading the file must see the override flag.
+- **Do NOT treat the HTML preview as a checkpoint.** It's a review aid. Approve is the only gate.
+- **Do NOT narrate filenames or schema mechanics in user-visible output.** See §Forbidden vocabulary.
+- **Do NOT ask for permission to read user-provided docs.** If the user named them, read them.

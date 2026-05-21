@@ -6,13 +6,6 @@ description: >
   complete 6-step workflow and correct execute syntax with --body.
 tags: [uipath-platform, smoke, integration-service, resources, execute]
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node:
-    env_packages:
-      - "@uipath/cli"
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 
@@ -63,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Agent executed a create operation with --body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+execute\s+create[\s\S]*--body'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create[\s\S]*--body'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

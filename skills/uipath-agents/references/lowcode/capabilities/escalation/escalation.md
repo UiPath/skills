@@ -33,7 +33,7 @@ Filter the result for entries whose `Type` is `"Workflow Action"` (Coded / Coded
 |-----------------------|--------|
 | `Key` | `channel.properties.resourceKey` (also becomes the app resource's `key`) |
 | `Name` | `channel.properties.appName` (also propagates as binding `name`) |
-| `Folder` | `channel.properties.folderName` — literal Orchestrator folder (e.g., `"Shared/Approvals"`). `uip agent validate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
+| `Folder` | `channel.properties.folderName` — literal Orchestrator folder (e.g., `"Shared/Approvals"`). `uip agent migrate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
 | `FolderKey` | folder GUID — used in `debug_overwrites.json` |
 
 `Key` gives you everything you need to identify the backing app, but `resource list` does not return `systemName` or `deployVersion` — both are required to fetch the action schema in Step 3. Query the Apps API once, filtered client-side by `id == <KEY>`, to extract them:
@@ -114,7 +114,7 @@ Use other `type` values (1=UserId, 2=GroupId, 4=AssetUserEmail, 5=StaticGroupNam
 
 > **Do not set `displayName` for `type: 3`.** The reference solution omits it; leaving it out results in cleaner rendering in Studio Web.
 
-**`channel.properties.folderName` must be the literal `Folder` from `uip solution resource list --kind App`** (e.g., `"Shared/Approvals"`). `uip agent validate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT set it to `"solution_folder"` — escalation apps are always external.
+**`channel.properties.folderName` must be the literal `Folder` from `uip solution resource list --kind App`** (e.g., `"Shared/Approvals"`). `uip agent migrate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT set it to `"solution_folder"` — escalation apps are always external.
 
 Default `taskTitle` / `taskTitleV2` to a short human-readable label — e.g., `"Approval request"`. `taskTitle` is a string; `taskTitleV2` is a `contentTokens`-style object (see [../../agent-definition.md](../../agent-definition.md) § Messages).
 
@@ -166,7 +166,7 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
       "properties": {
         "resourceKey": "<appId-guid>",              // from `action-apps?state=deployed` → `id`
         "appName": "<deploymentTitle>",             // from the same response → `deploymentTitle`
-        "folderName": "Shared/Approvals",           // literal Folder from `uip solution resource list --kind App`. uip agent validate translates this to folderPath in the App binding inside bindings_v2.json.
+        "folderName": "Shared/Approvals",           // literal Folder from `uip solution resource list --kind App`. uip agent migrate translates this to folderPath in the App binding inside bindings_v2.json.
         "appVersion": 1,                            // from the same response → `deployVersion` (integer)
         "isActionableMessageEnabled": false,
         "actionableMessageMetaData": null
@@ -223,11 +223,14 @@ The fourth file (`process/webApp/...`) backs the app resource's `dependencies[1]
 
 Use the full shape from § Agent-Level Resource Shape above. Generate fresh UUIDs for the top-level `id` AND the channel `id` — do not reuse.
 
-### Step 7 — Validate and refresh solution resources
+### Step 7 — Validate, migrate, and refresh solution resources
 
 ```bash
-# Validate — checks the agent and resource.json, migrates schema if needed
+# Validate — read-only check of agent and resource.json.
 uip agent validate "<AGENT_NAME>" --output json
+
+# Migrate — applies pending schema migrations and writes bindings_v2.json.
+uip agent migrate "<AGENT_NAME>" --output json
 
 # Refresh — imports the App binding from bindings_v2.json into the solution.
 uip solution resource refresh --output json
@@ -253,7 +256,7 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 See [../../critical-rules.md](../../critical-rules.md) Critical Rules. Escalation-specific gotchas:
 
-- `properties.folderName` MUST be the literal `Folder` from `uip solution resource list --kind App` (e.g., `"Shared/Approvals"`). `uip agent validate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT use `"solution_folder"` — escalation apps are always external. See [../../critical-rules.md](../../critical-rules.md) Rule 11 and Anti-pattern 18.
+- `properties.folderName` MUST be the literal `Folder` from `uip solution resource list --kind App` (e.g., `"Shared/Approvals"`). `uip agent migrate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT use `"solution_folder"` — escalation apps are always external. See [../../critical-rules.md](../../critical-rules.md) Rule 11 and Anti-pattern 18.
 - `recipients` array MUST have at least one entry. Empty uploads but routes nowhere.
 - For `type: 3` (email) recipients, do NOT set `displayName`.
 - Generate fresh UUIDs for the top-level `id` AND each channel `id`.
