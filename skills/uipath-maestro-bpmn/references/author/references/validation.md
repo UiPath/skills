@@ -72,21 +72,17 @@ before packing.
 
 ### Validator coverage across CLI surfaces
 
-After CLI PR #2137 (merged 2026-05-21), `uip maestro bpmn pack` and
-`uip solution pack` share the same BPMN validation rules through
-`@uipath/maestro-sdk/bpmn-validation` — `packager-tool-bpmn` only provides a
-file-system adapter. A BPMN that passes `uip maestro bpmn pack` will hit the
-same diagnostics under `uip solution pack` on the rules that live in the SDK
-validator (binding-backed `Orchestrator.StartAgentJob` context inputs, contract
-placement, declared variables, etc.). Do not assume `bpmn pack` is "less
-strict" — that gap is closed.
+`uip maestro bpmn pack` and `uip solution pack` share the same BPMN validation
+rules. A BPMN that passes one will hit the same diagnostics under the other on
+the packager-level rules (binding-backed `Orchestrator.StartAgentJob` context
+inputs, contract placement, declared variables, expression scoping, and the
+rest). Do not assume one CLI surface is "less strict" than the other.
 
-The Studio Web Health Analyzer still runs a separate canvas-side rule set and
-can surface issues that neither CLI command catches (or vice versa). Treat
-Health Analyzer as a third signal, not a duplicate. When a real run uncovers a
-diagnostic that the CLI did not flag, file it against the shared validator so
-the rule lands in `@uipath/maestro-sdk/bpmn-validation` and reaches every
-caller.
+The Studio Web Health Analyzer runs a separate canvas-side rule set and can
+surface issues that neither CLI command catches (or vice versa). Treat Health
+Analyzer as a third signal, not a duplicate. When a real run surfaces a
+diagnostic that the CLI did not flag, report it as a packager-validator gap so
+the rule reaches every caller.
 
 When generated package files exist, verify that:
 

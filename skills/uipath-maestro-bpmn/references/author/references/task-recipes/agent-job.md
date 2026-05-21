@@ -14,10 +14,9 @@ both are deployed to an Orchestrator folder.
 | Integration Service external agent | `Intsvc.SyncAgentExecution`, `Intsvc.AsyncAgentExecution`, or legacy `Intsvc.AsyncExecution` | CLI must enrich connector resource key, connection binding, dynamic schemas, and operation metadata. |
 
 Common authoring mistake: drafting `Orchestrator.StartAgentJob` with a literal
-`agentName` context input, or with `releaseKey` / `folderId`. The post-#2137
-shared validator (`@uipath/maestro-sdk/bpmn-validation`,
-`validateStartAgentJobBindings`) rejects all three. Always use the binding-pair
-shape shown in
+`agentName` context input, or with `releaseKey` / `folderId`. The Maestro
+BPMN packager validator rejects all three. Always use the binding-pair shape
+shown in
 [../../../shared/wrapper-shells.md](../../../shared/wrapper-shells.md#orchestratorstartagentjob-folder-deployed-agent--coded-python-or-low-code)
 and in the
 [agent-invocation fixture](../../../../fixtures/validation/agent-invocation/).

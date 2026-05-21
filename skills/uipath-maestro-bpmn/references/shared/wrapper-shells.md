@@ -70,7 +70,7 @@ Namespace baseline for greenfield files:
 
 `bpmn:serviceTask` with `Orchestrator.StartAgentJob`. Use this shell for any agent published to an Orchestrator folder, regardless of whether the agent is a coded Python project (LangGraph / LlamaIndex / OpenAI Agents) or a low-code Agent Builder agent — the wire format is identical. For external A2A agents addressed by URL, use `A2A.AgentExecution` instead.
 
-Required binding shape (enforced by the post-#2137 shared validator in `@uipath/maestro-sdk/bpmn-validation`):
+Required binding shape (enforced by the Maestro BPMN packager validator — `uip maestro bpmn pack` and `uip solution pack` share these checks):
 
 - Context inputs MUST be named exactly `name` and `folderPath`. Do not use `agentName`, `releaseKey`, or `folderId`.
 - Both values MUST be `value="=bindings.<bindingId>"` — literal strings are rejected.

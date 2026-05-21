@@ -2,6 +2,6 @@
   "projectVersion": "1.0.0",
   "projectType": "ProcessOrchestration",
   "name": "AgentInvocation",
-  "description": "End-to-end fixture: entry-point input projection plus Orchestrator.StartAgentJob with the post-#2137 binding pair.",
+  "description": "End-to-end fixture: entry-point input projection plus Orchestrator.StartAgentJob with the name+folderPath binding pair.",
   "main": "agent-invocation.bpmn"
 }
