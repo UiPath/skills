@@ -247,7 +247,7 @@ Never construct activity XAML from memory. Two sources, in this order:
 4. **Diff your step-2 checklist against the step-3 starter.** Add every checklist property that isn't already in the starter. An empty checklist with no third-party flag from step 2 means step 2 was skipped — go back to step 2; do NOT author from the starter alone.
 5. Validate with `uip rpa validate`.
 
-**The rule binds for every activity, not just complex ones.** "This activity is simple — `LogMessage`, `Delay`, `StartProcess` — I can author from the starter alone" is the failure mode. Self-exemption is the bug; the procedure is the only check.
+**The rule binds for every activity not on the [common-activity card](../common-activity-card.md).** Check the card first. If the activity is listed there, author from the card entry and skip `activities find`, `activities get-default-xaml`, and the per-activity doc read. If the activity is not listed there, follow the full workflow above. Self-extending the card by personal judgment ("this one feels simple — `StartProcess`, `InvokeWorkflowFile`, I can skip the procedure") is the bug. For card activities the surface is authoritative — version-anchored, source-verified, curated centrally. For everything else, the procedure is the only check.
 
 **Anti-pattern.** Treating `activities get-default-xaml` output as the complete property surface. The CLI runs XAML serialization on a default-constructed instance; type-default values are omitted by design.
 
@@ -274,7 +274,7 @@ Container activities have body or branch slots typed `Activity` or `ActivityActi
 
 **Validators do not catch this.** `validate` and `build` both accept any single `Activity` in a body slot — `<If.Then><Throw /></If.Then>` is structurally legal. The wrap is a Studio-idiomatic convention (drop-zone ergonomics + canonical emission), not a static-analysis requirement.
 
-**Cheapest enforcement.** Run `uip rpa activities get-default-xaml --activity-class-name "<FullClassName>"` for every container activity emitted, including `System.Activities.Statements.*` (`If`, `While`, `DoWhile`, `TryCatch`, `Switch`, `ForEach<T>`, `Pick`). Starter comes back wrapped — copy the shape. See SKILL.md Rules 21, 21a, 24.
+**Cheapest enforcement.** For card-listed containers (`If`, `Switch<T>`, `TryCatch`, `While`, `DoWhile`, `ForEach<T>`), copy the wrapped shape from the common-activity card. For off-card containers (`Pick`, `Parallel`, `ParallelForEach<T>`, package-specific body activities), run `uip rpa activities get-default-xaml --activity-class-name "<FullClassName>"` after the Rule 21 doc read and copy the wrapped shape from the starter. See SKILL.md Rules 21, 21a, 24.
 
 **Worked example.** [§ Example 1: Basic Activities (LogMessage, If/Else, Assign)](#example-1-basic-activities-logmessage-ifelse-assign) below — `If.Then` and `If.Else` each carry a `<Sequence>`.
 

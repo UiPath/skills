@@ -14,7 +14,7 @@ The XAML attribute parser defaults to VB for expression-bearing attribute values
 
 ## Property-surface sourcing
 
-Which properties exist on a given activity, the `<Activity>.md` lookup order, and how to handle `Cannot set unknown member` errors caused by property-name drift between package versions: see [xaml-basics-and-rules.md § Activity Property Surface](xaml-basics-and-rules.md#activity-property-surface-and-starter-xaml). The 5-step workflow there applies to both VB and C# XAML projects — the binding tables below assume you have already established the property surface from `<Activity>.md`.
+Which properties exist on a given activity, the `<Activity>.md` lookup order, and how to handle `Cannot set unknown member` errors caused by property-name drift between package versions: see [xaml-basics-and-rules.md § Activity Property Surface](xaml-basics-and-rules.md#activity-property-surface-and-starter-xaml). Check [../common-activity-card.md](../common-activity-card.md) first for card-listed activities; for those, the card is the property surface and the binding tables below describe how to convert its VB snippets to C#. For off-card activities, follow the full Rule 21 workflow before applying these binding forms.
 
 ## Binding forms by property type
 
