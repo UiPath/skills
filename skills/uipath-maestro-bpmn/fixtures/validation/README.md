@@ -83,6 +83,6 @@ make tags TAGS="uipath-maestro-bpmn smoke" EXPERIMENT=experiments/default.yaml
 
 ## Public-Safety Rules
 
-- Do not copy raw exported BPMN, screenshots, tenant metadata, connection IDs, folder keys, URLs, user names, private process names, or temporary mission notes into these fixtures.
+- Do not copy raw exported BPMN, screenshots, tenant metadata, connection IDs, folder keys, URLs, user names, private process names, or internal work-tracking notes into these fixtures.
 - Keep IDs readable and synthetic, for example `Task_CreateTicket` and `Binding_ServiceDeskConnection`.
 - Keep package metadata deterministic and local to the fixture folder.

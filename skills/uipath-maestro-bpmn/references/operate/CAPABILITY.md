@@ -17,7 +17,7 @@ These actions may contact UiPath services or external systems.
 ## When to use this capability
 
 - Package a Maestro BPMN Process Orchestration project.
-- Upload a project to Studio Web.
+- Upload a solution containing the BPMN project to Studio Web.
 - Publish or deploy a packaged process when explicitly requested.
 - Debug or run a process instance after explicit consent.
 - Inspect jobs, processes, process versions, instances, variables, incidents, and traces.

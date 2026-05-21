@@ -16,18 +16,19 @@ Before upload, publish, deploy, or debug:
    and package consistency.
 3. Confirm Integration Service enrichment is complete for executable connector elements.
    If enrichment tooling is unavailable, keep the project as a draft and do not operate it as executable.
-4. Regenerate or refresh package metadata with the supported CLI path.
+4. Confirm the BPMN project is registered in a local solution before Studio Web upload, publish, debug, or run.
+5. Regenerate or refresh package metadata with the supported CLI path.
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
    CLI contract says otherwise. Use
    [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for the local drift
    checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
-5. Confirm login for cloud actions:
+6. Confirm login for cloud actions:
 
    ```bash
    uip login status --output json
    ```
 
-6. Inspect generated files for public-safety issues before committing or sharing.
+7. Inspect generated files for public-safety issues before committing or sharing.
    Do not include tenant URLs, folder keys, connection IDs, user data, payloads, or local paths in docs or commits.
 
 ## Package only
@@ -35,10 +36,11 @@ Before upload, publish, deploy, or debug:
 Package when the user wants a local `.nupkg`, pre-deploy artifact, or package-shape verification:
 
 ```bash
-uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
+uip maestro bpmn pack <SolutionDir>/<ProjectName> <OutputDir> --name <ProjectName> --output json
 ```
 
-Use `--name` and `--version` only when the user provides a public-safe package identity.
+Use an explicit public-safe `--name`; add `--version` only when the user or project policy provides one.
+Avoid relying on `.` as the project path for package identity.
 Report the package path and package identity returned by the CLI.
 If packing changes generated files, explain whether the change came from BPMN source, CLI enrichment,
 or package generation.
@@ -48,8 +50,16 @@ or package generation.
 Use Studio Web upload when the user says publish without specifying Orchestrator deployment.
 Studio Web upload lets the user inspect and edit the BPMN project in the browser.
 
+Upload the solution directory, not a bare project directory:
+
 ```bash
 uip solution upload <SolutionDir> --output json
+```
+
+If the BPMN project is not already inside the solution, import or add it first:
+
+```bash
+uip solution project import --source <ProjectDir> --solutionFile <SolutionDir>/<SolutionName>.uipx --output json
 ```
 
 If the solution has resource declarations, refresh them with the supported solution tooling in the local CLI.
@@ -66,7 +76,7 @@ Confirm package identity, target folder/context, feed/package expectations, and 
 Typical path:
 
 ```bash
-uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
+uip maestro bpmn pack <SolutionDir>/<ProjectName> <OutputDir> --name <ProjectName> --output json
 uip solution pack <SolutionDir> <OutputDir> --output json
 uip solution publish <PackageZip> --output json
 ```
@@ -82,8 +92,8 @@ When Studio Web import or packaging fails, inspect the generated package files a
 
 - `bindings_v2.json` for resource and connection binding declarations generated from BPMN/enrichment.
 - `entry-points.json` for start-event entry points, schemas, and BPMN file references.
-- `operate.json` for runtime/package metadata and the intended main BPMN file.
-- `package-descriptor.json` for content manifest entries under `content/`.
+- `operate.json` for runtime/package metadata.
+- `package-descriptor.json` for the local `files` map that feeds packaged content.
 
 If the mismatch comes from process modeling, fix `.bpmn` in Author.
 If it comes from connector metadata or generated resources, rerun CLI enrichment/generation.

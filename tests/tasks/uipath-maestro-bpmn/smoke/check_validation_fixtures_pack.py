@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Verify the validation fixture corpus still parses and was packaged.
+"""Verify the validation fixture corpus parses and selected fixtures package.
 
-Run from the scored workspace after the agent has packed each fixture. Checks
-that the fixture corpus has not been mutated, every fixture BPMN file is
-well-formed, and local package artifacts were produced outside fixture folders.
+Run from the scored workspace after the agent has packed the runtime-packable
+fixture subset. Checks that the fixture corpus has not been mutated, every
+fixture BPMN file is well-formed, and local package artifacts were produced
+outside fixture folders.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-EXPECTED = (
+EXPECTED_BPMN = (
     "fixtures/validation/linear-process/linear-process.bpmn",
     "fixtures/validation/imported-brownfield-preservation/imported-brownfield-preservation.bpmn",
     "fixtures/validation/gateway-boundary-error/gateway-boundary-error.bpmn",
@@ -23,13 +24,19 @@ EXPECTED = (
     "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn",
 )
 
+EXPECTED_PACKAGES = (
+    "integration-service-enriched",
+    "registry-coverage-matrix",
+    "wrapper-family-contract",
+)
+
 PACKAGE_OUTPUT = Path("fixture-pack-output")
 
 
 def main() -> None:
     missing: list[str] = []
     bad: list[str] = []
-    for rel in EXPECTED:
+    for rel in EXPECTED_BPMN:
         path = Path(rel)
         if not path.exists():
             missing.append(rel)
@@ -44,11 +51,6 @@ def main() -> None:
         sys.exit(f"FAIL: fixture BPMN files no longer parse: {bad}")
 
     packages = list(PACKAGE_OUTPUT.rglob("*.nupkg"))
-    if len(packages) < len(EXPECTED):
-        sys.exit(
-            "FAIL: expected at least "
-            f"{len(EXPECTED)} package artifacts under {PACKAGE_OUTPUT}, found {len(packages)}"
-        )
     fixture_package_paths = [
         str(path) for path in packages if "fixtures/validation" in path.as_posix()
     ]
@@ -57,7 +59,21 @@ def main() -> None:
             f"FAIL: package artifacts were written under fixture folders: {fixture_package_paths}"
         )
 
-    print(f"OK: {len(EXPECTED)} fixture BPMN files parse and {len(packages)} packages exist")
+    missing_packages = [
+        name
+        for name in EXPECTED_PACKAGES
+        if not any(path.name.startswith(f"{name}.") for path in packages)
+    ]
+    if missing_packages:
+        sys.exit(
+            "FAIL: missing expected package artifacts under "
+            f"{PACKAGE_OUTPUT}: {missing_packages}"
+        )
+
+    print(
+        f"OK: {len(EXPECTED_BPMN)} fixture BPMN files parse and "
+        f"{len(EXPECTED_PACKAGES)} required packages exist"
+    )
 
 
 if __name__ == "__main__":

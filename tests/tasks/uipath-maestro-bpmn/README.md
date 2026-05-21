@@ -6,7 +6,8 @@ The layout mirrors the Flow eval suite:
 
 - `smoke/` covers lifecycle and fixture smoke checks. `init_pack_validate.yaml`
   walks the CLI happy path; `validation_fixtures.yaml` validates the corpus;
-  `validation_fixtures_pack.yaml` exercises the pack side of the same corpus;
+  `validation_fixtures_pack.yaml` exercises the pack side for the
+  runtime-packable fixture subset;
   `imported_xml_inspect.yaml` treats the three complex fixtures as imported
   XML and produces an inspection report without mutating source.
 - `author/` covers BPMN skeleton structure, gateways, sequence flows, and

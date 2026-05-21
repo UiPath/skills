@@ -47,7 +47,7 @@ packaging. The current local CLI validator expects a BPMN/XML file path, so use
 the main source file:
 
 ```bash
-uip maestro bpmn validate ProjectName/ProjectName.bpmn --output json
+uip maestro bpmn validate SolutionName/ProjectName/ProjectName.bpmn --output json
 ```
 
 Only validate a project directory if the installed CLI explicitly supports that
@@ -55,7 +55,7 @@ shape. If the installed CLI does not expose validation, run an explicit XML
 parse command against the BPMN source, for example:
 
 ```bash
-python3 -c "import xml.etree.ElementTree as ET; ET.parse('ProjectName/ProjectName.bpmn')"
+python3 -c "import xml.etree.ElementTree as ET; ET.parse('SolutionName/ProjectName/ProjectName.bpmn')"
 ```
 
 Do not treat reading the file or visually inspecting generated metadata as a
@@ -75,7 +75,7 @@ When generated package files exist, verify that:
 - `bindings_v2.json` matches root bindings and enriched resource metadata.
 - `entry-points.json` matches root start events, entry point IDs, and variable schemas.
 - `operate.json` points at the intended main BPMN file and content type.
-- `package-descriptor.json` includes the BPMN and generated JSON files under content.
+- `package-descriptor.json` maps the BPMN and generated JSON files.
 
 Use [shared/local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) when a mismatch requires local regeneration or Integration Service enrichment.
 

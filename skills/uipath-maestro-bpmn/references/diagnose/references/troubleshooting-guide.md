@@ -113,8 +113,8 @@ Correlate package files to the deployed BPMN:
 
 - `entry-points.json` should reference the intended BPMN file and start event.
 - `bindings_v2.json` should contain generated resources required by executable resource and connector elements.
-- `operate.json` should identify the intended main file/runtime metadata.
-- `package-descriptor.json` should include BPMN and generated JSON files under `content/`.
+- `operate.json` should identify the intended runtime metadata.
+- `package-descriptor.json` should map the BPMN and generated JSON files included in packaged content.
 
 ## Step 7 - Pull traces last
 
