@@ -74,7 +74,7 @@ Surface to the user as **"Available service catalog for region `<REGION>`"**. Do
 
 If the user says "show services on this tenant" without specifying, run both `services list` and `services list-available --region <TENANT_REGION>` and present them in two clearly labeled sections.
 
-## Before Mutating a Tenant or Tenant Service — Name the Target
+## Mutation Echo Rules
 
 Before any tenant lifecycle or tenant-service mutation, echo the resolved target back so the user knows exactly which resource will change:
 
@@ -88,32 +88,82 @@ Resolve UUIDs to names — never leave a raw `tenantId` in the echo. `tenants ge
 
 ## Workflow: Create a Tenant
 
-1. Confirm available regions:
-   ```bash
-   uip admin organizations regions list --output json
-   ```
-2. **Validate the tenant name client-side.** OMS rejects display names with `-`, `_`, spaces, or special chars — must start with a letter, be 2–32 chars, alphanumeric only. Reject hyphenated names before sending.
-3. **Propose default services to provision.** Query the regional catalog, then filter to the default-provision set — services with `provisioningMode === "Implicit"` AND `isVisible === true` AND `isAlwaysProvision === false`. Services with `isAlwaysProvision === true` are auto-provisioned by the platform (don't list as a choice); `isVisible === false` are platform-internal (don't surface); `provisioningMode === "Explicit"` are optional opt-ins (offer separately on request).
-   ```bash
-   uip admin tenants services list-available --region "<REGION>" --output json \
-     --output-filter "Data[?provisioningMode=='Implicit' && isVisible==\`true\` && isAlwaysProvision==\`false\`].{id:id,name:name}"
-   ```
-   Render this list to the user; let them remove any they don't want before submitting. Build the `services{}` map in the create body from the confirmed set.
-4. Create from a file (recommended once a services list is involved):
-   ```bash
-   uip admin tenants create --file ./tenant.json --output json
-   ```
-   Where `./tenant.json` is a `CreateTenantRequestDto`:
-   ```json
-   {
-     "name": "<TENANT_NAME>",
-     "region": "<REGION>",
-     "environment": "<ENV>",
-     "services": { "orchestrator": true, "du": true, "actions": true, "automationhub": true, "processes": true, "taskmining": true }
-   }
-   ```
-   For the bare no-services case use inline: `uip admin tenants create --name "<NAME>" --region "<REGION>" --environment "<ENV>"` (the platform still auto-provisions every `isAlwaysProvision === true` service).
-5. Response includes both the new `id` and an `operationId`. `(poll)`
+Run as a **wizard** — never accept a single-shot "create tenant X" and submit. Collect each required field interactively, validate it before moving on, and echo a confirmation summary before calling the API. Skip a step only if the user has already supplied that exact value in their request.
+
+### Step 1 — Tenant name
+
+Ask the user for the display name, then validate **client-side** before doing anything else:
+
+- Alphanumeric only (no `-`, `_`, spaces, or special chars).
+- Must start with a letter.
+- 2–32 chars.
+
+If the name fails, push back and ask for a corrected one. Do not call the API to "see what happens".
+
+### Step 2 — Region
+
+Fetch the available regions for the org and present them as a numbered list:
+
+```bash
+uip admin organizations regions list --output json
+```
+
+Render a numbered Markdown list (`1. Europe`, `2. UnitedStates`, ...) and ask the user to reply with a digit. Do not assume a default region.
+
+### Step 3 — Environment (optional)
+
+Ask the user to pick an environment tag — numbered list of `Production`, `NonProduction`, `Development`, or "skip". If the user skips, omit the field from the body.
+
+### Step 4 — Services
+
+Fetch the region-specific catalog and apply the **default-provision filter** (`provisioningMode === "Implicit"` AND `isVisible === true` AND `isAlwaysProvision === false`):
+
+```bash
+uip admin tenants services list-available --region "<REGION>" --output json \
+  --output-filter "[?provisioningMode=='Implicit' && isVisible==\`true\` && isAlwaysProvision==\`false\`].name"
+```
+
+> Filter root is the `Data` array itself — start the expression with `[?...]`, NOT `Data[?...]`.
+
+Present the resulting service names as a numbered list. Ask the user to confirm the default set, remove unwanted entries, or add Explicit services on request. The catalog is region-aware — never hardcode the default set.
+
+Catalog metadata cheatsheet (for deciding what to surface):
+- `isAlwaysProvision === true` → platform-pinned, auto-provisioned, don't list as a choice.
+- `isVisible === false` → platform-internal, don't surface.
+- `provisioningMode === "Explicit"` → optional opt-in, offer only on request.
+
+### Step 5 — Confirm and submit
+
+Echo the resolved values per the [Mutation echo rules](#mutation-echo-rules) (organization, name, region, plus the resolved environment + services list) and wait for the user's go-ahead.
+
+Then write `./tenant.json` and submit. **Always use `--file`** — the inline path (`--name --region --environment`) does not populate the required `services` field and returns `HTTP 400: The Services field is required.`
+
+```bash
+uip admin tenants create --file ./tenant.json --output json
+```
+
+`./tenant.json` is a `CreateTenantRequestDto`. The `services` field is a **plain string array of catalog `name` values** (e.g. `taskmining`, `du`) — NOT a `{name: true}` map; that's the `services add` shape and OMS rejects it on create with `services.<name>.services: Cannot deserialize ... IList<string>`:
+
+```json
+{
+  "name": "<TENANT_NAME>",
+  "region": "<REGION>",
+  "environment": "<ENV>",
+  "services": ["<SERVICE_NAME>", "<SERVICE_NAME>", "..."]
+}
+```
+
+Platform-pinned services (`isAlwaysProvision === true`) are added automatically regardless of what's in `services[]`; don't list them.
+
+### Step 6 — Poll the operation
+
+Response includes both the new tenant `id` and an `operationId`. Poll the operation until it reaches a terminal status (`Succeeded` / `Failed` / `Cancelled`):
+
+```bash
+uip admin organizations operation get <OPERATION_ID> --output json
+```
+
+Same command applies to every async tenant verb — `create`, `update`, `delete`, `enable`, `disable`. Follow the [shared polling procedure](organization-management.md#polling-procedure-auto-poll-then-hand-off): auto-poll 3 × 5 s, then hand off to the user with a numbered menu if still in-progress. Never indefinite-loop.
 
 ## Workflow: Update a Tenant
 

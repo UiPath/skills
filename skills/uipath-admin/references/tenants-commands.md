@@ -86,20 +86,32 @@ uip admin tenants get --output json
 
 Create a new tenant. **Async** — returns both the new `id` and an `operationId`.
 
+> **`--file` is required in practice.** The server marks the `services` field required on `CreateTenantRequestDto`, but the inline path (`--name --region --environment`) does not populate it — a pure inline call returns `HTTP 400: The Services field is required.` Use a JSON file with the full body for any real create.
+
 ```bash
-uip admin tenants create \
-  --name "<TENANT_NAME>" \
-  --region "<REGION>" \
-  --environment "<ENV>" \
-  --output json
+uip admin tenants create --file ./tenant.json --output json
 ```
 
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--name <name>` | Yes (inline) | Tenant display name |
-| `--region <region>` | Yes (inline) | Provisioning region — resolve via `organizations regions list` |
-| `--environment <env>` | No | Environment tag (e.g., `Production`, `Development`) |
-| `--file <path>` | Alternative | Full `CreateTenantRequestDto` body (required for `services[]`, `customProperties`, `color`, `isDefaultTenant`) |
+`./tenant.json` (`CreateTenantRequestDto`):
+
+```json
+{
+  "name": "<TENANT_NAME>",
+  "region": "<REGION>",
+  "environment": "<ENV>",
+  "services": ["<SERVICE_NAME>", "<SERVICE_NAME>", "..."]
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Tenant display name. Alphanumeric, 2–32 chars, starts with a letter. |
+| `region` | Yes | Provisioning region — resolve via `organizations regions list`. |
+| `environment` | No | Environment tag: `Production`, `NonProduction`, or `Development`. |
+| `services` | **Yes** | **Plain string array of service names** to provision (catalog `name` field, e.g. `taskmining`, `du`). NOT a `{name: true}` map — that's the `services add` shape; OMS rejects it on create. Resolve via the **Default-provision filter** in the `services list-available` section below — the catalog is region-aware, never hardcode names. Platform-pinned services (`isAlwaysProvision === true`) are added automatically regardless. |
+| `customProperties` | No | Free-form key/value bag carried with the tenant. |
+| `color` | No | UI color tag. |
+| `isDefaultTenant` | No | Mark as the org's default tenant. |
 
 **Output code:** `OmsTenantCreated`.
 
@@ -220,7 +232,14 @@ Each catalog entry carries provisioning metadata. The agent uses these fields to
 | `isAlwaysProvision` | `true` if the platform automatically provisions this service on every tenant | **Defaults set:** filter to `false`. `true` services are auto-provisioned by the platform — no need to include in the user's choice; they will be there regardless. |
 | `supportedRegions[]`, `defaultRegion`, `entitlement`, `serviceLicenseStatus` | informational | — |
 
-**Default-provision filter** (use for new-tenant proposals): `provisioningMode === "Implicit" && isVisible === true && isAlwaysProvision === false`. From the current US catalog this yields: Task Mining (`taskmining`), Document Understanding (`du`), Actions (`actions`), Processes (`processes`), Automation Hub (`automationhub`). Render those as the default services on `tenants create`; let the user remove unwanted entries and add Explicit services explicitly.
+**Default-provision filter** (use for new-tenant proposals): `provisioningMode === "Implicit" && isVisible === true && isAlwaysProvision === false`. Run the filter command below for the target region to get the current set — the catalog is region-aware, never hardcode names. Render the result as the default services on `tenants create`; let the user remove unwanted entries and add Explicit services explicitly. Pass the confirmed catalog `name` values as a string array in the create body's `services` field (NOT the `id` field).
+
+Filter command (note: filter root is the `Data` array itself — use `[?...]`, NOT `Data[?...]`):
+
+```bash
+uip admin tenants services list-available --region "<REGION>" --output json \
+  --output-filter "[?provisioningMode=='Implicit' && isVisible==\`true\` && isAlwaysProvision==\`false\`].name"
+```
 
 **Output code:** `OmsTenantServicesAvailable`.
 

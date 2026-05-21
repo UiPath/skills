@@ -147,7 +147,7 @@ One row per common goal. Per-area workflows are in the reference files.
 | **Grant permission(s) to a principal** ("grant me X", "give alice Y, Z") | [grant-permissions.md](references/authorization/grant-permissions.md) — intersection-and-menu flow |
 | **Assign a role to a principal** | (1) Resolve principal per Rule 5. (2) `roles get <ROLE_ID>` → echo `ownerServiceName` + verify scope-path service segment matches (Rule 17). (3) `roles assignments create --role-id <ROLE_ID> --identity-id <ID> --identity-type <User\|Group\|Robot\|ExternalApplication> --output json` |
 | **See what a principal can do** | `uip admin authorization check-access <USER_GUID_OR_EMAIL> --scope <Tenant\|Folder> --output json` (Rule 15) |
-| **Create a tenant** | `organizations regions list` → `tenants create --name <N> --region <R>` → poll `organizations operation get <OP_ID>` (Rule 18) |
+| **Create a tenant** | [tenant-management.md](references/tenant-management.md) — region + default-services resolution, file-body shape, operation polling (Rule 18) |
 | **Add a tenant service** | `tenants services list-available --region <R>` → `tenants services add --tenant-id <TID> --service <SVC>` (verify post-state per Rule 22) |
 | **Enable IP allowlist enforcement** | `ip-restriction my-ip` → verify covered by `ip-ranges list` → `ip-restriction enforcement enable --confirm` (Rule 31) |
 | **Query audit events / export** | [audit-workflow-guide.md](references/audit-workflow-guide.md) — scope disambiguation + 4 investigation playbooks (who-did-X, login history, date-range dump, overview) |
