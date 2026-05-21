@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Inline agent flow-wiring check.
+"""Inline-agent flow-wiring check.
 
-Reads WeatherSol/WeatherFlow/WeatherFlow.flow (existence asserted by
-a file_exists criterion in the task YAML) and verifies:
+Reads GreetingSol/GreetingFlow/GreetingFlow.flow (existence asserted
+by a file_exists criterion in the task YAML) and verifies the
+inline-in-flow structural pattern only — not the agent's prompt or
+input/output schema:
 
   1. The flow contains a `uipath.agent.autonomous` node.
   2. The node's source (read from `inputs.source`, falling back to
@@ -12,11 +14,13 @@ a file_exists criterion in the task YAML) and verifies:
      declares `model.source: true` but flow-core hoists the source
      identity onto `inputs.source` on each node instance.
   3. If `model.serviceType` is present, it must be
-     `Orchestrator.StartInlineAgentJob` (not the solution-agent variant
-     `StartAgentJob`). The field is optional on the instance — the BPMN
-     `serviceType` is inherited from the node definition at compile time.
-  4. The agent node is wired into the flow — at least one incoming edge
-     on port `input` and at least one outgoing edge on port `success`.
+     `Orchestrator.StartInlineAgentJob` (not the solution-agent
+     variant `StartAgentJob`). The field is optional on the instance —
+     the BPMN `serviceType` is inherited from the node definition at
+     compile time.
+  4. The agent node is wired into the flow — at least one incoming
+     edge on port `input` and at least one outgoing edge on port
+     `success`.
 """
 
 import json
@@ -26,10 +30,13 @@ from pathlib import Path
 
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
 INLINE_AGENT_SERVICE_TYPE = "Orchestrator.StartInlineAgentJob"
-FLOW_PATH = Path(os.getcwd()) / "WeatherSol" / "WeatherFlow" / "WeatherFlow.flow"
+FLOW_PROJECT = Path(os.getcwd()) / "GreetingSol" / "GreetingFlow"
+FLOW_PATH = FLOW_PROJECT / "GreetingFlow.flow"
 
 
 def main() -> None:
+    if not FLOW_PATH.is_file():
+        sys.exit(f"FAIL: Missing {FLOW_PATH}")
     try:
         flow = json.loads(FLOW_PATH.read_text())
     except json.JSONDecodeError as e:

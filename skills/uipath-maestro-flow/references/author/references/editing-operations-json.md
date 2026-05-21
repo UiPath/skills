@@ -4,7 +4,7 @@ All flow file modifications via the `Edit` and `Write` tools (read-modify-write 
 
 > **Apply every recipe in this file with the `Edit` tool (default) or the `Write` tool (only when ≥70% of nodes change).** Each recipe shows the JSON payload that goes into the `new_string` parameter of an `Edit` call. `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort for mutations and require explicit user approval after you've surfaced the trade-offs — see SKILL.md rule on scripted mutations and [editing-operations.md — Why not Python / Node / jq / sed?](editing-operations.md#why-not-python--node--jq--sed).
 >
-> **When to use this strategy:** Edit / Write is required for all non-carve-out `.flow` edits. Use Flow CLI only for connector activity, connector-trigger, and managed HTTP carve-outs documented by their plugins. Inline-agent project lifecycle uses `uip agent init --inline-in-flow` / `uip agent validate --inline-in-flow`, but the `uipath.agent.autonomous` node and edges are authored with this guide. See [editing-operations.md](editing-operations.md) for the strategy selection matrix.
+> **When to use this strategy:** Edit / Write is required for all non-carve-out `.flow` edits. Use Flow CLI only for connector activity, connector-trigger, and managed HTTP carve-outs documented by their plugins. Inline-agent project lifecycle uses `uip agent init --inline-in-flow` / `uip agent validate --inline-in-flow` / `uip agent migrate --inline-in-flow`, but the `uipath.agent.autonomous` node and edges are authored with this guide. See [editing-operations.md](editing-operations.md) for the strategy selection matrix.
 
 ---
 
