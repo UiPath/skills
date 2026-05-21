@@ -14,7 +14,7 @@ Confirm:
 - Output ports: `output`, `error`
 - `model.type` — `bpmn:ServiceTask`
 - `model.serviceType` — `ECS.BatchTransform`
-- `inputDefinition.properties` — `attachment` (declared `string`; runtime wants the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }` — Studio Web's file-picker form serializes the whole object into that slot, the engine deserializes it back), `prompt` (string), `enableWebSearchGrounding` (boolean), `outputColumns` (array of `{ name, description }`)
+- `inputDefinition.properties` — `attachment` (declared `string`; runtime wants the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive, `ID` is uppercase, not `Id` — Studio Web's file-picker form serializes the whole object into that slot, the engine deserializes it back), `prompt` (string), `enableWebSearchGrounding` (boolean), `outputColumns` (array of `{ name, description }`)
 - `outputDefinition.output.type` — `"file"`; `outputDefinition.output.source` — `"=response"` (the BPMN engine wraps the result under that key — same convention as every other ServiceTask)
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
@@ -50,7 +50,7 @@ Then on the Batch Transform node:
 }
 ```
 
-Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment csvFile=./path/to/data.csv` for the `csvFile` variable above). The CLI uploads the file and binds it as a `{ FullName, Id, Metadata, MimeType }` Attachment object. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment csvFile=./path/to/data.csv` for the `csvFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
 
 ## JSON Structure
 
@@ -128,7 +128,7 @@ uip maestro flow node add <FlowName>.flow uipath.pattern.batch-transform \
   --output json
 ```
 
-`attachment` must resolve to a **full Flow Attachment object** (`{ FullName, Id, Metadata, MimeType }`). Reference it through the trigger's output (`$vars.<triggerId>.output.<fileVarId>`) — that's how the canvas wires file-typed flow `in` variables. Do **not** pass a bare GUID, URL, byte stream, or path; even though the OOTB `inputDefinition` declares `type: "string"`, the engine wants the object.
+`attachment` must resolve to a **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. Reference it through the trigger's output (`$vars.<triggerId>.output.<fileVarId>`) — that's how the canvas wires file-typed flow `in` variables. Do **not** pass a bare GUID, URL, byte stream, or path; even though the OOTB `inputDefinition` declares `type: "string"`, the engine wants the object.
 
 ## Accessing Output
 
@@ -170,5 +170,5 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 - **Do not reshape `outputColumns` to a map** — the array-of-`{name, description}` shape is contractual with the canvas property panel and the BPMN `ECS.BatchTransform` serializer.
 - **Do not reference downstream rows inside the prompt** — each row is processed independently; there is no way to see sibling rows. Pre-aggregate or use [Summarize](../summarize/impl.md) on a synthesized document instead.
 - **Do not chain a Batch Transform's `$vars.{nodeId}.output` directly into a Script expecting rows** — it is a file handle, not a row array.
-- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
+- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
 - **Do not write `outputs.output.source: "=batchTransformResult"`.** The canonical value is `"=response"` (the convention every BPMN ServiceTask follows).

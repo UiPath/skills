@@ -14,7 +14,7 @@ Confirm:
 - Output ports: `output`, `error`
 - `model.type` — `bpmn:ServiceTask`
 - `model.serviceType` — `ECS.DeepRag`
-- `inputDefinition.properties` — `attachment` (declared `string`; runtime wants the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }` — Studio Web's file-picker form serializes the whole object into that slot, the engine deserializes it back), `prompt` (string), `returnCitations` (boolean)
+- `inputDefinition.properties` — `attachment` (declared `string`; runtime wants the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive, `ID` is uppercase, not `Id` — Studio Web's file-picker form serializes the whole object into that slot, the engine deserializes it back), `prompt` (string), `returnCitations` (boolean)
 - `outputDefinition.output.type` — `"object"`; `outputDefinition.output.source` — `"=response"` (the BPMN engine wraps the result under that key — same convention as every other ServiceTask)
 - `outputDefinition.output.schema` — top-level fields `id` (string) and `content` (object|null) with PascalCase nested fields:
   - `content.Text` — string
@@ -53,7 +53,7 @@ Then on the Summarize node:
 }
 ```
 
-Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ FullName, Id, Metadata, MimeType }` Attachment object. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
 
 ## JSON Structure
 
@@ -150,7 +150,7 @@ uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
   --output json
 ```
 
-`attachment` must resolve to a **full Flow Attachment object** (`{ FullName, Id, Metadata, MimeType }`). Reference it through the trigger's output (`$vars.<triggerId>.output.<fileVarId>`) — that's how the canvas wires file-typed flow `in` variables. Do **not** pass a bare GUID, URL, byte stream, or path; even though the OOTB `inputDefinition` declares `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
+`attachment` must resolve to a **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. Reference it through the trigger's output (`$vars.<triggerId>.output.<fileVarId>`) — that's how the canvas wires file-typed flow `in` variables. Do **not** pass a bare GUID, URL, byte stream, or path; even though the OOTB `inputDefinition` declares `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
 
 ## Accessing Output
 
@@ -194,5 +194,5 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 - **Do not stuff `prompt` with entire document text.** The attachment is already ingested — the prompt should describe **the task**, not the input.
 - **Do not assume `content.Citations` is always present.** When `returnCitations: false`, the field is omitted; downstream code must guard.
 - **Do not use lowercase field names** (`content.text`, `content.citations`, `.ordinal`, `.page`). The runtime emits PascalCase: `content.Text`, `content.Citations`, `Ordinal`, `PageNumber`, `Source`, `Reference`.
-- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
+- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
 - **Do not write `outputs.output.source: "=deepRagResult"`.** The canonical value is `"=response"` (the convention every BPMN ServiceTask follows).
