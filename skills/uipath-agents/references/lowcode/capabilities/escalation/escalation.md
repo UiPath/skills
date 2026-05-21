@@ -11,6 +11,10 @@ The only channel type currently supported end-to-end by `uip solution resource r
 
 **Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resource refresh` emits an App binding into `bindings_v2.json` and then hand-writes the four solution-level files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus two `debug_overwrites.json` entries (`kind: "app"`, `kind: "process"`) automatically. No manual solution-level authoring is required for `actionCenter` channels.
 
+## Conversational Support
+
+**Status: Supported.**
+
 ## Discovery
 
 ### Step 1 — Scaffold solution and agent (if not already done)

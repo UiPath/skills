@@ -9,6 +9,10 @@ For other context variants, see [context.md](context.md).
 - Agent needs to query against UiPath DataFabric entity sets
 - The entity sets already exist in DataFabric
 
+## Conversational Support
+
+**Status: Supported.**
+
 ## Agent-Level Resource Shape
 
 **Path:** `<AgentName>/resources/<ContextName>/resource.json`

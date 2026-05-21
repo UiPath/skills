@@ -9,6 +9,17 @@ For Integration Service connector tools (separate capability), see [../integrati
 - Agent needs to invoke an RPA process, another agent, an API workflow, or an agentic process
 - Target lives in the **same solution** (`Source: "Local"` from discovery) or is **already deployed in Orchestrator** (`Source: "Remote"`)
 
+## Conversational Support
+
+| Subtype | Status |
+|---|---|
+| **API Workflow** (`type: "api"`) | **Supported** |
+| **RPA Process** (`type: "process"`) | **Supported** |
+| **Low-code / Coded Agent** (`type: "agent"`) | **Supported** |
+| **Agentic Process** (`type: "processOrchestration"`) | **Supported** |
+
+The authoring flow below (discovery via `uip solution resource list`, agent-level `resource.json`, solution-level files, validation, refresh) is the same for both autonomous and conversational. Conversational-specific agent.json shape constraints are in [../../agent-definition.md § Conversational Variant](../../agent-definition.md#conversational-variant).
+
 ## Subtypes
 
 | `type` (resource.json) | Calls | Process declaration directory | Schema flavor |

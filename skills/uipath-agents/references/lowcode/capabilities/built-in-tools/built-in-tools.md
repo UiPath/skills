@@ -9,6 +9,12 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 - Agent needs file content analysis at runtime → pair a `job-attachment` input field with `analyze-attachments`
 - Agent needs a platform capability that ships pre-built and does not require deployment
 
+## Conversational Support
+
+**Status: Supported.** All built-in tools work with conversational agents — including file-handling built-ins like `analyze-attachments`.
+
+The authoring flow below (agent-level `resource.json` with `type: "internal"` + `properties.toolType`) is structurally identical for both flavors. Conversational-specific agent.json shape constraints are in [../../agent-definition.md § Conversational Variant](../../agent-definition.md#conversational-variant).
+
 ## Critical Rules
 
 1. **Built-in tools are not implicit.** Add them as `resources/{Name}/resource.json` with `type: "internal"` to make them callable. Without the resource file, the tool is unavailable.

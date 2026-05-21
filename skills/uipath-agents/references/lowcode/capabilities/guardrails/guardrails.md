@@ -10,6 +10,18 @@ Two types exist:
 
 > **All guardrails are configured at the agent.json root `guardrails` array.** The `selector.scopes` and `selector.matchNames` fields on each guardrail determine which tools and scopes it applies to.
 
+## Conversational Support
+
+**Status: Tool-scoped only.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only. **Agent-scoped (`["Agent"]`) and LLM-scoped (`["Llm"]`) guardrails are not honored by the conversational runtime** — `uip agent validate` accepts them but the runtime ignores them at execution.
+
+When authoring guardrails for a conversational agent:
+
+- Use `selector.scopes: ["Tool"]` exclusively
+- Use `selector.matchNames` to target specific tools by name
+- Tool-scoped guardrails work the same way as for autonomous agents — see the schema and examples below
+
+This restriction is enforced as [../../critical-rules.md](../../critical-rules.md) Rule 27.
+
 ## Guardrail Schema (Base Fields)
 
 Every guardrail object in the `guardrails` array shares these base fields:
