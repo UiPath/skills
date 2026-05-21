@@ -47,10 +47,11 @@ Use the document ID as the filename. Pass `-o` **without an extension** — the 
 Use the **Read tool** to view the document file (the Read tool handles PDF, PNG, JPG, etc. natively), then review each predicted field against the document:
 
 1. **Look at the document** to understand the layout and where field values appear.
-2. **For each predicted field**, assign one of three verdicts:
+2. **For each predicted field**, assign one of four verdicts:
    - **CONFIRMED** — the predicted value matches what is in the document. Minor OCR-level differences (capitalization, whitespace) are acceptable.
    - **CORRECTED** — the prediction found the right field in the right location, but the value is OCR-mangled (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`). The reference is correct but the text needs fixing.
-   - **NOT CONFIRMED** — the predicted value is wrong, the field is misassigned, or the field is not visible in the document. Left unannotated.
+   - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 12 forbids overriding a non-empty prediction with "missing".
+   - **NOT CONFIRMED** — the predicted value is wrong, the field is misassigned, or IXP predicted a value the document doesn't contain. Left unannotated.
 3. **Report your verdict for every field.** Print a table per document:
 
 ```text
@@ -61,16 +62,19 @@ Field                    | Verdict       | Reason
 Invoice Number           | CORRECTED     | OCR mangled "MSIÓÓÓ601020/" → "MSI0601020", top-right of page 1
 Invoice Date             | CONFIRMED     | Predicted "2018-02-28" matches document
 Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual is "456 Oak Ave", top-left of page 1
-Terms of Payment         | NOT CONFIRMED | Field not visible in document, prediction appears hallucinated
+Terms of Payment         | MISSING       | IXP predicted no value AND field not visible in document
+Discount                 | MISSING       | IXP predicted no value AND no discount section on the page
 Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
 ```
 
 For **CORRECTED** fields: state the mangled predicted value, the corrected value, and where it appears.
-For **NOT CONFIRMED** fields: state the predicted value, the actual value (if visible) and location, or that the field is not visible.
+For **MISSING** fields: state that the prediction was empty AND describe how you verified the field is absent (e.g., "no payment-terms section anywhere in the document").
+For **NOT CONFIRMED** fields: state the predicted value, the actual value (if visible) and location, or that IXP predicted something the document doesn't contain.
 
-4. **Build two lists from the table:**
+4. **Build three lists from the table:**
    - **Confirmed field IDs** — all CONFIRMED + CORRECTED fields
    - **Corrections JSON** — only CORRECTED fields: `[{"field_id":"...","value":"corrected text"}]`
+   - **Missing field IDs** — all MISSING fields
 
 ### 2d. Confirm and correct
 
@@ -99,6 +103,15 @@ If ALL predicted fields for a document are correct with no corrections needed, y
 ```bash
 uip ixp labellings confirm <project-name> <document-id> --output json
 ```
+
+**If there are missing fields**, submit them AFTER the `confirm` call above:
+
+```bash
+uip ixp labellings mark-missing <project-name> <document-id> \
+  --fields "<missing_field_id_1>,<missing_field_id_2>" --output json
+```
+
+Order matters: `confirm` runs first (it doesn't carry empty annotations forward), then `mark-missing` writes the empty markers while carrying the just-confirmed annotations forward. If you have no MISSING fields, skip this call.
 
 ### 2e. Move to the next document
 
@@ -140,14 +153,18 @@ At the end, report a full summary:
 Labelling complete.
 
 Documents: N processed, M confirmed, K skipped (no predictions)
-Fields: X confirmed, Y corrected, Z not confirmed
+Fields: X confirmed, Y corrected, W marked missing, Z not confirmed
 
 OCR Corrections Applied:
   Doc <uid-1>: Invoice Number "MSIÓÓÓ601020/" → "MSI0601020"
   Doc <uid-1>: Vendor Name "INGRAM NTCRO INC" → "INGRAM MICRO INC"
   Doc <uid-3>: Bill-To Address "123 Mam St" → "123 Main St"
 
+Marked Missing (IXP predicted empty AND field absent from document):
+  Doc <uid-2>: Terms of Payment
+  Doc <uid-4>: Discount
+
 Not Confirmed (skipped):
-  Doc <uid-2>: Terms of Payment — field not visible in document
   Doc <uid-3>: Total Amount — predicted "500.00" but actual is "5000.00" (bottom-right, page 1)
+  Doc <uid-5>: Vendor Address — predicted "123 Main St" but actual is "456 Oak Ave"
 ```

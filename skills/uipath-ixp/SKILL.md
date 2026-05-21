@@ -36,6 +36,7 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 9. **Do NOT manually extract values** — all labelling goes through `labelling confirm` with predictions from IXP.
 10. **Max 8 documents for taxonomy suggestion** — the suggest-taxonomy endpoint accepts at most 8 attachment references.
 11. **Claude is the reviewer, not the extractor** — IXP generates predictions, Claude validates them. For each document, review predicted field values against the document file (Read tool handles PDF, PNG, JPG, etc.). Confirm correct fields (`labelling confirm --fields`), correct OCR-mangled values (`--corrections`), and skip wrong fields. Do NOT manually extract values. If a field's F1 is low, improve the **prompt** so IXP predicts better values.
+12. **Mark a field as missing only when IXP also did** — `labellings mark-missing` is the explicit-missing analogue of `labellings confirm`. Only use it when IXP predicted no value (or an empty value) for that field on that document AND the field is genuinely absent. If IXP predicted a wrong value, leave the field NOT CONFIRMED — choosing "missing" yourself is the same kind of extractor decision rule 11 forbids.
 
 ## Quick Start
 
@@ -62,7 +63,7 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Delete a document" / "Remove a document" | `uip ixp documents delete <project-name> <document-id> --output json` — irreversible, triggers retrain. To delete by filename, look up the `DocumentId` via `documents list` (the `Filename` column shows the original upload name). |
 | "Add / delete / rename a field group" | `uip ixp groups {add,delete,rename} <project-name> --name <name> ... --output json` — see [CLI Reference § Groups](references/cli-reference.md#groups). `groups add` requires `--instructions` and `--fields '<json>'` with at least one field. `delete` requires `--confirm-data-loss`. |
 | "Add / delete / rename / retype a field" | `uip ixp fields {add,delete,rename,change-type} <project-name> --group <name> --field <name> ... --output json` — see [CLI Reference § Fields](references/cli-reference.md#fields). `change-type` deletes annotations and requires `--confirm-data-loss`. |
-| "Mark a field as missing for a document" | `uip ixp labellings mark-missing <project-name> <document-id> --fields <ids> --output json` — confirms the field as having no value and no location. Use when the field is genuinely absent from the document. |
+| "Mark a field as missing for a document" | `uip ixp labellings mark-missing <project-name> <document-id> --fields <ids> --output json` — confirms the field as having no value and no location. **Only call this for fields where IXP's prediction was also missing/empty.** See Critical Rule 12. |
 
 ## Common Pitfalls
 
