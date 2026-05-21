@@ -80,6 +80,7 @@ Use this workflow for greenfield projects and for brownfield edits that change t
 | Add lint-compatible runtime expressions | [shared/expression-authoring.md](../shared/expression-authoring.md) |
 | Add retry, boundary errors, or error mappings | [shared/error-handling.md](../shared/error-handling.md) |
 | Select the right BPMN wrapper for RPA, agent, API workflow, queue, HITL, business rule, or call activity work | [references/supported-elements.md](references/supported-elements.md) + [references/task-recipes/](references/task-recipes/) |
+| Map Studio Web palette buttons to BPMN XML | [shared/studio-web-palette-mapping.md](../shared/studio-web-palette-mapping.md) |
 | Add an Integration Service activity or trigger | [references/plugins/integration-service/](references/plugins/integration-service/) |
 | Add a specific BPMN or UiPath extension element | [Plugin references](#plugin-references) |
 | Prepare for upload or run | [references/validation.md](references/validation.md) then [operate/CAPABILITY.md](../operate/CAPABILITY.md) |

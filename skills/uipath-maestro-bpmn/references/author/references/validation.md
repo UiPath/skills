@@ -42,24 +42,36 @@ Validate these before Operate:
   [shared/error-handling.md](../../shared/error-handling.md).
 - CLI-owned Integration Service fields have been enriched or are clearly marked as blockers.
 
-For local-only authoring, always execute at least one validation command before
-packaging. The current local CLI validator expects a BPMN/XML file path, so use
-the main source file:
+For local-only authoring, always execute layered validation before packaging.
+`uip maestro bpmn validate` is the loosest validator: it checks BPMN syntax and
+local structural rules. `uip solution pack` runs the stricter solution-level
+validator that runs at deploy time. Studio Web Health Analyzer runs a third,
+stricter pass after upload. Run both local validators in order so deploy-time
+failures surface before upload:
 
 ```bash
-uip maestro bpmn validate ProjectName/ProjectName.bpmn --output json
+uip maestro bpmn validate ProjectName/ProjectName.bpmn --output json   # syntax + structure
+uip solution pack <solution-path> <output-path> --output json          # authoritative deploy-readiness
 ```
 
-Only validate a project directory if the installed CLI explicitly supports that
-shape. If the installed CLI does not expose validation, run an explicit XML
-parse command against the BPMN source, for example:
+> **Warning: `uip maestro bpmn validate` is not sufficient for production deployment.**
+> It validates BPMN syntax and local structural rules, but does not run the
+> full solution-level validator that runs at deploy time. A BPMN that passes
+> `bpmn validate` can still be rejected by `uip solution pack` or by Studio
+> Web Health Analyzer after upload. Treat the solution pack step as the
+> authoritative gate before Operate.
+
+Only validate a project directory with `uip maestro bpmn validate` if the
+installed CLI explicitly supports that shape. If the installed CLI does not
+expose validation, run an explicit XML parse command against the BPMN source,
+for example:
 
 ```bash
 python3 -c "import xml.etree.ElementTree as ET; ET.parse('ProjectName/ProjectName.bpmn')"
 ```
 
 Do not treat reading the file or visually inspecting generated metadata as a
-validation step; the validation command must run and succeed before `pack`.
+validation step; the validation commands must run and succeed before `pack`.
 
 ## Package checks
 
@@ -97,6 +109,11 @@ Use [shared/local-metadata-regeneration-guide.md](../../shared/local-metadata-re
 
 - Blocking errors must be fixed before upload, publish, debug, or run.
 - Warnings may be acceptable for local drafts, but warnings about CLI-owned executable elements are blockers for real runs.
+- Two validators, divergent strictness: `uip maestro bpmn validate` and
+  `uip solution pack` enforce different rule sets. Warnings or findings that
+  pass `bpmn validate` but fail `solution pack` must be treated as blockers,
+  not local-draft warnings. Always run both before declaring the project
+  ready for Operate.
 - If validation tooling is missing, report the exact checks that could not run and keep the project in Author state.
 - If Integration Service enrichment is unavailable, validation can pass only for source shape review; do not report the project as ready for Operate.
 
