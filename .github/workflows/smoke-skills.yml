@@ -259,13 +259,6 @@ jobs:
             echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
           } >> "$GITHUB_ENV"
-          UIPATH_CLI_ENABLE_ENV_AUTH=true \
-          UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
-          UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
-          UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
-          UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
-          UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
-            uip login status --output json
           mkdir ~/.uipath
 
       - name: Run smoke tests
