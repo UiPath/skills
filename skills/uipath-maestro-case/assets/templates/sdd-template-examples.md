@@ -30,7 +30,7 @@ Nine v1-supported patterns. Two intentionally-dropped patterns documented at the
 | Name        | Category | Type   | sourceTriggers | sourceFields | Default | Description                              |
 |-------------|----------|--------|----------------|--------------|---------|------------------------------------------|
 | caseStatus  | Variable | string |                |              | "Open"  | Current stage marker of the case          |
-| reviewCount | Variable | number |                |              | 0       | Number of review iterations completed     |
+| reviewCount | Variable | integer |                |              | 0       | Number of review iterations completed     |
 ```
 
 **Runtime behavior:** at case start, `vars.caseStatus = "Open"` and `vars.reviewCount = 0`. Downstream tasks, conditions, and SLA expressions can read them via `=vars.caseStatus` and `=vars.reviewCount`. To update them mid-case, see Use Case 6.
@@ -119,7 +119,7 @@ In Case Variables:
 | Name             | Category | Type   | sourceTriggers | sourceFields | Default | Description                       |
 |------------------|----------|--------|----------------|--------------|---------|-----------------------------------|
 | applicantId      | In       | string |                |              |         | Loan applicant ID (required)      |
-| requestedAmount  | In       | number |                |              | 0       | Loan amount requested             |
+| requestedAmount  | In       | double |                |              | 0       | Loan amount requested             |
 ```
 
 **Runtime behavior:** caller submits `{applicantId: "ALC-123", requestedAmount: 50000}` via API. Engine routes these to `vars.applicantId` and `vars.requestedAmount` at case start. Downstream tasks read them via `=vars.applicantId` etc.
@@ -202,7 +202,7 @@ In Case Variables (must be pre-declared):
 | Name        | Category | Type   | sourceTriggers | sourceFields | Default | Description                            |
 |-------------|----------|--------|----------------|--------------|---------|----------------------------------------|
 | caseStatus  | Variable | string |                |              | "Open"  | Stage progression marker               |
-| reviewCount | Variable | number |                |              | 0       | Count of review iterations             |
+| reviewCount | Variable | integer |                |              | 0       | Count of review iterations             |
 | enteredAt   | Variable | string |                |              |         | ISO timestamp when last stage entered  |
 ```
 
