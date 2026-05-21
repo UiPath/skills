@@ -424,7 +424,6 @@ uip admin external-apps delete-secret <SECRET_ID> --output json
 
 **Output code:** `ExternalClientSecretDeleted`
 
-<<<<<<< HEAD
 ### `external-apps federated-credentials list`
 
 List federated credentials for an external app.
@@ -532,7 +531,7 @@ uip admin pat create \
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--description <text>` | Yes | Token description |
-| `--expiration <date>` | Yes | Expiration date (ISO 8601: `YYYY-MM-DD`) |
+| `--expiration <date>` | Yes | Expiration date (ISO 8601: `YYYY-MM-DD`). Max 360 days (org default) |
 | `--scope <scopes>` | Yes | Comma-separated scope names |
 
 **Output code:** `PatCreated`

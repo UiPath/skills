@@ -6,10 +6,6 @@ description: >
 
 tags: [uipath-admin, smoke, create]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a personal access token for CI/CD with read access to Folders
   and Jobs, expiring January 15, 2027.
@@ -18,7 +14,7 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran pat create with --description, --expiration, and --scopes"
+    description: "Agent ran pat create with --description, --expiration, and --scope"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+pat\s+create\s+.*--description'
     min_count: 1
@@ -26,9 +22,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent included --scopes with OR.* values"
+    description: "Agent included --scope with OR.* values"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+pat\s+create\s+.*--scopes\s+"?OR\.'
+    command_pattern: 'uip\s+admin\s+pat\s+create\s+.*--scope\s+"?OR\.'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

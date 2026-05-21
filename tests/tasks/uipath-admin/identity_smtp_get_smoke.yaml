@@ -5,10 +5,6 @@ description: >
 
 tags: [uipath-admin, smoke, list]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Show me the current SMTP email settings for my UiPath organization.
 

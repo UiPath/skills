@@ -5,10 +5,6 @@ description: >
 
 tags: [uipath-admin, smoke, list]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Show me all available OAuth2 scopes I can use for external apps
   and personal access tokens.

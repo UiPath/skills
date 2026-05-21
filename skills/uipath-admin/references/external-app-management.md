@@ -8,7 +8,7 @@ External apps provide Client ID + Secret credentials for API integrations, CI/CD
 
 ## Scope Types
 
-See [SKILL.md — Scope Types](../SKILL.md#scope-types) for the `--app-scope` vs `--user-scope` distinction. Discover available scopes: `uip admin scopes list --output json`
+`--app-scope` grants permissions to the app itself (client_credentials flow). `--user-scope` delegates user permissions through the app (authorization_code flow). Discover available scopes: `uip admin scopes list --output json`
 
 ## Workflow: Create a Confidential App (Server-Side)
 
