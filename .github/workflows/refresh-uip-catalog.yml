@@ -74,8 +74,13 @@ jobs:
 
       - name: Open PR with updated catalog
         if: steps.check.outputs.exists != 'true' && steps.diff.outputs.changed == 'true'
+        # Use a PAT (not GITHUB_TOKEN) so the opened PR triggers
+        # `pull_request:` workflows — required-check workflows authored by
+        # GITHUB_TOKEN do not fire, which would let `--auto` merge before
+        # the verb gate / smoke tests ran. Same PAT already used by
+        # activation-gate.yml.
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           RAW_VERSION=$(jq -r .cli_version assets/uip-catalog-snapshot.json | tr -d '\r\n')
           # Sanitize before interpolating into title/body/branch — defense
@@ -92,9 +97,14 @@ jobs:
           git commit -m "chore: refresh uip CLI catalog ($CLI_VERSION, $VERB_COUNT verbs)"
           git push -u origin "$BRANCH"
 
-          gh pr create \
+          PR_URL=$(gh pr create \
             --title "chore: refresh uip CLI catalog ($CLI_VERSION)" \
             --body "Automated refresh against \`@uipath/cli@$CLI_VERSION\`. The catalog has $VERB_COUNT reachable verbs after installing all available plugins.
 
-          Review the diff for **removed** verbs — any deletion implies one or more task YAMLs need updating. \`/lint-task\` will surface High findings for unreachable patterns once this merges." \
-            --label "automated"
+          Auto-merge is armed — this PR will merge itself once required checks pass. If a check fails, the failure is real drift (a CLI release removed/renamed a verb still referenced in skill docs or task YAMLs); investigate the gate annotations and either sweep the docs or, if the verb is intentionally retired, add it to \`.claude/rules/cli-renames.md\`. \`/lint-task\` and the CLI Verb Gate will surface the affected references." \
+            --label "automated")
+
+          # Arm auto-merge. Waits for all required status checks (verb gate,
+          # smoke tests) to pass before squashing; stays open if any fail.
+          # Requires the repo setting 'Allow auto-merge' to be enabled.
+          gh pr merge "$PR_URL" --auto --squash --delete-branch
