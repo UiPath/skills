@@ -24,7 +24,9 @@
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
+/skills/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
+/tests/tasks/uipath-platform/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
 /tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 
 # Agents skill (coded + low-code)
@@ -63,6 +65,7 @@
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 /tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
 
 # Review skill
@@ -79,12 +82,9 @@
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
 /tests/tasks/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
 
-# LLM Configuration skill (BYO LLM product configurations via uip llm-configuration byo-connections)
-/skills/uipath-llm-configuration-byo-connections/ @denispetre @vstoleru-uipath @dragosvelcea
-
 # Test skill (reports, manual test automation, manual test execution)
-/skills/uipath-test/ @vaishalisharma-uipath @amoluipath
-/tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath
+/skills/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
+/tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
 
 # Data Fabric skill (CLI entity/record management)
 /skills/uipath-data-fabric/ @aditi-goyal-uipath

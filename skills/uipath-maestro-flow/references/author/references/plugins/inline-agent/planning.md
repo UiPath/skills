@@ -67,19 +67,26 @@ For agent.json configuration (prompts, model, schemas) and resource file authori
 
 ## Tools — Flow Registry Discovery
 
-The autonomous agent's `tool` artifact port accepts inline tool resource nodes. **External RPA process tools** are the primary supported case. Discovery uses the flow registry:
+The autonomous agent's `tool` artifact port accepts inline tool resource nodes in four kinds: RPA process, agent, API workflow, and process orchestration. Discovery uses the flow registry; pick the prefix per kind from the matrix below.
+
+| Kind | Registry-search prefix | `resource.json.type` | What it calls |
+|------|------------------------|----------------------|---------------|
+| RPA process | `uipath.agent.resource.tool.process` | `process` | RPA workflow (XAML / coded) |
+| Agent | `uipath.agent.resource.tool.agent` | `agent` | Low-code or coded agent |
+| API workflow | `uipath.agent.resource.tool.api` | `api` | Coded API workflow |
+| Process Orchestration | `uipath.agent.resource.tool.processorchestration` | `processOrchestration` | Agentic / orchestrated process |
 
 ```bash
-uip maestro flow registry search "uipath.agent.resource.tool.process" --output json
+uip maestro flow registry search "<prefix>" --output json
 ```
 
-Filter rows where `NodeType` starts with `uipath.agent.resource.tool.process.` and `DisplayName` matches. The `Description` field disambiguates same-named processes by folder. Fetch the full manifest:
+Filter rows where `NodeType` starts with `<prefix>.` and `DisplayName` matches. The `Description` field disambiguates same-named resources by folder. Fetch the full manifest:
 
 ```bash
 uip maestro flow registry get "<NodeType>" --output json
 ```
 
-For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/TestRPA)` → `"Shared/TestRPA"`) or from `uip solution resource get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resource refresh` from resolving the process at runtime.
+For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). All four subtypes share discovery, `resource.json` shape, and refresh — only the `type` field and the schema flavor differ (see § Subtypes in `process.md`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/Sales)` → `"Shared/Sales"`) or from `uip solution resource get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resource refresh` from resolving the tool at runtime.
 
 ### Anti-pattern
 
@@ -90,5 +97,5 @@ Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. T
 In the architectural plan:
 
 - `inline-agent: <description>` with a `<projectId-placeholder>` — the UUID is assigned during Phase 2 when `uip agent init --inline-in-flow` runs
-- `inline-agent-tool: <ToolName> (rpa, external) → <process-name> in <folder-path>` — one line per tool
+- `inline-agent-tool: <ToolName> (<kind>, solution|external) → <name> in <folder-path>` — one line per tool. `<kind>` is one of `process` | `agent` | `api` | `processOrchestration`.
 - If an existing published agent already covers the use case, prefer the [published agent](../agent/planning.md) annotation instead

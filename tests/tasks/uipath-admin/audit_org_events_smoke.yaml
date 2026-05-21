@@ -13,10 +13,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, audit, scope-org]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   An admin wants the 50 most recent organization-level audit events
   from the last 7 days — they're checking who joined the org and any

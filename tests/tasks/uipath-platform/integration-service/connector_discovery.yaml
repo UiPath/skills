@@ -6,11 +6,6 @@ description: >
   fallback strategy when no native connector exists.
 tags: [uipath-platform, smoke, integration-service, connectors]
 
-sandbox:
-  driver: docker
-  python: {}
-  node: {}
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

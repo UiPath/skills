@@ -13,10 +13,6 @@ run_limits:
   max_turns: 60
   turn_timeout: 900
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project named
   "ExpenseReviewBpmn".

@@ -1,0 +1,54 @@
+task_id: skill-test-junit-export
+description: >
+  Integration test: agent uses the uipath-test skill to export test execution
+  results as a JUnit XML report. Asserts that the agent (a) checks login
+  status with --output json, (b) lists executions with --project-key +
+  --output json to resolve the execution ID, and (c) downloads results via
+  `uip tm result download` with --execution-id + --output json. The skill
+  — not the prompt — must teach the result download command and distinguish
+  it from the attachment download command.
+tags: [uipath-test, integration, mode:operate, lifecycle:report, feature:execution]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 35
+
+sandbox:
+  driver: docker
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Export the results of the latest execution of my test set 'UAT Smoke Suite' in UiPath Test
+  Manager project CLAIM as a JUnit report XML.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed executions with --project-key + --output json to resolve execution ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions?\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded JUnit results with --execution-id + --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+result\s+download\s+.*--execution-id.*--output\s+json|uip\s+tm\s+result\s+download\s+.*--output\s+json.*--execution-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

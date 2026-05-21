@@ -56,12 +56,12 @@ jobs:
           # If test infrastructure changed, run all smoke tests except
           # the Windows-only ones and opt-in benchmarks.
           #
-          # We only fan out for the smoke config (default.yaml) — other
+          # We only fan out for the smoke config (default_smoke.yaml) — other
           # experiment files (integration.yaml, e2e.yaml, activation.yaml,
           # ...) drive their own jobs/dashboards and don't change smoke
           # behavior, so editing them shouldn't trigger a 30-min full-suite
           # run on every PR.
-          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
+          if echo "$CHANGED" | grep -qE '^tests/experiments/default_smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -296,7 +296,7 @@ jobs:
         run: |
           echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml \
+            -e experiments/default_smoke.yaml \
             -j "$TASK_PARALLELISM" -v \
             --run-dir /tmp/runs \
             --tags smoke

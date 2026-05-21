@@ -6,10 +6,6 @@ description: >
   scanning beyond main.py and constant resolution.
 tags: [uipath-agents, smoke, coded, bindings]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   I have a UiPath coded agent project. Please set up these files, then sync
   the bindings.json using the bindings skill.

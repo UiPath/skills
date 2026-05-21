@@ -1,0 +1,57 @@
+task_id: skill-admin-authz-check-access-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to look
+  up effective access for a principal. Tests the `check-access` CLI
+  shape — positional `<identity>` argument (NOT a `--identity-id` or
+  `--principal-id` flag, which are both legacy/non-existent).
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, authz, check-access]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  What can the user with id b44fc962-d544-4c99-b520-71121070ec17 do
+  right now?
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin authorization check-access` with the user id positional"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+check-access\s+\S*b44fc962-d544-4c99-b520-71121070ec17'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+check-access\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use the legacy --identity-id flag (replaced by positional identity)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+check-access\s+.*--identity-id'
+    weight: 2.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use the legacy --principal-id flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+check-access\s+.*--principal-id'
+    weight: 2.0

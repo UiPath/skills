@@ -20,6 +20,16 @@ uip admin audit
 
 `org` and `tenant` are **subject subgroups**. Same three verbs under each. The two trees are 100% verb-symmetric — any flag valid on `tenant events` is also valid on `org events` (except `--tenant-id`, which is tenant-only).
 
+## Output `Data` shape varies by verb — quick reference
+
+| Verb | `Data` shape |
+|---|---|
+| `audit <scope> sources` | array of `AuditEventSourceDto` |
+| `audit <scope> events` | object `{auditEvents, next, previous}` |
+| `audit <scope> export` | object `{Path, Bytes, Format, Days, NonEmptyDays}` |
+
+`events` is the one verb that legitimately returns an object — pagination cursors live alongside the rows. Full shape detail per verb in the sections below.
+
 ---
 
 ## uip admin audit `<scope>` sources

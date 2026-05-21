@@ -6,10 +6,6 @@ description: >
   goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   List the queues defined in the Orchestrator folder with key
   `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.

@@ -1,0 +1,58 @@
+task_id: skill-platform-llmgateway-list-product-configs
+description: >
+  Smoke test: agent uses the uipath-platform skill (LLM Gateway reference) to
+  discover which (product, feature) pairs accept BYO LLM configurations via
+  `uip llm-configuration byo-connections list-product-configs`. Verifies the
+  agent knows to query the discovery endpoint before attempting a create, and
+  that it filters with --product / --feature when given a specific feature.
+tags: [uipath-platform, smoke, llmgateway, byo-connections, discovery]
+
+sandbox:
+  driver: docker
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  I want to bring my own LLM key for the UiPath agenthub feature
+  `agenthub-llm-call`. Before I create anything, I need to know:
+
+  1. What product/feature pairs accept BYO LLM at all — run the discovery
+     command unfiltered first.
+  2. Then narrow to product=agenthub feature=agenthub-llm-call so I can see
+     `modelsConfigurationOption` and which connectors / api-flavors are
+     allowed.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected.
+    You MUST still run each command listed above. Do NOT retry or attempt
+    to login.
+  - Use `--output json` on every uip command.
+  - Do NOT run any `byo-connections create` or `update` commands.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran the discovery command (list-product-configs)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list-product-configs'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent narrowed discovery with --product agenthub and --feature agenthub-llm-call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list-product-configs.*--product\s+agenthub.*--feature\s+agenthub-llm-call'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on every llm-configuration call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list-product-configs.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

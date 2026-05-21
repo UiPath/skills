@@ -17,10 +17,6 @@ agent:
 
 task_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "ClaimsSol" containing a Flow project
   "ClaimsFlow" and a sibling Coded Function agent "ClassifierAgent"

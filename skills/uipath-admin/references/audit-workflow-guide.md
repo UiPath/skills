@@ -4,6 +4,18 @@ Four canonical investigations the `uipath-audit` skill should drive. Each starts
 
 > Every command below assumes the user has run `uip login` and the active token includes the `Audit.Read` scope. Every command should pass `--output json` so the agent can parse the envelope.
 
+## Audit scope disambiguation — route by user phrasing
+
+Pick `org` vs `tenant` BEFORE any `audit` call. They hit different basePaths and surface different events. Use this table to route a user query (SKILL.md Critical Rule 23 is the contract; this is the decision tool):
+
+| User says... | Likely scope | Why |
+|---|---|---|
+| "who joined / left the organization", "who was made an admin", "license changes", "cross-tenant audit", **"failed/successful logins"**, **"login history for user X"**, **"who's been signing in"** | **org** | Org-level events (memberships, license, tenant lifecycle, **Identity Server / IdP authentication including User Login**) live under `/orgaudit_`. |
+| "what happened on tenant X", "asset/queue/folder edits", "queue items processed", "job failures", "Action Center task changes", "Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity" | **tenant** | Tenant-scoped events (Orchestrator, Action Center, Apps, AgentHub, Document Understanding, Integration Service, Test Manager, Data Fabric, Process Mining, Relay, Hypervisor, tenant-side Admin) live under `/{tenantId}/tenantaudit_`. Note: governance/AOps policies, source control, and pipelines are **org**-scoped despite the AOps name. |
+| "everything everywhere" | **both** — run the same flow once per scope and present combined results. |
+
+If the prompt is **vague about scope** AND no prior turn has established it, **stop and ask** (one yes/no question, two clarifications max). Don't assume `tenant` just because it's the more common case.
+
 ---
 
 ## Investigation 1 — "Who did X to resource Y?"
@@ -89,20 +101,21 @@ If `Data.previous` is non-null, mention "older results available — extend the 
 
 If the user's question maps to anything in those categories — and `User Login` does — query `org` scope. Anything scoped to a single tenant (Orchestrator runs, asset/queue/folder edits, Action Center task changes, Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity) is `tenant` scope instead. Querying `tenant events` for org-level events returns nothing useful because the events don't live under `/{tenantId}/tenantaudit_`. Note that **AOps governance policies, pipelines, and source control are org-scoped** despite the AOps naming — `Governance`, `Pipelines`, and `Source Control` are sources in `org sources`, not tenant.
 
-**Approach:** Filter `org` events by user ID + the `User Login` event type, optionally with `--status Failure`. Present chronologically with `ipAddress`/`ipCountry` from `clientInfo`.
+**Approach:** Audit events store actor identity in indexed top-level columns (`actorId`, `actorName`, `actorEmail`), not inside `clientInfo`/`eventDetails`. So filter by `--user-id <GUID>`, not by `--search <email>` — the audit-events `--search` flag is a `contains` scan over `ClientInfo` (which holds `ipAddress`/`ipCountry`) and `EventDetails` (which holds event-type-specific payload like `Authentication` provider for logins). Neither contains the email, so searching for an email returns zero login events.
 
-### Step 1 — Find the user's GUID
+To resolve `email → actorId`, use the **Identity Server** (`uip admin users list --search <email>`), not the audit API. The user-list endpoint searches the proper user-name/email columns and returns the GUID you plug into `--user-id`.
 
-The user's `actorId` GUID is required by `--user-id`. It's not visible from email alone. Two ways:
-
-1. If the user has at least one prior audit event you've already loaded, grab `actorId` from there.
-2. Otherwise, run a search-only query (no `--user-id`) for `--search jane.doe` and take `actorId` from the first match.
+### Step 1 — Resolve the user's `actorId`
 
 ```bash
-uip admin audit org events \
+uip admin users list \
   --search "jane.doe@example.com" \
-  --limit 5 --output json --output-filter "Data.auditEvents[0].actorId"
+  --limit 5 \
+  --output json \
+  --output-filter "Data[0].id"
 ```
+
+`uip admin users list --search` matches against the Identity Server's name/email columns (different from audit's `--search`, which is what you want for this lookup). The returned `id` is the user GUID — identical to the `actorId` you'll see in audit events for that user.
 
 ### Step 2 — Find the User Login type GUID
 
@@ -117,29 +130,33 @@ The `Identity` → `Authentication` → `User Login` path matches the Audit Serv
 
 ### Step 3 — Query
 
-For "all logins this month":
+For "all logins for jane.doe@example.com this month":
 
 ```bash
 uip admin audit org events \
-  --user-id <USER_GUID> \
-  --type    <USER_LOGIN_TYPE_GUID> \
-  --from-date    2026-04-01T00:00:00Z \
-  --to-date      2026-04-29T23:59:59Z \
-  --limit   200 \
-  --output  json
+  --user-id   <USER_GUID> \
+  --type      <USER_LOGIN_TYPE_GUID> \
+  --from-date 2026-04-01T00:00:00Z \
+  --to-date   2026-04-29T23:59:59Z \
+  --limit     200 \
+  --output    json
 ```
 
-For "failed logins only":
+For "failed logins only" add `--status Failure`:
 
 ```bash
 uip admin audit org events \
-  --user-id <USER_GUID> \
-  --type    <USER_LOGIN_TYPE_GUID> \
-  --status  Failure \
-  --from-date    2026-04-01T00:00:00Z \
-  --to-date      2026-04-29T23:59:59Z \
-  --output  json
+  --user-id   <USER_GUID> \
+  --type      <USER_LOGIN_TYPE_GUID> \
+  --status    Failure \
+  --from-date 2026-04-01T00:00:00Z \
+  --to-date   2026-04-29T23:59:59Z \
+  --output    json
 ```
+
+If Step 1 fails (Identity Server unreachable, user not in this org), you can still bound the query by `--type <USER_LOGIN_GUID>` + date range and post-filter the result client-side by `actorEmail` — slower than `--user-id` but works without the lookup.
+
+When to use audit `--search` instead: useful when filtering by something that *does* live in `clientInfo`/`eventDetails` — e.g., a specific IP address (`--search "20.200.233.203"`), country code, authentication provider name, or session ID. Not useful for users.
 
 ### Step 4 — Present
 
@@ -265,3 +282,14 @@ Two or more signals? Run them in sequence and stitch the results in the final re
 - **Date-only ISO strings are interpreted as UTC midnight.** `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To capture the full final day in `--to-date`, use `2026-02-01` (exclusive next day) or `2026-01-31T23:59:59.999Z`.
 - **The export ZIP's per-day files are JSON, not CSV, and use PascalCase keys.** Different from the camelCase live `events` endpoint. Don't paste an export directly into a parser expecting the live shape.
 - **Org sources and tenant sources are different sets.** Don't reuse a GUID from `org sources` in a `tenant events` query — the filter will silently match nothing.
+
+## Output Etiquette — after an audit query or export
+
+After every `events` or `export` call, surface the following before waiting for the user's next-step choice. Do not chain mutations.
+
+1. **Operation & result** — e.g. `Found 47 audit events on tenant T in the last 7 days` or `Wrote 123,456 bytes to /path/to/audit.zip (3 days, 2 non-empty)`.
+2. **Scope used** (`org` or `tenant`) and any `--tenant-id` override.
+3. **Time window** — explicit ISO bounds, even if they came from a relative phrase ("last 7 days").
+4. **Filters applied** — sources, types, users, status.
+5. **Cursor state** — for `events`, mention whether `Data.previous` is null (start of audit history) or populated (more older events available — re-run with a larger `--limit`).
+6. **Next step** — "Want me to widen the window?", "Want me to export this slice?", "Want me to filter by user X?". Wait for the user's choice.

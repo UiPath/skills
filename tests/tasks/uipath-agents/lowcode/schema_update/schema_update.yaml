@@ -17,10 +17,6 @@ run_limits:
   max_turns: 30
   turn_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "QuerySol" containing a low-code agent
   "QueryAgent". The agent accepts a required `userQuery` (string) and

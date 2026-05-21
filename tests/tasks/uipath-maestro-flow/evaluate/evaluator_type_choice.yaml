@@ -21,10 +21,6 @@ agent:
 run_limits:
   max_turns: 50
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a
   project and add three evaluators — one per goal — picking the correct

@@ -9,8 +9,6 @@ description: >
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover]
 
 sandbox:
-  driver: docker
-  python: {}
   node:
     env_packages:
       - "@uipath/test-manager-tool"

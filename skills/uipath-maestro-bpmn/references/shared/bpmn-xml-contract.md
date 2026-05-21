@@ -137,6 +137,23 @@ Keep resource identity fields synthetic or placeholder-based until CLI or user-p
 For copyable minimal XML shells, read [wrapper-shells.md](wrapper-shells.md)
 before authoring a task wrapper.
 
+### Script-task body rule
+
+A `<bpmn:script>` body on `bpmn:scriptTask` is only valid when the task also
+carries UiPath script metadata. `uip maestro bpmn validate` accepts the body
+when **at least one** of these extension elements is present inside
+`<bpmn:extensionElements>`:
+
+- `<uipath:scriptVersion value="v3" />` (preferred for new tasks; `v2` is
+  preserve-only on imports)
+- `<uipath:mapping>` containing `<uipath:type value="BPMN.ScriptTask" version="v1" />`
+- `<uipath:mapping>` containing `<uipath:type value="BPMN.Variables" version="v1" />`
+
+Without one of those, the validator rejects the body. If the task does not
+need to execute JavaScript, drop the `<bpmn:script>` and express the logic as
+a `BPMN.Variables` output mapping on a generic `bpmn:task`, or as a condition
+on a downstream gateway.
+
 ## CLI-owned or CLI-enriched areas
 
 The CLI must generate, enrich, or validate these before upload, debug, publish, or deploy:

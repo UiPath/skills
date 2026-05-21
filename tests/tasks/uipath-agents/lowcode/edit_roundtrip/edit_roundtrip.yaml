@@ -16,10 +16,6 @@ agent:
   max_turns: 30
   turn_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "GreetSol" containing a low-code agent
   "GreeterAgent" that accepts a required `name` (string) and returns a

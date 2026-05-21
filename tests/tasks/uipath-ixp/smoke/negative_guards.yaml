@@ -18,10 +18,6 @@ agent:
 run_limits:
   max_turns: 30
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   You have three tasks against IXP project `my_invoices-f1afa9ef-ixp`.
   Follow the uipath-ixp skill's documented workflow for each one — even

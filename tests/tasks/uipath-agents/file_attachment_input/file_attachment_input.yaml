@@ -7,10 +7,6 @@ description: >
   Orchestrator use to render a file picker at runtime.
 tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:framework-simple]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   1. Create a 'test.txt' file at cwd with 'This is the file content' as content.
   2. Build a UiPath coded agent named `attachment-agent` that accepts it as input and outputs its name and content. 

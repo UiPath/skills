@@ -50,11 +50,14 @@ For the full notation and expression prefixes, see [bindings-and-expressions.md]
 | Cross-task output | `input <- "Stage"."Task".output` | `emails <- "Triage"."Fetch Inbox".emails` |
 | Global variable | `input = "=vars.<id>"` | `caseId = "=vars.caseId"` |
 | Metadata | `input = "=metadata.<field>"` | `caseRef = "=metadata.ExternalId"` |
+| Binding | `input = "=bindings.<id>"` | `connectionId = "=bindings.bA1B2C3D4"` |
 | Literal | `input = "<value>"` | `maxResults = "50"` |
 
 > **Note:** task INPUT bindings still use `<-` for cross-task references (`input <- "Stage"."Task".output`) — this is the planner-side notation for "this input value comes from another task's output." Task OUTPUT bindings use `->` for extract (`Field -> caseVar`) and `=` for set/compute/copy. Different directional conventions because inputs read from somewhere; outputs write to somewhere.
 
 Record discovered outputs on each task entry (`outputs: kycResult, riskScore, error`) so downstream cross-task references can be validated during implementation.
+
+> **Planner emits SDD-natural form; impl applies the per-sink canonical wrap.** Values in `tasks.md` use the natural prefix notation shown above — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<-`. The implementation step rewrites each value to its canonical sink form when constructing `caseplan.json` (e.g., `=js:(vars.X)` for connector body fields, `=js:metadata.X` for `=metadata` references in any sink that runs the JS evaluator). Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## Outputs table validation rules
 

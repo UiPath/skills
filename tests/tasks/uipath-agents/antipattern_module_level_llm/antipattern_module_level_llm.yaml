@@ -15,10 +15,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   I'm porting an existing LangGraph agent into UiPath. Recreate the
   project under `legacy-classifier` exactly as below, then review

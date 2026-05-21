@@ -11,10 +11,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:operate, audit, export]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   An admin needs a ZIP of all tenant audit events from yesterday for
   archival. Write the ZIP to ./audit-yesterday.zip in the current

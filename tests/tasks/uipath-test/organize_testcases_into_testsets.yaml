@@ -1,0 +1,64 @@
+task_id: skill-test-organize-testcases-into-testsets
+description: >
+  Integration test: agent uses the uipath-test skill to organise testcases into
+  logical test sets for a named feature. Asserts that the agent (a) checks
+  login status with --output json, (b) lists
+  testcases with --project-key + --filter , and
+  (c) creates at least one test set with --project-key + --output json.
+  The skill — not the prompt — must teach the --filter narrowing rule and
+  the testcases add command for assigning testcases to a set.
+tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:test-set]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 35
+
+sandbox:
+  driver: docker
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  I have a project called CLAIM. Organise testcases for the "disbursement"
+  feature into logical test sets (e.g. happy path, edge cases, regression).
+  List the testcases filtered by "disbursement", group them, and create the
+  test sets in Test Manager with appropriate names and descriptions.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rules #1 + #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed testcases with --project-key and --filter flag (Critical Rules #2 + #8)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--filter.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a test set with --project-key and --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets?\s+create\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets?\s+create\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added testcases to the new test set with --test-set-key + --test-case-keys + --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+add\s+.*--test-set-key.*--test-case-keys.*--output\s+json|uip\s+tm\s+testsets?\s+add-testcases\s+.*--test-set-key.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

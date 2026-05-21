@@ -235,13 +235,22 @@ For tool/resource nodes, wire the inline agent's bottom artifact port:
 
 `tool` is the inline agent's bottom artifact port. The target node's `input` port is a target-typed artifact handle.
 
-## Adding an External RPA Process Tool Node
+## Adding an External Tool Node
+
+Inline tool nodes come in four kinds. Discovery, node-add, edge-wire, and `resource.json` authoring are identical across kinds — only the registry-search prefix on the flow side and the `type` field in `resource.json` differ.
+
+| Kind | Registry-search prefix | `resource.json.type` | What it calls |
+|------|------------------------|----------------------|---------------|
+| RPA process | `uipath.agent.resource.tool.process` | `process` | RPA workflow (XAML / coded) |
+| Agent | `uipath.agent.resource.tool.agent` | `agent` | Low-code or coded agent |
+| API workflow | `uipath.agent.resource.tool.api` | `api` | Coded API workflow |
+| Process Orchestration | `uipath.agent.resource.tool.processorchestration` | `processOrchestration` | Agentic / orchestrated process |
 
 Discover the tool via the flow registry, then add the tool resource node directly in the `.flow` JSON. Generate a resource UUID and use it as both the tool node's `model.source` and the `resource.json` directory/id.
 
 ```bash
-# 1. Search for the process tool
-uip maestro flow registry search "uipath.agent.resource.tool.process" --output json
+# 1. Search the registry, picking the prefix from the matrix above
+uip maestro flow registry search "<prefix>" --output json
 
 # 2. Generate a resource UUID
 RES=$(uuidgen)
@@ -273,22 +282,23 @@ Also add:
 
 After adding the tool node, you must also:
 
-- Hand-write the per-tool `resource.json` at `<FlowProjectDir>/<inlineAgentProjectId>/resources/<RES_UUID>/resource.json`. **Use the exact `resource.json` shape documented in the `uipath-agents` skill: `lowcode/capabilities/process/process.md` § Tool resource.json Shape.** Read that section before writing the file — it defines all required fields. Run `uip solution resource list` + `uip solution resource get` to populate `referenceKey`, `folderPath`, `inputSchema`, and `outputSchema` with real values. Key inline-in-flow notes:
+- Hand-write the per-tool `resource.json` at `<FlowProjectDir>/<inlineAgentProjectId>/resources/<RES_UUID>/resource.json`. **Use the exact `resource.json` shape documented in the `uipath-agents` skill: `lowcode/capabilities/process/process.md` § Tool resource.json Shape.** Read that section before writing the file — it defines all required fields. The subtype is selected by the `type` field (`process` | `agent` | `api` | `processOrchestration`) — see § Subtypes in `process.md`. For RPA the schema uses raw .NET arrays (Template A in `solution-files.md`); for Agent / API / Process Orchestration it uses JSON Schema V2 (Template B). Run `uip solution resource list` + `uip solution resource get` to populate `referenceKey`, `folderPath`, `inputSchema`, and `outputSchema` with real values. Key inline-in-flow notes:
   - Set `id` to `<RES_UUID>` (same value used as the tool node's `model.source` and as the resource directory name).
   - Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents).
   - Set `properties.folderPath` to the **literal folder path from discovery** (e.g., `"Shared/TestRPA"`) — do **not** leave it empty.
   - `inputSchema.properties` must include `"guardrails": { "type": "array" }` alongside the process arguments.
-  - A `resource.json` missing `$resourceType: "tool"` or other required fields will not be recognized by `uip agent validate`, resulting in `"resources": 0` and an empty `bindings_v2.json`.
+  - A `resource.json` missing `$resourceType: "tool"` or other required fields will not be recognized by `uip agent validate` (it reports `"resources": 0`); the subsequent `uip agent migrate` will then write an empty `bindings_v2.json`.
 - Set prompts in `agent.json` (system + user messages with `contentTokens` of `type: "simpleText"` and `rawString`)
-- Run `uip agent validate --inline-in-flow` after the flow graph edits. For tool-bearing inline agents, first confirm the installed CLI supports `--bindings-target` with `uip agent validate --help`. When supported, pass it to propagate tool bindings to the flow project level:
+- Run `uip agent validate --inline-in-flow` after the flow graph edits to check the agent schema. Then run `uip agent migrate --inline-in-flow` to apply the migration and regenerate `.agent-builder/`; for tool-bearing inline agents, pass `--bindings-target <FlowProjectDir>/bindings_v2.json` on the migrate call to propagate tool bindings to the flow project level:
 
   ```bash
-  uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow \
+  uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
+  uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow \
     --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
   ```
 
-  If the installed CLI does not expose `--bindings-target`, run the supported validation command without that option and treat tool-binding propagation as a CLI capability blocker for tool-bearing inline agents; do not invent or hand-edit `bindings_v2.json`.
-  **Verify the output shows `"resources": N` where N > 0.** If it shows `"resources": 0`, the `resource.json` is malformed or missing required fields — fix it and re-run before proceeding.
+  Do not hand-edit `bindings_v2.json` — it is regenerated by `uip agent migrate`.
+  **Verify both validate and migrate report `"resources": N` where N > 0.** If either shows `"resources": 0`, the `resource.json` is malformed or missing required fields — fix it and re-run before proceeding.
 - Run `uip solution resource refresh` before upload
 
 For agent.json prompt configuration and solution resource mechanics, see the `uipath-agents` skill (`lowcode/capabilities/inline-in-flow/inline-in-flow.md`).
@@ -347,19 +357,22 @@ return { classification: response };
 - `$vars.{nodeId}.output.content` — the agent's text response
 - `$vars.{nodeId}.error` — error details if the agent fails
 
-## Validate
+## Validate and Migrate
 
-Validate the inline agent definition, then validate the flow:
+Validate the inline agent (read-only check), migrate it (writes `.agent-builder/` and, for tool-bearing agents, propagates bindings into the flow project's `bindings_v2.json`), then validate the flow:
 
 ```bash
-# 1. Validate the inline agent
+# 1. Validate the inline agent (read-only schema check)
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
-# For tool-bearing inline agents, when supported by `uip agent validate --help`:
-# uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow \
-#   --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+# 2. Migrate the inline agent (writes .agent-builder/ and applies migrations)
+uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
-# 2. Validate the flow
+# 2b. For tool-bearing inline agents, migrate with --bindings-target to propagate tool bindings:
+uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow \
+  --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+
+# 3. Validate the flow
 uip maestro flow validate <FlowName>.flow --output json
 ```
 
@@ -373,10 +386,10 @@ uip maestro flow validate <FlowName>.flow --output json
 | `inputs.source` UUID does not match any subdirectory | Wrong source value, or folder renamed | Set `inputs.source` to the exact UUID of the inline agent directory |
 | Flow runs a different agent than expected | `inputs.source` points to a stale/leftover inline agent dir | Check subdirectory names — only one inline agent dir should correspond to each agent node |
 | `Orchestrator.StartAgentJob` error at runtime | Stale instance `model` fields override the inherited inline-agent definition | Remove the inline-agent node's instance `model` block and keep the registry definition's `model.serviceType: "Orchestrator.StartInlineAgentJob"` in `definitions[]` |
-| Studio Web reports "System prompt is required" | Inline agent's `agent.json.messages[]` has empty `content`, OR `.agent-builder/agent.json` is stale | Set prompts in `agent.json`, re-run `uip agent validate --inline-in-flow` — see `uipath-agents` skill |
-| Studio Web debug: "Could not find process for tool" | Flow project's `bindings_v2.json` is missing the tool's process binding, so `uip solution resource refresh` never created the solution-level resource | If the installed CLI supports it, re-run `uip agent validate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json`, then `uip solution resource refresh`, then re-upload; if unsupported, report the CLI capability blocker |
-| `bindings_v2.json` is empty or missing tool bindings | Tool bindings were not propagated to the flow project level, or a later tool overwrote the file | Re-run validation with `--bindings-target <FlowProjectDir>/bindings_v2.json` after all flow node and edge edits are complete when supported; otherwise do not hand-edit the generated file |
-| Agent tool process cannot resolve at runtime | Missing top-level `bindings[]` entries, mismatched tool-node `model.source` / `resource.json` id, stale solution resources, or missing project-level `bindings_v2.json` | Add the resource bindings from the tool definition, keep the tool node's `model.source` equal to the resource UUID, run `uip agent validate --inline-in-flow` with `--bindings-target` when supported, and run `uip solution resource refresh` |
+| Studio Web reports "System prompt is required" | Inline agent's `agent.json.messages[]` has empty `content`, OR `.agent-builder/agent.json` is stale | Set prompts in `agent.json`, re-run `uip agent validate --inline-in-flow` to check, then `uip agent migrate --inline-in-flow` to regenerate `.agent-builder/agent.json` — see `uipath-agents` skill |
+| Studio Web debug: "Could not find process for tool" | Flow project's `bindings_v2.json` is missing the tool's process binding, so `uip solution resource refresh` never created the solution-level resource | Re-run `uip agent validate --inline-in-flow` to check schema, then `uip agent migrate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` to propagate bindings, then `uip solution resource refresh`, then re-upload |
+| `bindings_v2.json` is empty or missing tool bindings | Tool bindings were not propagated to the flow project level, or a later tool overwrote the file | Re-run `uip agent migrate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` after all flow node and edge edits are complete. Migrate is the verb that writes the file — do not hand-edit it |
+| Agent tool (process / agent / api / processOrchestration) cannot resolve at runtime | Missing top-level `bindings[]` entries, mismatched tool-node `model.source` / `resource.json` id, stale solution resources, or missing project-level `bindings_v2.json` | Add the resource bindings from the tool definition, keep the tool node's `model.source` equal to the resource UUID, run `uip agent validate --inline-in-flow` to check, then `uip agent migrate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` to write bindings, then run `uip solution resource refresh` |
 | `inputs.agentProjectId` unrecognized | Wrong field name | Use `inputs.source` — `agentProjectId` is not valid for inline agents |
 | Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
 | Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and the `projectId` field inside `agent.json` |
@@ -462,4 +475,4 @@ Current flow validation requires non-empty placeholder prompts on the flow node 
 - **Do not create `entry-points.json` or `project.uiproj` inside the inline agent directory** — those belong only to standalone agent projects.
 - **Do not name the inline agent folder with a human-readable name** — the folder name must be the `projectId` UUID.
 - **Do not use `uip agent tool add`** for inline-in-flow agents — hand-author the tool's `resource.json` instead.
-- **Do not skip `uip agent validate --inline-in-flow`** after editing `agent.json` or any `resources/*/resource.json`; for tool-bearing inline agents, use `--bindings-target <FlowProjectDir>/bindings_v2.json` when the installed CLI supports it.
+- **Do not skip `uip agent validate --inline-in-flow` followed by `uip agent migrate --inline-in-flow`** after editing `agent.json` or any `resources/*/resource.json`; for tool-bearing inline agents, pass `--bindings-target <FlowProjectDir>/bindings_v2.json` on the migrate call to propagate tool bindings.
