@@ -6,8 +6,6 @@ description: >
   SKILL.md and cannot be fabricated without loading the skill.
 tags: [uipath-solution, smoke, lifecycle:generate]
 
-sandbox: {}
-
 initial_prompt: |
   I have a Process Design Document I want to turn into a UiPath solution
   architecture. Load the appropriate UiPath skill for this work.

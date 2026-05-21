@@ -13,8 +13,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, list]
 
-sandbox: {}
-
 initial_prompt: |
   A tenant admin wants to see every Active access policy for the tenant,
   ordered by policy name ascending. Save the command output to

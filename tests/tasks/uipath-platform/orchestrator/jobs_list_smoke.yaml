@@ -7,8 +7,6 @@ description: >
   state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox: {}
-
 initial_prompt: |
   List the recently faulted jobs in the Orchestrator folder with key
   `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.

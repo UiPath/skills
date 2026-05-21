@@ -6,8 +6,6 @@ description: >
   A 404 response (no traces for this job key) is an acceptable outcome.
 tags: [uipath-platform, smoke, lifecycle:discover]
 
-sandbox: {}
-
 initial_prompt: |
   Use the `uipath-platform` skill.
 

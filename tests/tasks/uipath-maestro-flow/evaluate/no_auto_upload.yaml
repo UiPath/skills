@@ -19,8 +19,6 @@ agent:
 run_limits:
   max_turns: 50
 
-sandbox: {}
-
 initial_prompt: |
   Before starting, load the `uipath-maestro-flow` skill and read its
   `evaluate` capability — especially

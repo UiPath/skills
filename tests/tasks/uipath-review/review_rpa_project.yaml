@@ -13,8 +13,6 @@ description: >
   agent to produce, not on CLI runtime success.
 tags: [uipath-review, smoke]
 
-sandbox: {}
-
 initial_prompt: |
   A small UiPath RPA project needs a quality review.
 

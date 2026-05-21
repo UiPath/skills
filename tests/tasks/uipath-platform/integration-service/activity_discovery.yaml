@@ -6,8 +6,6 @@ description: >
   and resources.
 tags: [uipath-platform, smoke, integration-service, activities]
 
-sandbox: {}
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

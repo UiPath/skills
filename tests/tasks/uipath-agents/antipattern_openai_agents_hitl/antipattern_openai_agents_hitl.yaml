@@ -18,8 +18,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
 
-sandbox: {}
-
 initial_prompt: |
   Recreate the UiPath coded agent project under `triage-broken/`
   exactly as below, then review and fix anything that won't

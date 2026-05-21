@@ -12,8 +12,6 @@ run_limits:
   task_timeout: 400
   turn_timeout: 400
 
-sandbox: {}
-
 initial_prompt: |
   I have a UiPath coded test project called "LoginTests" that exercises a
   browser login flow. I need shared setup/teardown for every test case AND

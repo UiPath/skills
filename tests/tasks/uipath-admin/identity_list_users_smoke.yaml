@@ -4,8 +4,6 @@ description: >
   Tests correct CLI namespace and --output json convention.
 tags: [uipath-admin, smoke, list]
 
-sandbox: {}
-
 initial_prompt: |
   List all users in my UiPath organization.
 
