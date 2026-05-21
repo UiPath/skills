@@ -56,6 +56,7 @@ uip maestro flow registry get <nodeType> --output json
 | `uipath.core.flow.*`            | [flow/impl.md](plugins/flow/impl.md)                           |
 | `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
+| `uipath.connector.uipath-uipath-dataservice.*` | [connector/data-fabric/impl.md](plugins/connector/data-fabric/impl.md) |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
 | `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 
