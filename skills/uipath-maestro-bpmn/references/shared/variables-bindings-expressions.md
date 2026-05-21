@@ -37,6 +37,44 @@ Subprocesses can carry scoped `uipath:variables` in subprocess extension element
 
 Author variables in pass 2 after the BPMN skeleton and entry points are stable. If an entry point changes during pass 1, update every variable whose `elementId` points at the old start event.
 
+### Projecting entry-point inputs for downstream use
+
+A `uipath:input` is read-only and scoped to the start event it declares
+(`elementId`). Downstream nodes cannot dereference it directly — every
+`=vars.<inputId>` reference outside the start event reports
+`Unknown identifier '<inputId>'` at runtime even though `uip maestro bpmn pack`
+and `uip solution pack` accept the source. This is a required idiom, not a
+style choice.
+
+To make an entry-point input readable downstream, declare a sibling
+`uipath:inputOutput` variable and copy the input into it through a
+`BPMN.Variables` mapping on the start event:
+
+```xml
+<uipath:variables version="v1">
+  <uipath:input id="Var_RequestInput" name="request" type="json"
+                elementId="Start_Manual" />
+  <uipath:inputOutput id="Var_Request" name="requestState" type="json" />
+</uipath:variables>
+
+<bpmn:startEvent id="Start_Manual" name="Start">
+  <bpmn:extensionElements>
+    <uipath:entryPointId value="Entry_Example" />
+    <uipath:mapping version="v1">
+      <uipath:type value="BPMN.Variables" version="v1" />
+      <uipath:output name="requestState" type="json" var="Var_Request"
+                     source="=vars.Var_RequestInput" />
+    </uipath:mapping>
+  </bpmn:extensionElements>
+  <bpmn:outgoing>Flow_Start_To_Next</bpmn:outgoing>
+</bpmn:startEvent>
+```
+
+Downstream nodes then read `=vars.Var_Request`. The same pattern applies to
+trigger-bound inputs and to entry-point inputs that downstream logic needs to
+mutate. See the runnable example in
+[../../fixtures/validation/agent-invocation/](../../fixtures/validation/agent-invocation/).
+
 ## Bindings
 
 Use root `uipath:bindings version="v1"` for resources that become `bindings_v2.json` entries.

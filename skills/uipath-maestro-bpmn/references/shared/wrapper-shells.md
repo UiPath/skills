@@ -66,21 +66,40 @@ Namespace baseline for greenfield files:
 </bpmn:serviceTask>
 ```
 
-## Orchestrator.StartAgentJob (UiPath agent)
+## Orchestrator.StartAgentJob (folder-deployed agent — coded Python or low-code)
 
-`bpmn:serviceTask` with `Orchestrator.StartAgentJob`.
+`bpmn:serviceTask` with `Orchestrator.StartAgentJob`. Use this shell for any agent published to an Orchestrator folder, regardless of whether the agent is a coded Python project (LangGraph / LlamaIndex / OpenAI Agents) or a low-code Agent Builder agent — the wire format is identical. For external A2A agents addressed by URL, use `A2A.AgentExecution` instead.
+
+Required binding shape (enforced by the post-#2137 shared validator in `@uipath/maestro-sdk/bpmn-validation`):
+
+- Context inputs MUST be named exactly `name` and `folderPath`. Do not use `agentName`, `releaseKey`, or `folderId`.
+- Both values MUST be `value="=bindings.<bindingId>"` — literal strings are rejected.
+- Each context input points at its own binding. The pair shares one `resourceKey` and uses `resource="process"`, `resourceSubType="Agent"` (case-sensitive `A`), with `propertyAttribute="name"` on one binding and `propertyAttribute="folderPath"` on the other.
 
 ```xml
+<uipath:bindings version="v1">
+  <uipath:binding id="Binding_AgentName" name="Synthetic Agent" type="process" elementId="Task_StartAgentJob"
+                  resource="process" resourceSubType="Agent" resourceKey="synthetic-agent"
+                  propertyAttribute="name" />
+  <uipath:binding id="Binding_AgentFolderPath" name="Synthetic Agent" type="process" elementId="Task_StartAgentJob"
+                  resource="process" resourceSubType="Agent" resourceKey="synthetic-agent"
+                  propertyAttribute="folderPath" />
+</uipath:bindings>
+
 <bpmn:serviceTask id="Task_StartAgentJob" name="Start Agent Job">
   <bpmn:extensionElements>
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
       <uipath:context>
-        <uipath:input name="agentName" type="string" value="Synthetic Agent" />
+        <uipath:input name="name" type="string" value="=bindings.Binding_AgentName" />
+        <uipath:input name="folderPath" type="string" value="=bindings.Binding_AgentFolderPath" />
       </uipath:context>
     </uipath:activity>
     <uipath:mapping version="v1">
       <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="JobId" type="string" var="Var_AgentJobId" source="id" />
+      <uipath:output name="Status" type="string" var="Var_AgentJobStatus" source="status" />
+      <uipath:output name="Result" type="json" var="Var_AgentJobResult" source="result" />
     </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_AgentJob</bpmn:incoming>
@@ -88,9 +107,31 @@ Namespace baseline for greenfield files:
 </bpmn:serviceTask>
 ```
 
-## A2A.AgentExecution
+`bindings_v2.json` MUST mirror the BPMN pair. Both entries use `kind: "process"` and `metadata.SubType: "Agent"`; the `propertyAttribute` is preserved in `metadata`:
 
-`bpmn:serviceTask` with `A2A.AgentExecution`.
+```json
+{
+  "id": "Binding_AgentName",
+  "name": "Synthetic Agent",
+  "kind": "process",
+  "resourceKey": "synthetic-agent",
+  "metadata": {
+    "BindingsVersion": "v1",
+    "DisplayLabel": "Synthetic Agent",
+    "SolutionsSupport": "Required",
+    "SubType": "Agent",
+    "PropertyAttribute": "name"
+  }
+}
+```
+
+`Var_RequestId` must already exist as a `uipath:inputOutput` variable readable at the task — see [variables-bindings-expressions.md](variables-bindings-expressions.md#projecting-entry-point-inputs-for-downstream-use) for the required entry-point projection idiom.
+
+For the full runnable end-to-end fixture (BPMN + bindings + entry-point projection), see [../../fixtures/validation/agent-invocation/](../../fixtures/validation/agent-invocation/).
+
+## A2A.AgentExecution (external A2A agent addressed by URL)
+
+`bpmn:serviceTask` with `A2A.AgentExecution`. Use this shell only for external A2A agents addressed by URL/skillId/authToken — not for agents deployed to an Orchestrator folder. Studio Web renders this as an external A2A node and disables the Action dropdown; if you want a folder-deployed coded or low-code agent, use `Orchestrator.StartAgentJob` above.
 
 ```xml
 <bpmn:serviceTask id="Task_A2AAgent" name="A2A Agent">

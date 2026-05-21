@@ -1,13 +1,14 @@
 # Agent Implementation
 
-This document defines the implementation boundary for agent task recipes. Agents are implemented as `bpmn:serviceTask`; see [task-recipes/agent-job.md](../../task-recipes/agent-job.md).
+This document defines the implementation boundary for agent task recipes. Agents are implemented as `bpmn:serviceTask`; see [task-recipes/agent-job.md](../../task-recipes/agent-job.md) for the per-deployment-style shell decision table.
 
 ## Model-owned implementation
 
 The model may edit:
 
 - `bpmn:serviceTask` wrapper for agent invocation.
-- Documented `Orchestrator.StartAgentJob` or `A2A.AgentExecution` `uipath:activity` shells.
+- `Orchestrator.StartAgentJob` activity shell for any folder-deployed agent (coded Python or low-code) with the required binding pair (`name` + `folderPath`, `resource="process"`, `resourceSubType="Agent"`, paired `propertyAttribute` values).
+- `A2A.AgentExecution` activity shell for external A2A agents addressed by URL/skillId/authToken.
 - Input CDATA for public-safe invocation payloads.
 - Output mappings for job ID, status, result, and structured fields.
 - Timeout/error boundary events and validation gateways.

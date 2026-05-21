@@ -9,6 +9,8 @@
         <uipath:output id="Var_Result" name="result" type="string" />
       </uipath:variables>
       <uipath:bindings version="v1">
+        <uipath:binding id="Binding_AgentName" name="Synthetic Agent" type="process" elementId="Task_StartAgentJob" resource="process" resourceSubType="Agent" resourceKey="synthetic-agent" propertyAttribute="name" />
+        <uipath:binding id="Binding_AgentFolderPath" name="Synthetic Agent" type="process" elementId="Task_StartAgentJob" resource="process" resourceSubType="Agent" resourceKey="synthetic-agent" propertyAttribute="folderPath" />
         <uipath:binding id="Binding_EventConnection" name="Synthetic Event Connection" type="connection" elementId="Task_WaitForExternalEvent" resource="SyntheticEvents" resourceSubType="connection" resourceKey="synthetic-event-connection" />
         <uipath:binding id="Binding_EventTrigger" name="Synthetic Event Trigger" type="eventTrigger" elementId="Task_WaitForExternalEvent" resource="SyntheticEvents.ExternalSignal" resourceSubType="eventTrigger" resourceKey="synthetic-event-trigger" />
       </uipath:bindings>
@@ -27,7 +29,8 @@
         <uipath:activity version="v1">
           <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
           <uipath:context>
-            <uipath:input name="agentName" type="string" value="Synthetic Agent" />
+            <uipath:input name="name" type="string" value="=bindings.Binding_AgentName" />
+            <uipath:input name="folderPath" type="string" value="=bindings.Binding_AgentFolderPath" />
           </uipath:context>
         </uipath:activity>
       </bpmn:extensionElements>

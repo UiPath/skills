@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_AgentInvocation" targetNamespace="http://uipath.com/synthetic/maestro-bpmn/agent-invocation">
+  <bpmn:process id="Process_AgentInvocation" name="Agent Invocation" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="Var_RequestInput" name="request" type="json" elementId="Start_Manual"><![CDATA[{"type":"object","properties":{"prompt":{"type":"string"}}}]]></uipath:input>
+        <uipath:inputOutput id="Var_Request" name="requestState" type="json" />
+        <uipath:inputOutput id="Var_AgentJobId" name="agentJobId" type="string" />
+        <uipath:inputOutput id="Var_AgentResult" name="agentResult" type="json" />
+        <uipath:output id="Var_Status" name="status" type="string" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_AgentName" name="Synthetic Agent" type="process" elementId="Task_StartAgentJob" resource="process" resourceSubType="Agent" resourceKey="synthetic-agent" propertyAttribute="name" />
+        <uipath:binding id="Binding_AgentFolderPath" name="Synthetic Agent" type="process" elementId="Task_StartAgentJob" resource="process" resourceSubType="Agent" resourceKey="synthetic-agent" propertyAttribute="folderPath" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_Manual" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="Entry_AgentInvocation" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="requestState" type="json" var="Var_Request" source="=vars.Var_RequestInput" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_To_Agent</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_StartAgentJob" name="Start Agent Job">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="name" type="string" value="=bindings.Binding_AgentName" />
+            <uipath:input name="folderPath" type="string" value="=bindings.Binding_AgentFolderPath" />
+          </uipath:context>
+        </uipath:activity>
+        <uipath:mapping version="v1">
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"prompt":"=vars.Var_Request"}]]></uipath:input>
+          <uipath:output name="JobId" type="string" var="Var_AgentJobId" source="id" />
+          <uipath:output name="Result" type="json" var="Var_AgentResult" source="result" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_To_Agent</bpmn:incoming>
+      <bpmn:outgoing>Flow_Agent_To_End</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Done" name="Done">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="status" type="string" var="Var_Status" source="completed" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Agent_To_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_To_Agent" sourceRef="Start_Manual" targetRef="Task_StartAgentJob" />
+    <bpmn:sequenceFlow id="Flow_Agent_To_End" sourceRef="Task_StartAgentJob" targetRef="End_Done" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_AgentInvocation">
+    <bpmndi:BPMNPlane id="Plane_AgentInvocation" bpmnElement="Process_AgentInvocation">
+      <bpmndi:BPMNShape id="Shape_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="120" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_StartAgentJob" bpmnElement="Task_StartAgentJob">
+        <dc:Bounds x="220" y="98" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Done" bpmnElement="End_Done">
+        <dc:Bounds x="450" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Start_To_Agent" bpmnElement="Flow_Start_To_Agent">
+        <di:waypoint x="156" y="138" />
+        <di:waypoint x="220" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Agent_To_End" bpmnElement="Flow_Agent_To_End">
+        <di:waypoint x="380" y="138" />
+        <di:waypoint x="450" y="138" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

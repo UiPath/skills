@@ -2,6 +2,32 @@
   "version": "2.0",
   "resources": [
     {
+      "id": "Binding_AgentName",
+      "kind": "process",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "name"
+      }
+    },
+    {
+      "id": "Binding_AgentFolderPath",
+      "kind": "process",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "folderPath"
+      }
+    },
+    {
       "id": "Binding_EventConnection",
       "kind": "connection",
       "name": "Synthetic Event Connection",

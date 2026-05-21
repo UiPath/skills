@@ -390,8 +390,6 @@ class Validator:
         for binding in process.findall(
             f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}bindings/{{{UIPATH_NS}}}binding"
         ):
-            if binding.attrib.get("propertyAttribute") in {"folderKey", "folderPath"}:
-                continue
             result[binding.attrib["id"]] = binding
         return result
 

@@ -1,0 +1,25 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_AgentInvocation",
+      "name": "Start",
+      "filePath": "/content/agent-invocation.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request": {
+            "type": "object"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}
