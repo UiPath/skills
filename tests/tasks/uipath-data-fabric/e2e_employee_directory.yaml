@@ -25,25 +25,31 @@ initial_prompt: |
   HR needs a digital employee directory in UiPath Data Fabric.
   Load the uipath-data-fabric skill before starting.
 
-  The initial schema needs: full name, department (Engineering / Sales /
-  Finance / HR), job title, hire date, and salary (decimal).
+  Create entity `EmployeeDirectory_<EPOCH>` (Unix epoch seconds suffix —
+  e.g. `EmployeeDirectory_1716163200`) with fields:
+    - FullName    STRING
+    - Department  STRING   (values: Engineering | Sales | Finance | HR)
+    - JobTitle    STRING
+    - HireDate    DATE
+    - Salary      DECIMAL
 
-  Generate employees.csv with 20 employees — 5 per department — with
-  realistic names, job titles (e.g. "Software Engineer", "Account Executive"),
-  hire dates spread across 2020–2024, and salaries between $45,000 and
-  $120,000. Import it.
+  Generate `employees.csv` with 20 employees, 5 per department — realistic
+  names and job titles (e.g. "Software Engineer", "Account Executive"),
+  hire dates spread 2020–2024, salaries $45k–$120k. Import via
+  `uip df records import --file employees.csv`.
 
-  After import, evolve the schema by adding a PerformanceScore (INTEGER)
-  field. Update 6 employees across different departments with performance
-  scores between 70 and 98.
+  Evolve the schema: add `PerformanceScore` (INTEGER). Set scores between
+  70 and 98 on 6 employees spanning all four departments.
 
-  Then answer two business questions using queries:
-  1. Who are the top performers? Query employees with PerformanceScore > 85
-     sorted by PerformanceScore descending.
-  2. How many employees are in each department? Use one filterGroup query
-     per department to get the count.
+  Answer with `records query --body` (filterGroup):
+    1. Top performers — PerformanceScore > 85, sorted PerformanceScore desc.
+    2. Department headcount — one filterGroup query per department.
 
-  Do NOT delete the entity.
+  Before finishing, write `report.json` to the working directory:
+    {"entity_id": "<created-entity-id>"}
+
+  The harness deletes the entity using `report.json`. Do not delete it
+  yourself.
 
 success_criteria:
   - type: command_executed
@@ -130,6 +136,12 @@ success_criteria:
     timeout: 5
     expected_exit_code: 0
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written so cleanup can delete the entity"
+    path: "report.json"
+    weight: 1.0
     pass_threshold: 1.0
 
 post_run:

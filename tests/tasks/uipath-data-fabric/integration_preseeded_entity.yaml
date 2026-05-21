@@ -94,9 +94,20 @@ initial_prompt: |
   5. Sort all records by Score descending.
      Confirm records[0].Score == 10.0 (the highest seed value).
 
-  6. Paginate through ALL records with records list --limit 5.
-     Use Python to collect IDs across pages. Confirm total == 20 with no
-     duplicate IDs.
+  6. Paginate through ALL records with `uip df records list --limit 5`.
+     Each page MUST be a separate `uip df records list` Bash invocation —
+     subprocess loops inside a single Python call do not satisfy the
+     per-page rule.
+
+       Page 1 (no cursor):
+         uip df records list <entity-id> --limit 5 --output json
+
+       Subsequent pages: add `--cursor "<NextCursor from prior response>"`.
+       Stop when `HasNextPage` is false. Expected: 4 pages (3 × 5 + 1 × 5
+       = 20 records).
+
+     Collect each page's record IDs and confirm total == 20 with no
+     duplicates.
 
   7. Pick any one record returned by the Active=true query (step 4a).
      Update its Notes field to "test-annotation-by-agent".
