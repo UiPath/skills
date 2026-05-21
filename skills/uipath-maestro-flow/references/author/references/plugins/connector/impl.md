@@ -56,21 +56,17 @@ Follow these steps for every connector node.
 
 ### Step 1 — Fetch and bind a connection
 
-For each connector, extract the connector key from the node type (`uipath.connector.<connector-key>.<activity-name>`) and fetch a connection.
+Extract the connector key from the node type (`uipath.connector.<connector-key>.<activity-name>`).
+
+Discovery call is **always**:
 
 ```bash
-# 1. List available connections
-uip is connections list "<connector-key>" --folder-key "<folder-key>" --output json
-
-# 2. Pick the default enabled connection (IsDefault: Yes, State: Enabled)
-
-# 3. Verify the connection is healthy
-uip is connections ping "<connection-id>" --output json
+uip is connections list "<connector-key>" --all-folders --output json
 ```
 
-**If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --output json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
+> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules (auto-select, personal workspace), BYOA filtering, empty-result recovery, ping verification.
 
-**Read [/uipath:uipath-platform — Integration Service — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md) for connection selection rules** (default preference, `--all-folders` and `--refresh` retry on empty results as mentioned in the selection rules, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
+End state: a healthy connection `Id` + `FolderKey` for Step 2 (`registry get --connection-id`) and Step 6 (`node configure --detail`).
 
 ### Step 2 — Get enriched node definitions with connection
 
@@ -449,7 +445,7 @@ The CLI embeds the payload verbatim in `essentialConfiguration.customFieldsReque
 
 ```bash
 # Connections
-uip is connections list "<connector-key>" --folder-key "<folder-key>" --output json      # list connections for a connector
+uip is connections list "<connector-key>" --all-folders --output json      # discover connections (--all-folders is mandatory)
 uip is connections ping "<connection-id>" --output json      # verify connection health
 uip is connections create "<connector-key>"                  # create new connection (interactive)
 

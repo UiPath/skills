@@ -30,23 +30,19 @@ For the node instance shape, follow the [Action Node Structure — Standard JSON
 
 Skip this step for manual mode.
 
-```bash
-# List connections for the target connector (e.g., Slack)
-uip is connections list "<target-connector-key>" --output json
-
-# Verify the connection is healthy
-uip is connections ping "<connection-id>" --output json
-```
-
-If the list is empty, retry once with `--refresh` to bypass the CLI cache:
+Discovery call is **always**:
 
 ```bash
-uip is connections list "<target-connector-key>" --refresh --output json
+uip is connections list "<target-connector-key>" --all-folders --output json
 ```
 
-Record the `Id` and `FolderKey` from the connection.
+`--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<target-connector-key>"` is forbidden for discovery.
 
-> **A healthy connection is required for connector mode.** If `uip is connections list` returns empty, retry once with `--refresh`. If still empty, **STOP** — the node cannot be configured without a real connection ID. Use `AskUserQuestion` to present the path forward: **Create a new connection now** (`uip is connections create "<target-connector-key>"` starts the OAuth flow — user completes browser auth themselves, then re-run `uip is connections list` to pick up the new connection) / **Switch this node to manual mode** / **Skip this node** / **Something else**. Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node without explicit user selection. See [/uipath:uipath-platform — connections.md — For Native Connectors](../../../../../../uipath-platform/references/integration-service/connections.md#for-native-connectors) and the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md).
+> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules, empty-result recovery, ping verification.
+
+Record the chosen connection's `Id` and `FolderKey` for Step 3.
+
+> **HTTP-specific recovery — no usable connection.** If platform-skill recovery yields nothing (empty after `--all-folders` + `--refresh`, user declines to create one), the HTTP node has unique fallback options. **STOP** and use `AskUserQuestion`: **Create a new connection now** (`uip is connections create "<target-connector-key>"` starts the OAuth flow — user completes browser auth, then re-run list) / **Switch this node to manual mode** / **Skip this node** / **Something else**. Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node without explicit user selection. See the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md).
 
 ### Step 3 — Configure the node
 
