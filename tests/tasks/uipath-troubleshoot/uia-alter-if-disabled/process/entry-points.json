@@ -1,0 +1,35 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "entryPoints": [
+    {
+      "filePath": "ClickCase.xaml",
+      "uniqueId": "254f607d-40b8-47e2-b030-80c766911365",
+      "type": "process"
+    },
+    {
+      "filePath": "ERN.xaml",
+      "uniqueId": "91ff2eb0-5f9c-4f15-aed7-da33628383ce",
+      "type": "process"
+    },
+    {
+      "filePath": "Google.xaml",
+      "uniqueId": "e2c714f1-0d4c-4832-88d7-9eabca511ec0",
+      "type": "process"
+    },
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "7495a557-fe7a-48f0-b484-0cc945917a06",
+      "type": "process"
+    },
+    {
+      "filePath": "TO.xaml",
+      "uniqueId": "c94b4b20-4b54-4a78-9812-e45826551d69",
+      "type": "process"
+    },
+    {
+      "filePath": "Transaction.xaml",
+      "uniqueId": "949dc8bb-4f42-4418-8645-3f3c64902e94",
+      "type": "process"
+    }
+  ]
+}
