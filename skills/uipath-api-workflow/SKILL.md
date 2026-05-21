@@ -241,6 +241,7 @@ uip solution publish ./build/MyApiSolution.zip --tenant MyTenant --output json
 | File | Use when |
 |------|----------|
 | [references/workflow-file-format.md](references/workflow-file-format.md) | Authoring or editing the JSON skeleton: top-level keys, `document.metadata.variables` schema, `input.schema`/`output.schema`, `WorkflowStart` |
+| [references/http-retry-config.md](references/http-retry-config.md) | Adding workflow-level HTTP retry policy (`httpRetryConfig`) — scope (GET-only), constant/linear/exponential backoff formulas, defaults, `Retry-After` handling, anti-patterns |
 | [references/task-types.md](references/task-types.md) | Adding/editing any single activity — exact JSON shape, required fields, export pattern, common mistakes, basic nesting hints per type |
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Combining activities into hierarchical structures — nested If, ForEach inside DoWhile, TryCatch around/inside loops, conditional Break, multi-way branching, key uniqueness rules |
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |

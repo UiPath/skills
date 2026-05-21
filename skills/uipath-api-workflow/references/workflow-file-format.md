@@ -85,6 +85,7 @@ JSON files conforming to **CNCF Serverless Workflow DSL 1.0.0** with UiPath task
 | `evaluate.language` | string | yes | MUST be `"javascript"`. |
 | `evaluate.mode` | string | yes | `"strict"`. |
 | `do` | array | yes | Ordered tasks. Each entry is `{ "<TaskName>": { ... } }`. Root is conventionally a single `Sequence_1`. |
+| `httpRetryConfig` | object | optional | Workflow-level retry policy for HTTP **GET** calls (`UiPath.Http` GET + `UiPath.IntSvc` list/get). Absent → no retry. See [http-retry-config.md](http-retry-config.md). |
 
 ## Variables
 
