@@ -37,7 +37,7 @@ Use this table to determine which strategy to follow for each operation. **Edit 
 | Operation | Default | Alternative | Notes |
 |-----------|---------|-------------|-------|
 | Add a node | **Edit / Write** | — | Flow CLI is not an option for non-carve-out node CRUD. |
-| Add a managed HTTP node | **CLI** (carve-out) `node add`, then CLI `node configure` | — | Use `uip maestro flow node add <file> core.action.http.v2 ...` to add the node — the CLI copies the manifest byte-for-byte so `node configure` can read the embedded `connectorDetail.uiPathActivityTypeId`. Hand-authoring `definitions[]` for this node type produces canvas-crashing flows. See [http/impl.md — Step 1](plugins/http/impl.md#step-1--add-the-node). |
+| Add a managed HTTP node | **CLI** (carve-out) `node add`, then CLI `node configure` | — | Use `uip maestro flow node add <file> core.action.http.v2 ...` to add the node. Do not hand-author `definitions[]` for this node type. See [http/impl.md — Step 1](plugins/http/impl.md#step-1--add-the-node). |
 | Add a HITL QuickForm node | **Edit / Write** | — | Wire `completed` port after adding. See [hitl/impl.md](plugins/hitl/impl.md). |
 | Delete a node | **Edit / Write** | — | |
 | Add an edge | **Edit / Write** | — | Remember `targetPort` (Rule #6). |
