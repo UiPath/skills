@@ -29,11 +29,13 @@ initial_prompt: |
 
   Implementation requirements:
 
-  - The "Review" stage has TWO routing exits (Marks Stage Complete: No),
-    both `selected-tasks-completed("Review Leave Request")` but with
-    different `IF` expressions:
-      - Approved branch: IF `approved == true`
-      - Rejected branch: IF `approved == false`
+  - The "Review" stage has TWO routing exits, both
+    `selected-tasks-completed("Review Leave Request")` but with different
+    `IF` expressions:
+      - Approved branch: IF `approved == true`,  Marks Stage Complete: Yes
+      - Rejected branch: IF `approved == false`, Marks Stage Complete: No
+    (At least one exit must mark the stage complete for the validator to
+    pass; Approved is the canonical completion path.)
   - The "Approved" and "Rejected" stages each enter on
     `selected-stage-exited("Review")` and complete via
     `required-tasks-completed` (exit-only, Marks Stage Complete: Yes).
@@ -91,7 +93,7 @@ initial_prompt: |
   #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
-  | selected-tasks-completed("Review Leave Request") | approved == true | exit-only | No |
+  | selected-tasks-completed("Review Leave Request") | approved == true | exit-only | Yes |
   | selected-tasks-completed("Review Leave Request") | approved == false | exit-only | No |
 
   #### Stage Task Summary
@@ -206,8 +208,8 @@ success_criteria:
     description: "Both branch expressions present on Review's exits"
     path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
     includes:
-      - "approved == true"
-      - "approved == false"
+      - "approved === true"
+      - "approved === false"
     weight: 2.0
     pass_threshold: 1.0
 

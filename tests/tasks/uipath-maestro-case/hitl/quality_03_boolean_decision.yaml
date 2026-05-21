@@ -32,7 +32,7 @@ initial_prompt: |
   The "Compliance" stage's exit conditions MUST use the `approved` boolean
   field at the EXPRESSION level (not just the rule level):
     - Approved exit: WHEN selected-tasks-completed("Compliance Review"),
-                     IF `approved == true`,  exit-only, Marks Stage Complete: No
+                     IF `approved == true`,  exit-only, Marks Stage Complete: Yes
     - Rejected exit: WHEN selected-tasks-completed("Compliance Review"),
                      IF `approved == false`, exit-only, Marks Stage Complete: No
 
@@ -132,7 +132,7 @@ initial_prompt: |
   #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
-  | selected-tasks-completed("Compliance Review") | approved == true | exit-only | No |
+  | selected-tasks-completed("Compliance Review") | approved == true | exit-only | Yes |
   | selected-tasks-completed("Compliance Review") | approved == false | exit-only | No |
 
   #### Stage Task Summary
@@ -272,8 +272,8 @@ success_criteria:
     description: "Both branch expressions reference the approved boolean"
     path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
     includes:
-      - "approved == true"
-      - "approved == false"
+      - "approved === true"
+      - "approved === false"
     weight: 3.0
     pass_threshold: 1.0
 

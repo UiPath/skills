@@ -20,14 +20,21 @@ initial_prompt: |
   Create a UiPath Case Management project named "PurchaseApprovalCase" with
   this shape:
 
-    Manual Trigger → Stage "Review" (one HITL action task: manager approves
-    the purchase) → Stage "Recorded" (regular stage, no tasks) → Case end
+    Manual Trigger → Stage "Review" (two HITL action tasks: manager
+    approves the purchase, then reviewer captures approval notes) → Stage
+    "Recorded" (regular stage, no tasks) → Case end
 
-  The "Review" stage MUST exit (without marking complete — i.e. exit-only,
-  Marks Stage Complete: No) when the action task completes, using a
-  `selected-tasks-completed` rule that references the action task. The
-  "Recorded" stage's entry condition is `selected-stage-exited("Review")`,
-  and the case completes when all required stages complete.
+  The "Review" stage MUST have an exit-only rule (Marks Stage Complete: No)
+  using `selected-tasks-completed` that references the "Review Purchase"
+  action task — this is the routing rule under test. Add a second exit
+  rule `required-tasks-completed` with Marks Stage Complete: Yes so the
+  stage actually completes (the validator requires at least one
+  marksStageComplete: true exit per stage). Both action tasks are required
+  so the two rules target different sets ({Review Purchase} vs {Review
+  Purchase, Capture Approval Notes}) — this avoids the validator's
+  same-target-set overlap check. The "Recorded" stage's entry condition is
+  `selected-stage-exited("Review")`, and the case completes when all
+  required stages complete.
 
   Use the same name for solution and project so the case file lives at
   PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json.
@@ -78,11 +85,13 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
   | selected-tasks-completed("Review Purchase") | - | exit-only | No |
+  | required-tasks-completed | - | exit-only | Yes |
 
   #### Stage Task Summary
   | # | Task ID | Task | Type | Owner |
   |---|---|---|---|---|
   | 1 | `review.reviewPurchase` | Review Purchase | action | Manager |
+  | 2 | `review.captureNotes` | Capture Approval Notes | action | Reviewer |
 
   ##### Task 1.1: Review Purchase (`review.reviewPurchase`)
 
@@ -98,6 +107,22 @@ initial_prompt: |
   | Field | Value |
   |---|---|
   | Action App Reference | Name "Review Purchase", Folder "Shared" |
+  | Component Type | ACTION_APP |
+
+  ##### Task 1.2: Capture Approval Notes (`review.captureNotes`)
+
+  **Type:** action
+  **Description:** Reviewer captures notes about the manager's decision.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Action App Reference | Name "Capture Approval Notes", Folder "Shared" |
   | Component Type | ACTION_APP |
 
   ### Stage 2: Recorded (`recorded`)
