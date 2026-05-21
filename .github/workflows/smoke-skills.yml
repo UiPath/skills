@@ -215,23 +215,19 @@ jobs:
           UV_INDEX_UIPATH_PASSWORD: ${{ secrets.UV_INDEX_UIPATH_PASSWORD }}
         run: make docker-image
 
-      # Install from GitHub Packages under the `alpha` dist-tag so smoke
-      # tracks `cli/main`. Every merge to `cli/main` runs
-      # cli/.github/workflows/ci.yml, which publishes a
-      # `-alpha.<date>.<run>` prerelease to
-      # https://npm.pkg.github.com/ under dist-tag `alpha`. Public npm
-      # only carries the cut-release `latest` line which lags `main` by
-      # days, so smoke against `@latest` was masking CLI changes that
-      # task YAMLs and skills had already been updated for.
-      - name: Install uip CLI + admin tool (GitHub Packages @alpha)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+      # Build custom smoke image extending coder-eval-agent with @uipath/cli
+      # and @uipath/admin-tool from GitHub Packages @alpha.
+      # Every merge to `cli/main` publishes a `-alpha.<date>.<run>` prerelease;
+      # smoke tracks this so changes in task YAMLs/skills are tested against main,
+      # not stale `latest` from public npm (which lags by days).
+      - name: Build skills smoke Docker image
         run: |
-          npm config set @uipath:registry https://npm.pkg.github.com/
-          npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
-          npm install -g @uipath/cli@alpha @uipath/admin-tool@alpha
-          uip --version
-          uip admin --help
+          docker build \
+            --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
+            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
+            -t skills-smoke-image:latest \
+            -f .github/docker/Dockerfile.smoke \
+            .
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
       # smoke tasks (orchestrator / integration-service / data-fabric / ...)

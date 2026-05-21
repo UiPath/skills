@@ -18,6 +18,7 @@ defaults:
     python: {}
     node: {}
     docker:
+      image: skills-smoke-image:latest
       env_passthrough_extra:
         - SKILLS_REPO_PATH
         - BEDROCK_MODEL
