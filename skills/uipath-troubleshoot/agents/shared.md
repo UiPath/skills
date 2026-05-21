@@ -22,9 +22,11 @@ Every agent must follow this table. Do not redefine confidence behavior locally.
 
 | Confidence | Generator | Tester | Elimination | Exec-path required? |
 |---|---|---|---|---|
-| **High** | 1 hypothesis per matching playbook; skip others and docsai | 1-2 verification steps only | Quick check only | No |
-| **Medium** | 2-5 hypotheses from all matching playbooks | Follow all troubleshooting steps in playbook | All `to_eliminate` items | Yes |
-| **Low** | 2-5 hypotheses from all playbooks + docsai | Free-form reasoning | All `to_eliminate` items | Yes |
+| **High** | 1 hypothesis per matched playbook — cover ALL tiers (high+medium+low) in a single round; skip docsai unless matched playbooks are empty | 1-2 verification steps only | Quick check only | No |
+| **Medium** | 1-2 hypotheses per matched playbook — cover ALL tiers in a single round; docsai for additional context | Follow all troubleshooting steps in playbook | All `to_eliminate` items | Yes |
+| **Low** | 2-5 hypotheses per matched playbook — cover ALL tiers in a single round + docsai | Free-form reasoning | All `to_eliminate` items | Yes |
+
+**Single-round coverage rule.** Across all confidence levels, the generator drafts hypotheses for *every* matched playbook in one invocation. Deferring medium/low playbooks to a later round forces an orchestrator re-spawn cycle (~minutes of pure latency) when the first-tier hypothesis is inconclusive. The originating-fault hypothesis (per `hypothesis-generator.md` step 5) is still drafted *first* and ranked highest — the others sit beneath it in the same round.
 
 ## Startup
 
