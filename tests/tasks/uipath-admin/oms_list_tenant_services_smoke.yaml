@@ -1,0 +1,36 @@
+task_id: skill-admin-oms-list-tenant-services-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to list
+  provisioned tenant-level services. Tests correct CLI namespace
+  (`uip admin tenants services list`) and --output json convention.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, list, oms]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  List the services currently provisioned on the default tenant in my UiPath organization.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: command_executed
+    description: "Agent ran tenants services list with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+services\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

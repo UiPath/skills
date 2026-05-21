@@ -415,3 +415,17 @@ uip admin external-apps delete-secret <SECRET_ID> --output json
 | `<SECRET_ID>` | Yes | Secret ID (numeric) |
 
 **Output code:** `ExternalClientSecretDeleted`
+
+---
+
+## Output Etiquette — after any identity mutation
+
+Applies to every identity-side mutation: `users create / update / invite / delete`, `groups create / update / delete`, `groups members add / revoke`, `robot-accounts create / update / delete`, `external-apps create / update / delete / generate-secret / delete-secret`.
+
+1. Show the command result (success or failure).
+2. For creates: display the new resource ID.
+3. For `external-apps create` or `generate-secret`: **highlight the secret value and warn user to save it** — it appears only once in the creation response.
+4. Offer logical next steps:
+   - After creating a robot account → "Assign to a group for role-based access?"
+   - After creating an external app → "Generate an additional secret?"
+   - After inviting a user → "Check user list to see when they accept?"

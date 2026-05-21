@@ -1,0 +1,107 @@
+task_id: skill-admin-authz-role-lifecycle-tenant-global-e2e
+description: >
+  End-to-end test: full lifecycle of a TenantGlobal-shape custom
+  role — a reusable template assignable in every tenant of the org.
+  Discovers Tenant-shape permissions, creates with
+  `--scope TenantGlobal` (no `--tenant-id`), verifies, deletes.
+
+  Validates: `--scope TenantGlobal` (the new shape, not in the legacy
+  full-body schema), absence of `--tenant-id` (TenantGlobal is not
+  bound to one tenant), cleanup at end of test.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, e2e, authz, role-lifecycle, scope:tenant-global]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Set up a reusable read-only role template called "StudioViewer"
+  that should be available across every tenant in our organization —
+  not bound to any single tenant. It should cover viewing Studio
+  projects.
+
+  After it's created, show me the role's details. Then please clean
+  up by removing it and confirming it's gone.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed Tenant-shape permissions for studio"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\s+.*(?:--service\s+studio\b|--scope\s+Tenant\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked name collision via `roles list --filter`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--filter\s+\S*StudioViewer'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent wrote an actions.json file"
+    tool_name: "Write"
+    command_pattern: 'actions\.json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the role with --scope TenantGlobal and --name StudioViewer"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+TenantGlobal\b.*--name\s+\S*StudioViewer.*--file\s+\S+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the new role via `roles get <id>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+[a-f0-9-]{8,}'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cleaned up by calling `roles delete <id>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+delete\s+[a-f0-9-]{8,}'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the role was removed (second `roles get` or `roles list --filter`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get\s+[a-f0-9-]{8,}|list\s+.*--filter\s+\S*StudioViewer)'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT pass --tenant-id (TenantGlobal is not bound to one tenant)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+TenantGlobal\b.*--tenant-id'
+    weight: 1.5

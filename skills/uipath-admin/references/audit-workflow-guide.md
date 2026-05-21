@@ -4,6 +4,18 @@ Four canonical investigations the `uipath-audit` skill should drive. Each starts
 
 > Every command below assumes the user has run `uip login` and the active token includes the `Audit.Read` scope. Every command should pass `--output json` so the agent can parse the envelope.
 
+## Audit scope disambiguation — route by user phrasing
+
+Pick `org` vs `tenant` BEFORE any `audit` call. They hit different basePaths and surface different events. Use this table to route a user query (SKILL.md Critical Rule 23 is the contract; this is the decision tool):
+
+| User says... | Likely scope | Why |
+|---|---|---|
+| "who joined / left the organization", "who was made an admin", "license changes", "cross-tenant audit", **"failed/successful logins"**, **"login history for user X"**, **"who's been signing in"** | **org** | Org-level events (memberships, license, tenant lifecycle, **Identity Server / IdP authentication including User Login**) live under `/orgaudit_`. |
+| "what happened on tenant X", "asset/queue/folder edits", "queue items processed", "job failures", "Action Center task changes", "Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity" | **tenant** | Tenant-scoped events (Orchestrator, Action Center, Apps, AgentHub, Document Understanding, Integration Service, Test Manager, Data Fabric, Process Mining, Relay, Hypervisor, tenant-side Admin) live under `/{tenantId}/tenantaudit_`. Note: governance/AOps policies, source control, and pipelines are **org**-scoped despite the AOps name. |
+| "everything everywhere" | **both** — run the same flow once per scope and present combined results. |
+
+If the prompt is **vague about scope** AND no prior turn has established it, **stop and ask** (one yes/no question, two clarifications max). Don't assume `tenant` just because it's the more common case.
+
 ---
 
 ## Investigation 1 — "Who did X to resource Y?"
@@ -265,3 +277,14 @@ Two or more signals? Run them in sequence and stitch the results in the final re
 - **Date-only ISO strings are interpreted as UTC midnight.** `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To capture the full final day in `--to-date`, use `2026-02-01` (exclusive next day) or `2026-01-31T23:59:59.999Z`.
 - **The export ZIP's per-day files are JSON, not CSV, and use PascalCase keys.** Different from the camelCase live `events` endpoint. Don't paste an export directly into a parser expecting the live shape.
 - **Org sources and tenant sources are different sets.** Don't reuse a GUID from `org sources` in a `tenant events` query — the filter will silently match nothing.
+
+## Output Etiquette — after an audit query or export
+
+After every `events` or `export` call, surface the following before waiting for the user's next-step choice. Do not chain mutations.
+
+1. **Operation & result** — e.g. `Found 47 audit events on tenant T in the last 7 days` or `Wrote 123,456 bytes to /path/to/audit.zip (3 days, 2 non-empty)`.
+2. **Scope used** (`org` or `tenant`) and any `--tenant-id` override.
+3. **Time window** — explicit ISO bounds, even if they came from a relative phrase ("last 7 days").
+4. **Filters applied** — sources, types, users, status.
+5. **Cursor state** — for `events`, mention whether `Data.previous` is null (start of audit history) or populated (more older events available — re-run with a larger `--limit`).
+6. **Next step** — "Want me to widen the window?", "Want me to export this slice?", "Want me to filter by user X?". Wait for the user's choice.
