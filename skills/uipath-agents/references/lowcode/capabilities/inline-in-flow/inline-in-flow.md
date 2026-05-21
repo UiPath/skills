@@ -154,17 +154,17 @@ After creating the inline agent, the flow needs a `uipath.agent.autonomous` node
 
 The node JSON shape that the flow skill must produce is documented in § Flow Node Structure below — keep it as a reference, not as a CLI walkthrough.
 
-## Inline-in-Flow Process Tool resource.json
+## Inline-in-Flow Tool resource.json
 
-The `resource.json` for process tools inside an inline-in-flow agent uses the **same format** as external process tools in standalone agents. Follow the discovery workflow and resource.json shape in [../process/process.md](../process/process.md) — run `uip solution resource list` + `uip solution resource get` to populate `referenceKey`, `folderPath`, `inputSchema`, and `outputSchema` with real values.
+Inline tools support four subtypes — `process` (RPA), `agent`, `api`, `processOrchestration`. The `resource.json` shape is identical to standalone agents — follow [../process/process.md](../process/process.md) § Subtypes and § Tool resource.json Shape. Discovery is identical (`uip solution resource list` + `uip solution resource get`) and populates `referenceKey`, `folderPath`, `inputSchema`, and `outputSchema` with real values. The subtype is selected by the `type` field (`process` | `agent` | `api` | `processOrchestration`).
 
 **Path:** `<FlowProjectDir>/<projectId>/resources/<RES_UUID>/resource.json`
 
 Additional notes for inline-in-flow:
 - **`location`**: Follows the same rule as standalone agents — set `"solution"` when the row from `uip solution resource list` has `Source: "Local"`, set `"external"` when `Source: "Remote"`. See [../process/process.md](../process/process.md) and [../../critical-rules.md](../../critical-rules.md) Rule 12.
 - **`id`**: Must match the `<RES_UUID>` used as the tool node's `model.source` in the flow and the resource directory name.
-- **`properties.folderPath`**: Must be the **literal folder path from discovery** (e.g., `"Shared/TestRPA"`) — do **not** leave it empty. An empty `folderPath` prevents `uip solution resource refresh` from resolving the process at runtime.
-- **`inputSchema.properties`**: Must include `"guardrails": { "type": "array" }` alongside the process arguments — the runtime expects it.
+- **`properties.folderPath`**: Must be the **literal folder path from discovery** (e.g., `"Shared/Sales"`) — do **not** leave it empty. An empty `folderPath` prevents `uip solution resource refresh` from resolving the tool at runtime.
+- **`inputSchema.properties`**: Must include `"guardrails": { "type": "array" }` alongside the tool arguments — the runtime expects it.
 - **All fields from the template in [../process/process.md](../process/process.md) are required** — especially `$resourceType: "tool"`, `guardrail`, `properties.processName`, `properties.exampleCalls`, `isEnabled`, and `argumentProperties`. A `resource.json` missing `$resourceType` will not be recognized by `uip agent validate` (the tool reports `"resources": 0`); `uip agent migrate` will then write an empty `bindings_v2.json`.
 
 ## Flow Node Structure
@@ -215,12 +215,12 @@ Additional notes for inline-in-flow:
 - `definitions[]` — The `uipath.agent.autonomous` definition copied from the flow registry supplies `model.serviceType: "Orchestrator.StartInlineAgentJob"`, BPMN type, version, and context. Do not copy those fields into the node instance.
 - No node instance `model` block — the inline-agent source lives at `inputs.source`.
 
-Resource nodes use the same minimal `model.source` pattern:
+Resource nodes use the same minimal `model.source` pattern. The `type` follows the per-kind patterns in § Resource nodes below — `uipath.agent.resource.tool.{process|agent|api|processorchestration}.<release-key>`, where `<release-key>` is the resource's release-key GUID returned by `uip solution resource list`:
 
 ```jsonc
 {
   "id": "agentTool1",
-  "type": "uipath.agent.resource.tool.rpa",
+  "type": "uipath.agent.resource.tool.<kind>.<release-key>",
   "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "<ToolName>" },
   "inputs": {},
@@ -253,12 +253,16 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 
 | Resource type | Node type pattern |
 |--------------|-------------------|
-| RPA process | `uipath.agent.resource.tool.rpa` |
-| Agent-as-tool | `uipath.agent.resource.tool.agent.<process-key>` |
+| RPA process | `uipath.agent.resource.tool.process.<release-key>` |
+| Agent-as-tool | `uipath.agent.resource.tool.agent.<release-key>` |
+| API workflow | `uipath.agent.resource.tool.api.<release-key>` |
+| Process Orchestration | `uipath.agent.resource.tool.processorchestration.<release-key>` |
 | IS connector | `uipath.agent.resource.tool.connector` |
 | Semantic index | `uipath.agent.resource.context.index` |
 | Escalation | `uipath.agent.resource.escalation` |
 | Memory space | `uipath.agent.resource.memory.*` |
+
+`<release-key>` is the resource's release-key GUID from `uip solution resource list` (the row's `Key` field). The four process-tool kinds share the same registry-discovery flow and the same `resource.json` shape — only the prefix in front of `<release-key>` and the `type` field in `resource.json` differ. See [../process/process.md](../process/process.md) § Subtypes.
 
 ## Walkthrough — End-to-End
 
@@ -276,7 +280,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 # - Configure outputSchema if needed
 
 # 4. Add tools to <FlowProjectDir>/<projectId>/resources/ (optional)
-# See § Inline-in-Flow Process Tool resource.json above for the exact format
+# See § Inline-in-Flow Tool resource.json above for the exact format
 
 # 5. Hand off to the uipath-maestro-flow skill to add the
 #    uipath.agent.autonomous node (inputs.source = <projectId>),
@@ -324,16 +328,17 @@ content/
 ## Node Type Quick Reference
 
 ```
-uipath.agent.autonomous                               ← Inline agent node
+uipath.agent.autonomous                                        ← Inline agent node
 
-uipath.agent.resource.tool.rpa                        ← Tool: RPA process
-uipath.agent.resource.tool.agent.<process-key>        ← Tool: another agent
-uipath.agent.resource.tool.connector                  ← Tool: IS connector
-uipath.agent.resource.tool.api                        ← Tool: API
-uipath.agent.resource.tool.builtin                    ← Tool: built-in
-uipath.agent.resource.context.index                   ← Context: semantic index
-uipath.agent.resource.escalation                      ← Escalation: HITL
-uipath.agent.resource.memory.*                        ← Memory space
+uipath.agent.resource.tool.process.<release-key>               ← Tool: RPA process
+uipath.agent.resource.tool.agent.<release-key>                 ← Tool: agent
+uipath.agent.resource.tool.api.<release-key>                   ← Tool: API workflow
+uipath.agent.resource.tool.processorchestration.<release-key>  ← Tool: process orchestration
+uipath.agent.resource.tool.connector                           ← Tool: IS connector
+uipath.agent.resource.tool.builtin                             ← Tool: built-in
+uipath.agent.resource.context.index                            ← Context: semantic index
+uipath.agent.resource.escalation                               ← Escalation: HITL
+uipath.agent.resource.memory.*                                 ← Memory space
 ```
 
 ## BPMN Execution Engine Notes
