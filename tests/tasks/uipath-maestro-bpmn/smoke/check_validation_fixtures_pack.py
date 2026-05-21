@@ -21,6 +21,7 @@ EXPECTED = (
     "fixtures/validation/contract-variants/contract-variants.bpmn",
     "fixtures/validation/registry-coverage-matrix/registry-coverage-matrix.bpmn",
     "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn",
+    "fixtures/validation/agent-invocation/agent-invocation.bpmn",
 )
 
 PACKAGE_OUTPUT = Path("fixture-pack-output")
