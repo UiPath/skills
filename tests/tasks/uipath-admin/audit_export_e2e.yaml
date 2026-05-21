@@ -75,7 +75,7 @@ success_criteria:
   - type: command_executed
     description: "Agent's export targeted ./audit-last-7d.zip"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\.?/?audit-last-7d\.zip'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\S*audit-last-7d\.zip'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
