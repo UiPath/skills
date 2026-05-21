@@ -282,6 +282,7 @@ jobs:
         working-directory: tests
         id: smoke
         run: |
+          shopt -s globstar nullglob
           echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
             -e experiments/smoke.yaml \
