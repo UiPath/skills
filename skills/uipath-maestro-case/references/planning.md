@@ -219,23 +219,27 @@ Before presenting `tasks.md` at Step 5, run a completeness cross-check: for ever
 
 Counts that don't match the sdd.md → fix before Step 5 hard stop.
 
-### 4.0a — Incremental write contract (mandatory)
+### 4.0a — Section-batched write contract (mandatory)
 
-**One T-entry per file write.** Build `tasks.md` incrementally — never compose the full body in memory and Write once.
+**Per-section batching.** Build `tasks.md` one section at a time — never compose the full body in memory and Write once, but do not pay a Read between sibling T-entries inside a section either.
 
 Procedure:
 
 1. **Seed.** Write `tasks.md` with header only — `Schema: v19` (or `Schema: v20`), then a `## Inventory` placeholder section. Single Write.
-2. **Per T-entry.** For each T-entry in §4.2 → §4.8 order:
-   - Read `tasks.md` (recover state — context may compact between entries).
-   - Edit-append the new `## T<NN>: …` block to end-of-file.
-   - Move to next T-entry. Do NOT batch.
+2. **Per section.** Sections are §4.2.1 vars → §4.3 triggers → §4.4 stages → §4.5 edges → §4.6 tasks → §4.7 conditions → §4.8 SLA. For each section:
+   - **One Read** of `tasks.md` at section entry.
+   - **N Edit-appends** in sequence, one per T-entry in the section. Skip the re-Read between sibling Edits — Edit's tool result confirms applied state in context.
+   - TaskUpdate marks each T-entry `in_progress` → `completed` as it goes — that is the per-T-entry audit trail, not the file diff.
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
-4. **`registry-resolved.json`.** Same incremental discipline — Edit-append one resolution object per resource, not one bulk Write at end.
+4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
 
-Why: per-entry round-trips keep tool-call transcript reviewable, preserve rollback granularity, allow mid-run interruption (compaction, user abort), and surface omissions before they propagate. Batching is forbidden — anti-pattern enforced in `SKILL.md`.
+Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 
-This contract mirrors Phase 3's per-T-entry JSON-write contract (see [implementation.md § Per-plugin execution](implementation.md)).
+**Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (header + Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
+
+**Recovery on interruption:** re-Read `tasks.md`, scan for next un-applied T-entry (the audit trail in TaskUpdate identifies it), resume from there. No sidecar checkpoint file.
+
+This contract mirrors Phase 3's per-section JSON-write contract (see [implementation.md § Per-plugin execution](implementation.md)).
 
 ### 4.1 Task ordering
 
