@@ -1,0 +1,100 @@
+name: CLI Verb Gate
+
+# Per-skill gate that fails when a PR introduces (or leaves) `uip <verb>`
+# references in skill markdown that don't resolve against the current CLI
+# catalog (`assets/uip-catalog-snapshot.json`). Scoped exactly like
+# smoke-skills.yml and activation-gate.yml: only the skills touched by the
+# PR are checked, so the existing doc-drift backlog is swept opportunistically
+# as each skill is next edited rather than blocking unrelated PRs.
+
+concurrency:
+  group: verb-gate-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  # No `paths:` filter — this is wired as a required check. detect short-
+  # circuits via skip=true when nothing relevant changed; GitHub reports the
+  # gated job as skipped, which counts as a pass for required checks. Same
+  # rationale as smoke-skills.yml.
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    name: Detect changed skills
+    outputs:
+      skills: ${{ steps.detect.outputs.skills }}
+      skip:   ${{ steps.detect.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - id: detect
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          BASE_SHA=$(git merge-base "origin/$BASE_REF" HEAD)
+          CHANGED=$(git diff --name-only "$BASE_SHA"...HEAD)
+
+          # Infrastructure edits (catalog refresh, checker script, this
+          # workflow) re-gate every skill — same pattern as smoke-skills.yml's
+          # "test infrastructure changed → run everything" branch.
+          if echo "$CHANGED" | grep -qE '^(assets/uip-catalog-snapshot\.json|scripts/check-skill-verbs\.py|\.github/workflows/verb-gate\.yml)$'; then
+            SKILLS=$(ls skills/ | sort -u)
+          else
+            SKILLS=$(echo "$CHANGED" \
+              | grep -E '^skills/[^/]+/.*\.md$' \
+              | sed 's|skills/\([^/]*\)/.*|\1|' \
+              | sort -u || true)
+          fi
+
+          if [ -z "$SKILLS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No skill markdown changes — gate not triggered."
+            exit 0
+          fi
+
+          JSON=$(printf '%s\n' $SKILLS | jq -R . | jq -s -c .)
+          echo "skills=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Will gate: $SKILLS"
+
+  gate:
+    needs: detect
+    if: needs.detect.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    name: ${{ matrix.skill }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        skill: ${{ fromJSON(needs.detect.outputs.skills) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+
+      - name: Check verbs in skills/${{ matrix.skill }}
+        env:
+          SKILL: ${{ matrix.skill }}
+        run: |
+          set -euo pipefail
+          python3 scripts/check-skill-verbs.py --json "skills/$SKILL" > findings.ndjson || true
+
+          STALE=$(grep -c '"severity": "Stale"' findings.ndjson || true)
+          UNCERTAIN=$(grep -c '"severity": "Uncertain"' findings.ndjson || true)
+          echo "skills/$SKILL: $STALE Stale, $UNCERTAIN Uncertain"
+
+          if [ "${STALE:-0}" -gt 0 ]; then
+            echo "::group::Stale verbs in skills/$SKILL"
+            jq -r 'select(.severity=="Stale") | "::error file=\(.path),line=\(.line)::Stale verb `uip \(.verb_path)`"' findings.ndjson
+            echo "::endgroup::"
+            echo
+            echo "Fix: replace each `uip <verb>` above with a verb that exists in the current CLI"
+            echo "(see assets/uip-catalog-snapshot.json) or remove the reference."
+            exit 1
+          fi
