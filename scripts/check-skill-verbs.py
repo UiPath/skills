@@ -38,8 +38,10 @@ CATALOG_PATH = REPO_ROOT / "assets" / "uip-catalog-snapshot.json"
 # code-block end backtick or newline.
 UIP_LINE = re.compile(r"\buip(\s+[^\n`]*)?")
 
-# Tokens that look like placeholders or non-verb content.
-PLACEHOLDER = re.compile(r"^(<.+?>|\[.+?\]|\$\{?[A-Za-z_]\w*\}?|\.\.\.|\*+)$")
+# Tokens that look like placeholders or non-verb content. An optional
+# `.ext` suffix is permitted after `<X>` / `[X]` so file-argument forms like
+# `<ProjectName>.flow` are still treated as a placeholder, not a verb token.
+PLACEHOLDER = re.compile(r"^(<.+?>(\.\w+)?|\[.+?\](\.\w+)?|\$\{?[A-Za-z_]\w*\}?|\.\.\.|\*+)$")
 # Tokens that start a flag — stop verb extraction here.
 FLAG = re.compile(r"^-{1,2}[A-Za-z]")
 # Shell operators / control characters that end a command segment.
@@ -49,8 +51,15 @@ TRAILING_PUNCT = re.compile(r"[`,.;:)\]\"'\\]+$")
 LEADING_PUNCT = re.compile(r"^[`(\[\"']+")
 # Common prose tokens that follow `uip` in English sentences ("the uip CLI ...",
 # "uip is great", "uip a tool"). A reference whose first token is one of these
-# cannot be a verb regardless of what comes after.
-PROSE_NOISE = {"CLI", "is", "a", "the", "an", "and", "or", "to", "for", "with"}
+# cannot be a verb regardless of what comes after. Conjunctions, modal verbs,
+# and the literal word "commands" all show up in narrative prose around the
+# CLI ("Run uip commands against the platform").
+PROSE_NOISE = {
+    "CLI", "is", "are", "was", "were", "be", "been", "being",
+    "a", "the", "an", "and", "or", "to", "for", "with",
+    "if", "when", "while", "from", "into", "on", "in", "at", "by", "of",
+    "commands", "command", "version", "tool",
+}
 
 
 def load_catalog():
@@ -90,16 +99,26 @@ def extract_verb_tokens(tail):
         tok = clean_token(raw)
         if not tok:
             break
+        # First-token gate: if the very first token after `uip` doesn't
+        # start with a letter/digit, the whole match is non-command prose
+        # (em-dash separator in a heading, punctuation, etc.).
+        if not verb and not (tok[0].isalnum() or tok[0] == "_"):
+            break
         if FLAG.match(tok):
             break
         if tok in SHELL_STOP:
+            break
+        # Inline shell comment (e.g. `uip foo bar # refresh cache`) — the
+        # rest of the line is prose, not verb tokens.
+        if tok.startswith("#"):
             break
         if PLACEHOLDER.match(tok):
             # Placeholder — stop here. Whatever came before is the verb.
             break
         # Reject things that clearly aren't verbs: paths, JSON snippets,
-        # filenames, quoted strings.
-        if any(ch in tok for ch in "/={}\"'"):
+        # filenames, quoted strings, dot-separated identifiers (registry
+        # resource keys like `core.action.script`, version literals).
+        if any(ch in tok for ch in "/={}\"'."):
             break
         # Stop if the token starts looking like a value (digits-only).
         if tok.replace("-", "").replace("_", "").isdigit():

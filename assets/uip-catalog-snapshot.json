@@ -1104,6 +1104,7 @@
   ],
   "unwalkable_groups": [
     "codedagent",
-    "context-grounding"
+    "context-grounding",
+    "rpa"
   ]
 }

@@ -35,6 +35,14 @@ _DECODER = json.JSONDecoder()
 # classified as Uncertain rather than Stale.
 UNWALKABLE = set()
 
+# Tool prefixes that are platform-specific and may not be installable on
+# the runner that builds the catalog (e.g. `rpa` requires Windows + Studio
+# Helm; the nightly refresh runs on ubuntu-latest where the rpa tool can't
+# install). Marked unwalkable only when the prefix is NOT exposed as a
+# top-level subcommand in the current catalog build — that way a catalog
+# built on Windows still resolves `uip rpa …` verbs concretely.
+PLATFORM_SPECIFIC_PREFIXES = {"rpa"}
+
 
 def run_uip(args):
     try:
@@ -139,6 +147,15 @@ def collect_top_level():
             UNWALKABLE.add(prefix)
             print(f"tool {tool.get('name')!r}: installed but {prefix!r} is "
                   f"not exposed as top-level subcommand — marking unwalkable",
+                  file=sys.stderr)
+    # Platform-specific tools that simply aren't installed on this runner —
+    # mark unwalkable so consumers fall back to Uncertain instead of Stale
+    # for references like `uip rpa <verb>` on a Linux-built catalog.
+    for prefix in PLATFORM_SPECIFIC_PREFIXES:
+        if prefix not in groups:
+            UNWALKABLE.add(prefix)
+            print(f"platform-specific prefix {prefix!r} not exposed on this "
+                  f"runner — marking unwalkable",
                   file=sys.stderr)
     return verbs, groups
 

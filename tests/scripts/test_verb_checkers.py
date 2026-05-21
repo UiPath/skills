@@ -167,3 +167,53 @@ def test_report_exit_zero_when_only_medium(tmp_path, monkeypatch):
     assert "Medium" in body
     assert "**High**" in body  # the summary table mentions High even if zero
     assert rc == 0, f"Expected exit 0 for Medium-only run, got {rc}"
+
+
+# --- Issue 10: placeholder with file extension --------------------------------
+
+def test_placeholder_with_extension_does_not_extend_verb(tmp_path):
+    """`uip maestro flow validate <ProjectName>.flow` must stop at the
+    placeholder. The trailing `.flow` extension would otherwise sneak the
+    token past the bare-placeholder regex and get treated as a verb part.
+    """
+    md = tmp_path / "doc.md"
+    md.write_text("Run `uip maestro flow validate <ProjectName>.flow` to check.\n")
+    catalog = {"maestro flow validate"}
+    findings = skill.scan_file(md, catalog, set())
+    assert findings == [], (
+        f"Expected no findings — `<ProjectName>.flow` is a placeholder, "
+        f"got {findings!r}."
+    )
+
+
+# --- Issue 11: inline shell comment must not extend the verb path -------------
+
+def test_inline_shell_comment_stops_verb_extraction(tmp_path):
+    """`uip foo bar # refresh local cache` — the `#` starts a shell comment;
+    the prose after must not be treated as verb tokens.
+    """
+    md = tmp_path / "doc.md"
+    md.write_text("Run `uip maestro flow registry pull # refresh local cache`.\n")
+    catalog = {"maestro flow registry pull"}
+    findings = skill.scan_file(md, catalog, set())
+    assert findings == [], (
+        f"Expected no findings — `#` starts a comment, "
+        f"got {findings!r}."
+    )
+
+
+# --- Issue 12: dot-separated argument values are not verb tokens --------------
+
+def test_dot_separated_argument_value_not_treated_as_verb(tmp_path):
+    """`uip maestro flow registry get core.action.script` — the trailing
+    `core.action.script` is a registry resource key, not a verb token.
+    Catalog verbs never contain dots; dot-separated identifiers are args.
+    """
+    md = tmp_path / "doc.md"
+    md.write_text("Run `uip maestro flow registry get core.action.script`.\n")
+    catalog = {"maestro flow registry get"}
+    findings = skill.scan_file(md, catalog, set())
+    assert findings == [], (
+        f"Expected no findings — `core.action.script` is an argument, "
+        f"got {findings!r}."
+    )

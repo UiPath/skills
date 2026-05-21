@@ -85,16 +85,28 @@ jobs:
           set -euo pipefail
           python3 scripts/check-skill-verbs.py --json "skills/$SKILL" > findings.ndjson || true
 
-          STALE=$(grep -c '"severity": "Stale"' findings.ndjson || true)
+          # Block only on Stale findings where no valid catalog prefix
+          # matched at all. When matched_prefix is non-null, the trailing
+          # tokens are typically positional argument values (file paths,
+          # registry keys, names) that the literal-walker can't distinguish
+          # from sub-verbs — surface those as warnings, not hard failures.
+          BLOCKING=$(jq -c 'select(.severity=="Stale" and .matched_prefix == null)' findings.ndjson | wc -l | tr -d ' ')
+          SOFT=$(jq -c 'select(.severity=="Stale" and .matched_prefix != null)' findings.ndjson | wc -l | tr -d ' ')
           UNCERTAIN=$(grep -c '"severity": "Uncertain"' findings.ndjson || true)
-          echo "skills/$SKILL: $STALE Stale, $UNCERTAIN Uncertain"
+          echo "skills/$SKILL: $BLOCKING blocking, $SOFT soft-stale, ${UNCERTAIN:-0} Uncertain"
 
-          if [ "${STALE:-0}" -gt 0 ]; then
+          if [ "$SOFT" -gt 0 ]; then
+            echo "::group::Soft-stale verbs in skills/$SKILL (valid prefix, suspicious tail)"
+            jq -r 'select(.severity=="Stale" and .matched_prefix != null) | "::warning file=\(.path),line=\(.line)::Possibly stale `uip \(.verb_path)` (valid prefix: `\(.matched_prefix)`)"' findings.ndjson
+            echo "::endgroup::"
+          fi
+
+          if [ "$BLOCKING" -gt 0 ]; then
             echo "::group::Stale verbs in skills/$SKILL"
-            jq -r 'select(.severity=="Stale") | "::error file=\(.path),line=\(.line)::Stale verb `uip \(.verb_path)`"' findings.ndjson
+            jq -r 'select(.severity=="Stale" and .matched_prefix == null) | "::error file=\(.path),line=\(.line)::Stale verb `uip \(.verb_path)`"' findings.ndjson
             echo "::endgroup::"
             echo
-            echo "Fix: replace each `uip <verb>` above with a verb that exists in the current CLI"
+            echo 'Fix: replace each `uip <verb>` above with a verb that exists in the current CLI'
             echo "(see assets/uip-catalog-snapshot.json) or remove the reference."
             exit 1
           fi
