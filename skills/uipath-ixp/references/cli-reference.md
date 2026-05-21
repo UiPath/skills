@@ -60,6 +60,17 @@ done
 
 **When NOT to use this:** for filling a brand-new project, prefer `projects create <name> <folder-path>` — uploads the whole folder and suggests a taxonomy in one call.
 
+## Data Types
+
+Manage the reusable type definitions (entity_defs) that fields reference via `field_type_id`. In the IXP UI, these are the project's "Data Types".
+
+| Command | Description |
+|---------|-------------|
+| `uip ixp data-types add <project-name> --name <name> --kind <text\|date\|money\|number\|boolean\|choice> --instructions <text> --input-value <present\|inferred> --output json` | Create a new data type. `--kind` selects the underlying data shape; `text` is the default Text type. `--input-value present` marks the value as appearing verbatim in the document; `inferred` is for computed/derived values that don't have a visible location. |
+| `uip ixp data-types update-instructions <project-name> --name <name> --instructions <text> --output json` | Replace the instructions on an existing data type. Name, kind, and input-value stay the same. |
+| `uip ixp data-types rename <project-name> --name <name> --new-name <name> --output json` | Rename a data type. Existing field references (via `field_type_id`) stay intact. |
+| `uip ixp data-types delete <project-name> --name <name> --confirm-data-loss --output json` | Delete a data type. **IRREVERSIBLE** — any field referencing it via `field_type_id` will break. `--confirm-data-loss` is required. |
+
 ## Groups
 
 Manage field groups (label_defs) — the document type containers for fields. To edit fields **inside** an existing group, use the `fields` subject below.
