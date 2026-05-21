@@ -3,7 +3,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-admin skill to
   retrieve SMTP settings. Tests correct CLI namespace.
 
-tags: [uipath-admin, smoke, list]
+tags: [uipath-admin, smoke, get]
 
 initial_prompt: |
   Show me the current SMTP email settings for my UiPath organization.
