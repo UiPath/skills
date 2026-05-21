@@ -97,14 +97,9 @@ jobs:
           git commit -m "chore: refresh uip CLI catalog ($CLI_VERSION, $VERB_COUNT verbs)"
           git push -u origin "$BRANCH"
 
-          PR_URL=$(gh pr create \
+          gh pr create \
             --title "chore: refresh uip CLI catalog ($CLI_VERSION)" \
             --body "Automated refresh against \`@uipath/cli@$CLI_VERSION\`. The catalog has $VERB_COUNT reachable verbs after installing all available plugins.
 
-          Auto-merge is armed — this PR will merge itself once required checks pass. If a check fails, the failure is real drift (a CLI release removed/renamed a verb still referenced in skill docs or task YAMLs); investigate the gate annotations and either sweep the docs or, if the verb is intentionally retired, add it to \`.claude/rules/cli-renames.md\`. \`/lint-task\` and the CLI Verb Gate will surface the affected references." \
-            --label "automated")
-
-          # Arm auto-merge. Waits for all required status checks (verb gate,
-          # smoke tests) to pass before squashing; stays open if any fail.
-          # Requires the repo setting 'Allow auto-merge' to be enabled.
-          gh pr merge "$PR_URL" --auto --squash --delete-branch
+          Merges automatically once all checks pass (handled by \`automerge-catalog-refresh.yml\`). If a check fails, the failure is real drift (a CLI release removed/renamed a verb still referenced in skill docs or task YAMLs); investigate the gate annotations and either sweep the docs or, if the verb is intentionally retired, add it to \`.claude/rules/cli-renames.md\`. \`/lint-task\` and the CLI Verb Gate will surface the affected references." \
+            --label "automated"
