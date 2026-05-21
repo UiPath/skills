@@ -1,20 +1,22 @@
-task_id: skill-ixp-taxonomy-edit-chain-integration
+task_id: skill-ixp-taxonomy-edit-chain-smoke
 description: >
-  Integration test: agent builds a small project taxonomy from
-  scratch by chaining the new taxonomy-edit verbs in the right
-  order. The chain exercises an ordering invariant that smoke tests
-  don't catch — a `groups add` call that references a data type via
-  the `type` JSON key fails if that data type doesn't exist yet, so
-  the agent must call `data-types add` first. Also tests that the
-  agent picks the right verb for each step (data-types vs fields vs
+  Smoke test: agent builds a small project taxonomy from scratch by
+  chaining the new taxonomy-edit verbs in the right order. The
+  chain exercises an ordering invariant the simpler smokes don't
+  catch — a `groups add` call that references a data type via the
+  `type` JSON key fails if that data type doesn't exist yet, so the
+  agent must call `data-types add` first. Also tests that the agent
+  picks the right verb for each step (data-types vs fields vs
   groups), which is the most common confusion in a multi-step
   taxonomy build.
 
-  Platform note: the test runs without an authenticated tenant, so
-  `uip ixp` commands that hit the service will fail with an auth
-  error. That is acceptable — what matters is the command shape and
-  ordering, not the live result.
-tags: [uipath-ixp, integration, lifecycle:execute]
+  Platform note: the smoke test runs without an authenticated
+  tenant, so `uip ixp` commands that hit the service will fail with
+  an auth error. That is acceptable — what matters is the command
+  shape and ordering, not the live result. A future integration
+  test should bootstrap a real project and verify the added
+  data-type and group via `projects get-taxonomy`.
+tags: [uipath-ixp, smoke, lifecycle:execute]
 
 agent:
   type: claude-code
