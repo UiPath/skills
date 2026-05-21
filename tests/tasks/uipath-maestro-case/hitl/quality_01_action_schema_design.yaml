@@ -46,130 +46,148 @@ initial_prompt: |
   ```
   # SDD — VendorPOReviewCase
 
+  Three-stage case where a HITL action task captures reviewer decision on a
+  vendor purchase order.
+
   ## Section 1: Case Definition
 
-  ### Case Metadata
+  ### 1.1 Case Metadata
   | Property | Value |
-  |----------|-------|
+  |---|---|
   | Case Name | VendorPOReviewCase |
   | Case Description | Procurement officer reviews a vendor purchase order. |
   | Case Identifier | Prefix: VPR, Type: constant |
-  | Priority | Choiceset: Low,Medium,High — Default: High |
+  | Priority | Choiceset: Low, Medium, High - Default: High |
+  | Case-Level SLA | - |
+  | SLA Type | - |
 
-  ### Case Triggers
+  ### 1.3 Triggers
   | Trigger Type | Source | Configuration | Initial Variable Mapping |
-  |-------------|--------|---------------|-------------------------|
-  | None        | Manual | N/A           | —                        |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
 
-  ### Case Exit Conditions
+  ### 1.4 Case Completion Conditions
   | WHEN | IF | THEN | Marks Case Complete |
-  |------|-----|------|---------------------|
-  | required-stages-completed | — | Case exited | Yes |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
 
-  ### Case Variables
-  | Variable | Type | Default | Description | Produced By | Consumed By |
-  |----------|------|---------|-------------|-------------|-------------|
-  | poNumber    | String | — | Purchase order number.       | Fetch PO Data    | Review PO |
-  | vendorName  | String | — | Vendor name.                 | Fetch PO Data    | Review PO |
-  | totalAmount | Number | — | PO total amount.             | Fetch PO Data    | Review PO |
-  | decision    | String | — | Reviewer decision.           | Review PO        | computed  |
-  | notes       | String | — | Reviewer free-form notes.    | Review PO        | computed  |
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | poNumber | Variable | string | | | | Purchase order number; populated by Fetch PO Data. |
+  | vendorName | Variable | string | | | | Vendor name; populated by Fetch PO Data. |
+  | totalAmount | Variable | number | | | | PO total amount; populated by Fetch PO Data. |
+  | decision | Variable | string | | | | Reviewer decision; populated by Review PO. |
+  | notes | Variable | string | | | | Reviewer free-form notes; populated by Review PO. |
 
   ## Section 2: Stages & Tasks
 
-  ### Stage 1: Fetch
+  ### Stage 1: Fetch (`fetch`)
   **Type:** Stage
   **Description:** Fetch PO data into the case.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | case-entered | — | No |
+  |---|---|---|
+  | case-entered | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Fetch PO Data | process | Yes | No | — | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `fetch.fetchPoData` | Fetch PO Data | process | System |
 
-  ##### Task 1.1: Fetch PO Data
+  ##### Task 1.1: Fetch PO Data (`fetch.fetchPoData`)
+
   **Type:** process
   **Description:** Fetches the PO record into case variables.
 
-  **Entry Condition:**
-  | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  **Entry Condition**
 
-  ### Stage 2: Review
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | poNumber | string | -> poNumber |
+  | vendorName | string | -> vendorName |
+  | totalAmount | number | -> totalAmount |
+
+  ### Stage 2: Review (`review`)
   **Type:** Stage
   **Description:** Procurement officer reviews the PO.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | selected-stage-completed("Fetch") | — | No |
+  |---|---|---|
+  | selected-stage-completed("Fetch") | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Review PO | action | Yes | No | Procurement Officer | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `review.reviewPo` | Review PO | action | Procurement Officer |
 
-  ##### Task 2.1: Review PO
+  ##### Task 2.1: Review PO (`review.reviewPo`)
+
   **Type:** action
   **Description:** Officer approves or rejects the PO.
 
-  **Entry Condition:**
+  **Entry Condition**
+
   | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  |---|---|
+  | current-stage-entered | - |
 
-  **HITL Implementation:** Action App: Review PO
+  | Field | Value |
+  |---|---|
+  | Action App Reference | Name "Review PO", Folder "Shared" |
+  | Component Type | ACTION_APP |
+  | Task Title | Please review this PO and approve or reject |
+  | Priority | High |
+  | Recipient | po-approvals@corp.com |
 
-  **Task Title:** Please review this PO and approve or reject
-  **Priority:** High
-  **Recipient:** po-approvals@corp.com
+  **Inputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | poNumber | string | =vars.poNumber |
+  | vendorName | string | =vars.vendorName |
+  | totalAmount | number | =vars.totalAmount |
 
-  **Input Schema:**
-  | Field        | Type   | Binding     | Required |
-  |--------------|--------|-------------|----------|
-  | poNumber     | String | poNumber    | Yes |
-  | vendorName   | String | vendorName  | Yes |
-  | totalAmount  | Number | totalAmount | Yes |
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | decision | string | -> decision |
+  | notes | string | -> notes |
 
-  **Output Schema:**
-  | Field    | Type   | Binding |
-  |----------|--------|---------|
-  | decision | String | -> decision |
-  | notes    | String | -> notes |
-
-  ### Stage 3: Closed
+  ### Stage 3: Closed (`closed`)
   **Type:** Stage
   **Description:** Case closed.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | selected-stage-completed("Review") | — | No |
+  |---|---|---|
+  | selected-stage-completed("Review") | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
+  #### Stage Task Summary
   (none)
   ```
 

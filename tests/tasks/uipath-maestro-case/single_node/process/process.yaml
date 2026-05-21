@@ -56,9 +56,9 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | procurementCompleted | implementation | boolean | false | ProcurementProcess completion flag | runProcess.runProcurementProcess | - |
+  | procurementCompleted | Variable | boolean | | | false | ProcurementProcess completion flag; populated by Run Process. |
 
   ## Section 2: Stages & Tasks
 

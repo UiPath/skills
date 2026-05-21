@@ -55,10 +55,10 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | name | input | string | tomasz | Input name passed to the NameToAgeFixed2 API workflow | trigger:Manual | lookup.lookupAge |
-  | age | implementation | number | - | Predicted age returned by the API workflow | lookup.lookupAge | - |
+  | name | In | string | | | tomasz | Input name passed to the NameToAgeFixed2 API workflow. |
+  | age | Variable | number | | | | Predicted age returned by the API workflow; populated by Lookup. |
 
   ## Section 2: Stages & Tasks
 

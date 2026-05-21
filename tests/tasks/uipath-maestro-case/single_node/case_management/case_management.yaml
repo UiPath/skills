@@ -55,9 +55,9 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | childCaseSpawned | implementation | boolean | false | ChildOnboardingCase spawn flag | delegate.spawnChildOnboardingCase | - |
+  | childCaseSpawned | Variable | boolean | | | false | ChildOnboardingCase spawn flag; populated by Delegate. |
 
   ## Section 2: Stages & Tasks
 

@@ -43,115 +43,127 @@ initial_prompt: |
   ```
   # SDD — ExpenseApprovalCase
 
+  Two-stage case where a HITL action task's output is consumed by a
+  downstream process task via runtime variable path.
+
   ## Section 1: Case Definition
 
-  ### Case Metadata
+  ### 1.1 Case Metadata
   | Property | Value |
-  |----------|-------|
+  |---|---|
   | Case Name | ExpenseApprovalCase |
   | Case Description | Reviews and records an employee expense decision. |
   | Case Identifier | Prefix: EAC, Type: constant |
-  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | - |
+  | SLA Type | - |
 
-  ### Case Triggers
+  ### 1.3 Triggers
   | Trigger Type | Source | Configuration | Initial Variable Mapping |
-  |-------------|--------|---------------|-------------------------|
-  | None        | Manual | N/A           | —                        |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
 
-  ### Case Exit Conditions
+  ### 1.4 Case Completion Conditions
   | WHEN | IF | THEN | Marks Case Complete |
-  |------|-----|------|---------------------|
-  | required-stages-completed | — | Case exited | Yes |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
 
-  ### Case Variables
-  | Variable | Type | Default | Description | Produced By | Consumed By |
-  |----------|------|---------|-------------|-------------|-------------|
-  | expenseAmount  | Number  | —     | Expense amount.       | (input)            | Review Expense |
-  | requesterName  | String  | —     | Employee name.        | (input)            | Review Expense |
-  | category       | String  | —     | Expense category.     | (input)            | Review Expense |
-  | approved       | Boolean | —     | Reviewer decision.    | Review Expense     | Log Decision   |
-  | comments       | String  | —     | Reviewer comments.    | Review Expense     | Log Decision   |
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | expenseAmount | In | number | | | | Expense amount supplied by the caller. |
+  | requesterName | In | string | | | | Employee name supplied by the caller. |
+  | category | In | string | | | | Expense category supplied by the caller. |
+  | approved | Variable | boolean | | | | Reviewer decision; populated by Review Expense. |
+  | comments | Variable | string | | | | Reviewer comments; populated by Review Expense. |
 
   ## Section 2: Stages & Tasks
 
-  ### Stage 1: Review
+  ### Stage 1: Review (`review`)
   **Type:** Stage
   **Description:** Reviewer approves or rejects the expense.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | case-entered | — | No |
+  |---|---|---|
+  | case-entered | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Review Expense | action | Yes | No | Reviewer | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `review.reviewExpense` | Review Expense | action | Reviewer |
 
-  ##### Task 1.1: Review Expense
+  ##### Task 1.1: Review Expense (`review.reviewExpense`)
+
   **Type:** action
   **Description:** Reviewer approves or rejects the expense.
 
-  **Entry Condition:**
+  **Entry Condition**
+
   | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  |---|---|
+  | current-stage-entered | - |
 
-  **HITL Implementation:** Action App: Review Expense
+  | Field | Value |
+  |---|---|
+  | Action App Reference | Name "Review Expense", Folder "Shared" |
+  | Component Type | ACTION_APP |
 
-  **Input Schema:**
-  | Field         | Type    | Binding        | Required |
-  |---------------|---------|----------------|----------|
-  | expenseAmount | Number  | expenseAmount  | Yes |
-  | requesterName | String  | requesterName  | Yes |
-  | category      | String  | category       | Yes |
+  **Inputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | expenseAmount | number | =vars.expenseAmount |
+  | requesterName | string | =vars.requesterName |
+  | category | string | =vars.category |
 
-  **Output Schema:**
-  | Field    | Type    | Binding |
-  |----------|---------|---------|
-  | approved | Boolean | -> approved |
-  | comments | String  | -> comments |
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | approved | boolean | -> approved |
+  | comments | string | -> comments |
 
-  ### Stage 2: Record
+  ### Stage 2: Record (`record`)
   **Type:** Stage
   **Description:** Records the decision for downstream consumers.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | selected-stage-completed("Review") | — | No |
+  |---|---|---|
+  | selected-stage-completed("Review") | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Log Decision | process | Yes | No | — | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `record.logDecision` | Log Decision | process | System |
 
-  ##### Task 2.1: Log Decision
+  ##### Task 2.1: Log Decision (`record.logDecision`)
+
   **Type:** process
   **Description:** Logs the reviewer decision and comments downstream.
 
-  **Entry Condition:**
-  | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  **Entry Condition**
 
-  **Inputs:**
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  **Inputs**
   | Variable | Type | Binding |
-  |----------|------|---------|
-  | approved | Boolean | "Review"."Review Expense".approved |
-  | comments | String  | "Review"."Review Expense".comments |
+  |---|---|---|
+  | approved | boolean | =vars.approved |
+  | comments | string | =vars.comments |
   ```
 
   Important:

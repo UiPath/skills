@@ -47,166 +47,188 @@ initial_prompt: |
   ```
   # SDD — VendorApprovalCase
 
+  Four-stage case where a HITL action's boolean output routes to either an
+  Onboarded or Rejected terminal stage.
+
   ## Section 1: Case Definition
 
-  ### Case Metadata
+  ### 1.1 Case Metadata
   | Property | Value |
-  |----------|-------|
+  |---|---|
   | Case Name | VendorApprovalCase |
   | Case Description | Compliance officer reviews a new vendor for onboarding. |
   | Case Identifier | Prefix: VAC, Type: constant |
-  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | - |
+  | SLA Type | - |
 
-  ### Case Triggers
+  ### 1.3 Triggers
   | Trigger Type | Source | Configuration | Initial Variable Mapping |
-  |-------------|--------|---------------|-------------------------|
-  | None        | Manual | N/A           | —                        |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
 
-  ### Case Exit Conditions
+  ### 1.4 Case Completion Conditions
   | WHEN | IF | THEN | Marks Case Complete |
-  |------|-----|------|---------------------|
-  | required-stages-completed | — | Case exited | Yes |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
 
-  ### Case Variables
-  | Variable | Type | Default | Description | Produced By | Consumed By |
-  |----------|------|---------|-------------|-------------|-------------|
-  | vendorName  | String  | "Acme Corp" | Vendor name.            | Set Vendor Context | Compliance Review |
-  | creditScore | Number  | 720         | Vendor credit score.    | Set Vendor Context | Compliance Review |
-  | approved    | Boolean | —           | Compliance decision.    | Compliance Review  | Compliance (exit), Onboarded (entry), Rejected (entry) |
-  | risk_notes  | String  | —           | Optional risk notes.    | Compliance Review  | computed |
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | vendorName | Variable | string | | | "Acme Corp" | Vendor name; populated by Set Vendor Context. |
+  | creditScore | Variable | number | | | 720 | Vendor credit score; populated by Set Vendor Context. |
+  | approved | Variable | boolean | | | | Compliance decision; populated by Compliance Review. |
+  | risk_notes | Variable | string | | | | Optional risk notes; populated by Compliance Review. |
 
   ## Section 2: Stages & Tasks
 
-  ### Stage 1: Context
+  ### Stage 1: Context (`context`)
   **Type:** Stage
   **Description:** Sets vendor context.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | case-entered | — | No |
+  |---|---|---|
+  | case-entered | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Set Vendor Context | process | Yes | No | — | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `context.setVendorContext` | Set Vendor Context | process | System |
 
-  ##### Task 1.1: Set Vendor Context
+  ##### Task 1.1: Set Vendor Context (`context.setVendorContext`)
+
   **Type:** process
   **Description:** Initializes vendor variables.
 
-  **Entry Condition:**
-  | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  **Entry Condition**
 
-  ### Stage 2: Compliance
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | vendorName | string | -> vendorName |
+  | creditScore | number | -> creditScore |
+
+  ### Stage 2: Compliance (`compliance`)
   **Type:** Stage
   **Description:** Compliance officer reviews the vendor.
   **Required for Case Completion:** No
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | selected-stage-completed("Context") | — | No |
+  |---|---|---|
+  | selected-stage-completed("Context") | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | selected-tasks-completed("Compliance Review") | approved == true  | exit-only | No |
+  |---|---|---|---|
+  | selected-tasks-completed("Compliance Review") | approved == true | exit-only | No |
   | selected-tasks-completed("Compliance Review") | approved == false | exit-only | No |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Compliance Review | action | Yes | No | Compliance Officer | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `compliance.complianceReview` | Compliance Review | action | Compliance Officer |
 
-  ##### Task 2.1: Compliance Review
+  ##### Task 2.1: Compliance Review (`compliance.complianceReview`)
+
   **Type:** action
   **Description:** Compliance review of the vendor.
 
-  **Entry Condition:**
+  **Entry Condition**
+
   | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  |---|---|
+  | current-stage-entered | - |
 
-  **HITL Implementation:** Action App: Compliance Review
+  | Field | Value |
+  |---|---|
+  | Action App Reference | Name "Compliance Review", Folder "Shared" |
+  | Component Type | ACTION_APP |
 
-  **Input Schema:**
-  | Field       | Type   | Binding     | Required |
-  |-------------|--------|-------------|----------|
-  | vendorName  | String | vendorName  | Yes |
-  | creditScore | Number | creditScore | Yes |
+  **Inputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | vendorName | string | =vars.vendorName |
+  | creditScore | number | =vars.creditScore |
 
-  **Output Schema:**
-  | Field      | Type    | Binding |
-  |------------|---------|---------|
-  | approved   | Boolean | -> approved |
-  | risk_notes | String  | -> risk_notes |
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | approved | boolean | -> approved |
+  | risk_notes | string | -> risk_notes |
 
-  ### Stage 3: Onboarded
+  ### Stage 3: Onboarded (`onboarded`)
   **Type:** Stage
   **Description:** Vendor onboarded.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
+  |---|---|---|
   | selected-stage-exited("Compliance") | approved == true | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Log Onboarded | process | Yes | No | — | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `onboarded.logOnboarded` | Log Onboarded | process | System |
 
-  ##### Task 3.1: Log Onboarded
+  ##### Task 3.1: Log Onboarded (`onboarded.logOnboarded`)
+
   **Type:** process
   **Description:** Logs "Vendor onboarded".
 
-  **Entry Condition:**
-  | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  **Entry Condition**
 
-  ### Stage 4: Rejected
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  ### Stage 4: Rejected (`rejected`)
   **Type:** Stage
   **Description:** Vendor rejected.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
+  |---|---|---|
   | selected-stage-exited("Compliance") | approved == false | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Log Rejected | process | Yes | No | — | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `rejected.logRejected` | Log Rejected | process | System |
 
-  ##### Task 4.1: Log Rejected
+  ##### Task 4.1: Log Rejected (`rejected.logRejected`)
+
   **Type:** process
   **Description:** Logs "Vendor rejected".
 
-  **Entry Condition:**
+  **Entry Condition**
+
   | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  |---|---|
+  | current-stage-entered | - |
   ```
 
   Important:

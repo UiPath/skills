@@ -53,124 +53,142 @@ initial_prompt: |
   ```
   # SDD — ContractReviewCase
 
+  Three-stage case where a HITL action task gates contract closure on
+  legal-reviewer approval.
+
   ## Section 1: Case Definition
 
-  ### Case Metadata
+  ### 1.1 Case Metadata
   | Property | Value |
-  |----------|-------|
+  |---|---|
   | Case Name | ContractReviewCase |
   | Case Description | Legal reviewer approves a contract before close. |
   | Case Identifier | Prefix: CRC, Type: constant |
-  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | - |
+  | SLA Type | - |
 
-  ### Case Triggers
+  ### 1.3 Triggers
   | Trigger Type | Source | Configuration | Initial Variable Mapping |
-  |-------------|--------|---------------|-------------------------|
-  | None        | Manual | N/A           | —                        |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
 
-  ### Case Exit Conditions
+  ### 1.4 Case Completion Conditions
   | WHEN | IF | THEN | Marks Case Complete |
-  |------|-----|------|---------------------|
-  | required-stages-completed | — | Case exited | Yes |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
 
-  ### Case Variables
-  | Variable | Type | Default | Description | Produced By | Consumed By |
-  |----------|------|---------|-------------|-------------|-------------|
-  | contractId    | String  | — | Contract identifier.    | Extract Metadata | Approve Contract |
-  | contractValue | Number  | — | Contract dollar value.  | Extract Metadata | Approve Contract |
-  | approved      | Boolean | — | Reviewer decision.      | Approve Contract | computed         |
-  | legal_notes   | String  | — | Reviewer free notes.    | Approve Contract | computed         |
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | contractId | Variable | string | | | | Contract identifier; populated by Extract Metadata. |
+  | contractValue | Variable | number | | | | Contract dollar value; populated by Extract Metadata. |
+  | approved | Variable | boolean | | | | Reviewer decision; populated by Approve Contract. |
+  | legal_notes | Variable | string | | | | Reviewer free notes; populated by Approve Contract. |
 
   ## Section 2: Stages & Tasks
 
-  ### Stage 1: Extract
+  ### Stage 1: Extract (`extract`)
   **Type:** Stage
   **Description:** Extract contract metadata into case variables.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | case-entered | — | No |
+  |---|---|---|
+  | case-entered | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Extract Metadata | process | Yes | No | — | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `extract.extractMetadata` | Extract Metadata | process | System |
 
-  ##### Task 1.1: Extract Metadata
+  ##### Task 1.1: Extract Metadata (`extract.extractMetadata`)
+
   **Type:** process
   **Description:** Extracts contract metadata.
 
-  **Entry Condition:**
-  | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  **Entry Condition**
 
-  ### Stage 2: LegalReview
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | contractId | string | -> contractId |
+  | contractValue | number | -> contractValue |
+
+  ### Stage 2: LegalReview (`legalReview`)
   **Type:** Stage
   **Description:** Legal reviewer approves the contract.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | selected-stage-completed("Extract") | — | No |
+  |---|---|---|
+  | selected-stage-completed("Extract") | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | selected-tasks-completed("Approve Contract") | — | exit-only | Yes |
+  |---|---|---|---|
+  | selected-tasks-completed("Approve Contract") | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Approve Contract | action | Yes | No | Legal Reviewer | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `legalReview.approveContract` | Approve Contract | action | Legal Reviewer |
 
-  ##### Task 2.1: Approve Contract
+  ##### Task 2.1: Approve Contract (`legalReview.approveContract`)
+
   **Type:** action
   **Description:** Legal reviewer approves or rejects the contract.
 
-  **Entry Condition:**
+  **Entry Condition**
+
   | WHEN | IF |
-  |------|-----|
-  | current-stage-entered | — |
+  |---|---|
+  | current-stage-entered | - |
 
-  **HITL Implementation:** Action App: Approve Contract
+  | Field | Value |
+  |---|---|
+  | Action App Reference | Name "Approve Contract", Folder "Shared" |
+  | Component Type | ACTION_APP |
 
-  **Input Schema:**
-  | Field         | Type   | Binding        | Required |
-  |---------------|--------|----------------|----------|
-  | contractId    | String | contractId     | Yes |
-  | contractValue | Number | contractValue  | Yes |
+  **Inputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | contractId | string | =vars.contractId |
+  | contractValue | number | =vars.contractValue |
 
-  **Output Schema:**
-  | Field       | Type    | Binding |
-  |-------------|---------|---------|
-  | approved    | Boolean | -> approved |
-  | legal_notes | String  | -> legal_notes |
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | approved | boolean | -> approved |
+  | legal_notes | string | -> legal_notes |
 
-  ### Stage 3: Closed
+  ### Stage 3: Closed (`closed`)
   **Type:** Stage
   **Description:** Case closed.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
-  |------|-----|-------------|
-  | selected-stage-completed("LegalReview") | — | No |
+  |---|---|---|
+  | selected-stage-completed("LegalReview") | - | No |
 
-  #### Stage Exit Conditions
+  #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
-  |------|-----|-----------|---------------------|
-  | required-tasks-completed | — | exit-only | Yes |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
+  #### Stage Task Summary
   (none)
   ```
 

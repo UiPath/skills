@@ -55,10 +55,10 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | word | input | string | arrow | Input word the CountLetters agent counts | trigger:Manual | classify.runCountLetters |
-  | letterCount | implementation | number | - | Count of the letter 'r' returned by CountLetters | classify.runCountLetters | - |
+  | word | In | string | | | arrow | Input word the CountLetters agent counts. |
+  | letterCount | Variable | number | | | | Count of the letter 'r' returned by CountLetters; populated by Classify. |
 
   ## Section 2: Stages & Tasks
 
