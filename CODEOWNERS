@@ -83,8 +83,8 @@
 /skills/uipath-llm-configuration-byo-connections/ @denispetre @vstoleru-uipath @dragosvelcea
 
 # Test skill (reports, manual test automation, manual test execution)
-/skills/uipath-test/ @vaishalisharma-uipath @amoluipath
-/tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath
+/skills/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
+/tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
 
 # Data Fabric skill (CLI entity/record management)
 /skills/uipath-data-fabric/ @aditi-goyal-uipath
