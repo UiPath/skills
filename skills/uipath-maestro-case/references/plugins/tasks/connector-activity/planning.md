@@ -187,7 +187,7 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 - runOnlyOnce: false
 - order: after T<m>
 - lane: <n>
-- verify: Confirm task created with correct inputs
+- verify: tasks.md `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, `pathParameters` — see Step 5 above.
 ```
 
 `filter:` is optional and present only when the operation supports CEQL (i.e. `spec.filter` was non-null in step 7).
