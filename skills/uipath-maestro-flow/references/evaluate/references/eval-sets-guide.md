@@ -208,7 +208,6 @@ uip maestro flow eval simulation remove <component-id> \
 |----------|----------|-----------|
 | `Llm` | Output should be plausible but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |
 | `Static` | Output must be identical every run | `--mock-value <json>` |
-| `Mockito` | Output depends on input conditions | Edit `behaviors` in the eval set JSON directly |
 
 For `Llm` simulations, `--output-schema` is **auto-resolved from the `.flow` file** — the CLI reads the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`) and injects it automatically. Pass `--output-schema` explicitly only when you need to override the derived schema or the node has no declared outputs.
 

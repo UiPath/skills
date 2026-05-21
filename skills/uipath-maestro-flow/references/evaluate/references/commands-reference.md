@@ -140,7 +140,7 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 |------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--data-point <id>` | Yes | Data point name or ID |
-| `--strategy <strategy>` | Yes | `Llm`, `Static`, or `Mockito` |
+| `--strategy <strategy>` | Yes | `Llm` or `Static` |
 | `--component-type <type>` | Yes | Component type (e.g. `connector`, `agent`, `subflow`) |
 | `--component-description <text>` | No | Human-readable label for the component |
 | `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |
@@ -154,7 +154,6 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 |----------|-------------|-----------|
 | `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |
 | `Static` | Output is fixed and deterministic | `--mock-value` |
-| `Mockito` | Rule-based: output varies by input conditions | Edit the eval set JSON directly for `behaviors` |
 
 **`--output-schema` auto-resolution for Llm simulations:** When omitted, the CLI reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`). Fails with an actionable error if the node is not found or has no outputs. Pass `--output-schema` explicitly to override. The JSON Schema is sent alongside `--simulation-instructions` to the LLM, telling it what shape the output must conform to. Without it the LLM generates free-form text. For a connector that returns `{ status, message }` you would pass:
 
