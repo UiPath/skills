@@ -22,7 +22,7 @@ PATs provide scoped API authentication for users — an alternative to OAuth2 cl
    uip admin pat create \
      --description "CI/CD pipeline token" \
      --expiration "2027-01-15" \
-     --scopes "OR.Folders.Read,OR.Jobs.Read" \
+     --scope "OR.Folders.Read,OR.Jobs.Read" \
      --output json
    ```
 3. **Save the token value immediately.** It appears only in the creation response.

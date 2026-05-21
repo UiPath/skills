@@ -19,7 +19,7 @@ sandbox:
 
 initial_prompt: |
   Create a personal access token described as "e2e-test-pat" with
-  read access to Folders, expiring 2027-06-01. Then list my tokens
+  read access to Folders, expiring 90 days from now. Then list my tokens
   to confirm it was created.
 
   Do NOT prompt the user for confirmation — this is an automated test.

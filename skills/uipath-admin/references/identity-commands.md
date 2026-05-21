@@ -525,7 +525,7 @@ Create a personal access token. Token value returned only once.
 uip admin pat create \
   --description "CI/CD pipeline token" \
   --expiration "2027-01-15" \
-  --scopes "OR.Folders.Read,OR.Jobs.Read" \
+  --scope "OR.Folders.Read,OR.Jobs.Read" \
   --output json
 ```
 
@@ -533,7 +533,7 @@ uip admin pat create \
 |------|----------|-------------|
 | `--description <text>` | Yes | Token description |
 | `--expiration <date>` | Yes | Expiration date (ISO 8601: `YYYY-MM-DD`) |
-| `--scopes <scopes>` | Yes | Comma-separated scope names |
+| `--scope <scopes>` | Yes | Comma-separated scope names |
 
 **Output code:** `PatCreated`
 
