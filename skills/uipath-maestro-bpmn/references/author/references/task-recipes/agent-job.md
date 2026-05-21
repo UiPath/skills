@@ -1,5 +1,7 @@
 # Agent Job Recipe
 
+> For invoking a deployed Python coded agent from BPMN, read [python-coded-agent.md](./python-coded-agent.md) first - it covers the verified RPA-wrapper indirection and the draft direct-invocation binding shape.
+
 The current supported implementation wrapper for confirmed agent execution is
 `bpmn:serviceTask`.
 

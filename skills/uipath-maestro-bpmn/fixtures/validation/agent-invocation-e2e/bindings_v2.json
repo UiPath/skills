@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_AgentWrapperProcess",
+      "name": "Agent Wrapper Process",
+      "kind": "process",
+      "resourceKey": "synthetic-agent-wrapper-process",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Agent Wrapper Process",
+        "SolutionsSupport": "Required",
+        "SubType": "process"
+      }
+    }
+  ]
+}

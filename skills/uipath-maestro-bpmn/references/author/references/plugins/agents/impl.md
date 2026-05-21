@@ -26,3 +26,5 @@ The CLI or operator must resolve:
 - Input variables and output variables exist.
 - Timeout and invalid-output paths are modeled when needed.
 - High-impact outputs have review or validation gates when required by user intent.
+
+For invoking a deployed Python coded agent end-to-end (recommended RPA-wrapper path + draft direct path), see [`../../task-recipes/python-coded-agent.md`](../../task-recipes/python-coded-agent.md).

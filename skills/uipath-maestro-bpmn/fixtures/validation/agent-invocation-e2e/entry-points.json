@@ -1,0 +1,25 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_AgentInvocationE2E",
+      "name": "Start",
+      "filePath": "/content/agent-invocation-e2e.bpmn#Start_Request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "finalOutcome": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

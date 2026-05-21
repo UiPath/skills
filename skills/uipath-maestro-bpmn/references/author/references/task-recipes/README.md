@@ -11,6 +11,7 @@ not process-modeling guidance.
 | --- | --- | --- |
 | Start an RPA process | `bpmn:serviceTask` | [rpa-job.md](rpa-job.md) |
 | Start a UiPath agent or A2A agent | `bpmn:serviceTask` | [agent-job.md](agent-job.md) |
+| Invoke a deployed Python coded agent end-to-end | `bpmn:serviceTask` | [python-coded-agent.md](python-coded-agent.md) |
 | Execute an API workflow | `bpmn:serviceTask` | [api-workflow.md](api-workflow.md) |
 | Implement confirmed request-and-continue plain HTTP | `bpmn:sendTask` | [http-request.md](http-request.md) |
 | Create a queue item | `bpmn:sendTask` | [queue.md](queue.md) |

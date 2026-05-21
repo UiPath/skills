@@ -1,0 +1,9 @@
+{
+  "projectId": "Fixture.AgentInvocationE2E",
+  "main": "agent-invocation-e2e.bpmn",
+  "contentType": "ProcessOrchestration",
+  "targetFramework": "Portable",
+  "runtimeOptions": {
+    "requiresUserInteraction": false
+  }
+}

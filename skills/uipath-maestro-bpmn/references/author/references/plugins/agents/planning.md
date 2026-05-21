@@ -27,3 +27,5 @@ Use this reference when planning agent execution from BPMN. Agents are resource 
 ## Stop conditions
 
 Stop before Operate when agent identity, version, input schema, output schema, or resource binding is unresolved.
+
+For invoking a deployed Python coded agent end-to-end (recommended RPA-wrapper path + draft direct path), see [`../../task-recipes/python-coded-agent.md`](../../task-recipes/python-coded-agent.md).

@@ -66,9 +66,14 @@ Namespace baseline for greenfield files:
 </bpmn:serviceTask>
 ```
 
-## Orchestrator.StartAgentJob (UiPath agent)
+## Orchestrator.StartAgentJob (UiPath agent) - draft / verification-required
 
-`bpmn:serviceTask` with `Orchestrator.StartAgentJob`.
+`bpmn:serviceTask` with `Orchestrator.StartAgentJob`. The service task references
+a pair of root `uipath:bindings` entries with `propertyAttribute="name"` and
+`propertyAttribute="folderPath"` pointing at the same `resourceKey` with
+`resourceSubType="Agent"`. This is the shape reported to satisfy
+`uip solution pack` validation; it has not been verified runtime-end-to-end in
+this skill. Treat it as draft until an operator has packed and run it.
 
 ```xml
 <bpmn:serviceTask id="Task_StartAgentJob" name="Start Agent Job">
@@ -76,7 +81,8 @@ Namespace baseline for greenfield files:
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
       <uipath:context>
-        <uipath:input name="agentName" type="string" value="Synthetic Agent" />
+        <uipath:input name="agentName" type="resource" value="=bindings.Binding_Agent_Name" />
+        <uipath:input name="folderPath" type="resource" value="=bindings.Binding_Agent_FolderPath" />
       </uipath:context>
     </uipath:activity>
     <uipath:mapping version="v1">
@@ -87,6 +93,29 @@ Namespace baseline for greenfield files:
   <bpmn:outgoing>Flow_AgentJob_Out</bpmn:outgoing>
 </bpmn:serviceTask>
 ```
+
+Matching root `uipath:bindings` block (both rows share `resourceKey` and
+`resourceSubType="Agent"`; they differ only in `propertyAttribute`):
+
+```xml
+<uipath:bindings version="v1">
+  <uipath:binding id="Binding_Agent_Name" name="Synthetic Agent" type="agent"
+    elementId="Task_StartAgentJob" resource="SyntheticAgent"
+    resourceSubType="Agent" resourceKey="synthetic-agent-key"
+    propertyAttribute="name" />
+  <uipath:binding id="Binding_Agent_FolderPath" name="Synthetic Agent Folder" type="agent"
+    elementId="Task_StartAgentJob" resource="SyntheticAgent"
+    resourceSubType="Agent" resourceKey="synthetic-agent-key"
+    propertyAttribute="folderPath" />
+</uipath:bindings>
+```
+
+Draft / verification-required. The pair-binding shape is what `uip solution pack`
+has been reported to validate against; run `uip solution pack` (or the equivalent
+deploy-time validator) on a real tenant before relying on this shape in
+production. Prefer the verified RPA-wrapper indirection from
+[`../author/references/task-recipes/python-coded-agent.md`](../author/references/task-recipes/python-coded-agent.md)
+when invoking a folder-deployed agent from BPMN.
 
 ## A2A.AgentExecution
 

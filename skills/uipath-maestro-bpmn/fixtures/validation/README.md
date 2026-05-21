@@ -14,6 +14,7 @@ Public-safe fixture corpus for the `uipath-maestro-bpmn` skill maintenance check
 | `contract-variants/` | Representative public-safe Orchestrator agent, A2A, API workflow, business rule, queue, agentic/case call activity, message send event, case-management draft/preserve shells, `Intsvc.WaitForEvent`, numeric migration, legacy script, and preserve-only extension variants. |
 | `registry-coverage-matrix/` | Synthetic static wrapper coverage for current registry rows not otherwise covered by the corpus, including HITL, plain RPA, timer, HTTP, unified HTTP, and remaining Integration Service execution variants. |
 | `wrapper-family-contract/` | Maestro BPMN wrapper coverage for `A2A.AgentExecution`, API workflow, business rule, queue wait, case-management call activity, and `Intsvc.WaitForEvent` enrichment paths. |
+| `agent-invocation-e2e/` | End-to-end recipe fixture: process input mirrored into mutable state via start-event `BPMN.Variables`, deployed agent invoked via `Orchestrator.StartJob` (recommended RPA-wrapper indirection), and the agent's JSON output consumed by a downstream exclusive gateway. |
 
 ## Contract Coverage Scope
 

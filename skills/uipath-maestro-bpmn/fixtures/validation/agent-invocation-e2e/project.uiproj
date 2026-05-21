@@ -1,0 +1,7 @@
+{
+  "projectVersion": "1.0.0",
+  "projectType": "ProcessOrchestration",
+  "name": "AgentInvocationE2E",
+  "description": "Synthetic end-to-end agent invocation fixture - process input mirrored to mutable state, deployed agent invoked via Orchestrator.StartJob, JSON output consumed by a downstream gateway.",
+  "main": "agent-invocation-e2e.bpmn"
+}

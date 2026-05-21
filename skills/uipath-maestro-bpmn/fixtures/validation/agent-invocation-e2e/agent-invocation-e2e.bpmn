@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_AgentInvocationE2E" targetNamespace="http://uipath.com/synthetic/maestro-bpmn/agent-invocation-e2e">
+  <bpmn:process id="Process_AgentInvocationE2E" name="Agent Invocation End To End" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="Var_RequestId" name="requestId" type="string" elementId="Start_Request" />
+        <uipath:inputOutput id="Var_RequestId_Mirror" name="requestIdMirror" type="string" />
+        <uipath:inputOutput id="Var_JobStatus" name="jobStatus" type="string" />
+        <uipath:inputOutput id="Var_AgentResult" name="agentResult" type="json" />
+        <uipath:output id="Var_FinalOutcome" name="finalOutcome" type="string" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_AgentWrapperProcess" name="Agent Wrapper Process" type="process" elementId="Task_InvokeAgent" resource="SyntheticAgentWrapper" resourceSubType="process" resourceKey="synthetic-agent-wrapper-process" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_Request" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="Entry_AgentInvocationE2E" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context />
+          <uipath:output name="requestIdMirror" type="string" var="Var_RequestId_Mirror" source="=vars.Var_RequestId" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_To_Invoke</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_InvokeAgent" name="Invoke Agent Wrapper">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="process" type="resource" value="=bindings.Binding_AgentWrapperProcess" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId_Mirror"}]]></uipath:input>
+          <uipath:output name="JobState" type="string" var="Var_JobStatus" source="state" />
+          <uipath:output name="JobResult" type="json" var="Var_AgentResult" source="result" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_To_Invoke</bpmn:incoming>
+      <bpmn:outgoing>Flow_Invoke_To_Gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Outcome" name="Outcome" default="Flow_Gateway_To_Rejected">
+      <bpmn:incoming>Flow_Invoke_To_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Gateway_To_Approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Gateway_To_Rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Approved" name="Approved">
+      <bpmn:incoming>Flow_Gateway_To_Approved</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Rejected" name="Rejected">
+      <bpmn:incoming>Flow_Gateway_To_Rejected</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_To_Invoke" sourceRef="Start_Request" targetRef="Task_InvokeAgent" />
+    <bpmn:sequenceFlow id="Flow_Invoke_To_Gateway" sourceRef="Task_InvokeAgent" targetRef="Gateway_Outcome" />
+    <bpmn:sequenceFlow id="Flow_Gateway_To_Approved" sourceRef="Gateway_Outcome" targetRef="End_Approved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=vars.Var_AgentResult.outcome == "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Gateway_To_Rejected" sourceRef="Gateway_Outcome" targetRef="End_Rejected" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_AgentInvocationE2E">
+    <bpmndi:BPMNPlane id="Plane_AgentInvocationE2E" bpmnElement="Process_AgentInvocationE2E">
+      <bpmndi:BPMNShape id="Shape_Start_Request" bpmnElement="Start_Request"><dc:Bounds x="100" y="160" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_InvokeAgent" bpmnElement="Task_InvokeAgent"><dc:Bounds x="200" y="138" width="160" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_Outcome" bpmnElement="Gateway_Outcome" isMarkerVisible="true"><dc:Bounds x="420" y="153" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Approved" bpmnElement="End_Approved"><dc:Bounds x="540" y="90" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Rejected" bpmnElement="End_Rejected"><dc:Bounds x="540" y="230" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Start_To_Invoke" bpmnElement="Flow_Start_To_Invoke"><di:waypoint x="136" y="178" /><di:waypoint x="200" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Invoke_To_Gateway" bpmnElement="Flow_Invoke_To_Gateway"><di:waypoint x="360" y="178" /><di:waypoint x="420" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Gateway_To_Approved" bpmnElement="Flow_Gateway_To_Approved"><di:waypoint x="445" y="153" /><di:waypoint x="445" y="108" /><di:waypoint x="540" y="108" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Gateway_To_Rejected" bpmnElement="Flow_Gateway_To_Rejected"><di:waypoint x="445" y="203" /><di:waypoint x="445" y="248" /><di:waypoint x="540" y="248" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
