@@ -11,6 +11,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 - Add or remove data points (test cases) on a Flow eval set
 - Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*` types) for a Flow project
 - Create or remove eval sets, link them to evaluators, pin entry points
+- Add, list, or remove simulations on data points (`uip maestro flow eval simulation`)
 - Start an eval run on Studio Web, poll its status, fetch detailed results
 - Compare two eval runs to verify a change improved scores without regressions
 
@@ -87,6 +88,7 @@ uip maestro flow eval run results <eval_set_run_id> \
 | **Create an eval set and pin an entry point** | [eval-sets-guide.md — Eval Set Lifecycle](references/eval-sets-guide.md#eval-set-lifecycle) |
 | **Add a data point with file attachments** | [eval-sets-guide.md — `--input-file`](references/eval-sets-guide.md#--input-file-keypath) |
 | **Set per-data-point criteria for trajectory evaluators** | [eval-sets-guide.md — `--criteria`](references/eval-sets-guide.md#--criteria) |
+| **Add a simulation to a data point** | [eval-sets-guide.md — Simulations](references/eval-sets-guide.md#simulations-on-data-points) + [commands-reference.md — Simulations](references/commands-reference.md#simulations) |
 | **Start a Studio Web eval run** | [running-guide.md — Start a Run](references/running-guide.md#start-a-run) |
 | **Poll run status without `--wait`** | [running-guide.md — Check Status](references/running-guide.md#check-status) |
 | **Inspect only failed data points** | [running-guide.md — Detailed Results](references/running-guide.md#detailed-results) (`--only-failed --verbose`) |
@@ -120,7 +122,7 @@ After a run completes, report:
 
 - [commands-reference.md](references/commands-reference.md) — every `uip maestro flow eval` subcommand, flags, defaults, output `Code` enum
 - [evaluators-guide.md](references/evaluators-guide.md) — 7 evaluator types mapped to internal `uipath-*` IDs, JSON shapes, template variables
-- [eval-sets-guide.md](references/eval-sets-guide.md) — eval set + data point CRUD, `--inputs`/`--expected`/`--criteria`/`--input-file`/`--search-text`
+- [eval-sets-guide.md](references/eval-sets-guide.md) — eval set + data point CRUD, `--inputs`/`--expected`/`--criteria`/`--input-file`/`--search-text`, simulations
 - [running-guide.md](references/running-guide.md) — run start/status/results/list/compare, JMESPath `--output-filter`, failure detection
 - [upload-safety.md](references/upload-safety.md) — the `solution upload` rule
 
