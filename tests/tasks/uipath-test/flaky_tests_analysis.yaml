@@ -15,7 +15,7 @@ agent:
   type: claude-code
 
 run_limits:
-  max_turns: 3
+  max_turns: 35
 
 sandbox:
   driver: docker
