@@ -25,8 +25,8 @@ initial_prompt: |
   Create a UiPath solution "OnboardingFlowSol" containing a flow
   project "OnboardingFlow". The flow should use an inline low-code
   agent that calls an Agentic process called "EmployeeOnboarding" living
-  inside this same solution as a separate project. Wire the Maestro
-  flow as a tool on the inline agent.
+  inside this same solution as a separate project. Wire the Agentic
+  process as a tool on the inline agent.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
