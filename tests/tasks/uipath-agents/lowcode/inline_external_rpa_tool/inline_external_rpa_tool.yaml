@@ -5,8 +5,8 @@ description: >
   EXTERNAL RPA process deployed to Orchestrator (not inside this
   solution). Verifies the tool resource.json under the inline agent's
   UUID subdirectory uses `type: "process"`, `location: "external"`,
-  real `folderPath`, and that a `uipath.agent.resource.tool.rpa` flow
-  node is wired to the autonomous agent node's `tool` handle.
+  real `folderPath`, and that a `uipath.agent.resource.tool.process.<uuid>`
+  flow node is wired to the autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
 agent:

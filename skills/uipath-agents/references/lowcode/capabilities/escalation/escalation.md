@@ -132,6 +132,7 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
   "storageBucketName": null,                        // only used when escalationType = 1
   "properties": {},
   "governanceProperties": { "isEscalatedAtRuntime": false },
+  "isEnabled": true,
   "channels": [
     {
       "id": "<uuid-v4>",                            // channel id — generate a new one per channel

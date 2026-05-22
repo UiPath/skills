@@ -6,7 +6,7 @@ description: >
   Verifies the tool resource.json under the inline agent's UUID
   subdirectory uses `type: "process"`, `location: "solution"`,
   `folderPath: "solution_folder"`, and that a
-  `uipath.agent.resource.tool.rpa` flow node is wired to the
+  `uipath.agent.resource.tool.process.<uuid>` flow node is wired to the
   autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
