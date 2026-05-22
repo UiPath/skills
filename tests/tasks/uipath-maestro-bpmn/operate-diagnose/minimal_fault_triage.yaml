@@ -16,7 +16,6 @@ run_limits:
   turn_timeout: 900
 
 sandbox:
-  driver: tempdir
   template_sources:
   - type: template_dir
     path: ../../../../skills/uipath-maestro-bpmn

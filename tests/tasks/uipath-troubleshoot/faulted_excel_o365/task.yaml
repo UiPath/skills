@@ -26,7 +26,6 @@ run_limits:
   turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
   template_sources:
   - type: template_dir
     path: ../_shared/mock_template
