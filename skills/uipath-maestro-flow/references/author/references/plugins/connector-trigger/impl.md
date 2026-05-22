@@ -2,60 +2,9 @@
 
 How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
 
-## Quick Reference — Standard Sequence
+## Configuration Workflow
 
-For a typical connector trigger (polling mode, one connection, no BYOA, no filter), this is the whole sequence:
-
-```bash
-# 1. Discover the connection
-uip is connections list "<connector-key>" --all-folders --output json
-
-# 2. Query trigger objects — MANDATORY; drives BYOA and webhook-URL decisions
-uip is triggers objects "<connector-key>" "<OPERATION>" --connection-id "<id>" --output json
-# capture: byoaConnection, isWebhookUrlVisible, design.textBlocks
-
-# 3. Enriched trigger metadata (--connection-id REQUIRED for triggers)
-uip maestro flow registry get <triggerNodeType> --connection-id <id> --output json
-# capture: eventMode, eventParameters.fields, filterFields.fields, outputResponseDefinition
-
-# 4. Replace the manual trigger (CLI-owned — do NOT hand-write the trigger node)
-uip maestro flow node remove <file> start --output json
-uip maestro flow node add <file> <triggerNodeType> --label "<LABEL>" --output json
-
-# 5. Configure inputs.detail and bindings[]
-uip maestro flow node configure <file> <triggerId> --detail '{
-  "connectionId":    "<id>",
-  "folderKey":       "<key>",
-  "eventMode":       "<webhooks|polling>",
-  "eventParameters": { "<paramName>": "<RESOLVED_VALUE>" }
-}' --output json
-
-# 6. Validate
-uip maestro flow validate <file> --output json
-```
-
-**Stop reading here unless one of these applies:**
-
-| Condition (check against Step 1b / Step 2 output) | Jump to |
-| --- | --- |
-| `triggers objects` response has `byoaConnection: true` | § Step 1c |
-| Any `eventParameters.fields[]` entry has a `reference` object | § Step 3 |
-| User wants to narrow which events fire (any filter on `filterFields`) | § Filter Trees |
-| `eventMode: "webhooks"` AND `isWebhookUrlVisible: true` | § Step 6b |
-| Downstream node consumes trigger output (`$vars.<triggerId>.output.<field>`) | § Step 4b |
-| Re-configuring an already-configured trigger | § Step 6 (same full-rebuild rule as activities) |
-
-**Universal gotchas — read once, never repeat:**
-
-- `--output json`, never `--format json` (which exits 3).
-- `--all-folders` on `is connections list` is mandatory; Shared-folder connections are hidden without it.
-- `--connection-id` on `registry get` is **required** for trigger nodes (unlike activities, where it's required-for-enrichment).
-- Reference IDs are connection-scoped. Re-resolve via `is resources run list` against the current `--connection-id`. Never paste IDs across flows.
-- Never pass `filterExpression` directly — it's derived from `filter` by the CLI; passing it errors at configure time.
-
-## Detailed reference
-
-The steps below are **inputs to the Quick Reference's CLI calls** above. Read top-to-bottom only when the Quick Reference's skip table sends you here, or when configuring a trigger that uses BYOA, filters, webhooks, or reference fields.
+Follow these steps for every IS trigger node.
 
 ### Step 1 — Fetch a preliminary connection and query trigger objects
 
