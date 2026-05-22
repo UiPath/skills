@@ -5,7 +5,11 @@ defaults:
   run_limits:
     max_turns: 200
     task_timeout: 1200
-    turn_timeout: 300
+    # Match smoke.yaml: a single turn can chain several cold-runner Helm-backed
+    # `uip rpa` calls (install-or-update-packages → get-analyzer-rules → build),
+    # each 30-90s. Per-turn budget should be governed by the slowest external
+    # call, not by the suite's intent.
+    turn_timeout: 900
 
   sandbox:
     driver: docker
