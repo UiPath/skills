@@ -1,0 +1,137 @@
+task_id: skill-datafabric-smoke-choice-multiple-filter
+description: >
+  Smoke test: agent uses the uipath-data-fabric skill to filter records on a
+  CHOICE_SET_MULTIPLE field — picking `contains` for membership and the
+  JSON-array string form of `=` for set equality, and avoiding the two known
+  HTTP 400 failure modes (bare value with `=`, bracket value with `contains`).
+  Verified server behavior — see references/records-query.md §
+  "Filtering on Choice-Set Fields".
+tags: [uipath-data-fabric, smoke, complex-fields]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 25
+
+sandbox:
+  driver: docker
+  python: {}
+
+initial_prompt: |
+  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
+  Every uip df command will fail with an auth error — that is expected and normal.
+  Run each command exactly once, ignore the auth error, and continue to the next step.
+  Do NOT retry any command. Do NOT attempt to login.
+
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  Context:
+  - Entity "Expense" with ID "exp-ent-001" has a `CHOICE_SET_MULTIPLE` field
+    `tags` backed by choice set "TagSet" (id "cs-tags-001") whose values are
+    travel (NumberId 1), meals (NumberId 2), lodging (NumberId 3).
+  - CHOICE_SET_MULTIPLE values are stored server-side as a JSON-encoded
+    integer array (e.g. [1,3]). Filter operator semantics are non-obvious;
+    pick the right operator and value form for each user intent.
+
+  Use --output json on every uip df command. Compose ONE records query per
+  task — do not retry.
+
+  1. User intent: "find every Expense tagged with travel".
+     This is **membership** — does the stored tags array contain NumberId 1?
+     Use the membership operator with the bare NumberId as a string.
+
+  2. User intent: "find every Expense whose tag set is exactly {travel, lodging}".
+     This is **whole-set equality** — the stored array must equal [1,3]
+     (order-insensitive — server normalizes). Use `=` with a JSON-array string.
+
+  3. User intent: "find every Expense tagged with NOT meals" (exclude meals).
+     This is negated membership. Use `not contains` with the bare NumberId.
+
+  4. Group records by tag combination and count each — `groupBy: ["tags"]`
+     with a COUNT aggregate on Id, aliased as `total`.
+
+  Do NOT use any of these — they are known HTTP 400 failure modes:
+  - `tags = "1"` (bare value with `=` — `=` requires a JSON-array string)
+  - `tags contains "[1]"` (bracket value with `contains` — `contains` rejects
+    brackets in the value)
+  - `tags in valueList=...` / `tags startswith ...` / other operators —
+    only `contains` / `not contains` / `=` / `!=` are supported on
+    `CHOICE_SET_MULTIPLE`.
+
+success_criteria:
+  - type: command_executed
+    description: "Task 1 — agent used `contains` with a bare NumberId string for membership"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"contains\")(?=.*\"value\"\s*:\s*\"1\")'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Task 2 — agent used `=` with a JSON-array string for set equality"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"=\")(?=.*\"value\"\s*:\s*\"\[1,\s*3\]\")'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Task 3 — agent used `not contains` for negated membership"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"not contains\")'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Task 4 — agent used groupBy on tags with COUNT aggregate"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"groupBy\"\s*:\s*\[\s*\"tags\")(?=.*\"function\"\s*:\s*\"COUNT\")'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Negative — agent must NOT use `=` with a bare value on tags (HTTP 400)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"=\")(?=.*\"value\"\s*:\s*\"\d+\"(?!\s*\]))'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Negative — agent must NOT use `contains` with a bracketed value on tags (HTTP 400)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"contains\")(?=.*\"value\"\s*:\s*\"\[)'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Negative — agent must NOT use unsupported operators on a CHOICE_SET_MULTIPLE field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"(in|not in|startswith|endswith|>|<|>=|<=)\")'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Negative — agent must NOT pass a display label (`travel`/`meals`/`lodging`) into a tags filter"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"value\"\s*:\s*\"(travel|meals|lodging)\")'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip df commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0

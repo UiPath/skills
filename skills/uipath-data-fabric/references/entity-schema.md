@@ -122,23 +122,54 @@ uip df entities update <entity-id> \
 ### Choice Set Fields
 
 ```json
-{ "fieldName": "Status", "type": "CHOICE_SET_SINGLE", "choiceSetId": "<choice-set-id>" }
+{ "fieldName": "Status", "type": "CHOICE_SET_SINGLE",   "choiceSetId": "<choice-set-id>" }
+{ "fieldName": "Tags",   "type": "CHOICE_SET_MULTIPLE", "choiceSetId": "<choice-set-id>" }
 ```
 
-`CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` both require `choiceSetId`.
+`choiceSetId` is the UUID from `uip df choice-sets list`. Choice sets are read-only via the CLI — if a needed one doesn't exist, stop and ask the user to author it in the web UI (do not fall back to `STRING`). Record value is the integer `NumberId` (single) or integer array (multi), from `choice-sets get`. Filter semantics — including the `CHOICE_SET_MULTIPLE` `=` vs `contains` distinction — are in [records-query.md](records-query.md#filtering-on-choice-set-fields). Full workflow in [`choice-sets.md`](choice-sets.md).
 
 ### Relationship Fields
 
 ```json
-{
-  "fieldName": "CustomerId",
-  "type": "RELATIONSHIP",
-  "referenceEntityName": "<target-entity-name>",
-  "referenceFieldName": "<field-name-in-target-entity>"
-}
+{ "fieldName": "customerId", "type": "RELATIONSHIP", "referenceEntityName": "Customer", "referenceFieldName": "Id" }
 ```
 
-`RELATIONSHIP` requires `referenceEntityName` (the technical name of the target entity) and `referenceFieldName` (the field in the target entity to link on). Use `entities get <id>` to verify exact entity and field names.
+- `referenceEntityName` — target entity's technical `Name` (not `DisplayName` / `ID`). Target must exist and be native (no federated targets). Verify with `entities list --native-only`.
+- `referenceFieldName` — join field on read; usually `Id`, but any unique field works.
+- The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
+- Record value is **always the target record's UUID `Id`**, regardless of `referenceFieldName` (which configures join-on-read, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
+
+```bash
+# Resolve email → Id, then insert
+uip df records query <customer-entity-id> \
+  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}' \
+  --output json
+uip df records insert <child-entity-id> --body '{"customerId":"<resolved-uuid>","amount":250}' --output json
+```
+
+### Combined Example — mixing scalar, choice-set, and relationship fields
+
+Complex types accept the same standard field options as scalars — `isRequired`, `isUnique`, `displayName`, `description`, `defaultValue`, `isRbacEnabled`, `isEncrypted`, and the type-specific constraints (`lengthLimit`, `maxValue`/`minValue`, `decimalPrecision`). The only extras unique to complex types are `choiceSetId` (for `CHOICE_SET_*`) and `referenceEntityName` + `referenceFieldName` (for `RELATIONSHIP`).
+
+```bash
+# Prereqs: target entity exists; choice set exists (look up ID)
+uip df entities create "Expense" --body '{
+  "displayName": "Expense",
+  "description": "Reimbursable expenses with category, tags, and submitter",
+  "fields": [
+    {"fieldName":"invoiceNumber", "type":"STRING",  "isRequired": true, "isUnique": true, "lengthLimit": 50,
+     "displayName":"Invoice Number"},
+    {"fieldName":"amount",        "type":"DECIMAL", "isRequired": true, "decimalPrecision": 2, "minValue": 0,
+     "displayName":"Amount (USD)"},
+    {"fieldName":"notes",         "type":"MULTILINE_TEXT", "lengthLimit": 2000},
+    {"fieldName":"category",      "type":"CHOICE_SET_SINGLE",   "choiceSetId":"<choice-set-id>",
+     "isRequired": true, "displayName":"Category"},
+    {"fieldName":"tags",          "type":"CHOICE_SET_MULTIPLE", "choiceSetId":"<choice-set-id>"},
+    {"fieldName":"customerId",    "type":"RELATIONSHIP", "referenceEntityName":"Customer", "referenceFieldName":"Id",
+     "isRequired": true, "displayName":"Customer"}
+  ]
+}' --output json
+```
 
 ## Not Supported
 
@@ -233,9 +264,13 @@ uip df entities get <entity-id> --output json
 | Field | Description |
 |-------|-------------|
 | `Fields[].FieldName` | Exact field name for use in record bodies and CSV headers |
-| `Fields[].Type` | Data type (e.g. `STRING`, `INTEGER`) |
+| `Fields[].Type` | Data type (e.g. `STRING`, `INTEGER`, `CHOICE_SET_SINGLE`, `RELATIONSHIP`) |
 | `Fields[].ID` | Field UUID — required for `updateFields` in `entities update` |
 | `Fields[].IsRequired` | Whether the field must have a value on insert |
+
+**`entities get` does NOT echo back `choiceSetId` / `referenceEntityName` / `referenceFieldName`** — only the basic field metadata. To recover: for `CHOICE_SET_*`, match by `Name` via `choice-sets list`; for `RELATIONSHIP`, ask the user or fetch one record and identify which parent entity the UUID lives in.
+
+Before writing records, identify complex fields by `Type` and resolve lookups: `CHOICE_SET_*` → `choice-sets get <choice-set-id>` for `NumberId`s; `RELATIONSHIP` → `records query` on the referenced entity for target UUIDs.
 
 **Example — discover an entity before writing records:**
 ```bash
