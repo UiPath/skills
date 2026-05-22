@@ -45,7 +45,7 @@ xmlns:local="clr-namespace:<ProjectName>;assembly=DataService.<ProjectName>"
 ```
 
 - The `local` namespace **must** include `assembly=DataService.<ProjectName>`. Without the assembly qualifier, the XAML parser cannot locate entity types: `Cannot create unknown type '{clr-namespace:<ProjectName>}EntityName'`.
-- The `upr` namespace is required for file activity variables — `DownloadFileFromRecordField.DownloadedFileResource` outputs `upr:ILocalResource`. See [DownloadFileFromRecordField](DownloadFileFromRecordField.md).
+- The `upr` namespace is required for file activity variables — `DownloadFileFromRecordField.DownloadedFileResource` outputs `upr:ILocalResource`. See [DownloadFileFromRecordField](activities/DownloadFileFromRecordField.md).
 
 Namespace imports for `TextExpression.NamespacesForImplementation`:
 ```xml
@@ -96,13 +96,13 @@ Using `udd:IEntity` produces: `Selected Entity type (UiPath.DataService.Definiti
 
 ### Solution Scope Properties (Conditional)
 
-> **These properties only apply when the project has a SolutionId** (i.e., is part of a Data Service solution). For standalone projects without a SolutionId, **omit these properties entirely** — they have no effect and setting them on a standalone project may cause unexpected behavior. See [Solution Context](#solution-context-folder-vs-tenant-scope) for how to determine scope.
+These three properties exist on every activity's base class but Studio only renders the higher-level controls that *write* them when the project has a non-empty `SolutionId`. For standalone projects, leave them unset (Studio omits them entirely). They are never user-typed — they are populated by Studio rules from the scope radio + entity picker. See [Solution Context](#solution-context-folder-vs-tenant-scope).
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `ScopeValue` | `InArgument<string>` | `"Tenant"` | `"Folder"` or `"Tenant"`. Use Folder when project has a SolutionId; Tenant for standalone. See [Solution Context](#solution-context-folder-vs-tenant-scope) |
-| `SolutionEntityKey` | `InArgument<string>` | `{x:Null}` | Solution resource key for the entity. Set only when ScopeValue is Folder |
-| `SolutionEntityName` | `InArgument<string>` | `{x:Null}` | Entity display name in the solution. Set only when ScopeValue is Folder |
+| Property | Type | Default | Set by | Read at |
+|----------|------|---------|--------|---------|
+| `ScopeValue` | `InArgument<string>` | (unset) | Scope radio (`"Folder"` / `"Tenant"`) | Design time: gates `BindingsKey`. Not sent to API. |
+| `SolutionEntityKey` | `InArgument<string>` | `{x:Null}` | Entity picker — `key` field of the selected solution resource | Design time only: fetches entity schema JSON via solution resources. **Not used at runtime.** |
+| `SolutionEntityName` | `InArgument<string>` | `{x:Null}` | Entity picker — `name` field of the selected solution resource | Both: design time for the entity binding contract; runtime as the lookup key for `Entity.<name>.folderPath` (see [Runtime mechanism](#runtime-mechanism-folder-vs-tenant)). |
 
 ## Entity Metadata — EntitiesStore.json
 
@@ -172,33 +172,84 @@ Using `udd:IEntity` produces: `Selected Entity type (UiPath.DataService.Definiti
 
 ## Solution Context (Folder vs Tenant Scope)
 
-Data Service activities support two scoping modes controlled by whether the project has a **Solution ID** (i.e., is part of a Data Service solution). This is determined by `IUserDesignerContext.SolutionId` — NOT by which Studio product (Desktop vs Web) is running.
+Activities behave differently when the host project lives inside a `.uipx` solution. The switch is `IUserDesignContext.SolutionId` (Studio Desktop or Web — product does not matter). When non-empty, Studio renders solution-aware controls; runtime resolves the folder path from bindings injected by Orchestrator.
 
-### When to use each scope
+### What Studio renders
 
-| Condition | ScopeValue | Entity source |
-|-----------|-----------|---------------|
-| Project has a SolutionId (solution context) | `"Folder"` (default) or `"Tenant"` | Folder scope: entity resolved from solution resources. Tenant scope: entity resolved from tenant-level Data Service API |
-| Project has NO SolutionId (standalone) | `"Tenant"` (only option) | Entity resolved from tenant-level Data Service API |
+Studio never exposes the three raw XAML properties (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) in the property grid. They stay `IsVisible=false` and are written by rules from these higher-level controls:
 
-### XAML properties for solution context
+| Control | Visible when | Type | Writes |
+|---------|--------------|------|--------|
+| `Scope` | `SolutionId` is non-empty | `RadioGroup` — `Folder` / `Tenant` (resource keys `EntityFolderScope`, `EntityTenantScope`) | `ScopeValue` |
+| `SolutionEntity` | `SolutionId` non-empty AND `Scope == "Folder"` | `SolutionResourcesWidget` (`ResourceType="entity"`, `ExpectedProperties=["name","key"]`) | `SolutionEntityKey` ← `key`, `SolutionEntityName` ← `name`, and re-morphs the generic `TEntity` type via `EntityJitter` + `IDesignerCustomTypesService` |
+| `Entity` (legacy picker) | `SolutionId` empty OR `Scope == "Tenant"` | Studio's classic entity dropdown (populated from `IDesignerDataService.GetEntities()`) | `EntityId` + assembly-cached entity DTO |
 
-| Property | When to set | Value |
-|----------|-------------|-------|
-| `ScopeValue` | Always | `"Folder"` or `"Tenant"`. Standalone projects: always `"Tenant"` |
-| `SolutionEntityKey` | Folder scope only | Solution resource key identifying the entity (e.g., `"entity_key_abc"`) |
-| `SolutionEntityName` | Folder scope only | Display name of the entity in the solution |
+Toggling `Scope` Folder→Tenant clears `SolutionEntity.Value`, `SolutionEntityKey.Value`, `SolutionEntityName.Value`, `Entity.Value` and re-initializes the entity picker (`BaseSolutionResourceActivityViewModel.UpdateEntityChoiceOnScope`).
 
-When scope is **Tenant** or the project is standalone, set `SolutionEntityKey` and `SolutionEntityName` to `{x:Null}`.
+### Runtime mechanism (Folder vs Tenant)
 
-### Runtime behavior difference
+Runtime ignores `SolutionEntityKey` entirely. The activity computes `BindingsKey` from `SolutionEntityName` only when `ScopeValue == "Folder"`:
 
-- **Folder scope**: the activity injects an `X-UiPath-FolderPath` header in API requests, routing the operation to the correct solution folder
-- **Tenant scope**: no folder header — the operation targets the tenant-level Data Service directly
+```text
+BindingsKey = (ScopeValue == "Folder") ? SolutionEntityName.literal : null
+folderPath  = BindingsHelper.GetBindingValue($"Entity.{BindingsKey}.folderPath", ...)
+            // resolves from Orchestrator's resourceOverwrites for the current process
+if (folderPath != null) headers["X-UiPath-FolderPath"] = folderPath
+```
+
+- **Folder scope, binding present** → `X-UiPath-FolderPath: <folderPath>` injected on every HTTP call (Create/Update/Delete/Query/File). Data Service routes the operation to that folder's entity instance.
+- **Folder scope, binding missing** → no header; falls through to tenant resolution by entity name.
+- **Tenant scope** → `BindingsKey` is `null`; no header; tenant-level routing.
+- **Standalone** → identical to Tenant scope. If a XAML happens to contain stale `ScopeValue="Folder"` + `SolutionEntityName=<x>` literals from a previous solution context, the runtime still does the bindings lookup — but `resourceOverwrites` won't contain a matching entry outside a deployed solution, so the header is omitted and behavior collapses to Tenant. Not destructive, but leave the three properties unset to avoid confusion.
+
+`SolutionEntityKey` is design-time only: it's the lookup key for `ISolutionResources.GetResourceConfigurationAsync(key)`, which returns the entity schema JSON (used to JIT-compile the `TEntity` CLR type into the in-memory `DataService.<ProjectName>` assembly).
+
+### `bindings_v2.json` round-trip
+
+The runtime binding that feeds `folderPath` is declared in each project's `bindings_v2.json` (one entry per solution-scoped entity):
+
+```json
+{
+  "resourceType": 6,
+  "originalResourceType": "Entity",
+  "dynamicValues": {
+    "name":       { "defaultValue": "<SolutionEntityName>", "isExpression": false },
+    "folderPath": { "defaultValue": "<folder-or-special>",  "isExpression": false }
+  }
+}
+```
+
+- `dynamicValues.name.defaultValue` matches the XAML `SolutionEntityName` and is the lookup key.
+- `dynamicValues.folderPath.defaultValue` is the value injected as `X-UiPath-FolderPath`. The sentinel values `"."` and `"solution_folder"` are normalized to undefined → tenant scope.
+- At deploy time, `uip solution resource refresh` reads each project's `bindings_v2.json`, creates a matching solution resource (kind `Entity`), and packs everything into the `.uipx`. At runtime, Orchestrator hydrates `resourceOverwrites` from the deployment's resource bindings.
+
+### Discovering values for XAML
+
+When authoring a solution-scoped Data Service activity, the agent should NOT hand-pick GUIDs or names. Use the solution CLI to list the entities available in the host solution:
+
+```bash
+uip solution resource list --kind Entity --output json
+```
+
+Each entry's `Key` field is the `SolutionEntityKey` (resource key UUID); `Name` is the `SolutionEntityName`. For the full resource spec:
+
+```bash
+uip solution resource get <KEY> --output json
+```
+
+After editing a project's `bindings_v2.json` (e.g., adding a new entity reference), sync into the solution:
+
+```bash
+uip solution resource refresh --output json
+```
+
+These commands live in the `uipath-solution` skill — see [develop-solution.md](../../../../../uipath-solution/references/operate/develop-solution.md) for the full lifecycle (init → project add → resource refresh → pack → publish → deploy).
+
+> **Cross-skill scope.** The `uip df` CLI in `uipath-data-fabric` is tenant-only — no `--solution-id`, no `--folder-path`. Do not use `uip df entities list` to populate `SolutionEntityKey` / `SolutionEntityName`. Use `uip solution resource list --kind Entity` instead.
 
 ### Key rule
 
-Do NOT check for Studio Desktop vs Studio Web to decide scope. The only factor is whether `SolutionId` exists in the project context. If the project is in a solution, default to Folder scope. If standalone, use Tenant scope.
+`SolutionId` presence is the only signal. Do not branch on Studio Desktop vs Studio Web, or on `targetFramework`. If the project has a non-empty `SolutionId` and the entity lives in solution resources, Folder scope is the default; otherwise Tenant.
 
 ## Common Pitfalls
 

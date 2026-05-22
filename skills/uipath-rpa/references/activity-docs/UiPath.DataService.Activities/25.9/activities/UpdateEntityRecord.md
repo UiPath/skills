@@ -19,7 +19,7 @@ Updates an existing record in a Data Fabric entity. Category: **DataService.Enti
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Common | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Common | Timeout in milliseconds |
 
-> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, omit them. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope.** When this activity sits in a project with a non-empty `SolutionId`, Studio renders a Folder/Tenant radio plus an entity picker — not the three raw XAML properties. Folder scope writes `ScopeValue="Folder"`, `SolutionEntityKey` (resource UUID, design-time only) and `SolutionEntityName` (binding key + display name); at runtime the activity reads `Entity.<SolutionEntityName>.folderPath` from `bindings_v2.json` → Orchestrator's `resourceOverwrites` and injects `X-UiPath-FolderPath`. Tenant scope leaves the three properties unset. See [overview — Solution Context](../overview.md#solution-context-folder-vs-tenant-scope).
 
 ## Field Binding — Two Required Components
 
@@ -51,7 +51,7 @@ Studio syncs `SelectedFields` → `InputEntityInFieldView` on file load, keeping
 
 ## XAML Example (VB.NET expression language)
 
-> This snippet uses the `udam:` prefix (`RecordState`, `DynamicEntityField`). Ensure `xmlns:udam` is declared on the root `<Activity>` element — see [overview — XAML Namespace Declarations](overview.md#xaml-namespace-declarations).
+> This snippet uses the `udam:` prefix (`RecordState`, `DynamicEntityField`). Ensure `xmlns:udam` is declared on the root `<Activity>` element — see [overview — XAML Namespace Declarations](../overview.md#xaml-namespace-declarations).
 
 ```xml
 <uda:UpdateEntityRecord

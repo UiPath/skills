@@ -17,7 +17,7 @@ Uploads a file to a file-type field on an entity record. Category: **DataService
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Common | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Common | Timeout in milliseconds |
 
-> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, **omit these properties entirely** — the members do not exist on the activity in standalone scope. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope.** When this activity sits in a project with a non-empty `SolutionId`, Studio renders a Folder/Tenant radio plus an entity picker — not the three raw XAML properties. Folder scope writes `ScopeValue="Folder"`, `SolutionEntityKey` (resource UUID, design-time only) and `SolutionEntityName` (binding key + display name); at runtime the activity reads `Entity.<SolutionEntityName>.folderPath` from `bindings_v2.json` → Orchestrator's `resourceOverwrites` and injects `X-UiPath-FolderPath`. Tenant scope leaves the three properties unset. See [overview — Solution Context](../overview.md#solution-context-folder-vs-tenant-scope).
 
 ## XAML Example — Upload from FilePath
 
@@ -40,7 +40,7 @@ Uploads a file to a file-type field on an entity record. Category: **DataService
 - `Field` — bare string, not expression-wrapped. Use the field name exactly as it appears in `EntitiesStore.json`
 - `FilePath` — bare string for literal paths. Use expression syntax (`[variableName]`) only when the path comes from a variable
 - When using `FilePath`, set `FileResource="{x:Null}"`
-- Studio explicitly serializes unused nullable properties as `{x:Null}` — include them for properties that exist on the activity (do not include `ScopeValue`/`SolutionEntityKey`/`SolutionEntityName` in standalone projects)
+- Do not write `{x:Null}` literals for `ScopeValue` / `SolutionEntityKey` / `SolutionEntityName` in standalone projects — Studio omits them entirely when `SolutionId` is empty. Other nullable properties (e.g., `FilePath="{x:Null}"` when using `FileResource`, or `FileResource="{x:Null}"` when using `FilePath`) DO get serialized; the three solution-scope ones do not.
 
 ## XAML Example — Upload from FileResource (Round-Trip)
 

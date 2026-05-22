@@ -110,6 +110,18 @@ uip solution resource list --kind App --solution-folder ./InvoiceAutomation --ou
 | `--source <source>` | `all`, `local`, `remote` | `all` |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
 
+### Discovering Data Service Entity keys for XAML
+
+If your solution hosts an RPA project that uses `UiPath.DataService.Activities` in Folder scope, the XAML carries two solution-scope properties — `SolutionEntityKey` and `SolutionEntityName` — that map directly to fields from `resource list --kind Entity`:
+
+```bash
+uip solution resource list --kind Entity --output json
+```
+
+For each entity in the output, the `Key` field is the `SolutionEntityKey` value (resource UUID) and the `Name` field is the `SolutionEntityName` (binding key + display name). Pass the `Key` into `resource get` for the full spec. After editing a project's `bindings_v2.json` to add an entity reference, run `resource refresh` so the entity is reconciled into the solution's resource inventory before pack.
+
+See [uipath-rpa Data Service overview — Solution Context](../../../uipath-rpa/references/activity-docs/UiPath.DataService.Activities/25.9/overview.md#solution-context-folder-vs-tenant-scope) for how those XAML properties drive the `X-UiPath-FolderPath` header at runtime.
+
 ## Step 7: Refresh Resources
 
 Re-scan all projects and sync resource declarations from their `bindings_v2.json` files. Refresh is the only way to reconcile a solution's local artefacts with cloud entities — run it after adding/importing projects, after editing `bindings_v2.json`, or before any `pack` / `upload`.

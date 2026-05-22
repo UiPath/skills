@@ -2,13 +2,29 @@
 
 How to take a built `.nupkg` from `uip rpa pack` and get it onto Orchestrator or Studio Web. Covers the standalone-project paths only — solution publish (`.uipx` solutions and `solution publish` deploy lifecycle) lives in [/uipath:uipath-solution](../../uipath-solution/SKILL.md).
 
+## Step 0: Confirm the project is standalone
+
+Before any `pack` / `upload`, check the `INSIDE_SOLUTION` flag from [Step 0 of the rpa skill](../SKILL.md#step-0-resolve-project_dir-and-solution-membership) — the walk-up from `{projectRoot}` looking for an ancestor `.uipx`. If a `.uipx` was found:
+
+**Stop. Hand off to `/uipath:uipath-solution`.**
+
+Running `uip rpa pack` + `uip or packages upload` against a solution-resident project succeeds — it produces a valid standalone `.nupkg` — but the deployed package bypasses the entire solution layer:
+
+- `bindings_v2.json` entries are NOT bundled into the package; Orchestrator's `resourceOverwrites` never gets populated.
+- Solution-scoped `UiPath.DataService.Activities` lose their `X-UiPath-FolderPath` injection (no `Entity.<name>.folderPath` binding to read), and Folder-scoped reads/writes silently collapse to tenant scope or 404 — depending on whether a tenant-level entity with the same name happens to exist.
+- Folder-scoped Storage Bucket, Asset, Queue, and Connection bindings degrade the same way.
+
+The correct path for a solution-resident project is `solution pack` → `solution publish` → `solution deploy`. See [uipath-solution/references/operate/pack-and-deploy.md](../../uipath-solution/references/operate/pack-and-deploy.md). For entity-discovery commands referenced by Data Service activities, see [activity-docs/UiPath.DataService.Activities/25.9/overview.md § Discovering values for XAML](activity-docs/UiPath.DataService.Activities/25.9/overview.md#discovering-values-for-xaml).
+
+`INSIDE_SOLUTION=false` (no ancestor `.uipx`) → continue below.
+
 ## Pick a path
 
-| Goal | Path | Reference |
-|---|---|---|
-| Run the project as an Orchestrator process / link as a Test Manager automation | **Pack → Orchestrator package upload** | This file § Pack → Upload |
-| Edit / visualize in Studio Web | **Solution upload** | [uipath-solution](../../uipath-solution/SKILL.md) (solution upload) |
-| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-solution](../../uipath-solution/references/operate/pack-and-deploy.md) |
+| Goal | Path | Reference | If `INSIDE_SOLUTION=true` |
+|---|---|---|---|
+| Run the project as an Orchestrator process / link as a Test Manager automation | **Pack → Orchestrator package upload** | This file § Pack → Upload | Test Manager link still uses tm flow (no solution wrapper exists). For runtime deploy: hand off to uipath-solution. |
+| Edit / visualize in Studio Web | **Solution upload** | [uipath-solution](../../uipath-solution/SKILL.md) (solution upload) | → uipath-solution |
+| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-solution](../../uipath-solution/references/operate/pack-and-deploy.md) | → uipath-solution |
 
 This file documents the first row only — the legacy Orchestrator package feed flow that `uip tm testcases link-automation` requires.
 
@@ -77,4 +93,5 @@ For the full Pack → Upload → Link → Execute pipeline targeted at Test Mana
 - **`uip solution publish` expects a packed `.zip`, not a project directory.** Solutions: run `uip solution pack` first, then `uip solution publish "<ZIP_PATH>"`. Single projects: use `uip or packages upload` instead.
 - **Confusing `solution upload` and `solution publish`.** `upload` pushes to Studio Web (browser editing). `publish` pushes a packed solution `.zip` to the Orchestrator solution feed for `solution deploy`. They are NOT interchangeable. See [uipath-solution](../../uipath-solution/SKILL.md) for the decision tree.
 - **Re-uploading the same version.** Orchestrator rejects duplicate `<id>:<version>` uploads. Bump `--package-version` (or `project.json` `projectVersion`) before re-packing.
+- **Packing a solution-resident project as a standalone `.nupkg`.** Succeeds but the runtime cannot resolve `Entity.<name>.folderPath` — the bindings are not deployed alongside a standalone package. Symptom: `X-UiPath-FolderPath` header missing at runtime; Folder-scoped Data Service activities hit tenant-level entities or return 404. Re-check Step 0 — if `INSIDE_SOLUTION=true`, use the `uip solution` path instead.
 - **`pack` succeeds but `analyze` ran with errors.** A successful pack with errors in the analyzer log usually means warnings only. Re-run `uip rpa analyze --project-dir "<PROJECT_DIR>"` if you need a clean failure / pass signal.
