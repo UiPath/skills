@@ -250,7 +250,7 @@ See [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md)
 
 When you finish a mutating operation, report:
 
-1. **Operation & result** — e.g., `Created policy <name> (GUID: <guid>) for product <productName>`.
+1. **Operation & result** — e.g., `Created policy <name> (GUID: <guid>) for product <product-name>`.
 2. **Session directory** — print `$SESSION_DIR` so the user can inspect bootstrapped schemas and the `aops-policy-data.json` that was submitted.
 3. **Non-default fields set** — summary of fields the user configured vs. ones that stayed at defaults. (Omit this line after `delete`.)
 4. **Next step** — render a numbered Markdown list under a `### What would you like to do next?` heading (single post-mutation gate, per Critical Rule #12). Do NOT use `AskUserQuestion`. The user replies with a digit.
@@ -268,7 +268,7 @@ Do not run any of these actions automatically. Wait for the user's selection.
 
 **Per-operation adjustments to the menu:**
 - After `create` or `update`: offer all options above.
-- After `deploy`: replace the three Deploy options with a single **Verify deployment** option that runs `deployed-policy get <license-type> <productName> <tenantIdentifier>` to confirm the assignment took effect. Keep **Query effective rules** (via `deployed-policy list`) as the follow-up check for chain-resolved values.
+- After `deploy`: replace the three Deploy options with a single **Verify deployment** option that runs `deployed-policy get <license-type> <product-name> <tenantIdentifier>` to confirm the assignment took effect. Keep **Query effective rules** (via `deployed-policy list`) as the follow-up check for chain-resolved values.
 - After `delete`: offer only **List policies to verify** and **Something else**.
 
 ## References
