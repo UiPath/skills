@@ -137,9 +137,10 @@ tests/
 ├── README.md
 ├── Makefile
 ├── experiments/
-│   ├── default.yaml              # Primary config — docker, full lifecycle, staging tenant
+│   ├── default.yaml              # Dev / ad-hoc — tempdir, full lifecycle (no docker image required)
+│   ├── nightly.yaml              # Nightly cron — docker, full lifecycle, staging tenant
 │   ├── smoke.yaml                # PR-gate smoke (Linux, docker, faster budget)
-│   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir — only non-docker file)
+│   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir)
 │   ├── activation.yaml           # Opt-in skill-activation benchmark (1-turn)
 │   ├── skill-comparison-playbook.md      # A/B comparison playbook (research)
 │   └── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
@@ -166,9 +167,10 @@ Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
 
 | Experiment | Driver | Used by | max_turns | task_timeout | turn_timeout |
 |------------|--------|---------|-----------|--------------|--------------|
+| `default.yaml` | tempdir | Devs locally, ad-hoc runs | 200 | 1200s | 900s |
+| `nightly.yaml` | docker | Nightly cron (`daily.sh`) | 200 | 1200s | 900s |
 | `smoke.yaml` | docker | PR-gate smoke (Linux) | 40 | 900s | 900s |
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
-| `default.yaml` | docker | Nightly e2e, integration, ad-hoc | 200 | 1200s | 300s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 1 | 120s | 120s |
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent for exactly one turn against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
