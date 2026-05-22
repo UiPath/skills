@@ -22,9 +22,16 @@ on:
         type: string
         default: main
       cli_version:
-        description: '@uipath/cli npm tag or pinned version (e.g. alpha, latest, 0.1.21).'
+        description: '@uipath/cli tag or pinned version (e.g. alpha, latest, 0.1.21). Tag/version semantics depend on cli_registry.'
         type: string
         default: alpha
+      cli_registry:
+        description: 'CLI registry. github-packages tracks @alpha (published every cli/main merge); npmjs tracks public releases (lags by days).'
+        type: choice
+        default: github-packages
+        options:
+          - github-packages
+          - npmjs
       model_override:
         description: 'Override BEDROCK_MODEL (full Bedrock id, e.g. eu.anthropic.claude-sonnet-4-6). Blank → repo secret.'
         type: string
@@ -127,6 +134,7 @@ jobs:
             --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
+            --build-arg CLI_REGISTRY="${{ inputs.cli_registry }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
