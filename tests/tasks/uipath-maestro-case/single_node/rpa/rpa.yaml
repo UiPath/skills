@@ -55,10 +55,10 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | in_ProblemNumber | input | number | 123 | Project Euler problem number to solve | trigger:Manual | runRpa.runProjectEuler |
-  | problemTitle | implementation | string | - | Problem title returned by the ProjectEuler RPA workflow | runRpa.runProjectEuler | - |
+  | in_ProblemNumber | In | number | | | 123 | Project Euler problem number to solve. |
+  | problemTitle | Variable | string | | | | Problem title returned by the ProjectEuler RPA workflow; populated by Run RPA. |
 
   ## Section 2: Stages & Tasks
 
