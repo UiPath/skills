@@ -1,0 +1,176 @@
+task_id: skill-troubleshoot-excel-rr-nre-label
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (System.NullReferenceException from inside the activity) where the
+  workbook is protected by a Microsoft Purview / Azure Information
+  Protection sensitivity label that the Robot user lacks permission
+  for. The activity opens the file (no IOException), but parsing
+  fails with NRE because the label-enforced encryption / policy
+  blocks programmatic access. Agent must match the
+  activity-packages/excel-activities/playbooks/read-range-null-reference.md
+  playbook, identify the sensitivity-label branch from the workflow
+  source + the job-log Trace entry naming the label, and recommend
+  granting Robot user permission or removing the label.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, null-reference, sensitivity-label]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.NullReferenceException: Object reference not set to an instance of an object.`
+  Pinned job key: aa111111-bbbb-cccc-dddd-eeeeffffaaaa. There's no
+  stack pointing at a specific cell or sheet — just the bare NRE.
+  The workbook opens fine when I double-click it in Explorer, but
+  there's a "Confidential" banner at the top. Could that be the
+  problem?
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the read-range-null-reference playbook AND identified the Microsoft Purview / AIP sensitivity-label branch as the cause (using the user's 'Confidential banner' clue + the job-log Trace entry naming the label)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.NullReferenceException: Object reference not set to an
+         instance of an object.` Pinned job key:
+         aa111111-bbbb-cccc-dddd-eeeeffffaaaa. There's no stack
+         pointing at a specific cell or sheet — just the bare NRE.
+         The workbook opens fine when I double-click it in Explorer,
+         but there's a 'Confidential' banner at the top. Could that
+         be the problem?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-null-reference.md
+        because the runtime error is a NullReferenceException without
+        cell pointer from inside the activity -- the parsing-failure
+        signature of that playbook (not file-locked, not sheet-not-
+        found, not file-not-found).
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the read-range-null-reference
+             playbook should appear.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/excel-activities/playbooks/.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workbook is protected by a Microsoft Purview /
+            Azure Information Protection sensitivity label
+            (likely 'Confidential' based on the user's banner clue).
+          - The label policy grants permission to the workbook
+            owner's identity (interactive user via Explorer) but
+            NOT to the Robot user (UIPATH\AUTOMATION1).
+          - When the activity opens the file under the Robot
+            user's identity, the label's encryption / policy
+            engine refuses programmatic access; the activity's
+            parsing code receives a null reference where it
+            expected workbook content, and NullReferenceException
+            fires inside the activity.
+          - The job-log Trace entry from `Use Excel File` includes
+            the sensitivity-label name (e.g., 'Confidential' or
+            'Confidential\Limited Access') which is the smoking
+            gun.
+
+        The reference fix:
+          - Primary: grant the Robot user (or an automation group
+            it belongs to) permission for the label via Microsoft
+            Purview (Information Protection -> Labels -> the
+            specific policy -> add the Robot identity).
+          - Alternative: ask the workbook owner to remove the
+            label or apply a less-restrictive one.
+          - Long-term: do not classify automation-consumed
+            workbooks with labels that exclude the Robot
+            identity. Document an exemption for automation
+            identities.
+
+        Evidence sources (in priority order):
+          1. state.json -- domain/scope, error class.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the
+             sensitivity-label / Purview / AIP branch
+             specifically (branch 1).
+          3. The agent's last text response -- should name the
+             label (or sensitivity-label concept), explain the
+             Robot-identity-vs-interactive-user distinction, and
+             recommend the Purview / owner-permission fix.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-null-reference playbook AND
+             converged on the sensitivity-label branch (named
+             Purview / AIP / Information Protection, explained
+             the Robot-identity-lacks-permission pattern, and
+             recommended either the Purview fix OR removing the
+             label).
+        0.8  Both dimensions partially correct: matched the playbook
+             and recognized the label clue but didn't fully connect
+             it to Purview / Robot identity; OR identified the
+             label cause without matching the specific playbook.
+        0.5  Only one dimension correct: matched the playbook but
+             confidently guessed a different branch (corruption,
+             named-range, OpenXML feature) without supporting
+             evidence; OR identified the label issue without
+             matching the playbook.
+        0.2  Agent recognized the NRE as a parsing failure but
+             neither matched the playbook nor identified the
+             sensitivity-label pattern.
+        0.0  Agent confidently picked a wrong branch without
+             supporting evidence; concluded a different root
+             cause; got blocked; or failed.
+
+      Be substance-focused. The 'Confidential banner' user clue
+      and the job-log Trace entry naming the label are the
+      decisive signals -- penalize agents that ignore them.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
