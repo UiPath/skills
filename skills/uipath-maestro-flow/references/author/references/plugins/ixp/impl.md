@@ -97,7 +97,7 @@ Confirm:
 
 - `category` — `document-processing` (older `document-extraction` enum was renamed; current registry serves `document-processing`)
 - Input port: `input`
-- Output ports: `success` and `error` (the `error` port is gated by `inputs.errorHandlingEnabled`; manifest sets `supportsErrorHandling: true`). Edges target these handle ids in `.flow` JSON; `handleType` is `output`.
+- Output ports: `success` and `error` (the `error` port is gated by `inputs.errorHandlingEnabled`; manifest sets `supportsErrorHandling: true`). Edges target these handle IDs in `.flow` JSON; `handleType` is `output`.
 - `model.type` — `bpmn:ServiceTask`. `model.serviceType` — `IXP.Extraction`. The manifest's `model` is two fields only (`type`, `serviceType`) — no `context`, no `version`. Both are injected by the BPMN serializer at compile time.
 - `form.id` — `ixp-standalone-form`. Three sections: `ixp-model` (Configuration), `ixp-file-upload` (File input), `schema-definition` (Schema definition — a single custom field `inputs.model` rendered by the `ixp-model-taxonomy` component).
 - `inputDefinition.properties` — `model` (object), `modelName`, `projectName`, `projectId`, `versionTag`, `folderKey`, `folderName`, `fileRef`, `pageRange`, `attachmentConfig`, `guardrails`, `attachment`. `inputDefinition.required` — `["fileRef"]`.
