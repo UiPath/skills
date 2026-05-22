@@ -3,19 +3,17 @@
 ARG CODER_EVAL_IMAGE=coder-eval-agent:latest
 FROM ${CODER_EVAL_IMAGE}
 
-# Install @uipath/cli and @uipath/admin-tool from GitHub Packages
-# These are needed by skill smoke tests (orchestrator, integration-service, data-fabric, etc.)
 ARG NPM_AUTH_TOKEN=
 RUN set -euo pipefail && \
     if [ -z "$NPM_AUTH_TOKEN" ]; then \
       echo "Error: NPM_AUTH_TOKEN must be passed as build arg"; exit 1; \
     fi && \
-    npm config set @uipath:registry https://npm.pkg.github.com/ && \
-    npm config set //npm.pkg.github.com/:_authToken "$NPM_AUTH_TOKEN" && \
-    npm install -g @uipath/cli@alpha @uipath/admin-tool@alpha && \
-    npm config delete //npm.pkg.github.com/:_authToken && \
-    uip --version && \
-    uip admin --help
+    printf '%s\n' \
+      '@uipath:registry=https://npm.pkg.github.com/' \
+      '//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}' \
+      > /usr/local/etc/npmrc && \
+    npm install -g @uipath/cli@alpha && \
+    uip --version
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
 # Without it, RPA tasks running under driver: docker fail their build criterion

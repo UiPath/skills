@@ -24,6 +24,7 @@ defaults:
         - UIPATH_CLI_TENANT_NAME
         - UIPATH_CLI_TENANT_ID
         - TRACES_SMOKE_PROCESS_KEY
+        - NPM_AUTH_TOKEN
       extra_mounts:
         - ~/.uipath:/.uipath:rw
 

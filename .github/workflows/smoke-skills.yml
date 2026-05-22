@@ -279,6 +279,7 @@ jobs:
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PAT }}
         working-directory: tests
         id: smoke
         run: |
