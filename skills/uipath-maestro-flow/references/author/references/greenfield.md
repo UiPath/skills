@@ -162,9 +162,11 @@ Run from inside the flow project directory. Returns the same manifest format as 
 
 ## Step 4 — Build the flow
 
+> **Before each node, classify it as user-owned or CLI-owned (see [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node)). Connector activities, connector triggers, and `core.action.http.v2` are CLI-only — use `uip maestro flow node add` + `uip maestro flow node configure`, never Edit. Hand-writing these will fail `flow validate`.**
+
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-> **Required tool outside carve-outs: `Edit` / `Write`.** Use `Edit` for in-place changes, `Write` only when ≥70% of nodes change. The `uip maestro flow node` / `edge` / `variable` CLI is a **carve-out** — use it only for connector activity, connector-trigger, and managed HTTP workflows documented by their plugin `impl.md`. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON.
+> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change. For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the Quick Reference sequence. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
 
 Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
 
