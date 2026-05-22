@@ -60,13 +60,9 @@ uip solution upload <SolutionDir> --output json
 
 If the solution has resource declarations, refresh them with the supported solution tooling in the local CLI.
 Do not invent a `solution resource` command path; verify the installed CLI help before documenting a refresh step.
-Treat `Result: Success` with `Created: 0`, `Imported: 0`, and `Skipped: 0` as
-suspicious when project `bindings_v2.json` files contain resources. Inspect
-stderr/log output for binding serializer errors and verify that files appeared
-under `resources/solution_folder/` and `userProfile/.../debug_overwrites.json`.
-If `0/0/0` appears only after `resources` was deliberately emptied, treat the
-run as a hard-coded-context debug workaround rather than dependency refresh
-coverage.
+When the project declares resource dependencies, verify that refresh produced
+matching generated resource files and debug overwrite metadata. An empty
+`resources` array is valid only for projects with no generated dependencies.
 
 Report the Studio Web URL or solution ID when the CLI returns one.
 If the upload succeeds but returns no URL, say `<not returned by CLI>` instead of omitting the field.

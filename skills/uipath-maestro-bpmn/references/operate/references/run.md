@@ -19,10 +19,9 @@ Before any debug or process run:
 Use debug when the user wants to upload a local BPMN project to Studio Web and run a debug session with full Studio Web
 visibility.
 
-Debug requires a solution context. If direct project debug fails with
-`SolutionStorage.json is missing and no .uipx file was found`, initialize a
-solution, import the BPMN project, refresh resources, and run debug from the
-solution directory:
+For local project debug, prefer a solution context so generated resources,
+bindings, and debug metadata are available. Initialize a solution, import the
+BPMN project, refresh resources, and run debug from the solution directory:
 
 ```bash
 uip solution init <SolutionName> --output json
@@ -82,10 +81,8 @@ uip maestro bpmn job traces <JOB_KEY> --output json
 ```
 
 For debug instances, prefer the `debug-instance` inspection commands when
-`instance get/incidents` return 404 or empty data. They expose runtime wrapper
-errors that normal traces may omit. If `job status` returns a key or timestamp
-that does not match the debug instance, do not use that status as the source of
-truth; continue with the debug-instance commands returned by the debug run.
+standard deployed-instance commands do not have debug-session context. Use the
+identifiers returned by the debug command as the source of truth.
 
 ```bash
 uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json

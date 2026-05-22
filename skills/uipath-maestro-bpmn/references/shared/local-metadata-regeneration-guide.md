@@ -98,9 +98,9 @@ do not invent `contentFiles` as a substitute for `content`.
 }
 ```
 
-This empty resource file is a local package/debug placeholder only when every
-runtime identity field is supplied directly in BPMN context. It is not evidence
-that dependency refresh imported any external process, queue, or connection.
+This empty resource file is a package-shape placeholder only for projects with
+no generated resource dependencies. It is not evidence that dependency refresh
+imported an external process, queue, connector, or agent.
 
 `package-descriptor.json`:
 
@@ -131,8 +131,7 @@ JSON schema variables use their CDATA body as the property schema. Strip `$schem
 Generated `bindings_v2.json` must be a top-level object with
 `"version": "2.0"` and a `resources` array. Do not use a bare resource array, a
 single resource object, or an unversioned `{ "resources": [] }` object; those
-shapes can pass casual JSON inspection but fail solution resource refresh
-deserialization.
+shapes are not the package contract consumed by solution resource refresh.
 
 The resource array has two consumers with different tolerance:
 
@@ -147,11 +146,9 @@ The resource array has two consumers with different tolerance:
 
 When an executable BPMN depends on remote Orchestrator processes, include
 generated process binding resources before refresh so it can import the
-process/package resources and write debug overwrites. A refresh result of
-`Created:0 Imported:0 Skipped:0` while non-empty resources exist is a failure
-signal, even if the JSON wrapper says `Result: Success`. The same `0/0/0`
-result after intentionally emptying `resources` is only a debug workaround for
-hard-coded BPMN context identity, not a successful dependency refresh.
+process/package resources and write debug overwrites. If resource dependencies
+are expected, verify that refresh produced matching generated resource files or
+explicitly report that no dependency resources were imported.
 
 Generated id-addressable entries should preserve:
 

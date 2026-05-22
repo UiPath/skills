@@ -3,10 +3,9 @@
 The current supported implementation wrapper for confirmed RPA process
 execution is `bpmn:serviceTask` with `Orchestrator.StartJob`.
 
-Live-debug verified `StartJob` context includes the process GUID, folder GUID,
-integer folder ID, folder path, and process name. A wrapper that has
-`FolderKey` but omits lower-case `folderId` can fault before child-job creation
-with `Required field 'folderId' missing in the input args to RPA task`.
+Use a complete `StartJob` context: process key, folder key, folder ID, folder
+path, and process name. Resolve these values from process and folder discovery
+before execution; keep examples public-safe.
 
 The model may draft:
 

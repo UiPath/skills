@@ -46,13 +46,9 @@ Namespace baseline for greenfield files:
 ## Orchestrator.StartJob (RPA)
 
 `bpmn:serviceTask` with `Orchestrator.StartJob`.
-Live debug uses the process identity fields in `uipath:context`; a lone
-display-name context can validate locally but fail before child-job creation.
-For `StartJob`, live debug has also required the integer Orchestrator folder ID
-as lower-case `folderId`, even when `FolderKey` is present. Use public-safe
-placeholders in examples and resolve real values from
-`uip or processes list --all-fields --output json` and folder discovery during
-tenant-specific work.
+Use a complete process identity context instead of a display-name-only shell.
+For process job wrappers, resolve process and folder identity from discovery
+commands before execution; keep examples placeholder-safe.
 
 ```xml
 <bpmn:serviceTask id="Task_StartRpaJob" name="Start RPA Job">
@@ -78,21 +74,14 @@ tenant-specific work.
 ## Orchestrator.StartAgentJob (folder-deployed agent — coded Python or low-code)
 
 `bpmn:serviceTask` with `Orchestrator.StartAgentJob`. Use this wrapper only
-for a tenant dependency that is confirmed by `uip or processes list` as
-`processType: "Agent"`. Coded Python dependencies may surface as
-`processType: "Function"`; do not assume they use this wrapper.
-
-Current runtime caveat: live debug has shown `StartAgentJob` faulting before
-child-job creation with `Required field 'releaseKey' missing in the input args
-to RPA task`, even when solution resource refresh imports the agent and runtime
-variables show `releaseKey` populated under `JobArguments` or `body`. Treat
-this shell as draft-only until a tenant debug run proves it executable. Capture
-`uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json`,
-`uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json`, and a
-child-job query for the target folder when it faults.
+for a dependency that discovery confirms as `processType: "Agent"`. Coded
+Python dependencies may surface as another process type; do not infer the
+wrapper from the source project label alone.
 
 When drafting the wrapper from a resolved Agent process, use the same identity
-context shape that process wrappers use:
+context shape that process wrappers use. Local validation proves XML/package
+shape only; do not claim executable behavior until the target resource,
+bindings, schemas, and authorized debug/run have been verified.
 
 ```xml
 <bpmn:serviceTask id="Task_StartAgentJob" name="Start Agent Job">
@@ -114,11 +103,10 @@ context shape that process wrappers use:
 </bpmn:serviceTask>
 ```
 
-For `uip solution resource refresh`, `bindings_v2.json` must use the
-versioned package resource wrapper. A process dependency usually has separate
-resource entries for the process name and folder path; the older unwrapped BPMN
-mirror shape and an unversioned `{ "resources": [] }` object are not sufficient
-for refresh:
+For `uip solution resource refresh`, `bindings_v2.json` must use a versioned
+package resource wrapper. A process dependency usually has separate resource
+entries for the process name and folder path; do not use an unwrapped resource
+array or unversioned placeholder as the source of dependency resources:
 
 ```json
 {
@@ -160,10 +148,9 @@ for refresh:
 }
 ```
 
-If a live debug run succeeds only after emptying `resources` and hard-coding
-`ReleaseKey`, `FolderKey`, `folderId`, `FolderPath`, and `Name` in BPMN
-context, record that as a debug workaround. Do not report it as dependency
-binding refresh coverage.
+An empty `resources` array is valid for package-shape verification when the
+BPMN has no generated resource dependencies. It does not represent imported
+dependencies for a process, queue, connector, or agent.
 
 `Var_RequestId` must already exist as a `uipath:inputOutput` variable readable at the task — see [variables-bindings-expressions.md](variables-bindings-expressions.md#entry-point-inputs-used-downstream) for the start-scoped input pattern.
 
@@ -193,10 +180,9 @@ start-scoped entry input, see
 ## Orchestrator.ExecuteApiWorkflowAsync
 
 `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
-This wrapper is live-debug verified when context uses the Orchestrator process
-GUID as `ReleaseKey` and the target folder GUID as `FolderKey`. The registry
-may display lower-case `releaseKey` / `folderId`; those names can validate but
-fault at runtime.
+Use the same process identity context pattern as other Orchestrator process
+wrappers. Keep context field names aligned with the wrapper shell and use
+resolved process/folder identifiers before execution.
 
 ```xml
 <bpmn:serviceTask id="Task_ExecuteApiWorkflow" name="Execute API Workflow">

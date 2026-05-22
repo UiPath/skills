@@ -3,15 +3,15 @@
 The current supported implementation wrapper for confirmed API workflow
 invocation is `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
 
-Live-debug verified context fields:
+Use these context fields:
 
 - `ReleaseKey` = Orchestrator process GUID from `uip or processes list`.
 - `FolderKey` = target folder GUID.
 - `FolderPath` = target folder path.
 - `Name` = process display name.
 
-Use `type="string"` on those context inputs. Do not rely on a lone `name`
-context input or on lower-case registry field names for executable debug runs.
+Use `type="string"` on those context inputs. Do not rely on a lone display
+name when the wrapper requires resolved process and folder identity.
 
 The model may draft:
 
