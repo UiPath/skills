@@ -51,6 +51,11 @@ Bindable resource types:
 | `.context_grounding.*` (all methods: `retrieve`, `search`, `add_to_index`, `create_index`, etc.) | `(name="name", folder_path="folder")` | `index` | `name` or `index_name` |
 | `.connections.retrieve` / `.retrieve_async` | `("connection_key")` | `connection` | `key` (positional) |
 | `.mcp.retrieve` / `.retrieve_async` | `(slug="slug", folder_path="folder")` | `mcpServer` | `slug` |
+| `interrupt(InvokeProcess(...))` (LangGraph HITL) | `(name="name", process_folder_path="folder", input_arguments={...})` | `process` | `name` |
+| `interrupt(CreateTask(...))` (LangGraph HITL) | `(app_name="name", app_folder_path="folder", title="...", data={...})` | `app` | `app_name` |
+| `interrupt(CreateEscalation(...))` (LangGraph HITL) | `(app_name="name", app_folder_path="folder", title="...", data={...})` | `app` | `app_name` |
+
+> **Interrupt-based patterns also produce bindings.** LangGraph agents pause and delegate work via `interrupt(InvokeProcess|CreateTask|CreateEscalation(...))` imported from `uipath.platform.common`. These produce the **same binding entries** as their `sdk.processes.invoke` / `sdk.tasks.create` counterparts — same `resource` type, same key format, same `ActivityName`. Scan for the class names (`InvokeProcess`, `CreateTask`, `CreateEscalation`) in addition to the `sdk.*` method calls. Note: `InvokeProcess` uses `process_folder_path` (not `folder_path`).
 
 Use Grep to find calls matching these patterns across all project Python files. Then read the surrounding code to extract the literal string values for resource name and folder path.
 
@@ -344,6 +349,29 @@ result = sdk.processes.invoke(name="process_name", input_arguments={...}, folder
 
 **ActivityName:** Always use `invoke_async` in metadata, regardless of whether the code uses the sync or async variant.
 
+**Interrupt-based variant — `interrupt(InvokeProcess(...))`:**
+
+LangGraph HITL flows delegate to processes via `interrupt(InvokeProcess(...))` instead of calling `sdk.processes.invoke` directly:
+
+```python
+from langgraph.types import interrupt
+from uipath.platform.common import InvokeProcess
+
+process_output = interrupt(InvokeProcess(
+    name="process_name",
+    process_folder_path="folder_path",
+    input_arguments={"arg1": "value1"}
+))
+```
+
+Binding entry is **identical** to `sdk.processes.invoke` — same `resource: "process"`, same `key` (`<name>.<folder_path>`), same `ActivityName: "invoke_async"`.
+
+**Parameter extraction:**
+- `name` — keyword argument `name=` to `InvokeProcess(...)`
+- `folder_path` — extracted from `process_folder_path=` (note: **`process_folder_path`, not `folder_path`** — this is the only argument that differs from `sdk.processes.invoke`)
+
+See [process-invocation.md](../capabilities/process-invocation.md) for the full pattern.
+
 ---
 
 ### Bucket
@@ -429,6 +457,38 @@ task = sdk.tasks.create(title="...", data={...}, app_name="app_name", app_folder
 - `app_folder_path` — keyword argument `app_folder_path=`
 
 **Note:** The `DisplayLabel` in metadata uses the literal app name value, not `"FullName"`. Both Action Center tasks and escalations use this resource type — `CreateEscalation` extends `CreateTask` with the same `app_name`/`app_folder_path` fields.
+
+**Interrupt-based variant — `interrupt(CreateTask(...))` / `interrupt(CreateEscalation(...))`:**
+
+LangGraph HITL flows create Action Center tasks via `interrupt(...)` instead of calling `sdk.tasks.create` directly:
+
+```python
+from langgraph.types import interrupt
+from uipath.platform.common import CreateTask, CreateEscalation
+
+task_output = interrupt(CreateTask(
+    app_name="app_name",
+    app_folder_path="app_folder_path",
+    title="Review needed",
+    data={"key": "value"}
+))
+
+# Escalations use the same shape:
+esc_output = interrupt(CreateEscalation(
+    app_name="EscalationApp",
+    app_folder_path="Finance",
+    title="...",
+    data={...}
+))
+```
+
+Binding entry is **identical** to `sdk.tasks.create` — same `resource: "app"`, same `key` (`<app_name>.<app_folder_path>`), same `ActivityName: "create_async"`, same `DisplayLabel: <app_name>`.
+
+**Parameter extraction:**
+- `app_name` — keyword argument `app_name=` to `CreateTask(...)` / `CreateEscalation(...)`
+- `app_folder_path` — keyword argument `app_folder_path=`
+
+See [human-in-the-loop.md](../capabilities/human-in-the-loop.md) for the full pattern.
 
 ---
 
@@ -877,6 +937,9 @@ The `SubType (default)` column below is a quick-reference for the most common ca
 | `sdk.context_grounding` | ALL methods (`retrieve`, `search`, `add_to_index`, `create_index`, `delete`, `ingest_data`, etc.) | `index` | `name` or `index_name` | `retrieve_async` | *(omit — must exist in Orchestrator; no virtual fallback)* |
 | `sdk.connections` | `retrieve`, `retrieve_async` | `connection` | `key` (1st positional) | *(none)* | *(omit — must exist in Integration Service; no virtual fallback)* |
 | `sdk.mcp` | `retrieve`, `retrieve_async` | `mcpServer` | `slug` | `retrieve_async` | *(omit — sub-type is one of `Coded` / `Command` / `Remote` / `UiPath`; ask user)* |
+| `uipath.platform.common.InvokeProcess` (via `interrupt(...)`) | n/a — LangGraph HITL pattern | `process` | `name` (folder from `process_folder_path`) | `invoke_async` | *(omit — target process type not known here)* |
+| `uipath.platform.common.CreateTask` (via `interrupt(...)`) | n/a — LangGraph HITL pattern | `app` | `app_name` | `create_async` | *(omit — user chooses `Coded` / `CodedAction` / default)* |
+| `uipath.platform.common.CreateEscalation` (via `interrupt(...)`) | n/a — LangGraph HITL pattern | `app` | `app_name` | `create_async` | *(omit — user chooses `Coded` / `CodedAction` / default)* |
 
 **Note on ActivityName:** Always use the `_async` variant in the `ActivityName` metadata field, regardless of whether the code uses the sync or async version.
 
@@ -916,6 +979,8 @@ Not every SDK service supports resource overrides. The following services have N
 - `sdk.resource_catalog.*` — no bindings support
 
 **Note on assets:** `sdk.assets.update()` does NOT have `@resource_override` — only `retrieve` and `retrieve_credential` do.
+
+**Note on interrupt patterns:** `interrupt(WaitJob(job=...))` and `interrupt(WaitTask(action=...))` take a `Job` / `Task` model object from agent state — they have no static resource name to extract, so they cannot generate a binding from code alone. The binding (if any) belongs to whichever `InvokeProcess` / `sdk.processes.invoke` / `CreateTask` / `CreateEscalation` / `sdk.tasks.create` call originally created the resource handle.
 
 ---
 
