@@ -1,0 +1,221 @@
+name: Nightly Skill Tests (GH-hosted)
+
+# GH-hosted mirror of the VM cron (coder_eval/dashboard/scripts/ci/daily.sh).
+# Runs the full skills task tree against experiments/nightly.yaml on the
+# largest GH-hosted tier in UiPath (ubuntu-latest-16-cores = 16 vCPU /
+# 64 GB RAM). Manual dispatch — paired with smoke-skills.yml's per-PR
+# subset. Eventually intended to replace the coder-eval-runner VM cron;
+# this draft is the feasibility validation.
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_globs:
+        description: 'space-separated globs under tests/ (e.g. "tasks/uipath-agents/**/*.yaml"). Default: full tree minus Windows-only RPA + opt-in benchmarks.'
+        type: string
+        default: ''
+      runner_size:
+        description: 'GH-hosted runner tier'
+        type: choice
+        default: ubuntu-latest-16-cores
+        options:
+          - ubuntu-latest-16-cores
+          - ubuntu-latest
+      task_parallelism:
+        description: 'Concurrent tasks (-j). 4-6 is a safe ceiling for docker-driver tasks on 16-cores.'
+        type: string
+        default: '4'
+      model_override:
+        description: 'Override BEDROCK_MODEL (full Bedrock id, e.g. eu.anthropic.claude-sonnet-4-6). Blank → repo secret.'
+        type: string
+        default: ''
+
+concurrency:
+  group: nightly-skills-gh-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: ${{ inputs.runner_size }}
+    # Full skills suite on the VM (~700 tasks, j=1) runs 3-4h. The 16-core
+    # tier with j=4 should land ~1-1.5h; 330 min covers worst-case stalls.
+    timeout-minutes: 330
+    name: Run nightly suite
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/coder_eval
+          token: ${{ secrets.GH_PAT }}
+          path: .coder_eval
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify Docker is available
+        run: docker info > /dev/null
+
+      - name: Free up disk
+        run: |
+          df -h /
+          docker system prune -af --volumes >/dev/null 2>&1 || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL 2>/dev/null || true
+          df -h /
+
+      - name: Install coder-eval
+        working-directory: .coder_eval
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system .
+
+      - name: Build coder-eval Docker image
+        working-directory: .coder_eval
+        env:
+          UV_INDEX_UIPATH_USERNAME: ${{ secrets.UV_INDEX_UIPATH_USERNAME }}
+          UV_INDEX_UIPATH_PASSWORD: ${{ secrets.UV_INDEX_UIPATH_PASSWORD }}
+        run: make docker-image
+
+      # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
+      # @alpha on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
+      - name: Build skills Docker image
+        run: |
+          docker build \
+            --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
+            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
+            -t skills-image:latest \
+            -f tests/docker/Dockerfile \
+            .
+
+      - name: Mint UiPath service-account token + enable env-auth
+        env:
+          UIPATH_CLIENT_ID:     ${{ secrets.UIPATH_CLIENT_ID }}
+          UIPATH_CLIENT_SECRET: ${{ secrets.UIPATH_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -fsS -X POST \
+            "https://alpha.uipath.com/identity_/connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials" \
+            -d "client_id=$UIPATH_CLIENT_ID" \
+            -d "client_secret=$UIPATH_CLIENT_SECRET" \
+            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments" \
+            | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+          echo "::add-mask::$TOKEN"
+          {
+            echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
+            echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
+            echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
+            echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
+            echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
+            echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
+            echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
+          } >> "$GITHUB_ENV"
+          mkdir -p ~/.uipath
+
+      - name: Resolve task globs
+        id: globs
+        run: |
+          if [ -n "${{ inputs.task_globs }}" ]; then
+            echo "globs=${{ inputs.task_globs }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Default: full tree minus Windows-only and opt-in benchmarks
+          # (same exclusion set smoke-skills.yml uses).
+          shopt -s globstar nullglob
+          GLOBS=""
+          for f in tests/tasks/**/*.yaml; do
+            case "$f" in
+              tests/tasks/uipath-rpa/*)  continue ;;
+              tests/tasks/activation/*)  continue ;;
+            esac
+            GLOBS="$GLOBS ${f#tests/}"
+          done
+          GLOBS=$(echo "$GLOBS" | xargs)
+          echo "globs=$GLOBS" >> "$GITHUB_OUTPUT"
+
+      - name: Run nightly suite
+        env:
+          SKILLS_REPO_PATH:        ${{ github.workspace }}
+          API_BACKEND:             bedrock
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          AWS_REGION:              ${{ secrets.AWS_REGION }}
+          BEDROCK_MODEL:           ${{ inputs.model_override != '' && inputs.model_override || secrets.BEDROCK_MODEL }}
+          ANTHROPIC_API_KEY:       ${{ secrets.ANTHROPIC_API_KEY }}
+          TASK_PARALLELISM:        ${{ inputs.task_parallelism }}
+        working-directory: tests
+        id: nightly
+        run: |
+          echo "Running: coder-eval run ${{ steps.globs.outputs.globs }} -e experiments/nightly.yaml -j $TASK_PARALLELISM"
+          coder-eval run ${{ steps.globs.outputs.globs }} \
+            -e experiments/nightly.yaml \
+            -j "$TASK_PARALLELISM" -v \
+            --run-dir /tmp/runs
+        continue-on-error: true
+
+      - name: Fix permissions on /tmp/runs
+        if: always()
+        run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
+
+      - name: Summarize results
+        if: always()
+        run: |
+          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1)
+          if [ -z "$run_dir" ]; then
+            echo "::warning::No run directory found"
+            exit 0
+          fi
+          python - <<'PY'
+          import json, pathlib
+          run_dir = sorted(pathlib.Path('/tmp/runs').glob('*/'))[-1]
+          tasks = sorted(run_dir.rglob('task.json'))
+          rows = [json.loads(p.read_text(encoding='utf-8')) for p in tasks]
+          by_status = {}
+          for d in rows:
+              s = d.get('final_status', '?')
+              by_status[s] = by_status.get(s, 0) + 1
+          n = len(rows)
+          succ = by_status.get('SUCCESS', 0)
+          if n:
+              print(f'## Nightly results: {n} tasks, {succ} SUCCESS ({100*succ/n:.1f}%)')
+          else:
+              print('## Nightly results: (none)')
+          for s, c in sorted(by_status.items(), key=lambda x: -x[1]):
+              print(f'  {s}: {c}')
+          print()
+          print('### Non-SUCCESS tasks')
+          for d in rows:
+              if d.get('final_status') != 'SUCCESS':
+                  print(f"  {d.get('task_id', '?')}: {d.get('final_status', '?')}")
+          PY
+
+      - name: Clean up artifact subdirs
+        if: always()
+        run: find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
+
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-report-${{ github.run_id }}
+          path: |
+            /tmp/runs/*/experiment.html
+            /tmp/runs/*/experiment.md
+            /tmp/runs/*/experiment.json
+            /tmp/runs/*/experiment.log
+            /tmp/runs/*/*/variant.html
+            /tmp/runs/*/*/variant.md
+            /tmp/runs/*/*/variant.json
+            /tmp/runs/**/task.html
+            /tmp/runs/**/task.json
+            /tmp/runs/**/task.log
+            /tmp/runs/**/artifacts
+          if-no-files-found: warn
+          retention-days: 14
