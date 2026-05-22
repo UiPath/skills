@@ -1,0 +1,71 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uian="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities" xmlns:uiae="clr-namespace:UiPath.UIAutomationNext.Enums;assembly=UiPath.UIAutomationNext" xmlns:uiac="clr-namespace:UiPath.UIAutomationCore.Contracts;assembly=UiPath.UIAutomationCore.Contracts" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap:VirtualizedContainerService.HintSize="800,520" sap2010:WorkflowViewState.IdRef="Sequence_Main">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Start" sap:VirtualizedContainerService.HintSize="600,90" sap2010:WorkflowViewState.IdRef="LogMessage_Start" Level="Info" Message="[&quot;ExpenseImporter started - importing yesterday's expense reports into AcmeBooks&quot;]" />
+    <uian:NApplicationCard DisplayName="Use AcmeBooks accounting app" sap:VirtualizedContainerService.HintSize="600,360" sap2010:WorkflowViewState.IdRef="NApplicationCard_AcmeBooks">
+      <uian:NApplicationCard.TargetApp>
+        <uiac:TargetApp ApplicationPath="" Arguments="" OpenMode="Never" Selector="&lt;wnd app='acmebooks.exe' cls='Afx:00007FF6:0' /&gt;" WindowAttachMode="SingleWindow" />
+      </uian:NApplicationCard.TargetApp>
+      <uian:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="uiac:IApplicationCardContext">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="uiac:IApplicationCardContext" Name="ContextTarget" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Import expense reports" sap:VirtualizedContainerService.HintSize="560,260" sap2010:WorkflowViewState.IdRef="Sequence_Import">
+            <uian:NClick DisplayName="Click Import button" sap:VirtualizedContainerService.HintSize="500,120" sap2010:WorkflowViewState.IdRef="NClick_Import">
+              <uian:NClick.Target>
+                <uiac:Target Selector="&lt;wnd cls='Button' name='Import Expenses' /&gt;" />
+              </uian:NClick.Target>
+            </uian:NClick>
+            <uian:NTypeInto DisplayName="Type batch ID" sap:VirtualizedContainerService.HintSize="500,120" sap2010:WorkflowViewState.IdRef="NTypeInto_BatchId" Text="EXP-20260512">
+              <uian:NTypeInto.Target>
+                <uiac:Target Selector="&lt;wnd cls='Edit' aaname='Batch ID' /&gt;" />
+              </uian:NTypeInto.Target>
+            </uian:NTypeInto>
+          </Sequence>
+        </ActivityAction>
+      </uian:NApplicationCard.Body>
+    </uian:NApplicationCard>
+    <ui:LogMessage DisplayName="Log End" sap:VirtualizedContainerService.HintSize="600,90" sap2010:WorkflowViewState.IdRef="LogMessage_End" Level="Info" Message="[&quot;ExpenseImporter completed&quot;]" />
+  </Sequence>
+</Activity>

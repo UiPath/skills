@@ -33,6 +33,7 @@ When a robot executes a UI activity (Click, Type Into, Get Text, etc.), it uses 
 - **TimeoutException** — activity exceeded its wait time (ambiguous — could be UI or non-UI)
 - **ImageOperationException** — image-based UI automation failure
 - **ScreenScrapingException** — screen scraping activity failure
+- **ApplicationNotFoundException** — scope-level failure from `NApplicationCard` (Use Application / Use Browser) when the target application can't be located **and** the scope's `OpenMode=Never`. Distinct from `ApplicationOpenException` (which fires when `OpenMode != Never` and launch failed) and `WrongTargetApplicationException` (selector matched the wrong process).
 
 ## Features
 
