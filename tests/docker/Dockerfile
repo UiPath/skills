@@ -4,6 +4,7 @@ ARG CODER_EVAL_IMAGE=coder-eval-agent:latest
 FROM ${CODER_EVAL_IMAGE}
 
 ARG NPM_AUTH_TOKEN=
+ARG CLI_VERSION=alpha
 RUN set -euo pipefail && \
     if [ -z "$NPM_AUTH_TOKEN" ]; then \
       echo "Error: NPM_AUTH_TOKEN must be passed as build arg"; exit 1; \
@@ -14,7 +15,7 @@ RUN set -euo pipefail && \
       '@uipath:registry=https://npm.pkg.github.com/' \
       "//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}" \
       > "$npmrc" && \
-    npm install -g @uipath/cli@alpha && \
+    npm install -g "@uipath/cli@${CLI_VERSION}" && \
     uip --version
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.

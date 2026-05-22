@@ -122,6 +122,10 @@ See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide, including:
 
 For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/uipath-claude-plugins/issues).
 
+### Running coder-eval on demand
+
+[**Run Coder Eval**](https://github.com/UiPath/skills/actions/workflows/run-coder-eval.yml) — GH-hosted workflow that runs `coder-eval` against the skills task tree (`tests/tasks/...`). Use for ad-hoc single-task verification or a folder-scoped sweep on the same infra as the nightly cron. Trigger from the Actions tab → "Run workflow" → fill in `task_globs`. Definition: [`.github/workflows/run-coder-eval.yml`](.github/workflows/run-coder-eval.yml).
+
 ## Resources
 
 - [UiPath Documentation](https://docs.uipath.com/)
