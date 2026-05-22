@@ -22,10 +22,11 @@ Before upload, publish, deploy, or debug:
    [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for the local drift
    checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
    When the BPMN references external Orchestrator processes, `uip solution
-   resource refresh` expects solution-style process bindings in
-   `bindings_v2.json` (`resource`, `key`, `value.name.defaultValue`,
-   `value.folderPath.defaultValue`, and metadata), not only the older
-   id-addressable BPMN mirror entries.
+   resource refresh` expects a versioned `bindings_v2.json` object with a
+   `resources` array. Process resources should be generated or fixture-backed
+   entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,
+   `resourceSubType`, and `propertyAttribute` for name/folder-path pairs, not
+   an unwrapped array or unversioned placeholder.
 5. Confirm login for cloud actions:
 
    ```bash
@@ -63,6 +64,9 @@ Treat `Result: Success` with `Created: 0`, `Imported: 0`, and `Skipped: 0` as
 suspicious when project `bindings_v2.json` files contain resources. Inspect
 stderr/log output for binding serializer errors and verify that files appeared
 under `resources/solution_folder/` and `userProfile/.../debug_overwrites.json`.
+If `0/0/0` appears only after `resources` was deliberately emptied, treat the
+run as a hard-coded-context debug workaround rather than dependency refresh
+coverage.
 
 Report the Studio Web URL or solution ID when the CLI returns one.
 If the upload succeeds but returns no URL, say `<not returned by CLI>` instead of omitting the field.

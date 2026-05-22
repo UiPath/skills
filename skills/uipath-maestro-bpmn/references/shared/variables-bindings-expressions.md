@@ -123,7 +123,8 @@ with an `inputSchema` in context, but the Jint script body receives the mapped
 fields as top-level identifiers. For example, a mapped `caseId` field is read
 as `caseId` in script source, not `args.caseId`. Script outputs must map back
 to declared variable ids through the `var` attribute, usually with sources such
-as `=result.response`:
+as `=result.response` for a scalar return or `=result.response.<field>` for an
+object return:
 
 ```xml
 <uipath:mapping version="v1">
@@ -134,6 +135,10 @@ as `=result.response`:
   <uipath:output name="status" type="string" var="Var_Status" source="=result.response" />
 </uipath:mapping>
 ```
+
+If the script returns `{ status: "ok" }`, map the status with
+`source="=result.response.status"`. `source="=result.status"` can complete the
+script task while leaving the target variable null.
 
 Do not use `name="Var_Status"` as a substitute for `var="Var_Status"`. The
 `name` field identifies the output field; `var` identifies the target BPMN

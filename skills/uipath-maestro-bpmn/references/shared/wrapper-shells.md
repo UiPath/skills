@@ -114,24 +114,56 @@ context shape that process wrappers use:
 </bpmn:serviceTask>
 ```
 
-For `uip solution resource refresh`, use solution-style process bindings in
-`bindings_v2.json`; the older BPMN mirror shape is not sufficient for refresh:
+For `uip solution resource refresh`, `bindings_v2.json` must use the
+versioned package resource wrapper. A process dependency usually has separate
+resource entries for the process name and folder path; the older unwrapped BPMN
+mirror shape and an unversioned `{ "resources": [] }` object are not sufficient
+for refresh:
 
 ```json
 {
-  "resource": "process",
-  "key": "Synthetic Agent",
-  "value": {
-    "name": { "defaultValue": "Synthetic Agent" },
-    "folderPath": { "defaultValue": "Shared/SyntheticAgentSolution" }
-  },
-  "metadata": {
-    "subType": "agent",
-    "bindingsVersion": "2.2",
-    "solutionsSupport": "true"
-  }
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_AgentName",
+      "kind": "process",
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "name",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "name"
+      }
+    },
+    {
+      "id": "Binding_AgentFolderPath",
+      "kind": "process",
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "folderPath",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "folderPath"
+      }
+    }
+  ]
 }
 ```
+
+If a live debug run succeeds only after emptying `resources` and hard-coding
+`ReleaseKey`, `FolderKey`, `folderId`, `FolderPath`, and `Name` in BPMN
+context, record that as a debug workaround. Do not report it as dependency
+binding refresh coverage.
 
 `Var_RequestId` must already exist as a `uipath:inputOutput` variable readable at the task — see [variables-bindings-expressions.md](variables-bindings-expressions.md#entry-point-inputs-used-downstream) for the start-scoped input pattern.
 

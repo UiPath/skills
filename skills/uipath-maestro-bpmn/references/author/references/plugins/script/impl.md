@@ -61,7 +61,8 @@ The model may edit:
 Copy this shape when authoring a new BPMN script task. It is the exact
 mapping shape Maestro expects: `uipath:input name="args"`
 wraps the mapped fields, the script body reads top-level identifiers,
-and the output maps back through `=result.<field>`.
+and the output maps back through `=result.response` for scalar returns or
+`=result.response.<field>` for object fields.
 
 ```xml
 <bpmn:scriptTask id="Task_RiskScore" name="Risk Score" scriptFormat="JavaScript">
@@ -94,7 +95,7 @@ Required pieces:
 | `uipath:input` | `name="args"` | The canvas merges `args` JSON into top-level script identifiers |
 | `uipath:input` body | `=vars.<variableId>` for each mapped field | Reads root variables by id, not by name |
 | `bpmn:script` CDATA | top-level identifiers (`amount`, `daysOverdue`); not `args.amount` | Jint sees the merged JSON as top-level vars |
-| `uipath:output` | `source="=result.<field>"` for `v2+`; `var` points at a declared variable id | Maps the script return back to a declared variable |
+| `uipath:output` | `source="=result.response"` for scalar returns, or `source="=result.response.<field>"` for object fields; `var` points at a declared variable id | Maps the script return back to a declared variable |
 
 Anti-patterns the checker rejects:
 
@@ -103,6 +104,8 @@ Anti-patterns the checker rejects:
 - `args.amount` style reads inside the script body.
 - Missing `uipath:scriptVersion` when the canvas requires it.
 - Returning a bare value instead of `{ response: ... }` for `v2+` mappings.
+- Mapping object returns with `source="=result.summary"` after returning
+  `{ summary: "..." }`; use `source="=result.response.summary"` instead.
 
 ## Validation expectations
 
@@ -110,4 +113,6 @@ Anti-patterns the checker rejects:
 - Output variables exist and are writable.
 - Script CDATA is syntactically coherent.
 - `uipath:scriptVersion` is present when required by the local contract.
-- For `v2` and later, returned JSON may map through `=result.response`; older script versions must return a JSON object.
+- For `v2` and later, returned JSON maps through `=result.response` or a field
+  below it, such as `=result.response.status`; older script versions must
+  return a JSON object.

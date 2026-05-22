@@ -93,9 +93,14 @@ do not invent `contentFiles` as a substitute for `content`.
 
 ```json
 {
+  "version": "2.0",
   "resources": []
 }
 ```
+
+This empty resource file is a local package/debug placeholder only when every
+runtime identity field is supplied directly in BPMN context. It is not evidence
+that dependency refresh imported any external process, queue, or connection.
 
 `package-descriptor.json`:
 
@@ -123,19 +128,30 @@ JSON schema variables use their CDATA body as the property schema. Strip `$schem
 
 ## Binding Rules
 
-Generated `bindings_v2.json` has two consumers with different tolerance:
+Generated `bindings_v2.json` must be a top-level object with
+`"version": "2.0"` and a `resources` array. Do not use a bare resource array, a
+single resource object, or an unversioned `{ "resources": [] }` object; those
+shapes can pass casual JSON inspection but fail solution resource refresh
+deserialization.
+
+The resource array has two consumers with different tolerance:
 
 - Local/package binding expressions may need id-addressable entries that mirror
   root `uipath:binding` IDs.
-- `uip solution resource refresh` expects solution-style resource entries such
-  as `resource`, `key`, `value.name.defaultValue`, and
-  `value.folderPath.defaultValue`.
+- `uip solution resource refresh` reads the same `resources` array and imports
+  concrete dependencies only when it contains parseable resource entries.
+  Process resources should come from CLI generation or fixture-backed binding
+  entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,
+  `resourceSubType`, and, for name/folder-path binding pairs,
+  `propertyAttribute`.
 
-When an executable BPMN depends on remote Orchestrator processes, include the
-solution-style process binding so refresh can import the process/package
-resources and write debug overwrites. A refresh result of
-`Created:0 Imported:0 Skipped:0` while non-empty bindings exist is a failure
-signal, even if the JSON wrapper says `Result: Success`.
+When an executable BPMN depends on remote Orchestrator processes, include
+generated process binding resources before refresh so it can import the
+process/package resources and write debug overwrites. A refresh result of
+`Created:0 Imported:0 Skipped:0` while non-empty resources exist is a failure
+signal, even if the JSON wrapper says `Result: Success`. The same `0/0/0`
+result after intentionally emptying `resources` is only a debug workaround for
+hard-coded BPMN context identity, not a successful dependency refresh.
 
 Generated id-addressable entries should preserve:
 

@@ -12,8 +12,10 @@ them with expressions only after the variables and scopes exist.
   `=vars.Var_RequestId`.
 - Do not use bare variable names such as `=requestId` in generated runtime XML.
 - Context bindings use `=bindings.<bindingId>`.
-- Current element outputs use `result` only in output mappings for that element,
-  for example `source="=result.response"` for script task results.
+- Current element outputs use `result` only in output mappings for that
+  element. Script task return values are exposed under `result.response`; use
+  `source="=result.response"` for scalar returns or
+  `source="=result.response.<field>"` for object fields.
 - Multi-instance task bodies read the current item from `iterator.item`.
 - Multi-instance subprocess bodies read the current item from
   `iterator[0].item`. Use `iterator[1].item` (and so on) inside nested
