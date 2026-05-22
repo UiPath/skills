@@ -6,7 +6,7 @@ description: >
   fileInfoCollection entry in project.json (NOT entryPoints). Mirrors
   coded_test_case.yaml for the XAML mode that the skill historically
   under-served. See PILOT-5327.
-tags: [uipath-rpa, smoke, mode:build, feature:test-case]
+tags: [uipath-rpa, integration, mode:build, feature:test-case]
 
 sandbox:
   driver: tempdir
@@ -20,10 +20,6 @@ initial_prompt: |
   `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
   Studio Desktop is NOT available — skip any CLI commands that require
   --use-studio.
-
-  Use `UiPath.Testing.Activities` version `[25.4.1]` (newer 25.10.x
-  releases synthesize a bootloader that breaks the build on this
-  runner). Pin it in project.json before adding source files.
 
   Requirements:
   - Create one XAML test case at `LoginTests/TestLoginSuccess.xaml` that
