@@ -8,7 +8,7 @@ Read **only** the reference matching the selected framework. Do NOT load other f
 
 | Framework | Reference |
 |-----------|-----------|
-| Coded Function | `../frameworks/coded-function-agents.md` + `../frameworks/agent-patterns.md` |
+| Coded Function | `../frameworks/coded-functions.md` + `../frameworks/agent-patterns.md` |
 | LangGraph | `../frameworks/langgraph-integration.md` |
 | LlamaIndex | `../frameworks/llamaindex-integration.md` |
 | OpenAI Agents | `../frameworks/openai-agents-integration.md` |
