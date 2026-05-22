@@ -132,6 +132,8 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 ## Critical Rules
 
+**Rule numbering.** Common Rules use 1–11. `### Coded-Specific Rules` continues 12–18. `### XAML-Specific Rules` is an independent 16–24 sequence, so numbers 16/17/18 appear in both mode-specific sections — the `[Coded]` / `[XAML]` prefix on each rule disambiguates. Cross-references in this file ("Common Rule 10", "Rule 21", "Rule 24") always point to a uniquely-numbered rule.
+
 ### Common Rules (Both Modes)
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, then CWD for `project.json`. Only create when confirmed no project matches AND user explicitly requests creation.
