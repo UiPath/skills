@@ -17,9 +17,9 @@ UiPath low-code agents come in **two flavors**. Both share this skill — capabi
 The differences between flavors are localized — they do **not** live in a separate subdirectory. Look here:
 
 - **Schema deltas** — [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) covers the 7-field Init Defaults to Fix table, PROD canonical shape, and settings defaults (different model + maxTokens).
-- **Critical Rules** — [critical-rules.md](critical-rules.md) rules 22-27 apply only when `isConversational: true`.
+- **Critical Rules** — [critical-rules.md](critical-rules.md) rules 22-26 apply only when `isConversational: true`.
 - **Per-capability support** — each capability file (`capabilities/*`) has a § Conversational Support subsection noting Supported / Likely / Open / restrictions.
-- **Deployment** — [project-lifecycle.md § Conversational Deployment Notes](project-lifecycle.md#conversational-deployment-notes) covers External Application setup with the `ConversationalAgents` OAuth scope, `.agent-builder/` sync prerequisite, and frontend client handoff.
+- **Deployment** — [project-lifecycle.md § Conversational Deployment Notes](project-lifecycle.md#conversational-deployment-notes) covers External Application setup with the `ConversationalAgents` OAuth scope and frontend client handoff.
 
 ## When to Use
 

@@ -8,15 +8,14 @@ Variant and Critical Rules 22-26.
 Checks:
   1. metadata.isConversational == true (Rule 22)
   2. settings.engine == "conversational-v1" (Rule 22)
-  3. settings.maxIterations is absent (omitted for conversational; Rule 26)
-  4. metadata.targetRuntime is absent (PROD omits; Rule 26 + Forward-Looking)
+  3. settings.maxIterations is absent (omitted for conversational; Rule 25)
+  4. metadata.targetRuntime is absent (PROD omits; Rule 25)
   5. inputSchema.properties is empty {} (Rule 24)
   6. inputSchema.required is absent or empty (Rule 24)
   7. outputSchema.properties is empty {} (PROD canonical — Rule 24)
   8. messages[1] (user role) content has no {{input.*}} template (Rule 23)
   9. messages[1].contentTokens contain no "variable" entries (Rule 23)
-  10. .agent-builder/agent.json content matches agent.json (Rule 25)
-  11. entry-points.json schemas mirror agent.json — both empty (Rule 4 sync)
+  10. entry-points.json schemas mirror agent.json — both empty (Rule 4 sync)
 """
 
 import json
@@ -26,7 +25,6 @@ from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "ChatSol" / "ChatAgent"
 AGENT = ROOT / "agent.json"
-AGENT_BUILDER = ROOT / ".agent-builder" / "agent.json"
 ENTRY = ROOT / "entry-points.json"
 
 
@@ -112,18 +110,6 @@ def assert_static_user_message(agent: dict) -> None:
     print("OK: user message is static (no {{input}} template); contentTokens are simpleText")
 
 
-def assert_agent_builder_sync(agent: dict) -> None:
-    if not AGENT_BUILDER.is_file():
-        sys.exit(f"FAIL: Missing {AGENT_BUILDER} — Rule 25 .agent-builder sync not applied")
-    builder = load(AGENT_BUILDER)
-
-    if builder != agent:
-        sys.exit(
-            "FAIL: .agent-builder/agent.json does not match agent.json — sync per Rule 25 not applied"
-        )
-    print("OK: .agent-builder/agent.json matches agent.json (Rule 25 sync applied)")
-
-
 def assert_schema_sync(agent: dict, entry: dict) -> None:
     entry_points = entry.get("entryPoints", [])
     if not entry_points:
@@ -152,7 +138,6 @@ def main() -> None:
     agent = load(AGENT)
     assert_conversational_shape(agent)
     assert_static_user_message(agent)
-    assert_agent_builder_sync(agent)
 
     if ENTRY.is_file():
         entry = load(ENTRY)

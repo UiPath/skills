@@ -354,18 +354,12 @@ uip solution deploy run \
 
 The deploy flow above applies to conversational agents (`metadata.isConversational: true`). Conversational-specific additions:
 
-1. **`.agent-builder/` sync prerequisite.** After each `agent.json` edit and before push/publish, run:
-   ```bash
-   cp <AgentDir>/agent.json <AgentDir>/.agent-builder/agent.json
-   ```
-   Carve-out from [critical-rules.md](critical-rules.md) Rule 7 — see Rule 25. Full context in [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant).
-
-2. **External Application setup before frontend clients can connect.** Conversational agents are reached over a WebSocket session from a frontend client (typically a UiPath Coded App). Required External App configuration:
+1. **External Application setup before frontend clients can connect.** Conversational agents are reached over a WebSocket session from a frontend client (typically a UiPath Coded App). Required External App configuration:
    - **Type:** Non-Confidential application (PKCE flow, no client secret)
    - **Scopes:** `ConversationalAgents` (required), `Traces.Api` (recommended), and applicable `UiPath.Orchestrator` scopes (e.g., `OR.Execution OR.Folders OR.Jobs OR.Users` or broader `OR.Default`) when the agent uses tools that hit Orchestrator
    - **Redirect URI:** the app's base URL (not a `/callback` sub-path — UiPath Coded Apps hosting does not support SPA sub-route fallback). Local dev: `http://localhost:5173`. Deployed: `https://<org>.uipath.host/<app-name>`.
 
-3. **Frontend client integration.** For OAuth + PKCE setup and WebSocket client patterns (session lifecycle, exchange / message / content-part / tool-call event hierarchy), defer to the `uipath-coded-apps` skill. This skill (`uipath-agents`) does not own frontend integration.
+2. **Frontend client integration.** For OAuth + PKCE setup and WebSocket client patterns (session lifecycle, exchange / message / content-part / tool-call event hierarchy), defer to the `uipath-coded-apps` skill. This skill (`uipath-agents`) does not own frontend integration.
 
 ## Quick Reference
 

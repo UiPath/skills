@@ -3,10 +3,9 @@ description: >
   Skill-guided evaluation: agent uses the uipath-agents skill to scaffold
   a low-code conversational agent inside a solution and validate it.
   Tests whether the skill teaches the 7-field Init Defaults to Fix
-  workflow, the PROD-canonical conversational agent.json shape
+  workflow and the PROD-canonical conversational agent.json shape
   (anthropic.claude-sonnet-4-5, empty inputSchema, empty outputSchema,
-  static user-message placeholder, no maxIterations, no targetRuntime),
-  and the .agent-builder/ sync prerequisite (Rule 25).
+  static user-message placeholder, no maxIterations, no targetRuntime).
 tags: [uipath-agents, smoke, mode:build, low-code, conversational]
 max_iterations: 1
 
@@ -83,12 +82,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: ".agent-builder/agent.json was synced (Rule 25 carve-out)"
-    path: "ChatSol/ChatAgent/.agent-builder/agent.json"
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: json_check
     description: "agent.json has the two core conversational fields set"
     path: "ChatSol/ChatAgent/agent.json"
@@ -103,7 +96,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Conversational fixup applied (7 fields), schema sync, .agent-builder/ matches agent.json"
+    description: "Conversational fixup applied (7 fields), static user message, entry-points.json schema sync"
     command: "python3 $TASK_DIR/check_conversational_scaffold.py"
     timeout: 30
     expected_exit_code: 0

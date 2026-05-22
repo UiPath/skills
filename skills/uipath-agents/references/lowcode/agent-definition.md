@@ -397,18 +397,6 @@ Apply all changes before running `uip agent validate` — migration runs in memo
 - `outputSchema.properties` — **empty `{}`**. Do not add `content` or other fields.
 - Schema sync (per [critical-rules.md](critical-rules.md) Rule 4) — `entry-points.json` `input` / `output` mirror these (both empty for conversational).
 
-### `.agent-builder/` Sync
-
-`uip agent init` creates `<AgentDir>/.agent-builder/agent.json` as a copy of `<AgentDir>/agent.json`. `uip agent publish` packages **both**. Editing only `agent.json` ships the stale `.agent-builder/agent.json` in the package.
-
-For conversational agents, after every edit to `agent.json`:
-
-```bash
-cp <AgentDir>/agent.json <AgentDir>/.agent-builder/agent.json
-```
-
-> **Conflict with [critical-rules.md](critical-rules.md) Rule 7.** Rule 7 prohibits hand-editing `.agent-builder/`. This is an explicit carve-out for conversational agents until `uip agent init` ships a flag for this flavor. No CLI work is currently tracked for this fix.
-
 ### Not Yet Available
 
 The following autonomous capabilities are **not yet supported** for conversational agents. Do not add them to a conversational agent; if a user requests one, inform them it isn't available for conversational.
@@ -425,8 +413,7 @@ When the runtime adds support for a currently-unavailable capability, the matchi
 - Adding `content` or other properties to `outputSchema` (PROD canonical shape is empty).
 - Setting `metadata.targetRuntime: "pythonAgent"` on a conversational agent.
 - Setting `settings.maxIterations` on a conversational agent.
-- Editing `agent.json` without copying to `.agent-builder/agent.json`.
-- Using `selector.scopes: ["Agent"]` or `["Llm"]` for guardrails on a conversational agent — only `["Tool"]` scope is honored. See [critical-rules.md](critical-rules.md) Rule 27.
+- Using `selector.scopes: ["Agent"]` or `["Llm"]` for guardrails on a conversational agent — only `["Tool"]` scope is honored. Writing the conversational guardrail only at `agent.json` root `guardrails[]` — the runtime takes guardrails from each tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`. See [critical-rules.md](critical-rules.md) Rule 26.
 - Adding memory spaces or setting `agentMemory: true` on a conversational agent — see § Not Yet Available.
 
 ## Common Edits

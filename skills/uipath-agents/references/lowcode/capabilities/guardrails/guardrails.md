@@ -8,19 +8,13 @@ Two types exist:
 - **`custom`** — deterministic rules you define (word matching, number comparison, boolean checks, universal triggers)
 - **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks)
 
-> **All guardrails are configured at the agent.json root `guardrails` array.** The `selector.scopes` and `selector.matchNames` fields on each guardrail determine which tools and scopes it applies to.
+> **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** see § Conversational Support below — the runtime-effective location is each tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`.
 
 ## Conversational Support
 
-**Status: Tool-scoped only.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only. **Agent-scoped (`["Agent"]`) and LLM-scoped (`["Llm"]`) guardrails are not honored by the conversational runtime** — `uip agent validate` accepts them but the runtime ignores them at execution.
+**Status: Tool-scoped only, per-tool resource files are authoritative.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only — `"Agent"` and `"Llm"` scopes are not honored by the conversational runtime, even though `uip agent validate` accepts them.
 
-When authoring guardrails for a conversational agent:
-
-- Use `selector.scopes: ["Tool"]` exclusively
-- Use `selector.matchNames` to target specific tools by name
-- Tool-scoped guardrails work the same way as for autonomous agents — see the schema and examples below
-
-This restriction is enforced as [../../critical-rules.md](../../critical-rules.md) Rule 27.
+This restriction is enforced as [../../critical-rules.md](../../critical-rules.md) Rule 26.
 
 ## Guardrail Schema (Base Fields)
 
@@ -105,6 +99,8 @@ Each entry in the `Data` array contains:
 - `Parameters` — array of parameter definitions with `Type`, `Id`, and `Required`
 
 Do not hardcode assumptions about scope/stage support or availability.
+
+> **Conversational override (Rule 26).** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For conversational agents (`metadata.isConversational: true` / `settings.engine: "conversational-v1"`), **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround; the conversational runtime ignores those scopes silently.
 
 ## Actions
 
@@ -568,22 +564,24 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 ### Validators Quick Reference
 
-| Validator | Scopes | Stages | Supported Actions |
-|-----------|--------|--------|-------------------|
-| `pii_detection` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate |
-| `prompt_injection` | Llm | Pre only | Block, Log, Escalate |
-| `harmful_content` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate |
-| `intellectual_property` | Llm, Agent | Post only | Block, Log, Escalate |
-| `user_prompt_attacks` | Llm | Pre only | Block, Log, Escalate |
+> **For conversational agents (Rule 26): use `"Tool"` only — ignore the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support. Conversational runtime silently ignores `Agent` and `Llm` scopes.
 
-Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
+| Validator | Scopes (autonomous) | Conversational | Stages | Supported Actions |
+|-----------|---------------------|----------------|--------|-------------------|
+| `pii_detection` | Agent, Llm, Tool | **Tool only** | Pre + Post | Block, Log, Escalate |
+| `prompt_injection` | Llm | **Not usable** (no Tool scope) | Pre only | Block, Log, Escalate |
+| `harmful_content` | Agent, Llm, Tool | **Tool only** | Pre + Post | Block, Log, Escalate |
+| `intellectual_property` | Llm, Agent | **Not usable** (no Tool scope) | Post only | Block, Log, Escalate |
+| `user_prompt_attacks` | Llm | **Not usable** (no Tool scope) | Pre only | Block, Log, Escalate |
+
+Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields. **For conversational agents, intersect `AllowedScopes` with `["Tool"]` — if `"Tool"` is not in the validator's `AllowedScopes`, the validator cannot be used in a conversational agent.**
 **How to map `uip agent guardrails list` output to guardrail JSON:**
 
 | CLI field | Maps to |
 |-----------|---------|
 | `Status` | Gate check — only proceed if `"Available"` |
 | `Validator` | `validatorType` value |
-| `AllowedScopes` | Valid values for `selector.scopes` |
+| `AllowedScopes` | Valid values for `selector.scopes` (autonomous). **Conversational: intersect with `["Tool"]`** — see Rule 26. |
 | `GuardrailStages[scope]` | Valid execution stages for that scope |
 | `Parameters[].Id` | `validatorParameters[].id` |
 | `Parameters[].Type` | `validatorParameters[].$parameterType` |

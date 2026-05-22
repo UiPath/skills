@@ -2,9 +2,9 @@
 
 These rules are the canonical source for low-code agent authoring. Capability files cross-reference back here; they do not restate rules.
 
-## Critical Rules (27)
+## Critical Rules (26)
 
-Rules 1-21 apply to all low-code agents (autonomous and conversational). Rules 22-27 apply only when `metadata.isConversational: true` — see [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) and the per-capability § Conversational Support subsections under `capabilities/`.
+Rules 1-21 apply to all low-code agents (autonomous and conversational). Rules 22-26 apply only when `metadata.isConversational: true` — see [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) and the per-capability § Conversational Support subsections under `capabilities/`.
 
 
 1. **Edit JSON files directly** — the CLI supports `init` (scaffold), `validate` (read-only check), and `migrate` (apply writes + regenerate `.agent-builder/`). Agent configuration (prompts, schemas, settings) is done by editing `agent.json` and `entry-points.json`. Resources (tools, contexts, escalations) are added as individual files in `resources/{ResourceName}/resource.json` inside the agent project directory — **not** inline in `agent.json`. The root `agent.json` should not contain a `resources` field. The `migrate` command reads these resource files and generates `.agent-builder/agent.json` which inlines them.
@@ -49,7 +49,7 @@ Rules 1-21 apply to all low-code agents (autonomous and conversational). Rules 2
 
 21. **Built-in tools need no solution-level files and no resource refresh.** Unlike external process tools, built-in tools (`type: "internal"`) are self-contained at the agent level. Do not run `uip solution resource refresh` for them; do not author solution-level resource files. Validate the agent and bundle.
 
-### Conversational-only (22-27)
+### Conversational-only (22-26)
 
 22. **`settings.engine` must match `metadata.isConversational`.** Use `"conversational-v1"` when `isConversational: true`; `"basic-v2"` when `isConversational: false` or unset. `uip agent validate` accepts a mismatch but the runtime misbehaves. See [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant).
 
@@ -57,13 +57,11 @@ Rules 1-21 apply to all low-code agents (autonomous and conversational). Rules 2
 
 24. **Conversational agents require empty `inputSchema` and `outputSchema` properties.** Both `inputSchema.properties` and `outputSchema.properties` are `{}`; no `required` array on input. The conversational runtime does not consume typed input fields — chat input flows over the WebSocket session. `entry-points.json` `input` / `output` mirror these (also empty) to keep schema sync (Rule 4) satisfied. See [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) § Input and Output Schema.
 
-25. **Conversational agents require `.agent-builder/agent.json` to be kept in sync with `agent.json`.** After every edit to `agent.json`, run `cp <AgentDir>/agent.json <AgentDir>/.agent-builder/agent.json`. `uip agent publish` packages both. **Carve-out from Rule 7** — Rule 7's prohibition on hand-editing `.agent-builder/` is suspended for conversational agents until `uip agent init` ships a flag for this flavor. No CLI work is currently tracked for this fix. See [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) § `.agent-builder/` Sync.
+25. **`uip agent init` always scaffolds an autonomous (single-turn) agent.** There is no `--conversational` flag yet. After init, **seven fields** must be manually changed for the conversational flavor: `metadata.isConversational`, `settings.engine`, `settings.maxIterations` (omit), `messages[1].content`, `inputSchema`, `outputSchema`, and `metadata.targetRuntime` (omit). Shared schema fields like `version` and `metadata.storageVersion` are not in this list — they are managed by `uip agent validate` per Rule 14. Model / `maxTokens` defaults differ between CLI init and PROD but both CLI values still work. See [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) § Init Defaults to Fix.
 
-26. **`uip agent init` always scaffolds an autonomous (single-turn) agent.** There is no `--conversational` flag yet. After init, **seven fields** must be manually changed for the conversational flavor: `metadata.isConversational`, `settings.engine`, `settings.maxIterations` (omit), `messages[1].content`, `inputSchema`, `outputSchema`, and `metadata.targetRuntime` (omit). Shared schema fields like `version` and `metadata.storageVersion` are not in this list — they are managed by `uip agent validate` per Rule 14. Model / `maxTokens` defaults differ between CLI init and PROD but both CLI values still work. See [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) § Init Defaults to Fix.
+26. **Conversational agents support only Tool-scoped guardrails.** `selector.scopes` for conversational must be `["Tool"]` only — `"Agent"` and `"Llm"` scopes are not honored by the conversational runtime. `uip agent validate` accepts other scopes but they have no runtime effect. Author conversational guardrails in each affected tool's `resources/<Tool>/resource.json` under `guardrail.policies[]` (runtime-effective) AND mirror them at `agent.json` root `guardrails[]` (Studio Web display). See [capabilities/guardrails/guardrails.md § Conversational Support](capabilities/guardrails/guardrails.md#conversational-support).
 
-27. **Conversational agents support only Tool-scoped guardrails.** `selector.scopes` for conversational must be `["Tool"]` only — `"Agent"` and `"Llm"` scopes are not honored by the conversational runtime. `uip agent validate` accepts other scopes but they have no runtime effect. See [capabilities/guardrails/guardrails.md § Conversational Support](capabilities/guardrails/guardrails.md#conversational-support).
-
-## What NOT to Do (27)
+## What NOT to Do (26)
 
 1. **Do not manually create or edit `.agent-builder/` files** — it is generated by `uip agent migrate` and managed by Studio Web. Never create or modify these files by hand.
 2. **Do not use `=js:` or `$vars` in agent messages** — use `{{input.fieldName}}` only
@@ -95,6 +93,6 @@ Rules 1-21 apply to all low-code agents (autonomous and conversational). Rules 2
 
 25. **Do not populate `inputSchema.properties` or `inputSchema.required` on a conversational agent** — the runtime does not consume typed input fields. Conversational input flows over the WebSocket session. Adding required fields produces runtime errors. Per Rule 24.
 
-26. **Do not set `metadata.targetRuntime: "pythonAgent"` or `settings.maxIterations` on a conversational agent** — both indicate the file was scaffolded as autonomous and not converted. Conversational does not use `targetRuntime`, and the conversational engine ignores `maxIterations` because turn-taking is driven by WebSocket exchanges. Per Rule 26.
+26. **Do not set `metadata.targetRuntime: "pythonAgent"` or `settings.maxIterations` on a conversational agent** — both indicate the file was scaffolded as autonomous and not converted. Conversational does not use `targetRuntime`, and the conversational engine ignores `maxIterations` because turn-taking is driven by WebSocket exchanges. Per Rule 25.
 
-27. **Do not set `selector.scopes` to anything other than `["Tool"]` for guardrails on a conversational agent** — Agent-scoped and LLM-scoped guardrails are not honored by the conversational runtime. Validate accepts other scopes but they have no runtime effect. Per Rule 27.
+27. **Do not set `selector.scopes` to anything other than `["Tool"]` for guardrails on a conversational agent, and do not put the guardrail only in `agent.json` root `guardrails[]`** — Agent- and Llm-scoped guardrails are not honored by the conversational runtime. The runtime reads guardrails from each tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`; the `agent.json` root array is a Studio Web display mirror. Write to the tool resource (and mirror to agent.json root). Per Rule 26.
