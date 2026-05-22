@@ -7,6 +7,10 @@ name: Run Coder Eval
 # Long-term replacement for the coder-eval-runner VM.
 
 on:
+  # TEMP: pull_request trigger lets us exercise the workflow before it
+  # exists on main (workflow_dispatch needs the file on the default
+  # branch). Strip before final merge.
+  pull_request:
   workflow_dispatch:
     inputs:
       task_globs:
@@ -57,7 +61,8 @@ jobs:
       - name: Resolve task globs + enforce large-run gate
         id: globs
         env:
-          INPUT_GLOBS: ${{ inputs.task_globs }}
+          # On pull_request triggers (TEMP), fall back to a single quick task.
+          INPUT_GLOBS: ${{ inputs.task_globs || 'tasks/uipath-maestro-flow/multi_node/calculator/calculator.yaml' }}
           CONFIRMED:   ${{ inputs.confirm_large_run }}
         run: |
           set -euo pipefail
