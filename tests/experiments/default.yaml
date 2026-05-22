@@ -5,10 +5,8 @@ defaults:
   run_limits:
     max_turns: 200
     task_timeout: 1200
-    # Match smoke.yaml: a single turn can chain several cold-runner Helm-backed
-    # `uip rpa` calls (install-or-update-packages → get-analyzer-rules → build),
-    # each 30-90s. Per-turn budget should be governed by the slowest external
-    # call, not by the suite's intent.
+    # A single turn can chain several cold-runner `uip rpa` calls (each 30-90s);
+    # per-turn budget tracks the slowest external call, not the suite's intent.
     turn_timeout: 900
 
   sandbox:
@@ -41,11 +39,9 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
-  # Cross-cutting sandbox cleanup: wipe <sandbox>/{node_modules,.npm-prefix} so
-  # preserved artifacts stay slim (mirrors coder_eval #253 / sandbox isolation
-  # in #250 — MST-9674). Tasks that upload Studio Web solutions wire
-  # cleanup_solutions.py into their own post_run; it must run before this step
-  # because it still needs npm-installed CLIs.
+  # Sandbox cleanup between tasks. Tasks that upload Studio Web solutions
+  # wire cleanup_solutions.py into their own post_run — that must run before
+  # this step (still needs npm-installed CLIs).
   post_run:
     - command: "rm -rf node_modules .npm-prefix"
       timeout: 30

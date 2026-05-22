@@ -4,19 +4,15 @@ description: "Linux PR-gate smoke tests — docker isolation, fast turn budget"
 defaults:
   run_limits:
     # Coded RPA tasks (hooks setup + test case + project.json edits +
-    # `uip rpa` calls) routinely take 25-30 turns end-to-end. 20 was
-    # cutting before/after-hooks and coded-test-case off mid-task.
+    # `uip rpa` calls) routinely need ~25-30 turns end-to-end.
     max_turns: 40
-    # Helm-backed `uip rpa` ops (install-or-update-packages, get-analyzer-rules,
-    # build) regularly take 30-90s each on a cold runner. The before/after-hooks
-    # task chains several such calls, so the agent's single turn needs headroom.
+    # A single turn can chain several cold-runner `uip rpa` calls (each
+    # 30-90s); per-turn budget tracks the slowest external call.
     task_timeout: 900
     turn_timeout: 900
 
   sandbox:
     driver: docker
-    python: {}
-    node: {}
     docker:
       image: skills-image:latest
       env_passthrough_extra:
@@ -45,9 +41,8 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
-  # Drop <sandbox>/{node_modules,.npm-prefix} so preserved artifacts stay slim
-  # and Node module resolution can't leak across concurrent sandboxes
-  # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
+  # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
+  # sandboxes don't leak Node module resolution).
   post_run:
     - command: "rm -rf node_modules .npm-prefix"
       timeout: 30

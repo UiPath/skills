@@ -142,8 +142,7 @@ tests/
 │   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir — only non-docker file)
 │   ├── activation.yaml           # Opt-in skill-activation benchmark (1-turn)
 │   ├── skill-comparison-playbook.md      # A/B comparison playbook (research)
-│   ├── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
-│   └── sherif-skill-comparison.yaml      # One-off research experiment
+│   └── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
 ├── tasks/
 │   └── <skill-name>/             # One folder per skill (must match skills/<name>/)
 │       ├── _shared/              # Optional — helpers, cleanup scripts, per-skill pytest
