@@ -17,9 +17,9 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 5400
+task_timeout: 7200
 max_turns: 50
-turn_timeout: 3600
+turn_timeout: 5400
 
 sandbox:
   driver: tempdir
@@ -47,12 +47,19 @@ initial_prompt: |
   says and what the workbook has. What am I missing?
 
   I'm not on the Robot host right now and have no shell access to
-  MOCK-HOST — only Orchestrator. Diagnose what you can from
-  Orchestrator. If the answer needs me to run something on the
-  host (PowerShell, byte-dump tools, anything), give me the exact
-  commands as a list; I'll run them on the host and come back with
-  the output. Do not attempt to run those tools yourself, do not
-  stall waiting for host data — hand me the command list and stop.
+  MOCK-HOST — only Orchestrator. PowerShell, byte-dump tools, and
+  any host-side analysis are unavailable to you too; do not attempt
+  to run them — any such call will be rejected. This is a
+  diagnose-from-evidence task.
+
+  If you can identify the root cause directly from the workflow
+  source and the job's Orchestrator evidence (especially the Get
+  Workbook Sheets output in the job logs), name it. Otherwise give
+  me the exact host-side commands as a plain text list and stop —
+  I will run them on the host and come back with the output. Do not
+  loop on tool failures; if a Bash/PowerShell call is rejected once,
+  treat that as a hard signal to switch to writing recommendations
+  for me.
 
   The project source for the failing process is at ./ExcelDailyImport/ in the
   current working directory.
