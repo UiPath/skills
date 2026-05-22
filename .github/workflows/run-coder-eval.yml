@@ -25,10 +25,6 @@ on:
         description: '@uipath/cli tag or pinned version published to GH Packages (e.g. alpha, 0.1.22-alpha.20260520.1234).'
         type: string
         default: alpha
-      model_override:
-        description: 'Override BEDROCK_MODEL (full Bedrock id, e.g. eu.anthropic.claude-sonnet-4-6). Blank → repo secret.'
-        type: string
-        default: ''
 
 concurrency:
   group: run-coder-eval-${{ github.ref }}
@@ -57,20 +53,6 @@ jobs:
           python-version: '3.13'
 
       - uses: astral-sh/setup-uv@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Verify Docker is available
-        run: docker info > /dev/null
-
-      - name: Free up disk
-        run: |
-          df -h /
-          docker system prune -af --volumes >/dev/null 2>&1 || true
-          sudo rm -rf /opt/hostedtoolcache/CodeQL 2>/dev/null || true
-          df -h /
 
       - name: Resolve task globs + enforce large-run gate
         id: globs
@@ -131,40 +113,32 @@ jobs:
             -f tests/docker/Dockerfile \
             .
 
-      - name: Mint UiPath service-account token + enable env-auth
+      # ROPC bot-user auth via coder_eval's shared script (same as VM cron).
+      # Required because `uip flow debug` needs a real user `sub` claim —
+      # s2s/client_credentials tokens lack one. Writes ~/.uipath/.auth which
+      # experiments/nightly.yaml mounts into each eval container.
+      - name: Mint UiPath bot token (ROPC)
         env:
-          UIPATH_CLIENT_ID:     ${{ secrets.UIPATH_CLIENT_ID }}
-          UIPATH_CLIENT_SECRET: ${{ secrets.UIPATH_CLIENT_SECRET }}
-        run: |
-          set -euo pipefail
-          TOKEN=$(curl -fsS -X POST \
-            "https://alpha.uipath.com/identity_/connect/token" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=client_credentials" \
-            -d "client_id=$UIPATH_CLIENT_ID" \
-            -d "client_secret=$UIPATH_CLIENT_SECRET" \
-            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments" \
-            | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
-          echo "::add-mask::$TOKEN"
-          {
-            echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
-            echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
-            echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
-            echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
-            echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
-            echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
-            echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
-          } >> "$GITHUB_ENV"
-          mkdir -p ~/.uipath
+          UIPATH_URL:               https://alpha.uipath.com
+          UIPATH_ORGANIZATION_NAME: ${{ secrets.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:   ${{ secrets.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:       ${{ secrets.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:         ${{ secrets.UIPATH_TENANT_ID }}
+          CLIENT_ID:                ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
+        run: bash .coder_eval/dashboard/scripts/ci/refresh-auth.sh
 
       - name: Run coder-eval
         env:
-          SKILLS_REPO_PATH:        ${{ github.workspace }}
-          API_BACKEND:             bedrock
+          SKILLS_REPO_PATH:         ${{ github.workspace }}
+          API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION:              ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL:           ${{ inputs.model_override != '' && inputs.model_override || secrets.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY:       ${{ secrets.ANTHROPIC_API_KEY }}
+          AWS_REGION:               ${{ secrets.AWS_REGION }}
+          BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
+          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
+          TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
         working-directory: tests
         id: eval
         run: |
@@ -173,64 +147,26 @@ jobs:
             -e experiments/nightly.yaml \
             -j 20 -v \
             --run-dir /tmp/runs
-        continue-on-error: true
 
       - name: Fix permissions on /tmp/runs
         if: always()
         run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
 
-      - name: Summarize results
+      - name: Plaintext summary + verdict
         if: always()
         run: |
-          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1)
+          set -uo pipefail
+          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1 || true)
           if [ -z "$run_dir" ]; then
-            echo "::warning::No run directory found"
-            exit 0
+            echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
-          python - <<'PY'
-          import json, pathlib
-          run_dir = sorted(pathlib.Path('/tmp/runs').glob('*/'))[-1]
-          tasks = sorted(run_dir.rglob('task.json'))
-          rows = [json.loads(p.read_text(encoding='utf-8')) for p in tasks]
-          by_status = {}
-          for d in rows:
-              s = d.get('final_status', '?')
-              by_status[s] = by_status.get(s, 0) + 1
-          n = len(rows)
-          succ = by_status.get('SUCCESS', 0)
-          if n:
-              print(f'## Coder eval results: {n} tasks, {succ} SUCCESS ({100*succ/n:.1f}%)')
-          else:
-              print('## Coder eval results: (none)')
-          for s, c in sorted(by_status.items(), key=lambda x: -x[1]):
-              print(f'  {s}: {c}')
-          print()
-          print('### Non-SUCCESS tasks')
-          for d in rows:
-              if d.get('final_status') != 'SUCCESS':
-                  print(f"  {d.get('task_id', '?')}: {d.get('final_status', '?')}")
+          python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, pathlib, sys
+          rows = [json.loads(p.read_text()) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          for r in rows:
+              print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
+          ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
+          print(f"\n{ok}/{len(rows)} PASS")
+          sys.exit(0 if rows and ok == len(rows) else 1)
           PY
-
-      - name: Clean up artifact subdirs
-        if: always()
-        run: find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
-
-      - name: Upload eval report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coder-eval-report-${{ github.run_id }}
-          path: |
-            /tmp/runs/*/experiment.html
-            /tmp/runs/*/experiment.md
-            /tmp/runs/*/experiment.json
-            /tmp/runs/*/experiment.log
-            /tmp/runs/*/*/variant.html
-            /tmp/runs/*/*/variant.md
-            /tmp/runs/*/*/variant.json
-            /tmp/runs/**/task.html
-            /tmp/runs/**/task.json
-            /tmp/runs/**/task.log
-            /tmp/runs/**/artifacts
-          if-no-files-found: warn
-          retention-days: 14
