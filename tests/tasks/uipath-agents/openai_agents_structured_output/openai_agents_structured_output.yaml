@@ -31,9 +31,7 @@ initial_prompt: |
   sentence). Call the output model `ReviewOutput` and set it as the agent's
   `output_type`.
 
-  Route LLM calls through UiPath's gateway by initializing `UiPathChatOpenAI`
-  and calling `set_default_openai_client` inside the agent factory function —
-  not at module level. Use `gpt_4o_mini_2024_07_18` at temperature 0.
+  Route LLM calls through UiPath's gateway by initializing `UiPathChatOpenAI`. Use `gpt_4o_mini_2024_07_18` at temperature 0.
 
   Scaffold, init, then run the agent with:
   `'{"messages": "Analyze this review", "review_text": "This product is absolutely amazing — best purchase I have made in years."}'`
