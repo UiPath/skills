@@ -273,6 +273,8 @@ Full reference: [coded/codedworkflow-reference.md](references/coded/codedworkflo
 
 XAML workflows follow a **discovery-first, phase-based approach**: Discovery → Generate/Edit → Validate & Fix → Response. See [references/xaml/workflow-guide.md](references/xaml/workflow-guide.md) for the full phase workflow.
 
+**Default layout: `Main.xaml` orchestrator + one small sub-workflow per business step, invoked via `Invoke Workflow File`.** Each sub-workflow has a self-contained In/Out contract, so steps can be authored in parallel by separate agents. Reserve single-file projects for genuinely one-step automations. See [references/project-structure-guide.md](references/project-structure-guide.md).
+
 ### Workflow Types
 
 | Type | When to Use |

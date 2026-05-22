@@ -6,8 +6,8 @@ For the coded vs XAML decision, see [coded-vs-xaml-guide.md](coded-vs-xaml-guide
 
 ## Guidelines
 
-- **Single simple task** (e.g. "read a CSV and log it") — one workflow file (`Main.xaml` for XAML projects, `Main.cs` for coded) is fine
-- **Multi-step process** (e.g. "read invoices, validate, post to system") — split into multiple workflow files, each handling one step. The root workflow invokes each step
+- **Default to decomposition: a `Main` orchestrator + small focused sub-workflows, one per business step.** The root (`Main.xaml` for XAML, `Main.cs` for coded) only sequences and passes arguments; each step lives in its own file invoked via `Invoke Workflow File` (XAML) or `workflows.StepName(...)` (coded). Benefits: independent validation and testing, isolated merge conflicts, readable orchestrator, **and — because each sub-workflow has a self-contained In/Out contract — every sub-workflow can be authored in parallel by a separate agent.** Size each sub-workflow to one cohesive business step (typically tens of activities, never approaching the ~500-activity ceiling from [xaml/common-pitfalls.md](xaml/common-pitfalls.md)).
+- **Single-activity task** (e.g. "read a CSV and log it", "send one email") — one workflow file is fine. Use this exception only when the entire automation is genuinely one step.
 - **Shared data structures** — extract into a Coded Source File (e.g. `Models.cs`, `InvoiceData.cs`). XAML cannot define types, so a Coded Source File is the right home even in an otherwise XAML project
 - **Repeated logic** — in XAML projects, extract into a reusable XAML workflow. In coded or hybrid projects, extract into a helper Coded Source File (e.g. `ValidationHelpers.cs`)
 - **Test project** — one test case per scenario. Coded test projects optionally use `partial class CodedWorkflow : IBeforeAfterRun` in `CodedWorkflowHooks.cs` for shared setup. XAML test projects use Test Activities for shared setup
@@ -103,11 +103,9 @@ OrderProcessing/
 
 **First — coded or XAML?** For new projects, default to XAML unless the user explicitly said "coded" or named a coded-specific trigger (custom data models, complex algorithms, unit tests on business logic). See [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md). The root workflow is `Main.xaml` for XAML projects and `Main.cs` for coded projects — substitute accordingly below.
 
-**Is it a single, simple task?**
+**Is the entire automation a single activity/step?** (e.g. one CSV read, one email send)
 - ✅ Yes → Single root workflow
-
-**Is it a multi-step process?**
-- ✅ Yes → A root workflow that invokes each step + separate workflow files for each step
+- ❌ No → Default to a root orchestrator + one sub-workflow per business step. Each sub-workflow has an explicit In/Out contract and can be authored in parallel by separate agents.
 
 **Does it involve repeated data structures?**
 - ✅ Yes → Extract to Coded Source File (e.g. `Models.cs`, `InvoiceData.cs`). Required even in XAML projects — XAML cannot define types
