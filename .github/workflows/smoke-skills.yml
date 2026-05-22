@@ -106,12 +106,46 @@ jobs:
               continue
             fi
             if [ -d "tests/tasks/$skill" ]; then
-              if [ -n "$GLOBS" ]; then
-                GLOBS="$GLOBS tasks/$skill/**/*.yaml"
+              if [ "$skill" = "uipath-agents" ]; then
+                # Split coded vs lowcode based on which sub-paths changed.
+                # skills/uipath-agents/references/coded/ and tests/tasks/uipath-agents/coded/
+                # → coded suite only.  Same pattern for lowcode.
+                # Any change outside those dirs (SKILL.md, root-level tasks, etc.)
+                # → both suites.
+                UA_CODED=$(echo "$CHANGED" | grep -E \
+                  '^skills/uipath-agents/references/coded/|^tests/tasks/uipath-agents/coded/' \
+                  || true)
+                UA_LOWCODE=$(echo "$CHANGED" | grep -E \
+                  '^skills/uipath-agents/references/lowcode/|^tests/tasks/uipath-agents/lowcode/' \
+                  || true)
+                UA_GENERAL=$(echo "$CHANGED" | \
+                  grep -E '^skills/uipath-agents/|^tests/tasks/uipath-agents/' | \
+                  grep -vE '^skills/uipath-agents/references/(coded|lowcode)/|^tests/tasks/uipath-agents/(coded|lowcode)/' \
+                  || true)
+                if [ -n "$UA_GENERAL" ]; then
+                  GLOBS="$GLOBS tasks/uipath-agents/coded/**/*.yaml tasks/uipath-agents/lowcode/**/*.yaml"
+                  echo "Will test: uipath-agents/coded + uipath-agents/lowcode (general change)"
+                elif [ -n "$UA_CODED" ] || [ -n "$UA_LOWCODE" ]; then
+                  if [ -n "$UA_CODED" ]; then
+                    GLOBS="$GLOBS tasks/uipath-agents/coded/**/*.yaml"
+                    echo "Will test: uipath-agents/coded"
+                  fi
+                  if [ -n "$UA_LOWCODE" ]; then
+                    GLOBS="$GLOBS tasks/uipath-agents/lowcode/**/*.yaml"
+                    echo "Will test: uipath-agents/lowcode"
+                  fi
+                else
+                  GLOBS="$GLOBS tasks/uipath-agents/coded/**/*.yaml tasks/uipath-agents/lowcode/**/*.yaml"
+                  echo "Will test: uipath-agents/coded + uipath-agents/lowcode (fallback)"
+                fi
               else
-                GLOBS="tasks/$skill/**/*.yaml"
+                if [ -n "$GLOBS" ]; then
+                  GLOBS="$GLOBS tasks/$skill/**/*.yaml"
+                else
+                  GLOBS="tasks/$skill/**/*.yaml"
+                fi
+                echo "Will test: $skill"
               fi
-              echo "Will test: $skill"
             else
               if [ -n "$UNTESTED" ]; then
                 UNTESTED="$UNTESTED, $skill"
