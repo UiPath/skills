@@ -2,7 +2,6 @@
 
 How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
 
-
 ## Configuration Workflow
 
 Follow these steps for every IS trigger node.

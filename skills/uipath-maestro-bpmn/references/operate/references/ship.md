@@ -21,6 +21,12 @@ Before upload, publish, deploy, or debug:
    CLI contract says otherwise. Use
    [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for the local drift
    checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
+   When the BPMN references external Orchestrator processes, `uip solution
+   resource refresh` expects a versioned `bindings_v2.json` object with a
+   `resources` array. Process resources should be generated or fixture-backed
+   entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,
+   `resourceSubType`, and `propertyAttribute` for name/folder-path pairs, not
+   an unwrapped array or unversioned placeholder.
 5. Confirm login for cloud actions:
 
    ```bash
@@ -54,6 +60,9 @@ uip solution upload <SolutionDir> --output json
 
 If the solution has resource declarations, refresh them with the supported solution tooling in the local CLI.
 Do not invent a `solution resource` command path; verify the installed CLI help before documenting a refresh step.
+When the project declares resource dependencies, verify that refresh produced
+matching generated resource files and debug overwrite metadata. An empty
+`resources` array is valid only for projects with no generated dependencies.
 
 Report the Studio Web URL or solution ID when the CLI returns one.
 If the upload succeeds but returns no URL, say `<not returned by CLI>` instead of omitting the field.

@@ -46,6 +46,9 @@ Namespace baseline for greenfield files:
 ## Orchestrator.StartJob (RPA)
 
 `bpmn:serviceTask` with `Orchestrator.StartJob`.
+Use a complete process identity context instead of a display-name-only shell.
+For process job wrappers, resolve process and folder identity from discovery
+commands before execution; keep examples placeholder-safe.
 
 ```xml
 <bpmn:serviceTask id="Task_StartRpaJob" name="Start RPA Job">
@@ -53,7 +56,11 @@ Namespace baseline for greenfield files:
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartJob" version="v1" />
       <uipath:context>
-        <uipath:input name="name" type="string" value="Synthetic Process" />
+        <uipath:input name="ReleaseKey" type="string" value="<PROCESS_KEY_GUID>" />
+        <uipath:input name="FolderKey" type="string" value="<FOLDER_KEY_GUID>" />
+        <uipath:input name="folderId" type="string" value="<FOLDER_ID_INTEGER>" />
+        <uipath:input name="FolderPath" type="string" value="Shared/Synthetic" />
+        <uipath:input name="Name" type="string" value="Synthetic Process" />
       </uipath:context>
       <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
       <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_JobResult" />
@@ -66,31 +73,26 @@ Namespace baseline for greenfield files:
 
 ## Orchestrator.StartAgentJob (folder-deployed agent — coded Python or low-code)
 
-`bpmn:serviceTask` with `Orchestrator.StartAgentJob`. Use this shell for any agent published to an Orchestrator folder, regardless of whether the agent is a coded Python project (LangGraph / LlamaIndex / OpenAI Agents) or a low-code Agent Builder agent — the wire format is identical. For external A2A agents addressed by URL, use `A2A.AgentExecution` instead.
+`bpmn:serviceTask` with `Orchestrator.StartAgentJob`. Use this wrapper only
+for a dependency that discovery confirms as `processType: "Agent"`. Coded
+Python dependencies may surface as another process type; do not infer the
+wrapper from the source project label alone.
 
-Required binding shape (enforced by the Maestro BPMN packager validator — `uip maestro bpmn pack` and `uip solution pack` share these checks):
-
-- Context inputs MUST be named exactly `name` and `folderPath`. Do not use `agentName`, `releaseKey`, or `folderId`.
-- Both values MUST be `value="=bindings.<bindingId>"` — literal strings are rejected.
-- Each context input points at its own binding. The pair shares one `resourceKey` and uses `resource="process"`, `resourceSubType="Agent"` (case-sensitive `A`), with `propertyAttribute="name"` on one binding and `propertyAttribute="folderPath"` on the other.
+When drafting the wrapper from a resolved Agent process, use the same identity
+context shape that process wrappers use. Local validation proves XML/package
+shape only; do not claim executable behavior until the target resource,
+bindings, schemas, and authorized debug/run have been verified.
 
 ```xml
-<uipath:bindings version="v1">
-  <uipath:binding id="Binding_AgentName" name="Synthetic Agent" type="process" elementId="Task_StartAgentJob"
-                  resource="process" resourceSubType="Agent" resourceKey="synthetic-agent"
-                  propertyAttribute="name" />
-  <uipath:binding id="Binding_AgentFolderPath" name="Synthetic Agent" type="process" elementId="Task_StartAgentJob"
-                  resource="process" resourceSubType="Agent" resourceKey="synthetic-agent"
-                  propertyAttribute="folderPath" />
-</uipath:bindings>
-
 <bpmn:serviceTask id="Task_StartAgentJob" name="Start Agent Job">
   <bpmn:extensionElements>
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
       <uipath:context>
-        <uipath:input name="name" type="string" value="=bindings.Binding_AgentName" />
-        <uipath:input name="folderPath" type="string" value="=bindings.Binding_AgentFolderPath" />
+        <uipath:input name="ReleaseKey" type="string" value="<AGENT_PROCESS_KEY_GUID>" />
+        <uipath:input name="FolderKey" type="string" value="<FOLDER_KEY_GUID>" />
+        <uipath:input name="FolderPath" type="string" value="Shared/SyntheticAgentSolution" />
+        <uipath:input name="Name" type="string" value="Synthetic Agent" />
       </uipath:context>
       <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
       <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgentJobResult" />
@@ -101,30 +103,60 @@ Required binding shape (enforced by the Maestro BPMN packager validator — `uip
 </bpmn:serviceTask>
 ```
 
-`bindings_v2.json` MUST mirror the BPMN pair. Both entries use `kind: "process"` and `metadata.SubType: "Agent"`; the `propertyAttribute` is preserved in `metadata`:
+For `uip solution resource refresh`, `bindings_v2.json` must use a versioned
+package resource wrapper. A process dependency usually has separate resource
+entries for the process name and folder path; do not use an unwrapped resource
+array or unversioned placeholder as the source of dependency resources:
 
 ```json
 {
-  "id": "Binding_AgentName",
-  "name": "Synthetic Agent",
-  "kind": "process",
-  "resource": "process",
-  "resourceSubType": "Agent",
-  "propertyAttribute": "name",
-  "resourceKey": "synthetic-agent",
-  "metadata": {
-    "BindingsVersion": "v1",
-    "DisplayLabel": "Synthetic Agent",
-    "SolutionsSupport": "Required",
-    "SubType": "Agent",
-    "PropertyAttribute": "name"
-  }
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_AgentName",
+      "kind": "process",
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "name",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "name"
+      }
+    },
+    {
+      "id": "Binding_AgentFolderPath",
+      "kind": "process",
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "folderPath",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "folderPath"
+      }
+    }
+  ]
 }
 ```
 
+An empty `resources` array is valid for package-shape verification when the
+BPMN has no generated resource dependencies. It does not represent imported
+dependencies for a process, queue, connector, or agent.
+
 `Var_RequestId` must already exist as a `uipath:inputOutput` variable readable at the task — see [variables-bindings-expressions.md](variables-bindings-expressions.md#entry-point-inputs-used-downstream) for the start-scoped input pattern.
 
-For the full runnable end-to-end fixture (BPMN + bindings + start-scoped entry input), see [../../fixtures/validation/agent-invocation/](../../fixtures/validation/agent-invocation/).
+For the local validation fixture covering BPMN structure, bindings, and
+start-scoped entry input, see
+[../../fixtures/validation/agent-invocation/](../../fixtures/validation/agent-invocation/).
 
 ## A2A.AgentExecution (external A2A agent addressed by URL)
 
@@ -148,6 +180,9 @@ For the full runnable end-to-end fixture (BPMN + bindings + start-scoped entry i
 ## Orchestrator.ExecuteApiWorkflowAsync
 
 `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
+Use the same process identity context pattern as other Orchestrator process
+wrappers. Keep context field names aligned with the wrapper shell and use
+resolved process/folder identifiers before execution.
 
 ```xml
 <bpmn:serviceTask id="Task_ExecuteApiWorkflow" name="Execute API Workflow">
@@ -155,7 +190,10 @@ For the full runnable end-to-end fixture (BPMN + bindings + start-scoped entry i
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
       <uipath:context>
-        <uipath:input name="name" type="string" value="Synthetic API Workflow" />
+        <uipath:input name="ReleaseKey" type="string" value="<API_WORKFLOW_PROCESS_KEY_GUID>" />
+        <uipath:input name="FolderKey" type="string" value="<FOLDER_KEY_GUID>" />
+        <uipath:input name="FolderPath" type="string" value="Shared/Synthetic" />
+        <uipath:input name="Name" type="string" value="Synthetic API Workflow" />
       </uipath:context>
       <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
       <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ApiWorkflowResult" />

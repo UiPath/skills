@@ -56,8 +56,8 @@ if uip login status --output json >"$TMPDIR/login-status.json" 2>&1 \
     solution_file="$solution_dir/solution-$name.uipx"
     solution_count=$((solution_count + 1))
 
-    if ! run_json_command "solution-new-$name" \
-      uip solution new "$solution_dir" --output json; then
+    if ! run_json_command "solution-init-$name" \
+      uip solution init "$solution_dir" --output json; then
       errors=1
       continue
     fi

@@ -93,9 +93,14 @@ do not invent `contentFiles` as a substitute for `content`.
 
 ```json
 {
+  "version": "2.0",
   "resources": []
 }
 ```
+
+This empty resource file is a package-shape placeholder only for projects with
+no generated resource dependencies. It is not evidence that dependency refresh
+imported an external process, queue, connector, or agent.
 
 `package-descriptor.json`:
 
@@ -123,7 +128,29 @@ JSON schema variables use their CDATA body as the property schema. Strip `$schem
 
 ## Binding Rules
 
-Generated `bindings_v2.json` must include one resource for each root binding that is not only a folder helper attribute. The resource should preserve:
+Generated `bindings_v2.json` must be a top-level object with
+`"version": "2.0"` and a `resources` array. Do not use a bare resource array, a
+single resource object, or an unversioned `{ "resources": [] }` object; those
+shapes are not the package contract consumed by solution resource refresh.
+
+The resource array has two consumers with different tolerance:
+
+- Local/package binding expressions may need id-addressable entries that mirror
+  root `uipath:binding` IDs.
+- `uip solution resource refresh` reads the same `resources` array and imports
+  concrete dependencies only when it contains parseable resource entries.
+  Process resources should come from CLI generation or fixture-backed binding
+  entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,
+  `resourceSubType`, and, for name/folder-path binding pairs,
+  `propertyAttribute`.
+
+When an executable BPMN depends on remote Orchestrator processes, include
+generated process binding resources before refresh so it can import the
+process/package resources and write debug overwrites. If resource dependencies
+are expected, verify that refresh produced matching generated resource files or
+explicitly report that no dependency resources were imported.
+
+Generated id-addressable entries should preserve:
 
 - `id`, `name`, kind/type, and `resourceKey`.
 - `metadata.BindingsVersion` for the source binding version.

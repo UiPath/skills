@@ -91,7 +91,7 @@ One entry per declared output (trigger nodes: `output` only; action nodes: `outp
 
 ### Reference
 
-[shared/file-format.md — Node outputs](../../shared/file-format.md#node-outputs), [author/CAPABILITY.md rule #15](../../author/CAPABILITY.md), [editing-operations-json.md — Pre-flight Checklist step 5–6](../../author/references/editing-operations-json.md#pre-flight-checklist).
+[shared/file-format.md — Node outputs](../../shared/file-format.md#node-outputs), [author/CAPABILITY.md rule #14](../../author/CAPABILITY.md), [editing-operations-json.md — Pre-flight Checklist step 5–6](../../author/references/editing-operations-json.md#pre-flight-checklist).
 
 ---
 

@@ -199,6 +199,8 @@ class Validator:
     def validate_regressions(self) -> list[str]:
         errors: list[str] = []
         errors.extend(self.validate_gateway_misnamed_repro())
+        errors.extend(self.validate_bindings_version_repro())
+        errors.extend(self.validate_script_result_response_repro())
         return errors
 
     def validate_gateway_misnamed_repro(self) -> list[str]:
@@ -234,6 +236,65 @@ class Validator:
                 "error for a copied project whose single BPMN file no longer matches "
                 "the project directory name; "
                 f"observed: {details}"
+            ]
+
+    def validate_bindings_version_repro(self) -> list[str]:
+        """Assert bindings_v2.json without version is rejected."""
+
+        fixture = FIXTURES / "linear-process"
+        if not fixture.is_dir():
+            return [
+                "regression bindings-version-repro: "
+                "source fixture linear-process is missing"
+            ]
+
+        with tempfile.TemporaryDirectory(prefix="bindings-version-repro-", dir=ROOT) as tmp:
+            project = Path(tmp) / "linear-process"
+            shutil.copytree(fixture, project)
+            bindings_path = project / "bindings_v2.json"
+            data = json.loads(bindings_path.read_text(encoding="utf-8"))
+            data.pop("version", None)
+            bindings_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+            regression = Validator()
+            regression.validate_project(project)
+            if any("version must be 2.0" in err for err in regression.errors):
+                return []
+
+            details = "; ".join(regression.errors) or "no validation error"
+            return [
+                "regression bindings-version-repro failed: expected bindings_v2.json "
+                f"version validation error; observed: {details}"
+            ]
+
+    def validate_script_result_response_repro(self) -> list[str]:
+        """Assert script output mappings cannot read result fields above response."""
+
+        fixture = FIXTURES / "subprocess-multi-instance"
+        if not fixture.is_dir():
+            return [
+                "regression script-result-response-repro: "
+                "source fixture subprocess-multi-instance is missing"
+            ]
+
+        with tempfile.TemporaryDirectory(prefix="script-result-response-repro-", dir=ROOT) as tmp:
+            project = Path(tmp) / "subprocess-multi-instance"
+            shutil.copytree(fixture, project)
+            bpmn = project / "subprocess-multi-instance.bpmn"
+            text = bpmn.read_text(encoding="utf-8")
+            text = text.replace('source="=result.response"', 'source="=result.outcome"', 1)
+            bpmn.write_text(text, encoding="utf-8")
+
+            regression = Validator()
+            regression.validate_project(project)
+            expected = "BPMN.ScriptTask output source must read result.response"
+            if any(expected in err for err in regression.errors):
+                return []
+
+            details = "; ".join(regression.errors) or "no validation error"
+            return [
+                "regression script-result-response-repro failed: expected script output "
+                f"result.response validation error; observed: {details}"
             ]
 
     def validate_public_safety(self, path: Path, text: str) -> None:
@@ -759,6 +820,8 @@ class Validator:
                 continue
             if local(elem.tag) in {"activity", "event"}:
                 self.validate_activity_or_event(path, elem, bindings, parent_map)
+            if local(elem.tag) == "mapping":
+                self.validate_script_mapping(path, elem, parent_map)
             if local(elem.tag) == "output":
                 target = elem.attrib.get("var") or elem.attrib.get("target")
                 if target and target not in variables["writable"]:
@@ -779,6 +842,29 @@ class Validator:
                 variables,
                 f"uipath:{local(elem.tag)} text",
             )
+
+    def validate_script_mapping(
+        self,
+        path: Path,
+        elem: ET.Element,
+        parent_map: dict[int, ET.Element],
+    ) -> None:
+        type_elem = elem.find(f"{{{UIPATH_NS}}}type")
+        mapping_type = type_elem.attrib.get("value") if type_elem is not None else None
+        extension_elements = parent_map.get(id(elem))
+        bpmn_parent = parent_map.get(id(extension_elements))
+        is_script_parent = bpmn_parent is not None and local(bpmn_parent.tag) == "scriptTask"
+        if mapping_type != "BPMN.ScriptTask" and not is_script_parent:
+            return
+
+        for output in elem.findall(f"{{{UIPATH_NS}}}output"):
+            source = output.attrib.get("source", "")
+            if source.startswith("=result.") and not source.startswith("=result.response"):
+                self.error(
+                    path,
+                    "BPMN.ScriptTask output source must read result.response "
+                    f"or result.response.<field>, found {source}",
+                )
 
     def validate_activity_or_event(
         self,
@@ -912,6 +998,16 @@ class Validator:
             )
         if data["operate.json"].get("contentType") != "ProcessOrchestration":  # type: ignore[union-attr]
             self.error(project / "operate.json", "contentType must be ProcessOrchestration")
+
+        bindings_file = data["bindings_v2.json"]
+        if not isinstance(bindings_file, dict):
+            self.error(project / "bindings_v2.json", "must be a JSON object")
+            return
+        if bindings_file.get("version") != "2.0":
+            self.error(project / "bindings_v2.json", "version must be 2.0")
+        if not isinstance(bindings_file.get("resources"), list):
+            self.error(project / "bindings_v2.json", "resources must be an array")
+            return
 
         descriptor_content = set(data["package-descriptor.json"].get("content", []))  # type: ignore[union-attr]
         for required in (
