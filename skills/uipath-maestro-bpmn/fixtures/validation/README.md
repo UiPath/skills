@@ -78,7 +78,7 @@ CI should run the same two commands before skill evals. The smoke eval task for 
 
 ```bash
 cd tests
-make tags TAGS="uipath-maestro-bpmn smoke" EXPERIMENT=experiments/default.yaml
+make tags TAGS="uipath-maestro-bpmn smoke" EXPERIMENT=experiments/smoke.yaml
 ```
 
 ## Public-Safety Rules

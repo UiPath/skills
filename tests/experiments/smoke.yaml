@@ -1,5 +1,5 @@
-experiment_id: skill-tests-default
-description: "Default experiment for smoke tests — loads the full UiPath skills plugin"
+experiment_id: skill-tests-smoke
+description: "Linux PR-gate smoke tests — docker isolation, fast turn budget"
 
 defaults:
   run_limits:
@@ -14,9 +14,24 @@ defaults:
     turn_timeout: 900
 
   sandbox:
-    driver: tempdir
+    driver: docker
     python: {}
     node: {}
+    docker:
+      image: skills-image:latest
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - TRACES_SMOKE_PROCESS_KEY
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
 
   agent:
     type: claude-code

@@ -33,7 +33,7 @@ Once resolved, `<skill-name>` is fixed for the rest of the run.
 ### 1b. Read context (parallel Explore agents or parallel tool calls)
 
 1. `skills/<skill-name>/SKILL.md` plus everything under `skills/<skill-name>/references/` and `skills/<skill-name>/assets/`.
-2. `tests/README.md` — authoritative source for the **Tag Taxonomy**, **Weight scale**, and **experiment defaults** (`default.yaml` for smoke, `integration.yaml`, `e2e.yaml`). Do not duplicate that material here; reference it.
+2. `tests/README.md` — authoritative source for the **Tag Taxonomy**, **Weight scale**, and **experiment defaults** (`smoke.yaml` for PR-gate, `default.yaml` for nightly e2e and ad-hoc, `smoke-windows.yaml` for Windows RPA). Do not duplicate that material here; reference it.
 3. `.claude/commands/lint-task.md` — the quality rubric (six axes, four severities). Generated tasks must not trip a Medium-or-above issue on any axis.
 4. `tests/reports/<skill-name>.md` if it exists — use it to detect that the scenario in the description is already a known gap with prior recommendations.
 5. Every existing `*.yaml` task under `tests/tasks/` — collect all `task_id` values (collision check), study conventions for the target skill (or a peer skill if the target has none yet), and confirm the described scenario is not already covered.

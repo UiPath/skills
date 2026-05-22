@@ -40,22 +40,22 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
 ```bash
 cd tests
 
-# Run all tests (smoke + integration + e2e)
+# Run everything under the default config (full lifecycle, longest budget)
 make all
 
-# Run all smoke tests
+# Run smoke tests (Linux, fast PR-gate budget)
 make smoke
 
-# Run all integration tests
-make integration
+# Run Windows RPA smoke tests (tempdir)
+make smoke_rpa
 
-# Run all e2e tests
+# Run e2e-tagged tests under the default config
 make e2e
 
 # Run tests matching a combination of tags (AND semantics — tasks must carry all listed tags) (defaults to experiments/default.yaml):
 make tags TAGS="integration connector-feature"
 # Optionally override the experiment config 
-make tags TAGS="integration connector-feature" EXPERIMENT=experiments/integration.yaml
+make tags TAGS="integration connector-feature" EXPERIMENT=experiments/smoke.yaml
 
 # Run all tests for a specific skill
 make test-uipath-maestro-flow
@@ -137,9 +137,13 @@ tests/
 ├── README.md
 ├── Makefile
 ├── experiments/
-│   ├── default.yaml              # Smoke config
-│   ├── integration.yaml          # Integration config (longer timeouts)
-│   └── e2e.yaml                  # E2E config (staging tenant, full lifecycle)
+│   ├── default.yaml              # Primary config — docker, full lifecycle, staging tenant
+│   ├── smoke.yaml                # PR-gate smoke (Linux, docker, faster budget)
+│   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir — only non-docker file)
+│   ├── activation.yaml           # Opt-in skill-activation benchmark (1-turn)
+│   ├── skill-comparison-playbook.md      # A/B comparison playbook (research)
+│   ├── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
+│   └── sherif-skill-comparison.yaml      # One-off research experiment
 ├── tasks/
 │   └── <skill-name>/             # One folder per skill (must match skills/<name>/)
 │       ├── _shared/              # Optional — helpers, cleanup scripts, per-skill pytest
@@ -161,12 +165,12 @@ Experiment files define shared agent defaults per test type. Tasks inherit these
 
 Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
 
-| Experiment | Used by | max_turns | task_timeout | turn_timeout |
-|------------|---------|-----------|--------------|--------------|
-| `default.yaml` | Smoke | 40 | 900s | 900s |
-| `integration.yaml` | Integration | 30 | 900s | 300s |
-| `e2e.yaml` | E2E | 200 | 1200s | 300s |
-| `activation.yaml` | Skill activation classifier | 1 | 120s | 120s |
+| Experiment | Driver | Used by | max_turns | task_timeout | turn_timeout |
+|------------|--------|---------|-----------|--------------|--------------|
+| `smoke.yaml` | docker | PR-gate smoke (Linux) | 40 | 900s | 900s |
+| `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
+| `default.yaml` | docker | Nightly e2e, integration, ad-hoc | 200 | 1200s | 300s |
+| `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 1 | 120s | 120s |
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent for exactly one turn against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
