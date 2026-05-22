@@ -84,7 +84,7 @@ Rules for the listing path:
 - **Do NOT mock.** If `Data: []`, answer directly: no IxP models are published on this tenant. The `core.logic.mock` fallback is for build-time planning, not for listing-time Q&A.
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
 - **Do NOT search by `"runtime"`, `"document extractor"`, `"extractor"`, or `"IXP"` (uppercase).** These return empty results or agent-tool variants — not extraction nodes. Use `"uipath.ixp"` (lowercase) only.
-- **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates *deployed flow process instances* (with `--folder-key`) — that is a different question. Listing published IxP models always goes through `registry search "uipath.ixp"`.
+- **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates *deployed flow process instances* (with `--folder-key`), not published models. Listing published IxP models always goes through `registry search "uipath.ixp"`.
 - **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist. The CLI returns `unknown command 'list-...'` and there is no fallback path to pursue.
 
 ## Registry Validation
@@ -119,7 +119,7 @@ The IxP node instance is **derived from the registry response**, not authored fr
 Run this once and source every field below from the response:
 
 ```bash
-uip maestro flow registry get "<nodeType>" --output json > /tmp/ixp-def.json
+uip maestro flow registry get "<nodeType>" --output json > <tmpfile>.json
 ```
 
 Then assemble the instance by copying these paths verbatim:
@@ -153,7 +153,7 @@ If you find yourself typing any of those five field names while authoring an IxP
 {
   "id": "extractInvoiceFields",
   "type": "uipath.ixp.invoice-model.shared-invoice-model",
-  "typeVersion": "1.0.0",
+  "typeVersion": "<typeVersion from `registry get` response>",
   "display": { "label": "Extract Invoice Fields" },
   "inputs": {
     "model": {
