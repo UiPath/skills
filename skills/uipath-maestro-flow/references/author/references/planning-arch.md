@@ -4,7 +4,7 @@ Discover available capabilities, then design the flow topology — select node t
 
 > **Registry rules for this phase:**
 > - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
-> - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get <nodeType> --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+> - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get <node-type> --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
 > - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](planning-impl.md).
 
 ---

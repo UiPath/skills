@@ -70,7 +70,7 @@ These apply regardless of which strategy you use.
 ### Definitions
 
 - Every unique `type:typeVersion` pair in `nodes` must have a matching entry in `definitions`
-- Definitions come from `uip maestro flow registry get <NODE_TYPE> --output json` — copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
+- Definitions come from `uip maestro flow registry get <node-type> --output json` — copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
 - **Never hand-write definitions** — hand-written definitions cause validation failures
 - One definition per unique type, not one per node instance
 

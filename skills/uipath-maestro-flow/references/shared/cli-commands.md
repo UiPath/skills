@@ -330,10 +330,10 @@ Manage the local node type cache. No auth required for OOTB nodes; login for ten
 uip maestro flow registry pull                             # refresh local cache (expires after 30 min)
 uip maestro flow registry list --output json               # list all cached node types
 uip maestro flow registry search <keyword> --output json   # search by name, tag, or category
-uip maestro flow registry get <nodeType> --output json     # get full schema for a node type
+uip maestro flow registry get <node-type> --output json     # get full schema for a node type
 ```
 
-`registry search` returns `Data` as a flat array (not `Data.Nodes`); fields are PascalCase. `NodeType` is the identifier you pass to `registry get <nodeType>` (and later `node add`).
+`registry search` returns `Data` as a flat array (not `Data.Nodes`); fields are PascalCase. `NodeType` is the identifier you pass to `registry get <node-type>` (and later `node add`).
 
 ```json
 { "Data": [
