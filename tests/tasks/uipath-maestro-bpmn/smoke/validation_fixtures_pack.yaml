@@ -32,6 +32,7 @@ initial_prompt: |
   - `fixtures/validation/contract-variants/`
   - `fixtures/validation/registry-coverage-matrix/`
   - `fixtures/validation/wrapper-family-contract/`
+  - `fixtures/validation/agent-invocation/`
 
   Requirements:
   - Use the installed `uip` CLI to pack each fixture project. Send packed

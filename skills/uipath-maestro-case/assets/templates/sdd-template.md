@@ -196,7 +196,7 @@ DO NOT include in Configuration:
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| {camelCase name} | {In \| Out \| Variable} | {string \| number \| boolean \| date \| object \| array \| jsonSchema} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
+| {camelCase name} | {In \| Out \| Variable} | {string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
 
 **Category semantics (author-facing summary; canonical definition in [`global-vars/impl-json.md` § Pattern shapes by category](../../references/plugins/variables/global-vars/impl-json.md)):**
 
@@ -228,7 +228,7 @@ If neither holds, the io-binding validator surfaces the misalignment.
 | caseStarter | Variable | string | T02, T03 | T02: response.user; T03: response.initiator | | Shared slot — whichever trigger fires populates it |
 | applicantName | In | string | | | | Formal In-arg supplied by API caller (manual trigger) |
 | finalDecision | Out | string | | | "Pending" | Out-arg; producer is "Approve Decision" task; "Pending" returned if no task fires |
-| reviewCount | Variable | number | | | 0 | Counter incremented by tasks via `=` operator |
+| reviewCount | Variable | integer | | | 0 | Counter incremented by tasks via `=` operator |
 
 ---
 

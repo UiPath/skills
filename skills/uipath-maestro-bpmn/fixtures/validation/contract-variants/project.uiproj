@@ -1,7 +1,7 @@
 {
   "projectVersion": "1.0.0",
-  "projectType": "ProcessOrchestration",
-  "name": "ContractVariants",
+  "ProjectType": "ProcessOrchestration",
+  "Name": "ContractVariants",
   "description": "Synthetic Maestro BPMN XML contract variant fixture.",
   "main": "contract-variants.bpmn"
 }

@@ -1,0 +1,268 @@
+task_id: skill-case-multi-task-dependency-chain
+description: >
+  Build a Case Management definition that exercises task-driven stage
+  completion, the under-covered task-entry rule-types, and a non-timer
+  task type embedded in a multi-stage flow. Process stage contains two
+  sequential timers (task-entry runs-sequentially) and exits via
+  required-tasks-completed (marks-stage-complete: true). Finalize
+  contains a wait-for-connector-gated task referencing a string Variable
+  AND a number Variable inside its conditionExpression, a sibling-gated
+  task (task-entry selected-tasks-completed), and an adhoc PROCESS task
+  (registry unresolved → skeleton, exercising the non-timer task type
+  in a downstream stage that no other multi_stages_tasks test covers). Finalize
+  exits via selected-tasks-completed (marks-stage-complete: false)
+  routing to Done. Finalize entry uses selected-stage-completed on
+  Process. Closes gaps: stage-exit required-tasks-completed +
+  selected-tasks-completed, stage-entry selected-stage-completed,
+  task-entry runs-sequentially + adhoc + wait-for-connector +
+  selected-tasks-completed, both string AND number Variables referenced
+  inside a rule conditionExpression, and a non-timer (process) skeleton
+  task in a multi-stage flow.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:tasks, feature:conditions, feature:task-entry, feature:variables, feature:skeleton-task]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "TaskDependencyChain"
+  containing a project also named "TaskDependencyChain" from the sdd.md
+  below. Use v20 schema. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — TaskDependencyChain
+
+  **Case Definition Blueprint** · Generic — Task-Driven Stage Completion Coverage
+
+  Three-stage linear flow that exercises task-driven stage completion, the under-covered task-entry rule-types, and a non-timer task type embedded in a multi-stage flow. Process exits via required-tasks-completed; Finalize gates on a wait-for-connector expression referencing both string AND number Variables (plus metadata.tier) and exits via selected-tasks-completed to Done.
+
+  > **Unresolved-fallback rule.** The Optional Audit process is NOT registered in the tenant. The agent MUST leave `taskTypeId` as `<UNRESOLVED: ...>`, omit inputs/outputs, and emit a skeleton process task. DO NOT fabricate a taskTypeId. The skeleton's TaskId is still captured and the task still carries its task-entry condition.
+
+  Prepared date: 2026-05-19
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | TaskDependencyChain |
+  | Case Description | Three-stage flow exercising task-driven stage completion, runs-sequentially / adhoc / wait-for-connector / selected-tasks-completed task-entry rules, and a non-timer skeleton task in a downstream stage. |
+  | Case Identifier | Prefix: TDC, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  |---|---|---|---|---|---|---|
+  | region | Variable | string | "US" | Case-level region flag referenced inside the Region Check task-entry conditionExpression. | - | finalize.regionCheck |
+  | priorityScore | Variable | number | 0 | Case-level numeric score referenced alongside region inside the same task-entry conditionExpression. | - | finalize.regionCheck |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Process (`process`)
+  **Type:** Stage
+  **Description:** Runs a fixed two-step sequence; exits via required-tasks-completed.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed ("All steps done") | - | exit-only | **Yes** |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `process.firstStep` | First Step | wait-for-timer | (system-driven) |
+  | 2 | `process.secondStep` | Second Step | wait-for-timer | (system-driven) |
+
+  ##### Task 1.1: First Step (`process.firstStep`)
+
+  **Type:** wait-for-timer
+  **Description:** Bounded recurring timer — every 1 hour, 5 repetitions total. Exercises the wait-for-timer plugin's bounded `repeat` flag.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | runs-sequentially ("Sequential 1") | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 1h |
+  | Repeat | 5 (bounded) |
+
+  ##### Task 1.2: Second Step (`process.secondStep`)
+
+  **Type:** wait-for-timer
+  **Description:** Raw ISO 8601 repeating-interval timer (timeCycle branch, NOT every/at). Exercises the timeCycle branch of the wait-for-timer plugin.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | runs-sequentially ("Sequential 2") | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Trigger Style | TIME-CYCLE (raw ISO 8601 repeating interval) |
+  | Timer Type | timeCycle |
+  | Time Cycle | R3/PT2H (every 2 hours, 3 repetitions) |
+
+  ### Stage 2: Finalize (`finalize`)
+  **Type:** Stage
+  **Description:** Gated review steps, conditional on Process. Exits via selected-tasks-completed routing to Done.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed ("After Process") | selected-stage: Process | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | selected-tasks-completed ("Final task done") | selected-tasks: Final Task | exit-only | Done | No |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `finalize.regionCheck` | Region Check | wait-for-timer | (system-driven) |
+  | 2 | `finalize.finalTask` | Final Task | wait-for-timer | (system-driven) |
+  | 3 | `finalize.optionalAudit` | Optional Audit | process | (UNRESOLVED) |
+
+  ##### Task 2.1: Region Check (`finalize.regionCheck`)
+
+  **Type:** wait-for-timer
+  **Description:** Gated by an external region event whose expression references both case Variables AND a case METADATA field — exercises the `=metadata.X` reference form.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | wait-for-connector ("On region event") | =js:vars.region == 'EU' && vars.priorityScore > 5 && metadata.tier == 'gold' |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 1h |
+
+  ##### Task 2.2: Final Task (`finalize.finalTask`)
+
+  **Type:** wait-for-timer
+  **Description:** Sibling-gated task; activates after Region Check completes.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | selected-tasks-completed ("After region check") | selected-tasks: Region Check |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 1h |
+
+  ##### Task 2.3: Optional Audit (`finalize.optionalAudit`)
+
+  **Type:** process
+  **Description:** UiPath process reference; emitted as a skeleton process task per the unresolved-fallback rule.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | adhoc ("On demand") | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | PROCESS (UiPath process reference) |
+  | Process Reference (Name) | Optional Audit Process |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: ...>` (do NOT fabricate) |
+
+  ### Stage 3: Done (`done`)
+  **Type:** Stage
+  **Description:** Terminal stage receiving Finalize's exit-only route.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-tasks-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate TaskDependencyChain/TaskDependencyChain/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; tasks carry runs-sequentially/adhoc/wait-for-connector/selected-tasks-completed task-entry rules; First Step timer carries bounded repeat=5 (timeDuration); Second Step timer uses timeCycle (R3/PT2H); root has string variable 'region' AND number variable 'priorityScore' (both referenced alongside metadata.tier in Region Check conditionExpression); 'Optional Audit' is a process-typed skeleton task in Finalize"
+    command: "python3 $TASK_DIR/check_task_dependency_chain.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -62,10 +62,8 @@ Minimal draft `Intsvc.ActivityExecution` shell on a `bpmn:sendTask`:
         <uipath:input name="connectorKey" type="string" value="placeholder-connector" />
         <uipath:input name="activity" type="string" value="placeholder-operation" />
       </uipath:context>
-    </uipath:activity>
-    <uipath:mapping version="v1">
       <uipath:input name="Body" type="json" target="bodyField"><![CDATA[{"value":"=vars.Var_RequestId"}]]></uipath:input>
-    </uipath:mapping>
+    </uipath:activity>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_ConnectorActivity</bpmn:incoming>
   <bpmn:outgoing>Flow_ConnectorActivity_Out</bpmn:outgoing>

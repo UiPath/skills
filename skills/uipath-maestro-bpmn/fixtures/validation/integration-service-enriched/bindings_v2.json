@@ -13,7 +13,9 @@
         "SolutionsSupport": "Required",
         "SubType": "connection",
         "Connector": "service-desk"
-      }
+      },
+      "resource": "ServiceDesk",
+      "resourceSubType": "connection"
     },
     {
       "id": "Binding_RecordCreatedTrigger",
@@ -27,7 +29,9 @@
         "SolutionsSupport": "Required",
         "SubType": "eventTrigger",
         "Connector": "service-desk"
-      }
+      },
+      "resource": "ServiceDesk.RecordCreated",
+      "resourceSubType": "eventTrigger"
     },
     {
       "id": "Binding_RecordObjectProperty",
@@ -39,7 +43,10 @@
         "DisplayLabel": "Record Object Property",
         "ParentResourceKey": "record-created-trigger",
         "SubType": "property"
-      }
+      },
+      "resource": "RecordObject",
+      "resourceSubType": "property",
+      "propertyAttribute": "objectName"
     }
   ]
 }

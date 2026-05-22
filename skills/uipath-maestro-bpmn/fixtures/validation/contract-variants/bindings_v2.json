@@ -2,6 +2,38 @@
   "version": "2.0",
   "resources": [
     {
+      "id": "Binding_AgentName",
+      "kind": "process",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "name"
+      },
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "name"
+    },
+    {
+      "id": "Binding_AgentFolderPath",
+      "kind": "process",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "folderPath"
+      },
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "folderPath"
+    },
+    {
       "id": "Binding_EventConnection",
       "kind": "connection",
       "name": "Synthetic Event Connection",
@@ -12,7 +44,9 @@
         "SolutionsSupport": "Required",
         "SubType": "connection",
         "Connector": "synthetic-events"
-      }
+      },
+      "resource": "SyntheticEvents",
+      "resourceSubType": "connection"
     },
     {
       "id": "Binding_EventTrigger",
@@ -26,7 +60,9 @@
         "SubType": "eventTrigger",
         "Connector": "synthetic-events",
         "EventName": "external-signal"
-      }
+      },
+      "resource": "SyntheticEvents.ExternalSignal",
+      "resourceSubType": "eventTrigger"
     }
   ]
 }

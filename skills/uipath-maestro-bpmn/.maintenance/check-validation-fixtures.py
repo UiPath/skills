@@ -390,8 +390,6 @@ class Validator:
         for binding in process.findall(
             f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}bindings/{{{UIPATH_NS}}}binding"
         ):
-            if binding.attrib.get("propertyAttribute") in {"folderKey", "folderPath"}:
-                continue
             result[binding.attrib["id"]] = binding
         return result
 
@@ -858,6 +856,28 @@ class Validator:
                     if required not in context_inputs:
                         self.error(path, f"{service_type} missing {required}")
 
+        if service_type == "Orchestrator.StartAgentJob":
+            direct_inputs = {
+                child.attrib.get("name"): child
+                for child in list(elem)
+                if local(child.tag) == "input"
+            }
+            direct_outputs = [
+                child for child in list(elem) if local(child.tag) == "output"
+            ]
+            if "JobArguments" not in direct_inputs:
+                self.error(path, "Orchestrator.StartAgentJob missing direct JobArguments input")
+            if not any(
+                output.attrib.get("name") == "Process response"
+                and output.attrib.get("type") == "Orchestrator.RunJob"
+                and output.attrib.get("var")
+                for output in direct_outputs
+            ):
+                self.error(
+                    path,
+                    "Orchestrator.StartAgentJob missing direct Process response output",
+                )
+
     def validate_package_files(self, project: Path, bpmn_name: str, root: ET.Element) -> None:
         data: dict[str, object] = {}
         for name in (
@@ -881,6 +901,10 @@ class Validator:
                 project / "project.uiproj",
                 "main basename does not match single BPMN file basename",
             )
+        if data["project.uiproj"].get("ProjectType") != "ProcessOrchestration":  # type: ignore[union-attr]
+            self.error(project / "project.uiproj", "ProjectType must be ProcessOrchestration")
+        if "projectType" in data["project.uiproj"] or "name" in data["project.uiproj"]:  # type: ignore[operator]
+            self.error(project / "project.uiproj", "uses lowercase project metadata keys")
         if Path(str(data["operate.json"].get("main", ""))).name != bpmn_name:  # type: ignore[union-attr]
             self.error(
                 project / "operate.json",
@@ -961,16 +985,27 @@ class Validator:
         root_variables = process.find(f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}variables")
         inputs_by_start: dict[str, dict[str, object]] = {}
         outputs: dict[str, object] = {}
+        event_start_ids = {
+            start.attrib["id"]
+            for start in [c for c in list(process) if local(c.tag) == "startEvent"]
+            if start.find(f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}event") is not None
+            and "id" in start.attrib
+        }
         if root_variables is not None:
             for variable in list(root_variables):
                 name = variable.attrib.get("name")
                 if not name:
                     continue
                 schema = self.variable_schema(variable)
-                if local(variable.tag) == "input":
-                    element_id = variable.attrib.get("elementId")
-                    if element_id:
-                        inputs_by_start.setdefault(element_id, {})[name] = schema
+                element_id = variable.attrib.get("elementId")
+                if local(variable.tag) == "input" and element_id:
+                    inputs_by_start.setdefault(element_id, {})[name] = schema
+                elif (
+                    local(variable.tag) == "inputOutput"
+                    and element_id
+                    and element_id not in event_start_ids
+                ):
+                    inputs_by_start.setdefault(element_id, {})[name] = schema
                 elif local(variable.tag) == "output":
                     outputs[name] = schema
 
@@ -1021,6 +1056,18 @@ class Validator:
             "resourceKey"
         ):
             self.error(path, f"resource {binding_id} resourceKey differs from BPMN binding")
+        if binding.attrib.get("resource") and resource.get("resource") != binding.attrib.get(
+            "resource"
+        ):
+            self.error(path, f"resource {binding_id} resource differs from BPMN binding")
+        if binding.attrib.get("resourceSubType") and resource.get(
+            "resourceSubType"
+        ) != binding.attrib.get("resourceSubType"):
+            self.error(path, f"resource {binding_id} resourceSubType differs from binding")
+        if binding.attrib.get("propertyAttribute") and resource.get(
+            "propertyAttribute"
+        ) != binding.attrib.get("propertyAttribute"):
+            self.error(path, f"resource {binding_id} propertyAttribute differs from binding")
 
         metadata = resource.get("metadata")
         if not isinstance(metadata, dict):
