@@ -109,7 +109,7 @@ Remove a specific version of a published package from the solution feed:
 uip solution packages delete "MySolution" "1.0.0" --output json
 ```
 
-Arguments: `<package-name> <version>`. This deletes only the specified version, not all versions of the package.
+Arguments: `<package-name> <package-version>`. This deletes only the specified version, not all versions of the package.
 
 ## Step 6: Delete from Studio Web
 
