@@ -5,7 +5,7 @@ description: >
   decision. Verifies two `selected-tasks-completed` exits with different
   `IF` expressions on the same source stage, and that both downstream
   stages have correct entry conditions.
-tags: [uipath-maestro-case, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-case, lifecycle:generate, shape:multi-node, node:hitl]
 
 agent:
   type: claude-code
