@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "aa111111-8888-9999-aaaa-bbbbccccdddd",
+      "StartTime": "2026-05-20T08:00:01.300Z",
+      "EndTime": "2026-05-20T08:00:01.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": "System.IO.FileNotFoundException: Could not find file 'C:\\Robot\\Data\\sales-2026-05.xlsx'.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+task_id: skill-troubleshoot-excel-rr-relative-path
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (System.IO.DirectoryNotFoundException) where the workflow's
+  WorkbookPath is a relative path that resolves against the wrong
+  CWD at runtime. Studio's CWD is the project directory; the
+  Robot's unattended CWD is %LocalAppData%\UiPath\Packages\<process>\<version>\.
+  The error echoes a resolved path with the per-package prefix
+  rather than the user's data folder. Agent must match the
+  activity-packages/excel-activities/playbooks/read-range-file-not-found.md
+  playbook, identify the relative-path-wrong-CWD branch from the
+  workflow source AND the resolved-path prefix in the error, and
+  recommend anchoring the path to an absolute base.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, file-not-found, relative-path]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.IO.DirectoryNotFoundException: Could not find a part of the path 'C:\Users\automation1\AppData\Local\UiPath\Packages\ExcelDailyImport\1.0.0\Data\sales-2026-05.xlsx'.`
+  Pinned job key: cc333333-9999-aaaa-bbbb-ccccddddeeee. That path
+  is bizarre — the file lives at C:\Robot\Data\sales-2026-05.xlsx,
+  not anywhere near AppData. Where is the Robot looking, and why?
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the read-range-file-not-found playbook AND identified the relative-WorkbookPath-resolved-against-wrong-CWD branch (workflow source has relative path; error shows resolved path with the per-package %LocalAppData%\\UiPath\\Packages\\... prefix)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.IO.DirectoryNotFoundException: Could not find a part
+         of the path 'C:\Users\automation1\AppData\Local\UiPath\Packages\ExcelDailyImport\1.0.0\Data\sales-2026-05.xlsx'.`
+         Pinned job key: cc333333-9999-aaaa-bbbb-ccccddddeeee. That
+         path is bizarre — the file lives at C:\Robot\Data\sales-2026-05.xlsx,
+         not anywhere near AppData. Where is the Robot looking, and
+         why?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-not-found.md
+        because the runtime error is a DirectoryNotFoundException /
+        FileNotFoundException family — the file-resolution-failure
+        signature of that playbook.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the read-range-file-not-found
+             playbook should appear.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/excel-activities/playbooks/.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow's configured `WorkbookPath` is a relative path
+            literal: `"Data\sales-2026-05.xlsx"` (visible in
+            `process/Main.xaml`).
+          - The .NET runtime resolves relative paths against
+            `Environment.CurrentDirectory`. Studio's CurrentDirectory
+            during design-time tests is the project folder, so the
+            workflow works on the developer's machine.
+          - The Robot's unattended runtime CWD is the per-package
+            directory: `%LocalAppData%\UiPath\Packages\<process>\<version>\`.
+            The resolved path becomes
+            `C:\Users\automation1\AppData\Local\UiPath\Packages\ExcelDailyImport\1.0.0\Data\sales-2026-05.xlsx`,
+            which does not exist.
+          - The error path's prefix (`C:\Users\<robot-user>\AppData\Local\UiPath\Packages\<process>\<version>\`)
+            is the smoking gun for branch 3.
+          - The user's actual data folder (`C:\Robot\Data\`) is
+            unrelated to the resolved path — confirming the runtime
+            is anchoring against the wrong CWD, not against any
+            user-intended root.
+
+        The reference fix:
+          - Change the workflow's `WorkbookPath` from the relative
+            `"Data\sales-2026-05.xlsx"` to an absolute path:
+            `"C:\Robot\Data\sales-2026-05.xlsx"`, OR anchor it
+            against a known root (Orchestrator asset, environment
+            variable, `SpecialFolder` constant).
+          - Never use relative paths in unattended workflows; the
+            Robot's CWD differs from Studio's.
+
+        Evidence sources (in priority order):
+          1. state.json -- domain/scope, error class
+             (DirectoryNotFoundException).
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the relative-path-
+             wrong-CWD branch.
+          3. The agent's last text response -- should explicitly
+             name BOTH the workflow source's relative path AND the
+             resolved-path prefix as evidence.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-file-not-found playbook AND
+             converged on the relative-path-wrong-CWD branch (named
+             the workflow's relative `WorkbookPath` from source,
+             identified the per-package %LocalAppData% prefix as the
+             smoking gun, and recommended anchoring to an absolute
+             path).
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the CWD divergence but did not name
+             BOTH the workflow's relative path AND the resolved
+             prefix; OR identified the pattern without matching the
+             specific playbook.
+        0.5  Only one dimension correct: matched the playbook but
+             confidently guessed a different branch (deletion,
+             unmapped drive, UNC) without supporting evidence;
+             OR identified the relative-path issue without matching
+             the specific playbook.
+        0.2  Agent recognized the path-resolution failure but
+             neither matched the playbook nor identified the CWD
+             pattern.
+        0.0  Agent confidently picked a wrong branch without
+             evidence; concluded a different root cause; got
+             blocked; or failed.
+
+      Be substance-focused. The %LocalAppData%\UiPath\Packages\
+      prefix in the resolved path is the decisive signal -- penalize
+      agents that miss it.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

@@ -1,0 +1,70 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the file-deleted-upstream branch of the excel-activities/read-range-file-not-found playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs → jobs list (broader; reveals multiple prior Successful runs against the same process/path) → workflow source. The recent-success pattern is decisive: stable absolute path + recent successes rule out config issues; the current FileNotFoundException points at upstream deletion between runs.",
+  "rules": [
+    {
+      "match": "or folders list-current-user --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --output json",
+      "file": "or-jobs-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
+      "file": "or-jobs-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --process-name \"ExcelDailyImport\" --output json",
+      "file": "or-jobs-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --process-name ExcelDailyImport --output json",
+      "file": "or-jobs-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or jobs get \"aa111111-8888-9999-aaaa-bbbbccccdddd\" --output json",
+      "file": "or-jobs-get-aa111188-output-json.json"
+    },
+    {
+      "match": "or jobs get aa111111-8888-9999-aaaa-bbbbccccdddd --output json",
+      "file": "or-jobs-get-aa111188-output-json.json"
+    },
+    {
+      "match": "or jobs get \"bb222222-8888-9999-aaaa-bbbbccccdddd\" --output json",
+      "file": "or-jobs-get-bb222288-output-json.json"
+    },
+    {
+      "match": "or jobs get bb222222-8888-9999-aaaa-bbbbccccdddd --output json",
+      "file": "or-jobs-get-bb222288-output-json.json"
+    },
+    {
+      "match": "or jobs history \"aa111111-8888-9999-aaaa-bbbbccccdddd\" --output json",
+      "file": "or-jobs-history-aa111188-output-json.json"
+    },
+    {
+      "match": "or jobs history aa111111-8888-9999-aaaa-bbbbccccdddd --output json",
+      "file": "or-jobs-history-aa111188-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"aa111111-8888-9999-aaaa-bbbbccccdddd\" --output json",
+      "file": "or-jobs-logs-aa111188-output-json.json"
+    },
+    {
+      "match": "or jobs logs aa111111-8888-9999-aaaa-bbbbccccdddd --output json",
+      "file": "or-jobs-logs-aa111188-output-json.json"
+    }
+  ]
+}
