@@ -36,7 +36,7 @@ concurrency:
 
 jobs:
   run:
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest
     # Full skills suite on the VM (~700 tasks, j=1) runs 3-4h. 16-core
     # runner with j=20 should land ~30-45min; 330 min covers worst-case
     # stalls (one slow task pinning a slot, network hiccups, etc.).
