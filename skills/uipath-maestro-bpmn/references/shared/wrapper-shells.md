@@ -48,8 +48,11 @@ Namespace baseline for greenfield files:
 `bpmn:serviceTask` with `Orchestrator.StartJob`.
 Live debug uses the process identity fields in `uipath:context`; a lone
 display-name context can validate locally but fail before child-job creation.
-Use public-safe placeholders in examples and resolve real values from
-`uip or processes list --all-fields --output json` during tenant-specific work.
+For `StartJob`, live debug has also required the integer Orchestrator folder ID
+as lower-case `folderId`, even when `FolderKey` is present. Use public-safe
+placeholders in examples and resolve real values from
+`uip or processes list --all-fields --output json` and folder discovery during
+tenant-specific work.
 
 ```xml
 <bpmn:serviceTask id="Task_StartRpaJob" name="Start RPA Job">
@@ -59,6 +62,7 @@ Use public-safe placeholders in examples and resolve real values from
       <uipath:context>
         <uipath:input name="ReleaseKey" type="string" value="<PROCESS_KEY_GUID>" />
         <uipath:input name="FolderKey" type="string" value="<FOLDER_KEY_GUID>" />
+        <uipath:input name="folderId" type="string" value="<FOLDER_ID_INTEGER>" />
         <uipath:input name="FolderPath" type="string" value="Shared/Synthetic" />
         <uipath:input name="Name" type="string" value="Synthetic Process" />
       </uipath:context>

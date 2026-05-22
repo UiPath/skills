@@ -62,6 +62,22 @@ wrapper/runtime blocker. Do not keep reshuffling the same identity fields across
 context inputs, direct activity inputs, `JobArguments`, and `body` unless a new
 runtime contract is available.
 
+## StartJob folderId fault
+
+An `Orchestrator.StartJob` service task can fault before child-job creation with
+`Required field 'folderId' missing in the input args to RPA task`, even when
+`FolderKey` is present in context.
+
+Signs:
+
+- The faulting BPMN element is a `StartJob` service task.
+- The task context includes the process GUID and folder GUID, but not the
+  integer Orchestrator folder ID as lower-case `folderId`.
+- No child job appears in the target folder after the debug run starts.
+
+Fix ownership: add `folderId` to the `StartJob` context, revalidate, and run a
+new debug only with explicit consent.
+
 ## Stale generated package files
 
 Generated JSON no longer reflects the BPMN source.
