@@ -4,7 +4,7 @@ description: >
   user asks to research / synthesize across PDF or TXT documents from
   a Studio Web Agent Builder / `agent.json` (lowCode) project.
   Verifies the skill fires for the low-code + PDF/TXT signal pair.
-tags: [uipath-agents, smoke, lifecycle:discover]
+tags: [uipath-agents, smoke, low-code, lifecycle:discover, context-grounding]
 
 sandbox:
   driver: tempdir
