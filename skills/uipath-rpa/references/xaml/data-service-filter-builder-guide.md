@@ -49,7 +49,7 @@ xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.Core
 xmlns:local="clr-namespace:<ProjectName>;assembly=DataService.<ProjectName>"
 ```
 
-The `local:` namespace is required for entity type arguments (e.g., `x:TypeArguments="local:NumericEntity"`). It **must** include `assembly=DataService.<ProjectName>` — without the assembly qualifier, the XAML parser cannot locate entity types. See [overview.md § XAML Namespace Declarations](../../../../references/activity-docs/UiPath.DataService.Activities/25.9/activities/overview.md#xaml-namespace-declarations) for the full set of required declarations.
+The `local:` namespace is required for entity type arguments (e.g., `x:TypeArguments="local:NumericEntity"`). It **must** include `assembly=DataService.<ProjectName>` — without the assembly qualifier, the XAML parser cannot locate entity types. See [overview.md § XAML Namespace Declarations](../activity-docs/UiPath.DataService.Activities/25.9/overview.md#xaml-namespace-declarations) for the full set of required declarations.
 
 If any `FilterValues` entry uses `DateTimeOffset`, `Guid`, or `String[]`, also declare:
 
