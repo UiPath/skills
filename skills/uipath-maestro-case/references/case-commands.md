@@ -105,13 +105,13 @@ uip solution upload <SolutionDir> --output json
 Pack a Case project directory into a `.nupkg` file. Only used when the user explicitly requests Orchestrator deployment via `uip solution publish` — not the default publish path.
 
 ```bash
-uip maestro case pack <projectPath> <outputPath>
+uip maestro case pack <project-path> <outputPath>
 uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 ```
 
 | Flag | Description |
 |------|-------------|
-| `<projectPath>` | **(required)** Path to the Case project directory |
+| `<project-path>` | **(required)** Path to the Case project directory |
 | `<outputPath>` | **(required)** Output directory for the `.nupkg` |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
@@ -144,14 +144,14 @@ Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. E
 
 ```bash
 uip solution resource refresh --solution-folder <SolutionDir> --output json
-uip maestro case debug <projectDirectory> --log-level debug --output json
+uip maestro case debug <project-path> --log-level debug --output json
 ```
 
 > **Always run `uip solution resource refresh`** on the solution directory before debug.
 
 | Flag | Description |
 |------|-------------|
-| `<projectDirectory>` | **(required)** Path to the case project directory (must contain `project.uiproj`) |
+| `<project-path>` | **(required)** Path to the case project directory (must contain `project.uiproj`) |
 | `--folder-id <id>` | Orchestrator folder ID (`OrganizationUnitId`). Auto-detected if omitted. |
 | `--poll-interval <ms>` | Polling interval in milliseconds (default: `2000`) |
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` (default: `json`) |

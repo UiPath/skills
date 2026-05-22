@@ -41,7 +41,7 @@ Pack the flow project into a `.nupkg` then publish via the platform skill:
 uip solution resource refresh <SolutionDir> --output json
 
 # 2. Pack
-uip maestro flow pack <ProjectDir> <OutputDir>
+uip maestro flow pack <project-path> <OutputDir>
 ```
 
 For `uip solution publish` and the rest of the deployment workflow, see [/uipath:uipath-solution](/uipath:uipath-solution). See [shared/cli-commands.md — uip maestro flow pack](../../shared/cli-commands.md#uip-maestro-flow-pack) for `pack` flags.

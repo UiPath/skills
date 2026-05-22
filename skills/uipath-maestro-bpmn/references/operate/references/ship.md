@@ -35,7 +35,7 @@ Before upload, publish, deploy, or debug:
 Package when the user wants a local `.nupkg`, pre-deploy artifact, or package-shape verification:
 
 ```bash
-uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
+uip maestro bpmn pack <project-path> <OutputDir> --output json
 ```
 
 Use `--name` and `--version` only when the user provides a public-safe package identity.
@@ -66,7 +66,7 @@ Confirm package identity, target folder/context, feed/package expectations, and 
 Typical path:
 
 ```bash
-uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
+uip maestro bpmn pack <project-path> <OutputDir> --output json
 uip solution pack <SolutionDir> <OutputDir> --output json
 uip solution publish <PackageZip> --output json
 ```

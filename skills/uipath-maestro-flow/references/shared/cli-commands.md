@@ -79,9 +79,9 @@ JSON output (`--output json`) reports counts in `Data`: `NodesTotal`, `EdgesTota
 Pack a Flow project into a `.nupkg` for Orchestrator deployment.
 
 ```bash
-uip maestro flow pack <ProjectDir> <OutputDir>
-uip maestro flow pack <ProjectDir> <OutputDir> --version 2.0.0
-uip maestro flow pack <ProjectDir> <OutputDir> --output json
+uip maestro flow pack <project-path> <OutputDir>
+uip maestro flow pack <project-path> <OutputDir> --version 2.0.0
+uip maestro flow pack <project-path> <OutputDir> --output json
 ```
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.

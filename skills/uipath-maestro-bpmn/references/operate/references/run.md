@@ -20,19 +20,19 @@ Use debug when the user wants to upload a local BPMN project to Studio Web and r
 visibility.
 
 ```bash
-uip maestro bpmn debug <ProjectDir> --output json
+uip maestro bpmn debug [project-path] --output json
 ```
 
 Pass input arguments only after confirming the values and redacting secrets from summaries:
 
 ```bash
-uip maestro bpmn debug <ProjectDir> --inputs @inputs.json --output json
+uip maestro bpmn debug [project-path] --inputs @inputs.json --output json
 ```
 
 If a target folder is needed, provide the folder ID exposed by the CLI:
 
 ```bash
-uip maestro bpmn debug <ProjectDir> --folder-id <FOLDER_ID> --output json
+uip maestro bpmn debug [project-path] --folder-id <FOLDER_ID> --output json
 ```
 
 Parse and report returned identifiers such as `Data.jobKey`, `Data.instanceId`, `Data.runId`, `Data.solutionId`,

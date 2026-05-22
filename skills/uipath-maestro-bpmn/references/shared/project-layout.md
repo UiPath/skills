@@ -31,7 +31,7 @@ ProjectName/
 Treat these JSON files as derived unless a CLI contract explicitly identifies a field as user-authored. For source fixes, edit BPMN or rerun CLI enrichment rather than patching generated output by hand.
 
 Local packaging requires the generated metadata set to exist. In particular,
-`uip maestro bpmn pack <ProjectDir> <OutputDir> --output json` consumes
+`uip maestro bpmn pack <project-path> <OutputDir> --output json` consumes
 `package-descriptor.json`; it does not create a missing descriptor from only
 the BPMN and `project.uiproj`.
 
