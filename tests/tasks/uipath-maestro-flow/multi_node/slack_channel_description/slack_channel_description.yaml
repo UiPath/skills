@@ -14,10 +14,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow named "SlackChannelDescription" that retrieves
   the channel description of #office-bellevue and outputs it.

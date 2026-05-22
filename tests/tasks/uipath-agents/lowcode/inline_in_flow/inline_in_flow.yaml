@@ -19,10 +19,6 @@ run_limits:
   max_turns: 70
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "GreetingSol" containing a flow project
   "GreetingFlow". The flow uses a single low-code agent embedded

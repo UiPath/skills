@@ -13,11 +13,9 @@ run_limits:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
-    - type: template_dir
-      path: "../templates/initial_flow"
+  - type: template_dir
+    path: ../templates/initial_flow
 
 initial_prompt: |
   Rearrange the flow so the decision happens right after the HTTP call. Both the true and false branches should merge back into formatSummary, which then goes to a single end node. formatSummary should pick the message ('nice day' or 'bring a jacket') based on which branch the decision took.

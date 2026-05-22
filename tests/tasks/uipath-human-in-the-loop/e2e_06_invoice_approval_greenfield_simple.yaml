@@ -15,10 +15,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a new UiPath Flow project called "InvoiceApproval" that processes
   invoices. The flow must pause so a finance manager can review and approve

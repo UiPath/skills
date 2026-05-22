@@ -27,24 +27,15 @@ run_limits:
 
 sandbox:
   driver: tempdir
-  python: {}
   template_sources:
-    # 1. Shared dispatcher (mocks/uip + mocks/uip.cmd).
-    - type: template_dir
-      path: ../_shared/mock_template
-    # 2. Full project source — frozen snapshot of the failing process.
-    - type: template_dir
-      path: process
-    # 3. Per-scenario fixtures (manifest + .local/investigations/raw responses).
-    - type: template_dir
-      path: fixtures
-  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock
-  # dispatcher instead of the real CLI installed on the host.
-  mock_path_dirs: ["mocks"]
-
-# Ground truth from RESOLUTION.md.
-# Hidden from the agent. Used by the llm_judge criteria below to score
-# whether the agent reached the same outcome as the real session.
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
 reference:
   file: RESOLUTION.md
 

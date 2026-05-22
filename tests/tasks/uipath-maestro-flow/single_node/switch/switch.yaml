@@ -13,10 +13,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "SeasonLookup" that takes a quarter number
   (1, 2, 3, or 4) as input and returns the corresponding season name:

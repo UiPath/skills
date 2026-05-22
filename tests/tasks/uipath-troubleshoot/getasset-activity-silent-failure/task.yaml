@@ -23,15 +23,15 @@ run_limits:
 
 sandbox:
   driver: tempdir
-  python: {}
   template_sources:
-    - type: template_dir
-      path: ../_shared/mock_template
-    - type: template_dir
-      path: process
-    - type: template_dir
-      path: fixtures
-  mock_path_dirs: ["mocks"]
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
 
 reference:
   file: RESOLUTION.md

@@ -17,10 +17,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a Simple Function UiPath coded agent named `adder` whose
   `main(input)` returns the sum of two integers. No LLM — purely

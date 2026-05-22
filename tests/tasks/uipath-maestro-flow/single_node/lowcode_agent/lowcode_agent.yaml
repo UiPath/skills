@@ -13,10 +13,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "CountLettersLowCode" that uses the
   CountLetters low-code agent to count the number of r's in 'arrow'

@@ -17,10 +17,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "ShippingFlowSol" containing a flow project
   "ShippingFlow". The flow should use an inline low-code agent that

@@ -14,10 +14,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "ReadingList" that curates a reading list
   from a catalog of math and data science books.

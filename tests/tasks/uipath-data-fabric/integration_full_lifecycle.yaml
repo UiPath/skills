@@ -18,10 +18,6 @@ agent:
 run_limits:
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.
 

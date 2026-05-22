@@ -17,10 +17,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow named "GdprDeletionApproval" that processes GDPR
   data deletion requests. Each request must be reviewed and signed off by

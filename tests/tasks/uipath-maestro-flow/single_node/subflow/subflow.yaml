@@ -15,10 +15,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "SubflowDemo" that takes a string input
   called "text" and reverses it. The string reversal logic should be

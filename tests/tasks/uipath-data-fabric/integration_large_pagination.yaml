@@ -17,10 +17,6 @@ run_limits:
   max_turns: 60
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 pre_run:
   - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/extract_page_ids.py $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/verify_pagination.py ."
     timeout: 10

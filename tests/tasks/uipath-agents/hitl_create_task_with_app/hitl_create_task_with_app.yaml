@@ -17,10 +17,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath agent named `refund-gate`. When asked to issue a
   refund over $500, the agent must pause and file a structured

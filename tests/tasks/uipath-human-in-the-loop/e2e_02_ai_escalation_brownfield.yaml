@@ -16,10 +16,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I have an existing complaint classification flow. First, create it by
   writing to ComplaintTriage/ComplaintTriage/ComplaintTriage.flow:

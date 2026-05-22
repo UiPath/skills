@@ -14,10 +14,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
 initial_prompt: |
   Create a new Flow project called "QueryParamsTest" with a manual trigger.
   You need a flow that lists all Google Tasks including hidden ones. Discover

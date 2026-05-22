@@ -16,10 +16,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath coded agent named `hr-helper` that answers
   employee questions about HR policy. The agent reads the

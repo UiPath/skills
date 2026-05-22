@@ -19,10 +19,6 @@ agent:
 
 task_timeout: 1800
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "EscalateSol" with an agent "ComplianceAgent" for
   handling user requests about financial data. Add a guardrail that detects PII

@@ -22,10 +22,6 @@ agent:
 run_limits:
   max_turns: 60
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   You will audit a small UiPath solution with two RPA projects. The goal
   is to exercise the uipath-review skill's full discovery → validation →

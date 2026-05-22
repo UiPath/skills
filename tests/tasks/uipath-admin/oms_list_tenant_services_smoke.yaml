@@ -9,10 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, list, oms]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   List the services currently provisioned on the default tenant in my UiPath organization.
 

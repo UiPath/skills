@@ -11,7 +11,7 @@ tags: [uipath-test, smoke, mode:operate, lifecycle:discover]
 sandbox:
   node:
     env_packages:
-      - "@uipath/test-manager-tool"
+    - '@uipath/test-manager-tool'
 
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.

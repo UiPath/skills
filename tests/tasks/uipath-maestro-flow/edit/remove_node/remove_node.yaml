@@ -14,11 +14,9 @@ run_limits:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
-    - type: template_dir
-      path: "../templates/initial_flow"
+  - type: template_dir
+    path: ../templates/initial_flow
 
 initial_prompt: |
   Remove the formatSummary script node. The decision and end nodes should read temperature directly from the HTTP response instead.

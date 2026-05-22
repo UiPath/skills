@@ -17,10 +17,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "BatchTransformDemo" that uses a Batch
   Transform pattern node to enrich rows of a CSV. The flow takes one `in`

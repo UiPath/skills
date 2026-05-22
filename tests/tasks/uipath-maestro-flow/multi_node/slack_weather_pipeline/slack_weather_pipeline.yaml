@@ -14,10 +14,6 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description to find out which city the office is in, then fetch the current weather for that city from open-meteo. If it's above 60F output 'warm office today', otherwise 'cold office today'.
 

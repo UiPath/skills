@@ -20,10 +20,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1500
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a minimal echo agent named `acme-echo` that takes a
   `message` (string) and returns `{"echoed": message}`. No LLM

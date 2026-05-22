@@ -9,10 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, list, authz]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   List all authorization roles in my UiPath organization.
 

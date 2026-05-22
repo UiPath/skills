@@ -13,10 +13,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "ProjectEulerTitle" that uses the
   ProjectEuler RPA workflow to retrieve the title for problem 123 and

@@ -15,10 +15,6 @@ agent:
   max_turns: 40
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "ValidationSol" containing a low-code agent
   "ReviewAgent" that handles compliance review requests.

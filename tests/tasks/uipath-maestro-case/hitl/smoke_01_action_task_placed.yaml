@@ -13,10 +13,6 @@ agent:
   max_turns: 80
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Case Management project named "InvoiceApprovalCase" with a
   manual trigger and a single stage "Review" that contains one HITL action

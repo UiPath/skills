@@ -15,10 +15,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Set up a new "Invoice Processing Team" group containing the first
   two users in the org, verify membership, then remove the second user.

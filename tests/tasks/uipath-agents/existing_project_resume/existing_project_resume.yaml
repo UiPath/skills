@@ -16,10 +16,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Recreate the half-finished coded agent project under
   `mood-meter/` exactly as below, then pick it up from this
@@ -45,19 +41,15 @@ initial_prompt: |
   from langgraph.graph import StateGraph, START, END
   from pydantic import BaseModel
 
-
   class GraphInput(BaseModel):
       text: str
-
 
   class GraphOutput(BaseModel):
       mood: str
 
-
   class GraphState(TypedDict):
       text: str
       mood: str
-
 
   async def classify_mood(state: GraphState):
       lower = state["text"].lower()
@@ -68,7 +60,6 @@ initial_prompt: |
       else:
           mood = "neutral"
       return {"mood": mood}
-
 
   builder = StateGraph(GraphState, input_schema=GraphInput, output_schema=GraphOutput)
   builder.add_node("classify_mood", classify_mood)

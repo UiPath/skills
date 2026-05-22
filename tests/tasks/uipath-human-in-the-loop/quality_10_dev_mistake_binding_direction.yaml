@@ -13,10 +13,6 @@ run_limits:
   max_turns: 90
   turn_timeout: 900
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow named "SupplierOnboarding" for supplier vetting:
 

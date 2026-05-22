@@ -19,10 +19,6 @@ agent:
   max_turns: 60
   turn_timeout: 2100
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Recreate the Simple Function UiPath coded agent under
   `daily-digest/` from the snapshot below. Shipping it to the
@@ -53,14 +49,11 @@ initial_prompt: |
   from pydantic import BaseModel
   from uipath.tracing import traced
 
-
   class Input(BaseModel):
       label: str = "digest"
 
-
   class Output(BaseModel):
       digest: str
-
 
   @traced()
   async def main(input: Input) -> Output:

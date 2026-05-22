@@ -16,10 +16,6 @@ run_limits:
   turn_timeout: 1200
   max_turns: 40
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a Simple Function UiPath coded agent named
   `credential-validator` that validates a username + password and

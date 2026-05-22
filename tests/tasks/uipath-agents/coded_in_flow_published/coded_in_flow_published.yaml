@@ -21,10 +21,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1500
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a small UiPath coded agent named `tone-classifier` that
   reads a short message and labels it as `friendly`, `neutral`,

@@ -16,10 +16,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath agent named `purchase-gate` that closes the loop
   on purchase requests already opened for human review elsewhere.

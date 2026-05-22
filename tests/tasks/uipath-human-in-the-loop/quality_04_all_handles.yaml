@@ -11,10 +11,6 @@ agent:
 run_limits:
   max_turns: 50
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a flow called "PurchaseOrderApproval" with the following structure:
   - A manual trigger

@@ -15,10 +15,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "TerminateParallel" with two parallel
   branches from the trigger:

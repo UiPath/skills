@@ -21,10 +21,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Set up a reusable read-only role template called "StudioViewer"
   that should be available across every tenant in our organization —

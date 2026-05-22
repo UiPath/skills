@@ -18,10 +18,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Hand-author a UiPath coded agent project — do NOT scaffold via
   the CLI. Inside the working directory create:

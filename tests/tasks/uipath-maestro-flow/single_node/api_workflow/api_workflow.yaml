@@ -22,10 +22,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "NameToAge" that invokes the name-to-age
   API workflow with the name 'tomasz' and returns his age as an output.

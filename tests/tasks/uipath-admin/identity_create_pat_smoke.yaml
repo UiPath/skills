@@ -6,10 +6,6 @@ description: >
 
 tags: [uipath-admin, smoke, create]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a personal access token for CI/CD with read access to Folders
   and Jobs, expiring January 15, 2027.

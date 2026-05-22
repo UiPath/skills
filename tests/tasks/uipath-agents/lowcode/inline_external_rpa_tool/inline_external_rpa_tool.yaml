@@ -17,10 +17,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "FibonacciFlowSol" containing a flow project
   "FibonacciFlow" with an inline low-code agent. The agent accepts a

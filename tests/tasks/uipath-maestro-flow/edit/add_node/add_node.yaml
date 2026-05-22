@@ -14,11 +14,9 @@ run_limits:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
-    - type: template_dir
-      path: "../templates/initial_flow"
+  - type: template_dir
+    path: ../templates/initial_flow
 
 initial_prompt: |
   Add a script node called "convertToCelsius" between getWeather and formatSummary that converts the temp from F to C. Return both values. Also update formatSummary to include the Celsius value in its summary string.

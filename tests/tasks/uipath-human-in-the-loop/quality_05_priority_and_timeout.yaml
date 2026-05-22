@@ -13,10 +13,6 @@ run_limits:
   task_timeout: 500
   turn_timeout: 500
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Add a Human-in-the-Loop node to a new flow called "FinanceCompliance".
   This is a financial compliance check — set it to HIGH priority and give

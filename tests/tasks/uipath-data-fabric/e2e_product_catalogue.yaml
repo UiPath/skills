@@ -15,10 +15,6 @@ run_limits:
   max_turns: 50
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build an e-commerce product catalogue in UiPath Data Fabric.
   Load the uipath-data-fabric skill before starting.

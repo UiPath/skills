@@ -21,10 +21,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "FibonacciSol" containing a single low-code
   agent "FibonacciAgent". The agent accepts a required `index`

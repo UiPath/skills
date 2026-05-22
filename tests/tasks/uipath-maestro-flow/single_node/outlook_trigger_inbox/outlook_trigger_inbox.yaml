@@ -21,10 +21,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow named "OutlookTriggerInbox" with a Microsoft Outlook 365
   email-received trigger on the **Inbox** folder.

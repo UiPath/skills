@@ -19,10 +19,6 @@ agent:
   max_turns: 80
   turn_timeout: 1800
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a Simple Function UiPath coded agent named `secret-peek` that
   returns a structured summary of a UiPath asset: the first 4

@@ -12,10 +12,6 @@ agent:
   max_turns: 105
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Case Management project named "PurchaseApprovalCase" with
   this shape:

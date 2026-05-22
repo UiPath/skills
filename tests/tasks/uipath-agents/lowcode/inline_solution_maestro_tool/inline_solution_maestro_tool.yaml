@@ -17,10 +17,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "OnboardingFlowSol" containing a flow
   project "OnboardingFlow". The flow should use an inline low-code

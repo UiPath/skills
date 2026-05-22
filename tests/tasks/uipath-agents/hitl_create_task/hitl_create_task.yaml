@@ -15,10 +15,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a LangGraph UiPath coded agent named `expense-approver` that
   escalates expense-reimbursement requests over `$1000` to a human

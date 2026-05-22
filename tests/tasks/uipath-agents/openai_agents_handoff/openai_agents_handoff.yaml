@@ -18,10 +18,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build an OpenAI Agents UiPath coded agent named `triage-bot` with
   three agents:

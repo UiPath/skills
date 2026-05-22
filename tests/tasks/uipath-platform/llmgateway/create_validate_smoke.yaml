@@ -7,11 +7,6 @@ description: >
   discovery before the create. Auth errors are expected in CI.
 tags: [uipath-platform, smoke, llmgateway, byo-connections, lifecycle:create]
 
-sandbox:
-  driver: docker
-  python: {}
-  node: {}
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

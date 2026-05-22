@@ -13,10 +13,6 @@ agent:
   max_turns: 110
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Case Management project named "LeaveRequestCase" with this
   shape:

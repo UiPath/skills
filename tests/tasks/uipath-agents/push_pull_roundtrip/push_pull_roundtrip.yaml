@@ -19,10 +19,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1800
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Recreate the working tree below exactly — this is an existing
   UiPath coded agent whose Studio Web project is already set up
@@ -46,14 +42,11 @@ initial_prompt: |
   ```python
   from pydantic import BaseModel
 
-
   class Input(BaseModel):
       message: str
 
-
   class Output(BaseModel):
       echoed: str
-
 
   async def main(payload: Input) -> Output:
       return Output(echoed=payload.message)

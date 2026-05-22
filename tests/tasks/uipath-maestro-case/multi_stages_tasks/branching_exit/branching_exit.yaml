@@ -27,10 +27,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1500
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Case Management solution named "BranchingExit" containing
   a project also named "BranchingExit" from the sdd.md below. Use v20

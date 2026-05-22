@@ -17,10 +17,6 @@ run_limits:
   max_turns: 50
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   HR needs a digital employee directory in UiPath Data Fabric.
   Load the uipath-data-fabric skill before starting.

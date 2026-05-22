@@ -13,10 +13,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "FeetInches" that takes `value` (number)
   and `direction` (string: "f2i", "i2f", or "y2f") as inputs, converts feet

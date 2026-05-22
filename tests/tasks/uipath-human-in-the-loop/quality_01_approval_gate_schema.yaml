@@ -5,10 +5,6 @@ description: >
   with the user before running any CLI. Tests B1, B2, B3, B4.
 tags: [uipath-human-in-the-loop, integration, schema, approval-gate]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I need to add a human approval step to my invoice processing flow.
   A finance manager needs to see: the invoice ID, vendor name, and total
@@ -56,5 +52,4 @@ success_criteria:
       - "Reject"
     weight: 1.5
     pass_threshold: 1.0
-
 

@@ -13,10 +13,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "BellevueWeather" that gets today's weather
   in Bellevue from open-meteo, formats a summary with a script, and if the

@@ -18,10 +18,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "DisputeSol" containing a single low-code
   agent "DisputeAnalystAgent".

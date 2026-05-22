@@ -25,10 +25,6 @@ agent:
   turn_timeout: 900
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   A legacy UiPath RPA project exists at `./InvoiceReader/`. It currently
   reads `invoices.xlsx` and logs each row, but Excel sometimes fails

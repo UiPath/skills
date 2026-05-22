@@ -8,10 +8,6 @@ description: >
   under-served. See PILOT-5327.
 tags: [uipath-rpa, integration, mode:build, feature:test-case]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I need a UiPath XAML test project called "LoginTests" with a first XAML
   test case that asserts a trivial expression.

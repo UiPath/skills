@@ -13,10 +13,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a personal access token described as "e2e-test-pat" with
   read access to Folders, expiring 90 days from now. Then list my tokens

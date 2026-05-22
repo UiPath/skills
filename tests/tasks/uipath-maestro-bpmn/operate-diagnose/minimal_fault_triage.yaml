@@ -16,14 +16,16 @@ run_limits:
   turn_timeout: 900
 
 sandbox:
+  driver: tempdir
   template_sources:
-    - type: template_dir
-      path: ../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
-      path: ../_shared/mock_template
-    - type: template_dir
-      path: fixtures
-  mock_path_dirs: ["mocks"]
+  - type: template_dir
+    path: ../../../../skills/uipath-maestro-bpmn
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

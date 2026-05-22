@@ -14,10 +14,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "WikiPageviews" that takes `article`
   (string) and `date1`, `date2` (strings in `YYYYMMDD` format) as inputs.

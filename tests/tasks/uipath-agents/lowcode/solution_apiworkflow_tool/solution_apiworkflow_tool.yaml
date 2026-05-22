@@ -15,10 +15,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "ShippingSol" containing a low-code agent
   "ShippingAgent". The agent should call an API workflow called

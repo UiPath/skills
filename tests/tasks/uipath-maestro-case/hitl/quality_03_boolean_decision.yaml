@@ -13,10 +13,6 @@ agent:
   max_turns: 130
   turn_timeout: 900
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Case Management project named "VendorApprovalCase" for
   vendor onboarding with this shape:

@@ -9,10 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, list, apms]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Show me all IP-restriction bypass rules configured for my UiPath organization.
 
