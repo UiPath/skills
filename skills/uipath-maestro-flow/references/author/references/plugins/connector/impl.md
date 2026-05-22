@@ -4,6 +4,50 @@ How to configure connector activity nodes: connection binding, enriched metadata
 
 For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
 
+## Quick Reference — Standard Sequence
+
+For a typical connector activity (one connection, body parameters, no schema gymnastics), this is the whole sequence:
+
+```bash
+# 1. Discover the connection and node metadata
+uip is connections list "<connector-key>" --all-folders --output json
+uip maestro flow registry get <nodeType> --connection-id <id> --output json
+# capture: connectorMethodInfo.method, .path, and required requestFields[].name
+
+# 2. Add the node (CLI-owned — do NOT hand-write nodes[] / definitions[])
+uip maestro flow node add <file> <nodeType> --output json
+
+# 3. Configure inputs.detail and bindings[]
+uip maestro flow node configure <file> <nodeId> --detail '{
+  "connectionId": "<id>",
+  "folderKey":    "<key>",
+  "method":       "<METHOD>",
+  "endpoint":     "<PATH>",
+  "bodyParameters": { ...required fields... }
+}' --output json
+
+# 4. Validate
+uip maestro flow validate <file> --output json
+```
+
+**Stop reading here unless one of these applies:**
+
+| Condition (check against registry-get output) | Jump to |
+| --- | --- |
+| Node type ends in a generic verb (`list-records`, `insert-record`, `get-record`) — `activityType: "Generic"` | § Step 2a |
+| Any `parameters[]` entry has `design.component === "FilterBuilder"` | § Step 6a |
+| `objectActions[]` or `connectorMethodInfo.design.actions[]` contains an `actionType: "api"` entry (Jira Create Issue, Snowflake executeQuery, Dataservice V3) | § Steps 3a + 6c |
+| Any required `requestFields[].name` contains `[*]` (array field) | § Step 6b array table |
+| Any required field has a `reference` object (channel ID, mailbox folder, etc.) | § Step 4 |
+| Re-configuring an already-configured node | § Step 6 rebuild warning |
+| Multipart / file upload operation | § Step 6 multipart paragraph |
+
+**Universal gotchas — read once, never repeat:**
+
+- `--output json`, never `--format json` (which exits 3).
+- `--all-folders` on `is connections list` is mandatory; Shared-folder connections are hidden without it.
+- Reference IDs are connection-scoped. Re-resolve via `is resources run list` against the current `--connection-id`. Never paste IDs across flows.
+
 ## How Connector Nodes Differ from OOTB
 
 1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow's top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
@@ -50,11 +94,13 @@ Do not replace a registered connector operation with `core.logic.mock` because c
 
 When piping `--output json` into `python`, `jq`, or another parser, do not merge stderr into stdout. The CLI may emit diagnostic lines such as "Tool factory already registered..." before the JSON on stderr; use `2>/dev/null` for parse-only probes or capture stderr separately.
 
-## Configuration Workflow
+## Detailed reference
 
-Follow these steps for every connector node.
+The steps below are **inputs to the Quick Reference's CLI calls** above, not a parallel narrative — each section explains what one piece of `--detail` or one CLI flag comes from. Read top-to-bottom only when the Quick Reference's skip table sends you here for a specific edge case; for the typical path, the Quick Reference is the whole sequence.
 
 ### Step 1 — Fetch and bind a connection
+
+**Produces:** `connectionId` and `folderKey` for the Quick Reference's `--detail` payload.
 
 Extract the connector key from the node type (`uipath.connector.<connector-key>.<activity-name>`).
 
@@ -70,6 +116,8 @@ End state: a healthy connection `Id` + `FolderKey` for Step 2 (`registry get --c
 
 ### Step 2 — Get enriched node definitions with connection
 
+**Produces:** `method`, `endpoint`, and the required `requestFields[].name` set for the Quick Reference's `--detail.bodyParameters` / `queryParameters` / `pathParameters`.
+
 Call `registry get` with `--connection-id` to fetch connection-aware metadata including custom fields:
 
 ```bash
@@ -84,6 +132,8 @@ The response also includes `connectorMethodInfo` with the real HTTP `method` (e.
 
 ### Step 2a — Discover the object name (generic activities only)
 
+**Produces:** `objectName` for the Quick Reference's `--detail` when `activityType: "Generic"`.
+
 Skip this step for concrete activities — they encode the object in the node type. For generic activities (`activityType: "Generic"`), list the connection's catalog and pick the object the user wants to act on.
 
 ```bash
@@ -96,6 +146,8 @@ uip is resources list "<connector-key>" --connection-id "<connection-id>" --outp
 - `Custom` — `true` for tenant-defined objects.
 
 ### Step 3 — Describe the resource and read full metadata
+
+**Produces:** the cached metadata file you read to enumerate `availableOperations[]`, full `requestFields[]` with `reference` objects, query/path `parameters[]`, and `responseFields[]`. Required when Step 2's `registry get` output is incomplete (generic activities, multipart operations, anything where Step 4 reference resolution or Step 5 required-field validation needs more than the manifest).
 
 Run `is resources describe` to fetch and cache the full operation metadata, then **read the cached metadata file** for complete field details including descriptions, types, references, and query/path parameters. The describe summary omits some of this.
 
@@ -117,6 +169,8 @@ The full metadata contains:
 
 ### Step 3a — Resolve parent-field-driven custom fields (api-type ObjectActions)
 
+**Produces:** the live ObjectAction response that anchors the `customFieldsRequestDetails.parameterValues` tuples you'll pass in Step 6c's `--detail`. Skip table trigger: `objectActions[]` or `connectorMethodInfo.design.actions[]` contains an `actionType: "api"` entry.
+
 **Run whenever the activity has a parent-field-driven schema** — an api-type ObjectAction in `objectActions[]` or `connectorMethodInfo.design.actions[]` (see Step 6c's support table). Applies to **every** operation with such an action — Create/Edit/Update for parent-driven required body fields AND Get/Retrieve/Query for the response-schema fields downstream nodes will reference. The base `describe` returns only static metadata; this step runs the matching ObjectAction against the live connection so the cache you author in Step 6c is a replay of a real call, not a fabrication.
 
 Pass parent values via `-f, --field` — see [/uipath:uipath-platform — resources.md > Parent-Field-Driven Custom Fields (api-type ObjectActions)](../../../../../../uipath-platform/references/integration-service/resources.md#parent-field-driven-custom-fields-api-type-objectactions) for the full procedure, flag table, merge semantics, and error recovery.
@@ -126,6 +180,8 @@ Pass parent values via `-f, --field` — see [/uipath:uipath-platform — resour
 Run this before Step 5 (validate required fields) and reuse the same parent-field values in Step 6c's `customFieldsRequestDetails.parameterValues` (with the encoded keys).
 
 ### Step 4 — Resolve reference fields
+
+**Produces:** the resolved IDs (channel IDs, mailbox folders, project keys, etc.) you place into `--detail.bodyParameters` / `queryParameters` / `pathParameters` in the Quick Reference's configure call. Skip table trigger: any required field has a `reference` object.
 
 Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
 
@@ -146,6 +202,8 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 ### Step 5 — Validate required fields
 
+**Produces:** the confirmed required-field value set. This is the gate before the Quick Reference's `node configure` call — missing required values cause runtime errors that `flow validate` does not catch.
+
 **Check every required field** — both `requestFields` and `parameters` where `required: true` — against what the user provided. This is a hard gate — do NOT proceed to building until all required fields have values. For query/path parameters with a `defaultValue`, use the default if the user didn't specify one.
 
 1. Collect all required fields from the metadata (`requestFields` + `parameters`)
@@ -158,6 +216,8 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 > **For connectors with api-type ObjectActions, run Step 3a first.** Base `describe` does not surface custom required fields driven by project / issue type / query / tenant entity. Use `-f, --field name=value` to fetch the connection-and-parent-field-specific schema before validating.
 
 ### Step 5b — Wire outputs from previous nodes
+
+**Produces:** the `=js:$vars.<sourceNodeId>.output.<field>` expression strings that go into `--detail.bodyParameters` / `queryParameters` / `pathParameters` when an upstream node supplies the value. Applies to the Quick Reference's configure call; not a skip-table trigger but always check whether any required field is downstream-bound before composing `--detail`.
 
 When a connector node's input field needs a value produced by an upstream node (e.g. the `Id` returned by a Create activity becomes the `recordId` for a Get-by-Id activity), the value MUST use the canonical expression form:
 
@@ -181,6 +241,8 @@ Examples in `inputs.detail`:
 > **The `=js:` prefix is REQUIRED on every `$vars`/`$metadata`/`$self` reference inside `bodyParameters`, `queryParameters`, and `pathParameters`.** Without it the BPMN runtime sees a literal string (`"vars.createEntityRecord1.output.Id"`) and binds it as-is to the activity input — `flow validate` passes; the failure surfaces only at `flow debug`. There is no `nodes.X.output.Y` syntax — that is an invention that silently ships as a literal string. See [node-output-wiring.md](../../../../shared/node-output-wiring.md) for the per-field-type rule and the full failure-mode table (MST-9107).
 
 ### Step 6 — Configure the node
+
+**This is the configure call shown in the Quick Reference.** The sub-sections below cover the edge cases the skip table sends you to: §6a (FilterBuilder parameters), §6b (the standard run-configure shape with array-field and method-label nuances), §6c (api-type ObjectAction custom-fields cache). Read the rebuild warning immediately below before any re-configure of an already-configured node.
 
 **Run `is resources describe` (Step 3) before this step.** The full metadata tells you which fields are required, what types they expect, and which need reference resolution. Do not guess field names or skip the metadata check — required fields missing from `--detail` cause runtime errors that `flow validate` does not catch.
 

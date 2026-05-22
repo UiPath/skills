@@ -16,9 +16,56 @@ Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `b
 
 ## Critical: Use `node configure`
 
-> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
+> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime. `core.action.http.v2` is CLI-owned per [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) (same envelope rules as connector activities).
 
-## Configuration Workflow
+## Quick Reference — Standard Sequence
+
+For a typical managed HTTP call (manual mode, single GET / POST, no branches), this is the whole sequence:
+
+```bash
+# 1. Add the node (Edit/Write — node skeleton is user-authored; inputs.detail is CLI-owned)
+#    Copy the registry definition into definitions[] and the action-node skeleton into nodes[].
+#    See § Step 1 below for the exact shape.
+
+# 2. (Connector mode only) Discover the target connection
+uip is connections list "<target-connector-key>" --all-folders --output json
+
+# 3. Configure inputs.detail (CLI-owned — do NOT hand-write the envelope)
+uip maestro flow node configure <file> <nodeId> --detail '{
+  "authentication": "manual",
+  "method":         "<METHOD>",
+  "url":            "<URL>",
+  "query":          { ...optional... },
+  "headers":        { ...optional... },
+  "body":           { ...optional... }
+}' --output json
+
+# 4. Wire the default + error edges (Edit/Write — edges are user-authored)
+
+# 5. Validate
+uip maestro flow validate <file> --output json
+```
+
+**Stop reading here unless one of these applies:**
+
+| Condition | Jump to |
+| --- | --- |
+| Authentication is via an IS connector (not raw URL) | § Step 2 + § Step 3 connector-mode example |
+| Any value in `url` / `headers` / `body` / `query` is dynamic (depends on `$vars` / `$metadata` / `$self`) | § Step 3b |
+| Need to route downstream paths by response content (`items.length > 0` vs empty) | § Step 4 |
+| Re-configuring an already-configured HTTP node | The same full-rebuild rule as connector activities applies — re-pass the complete `--detail` shape |
+
+**Universal gotchas — read once, never repeat:**
+
+- `--output json`, never `--format json` (which exits 3).
+- `core.action.http.v2` only — `core.action.http` (v1) is deprecated and silently fails connector auth.
+- `inputs.detail` is CLI-owned. Hand-writing it misses the `essentialConfiguration` block and faults at runtime.
+- Branch `conditionExpression` is **auto-evaluated as JS** — do NOT prefix with `=js:`. URL / header / body values that reference `$vars` / `$metadata` / `$self` **DO require `=js:`** (see Step 3b).
+- The node skeleton (`nodes[]`, `definitions[]`, edges, layout) is user-authored via `Edit` / `Write`; only `inputs.detail` flows through the CLI.
+
+## Detailed reference
+
+The steps below are **inputs to the Quick Reference's CLI calls** above. Read top-to-bottom only when the Quick Reference's skip table sends you here, or when configuring connector-mode HTTP, dynamic values, branches, or wiring edges.
 
 ### Step 1 — Add the node
 
