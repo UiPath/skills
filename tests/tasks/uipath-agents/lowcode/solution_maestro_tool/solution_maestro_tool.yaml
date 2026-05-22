@@ -21,7 +21,7 @@ sandbox:
 
 initial_prompt: |
   Create a UiPath solution "OnboardingSol" containing a low-code agent
-  "OnboardingAgent". The agent should call a Maestro flow called
+  "OnboardingAgent". The agent should call an Agentic process called
   "EmployeeOnboarding" that lives INSIDE this same solution as a
   separate project. Expose it to the agent as a tool resource.
 
