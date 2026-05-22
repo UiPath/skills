@@ -19,6 +19,18 @@ Before any debug or process run:
 Use debug when the user wants to upload a local BPMN project to Studio Web and run a debug session with full Studio Web
 visibility.
 
+Debug requires a solution context. If direct project debug fails with
+`SolutionStorage.json is missing and no .uipx file was found`, initialize a
+solution, import the BPMN project, refresh resources, and run debug from the
+solution directory:
+
+```bash
+uip solution init <SolutionName> --output json
+uip solution project import --source <ProjectDir> --solutionFile <SolutionName>/<SolutionName>.uipx --output json
+uip solution resource refresh --solution-folder <SolutionName> --output json
+cd <SolutionName> && uip maestro bpmn debug <ProjectDirName> --output json
+```
+
 ```bash
 uip maestro bpmn debug <ProjectDir> --output json
 ```
@@ -58,7 +70,7 @@ or the process discovery output clearly identifies them.
 Use status first, then incidents and variables if the status is faulted or ambiguous:
 
 ```bash
-uip maestro bpmn job status <JOB_KEY> --output json
+uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
@@ -67,6 +79,18 @@ Use traces only when status, incidents, variables, and deployed BPMN correlation
 
 ```bash
 uip maestro bpmn job traces <JOB_KEY> --output json
+```
+
+For debug instances, prefer the `debug-instance` inspection commands when
+`instance get/incidents` return 404 or empty data. They expose runtime wrapper
+errors that normal traces may omit. If `job status` returns a key or timestamp
+that does not match the debug instance, do not use that status as the source of
+truth; continue with the debug-instance commands returned by the debug run.
+
+```bash
+uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
+uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
+uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
 ```
 
 ## Execution summary

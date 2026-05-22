@@ -20,8 +20,16 @@ Use this reference when planning agent execution from BPMN. Agents are resource 
 
 ## Model may draft
 
-- `bpmn:serviceTask` wrapper with the wrapper shell that matches the agent deployment style (`Orchestrator.StartAgentJob` for folder-deployed coded or low-code agents; `A2A.AgentExecution` for external A2A; `Intsvc.*AgentExecution` for Integration Service external agents) — see [../../task-recipes/agent-job.md](../../task-recipes/agent-job.md) for the decision table.
-- For `Orchestrator.StartAgentJob`, the required binding pair (`name` + `folderPath`, same `resourceKey`, `resource="process"`, `resourceSubType="Agent"`) and the matching context inputs `=bindings.<bindingId>`.
+- `bpmn:serviceTask` wrapper with the wrapper shell that matches the process
+  type and invocation style (`Orchestrator.StartAgentJob` draft shell for
+  folder-deployed dependencies confirmed as `processType: "Agent"`;
+  `A2A.AgentExecution` for external A2A; `Intsvc.*AgentExecution` for
+  Integration Service external agents). See
+  [../../task-recipes/agent-job.md](../../task-recipes/agent-job.md) for the
+  decision table.
+- For `Orchestrator.StartAgentJob`, resolved process identity context and
+  solution-style process bindings from the current shell guidance. Do not treat
+  local validation as proof of executable agent invocation.
 - Input/output mappings, boundary timeout/error paths, and gateways.
 - Public-safe resource placeholders.
 

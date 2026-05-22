@@ -42,6 +42,26 @@ Fix ownership: CLI enrichment/generation owns connector metadata, connection bin
 and generated package resources.
 The model may adjust BPMN structure around the connector but must not invent connection IDs or private connector payloads.
 
+## Agent wrapper releaseKey fault
+
+A folder-deployed agent task using `Orchestrator.StartAgentJob` can fault before
+child-job creation with `Required field 'releaseKey' missing in the input args
+to RPA task`.
+
+Signs:
+
+- The faulting BPMN element is the agent service task.
+- Solution resource refresh imported the agent process successfully.
+- Debug variables show the process identity is present under `JobArguments` or
+  `body`, but the incident still reports missing `releaseKey`.
+- Orchestrator job queries in the target agent folder show no child job created
+  after the debug run started.
+
+Fix ownership: record the incident and variables, then treat this as a
+wrapper/runtime blocker. Do not keep reshuffling the same identity fields across
+context inputs, direct activity inputs, `JobArguments`, and `body` unless a new
+runtime contract is available.
+
 ## Stale generated package files
 
 Generated JSON no longer reflects the BPMN source.

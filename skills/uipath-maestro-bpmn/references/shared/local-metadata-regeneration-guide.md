@@ -123,7 +123,21 @@ JSON schema variables use their CDATA body as the property schema. Strip `$schem
 
 ## Binding Rules
 
-Generated `bindings_v2.json` must include one resource for each root binding that is not only a folder helper attribute. The resource should preserve:
+Generated `bindings_v2.json` has two consumers with different tolerance:
+
+- Local/package binding expressions may need id-addressable entries that mirror
+  root `uipath:binding` IDs.
+- `uip solution resource refresh` expects solution-style resource entries such
+  as `resource`, `key`, `value.name.defaultValue`, and
+  `value.folderPath.defaultValue`.
+
+When an executable BPMN depends on remote Orchestrator processes, include the
+solution-style process binding so refresh can import the process/package
+resources and write debug overwrites. A refresh result of
+`Created:0 Imported:0 Skipped:0` while non-empty bindings exist is a failure
+signal, even if the JSON wrapper says `Result: Success`.
+
+Generated id-addressable entries should preserve:
 
 - `id`, `name`, kind/type, and `resourceKey`.
 - `metadata.BindingsVersion` for the source binding version.

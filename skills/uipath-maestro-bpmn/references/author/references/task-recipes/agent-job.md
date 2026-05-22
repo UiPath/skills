@@ -1,25 +1,30 @@
 # Agent Job Recipe
 
-The current supported implementation wrapper for confirmed agent execution is
-`bpmn:serviceTask`. Pick the shell from agent deployment style, not from the
-agent's implementation language. Coded Python agents (LangGraph / LlamaIndex /
-OpenAI Agents) and low-code Agent Builder agents use the same wire format when
-both are deployed to an Orchestrator folder.
+Agent wrappers are authored as `bpmn:serviceTask`, but the executable runtime
+contract depends on the process type reported by
+`uip or processes list --all-fields`, not the source project label. Some coded
+Python "agents" are published as `processType: "Function"` and are not the same
+runtime contract as low-code Agent Builder processes published as
+`processType: "Agent"`.
 
 | Agent deployment style | Wrapper shell | Notes |
 | --- | --- | --- |
-| Coded Python agent published to an Orchestrator folder | `Orchestrator.StartAgentJob` | Required binding pair: two `uipath:binding` entries sharing one `resourceKey`, `resource="process"`, `resourceSubType="Agent"`, with `propertyAttribute="name"` and `propertyAttribute="folderPath"`. Context inputs MUST be `name` and `folderPath`, both `value="=bindings.<bindingId>"`. Studio Web's palette generates this shape under the "Coded Agent" service-task option. |
-| Low-code Agent Builder agent published to an Orchestrator folder | `Orchestrator.StartAgentJob` | Identical wire format to the coded case above. Agent type is opaque at the BPMN layer. |
+| Coded Python dependency published as `Function` | Not yet live-debug verified for `StartAgentJob` | Direct Orchestrator `jobs start` can work, but BPMN `StartAgentJob` may fault before creating a child job. Record `debug-instance incidents` and treat as a product/runtime blocker. |
+| Low-code Agent Builder agent published as `Agent` | `Orchestrator.StartAgentJob` draft shell | Use resolved process identity fields. Current debug runs may still fault with `Required field 'releaseKey' missing in the input args to RPA task` after solution refresh imports the agent and debug variables show `releaseKey` populated; do not claim executable success until a tenant debug run proves it. |
 | External A2A agent addressed by URL / skillId / authToken | `A2A.AgentExecution` | Studio Web renders this as an external A2A node and disables the Action dropdown. Do not use for folder-deployed agents — the canvas will treat the task as misconfigured. |
 | Integration Service external agent | `Intsvc.SyncAgentExecution`, `Intsvc.AsyncAgentExecution`, or legacy `Intsvc.AsyncExecution` | CLI must enrich connector resource key, connection binding, dynamic schemas, and operation metadata. |
 
-Common authoring mistake: drafting `Orchestrator.StartAgentJob` with a literal
-`agentName` context input, or with `releaseKey` / `folderId`. The Maestro
-BPMN packager validator rejects all three. Always use the binding-pair shape
-shown in
-[../../../shared/wrapper-shells.md](../../../shared/wrapper-shells.md#orchestratorstartagentjob-folder-deployed-agent--coded-python-or-low-code)
-and in the
-[agent-invocation fixture](../../../../fixtures/validation/agent-invocation/).
+Common authoring mistake: assuming local validation or packaging proves the
+agent wrapper is executable. The validator may accept stale shapes that fault
+before child-job creation. Always inspect
+`uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json` after a
+faulted debug run.
+If the incident reports a missing `releaseKey`, inspect
+`uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json` before
+editing the XML. If variables already contain the process identity and no child
+job exists in the target folder, treat the result as a wrapper/runtime blocker
+rather than continuing to move the same fields between context, direct inputs,
+`JobArguments`, and `body`.
 Put the `JobArguments` input payload and `Process response` output payload as
 direct children of `uipath:activity`; do not put them in a sibling
 `uipath:mapping`.

@@ -3,6 +3,16 @@
 The current supported implementation wrapper for confirmed API workflow
 invocation is `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
 
+Live-debug verified context fields:
+
+- `ReleaseKey` = Orchestrator process GUID from `uip or processes list`.
+- `FolderKey` = target folder GUID.
+- `FolderPath` = target folder path.
+- `Name` = process display name.
+
+Use `type="string"` on those context inputs. Do not rely on a lone `name`
+context input or on lower-case registry field names for executable debug runs.
+
 The model may draft:
 
 - Service task wrapper and BPMN DI.
@@ -12,6 +22,7 @@ The model may draft:
 CLI or operator must resolve:
 
 - API workflow resource identity, folder binding, and generated package resources.
+- Solution-style `bindings_v2.json` entries for `uip solution resource refresh`.
 - Dynamic request and response schemas.
 - Fire-and-forget versus wait behavior when the product contract exposes that choice.
 
