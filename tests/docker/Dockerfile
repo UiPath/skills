@@ -5,27 +5,16 @@ FROM ${CODER_EVAL_IMAGE}
 
 ARG NPM_AUTH_TOKEN=
 ARG CLI_VERSION=alpha
-# github-packages: install @uipath/cli@<CLI_VERSION> from GH Packages
-#   (tracks @alpha — published every cli/main merge).
-# npmjs: install from default public npm registry (tracks GH releases).
-ARG CLI_REGISTRY=github-packages
 RUN set -euo pipefail && \
-    case "$CLI_REGISTRY" in \
-      github-packages) \
-        if [ -z "$NPM_AUTH_TOKEN" ]; then \
-          echo "Error: NPM_AUTH_TOKEN required for github-packages registry"; exit 1; \
-        fi; \
-        npmrc="$(npm config get globalconfig)"; \
-        mkdir -p "$(dirname "$npmrc")"; \
-        printf '%s\n' \
-          '@uipath:registry=https://npm.pkg.github.com/' \
-          "//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}" \
-          > "$npmrc" ;; \
-      npmjs) \
-        : ;; \
-      *) \
-        echo "Error: CLI_REGISTRY must be 'github-packages' or 'npmjs', got: $CLI_REGISTRY"; exit 1 ;; \
-    esac && \
+    if [ -z "$NPM_AUTH_TOKEN" ]; then \
+      echo "Error: NPM_AUTH_TOKEN must be passed as build arg"; exit 1; \
+    fi && \
+    npmrc="$(npm config get globalconfig)" && \
+    mkdir -p "$(dirname "$npmrc")" && \
+    printf '%s\n' \
+      '@uipath:registry=https://npm.pkg.github.com/' \
+      "//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}" \
+      > "$npmrc" && \
     npm install -g "@uipath/cli@${CLI_VERSION}" && \
     uip --version
 
