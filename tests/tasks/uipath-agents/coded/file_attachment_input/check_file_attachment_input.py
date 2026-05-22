@@ -30,7 +30,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
 from _shared.project_root import find_project_root  # noqa: E402
 

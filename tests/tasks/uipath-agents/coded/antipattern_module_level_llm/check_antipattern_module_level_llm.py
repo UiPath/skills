@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(os.getcwd()) / "legacy-classifier"
 MAIN = ROOT / "main.py"
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
 
 
