@@ -154,15 +154,22 @@ After creating the inline agent, the flow needs a `uipath.agent.autonomous` node
 
 The node JSON shape that the flow skill must produce is documented in § Flow Node Structure below — keep it as a reference, not as a CLI walkthrough.
 
-## Inline-in-Flow Tool resource.json
+## Inline-in-Flow Resource Paths
 
-Inline tools support four subtypes — `process` (RPA), `agent`, `api`, `processOrchestration`. The `resource.json` shape is identical to standalone agents — follow [../process/process.md](../process/process.md) § Subtypes and § Tool resource.json Shape. Discovery is identical (`uip solution resource list` + `uip solution resource get`) and populates `referenceKey`, `folderPath`, `inputSchema`, and `outputSchema` with real values. The subtype is selected by the `type` field (`process` | `agent` | `api` | `processOrchestration`).
+All inline-agent resources — `tool`, `context`, `escalation`, `memory` — share one path convention:
 
 **Path:** `<FlowProjectDir>/<projectId>/resources/<RES_UUID>/resource.json`
 
-Additional notes for inline-in-flow:
+`<RES_UUID>` is a fresh UUID. It MUST match (a) the resource node's `model.source` in the flow and (b) the `id` field inside `resource.json`. The resource directory name is the UUID — never the human-readable resource name. Human-readable folder names are the standalone-agent convention; inline agents always use UUIDs.
+
+Resource body shape is identical to the standalone-agent docs — only the folder name differs:
+- Tools (`process` / `agent` / `api` / `processOrchestration`): [../process/process.md](../process/process.md) § Subtypes and § Tool resource.json Shape. Discovery is identical (`uip solution resource list` + `uip solution resource get`); subtype is selected by the `type` field.
+- Context index: [../context/index.md](../context/index.md) § Agent-Level Resource Shape.
+- Escalation: [../escalation/escalation.md](../escalation/escalation.md) § Agent-Level Resource.
+
+### Tool-specific notes
+
 - **`location`**: Follows the same rule as standalone agents — set `"solution"` when the row from `uip solution resource list` has `Source: "Local"`, set `"external"` when `Source: "Remote"`. See [../process/process.md](../process/process.md) and [../../critical-rules.md](../../critical-rules.md) Rule 12.
-- **`id`**: Must match the `<RES_UUID>` used as the tool node's `model.source` in the flow and the resource directory name.
 - **`properties.folderPath`**: Must be the **literal folder path from discovery** (e.g., `"Shared/Sales"`) — do **not** leave it empty. An empty `folderPath` prevents `uip solution resource refresh` from resolving the tool at runtime.
 - **`inputSchema.properties`**: Must include `"guardrails": { "type": "array" }` alongside the tool arguments — the runtime expects it.
 - **All fields from the template in [../process/process.md](../process/process.md) are required** — especially `$resourceType: "tool"`, `guardrail`, `properties.processName`, `properties.exampleCalls`, `isEnabled`, and `argumentProperties`. A `resource.json` missing `$resourceType` will not be recognized by `uip agent validate` (the tool reports `"resources": 0`); `uip agent migrate` will then write an empty `bindings_v2.json`.
@@ -280,7 +287,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 # - Configure outputSchema if needed
 
 # 4. Add tools to <FlowProjectDir>/<projectId>/resources/ (optional)
-# See § Inline-in-Flow Tool resource.json above for the exact format
+# See § Inline-in-Flow Resource Paths above for the exact format
 
 # 5. Hand off to the uipath-maestro-flow skill to add the
 #    uipath.agent.autonomous node (inputs.source = <projectId>),
