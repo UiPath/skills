@@ -37,13 +37,12 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
-  # Append default post_run to every e2e task. Order matters: solution cleanup
-  # talks to the tenant (still needs npm-installed CLIs), then sandbox-local
-  # cleanup wipes <sandbox>/{node_modules,.npm-prefix} so preserved artifacts
-  # stay slim (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
+  # Cross-cutting sandbox cleanup: wipe <sandbox>/{node_modules,.npm-prefix} so
+  # preserved artifacts stay slim (mirrors coder_eval #253 / sandbox isolation
+  # in #250 — MST-9674). Tasks that upload Studio Web solutions wire
+  # cleanup_solutions.py into their own post_run; it must run before this step
+  # because it still needs npm-installed CLIs.
   post_run:
-    - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
-      timeout: 120
     - command: "rm -rf node_modules .npm-prefix"
       timeout: 30
 
