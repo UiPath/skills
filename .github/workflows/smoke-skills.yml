@@ -226,7 +226,7 @@ jobs:
             --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
             -t skills-image:latest \
-            -f .github/docker/Dockerfile.smoke \
+            -f tests/docker/Dockerfile \
             .
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
