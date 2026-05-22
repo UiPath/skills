@@ -88,7 +88,7 @@ Enable workload identity federation with external identity providers (GitHub Act
 uip admin external-apps federated-credentials create <CLIENT_ID> \
   --name "GitHub Actions" \
   --issuer "https://token.actions.githubusercontent.com" \
-  --audience "api://AzureADTokenExchange" \
+  --audience "<AUDIENCE>" \
   --subject "repo:myorg/myrepo:ref:refs/heads/main" \
   --output json
 ```
@@ -107,7 +107,7 @@ All fields are required on update (full replace):
 uip admin external-apps federated-credentials update <CLIENT_ID> <CREDENTIAL_ID> \
   --name "Updated Name" \
   --issuer "https://token.actions.githubusercontent.com" \
-  --audience "api://AzureADTokenExchange" \
+  --audience "<AUDIENCE>" \
   --subject "repo:myorg/myrepo:ref:refs/heads/release" \
   --output json
 ```

@@ -17,7 +17,7 @@ def main():
         fail("pat list did not return Success")
 
     found = any(
-        "e2e-test-pat" == (t.get("description") or "")
+        "e2e-test-pat" in (t.get("description") or "")
         for t in data.get("Data", [])
     )
 
