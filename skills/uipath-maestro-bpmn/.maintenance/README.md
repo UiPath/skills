@@ -47,6 +47,21 @@ references/
 
 Author terminates at validation and hands off to Operate. Operate hands off to Diagnose when a run faults. Diagnose hands off back to Author for the underlying fix.
 
+## Daily Validator Drift Hygiene
+
+Run the drift routine through the disposable wrapper:
+
+```bash
+bash .maintenance/daily-validator-drift.sh
+```
+
+The wrapper writes scratch inputs outside the product worktree by default and
+emits a JSON report that separates product validation from workspace-check
+transport or structural skips. If a Rookery task needs `run_workspace_checks`,
+target the actual `uipcli` checkout; when that checkout is unavailable or lacks
+the required Bun scripts, report `workspace_checks` as a structural skip instead
+of running checks in this skills worktree.
+
 ### Capability-index template
 
 `AUTHOR.md`, `OPERATE.md`, `DIAGNOSE.md` all follow the same 6-section structure:
