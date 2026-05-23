@@ -57,10 +57,12 @@ bash .maintenance/daily-validator-drift.sh
 
 The wrapper writes scratch inputs outside the product worktree by default and
 emits a JSON report that separates product validation from workspace-check
-transport or structural skips. If a Rookery task needs `run_workspace_checks`,
-target the actual `uipcli` checkout; when that checkout is unavailable or lacks
-the required Bun scripts, report `workspace_checks` as a structural skip instead
-of running checks in this skills worktree.
+transport or structural skips. Callers own cleanup for the temp directory when
+they do not provide `--work-dir`; keep the report path if the routine output
+must be retained as durable evidence. If a Rookery task needs
+`run_workspace_checks`, target the actual `uipcli` checkout; when that checkout
+is unavailable or lacks the required Bun scripts, report `workspace_checks` as a
+structural skip instead of running checks in this skills worktree.
 
 ### Capability-index template
 

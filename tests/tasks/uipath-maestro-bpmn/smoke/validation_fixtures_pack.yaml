@@ -22,6 +22,9 @@ initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
   Package each validation fixture project locally without cloud-side effects.
+  Some validation/preservation fixtures are expected to fail runtime packaging;
+  still attempt every fixture and keep any successful package artifacts in the
+  requested output directory.
 
   Each fixture lives in its own subdirectory under `fixtures/validation/`:
   - `fixtures/validation/linear-process/`
@@ -37,7 +40,8 @@ initial_prompt: |
   Requirements:
   - Use the installed `uip` CLI to pack each fixture project. Send packed
     output to a local `fixture-pack-output/` directory, not into the fixture
-    folders.
+    folders. Validation-only fixtures may fail packaging without requiring
+    fixture edits.
   - Do not upload, publish, deploy, debug, or run any process.
   - Do not edit fixture files.
 
@@ -49,15 +53,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent invoked Maestro BPMN pack for fixture projects"
+    description: "Agent invoked Maestro BPMN pack for every validation fixture project"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+pack\s+.*fixtures/validation/[\w-]+.*--output\s+json'
-    min_count: 1
+    min_count: 9
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Every fixture BPMN file parses and local package artifacts exist"
+    description: "Every fixture BPMN file parses and packable fixtures have local package artifacts"
     command: "python3 $TASK_DIR/check_validation_fixtures_pack.py"
     timeout: 30
     expected_exit_code: 0

@@ -16,7 +16,12 @@ WORK_DIR=""
 REPORT_PATH=""
 
 usage() {
-  sed -n '2,5p' "$0"
+  cat <<'EOF'
+Run the public Maestro BPMN validator drift routine with disposable inputs.
+Usage: bash .maintenance/daily-validator-drift.sh [--input PATH] [--uipcli-checkout PATH] [--work-dir PATH] [--report PATH]
+
+The routine intentionally writes scratch data outside the git worktree by default.
+EOF
 }
 
 is_under_repo_runtime_dir() {
@@ -142,6 +147,11 @@ if (cd "$SKILL_ROOT" && python3 .maintenance/check-validation-fixtures.py >"$PRO
 else
   PRODUCT_STATUS="failed"
 fi
+if [ -f "$PRODUCT_LOG" ]; then
+  PRODUCT_LOG_TAIL="$(tail -40 "$PRODUCT_LOG")"
+else
+  PRODUCT_LOG_TAIL=""
+fi
 
 CHECKS_STATUS="structural_skip"
 CHECKS_REASON="no uipcli checkout supplied; run_workspace_checks should target the actual uipcli checkout, not this skills worktree"
@@ -161,7 +171,7 @@ if [ -n "$UIPCLI_CHECKOUT" ]; then
   fi
 fi
 
-write_report "$PRODUCT_STATUS" "$(tail -40 "$PRODUCT_LOG")" "$CHECKS_STATUS" "$CHECKS_REASON" "$INPUT_STATUS"
+write_report "$PRODUCT_STATUS" "$PRODUCT_LOG_TAIL" "$CHECKS_STATUS" "$CHECKS_REASON" "$INPUT_STATUS"
 
 echo "product_validation=$PRODUCT_STATUS"
 echo "workspace_checks=$CHECKS_STATUS"
