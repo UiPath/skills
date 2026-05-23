@@ -10,7 +10,7 @@ Updates an existing record in a Data Fabric entity. Category: **DataService.Enti
 | `EntityId` | `InArgument<Guid>` | Yes | — | — | Entity GUID from `EntitiesStore.json` |
 | `RecordId` | `InArgument<Guid>` | Yes | — | Input | GUID of the record to update |
 | `InputEntityInFieldView` | `InArgument<TEntity>` | Yes | — | Input | Object-initializer expression with updated field values (runtime reads this) |
-| `IsInRecordView` | `InArgument<bool>` | Yes | — | — | Set to `[False]` — makes runtime read `InputEntityInFieldView` |
+| `IsInRecordView` | `InArgument<bool>` | No | `{x:Null}` | — | Studio writes `{x:Null}`; runtime defaults null → `false`, reads `InputEntityInFieldView`. `[False]` is equivalent. `[True]` flips runtime to read `InputEntity` — avoid. |
 | `State` | `RecordState` | Yes | — | — | Contains `SelectedFields` with field GUIDs and values (Studio card UI reads this) |
 | `InputEntity` | `InArgument<TEntity>` | No | — | Input | Not recommended — Studio never syncs `SelectedFields` to this property, causing desync |
 | `VisibleDynamicPropertiesInfo` | `InArgument<string>` | No | `{x:Null}` | — | Always set to `{x:Null}` |
@@ -19,11 +19,16 @@ Updates an existing record in a Data Fabric entity. Category: **DataService.Enti
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Common | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Common | Timeout in milliseconds |
 
-> **Solution scope.** When this activity sits in a project with a non-empty `SolutionId`, Studio renders a Folder/Tenant radio plus an entity picker — not the three raw XAML properties. Folder scope writes `ScopeValue="Folder"`, `SolutionEntityKey` (resource UUID, design-time only) and `SolutionEntityName` (binding key + display name); at runtime the activity reads `Entity.<SolutionEntityName>.folderPath` from `bindings_v2.json` → Orchestrator's `resourceOverwrites` and injects `X-UiPath-FolderPath`. Tenant scope leaves the three properties unset. See [overview — Solution Context](../overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope.** When this activity sits in a project with a non-empty `SolutionId`, Studio renders a Folder/Tenant radio plus an entity picker — not the three raw XAML properties. Studio writes all three properties as explicit literals on every activity:
+>
+> - **Folder scope** — `ScopeValue="Folder"`, `SolutionEntityKey="<entity-UUID>"`, `SolutionEntityName="<EntityName>"`, plus `x:TypeArguments="udacsdeb:<EntityName>_<UUID-with-dashes-as-underscores>"`. Entity declaration lives at `<SOLUTION_DIR>/resources/solution_folder/entity/[native/]<EntityName>.json`. At runtime, `Entity.<SolutionEntityName>.folderPath` resolves from Orchestrator's `resourceOverwrites` (hydrated at deploy from the solution's resource artefacts) and is injected as `X-UiPath-FolderPath`.
+> - **Tenant scope or standalone** — `ScopeValue="Tenant"`, `SolutionEntityKey="{x:Null}"`, `SolutionEntityName="{x:Null}"`, plus `x:TypeArguments="<initial>:<EntityName>"` via the `xmlns:<initial>="clr-namespace:<ProjectName>;assembly=DataService.<ProjectName>"` namespace. No `X-UiPath-FolderPath` header at runtime.
+>
+> The Studio Desktop binding contract lives at `<PROJECT_DIR>/.project/PackageBindingsMetadata.json`. Studio Desktop does NOT produce `bindings_v2.json` — that file is a Studio Web / Maestro Flow / Maestro Case artefact. See [overview — Solution Context](../overview.md#solution-context-folder-vs-tenant-scope) and [overview — Binding source by surface](../overview.md#binding-source-by-surface).
 
 ## Field Binding — Two Required Components
 
-For Create and Update activities, set `IsInRecordView="[False]"` and populate two things:
+For Create and Update activities, populate two things (Studio writes `IsInRecordView="{x:Null}"` on the activity element — runtime defaults null → false, reads `InputEntityInFieldView`):
 
 1. **`InputEntityInFieldView`** — object-initializer expression with updated field values. The runtime evaluates this expression and sends it to the Data Service API.
 2. **`State` with `RecordState.SelectedFields`** — declares each field with its GUID from `EntitiesStore.json` and its value. Studio's card UI reads this to render per-field editors.
@@ -64,7 +69,7 @@ Studio syncs `SelectedFields` → `InputEntityInFieldView` on file load, keeping
     ExpansionDepth="2"
     RecordId="[recordIdVariable]"
     InputEntityInFieldView="[New ENTITY_NAME() With {.FIELD_A = &quot;newValue&quot;}]"
-    IsInRecordView="[False]"
+    IsInRecordView="{x:Null}"
     TimeoutInMs="30000">
   <uda:UpdateEntityRecord.State>
     <udam:RecordState IsInRecordView="False" RequiredFieldCount="0">
@@ -86,7 +91,7 @@ Replace: `ENTITY_NAME` (entity class), `ENTITY_GUID` (from `EntitiesStore.json` 
 
 ## Key Rules
 
-- Set `IsInRecordView="[False]"` and populate both `InputEntityInFieldView` and `RecordState.SelectedFields` — do NOT use `InputEntity`
+- Studio writes `IsInRecordView="{x:Null}"` on the activity (runtime defaults null → false). Populate both `InputEntityInFieldView` and `RecordState.SelectedFields`. Do NOT use `InputEntity`.
 - At least one field in `SelectedFields` must have an `ArgumentValue` set — otherwise validation fails with "No update fields specified"
 - If the `InputEntityInFieldView` expression does not set `Id`, the activity copies `RecordId` into the entity automatically at runtime
 - Only include fields you want to update in `SelectedFields` and `InputEntityInFieldView` — unchanged fields can be omitted

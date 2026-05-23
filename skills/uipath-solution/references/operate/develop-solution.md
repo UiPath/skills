@@ -118,9 +118,11 @@ If your solution hosts an RPA project that uses `UiPath.DataService.Activities` 
 uip solution resource list --kind Entity --output json
 ```
 
-For each entity in the output, the `Key` field is the `SolutionEntityKey` value (resource UUID) and the `Name` field is the `SolutionEntityName` (binding key + display name). Pass the `Key` into `resource get` for the full spec. After editing a project's `bindings_v2.json` to add an entity reference, run `resource refresh` so the entity is reconciled into the solution's resource inventory before pack.
+For each entity in the output, the `Key` field is the `SolutionEntityKey` value (resource UUID) and the `Name` field is the `SolutionEntityName` (binding key + display name). Pass the `Key` into `resource get` for the full spec. For Studio Web / Maestro projects, after editing a project's `bindings_v2.json` to add an entity reference, run `resource refresh` so the entity is reconciled into the solution's resource inventory before pack.
 
-See [uipath-rpa Data Service overview — Solution Context](../../../uipath-rpa/references/activity-docs/UiPath.DataService.Activities/25.9/overview.md#solution-context-folder-vs-tenant-scope) for how those XAML properties drive the `X-UiPath-FolderPath` header at runtime.
+> **Studio Desktop RPA projects don't produce `bindings_v2.json`.** When the user picks an entity in Studio Desktop's Folder-scope picker, the artefact at `resources/solution_folder/entity/[native/]<Name>.json` is written directly. `uip solution resource refresh` against a Studio Desktop project reports `Created: 0, Imported: 0, Skipped: 0` — expected, not a failure. `resource list --kind Entity` already returns the merged local + remote view without `refresh`. The `bindings_v2.json` round-trip described in [Step 7](#step-7-refresh-resources) and the gotchas below applies to Studio Web RPA, Maestro Flow, and Maestro Case projects. The Studio Desktop binding contract instead lives at `<project>/.project/PackageBindingsMetadata.json`.
+
+See [uipath-rpa Data Service overview — Solution Context](../../../uipath-rpa/references/activity-docs/UiPath.DataService.Activities/25.9/overview.md#solution-context-folder-vs-tenant-scope) for how those XAML properties drive the `X-UiPath-FolderPath` header at runtime, and [overview — Binding source by surface](../../../uipath-rpa/references/activity-docs/UiPath.DataService.Activities/25.9/overview.md#binding-source-by-surface) for the per-surface canonical artefact.
 
 ## Step 7: Refresh Resources
 

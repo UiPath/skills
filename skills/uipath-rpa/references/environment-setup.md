@@ -44,7 +44,7 @@ while dir != filesystem root:
     dir = parent(dir)
 ```
 
-If `INSIDE_SOLUTION` is true, the project's **publish/deploy strategy is owned by `uipath-solution`**. Do NOT run `uip rpa pack` + `uip or packages upload` for deploy — it produces a standalone `.nupkg` that bypasses `bindings_v2.json` → solution-resource → `X-UiPath-FolderPath` and breaks any `UiPath.DataService.Activities` Folder-scope record. See [publishing-guide.md § Step 0](publishing-guide.md) before any pack/upload.
+If `INSIDE_SOLUTION` is true, the project's **publish/deploy strategy is owned by `uipath-solution`**. Do NOT run `uip rpa pack` + `uip or packages upload` for deploy — it produces a standalone `.nupkg` that bypasses the solution's resource artefacts (`resources/solution_folder/entity/[native/]<Name>.json`) → `X-UiPath-FolderPath` and breaks any `UiPath.DataService.Activities` Folder-scope record. See [publishing-guide.md § Step 0](publishing-guide.md) before any pack/upload.
 
 This applies regardless of whether the user invoked you from inside the project directory or from the solution directory — the walk-up will catch both.
 

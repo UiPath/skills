@@ -53,7 +53,7 @@ Before creating or modifying anything, determine which project to work with. See
 
 **Then detect solution membership.** Walk up from `{projectRoot}` until you hit a `.uipx` file or the filesystem root. If a `.uipx` is found, set `SOLUTION_DIR` to its directory and `INSIDE_SOLUTION=true`. This single signal changes how publish/deploy works:
 
-- `INSIDE_SOLUTION=true` → publish/deploy is owned by `uipath-solution`. Do not run `uip rpa pack` + `uip or packages upload` for deploy — it bypasses `bindings_v2.json` → solution-resource → `X-UiPath-FolderPath` and breaks any solution-scoped `UiPath.DataService.Activities` activities. Hand off to `/uipath:uipath-solution`. See [references/publishing-guide.md § Step 0](references/publishing-guide.md).
+- `INSIDE_SOLUTION=true` → publish/deploy is owned by `uipath-solution`. Do not run `uip rpa pack` + `uip or packages upload` for deploy — it bypasses the solution's resource artefacts (`resources/solution_folder/entity/[native/]<Name>.json`) → `X-UiPath-FolderPath` and breaks any solution-scoped `UiPath.DataService.Activities` activities. Hand off to `/uipath:uipath-solution`. See [references/publishing-guide.md § Step 0](references/publishing-guide.md).
 - `INSIDE_SOLUTION=false` → standalone project. Follow the existing pack/upload path.
 
 The walk-up mirrors `solution-sdk findNearestParentUipxFile(...)` and works regardless of whether the user invoked you from inside the project directory or from the solution directory.

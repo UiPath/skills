@@ -10,7 +10,7 @@ Before any `pack` / `upload`, check the `INSIDE_SOLUTION` flag from [Step 0 of t
 
 Running `uip rpa pack` + `uip or packages upload` against a solution-resident project succeeds — it produces a valid standalone `.nupkg` — but the deployed package bypasses the entire solution layer:
 
-- `bindings_v2.json` entries are NOT bundled into the package; Orchestrator's `resourceOverwrites` never gets populated.
+- The solution's resource artefacts (`resources/solution_folder/entity/[native/]<Name>.json`) are NOT bundled into the standalone package; Orchestrator's `resourceOverwrites` never gets populated.
 - Solution-scoped `UiPath.DataService.Activities` lose their `X-UiPath-FolderPath` injection (no `Entity.<name>.folderPath` binding to read), and Folder-scoped reads/writes silently collapse to tenant scope or 404 — depending on whether a tenant-level entity with the same name happens to exist.
 - Folder-scoped Storage Bucket, Asset, Queue, and Connection bindings degrade the same way.
 
@@ -93,5 +93,5 @@ For the full Pack → Upload → Link → Execute pipeline targeted at Test Mana
 - **`uip solution publish` expects a packed `.zip`, not a project directory.** Solutions: run `uip solution pack` first, then `uip solution publish "<ZIP_PATH>"`. Single projects: use `uip or packages upload` instead.
 - **Confusing `solution upload` and `solution publish`.** `upload` pushes to Studio Web (browser editing). `publish` pushes a packed solution `.zip` to the Orchestrator solution feed for `solution deploy`. They are NOT interchangeable. See [uipath-solution](../../uipath-solution/SKILL.md) for the decision tree.
 - **Re-uploading the same version.** Orchestrator rejects duplicate `<id>:<version>` uploads. Bump `--package-version` (or `project.json` `projectVersion`) before re-packing.
-- **Packing a solution-resident project as a standalone `.nupkg`.** Succeeds but the runtime cannot resolve `Entity.<name>.folderPath` — the bindings are not deployed alongside a standalone package. Symptom: `X-UiPath-FolderPath` header missing at runtime; Folder-scoped Data Service activities hit tenant-level entities or return 404. Re-check Step 0 — if `INSIDE_SOLUTION=true`, use the `uip solution` path instead.
+- **Packing a solution-resident project as a standalone `.nupkg`.** Succeeds but the runtime cannot resolve `Entity.<name>.folderPath` — the solution's resource artefacts (`resources/solution_folder/entity/[native/]<Name>.json`) are not deployed alongside a standalone package. Symptom: `X-UiPath-FolderPath` header missing at runtime; Folder-scoped Data Service activities hit tenant-level entities or return 404. Re-check Step 0 — if `INSIDE_SOLUTION=true`, use the `uip solution` path instead.
 - **`pack` succeeds but `analyze` ran with errors.** A successful pack with errors in the analyzer log usually means warnings only. Re-run `uip rpa analyze --project-dir "<PROJECT_DIR>"` if you need a clean failure / pass signal.

@@ -34,7 +34,9 @@ You are a project discovery agent. Analyze a UiPath automation project and gener
    - `solutionDir` — directory containing the `.uipx`, or `"none"`
    - `solutionFile` — absolute path to the `.uipx`, or `"none"`
    - `solutionId` — value of the `SolutionId` field inside the `.uipx` manifest (or first line containing `"SolutionId"`), or `"none"`
-   - `bindingsV2` — path to `bindings_v2.json` if present at the project root, else `"none"`. Solution-resident projects with no `bindings_v2.json` are valid but worth flagging.
+   - `solutionResourceDir` — path to `<solutionDir>/resources/solution_folder/entity/`. If a `native/` subdirectory exists inside it, use `<solutionDir>/resources/solution_folder/entity/native/` instead (Studio Desktop's current layout). Else `"none"`.
+   - `entityArtefacts` — basenames of `*.json` files in `solutionResourceDir` (entity declarations Studio Desktop / Studio Web wrote there). Cap at 20; append ` (+N more)` if more exist. Else `"none"`. These are the `SolutionEntityName` candidates a solution-scoped Data Service activity can bind to without a `resource refresh`.
+   - Studio Desktop RPA projects don't produce `bindings_v2.json`; do not emit a `bindingsV2` field. For Studio Web / Maestro projects with `bindings_v2.json` at the project root, downstream agents read it via the uipath-solution skill — they don't need it surfaced here.
 
 ### Step 2: Discovery
 
@@ -229,7 +231,8 @@ Replace `{{PLACEHOLDER}}` sections with discovered values. Omit any section wher
 | **Solution directory** | {{SOLUTION_DIR or "none — standalone project"}} |
 | **Solution file** | {{SOLUTION_FILE or "none"}} |
 | **SolutionId** | {{SOLUTION_ID or "none"}} |
-| **bindings_v2.json** | {{BINDINGS_V2_PATH or "none"}} |
+| **Solution resource dir** | {{SOLUTION_RESOURCE_DIR or "none"}} |
+| **Entity artefacts** | {{ENTITY_ARTEFACTS or "none"}} |
 
 > If solution directory is set: publish/deploy is owned by `uipath-solution`. Do not run `uip rpa pack` for deploy — use `uip solution pack` / `solution publish` / `solution deploy` via the uipath-solution skill.
 
