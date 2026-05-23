@@ -31,6 +31,11 @@ concurrency:
 
 jobs:
   run:
+    # TODO: switch to `ubuntu-latest-16-cores` (16 vCPU / 64 GB RAM) once
+    # the UiPath/skills repo is allowlisted for that runner group. Standard
+    # ubuntu-latest is fine for ad-hoc single-task / small-folder runs at
+    # j=20; the larger tier is needed for the full nightly sweep to finish
+    # in ~30-45min instead of multi-hour.
     runs-on: ubuntu-latest
     # Full skills suite on the VM (~700 tasks, j=1) runs 3-4h. 330 min
     # covers worst-case stalls (one slow task pinning a slot, network
