@@ -1,0 +1,56 @@
+task_id: skill-agent-coded-conversational-langgraph
+description: >
+  LangGraph conversational coded agent. Verifies
+  `runtimeOptions.isConversational: true` in `uipath.json`,
+  `langgraph.json` entry-point config, and that the agent ran locally
+  for two turns. Lazy-LLM-init invariant (Critical Rule C4) still
+  applies.
+tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:conversational, feature:framework-langgraph]
+
+initial_prompt: |
+  hey, can you set up a tiny LangGraph chat agent here called
+  `chat-agent`? it should just take a message and reply with the same
+  thing plus " echo" on the end. history is handled by the runtime,
+  you don't need to deal with that.
+
+  chain `uip codedagent setup --force` before every uip codedagent
+  command (new, init, run).
+
+  once it's running, chat with it twice locally so I can see it works.
+
+  no publishing, no deploys, no evals — and please don't burn time on
+  TaskCreate/TaskUpdate planning. just bang it out end-to-end and stop
+  after the second turn.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the agent locally twice (two chat turns)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "isConversational flag, langgraph.json, lazy init"
+    command: "python3 $TASK_DIR/check_conversational_agent_langgraph.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

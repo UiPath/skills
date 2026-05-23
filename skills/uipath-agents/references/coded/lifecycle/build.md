@@ -23,6 +23,7 @@ Load capability references **only if the task requires them** — do not preload
 | Platform API calls | `../capabilities/sdk-services.md` | agent uses UiPath platform services directly |
 | Tracing / monitoring | `../capabilities/tracing.md` | agent needs custom tracing (Coded Function only — LangGraph traces automatically) |
 | File attachments (input or created) | `../capabilities/file-attachments.md` | agent takes a file as input, or creates an attachment |
+| Conversational (chat-style) agents | `../capabilities/conversational-agents.md` | agent receives one message per turn; runtime threads history (LangGraph / LlamaIndex only) |
 
 ## Framework Reference
 
