@@ -16,11 +16,10 @@ If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy.
 
 When testing hypotheses for UI Automation issues, gather and verify these before drawing conclusions:
 
-0. **Request source code** - if not provided, ask user for project source code
 1. **Activity type and namespace** — identify the exact activity that faulted (e.g., `UiPath.UIAutomationNext.Activities.NClick` vs `UiPath.Core.Activities.Click`)
 2. **Selector definition** — read the actual selector from the workflow source or error details; don't rely on summaries
 3. **Target application state** — verify the application was running and the expected screen/page was visible at time of failure
 4. **Healing Agent status** — if relevant, check whether Healing Agent is enabled, whether recovery data exists
 5. **Execution context** — check if running attended vs unattended, screen resolution, RDP session state — these affect UI element visibility
 6. **Package version** — confirm `UiPath.UIAutomation.Activities` package version; behavior differs across versions
-7. **Enclosing scope container configuration** — for activities inside a scope container (`NApplicationCard`, `NBrowser`, `Use Application/Browser`, `NWindow`, `Attach Window`, `Attach Browser`, etc.), open the workflow XAML and capture the container's `AttachMode`, `Open` (defaults to `IfNotOpen` when absent), and `TargetApp.{Selector,Url}` values. The scope container determines which application instance/page the inner selector resolves against — a misconfigured scope makes a structurally correct selector fail (e.g., card attaches to an unintended existing tab via `AttachMode=ByInstance` + default `Open=IfNotOpen` + a loose `TargetApp.Selector`). Do not confirm a selector-failure hypothesis before naming the scope container's configuration.
+7. **Enclosing scope container configuration** — for activities inside a scope container (`NApplicationCard`, `NBrowser`, `Use Application/Browser`, `NWindow`, `Attach Window`, `Attach Browser`, etc.), open the workflow XAML and capture the container's `AttachMode`, `OpenMode` (defaults to `IfNotOpen` when absent), and `TargetApp.{Selector,Url}` values. The scope container determines which application instance/page the inner selector resolves against — a misconfigured scope makes a structurally correct selector fail (e.g., card attaches to an unintended existing tab via `AttachMode=ByInstance` + default `OpenMode=IfNotOpen` + a loose `TargetApp.Selector`). Do not confirm a selector-failure hypothesis before naming the scope container's configuration.
