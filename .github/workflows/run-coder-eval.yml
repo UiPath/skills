@@ -48,7 +48,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
-          ref: ${{ inputs.coder_eval_ref }}
+          # inputs.* is empty on pull_request triggers — fall back to defaults.
+          ref: ${{ inputs.coder_eval_ref || 'main' }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
@@ -113,7 +114,7 @@ jobs:
           docker build \
             --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
-            --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
+            --build-arg CLI_VERSION="${{ inputs.cli_version || 'alpha' }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
