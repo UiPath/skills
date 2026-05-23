@@ -2,15 +2,10 @@ name: Run Coder Eval
 
 # GH-hosted runner for coder-eval against the skills task tree. Use cases:
 # single task ad-hoc, a folder, or (with explicit confirmation) the full
-# suite that the VM cron runs nightly. Runs on the largest GH-hosted tier
-# in UiPath (ubuntu-latest-16-cores = 16 vCPU / 64 GB RAM) at j=20.
-# Long-term replacement for the coder-eval-runner VM.
+# suite that the VM cron runs nightly. Long-term replacement for the
+# coder-eval-runner VM.
 
 on:
-  # TEMP: pull_request trigger lets us exercise the workflow before it
-  # exists on main (workflow_dispatch needs the file on the default
-  # branch). Strip before final merge.
-  pull_request:
   workflow_dispatch:
     inputs:
       task_globs:
@@ -37,9 +32,9 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    # Full skills suite on the VM (~700 tasks, j=1) runs 3-4h. 16-core
-    # runner with j=20 should land ~30-45min; 330 min covers worst-case
-    # stalls (one slow task pinning a slot, network hiccups, etc.).
+    # Full skills suite on the VM (~700 tasks, j=1) runs 3-4h. 330 min
+    # covers worst-case stalls (one slow task pinning a slot, network
+    # hiccups, etc.) on ubuntu-latest at j=20.
     timeout-minutes: 330
     name: Run coder-eval
     steps:
@@ -48,8 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
-          # inputs.* is empty on pull_request triggers — fall back to defaults.
-          ref: ${{ inputs.coder_eval_ref || 'main' }}
+          ref: ${{ inputs.coder_eval_ref }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
@@ -62,8 +56,7 @@ jobs:
       - name: Resolve task globs + enforce large-run gate
         id: globs
         env:
-          # On pull_request triggers (TEMP), fall back to a single quick task.
-          INPUT_GLOBS: ${{ inputs.task_globs || 'tasks/uipath-maestro-flow/multi_node/calculator/calculator.yaml' }}
+          INPUT_GLOBS: ${{ inputs.task_globs }}
           CONFIRMED:   ${{ inputs.confirm_large_run }}
         run: |
           set -euo pipefail
@@ -114,7 +107,7 @@ jobs:
           docker build \
             --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
-            --build-arg CLI_VERSION="${{ inputs.cli_version || 'alpha' }}" \
+            --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
