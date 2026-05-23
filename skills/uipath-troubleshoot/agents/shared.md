@@ -28,6 +28,8 @@ Every agent must follow this table. Do not redefine confidence behavior locally.
 
 **Single-round coverage rule.** Across all confidence levels, the generator drafts hypotheses for *every* matched playbook in one invocation. Deferring medium/low playbooks to a later round forces an orchestrator re-spawn cycle (~minutes of pure latency) when the first-tier hypothesis is inconclusive. The originating-fault hypothesis (per `hypothesis-generator.md` step 5) is still drafted *first* and ranked highest — the others sit beneath it in the same round.
 
+**Playbook-signature granularity rule.** One hypothesis = one playbook match at its signature level. Do NOT enumerate the playbook's `## Causes` / "What can cause it" list as separate hypotheses — those are sub-cause branches the playbook's `## Resolution` section narrows once the playbook-level signature is confirmed.
+
 ## Startup
 
 1. Create `.local/investigations/`, `.local/investigations/evidence/`, `.local/investigations/raw/` if they don't exist
