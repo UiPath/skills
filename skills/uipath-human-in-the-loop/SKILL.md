@@ -24,6 +24,8 @@ Recognizes when a business process needs a human decision point, designs the tas
 - User explicitly asks to **add a HITL node**, human review step, or Action Center task
 - User is building any automation where **a human must act before the process can continue**
 
+**Do not use this skill for:** managing, reassigning, escalating, or monitoring existing Action Center tasks at runtime — use the `uipath-tasks` skill for those operations.
+
 See [references/hitl-patterns.md](references/hitl-patterns.md) for the full business pattern recognition guide.
 
 ---
