@@ -52,7 +52,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip flow validate FinanceCompliance/FinanceCompliance/FinanceCompliance.flow --output json"
+    command: "uip maestro flow validate FinanceCompliance/FinanceCompliance/FinanceCompliance.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

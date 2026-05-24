@@ -28,7 +28,7 @@ initial_prompt: |
 
   2. Create the flow project inside the solution:
      (run inside the ExpenseApproval directory)
-     uip flow init ExpenseApproval
+     uip maestro flow init ExpenseApproval
 
   3. Edit ExpenseApproval/ExpenseApproval/ExpenseApproval.flow to add a script
      node "postExpense" (label: "Post to Finance System") connected after the
@@ -36,11 +36,11 @@ initial_prompt: |
        console.log('posting expense'); return {};
      Wire it: trigger output port → postExpense input port.
 
-  Now add a Human-in-the-Loop node (type: uipath.human-in-the-loop) between
+  Now add a Human-in-the-Loop node between
   the trigger and the posting step. A manager should review and approve the
   expense before it is posted. Wire the completed handle to the posting step
   and validate the flow using:
-    uip flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json
+    uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json
 
 success_criteria:
   - type: file_contains
@@ -69,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json"
+    command: "uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

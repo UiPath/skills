@@ -28,7 +28,7 @@ initial_prompt: |
 
   2. Create the flow project inside the solution:
      (run inside the HROnboarding directory)
-     uip flow init HROnboarding
+     uip maestro flow init HROnboarding
 
   3. Edit HROnboarding/HROnboarding/HROnboarding.flow to wire these script
      nodes in sequence after the manual trigger:
@@ -38,13 +38,13 @@ initial_prompt: |
      - id "sendWelcome" (label: "Send Welcome Email") — script: // send welcome
      Wire: trigger → fetchDocs → validateDocs → provisionIT → sendWelcome
 
-  Add human validation at TWO points (both type: uipath.human-in-the-loop):
+  Add human validation at TWO points:
   1. Before document validation — an HR officer must review submitted documents
   2. Before IT provisioning — a manager must approve IT access
 
   Wire the completed handles for both HITL nodes to their respective downstream
   steps. Validate the full flow after both nodes are added using:
-    uip flow validate HROnboarding/HROnboarding/HROnboarding.flow --output json
+    uip maestro flow validate HROnboarding/HROnboarding/HROnboarding.flow --output json
 
 success_criteria:
   - type: file_contains
@@ -81,7 +81,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip flow validate HROnboarding/HROnboarding/HROnboarding.flow --output json"
+    command: "uip maestro flow validate HROnboarding/HROnboarding/HROnboarding.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
