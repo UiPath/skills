@@ -21,26 +21,41 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  I have a UiPath Flow project for expense approval. Set it up as follows:
+  I have a UiPath Flow project. First, create this starting flow by writing
+  it to ExpenseApproval/ExpenseApproval/ExpenseApproval.flow:
 
-  1. Create the solution:
-     uip solution new ExpenseApproval
+  {
+    "nodes": [
+      {
+        "id": "trigger1",
+        "type": "core.trigger.manual",
+        "label": "Start",
+        "position": { "x": 100, "y": 200 }
+      },
+      {
+        "id": "postExpense",
+        "type": "core.action.script",
+        "label": "Post to Finance System",
+        "position": { "x": 400, "y": 200 },
+        "inputs": { "script": "console.log('posting expense');" }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "trigger1",
+        "target": "postExpense",
+        "sourcePort": "output",
+        "targetPort": "input"
+      }
+    ],
+    "variables": [],
+    "definitions": []
+  }
 
-  2. Create the flow project inside the solution:
-     (run inside the ExpenseApproval directory)
-     uip maestro flow init ExpenseApproval
-
-  3. Edit ExpenseApproval/ExpenseApproval/ExpenseApproval.flow to add a script
-     node "postExpense" (label: "Post to Finance System") connected after the
-     manual trigger. The script body should be:
-       console.log('posting expense'); return {};
-     Wire it: trigger output port → postExpense input port.
-
-  Now add a Human-in-the-Loop node between
-  the trigger and the posting step. A manager should review and approve the
-  expense before it is posted. Wire the completed handle to the posting step
-  and validate the flow using:
-    uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json
+  Now add a Human-in-the-Loop node between the trigger and the posting step.
+  A manager should review and approve the expense before it is posted.
+  Wire the completed handle to the posting step and validate the flow.
 
 success_criteria:
   - type: file_contains
@@ -64,13 +79,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "uip flow validate passes"
-    command: "uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0

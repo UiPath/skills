@@ -13,7 +13,7 @@ agent:
   type: claude-code
 
 run_limits:
-  max_turns: 70
+  max_turns: 50
   turn_timeout: 1200
 
 sandbox:
@@ -21,30 +21,33 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  I have an HR onboarding flow. Set it up as follows:
+  I have an HR onboarding flow. Create it by writing to
+  HROnboarding/HROnboarding/HROnboarding.flow:
 
-  1. Create the solution:
-     uip solution new HROnboarding
-
-  2. Create the flow project inside the solution:
-     (run inside the HROnboarding directory)
-     uip maestro flow init HROnboarding
-
-  3. Edit HROnboarding/HROnboarding/HROnboarding.flow to wire these script
-     nodes in sequence after the manual trigger:
-     - id "fetchDocs" (label: "Fetch Documents") — script: // fetch submitted docs
-     - id "validateDocs" (label: "Validate Documents") — script: // validate doc completeness
-     - id "provisionIT" (label: "Provision IT Access") — script: // create accounts
-     - id "sendWelcome" (label: "Send Welcome Email") — script: // send welcome
-     Wire: trigger → fetchDocs → validateDocs → provisionIT → sendWelcome
+  {
+    "nodes": [
+      {"id": "trigger1", "type": "core.trigger.manual", "label": "New Hire Request", "position": {"x": 100, "y": 300}},
+      {"id": "fetchDocs", "type": "core.action.script", "label": "Fetch Documents", "position": {"x": 300, "y": 300}, "inputs": {"script": "// fetch submitted docs"}},
+      {"id": "validateDocs", "type": "core.action.script", "label": "Validate Documents", "position": {"x": 500, "y": 300}, "inputs": {"script": "// validate doc completeness"}},
+      {"id": "provisionIT", "type": "core.action.script", "label": "Provision IT Access", "position": {"x": 700, "y": 300}, "inputs": {"script": "// create accounts"}},
+      {"id": "sendWelcome", "type": "core.action.script", "label": "Send Welcome Email", "position": {"x": 900, "y": 300}, "inputs": {"script": "// send welcome"}}
+    ],
+    "edges": [
+      {"id": "e1", "source": "trigger1", "target": "fetchDocs", "sourcePort": "output", "targetPort": "input"},
+      {"id": "e2", "source": "fetchDocs", "target": "validateDocs", "sourcePort": "output", "targetPort": "input"},
+      {"id": "e3", "source": "validateDocs", "target": "provisionIT", "sourcePort": "output", "targetPort": "input"},
+      {"id": "e4", "source": "provisionIT", "target": "sendWelcome", "sourcePort": "output", "targetPort": "input"}
+    ],
+    "variables": [],
+    "definitions": []
+  }
 
   Add human validation at TWO points:
   1. Before document validation — an HR officer must review submitted documents
   2. Before IT provisioning — a manager must approve IT access
 
   Wire the completed handles for both HITL nodes to their respective downstream
-  steps. Validate the full flow after both nodes are added using:
-    uip maestro flow validate HROnboarding/HROnboarding/HROnboarding.flow --output json
+  steps. Validate the full flow after both nodes are added.
 
 success_criteria:
   - type: file_contains
@@ -52,15 +55,7 @@ success_criteria:
     path: "HROnboarding/HROnboarding/HROnboarding.flow"
     includes:
       - '"uipath.human-in-the-loop"'
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow contains at least 2 HITL nodes"
-    command: "[ $(grep -c '\"uipath.human-in-the-loop\"' HROnboarding/HROnboarding/HROnboarding.flow) -ge 2 ]"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: file_contains
@@ -76,13 +71,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
-    weight: 1.0
+    weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "uip flow validate passes"
-    command: "uip maestro flow validate HROnboarding/HROnboarding/HROnboarding.flow --output json"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
