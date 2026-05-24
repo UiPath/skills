@@ -21,11 +21,11 @@ initial_prompt: |
   Build a UiPath Flow named "PurchaseApproval" with this structure:
     Manual Trigger -> HITL (manager approves purchase) -> Script (log approval) -> End
 
-  The reviewer's form should be inline — rendered by Action Center.
+  Use the inline quickform HITL node (uipath.human-in-the-loop).
   The HITL node shows the reviewer: purchase amount and vendor name.
   Outcomes: Approve and Reject.
 
-  Wire the output of the HITL step to the Script node.
+  Wire the HITL node's completed handle to the Script node.
   The Script node logs: "Approval recorded."
 
   Validate the flow after building.

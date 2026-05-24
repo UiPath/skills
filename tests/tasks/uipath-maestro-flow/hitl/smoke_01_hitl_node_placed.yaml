@@ -23,8 +23,8 @@ initial_prompt: |
   2. Pauses for a finance manager to review and approve an invoice (human-in-the-loop)
   3. Ends after the review is complete
 
-  The reviewer's form should be rendered inline by Action Center — no external app.
-  The node must show the reviewer: invoice ID and amount.
+  The HITL node must use the inline quickform style (uipath.human-in-the-loop),
+  not an external app. The node must show the reviewer: invoice ID and amount.
   The reviewer clicks Approve or Reject.
 
   Wire the completed handle to an End node.
