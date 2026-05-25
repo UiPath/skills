@@ -6,8 +6,9 @@ Asserts:
      `uipath_langchain.retrievers` (the canonical import path the
      skill teaches across context-grounding examples and the
      LangGraph integration tools table) and references it.
-  2. The retriever is constructed with `index_name="company_docs"`
-     and `folder_path="Shared"`.
+  2. `index_name` and `folder_path` are used as keyword arguments with
+     values "company_docs" and "Shared" — accepted as inline literals
+     or constant variables.
   3. `bindings.json` declares the `index` resource for
      company_docs / Shared with the standard binding shape.
   4. No module-level UiPath* construction — both the retriever and
