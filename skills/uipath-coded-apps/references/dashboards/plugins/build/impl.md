@@ -23,7 +23,8 @@ Full pipeline: NLP prompt → plan approval → scaffold → widgets → validat
 ## Execution Rules — Non-negotiable
 
 1. **Never spawn subagents.** Do not use `TaskCreate`, `Agent`, or any dispatching tool. Every phase executes in this session.
-2. **Never read scaffold source files during Phase 7.** The template's `useInsights.ts`, `insights-client.ts`, `DashboardShell.tsx`, etc. are known — do not re-read them to understand their API.
+2. **Never read scaffold source files during Phase 7.** Their APIs are fully documented in this file — reading them wastes a round-trip.
+   **Explicitly forbidden (by filename):** `App.tsx`, `package.json`, `vite.config.ts`, `tsconfig.json`, any file under `src/dashboard/chrome/`, any file under `src/components/`, `useInsights.ts`, `insights-client.ts`, `useAuth.ts`.
 3. **Never read widget template files.** Use Widget Recipes from `insights-catalog.md` directly.
 
 ## Narration Rules — What Users See
@@ -81,14 +82,15 @@ ls .dashboard/state.json 2>/dev/null && echo "INCREMENTAL" || echo "FRESH"
 > **Rule:** Issue exactly ONE message containing all four Read tool calls at the same time,
 > with NO text output before they complete. Do not read them one at a time.
 
-Issue these four Read calls in a single parallel message now:
+Issue **EXACTLY** these four Read calls in a **SINGLE** message. All four in one tool-call block — do not send until all four are listed:
 
-| File | Purpose |
-|---|---|
-| `../../primitives/auth-context.md` | Auth resolution |
-| `../../primitives/build-plan.md` | Plan format + startTime constants |
-| `../../primitives/data-router.md` | SDK vs Insights routing |
-| `../../insights-catalog.md` | API catalog + **Widget Recipes** (used in Phase 7) |
+☐ 1. `../../primitives/auth-context.md`
+☐ 2. `../../primitives/build-plan.md`
+☐ 3. `../../primitives/data-router.md`
+☐ 4. `../../insights-catalog.md`
+
+**DO NOT send the message until all 4 paths are in the same tool-call block.**
+Missing even one causes a sequential read which wastes ~8s per file.
 
 ## Phase 2 — Preflight (1 Bash)
 ```bash
@@ -123,8 +125,10 @@ DASHBOARD_SLUG=$(node -e "
   console.log(t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-\$)/g,''));
 ")
 PROJECT_DIR="$(pwd)/${DASHBOARD_SLUG}"
-STATUS_FILE="/tmp/dashboard-prewarm-${DASHBOARD_SLUG}.status"
-DIR_FILE="/tmp/dashboard-prewarm-${DASHBOARD_SLUG}.dir"
+# Use project-relative paths — /tmp is not reliably shared between shells on Windows
+mkdir -p "${PROJECT_DIR}/.dashboard"
+STATUS_FILE="${PROJECT_DIR}/.dashboard/.prewarm-status"
+DIR_FILE="${PROJECT_DIR}/.dashboard/.prewarm-dir"
 
 # Background: copy scaffold + install deps (silent)
 (
@@ -173,8 +177,8 @@ DASHBOARD_SLUG=$(node -e "
   const t='<DASHBOARD_NAME>';
   console.log(t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-\$)/g,''));
 ")
-PROJECT_DIR="$(cat /tmp/dashboard-prewarm-${DASHBOARD_SLUG}.dir 2>/dev/null || echo "$(pwd)/${DASHBOARD_SLUG}")"
-STATUS_FILE="/tmp/dashboard-prewarm-${DASHBOARD_SLUG}.status"
+PROJECT_DIR="$(pwd)/${DASHBOARD_SLUG}"
+STATUS_FILE="${PROJECT_DIR}/.dashboard/.prewarm-status"
 
 # Read auth
 PAT=$(grep -m1 '^UIPATH_ACCESS_TOKEN=' ~/.uipath/.auth | cut -d'=' -f2-)
@@ -190,17 +194,18 @@ elif echo "$DATA_BASE_URL" | grep -q "staging"; then API_BASE_URL="https://stagi
 else API_BASE_URL="https://api.uipath.com"
 fi
 
-# Wait for pre-warm (should already be done — npm ci takes 16-25s, user takes 30-60s to approve)
-ATTEMPTS=0
-while [ ! -f "${STATUS_FILE}" ] && [ $ATTEMPTS -lt 6 ]; do
-  sleep 5
-  ATTEMPTS=$((ATTEMPTS+1))
-done
-
-# If pre-warm failed or timed out, run npm ci now (fallback)
-if [ "$(cat ${STATUS_FILE} 2>/dev/null)" != "0" ]; then
-  cd "${PROJECT_DIR}"
-  npm ci --prefer-offline 2>/dev/null || npm ci 2>/dev/null
+# Primary signal: node_modules/.package-lock.json exists when npm ci finishes successfully
+# This is more reliable than /tmp status files which fail across Windows shells
+if [ ! -f "${PROJECT_DIR}/node_modules/.package-lock.json" ]; then
+  # Pre-warm not done yet — wait up to 60s, then run synchronously if still not ready
+  WAITED=0
+  while [ ! -f "${PROJECT_DIR}/node_modules/.package-lock.json" ] && [ $WAITED -lt 12 ]; do
+    sleep 5
+    WAITED=$((WAITED+1))
+  done
+  if [ ! -f "${PROJECT_DIR}/node_modules/.package-lock.json" ]; then
+    cd "${PROJECT_DIR}" && npm ci --prefer-offline 2>/dev/null || npm ci 2>/dev/null
+  fi
 fi
 
 # Write env config
@@ -220,7 +225,6 @@ ROUTING_NAME=$(node -e "
   const suffix = Math.random().toString(36).slice(2, 6);
   console.log(name + '-' + suffix);
 ")
-rm -f "${STATUS_FILE}"
 ```
 
 No client ID, no scope, no OAuth setup required. The PAT comes from the active `uip login` session.
@@ -343,7 +347,17 @@ Response Unwrapping:
 
 ### Step 2 — Write all files via Bash (1–2 Bash calls)
 
-**For 1–5 widgets:** Write everything in one Node.js heredoc:
+**MANDATORY: Check widget count before choosing approach.**
+
+```bash
+# Count planned widgets (number of widget names in your Phase 7 list)
+WIDGET_COUNT=<N>  # substitute the actual count
+```
+
+- **If WIDGET_COUNT < 4** → Use the inline heredoc (safe for small content)
+- **If WIDGET_COUNT ≥ 4** → Go directly to temp-script path. **Never attempt inline heredoc.** TSX files with React + TypeScript content hit shell limits well below 6 widgets.
+
+**WIDGET_COUNT < 4 — inline heredoc:**
 
 ```bash
 node << 'NODESCRIPT'
@@ -366,14 +380,17 @@ console.log('✓ ' + Object.keys(files).length + ' files written');
 NODESCRIPT
 ```
 
-**For 6+ widgets:** The combined content may exceed shell limits. Write a temp script instead:
+**WIDGET_COUNT ≥ 4 — temp script (mandatory):**
 
 ```bash
 # Write temp script
-cat > <PROJECT_DIR>/write-widgets.mjs << 'SCRIPT'
+cat > $PROJECT_DIR/write-widgets.mjs << 'SCRIPT'
 import { writeFileSync, mkdirSync } from 'fs';
+import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-const P = '<PROJECT_DIR>';
+// Script lives at <PROJECT_DIR>/write-widgets.mjs — resolve parent directory
+// This handles POSIX vs Windows path differences automatically
+const P = dirname(fileURLToPath(import.meta.url));
 const files = {
   [`${P}/src/dashboard/Dashboard.tsx`]: `<full content>`,
   // ...all files...
@@ -386,7 +403,7 @@ console.log('✓ ' + Object.keys(files).length + ' files written');
 SCRIPT
 
 # Execute and delete
-node <PROJECT_DIR>/write-widgets.mjs && rm <PROJECT_DIR>/write-widgets.mjs
+node $PROJECT_DIR/write-widgets.mjs && rm $PROJECT_DIR/write-widgets.mjs
 ```
 
 > **Escaping in both approaches:** backtick → `` \` ``, `${` → `\${`
