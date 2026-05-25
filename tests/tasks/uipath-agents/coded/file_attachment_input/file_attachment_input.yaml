@@ -9,7 +9,17 @@ tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:framework-simple
 
 initial_prompt: |
   1. Create a 'test.txt' file at cwd with 'This is the file content' as content.
-  2. Build a UiPath coded agent named `attachment-agent` that accepts it as input and outputs its name and content. 
+  2. Build a UiPath coded agent named `attachment-agent` that accepts it as input and outputs its name and content.
+
+  Use the coded function shape with Pydantic models. In `main.py`, define
+  `class Input(BaseModel)` with an `attachment: Attachment` field imported
+  from `uipath.platform.attachments`. Do not use dataclasses for the Input
+  model: `uip codedagent init` must recognize the `Attachment` type and emit
+  `x-uipath-resource-kind: JobAttachment` in `entry-points.json`.
+
+  For local testing, branch on `UiPathConfig.job_key`; when it is `None`, read
+  bytes from the `UIPATH_LOCAL_ATTACHMENT` file path and pass a placeholder
+  attachment object to `uip codedagent run`.
   Then run it locally.
 
 success_criteria:
