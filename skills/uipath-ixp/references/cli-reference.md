@@ -24,6 +24,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 |---------|-------------|
 | `uip ixp documents list <project-name> [-l <limit>] [--offset <n>] --output json` | List documents — returns `[{ DocumentId, AttachmentRef }]`. Paginated: defaults to 50 items per page (max 10000). Pass `-l` for larger pages or `--offset` to skip ahead. |
 | `uip ixp documents download <project-name> <document-id> -o <path> --output json` | Download the original document file (PDF/PNG/JPG/etc.). The CLI auto-corrects the file extension to match the actual content; use the response `Path` field as the resolved location. |
+| `uip ixp documents upload <project-name> <file> --output json` | Upload a single document file (PDF/PNG/JPG/JPEG/GIF/TIF/TIFF/BMP) to an existing project. Returns `{ ProjectName, FileName, AttachmentRef, DocumentId }`. Use `AttachmentRef` with `suggest-taxonomy` or `import-taxonomy` workflows. For bulk uploads when creating a new project, prefer `projects create <name> <folder>`. |
 
 ## Labellings
 
