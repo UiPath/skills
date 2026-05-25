@@ -1,0 +1,86 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the orphan-process branch of the excel-activities/read-range-file-locked playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get (current) → jobs logs → jobs list (broader, surfaces the prior faulted run) → jobs get <prior-key> → triggers list (single trigger, no overlap) → workflow source inspection. Together with process/Main.xaml's ContinueOnError=True on the Excel scope, the prior faulted run pinpoints the orphan-process branch.",
+  "rules": [
+    {
+      "match": "or folders list-current-user --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --output json",
+      "file": "or-jobs-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
+      "file": "or-jobs-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --process-name \"ExcelDailyImport\" --output json",
+      "file": "or-jobs-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --process-name ExcelDailyImport --output json",
+      "file": "or-jobs-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or jobs get \"cc333333-4444-5555-6666-777788889999\" --output json",
+      "file": "or-jobs-get-cc333333-output-json.json"
+    },
+    {
+      "match": "or jobs get cc333333-4444-5555-6666-777788889999 --output json",
+      "file": "or-jobs-get-cc333333-output-json.json"
+    },
+    {
+      "match": "or jobs get \"dd444444-5555-6666-7777-888899990000\" --output json",
+      "file": "or-jobs-get-dd444444-output-json.json"
+    },
+    {
+      "match": "or jobs get dd444444-5555-6666-7777-888899990000 --output json",
+      "file": "or-jobs-get-dd444444-output-json.json"
+    },
+    {
+      "match": "or jobs history \"cc333333-4444-5555-6666-777788889999\" --output json",
+      "file": "or-jobs-history-cc333333-output-json.json"
+    },
+    {
+      "match": "or jobs history cc333333-4444-5555-6666-777788889999 --output json",
+      "file": "or-jobs-history-cc333333-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"cc333333-4444-5555-6666-777788889999\" --output json",
+      "file": "or-jobs-logs-cc333333-output-json.json"
+    },
+    {
+      "match": "or jobs logs cc333333-4444-5555-6666-777788889999 --output json",
+      "file": "or-jobs-logs-cc333333-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"dd444444-5555-6666-7777-888899990000\" --output json",
+      "file": "or-jobs-logs-dd444444-output-json.json"
+    },
+    {
+      "match": "or jobs logs dd444444-5555-6666-7777-888899990000 --output json",
+      "file": "or-jobs-logs-dd444444-output-json.json"
+    },
+    {
+      "match": "or triggers list --folder-key \"f0011111-2222-3333-4444-555566667777\" --output json",
+      "file": "or-triggers-list-folder-key-f0011111-output-json.json"
+    },
+    {
+      "match": "or triggers list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
+      "file": "or-triggers-list-folder-key-f0011111-output-json.json"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Read Range process with relative WorkbookPath that resolves against the Robot's per-package %LocalAppData% CWD instead of the user's data folder. Exercises the relative-path-wrong-CWD branch of the file-not-found playbook.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,127 @@
+task_id: skill-troubleshoot-excel-rr-sheet-typo
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (UiPath.Excel.BusinessException: The sheet with the name '<X>' does
+  not exist) where the configured SheetName is a typo of an existing
+  sheet. The workflow already enumerated the workbook's actual sheet
+  list via a prior Get Workbook Sheets activity (output present in
+  job logs). The agent must match the activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md
+  playbook, compare configured vs. actual sheet titles, identify the
+  typo branch, and recommend the typo fix.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, sheet-not-found, typo]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: The sheet with the name 'Datab' does not exist.`
+  Pinned job key: aa111111-7777-8888-9999-000011112222. The workbook
+  opens fine — it's only the sheet that's failing. I'm pretty sure
+  the sheet exists; what's wrong?
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-sheet-not-found playbook AND identified the typo branch by comparing configured 'Datab' against the actual sheet titles enumerated in job logs"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: The sheet with the name 'Datab'
+         does not exist.` Pinned job key:
+         aa111111-7777-8888-9999-000011112222. The workbook opens fine —
+         it's only the sheet that's failing. I'm pretty sure the sheet
+         exists; what's wrong?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md
+        because the runtime error
+          "UiPath.Excel.BusinessException: The sheet with the name '<X>'
+          does not exist."
+        is the verbatim sheet-resolution-failure signature of that playbook.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Configured `SheetName: "Datab"` in the Read Range activity is
+            a one-character typo of `Data`, an actual sheet in the
+            workbook.
+          - The workbook's actual sheet titles are `["Sheet1", "Data",
+            "Summary"]` — surfaced by the prior `Get Workbook Sheets`
+            activity that ran successfully in the same workflow and
+            logged the list before the failing `Read Range`.
+          - None of the workbook's actual sheets has a name resembling
+            `Datab` except `Data`, which differs by one trailing
+            character.
+
+        The reference fix:
+          - Update the configured `SheetName` from `"Datab"` to `"Data"`.
+          - For future-proofing, validate configured sheet names against
+            the `Get Workbook Sheets` output at job start (workflow
+            already does the enumeration — just add the validation).
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-sheet-not-found playbook AND
+             identified the typo (named both `Datab` and `Data` and
+             explained the one-char difference) using the Get Workbook
+             Sheets log evidence.
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified some kind of name mismatch but did not
+             clearly distinguish typo from other branches (case-mismatch,
+             etc.); OR identified the typo without surfacing the
+             actual-sheets evidence.
+        0.5  Only one dimension correct: e.g., matched the playbook
+             but never reached a specific branch, OR identified the
+             typo without matching the specific playbook.
+        0.2  Agent recognized SOME aspect (excel-activities domain,
+             sheet-name issue) but neither matched the playbook nor
+             reached the typo conclusion.
+        0.0  Reached the wrong branch (case-mismatch, rename, etc.)
+             without evidence, concluded a different root cause, got
+             blocked, or failed.
+
+      Be substance-focused. Penalize confident guessing without evidence.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
