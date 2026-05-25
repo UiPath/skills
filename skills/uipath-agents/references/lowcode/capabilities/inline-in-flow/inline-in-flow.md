@@ -160,7 +160,7 @@ All inline-agent resources — `tool`, `context`, `escalation`, `memory` — sha
 
 **Path:** `<FlowProjectDir>/<projectId>/resources/<RES_UUID>/resource.json`
 
-`<RES_UUID>` is a fresh UUID. It MUST match (a) the resource node's `model.source` in the flow and (b) the `id` field inside `resource.json`. The resource directory name is the UUID — never the human-readable resource name. Human-readable folder names are the standalone-agent convention; inline agents always use UUIDs.
+`<RES_UUID>` is a fresh UUID. It MUST match (a) the resource node's `inputs.source` in the flow and (b) the `id` field inside `resource.json`. The resource directory name is the UUID — never the human-readable resource name. Human-readable folder names are the standalone-agent convention; inline agents always use UUIDs.
 
 Resource body shape is identical to the standalone-agent docs — only the folder name differs:
 - Tools (`process` / `agent` / `api` / `processOrchestration`): [../process/process.md](../process/process.md) § Subtypes and § Tool resource.json Shape. Discovery is identical (`uip solution resource list` + `uip solution resource get`); subtype is selected by the `type` field.
@@ -222,7 +222,7 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 - `definitions[]` — The `uipath.agent.autonomous` definition copied from the flow registry supplies `model.serviceType: "Orchestrator.StartInlineAgentJob"`, BPMN type, version, and context. Do not copy those fields into the node instance.
 - No node instance `model` block — the inline-agent source lives at `inputs.source`.
 
-Resource nodes use the same minimal `model.source` pattern. The `type` follows the per-kind patterns in § Resource nodes below — `uipath.agent.resource.tool.{process|agent|api|processorchestration}.<release-key>`, where `<release-key>` is the resource's release-key GUID returned by `uip solution resource list`:
+Resource nodes use the same `inputs.source` pattern as the autonomous agent — no instance `model` block. The `type` follows the per-kind patterns in § Resource nodes below — `uipath.agent.resource.tool.{process|agent|api|processorchestration}.<release-key>`, where `<release-key>` is the resource's release-key GUID returned by `uip solution resource list`:
 
 ```jsonc
 {
@@ -230,12 +230,13 @@ Resource nodes use the same minimal `model.source` pattern. The `type` follows t
   "type": "uipath.agent.resource.tool.<kind>.<release-key>",
   "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "<ToolName>" },
-  "inputs": {},
-  "model": {
+  "inputs": {
     "source": "<RES_UUID>"
   }
 }
 ```
+
+The definition declares `model.source: true`; flow-core hoists that identity field onto the node instance as `inputs.source` (same hoisting rule as `uipath.agent.autonomous`). The same shape applies to `uipath.agent.resource.escalation` and `uipath.agent.resource.context.*` nodes.
 
 ### Handles
 
