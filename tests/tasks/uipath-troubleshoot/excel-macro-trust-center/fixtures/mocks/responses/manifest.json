@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Trust Center branch of the excel-activities/execute-macro-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (same 'Cannot run macro' COMException as branch 1) → jobs logs (VBA enumeration includes the configured macro 'Module1.ProcessData' — branch 1 RULED OUT) → workflow source. Combined with the user's 'works on dev machine' clue, the diagnosis is branch 5 (Trust Center on Robot host blocks macros). Agent must recommend host-side Trust Center inspection / Trusted Locations fix.",
+  "rules": [
+    {"match": "or folders list-current-user --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json", "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"},
+    {"match": "or jobs get \"cc333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-cc3333cc-output-json.json"},
+    {"match": "or jobs get cc333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-cc3333cc-output-json.json"},
+    {"match": "or jobs history \"cc333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-cc3333cc-output-json.json"},
+    {"match": "or jobs history cc333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-cc3333cc-output-json.json"},
+    {"match": "or jobs logs \"cc333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-cc3333cc-output-json.json"},
+    {"match": "or jobs logs cc333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-cc3333cc-output-json.json"}
+  ]
+}
