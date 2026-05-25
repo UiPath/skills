@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-apps
-description: "Always invoke for `app.config.json` or `action-schema.json` files. UiPath Coded Web Apps & Coded Action Apps via `uip codedapp` and `@uipath/uipath-typescript` SDK. Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
+description: "UiPath Coded Web Apps, Action Apps (app.config.json, action-schema.json), and admin dashboards. Build and deploy apps via uip codedapp + TS SDK. Generate analytics/KPI/observability dashboards from NLP using Insights RTM API. For .cs/XAML→uipath-rpa, Python→uipath-agents, .flow→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -47,6 +47,22 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 15. **Tables of dynamic data must paginate, not dump all rows in one scroll.** Page size 25–50 with next/prev/page-number controls and a "Showing X–Y of Z" summary. Top-N + "see all" is acceptable for explicitly summary panels (e.g., "Top 10 oldest"). Infinite-scroll-of-N-rows is unusable for operational dashboards. Applies to any table backed by any service (DF entities, Tasks, Jobs, Conversations, Process Instances, etc.). See [patterns.md](references/patterns.md) "Tabular Data".
 16. **When adding any new SDK method call, verify `VITE_UIPATH_SCOPE` already includes the required scope.** Write operations, action methods (`Jobs.stop`, `Tasks.complete`, `ProcessInstances.cancel`, etc.), or first use of a new service typically need broader scopes than read-only flows. Mismatched scopes fail silently with `401` / `403` on the first call. See [oauth-scopes.md](references/oauth-scopes.md) for the per-method scope table.
 
+## Disambiguation — Apps vs Dashboards
+
+**Route directly to Apps workflow** (sections below) when you see:
+`web app`, `action app`, `codedapp`, `app.config.json`, `action-schema.json`,
+`scaffold app`, `deploy app`, `pack`, `publish`, `push`, `pull`, `debug app`
+
+**Route directly to [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) when you see:**
+`dashboard`, `analytics`, `KPI`, `metrics`, `Insights`, `observability`,
+`admin console`, `report`, `chart`, `trend`, `governance report`, `agent metrics`
+
+**When intent is ambiguous** — render this verbatim, wait for digit `1` or `2` only:
+
+> Which fits your goal?
+> 1. **Build or modify a Web App or Action App** — scaffold a UI, form, or app that deploys to Automation Cloud
+> 2. **Generate a dashboard** — analytics or admin view from a natural-language description
+
 ## Task Navigation
 
 | I want to... | Read this |
@@ -67,6 +83,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **SDK: Agent Feedback** | [references/sdk/feedback.md](references/sdk/feedback.md) |
 | **SDK: Pagination** | [references/sdk/pagination.md](references/sdk/pagination.md) |
 | **UI Patterns (polling, BPMN, HITL, text overflow, table pagination)** | [references/patterns.md](references/patterns.md) |
+| **Generate an admin dashboard from NLP** | [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) |
 
 ## CLI Setup
 
