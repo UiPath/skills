@@ -3,7 +3,17 @@
 Full pipeline: NLP prompt → plan approval → scaffold → widgets → validate → preview.
 
 ## Tool-Use Budget
-≤ 14 tool calls for a 6-widget dashboard. Never exceed 20 total.
+≤ 10 tool calls for a 6-widget dashboard. Never exceed 15 total.
+
+| Phase | Calls | How |
+|---|---|---|
+| 1 Boot | 1 block | 4 reads issued simultaneously |
+| 2 Preflight | 1 Bash | `uip login status` |
+| 3–5 Derive + Plan + Approve | 0 | In-context, no tools |
+| 6 Scaffold | 1 Bash | cp + .env.local + npm ci combined |
+| 7 Widgets | 1 block | N Write calls in parallel (no template reads) |
+| 8 Validate | 1 Bash | `tsc --noEmit` |
+| **Total** | **≤ 6 blocks** | |
 
 ## Narration Rules — What Users See
 
@@ -26,12 +36,23 @@ This skill serves end users, not developers. Never show npm output, TypeScript e
 
 **Never say:** "Writing widget files", "Running tsc --noEmit", "Phase 6", "scaffold", "package.json", "useInsights", or any other implementation detail.
 
-## Phase 1 — Boot (1 tool-use block)
-Read ALL the following in a single parallel message:
-- `../../primitives/auth-context.md`
-- `../../primitives/build-plan.md`
-- `../../primitives/data-router.md`
-- `../../insights-catalog.md`
+## Phase 1 — Boot (**MANDATORY: one parallel block, all 4 reads simultaneously**)
+
+> **This is the single biggest performance lever in the pipeline.**
+> Reading files sequentially costs ~8s per file in API round-trips (32s+ total).
+> Issuing all 4 in one parallel block costs ~5s total — a 6× speedup.
+>
+> **Rule:** Issue exactly ONE message containing all four Read tool calls at the same time,
+> with NO text output before they complete. Do not read them one at a time.
+
+Issue these four Read calls in a single parallel message now:
+
+| File | Purpose |
+|---|---|
+| `../../primitives/auth-context.md` | Auth resolution |
+| `../../primitives/build-plan.md` | Plan format + startTime constants |
+| `../../primitives/data-router.md` | SDK vs Insights routing |
+| `../../insights-catalog.md` | API catalog + **Widget Recipes** (used in Phase 7) |
 
 ## Phase 2 — Preflight (1 Bash)
 ```bash
@@ -107,19 +128,22 @@ No client ID, no scope, no OAuth setup required. The PAT comes from the active `
 
 > **SKILL_BASE_DIR:** Check your system context for "Base directory for this skill" — it shows the exact path where skill assets are installed. Use that as `SKILL_BASE_DIR`. On a fresh Claude Code session this is always available.
 
-## Phase 7 — Widget Generation (1 parallel Write block)
-Read the appropriate widget template files from `../../assets/templates/dashboard/widgets/`.
-For each widget in the approved plan, write one file to `<PROJECT_DIR>/src/widgets/`:
-- Fill `<COMPONENT_NAME>` → PascalCase name (e.g. `AgentSuccessRate`)
-- Fill `<DATA_HOOK>` → `useInsights<ResponseType>('namespace.method', { startTime })` — include a TypeScript interface for the response shape
-- Fill `<TITLE>` → human label from the plan
-- Fill `<DATA_SELECTOR>` → expression to extract the array from the raw response (see below)
-- Fill `<X_KEY>` / `<Y_KEY>` / `<VALUE_EXPRESSION>` / `<COLUMNS>` → field names from `insights-catalog.md` Key response fields
+## Phase 7 — Widget Generation (1 parallel Write block, **zero template reads**)
 
-### Response Unwrapping — All Insights responses are wrapped objects
-Every Insights endpoint returns a nested object, not a flat array. Use the Key response fields from `insights-catalog.md` to find the correct extraction path:
+> **Do NOT read widget template files from `assets/templates/dashboard/widgets/`.**
+> The Widget Recipes in `insights-catalog.md` (already loaded in Phase 1) contain
+> copy-paste-ready widget code with typed `useInsights` calls, response interfaces,
+> and extraction patterns. Use those directly — reading templates adds 6–8 sequential
+> file reads (~20-30s) for no benefit.
 
-| Pattern | DATA_SELECTOR example |
+For each widget in the approved plan:
+1. Find the matching recipe in `insights-catalog.md` → "Widget Recipes" section
+2. If no exact recipe matches, pick the closest one and adapt the endpoint + title
+3. Write the complete widget file directly — copy the recipe block, set `<COMPONENT_NAME>` and `<TITLE>`
+
+If a metric has no matching recipe, use the Response Unwrapping table below:
+
+| Pattern | Extraction |
 |---|---|
 | `data[].{field}` (most timelines) | `(data as any)?.data ?? []` |
 | `{ data: { agents[] } }` (getAgents) | `(data as any)?.data?.agents ?? []` |
@@ -127,7 +151,7 @@ Every Insights endpoint returns a nested object, not a flat array. Use the Key r
 | `{ data: { errorCount, escalationCount } }` (incidentDistribution) | `Object.entries((data as any)?.data ?? {}).map(([name,value]) => ({name,value}))` |
 | KPI from `currentPeriodSummary` | `String((data as any)?.data?.currentPeriodSummary?.successRate?.toFixed(1) + '%' ?? '—')` |
 
-Write ALL widget files in a single message with parallel Write calls.
+Write ALL widget files in a single parallel message (one Write call per widget file).
 Also write `<PROJECT_DIR>/src/widgets/index.ts` exporting all components.
 Update `<PROJECT_DIR>/src/App.tsx` to import widgets and pass them as children to `<DashboardShell>`.
 
