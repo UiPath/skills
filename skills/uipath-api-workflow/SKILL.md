@@ -31,7 +31,7 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
 
 1. **Know before you write.** Read the existing workflow file before editing. Read an example template before creating from scratch.
 2. **Start minimal, iterate to correct.** Add one activity at a time. Run with `--no-auth --output json` after each addition. Fix what breaks. Repeat.
-3. **Validate by running.** There is no `uip api-workflow validate` command — local execution is the only validator. The executor fails fast on malformed JSON, unknown activity types, or missing required fields.
+3. **Validate before running.** `uip api-workflow validate <Workflow.json>` is the closure step for every authoring session. It performs static checks (JSON Schema + semantic) without touching the network — catching malformed JSON, unknown `activityType` values, missing per-activity required keys (e.g. `If` without `do`+`switch`, `Assign` without `set`, `Connector` without `metadata.configuration`/`essentialConfiguration`), bad `evaluate.language`/`evaluate.mode`, and duplicate/empty workflow variables. Use it as a fast pre-flight; `uip api-workflow run` is the runtime validator that catches what static analysis can't (live HTTP calls, expression evaluation, connection state).
 4. **Fix errors by category.** Triage: Structure > Expression > Activity Config > Logic. Higher-category fixes often resolve lower-category errors automatically.
 
 ## Critical Rules
@@ -84,7 +84,15 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
 17. **Pass input as a JSON string.** `--input-arguments '{"key":"value"}'`. Invalid JSON exits 1.
 18. **Always `--output json`** when parsing CLI output programmatically. Success → `{ "Result": "Success", "Code": "WorkflowRun", "Data": {...} }`. Failure → `{ "Result": "Failure", "Message": "...", "Instructions": "..." }` with exit 1.
 19. **Build & publish goes through the solution packager.** API workflows pack via `uip solution pack <solutionDir> <outputDir>` and publish via `uip solution publish <package.zip>`. There is no `uip api-workflow build` or `uip api-workflow publish` command. Project type must be `"Api"` in the solution `.uipx`.
-20. **Never run `uip api-workflow run` without an explicit user "yes."** Authoring and editing the JSON happens autonomously; *running* it does not. Before each validation invocation, ask the user: (a) run validation now or skip, (b) if running, with `--no-auth` (fast, structure-only — IntSvc kind vendor calls fail) or with auth (real Integration Service calls — vendor side effects WILL happen: emails sent, tickets created, files uploaded). Suggest a default based on workflow content (`--no-auth` for control-flow-only + Http kind `ImplicitConnection`; with-auth for any IntSvc kind vendor activity), but wait for the user's answer. Never invoke `uip api-workflow run` with auth on speculation — once a vendor call goes out, it can't be unsent.
+20. **`uip api-workflow validate <Workflow.json>` is the autonomous closure step for every authoring or edit cycle.** Run it as the LAST command before asking the user anything about runtime. It's offline (no auth, no network, no side effects): JSON Schema + semantic checks on the static file. Output codes:
+    - `Result: "Success"`, `Code: "ApiwfValidate"`, `Data.Status: "Valid"` (exit 0) — possibly with `Data.Warnings`. Proceed to rule 21 (ask the user whether to run).
+    - `Result: "Failure"` (exit 1) — do NOT bother the user. Read `Instructions`, locate the offending activity by its JSON path (e.g. `/do/0/Sequence_1/do/2/Mystery_1/metadata/activityType`), edit `Workflow.json` to fix it, then re-validate. Loop until pass.
+
+    **Reading the error list.** AJV schema errors from `oneOf` branches produce duplicate "Missing required property" noise (each unmatched variant lists all its required fields). Focus on the **semantic-tail errors** — the ones with prose messages like `Unknown activityType 'X'`, `must contain a 'do' with inner 'switch'`, `is missing 'metadata.configuration'`, `Variable must have a non-empty 'type'`. Those uniquely identify the root cause. Fix one root cause, re-validate, repeat — don't chase the schema-level fanout one by one.
+
+    **What validate catches:** malformed JSON; unknown `activityType` values (see VALID_ACTIVITY_TYPES list in the validate source); per-activity required keys (If → `do` + inner `switch`, Sequence → `do`, Assign → `set`, ForEach → `for` + `do`, DoWhile → `for` + `doWhile`, Connector → `call` + `metadata.configuration` + `essentialConfiguration`, Response → `response`, etc.); missing `metadata.activityType`/`displayName` (warnings); bad `evaluate.language`/`evaluate.mode`; duplicate or empty-named workflow variables; empty task lists. **What it does NOT catch:** wrong `selectedResourceId`, broken connector connection IDs, runtime expression errors (`ReferenceError: x is not defined`), unwrapped string literals (rule 5), multi-key `Assign.set` (rule 6) — those still need runtime validation via `uip api-workflow run` once the user consents.
+
+21. **Never run `uip api-workflow run` without an explicit user "yes."** Validation (rule 20) is autonomous; *running* is not. Once validate passes, ask the user: (a) run now or skip, (b) if running, with `--no-auth` (fast, structure-only — IntSvc kind vendor calls fail) or with auth (real Integration Service calls — vendor side effects WILL happen: emails sent, tickets created, files uploaded). Suggest a default based on workflow content (`--no-auth` for control-flow-only + Http kind `ImplicitConnection`; with-auth for any IntSvc kind vendor activity), but wait for the user's answer. Never invoke `uip api-workflow run` with auth on speculation — once a vendor call goes out, it can't be unsent.
 
 ## Workflow Phases
 
@@ -152,9 +160,18 @@ Workflow skeleton:
 }
 ```
 
-### Phase 3: Validate by Running
+### Phase 3: Validate (static) then Run (with consent)
 
-After authoring or editing, **ask the user before running anything** (see Critical Rule 20). The choice has real consequences:
+After authoring or editing, **always validate first, autonomously** (Critical Rule 20):
+
+```bash
+uip api-workflow validate ./my-workflow.json --output json
+```
+
+- **Validate passes** (`Result: "Success"`, `Data.Status: "Valid"`) — the activity tree is structurally sound. Proceed to the run-confirmation step below.
+- **Validate fails** (`Result: "Failure"`, exit 1) — do NOT bother the user. Read the `Instructions` field, locate the offending activity by its JSON path, fix Workflow.json, re-validate. Loop until pass. Focus on the **semantic-tail errors** (prose messages like "Unknown activityType", "must contain a 'do' with inner 'switch'") — schema-level `oneOf` errors are noisy fanout; one semantic fix usually clears a dozen schema errors at once.
+
+Once validate is green, **ask the user before running anything** (Critical Rule 21). The choice has real consequences:
 
 | Mode | Flag | What happens | Use when |
 |--|--|--|--|
@@ -163,8 +180,8 @@ After authoring or editing, **ask the user before running anything** (see Critic
 
 Phrase the question explicitly, with a recommended default. Examples:
 
-- Control-flow workflow: "Workflow's ready. Validate with `--no-auth`? (Y/n)"
-- IntSvc kind workflow: "Workflow's ready. It contains a IntSvc kind Outlook send-mail-v2 call — running with auth WILL send a real email to `<recipient>`. Options: (1) skip validation, (2) run `--no-auth` (will fail at the connector call but confirms structure), (3) run with auth and send the email. Which?"
+- Control-flow workflow: "Validate passed. Run with `--no-auth` to exercise the activity tree? (Y/n)"
+- IntSvc kind workflow: "Validate passed. The workflow contains a IntSvc kind Outlook send-mail-v2 call — running with auth WILL send a real email to `<recipient>`. Options: (1) skip run, (2) run `--no-auth` (fails at the connector call but exercises everything before it), (3) run with auth and send the email. Which?"
 
 Wait for the user's reply. Then run the chosen command:
 
@@ -223,10 +240,11 @@ cp ./.claude/plugins/uipath/skills/uipath-api-workflow/assets/templates/api-work
 
 # 2. Edit main.json to add user activities after WorkflowStart inside the root sequence
 
-# 3. Smoke test
-uip api-workflow run ./MyApiProject/main.json --no-auth --output json
+# 3. Validate (offline, autonomous — fix + re-validate until Status: Valid)
+uip api-workflow validate ./MyApiProject/main.json --output json
 
-# 4. Iterate — fix, re-run, repeat until exit 0
+# 4. Ask the user, then run (only on user "yes")
+uip api-workflow run ./MyApiProject/main.json --no-auth --output json
 
 # 5. Package
 uip solution pack ./MySolution ./build --name MyApiSolution --version 1.0.0 --output json
