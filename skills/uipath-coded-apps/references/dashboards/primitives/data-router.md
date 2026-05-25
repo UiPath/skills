@@ -60,10 +60,13 @@ import { Jobs } from '@uipath/uipath-typescript/jobs';
 
 ## Insights Hook Pattern
 ```typescript
-import { useInsights } from '../hooks/useInsights';
-// Key is namespace.method
+import { useInsights } from '@/hooks/useInsights';
+// Both startTime AND endTime are required — omitting endTime causes 500 errors
+const NOW            = new Date().toISOString()
+const SEVEN_DAYS_AGO = new Date(Date.now() - 604_800_000).toISOString()
+
 const { data, loading, error } = useInsights(
   'agents.getSummaryV2',
-  { startTime: '2025-01-01T00:00:00Z' }
+  { startTime: SEVEN_DAYS_AGO, endTime: NOW }
 );
 ```

@@ -52,14 +52,23 @@ Say **"go ahead"** to build, or try:
 - Rejection without edit → ask: "What would you like to change?"
 - Never re-show the full plan after partial edits — show diffs only
 
-## Standard startTime Constants
-Use these when writing widget code — do not compute date arithmetic inline:
+## Standard Time Constants
+**Both `startTime` AND `endTime` are required for all Insights API calls — omitting `endTime` causes 500 errors.**
+
+Use these constants — do not compute date arithmetic inline:
 ```typescript
+const NOW             = new Date().toISOString()                            // always required as endTime
 const ONE_DAY_AGO     = new Date(Date.now() -    86_400_000).toISOString() // 24 hours
 const SEVEN_DAYS_AGO  = new Date(Date.now() -   604_800_000).toISOString() // 7 days
 const THIRTY_DAYS_AGO = new Date(Date.now() - 2_592_000_000).toISOString() // 30 days
 const NINETY_DAYS_AGO = new Date(Date.now() - 7_776_000_000).toISOString() // 90 days
 ```
+
+Every `useInsights` call must pass both:
+```typescript
+useInsights('agents.getErrors', { startTime: SEVEN_DAYS_AGO, endTime: NOW })
+```
+
 In the plan, map time frames to natural language: ONE_DAY_AGO → "today" or "24h",
 SEVEN_DAYS_AGO → "last 7 days", THIRTY_DAYS_AGO → "last 30 days".
 

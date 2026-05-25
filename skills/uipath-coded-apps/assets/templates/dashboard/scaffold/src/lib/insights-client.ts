@@ -1,7 +1,7 @@
 export interface InsightsParams {
   tenantId: string
-  startTime?: string
-  endTime?: string
+  startTime: string  // required — omitting causes 500 errors
+  endTime: string    // required — omitting causes 500 errors, use new Date().toISOString()
   limit?: number
   [key: string]: unknown
 }

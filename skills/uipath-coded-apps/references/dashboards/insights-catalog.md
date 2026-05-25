@@ -6,7 +6,8 @@ Environment values for VITE_UIPATH_BASE_URL:
   alpha:   https://alpha.api.uipath.com
   staging: https://staging.api.uipath.com
   prod:    https://api.uipath.com
-All calls: POST JSON body. All require `tenantId` (UUID). Add `startTime`/`endTime` (ISO 8601) per endpoint.
+All calls: POST JSON body. All require `tenantId` (UUID), `startTime` (ISO 8601), AND `endTime` (ISO 8601).
+**Omitting `endTime` causes 500 errors.** Always pass `endTime: NOW` alongside any `startTime`.
 
 ---
 
@@ -91,7 +92,7 @@ Pre-written patterns for the 10 most common widgets. For each widget in the appr
 **Template:** `line-chart.tsx`
 ```tsx
 const { data, loading, error } = useInsights<{ data: Array<{ name: string; value: number; date: string }> }>(
-  'agents.getErrors', { startTime: SEVEN_DAYS_AGO }
+  'agents.getErrors', { startTime: SEVEN_DAYS_AGO, endTime: NOW }
 )
 const chartData = (data as any)?.data ?? []
 // X_KEY: "date"   Y_KEY: "value"
@@ -105,7 +106,7 @@ const chartData = (data as any)?.data ?? []
 **Template:** `area-chart.tsx`
 ```tsx
 const { data, loading, error } = useInsights<{ data: Array<{ timeSlice: string; aguConsumption: number }> }>(
-  'agents.getConsumptionTimeline', { startTime: ONE_DAY_AGO }
+  'agents.getConsumptionTimeline', { startTime: ONE_DAY_AGO, endTime: NOW }
 )
 const chartData = (data as any)?.data ?? []
 // X_KEY: "timeSlice"   Y_KEY: "aguConsumption"
@@ -119,7 +120,7 @@ const chartData = (data as any)?.data ?? []
 **Template:** `kpi-card.tsx`
 ```tsx
 const { data, loading, error } = useInsights<{ data: { agents: Array<{ agentId: string }> } }>(
-  'agents.getAgents', { startTime: THIRTY_DAYS_AGO }
+  'agents.getAgents', { startTime: THIRTY_DAYS_AGO, endTime: NOW }
 )
 const value = String((data as any)?.data?.agents?.length ?? '—')
 // TITLE: "Active Agents"
@@ -133,7 +134,7 @@ const value = String((data as any)?.data?.agents?.length ?? '—')
 ```tsx
 const { data, loading, error } = useInsights<{
   data: { currentPeriodSummary: { successRate: number; totalJobs: number; averageDurationSeconds: number } }
-}>('agents.getSummaryV2', { startTime: THIRTY_DAYS_AGO })
+}>('agents.getSummaryV2', { startTime: THIRTY_DAYS_AGO, endTime: NOW })
 const value = (() => {
   const s = (data as any)?.data?.currentPeriodSummary
   return s ? `${s.successRate.toFixed(1)}%` : '—'
@@ -149,7 +150,7 @@ const value = (() => {
 ```tsx
 const { data, loading, error } = useInsights<{
   data: { currentPeriodSummary: { averageDurationSeconds: number } }
-}>('agents.getSummaryV2', { startTime: THIRTY_DAYS_AGO })
+}>('agents.getSummaryV2', { startTime: THIRTY_DAYS_AGO, endTime: NOW })
 const value = (() => {
   const secs = (data as any)?.data?.currentPeriodSummary?.averageDurationSeconds
   return secs != null ? `${(secs / 60).toFixed(1)}m` : '—'
@@ -165,7 +166,7 @@ const value = (() => {
 ```tsx
 const { data, loading, error } = useInsights<{
   totalErrors: number; data: Array<{ name: string; count: number }>
-}>('agents.getTopErroredAgents', { startTime: SEVEN_DAYS_AGO })
+}>('agents.getTopErroredAgents', { startTime: SEVEN_DAYS_AGO, endTime: NOW })
 const chartData = (data as any)?.data ?? []
 // X_KEY: "name"   Y_KEY: "count"
 ```
@@ -178,7 +179,7 @@ const chartData = (data as any)?.data ?? []
 ```tsx
 const { data, loading, error } = useInsights<{
   data: Array<{ name: 'P50' | 'P95'; value: number; date: string }>
-}>('agents.getLatencyTimeline', { startTime: SEVEN_DAYS_AGO })
+}>('agents.getLatencyTimeline', { startTime: SEVEN_DAYS_AGO, endTime: NOW })
 const chartData = (data as any)?.data?.filter((d: { name: string }) => d.name === 'P95') ?? []
 // X_KEY: "date"   Y_KEY: "value"
 // To show both P50 and P95: remove the filter and add a second <Line dataKey="value" />
@@ -193,7 +194,7 @@ const chartData = (data as any)?.data?.filter((d: { name: string }) => d.name ==
 ```tsx
 const { data, loading, error } = useInsights<{
   data: { errorCount: number; escalationCount: number; policyCount: number }
-}>('agents.getIncidentDistribution', { startTime: THIRTY_DAYS_AGO })
+}>('agents.getIncidentDistribution', { startTime: THIRTY_DAYS_AGO, endTime: NOW })
 const chartData = [
   { name: 'Errors',      value: (data as any)?.data?.errorCount      ?? 0 },
   { name: 'Escalations', value: (data as any)?.data?.escalationCount  ?? 0 },
@@ -210,7 +211,7 @@ const chartData = [
 ```tsx
 const { data, loading, error } = useInsights<{
   data: { agents: Array<{ agentName: string; healthScore: number; unitsQuantity: number; lastRun: string }> }
-}>('agents.getAgents', { startTime: THIRTY_DAYS_AGO })
+}>('agents.getAgents', { startTime: THIRTY_DAYS_AGO, endTime: NOW })
 const rows = [...((data as any)?.data?.agents ?? [])].sort((a, b) => b.unitsQuantity - a.unitsQuantity)
 // COLUMNS: [
 //   { key: 'agentName',    label: 'Agent' },
@@ -228,7 +229,7 @@ const rows = [...((data as any)?.data?.agents ?? [])].sort((a, b) => b.unitsQuan
 ```tsx
 const { data, loading, error } = useInsights<{
   data: { agents: Array<{ agentName: string; consumedQuantity: number }> }
-}>('agents.getConsumption', { startTime: THIRTY_DAYS_AGO })
+}>('agents.getConsumption', { startTime: THIRTY_DAYS_AGO, endTime: NOW })
 const chartData = (data as any)?.data?.agents ?? []
 // X_KEY: "agentName"   Y_KEY: "consumedQuantity"
 ```
@@ -240,7 +241,7 @@ const chartData = (data as any)?.data?.agents ?? []
 **Template:** `area-chart.tsx`
 ```tsx
 const { data, loading, error } = useInsights<{ data: Array<{ date: string; count: number }> }>(
-  'jobs.getCompletedTimeline', { startTime: SEVEN_DAYS_AGO }
+  'jobs.getCompletedTimeline', { startTime: SEVEN_DAYS_AGO, endTime: NOW }
 )
 const chartData = (data as any)?.data ?? []
 // X_KEY: "date"   Y_KEY: "count"
@@ -255,7 +256,7 @@ const chartData = (data as any)?.data ?? []
 ```tsx
 const { data, loading, error } = useInsights<{
   data: Array<{ timeSlice: string; inMemoryCount: number; totalCount: number }>
-}>('traceview.getMemoryTimeline', { startTime: SEVEN_DAYS_AGO })
+}>('traceview.getMemoryTimeline', { startTime: SEVEN_DAYS_AGO, endTime: NOW })
 const chartData = (data as any)?.data ?? []
 // X_KEY: "timeSlice"   Y_KEY: "inMemoryCount"
 ```
@@ -267,7 +268,7 @@ const chartData = (data as any)?.data ?? []
 **Template:** `multi-line-chart.tsx`
 ```tsx
 const { data, loading, error } = useInsights<{ data: Array<{ name: 'P50' | 'P95'; value: number; date: string }> }>(
-  'agents.getLatencyTimeline', { startTime: SEVEN_DAYS_AGO }
+  'agents.getLatencyTimeline', { startTime: SEVEN_DAYS_AGO, endTime: NOW }
 )
 const rawData = (data as any)?.data ?? []
 const chartData = rawData.reduce((acc: Record<string, unknown>[], row: { name: string; value: number; date: string }) => {
@@ -287,7 +288,7 @@ const chartData = rawData.reduce((acc: Record<string, unknown>[], row: { name: s
 **Template:** `kpi-with-sparkline.tsx`
 ```tsx
 const { data, loading, error } = useInsights<{ data: Array<{ name: string; value: number; date: string }> }>(
-  'agents.getErrors', { startTime: SEVEN_DAYS_AGO }
+  'agents.getErrors', { startTime: SEVEN_DAYS_AGO, endTime: NOW }
 )
 const allRows = (data as any)?.data ?? []
 // Aggregate total errors per day across all agents
@@ -310,7 +311,7 @@ const latestValue = sparklineData.length > 0 ? String(sparklineData[sparklineDat
 **Template:** `ranked-table.tsx`
 ```tsx
 const { data, loading, error } = useInsights<{ data: Array<{ agentName: string; count: number }> }>(
-  'agents.getTopErroredAgents', { startTime: SEVEN_DAYS_AGO }
+  'agents.getTopErroredAgents', { startTime: SEVEN_DAYS_AGO, endTime: NOW }
 )
 const rows = [...((data as any)?.data ?? [])].sort((a, b) => b.count - a.count)
 // COLUMNS: [{ key: 'agentName', label: 'Agent' }, { key: 'count', label: 'Errors', numeric: true }]
@@ -325,7 +326,7 @@ const rows = [...((data as any)?.data ?? [])].sort((a, b) => b.count - a.count)
 ```tsx
 const { data, loading, error } = useInsights<{
   data: { errorCount: number; escalationCount: number; policyCount: number }
-}>('agents.getIncidentDistribution', { startTime: THIRTY_DAYS_AGO })
+}>('agents.getIncidentDistribution', { startTime: THIRTY_DAYS_AGO, endTime: NOW })
 const items = [
   { label: 'Errors',      value: (data as any)?.data?.errorCount ?? 0 },
   { label: 'Escalations', value: (data as any)?.data?.escalationCount ?? 0 },

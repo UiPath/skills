@@ -12,8 +12,8 @@ No widget files, no hook call sites change on migration.
 
 export interface InsightsParams {
   tenantId: string;        // UUID from VITE_INSIGHTS_TENANT_ID — never the tenant name string
-  startTime?: string;      // ISO 8601, e.g. "2025-01-01T00:00:00Z"
-  endTime?: string;        // ISO 8601
+  startTime: string;       // ISO 8601 — required, use startTime constants from build-plan.md, e.g. "2025-01-01T00:00:00Z"
+  endTime: string;         // ISO 8601 — required, always pass endTime: NOW
   limit?: number;
   [key: string]: unknown;
 }

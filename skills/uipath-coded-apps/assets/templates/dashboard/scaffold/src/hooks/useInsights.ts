@@ -44,7 +44,7 @@ export function useInsights<T>(
       'agents' | 'traceview' | 'governance' | 'jobs',
       string
     ]
-    const fullParams: InsightsParams = { ...params, tenantId }
+    const fullParams = { ...params, tenantId } as InsightsParams
     const call = (client[ns] as Record<string, (p: InsightsParams) => Promise<T>>)[method]
 
     call(fullParams)
