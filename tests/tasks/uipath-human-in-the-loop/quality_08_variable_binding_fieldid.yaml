@@ -33,8 +33,7 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Script (log) → End
 
-  Use the inline quickform node (uipath.human-in-the-loop).
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command
@@ -79,10 +78,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Script does NOT reference .output.legalApproval or .output.legalNotes (variable names, not field IDs)"
-    command: "grep -L legalApproval ContractReview/ContractReview/ContractReview.flow"
+    description: "Script does NOT reference output by variable name (.output.legalApproval or .output.legalNotes)"
+    command: "grep -cE '\\.output\\.(legalApproval|legalNotes)' ContractReview/ContractReview/ContractReview.flow"
     timeout: 10
-    expected_exit_code: 0
+    expected_exit_code: 1
     weight: 2.5
     pass_threshold: 1.0
 

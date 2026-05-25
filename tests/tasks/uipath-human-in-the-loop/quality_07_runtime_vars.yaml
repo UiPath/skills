@@ -10,6 +10,7 @@ agent:
 
 run_limits:
   max_turns: 50
+  turn_timeout: 600
 
 initial_prompt: |
   Create a flow called "ReviewAndRoute" with:
@@ -36,7 +37,15 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate ReviewAndRoute/ReviewAndRoute/ReviewAndRoute.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: file_matches_regex

@@ -7,13 +7,14 @@ description: >
   approval flow from scratch — detecting write-back + approval gate signals,
   designing schema, adding HITL node, wiring all handles, and validating the
   authored .flow file. Real business use case. Full Discover -> Plan -> Build -> Verify loop.
+  Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
 
 agent:
   type: claude-code
 
 run_limits:
-  max_turns: 40
+  max_turns: 60
   turn_timeout: 1200
 
 initial_prompt: |

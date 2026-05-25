@@ -10,6 +10,7 @@ agent:
 
 run_limits:
   max_turns: 50
+  turn_timeout: 600
 
 initial_prompt: |
   Create a flow called "PurchaseOrderApproval" with the following structure:
@@ -18,9 +19,8 @@ initial_prompt: |
   - A script node that reads the human's decision after the HITL step
     (id: "processResult", label: "Process Result")
 
-  Wire the completed handle from the HITL node to processResult. In the
-  processResult script node body, show how to read the human's decision using
-  $vars.<hitl-node-id>.output.
+  Wire the output of the human approval step to processResult. In the
+  processResult script body, log the reviewer's decision.
 
   Validate after adding and wiring.
 
@@ -46,6 +46,14 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate PurchaseOrderApproval/PurchaseOrderApproval/PurchaseOrderApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
