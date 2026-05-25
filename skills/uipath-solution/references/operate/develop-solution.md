@@ -213,7 +213,7 @@ Upload the solution for browser-based editing. Accepts a directory, `.uipx` file
 uip solution upload ./InvoiceAutomation --output json
 ```
 
-If the `SolutionId` in `.uipx` matches an existing Studio Web solution, the upload overwrites it.
+If the `SolutionId` in `.uipx` matches an existing Studio Web solution, the upload is **refused** unless `--force` is passed. Forcing replaces the cloud project in place and wipes its Studio Web version history. On a freshly `solution init`-ed project (or any `.uipx` whose `SolutionId` does not yet exist in the cloud) the upload imports as new with no flag. See [`upload` refuses to overwrite without `--force`](#upload-refuses-to-overwrite-without---force) for the recovery path.
 
 ## Step 10: Delete from Studio Web
 
@@ -334,9 +334,15 @@ Refresh reads both. Don't hand-edit these — they're regenerated whenever Studi
 
 `userProfile/<userId>/debug_overwrites.json` is per-user state (the `userId` is your UiPath user GUID). Refresh writes only your own entries; another user opening the bundled solution would have separate entries. The bundle (`.uis`) carries `userProfile/` for everyone who ran refresh; Studio Web picks the active user's at runtime.
 
-### `upload` overwrites on matching SolutionId
+### `upload` refuses to overwrite without `--force`
 
-The `SolutionId` in `.uipx` determines identity. If a Studio Web solution with the same ID exists, `upload` replaces it. To upload as a new solution, change the `SolutionId`.
+The `SolutionId` in `.uipx` determines identity. Before uploading, the CLI probes Studio Web for that id:
+
+- **Cloud has no solution with that id** → imports as new (no flag needed). This is the freshly `solution init`-ed flow.
+- **Cloud already has that id, no `--force`** → upload is refused with exit code 1 and no `.uipx` mutation. Refusing is the safe default — overwriting destroys the cloud project's Studio Web version history.
+- **`--force` passed** → skips the probe and goes straight through the overwrite path (with the SDK's 404 → import fallback for stale ids).
+
+To upload as an unrelated new cloud solution rather than overwriting, scaffold a fresh solution with `uip solution init` or remove the `SolutionId` from the local `.uipx` before re-running `upload`.
 
 ### `delete` uses the solution UUID, not the name
 

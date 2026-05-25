@@ -73,7 +73,7 @@ If the goal is browser-based editing rather than deployment, use `upload` instea
 uip solution upload ./MySolution --output json
 ```
 
-This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`.
+This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` refuses unless `--force` is passed (forcing replaces the cloud project in place and wipes its Studio Web version history).
 
 ## Step 4: Deploy to Orchestrator
 
