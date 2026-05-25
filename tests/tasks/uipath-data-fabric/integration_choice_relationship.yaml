@@ -1,13 +1,16 @@
 task_id: skill-datafabric-integration-complex-fields
 description: >
-  Integration test: agent builds a two-entity schema with complex fields
-  (CHOICE_SET_SINGLE on a discovered choice set, RELATIONSHIP between parent
-  and child entities), inserts records writing the correct value tokens, and
-  filters by both fields. Verifies the value-form discipline (NumberId for
-  choice, target UUID for relationship) and the resolve-by-unique-key pattern
-  (Email → Id) end-to-end. Choice sets are authored only in the web UI — if
-  none exists in the tenant, the test records the gap and still completes the
-  relationship workflow.
+  Integration test: agent builds a two-entity Customer/Order schema with a
+  CHOICE_SET_SINGLE status field (on a discovered choice set) and a
+  RELATIONSHIP from Order back to Customer, inserts records, filters by both
+  fields, and resolves a Customer by Email before writing the related Order.
+  Distinct from e2e_expense_tracker (which covers CHOICE_SET_MULTIPLE +
+  `in`-operator aggregation): this test exercises the resolve-by-unique-key
+  pattern (Email → Id) before a relational write, and uses a plainer
+  customer-style prompt so the two tasks together give breadth coverage
+  across prompt styles. Choice sets are authored only in the web UI — if
+  none exists in the tenant, the test records the gap and still completes
+  the relationship workflow.
 tags: [uipath-data-fabric, integration, complex-fields]
 
 agent:
@@ -22,14 +25,14 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
+  Build a small Customer/Order schema in UiPath Data Fabric. Customer has a
+  Name and an Email (unique). Order belongs to a Customer, has an amount, and
+  (if available in the tenant) a status picked from a choice set. Seed a few
+  Customers and a few Orders, then answer two questions:
+    - How many Orders belong to "alice@integration.test"?
+    - If status is in use, how many Orders are in the chosen status?
 
   Use --output json on every uip df command.
-
-  This test exercises two complex field types — `CHOICE_SET_SINGLE` and
-  `RELATIONSHIP` — end-to-end. They're regular fields in the type table that
-  happen to need lookup tokens for their values (a `NumberId` integer for
-  choice; the target record's UUID `Id` for relationship).
 
   1. Check login: run `uip login status --output json`. Do NOT re-login.
 

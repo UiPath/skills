@@ -31,7 +31,9 @@ For an entity with fields: `Name` (STRING), `Score` (INTEGER), `Active` (BOOLEAN
 
 ### Complex Field Types Are Silently Dropped
 
-`records import` only processes Basic types (`STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `MULTILINE_TEXT`, `UUID`). Columns for `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` are accepted in the header but the row values are discarded — no error, nothing in `ErrorFileLink`, just `null` on every imported row (or row failure if the field is `isRequired` without a `defaultValue`).
+**Complex field types** in Data Fabric are the ones that need extra config or lookup tokens beyond the value itself: `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER`. Everything else is a Basic type.
+
+`records import` only processes Basic types (`STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `MULTILINE_TEXT`, `UUID`). Columns for the complex types listed above are accepted in the header but the row values are discarded — no error, nothing in `ErrorFileLink`, just `null` on every imported row (or row failure if the field is `isRequired` without a `defaultValue`).
 
 For entities with any complex field, use `records insert --file <json>` instead — the insert endpoint handles all types. See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
 

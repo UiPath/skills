@@ -16,13 +16,12 @@ All operations go through `uip df <subject> <verb> --output json`.
 
 ## When to Use
 
-- Creating or modifying entity schemas (add fields of any supported type, update metadata)
+- Creating or modifying entity schemas (add fields, update metadata)
 - Reading, inserting, updating, or deleting records
 - Filtering records with complex predicates
 - Computing aggregate metrics for dashboards / KPIs (counts, sums, averages, group-by) — see [references/records-query.md](references/records-query.md#aggregates-server-side)
 - Importing bulk data from CSV files
 - Uploading or downloading file attachments on records
-- Browsing choice sets (`choice-sets list` / `get`) — choice sets are read-only resources from the CLI
 
 ## When NOT to Use — Hand Off to Another Skill
 
@@ -68,7 +67,7 @@ Respond that the operation is not supported. Do not try to work around it.
 
 6. **File fields are separate from record data.** Use `files upload`/`download`, not `records insert`. Field must be type `FILE`.
 
-7. **CSV `records import` is Basic-types only.** Headers must match field names exactly (case-sensitive); `CHOICE_SET_*` / `RELATIONSHIP` / `FILE` / `AUTO_NUMBER` columns are silently dropped. For complex fields, use `records insert --file <json>` — see [`references/bulk-import.md`](references/bulk-import.md).
+7. **CSV headers must match exact field names** (case-sensitive). Use `entities get` to discover field names before importing.
 
 8. **Never create duplicate entities.** Always `entities list` first; reuse if it already exists.
 
@@ -83,6 +82,8 @@ Respond that the operation is not supported. Do not try to work around it.
 13. **`choice-sets` is read-only.** CLI has only `list` / `get` — author choice sets in the Data Fabric web UI. If a needed choice set is missing, stop and ask; do not fall back to `STRING`.
 
 14. **Choice / relationship record values use lookup tokens, not labels.** Choice value → integer `NumberId` (single) or array of `NumberId`s (multi), from `choice-sets get`. Relationship value → target record's UUID `Id` regardless of `referenceFieldName`. Filter / `groupBy` use the same tokens; `CHOICE_SET_MULTIPLE` filtering has special operator semantics — see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
+
+15. **Answer with `records query`, not from memory.** Counts, sums, filters, lookups — issue a fresh `records query` (or `records list`) and use the server's response. Do not reuse cached insert responses, IDs you generated earlier, or values from previous tool results. Exception: the `Id` returned by the same `records insert` you just made.
 
 ---
 
@@ -123,7 +124,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-For `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` / `RELATIONSHIP` field shapes and value formats, see [`references/entity-schema.md`](references/entity-schema.md#supported-field-types) and [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
+For Complex types  field shapes and value formats, see [`references/entity-schema.md`](references/entity-schema.md#supported-field-types) and [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
 
 ---
 
@@ -227,8 +228,6 @@ Pass via `--body` or `--file`. Use `--limit`, `--cursor`, and `--offset` CLI fla
 | Import errors in CSV | Header mismatch | Run `entities get` and check exact field names (case-sensitive) |
 | `records import` succeeded but choice / relationship / file column is `null` on every row | `records import` silently drops complex field types (Basic only) | Re-seed via `records insert` with a JSON body — see [`references/bulk-import.md`](references/bulk-import.md) |
 | Write to federated entity | Entity is read-only | Use `--native-only`; federated entities cannot be written to |
-| Missing `choiceSetId` / `referenceEntityName` / `referenceFieldName` on a complex field | Required extras omitted on field definition | See [`references/entity-schema.md`](references/entity-schema.md) for the required keys per type |
-| Choice / relationship value rejected on insert / update / query | Passed a display label, UUID for choice, non-UUID for relationship, or wrong operator form for `CHOICE_SET_MULTIPLE` | See [`references/records-query.md`](references/records-query.md#writing-choice-set-and-relationship-values) for the value form per type |
 
 ---
 

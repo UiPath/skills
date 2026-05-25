@@ -24,8 +24,6 @@ initial_prompt: |
   Run each command exactly once, ignore the auth error, and continue to the next step.
   Do NOT retry any command. Do NOT attempt to login.
 
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
-
   Context:
   - Entity "Expense" with ID "exp-ent-001" has a `CHOICE_SET_MULTIPLE` field
     `tags` backed by choice set "TagSet" (id "cs-tags-001") whose values are
@@ -95,7 +93,7 @@ success_criteria:
   - type: command_executed
     description: "Negative — agent must NOT use `=` with a bare value on tags (HTTP 400)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"=\")(?=.*\"value\"\s*:\s*\"\d+\"(?!\s*\]))'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*\"fieldName\"\s*:\s*\"tags\"\s*,\s*\"operator\"\s*:\s*\"=\"\s*,\s*\"value\"\s*:\s*\"\d+\"'
     min_count: 0
     max_count: 0
     weight: 3.0

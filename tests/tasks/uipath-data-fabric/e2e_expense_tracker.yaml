@@ -25,13 +25,11 @@ sandbox:
 initial_prompt: |
   Finance needs an expense tracker in UiPath Data Fabric where each Expense is
   submitted by an Employee, has a category from a fixed picklist (choice set),
-  and can carry one or more tags from a second picklist. The Expense entity
-  combines plain types (`DECIMAL`, `MULTILINE_TEXT`) with complex types
-  (`RELATIONSHIP` to Employee, `CHOICE_SET_SINGLE` for category, optional
-  `CHOICE_SET_MULTIPLE` for tags) — treat them the same way you'd treat any
-  other type, just with the extra config + lookup tokens they require.
+  and can carry one or more tags from a second picklist. Use these field types:
+  `DECIMAL` (amount), `MULTILINE_TEXT` (description), `RELATIONSHIP` (submitter
+  → Employee), `CHOICE_SET_SINGLE` (category), and optionally
+  `CHOICE_SET_MULTIPLE` (tags).
 
-  Load the uipath-data-fabric skill before starting.
   Use --output json on every uip df command.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation.

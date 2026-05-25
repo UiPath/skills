@@ -25,13 +25,12 @@ initial_prompt: |
   Run each command exactly once, ignore the auth error, and continue to the next step.
   Do NOT retry any command. Do NOT attempt to login.
 
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
-
-  This scenario exercises complex field types — they're just types in the
-  Data Fabric type table, but they require extra config (a `choiceSetId` on
-  `CHOICE_SET_*`, `referenceEntityName` + `referenceFieldName` on
-  `RELATIONSHIP`) and lookup tokens for their values (a `NumberId` integer or
-  array for choice; the target record's UUID `Id` for relationship).
+  This scenario exercises three field types — `CHOICE_SET_SINGLE`,
+  `CHOICE_SET_MULTIPLE`, and `RELATIONSHIP`. On the schema side each one needs
+  an extra config key (`choiceSetId` for the choice fields; `referenceEntityName`
+  + `referenceFieldName` for relationship). On records, choice values use the
+  `NumberId` integer (or array for multi-select) and relationship values use
+  the target record's UUID `Id`.
 
   Pre-seeded placeholders (treat as real values for command construction):
   - Choice set "ExpenseCategories"   ID: "cs-cat-001"

@@ -33,6 +33,17 @@ uip df records list <entity-id> --limit 100 --cursor "<NextCursor>" --output jso
 uip df records list <entity-id> --limit 100 --offset 250 --output json
 ```
 
+## Always Query the Server for Answers
+
+Issue a fresh `records query` (or `records list`) — don't filter cached transcript data. Records mutate between turns, and the CLI call is the audit trail.
+
+Common shapes:
+
+- **By relationship:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"<rel-field>","operator":"=","value":"<target-uuid>"}]}}'`
+- **Resolve unique key before write:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}'`
+- **Set membership over UUIDs:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"<rel-field>","operator":"in","valueList":["<u1>","<u2>","<u3>"]}]}}'`
+- **Counts / sums / groupings:** `aggregates` + `groupBy` — see [Aggregates (server-side)](#aggregates-server-side).
+
 ## Filtered Query
 
 ```bash

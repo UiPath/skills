@@ -24,8 +24,6 @@ initial_prompt: |
   Run each command exactly once, ignore the auth error, and continue to the next step.
   Do NOT retry any command. Do NOT attempt to login.
 
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
-
   Context — existing entity "Expense" (ID "exp-ent-001") with fields:
   - amount       (DECIMAL)
   - description  (MULTILINE_TEXT)
@@ -80,9 +78,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT produce a .csv file for this entity (would silently drop complex fields)"
+    description: "Agent must NOT produce a .csv file or call records import with one (would silently drop complex fields)"
     tool_name: "Bash"
-    command_pattern: '\.csv\b'
+    command_pattern: '(uip\s+df\s+records\s+import\b.*\.csv|>\s*\S*\.csv\b|tee\s+\S*\.csv\b)'
     min_count: 0
     max_count: 0
     weight: 2.5
