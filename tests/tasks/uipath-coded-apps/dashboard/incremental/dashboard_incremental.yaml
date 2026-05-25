@@ -38,12 +38,10 @@ success_criteria:
     pass_threshold: 1.0
 
   # New widget uses governance endpoint
-  - type: file_check
+  - type: run_command
     description: "New widget uses governance.getPolicyTraces or governance.getOperationSummary"
-    path: "src/widgets"
-    patterns:
-      - pattern: "governance\\.get"
-        must_match: true
+    command: "grep -rl 'governance\\.get' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 

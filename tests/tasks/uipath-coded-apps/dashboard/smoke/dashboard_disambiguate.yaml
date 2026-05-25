@@ -12,10 +12,23 @@ initial_prompt: |
   I need to create something to track my automation performance.
 
 success_criteria:
+  # Agent must NOT scaffold before getting intent clarity
   - type: command_executed
-    description: "Agent asks disambiguation question before any action"
-    tool_name: "AskUserQuestion"
-    command_pattern: '.*'
-    min_count: 1
-    weight: 2.0
+    description: "Agent did NOT run npm ci — no scaffold before disambiguation"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+ci'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Agent must ask "which fits your goal" or numbered options
+  - type: llm_judge
+    description: "Agent output contains a disambiguation question with numbered options"
+    query: >
+      Did the agent ask a disambiguation question with numbered options (1 and 2)
+      asking whether the user wants to build a Web App/Action App or generate a dashboard?
+      Answer YES or NO.
+    expected: "YES"
+    weight: 3.0
     pass_threshold: 1.0

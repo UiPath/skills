@@ -21,42 +21,34 @@ initial_prompt: |
 
 success_criteria:
   # Error trend uses agents.getErrors
-  - type: file_check
+  - type: run_command
     description: "Error trend widget uses agents.getErrors endpoint"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getErrors"
-        must_match: true
+    command: "grep -rl 'agents\\.getErrors' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   # Latency uses agents.getLatencyTimeline
-  - type: file_check
+  - type: run_command
     description: "Latency widget uses agents.getLatencyTimeline endpoint"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getLatencyTimeline"
-        must_match: true
+    command: "grep -rl 'agents\\.getLatencyTimeline' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   # Top erroring agents uses agents.getTopErroredAgents
-  - type: file_check
+  - type: run_command
     description: "Top agents widget uses agents.getTopErroredAgents"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getTopErroredAgents"
-        must_match: true
+    command: "grep -rl 'agents\\.getTopErroredAgents' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   # All three use useInsights hook
-  - type: file_check
+  - type: run_command
     description: "Widgets use useInsights hook (not raw fetch)"
-    path: "src/widgets"
-    patterns:
-      - pattern: "useInsights"
-        must_match: true
+    command: "grep -rl 'useInsights' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

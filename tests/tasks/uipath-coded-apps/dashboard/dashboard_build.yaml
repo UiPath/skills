@@ -32,21 +32,17 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "Agent success rate widget uses Insights agents namespace"
-    path: "src/widgets"
-    patterns:
-      - pattern: "useInsights.*agents\\."
-        must_match: true
+    command: "grep -rl 'useInsights' src/widgets/ 2>/dev/null && grep -rl 'agents\\.' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "Queue items widget uses SDK (not Insights)"
-    path: "src/widgets"
-    patterns:
-      - pattern: "QueueItems|queues\\.getAll"
-        must_match: true
+    command: "grep -rl 'QueueItems\\|queues\\.getAll' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

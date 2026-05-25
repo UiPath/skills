@@ -26,10 +26,10 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "New widget uses governance Insights endpoint"
-    path: "src/widgets"
-    pattern: "governance\\.get"
+    command: "grep -rl 'governance\\.get' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

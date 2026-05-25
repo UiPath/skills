@@ -35,39 +35,31 @@ success_criteria:
     pass_threshold: 1.0
 
   # All Insights endpoints represented
-  - type: file_check
+  - type: run_command
     description: "KPI widget uses agents.getAgents"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getAgents"
-        must_match: true
+    command: "grep -rl 'agents\\.getAgents' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "Error trend uses agents.getErrors"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getErrors"
-        must_match: true
+    command: "grep -rl 'agents\\.getErrors' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "Activity chart uses agents.getConsumptionTimeline"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getConsumptionTimeline"
-        must_match: true
+    command: "grep -rl 'agents\\.getConsumptionTimeline' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "Latency chart uses agents.getLatencyTimeline"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getLatencyTimeline"
-        must_match: true
+    command: "grep -rl 'agents\\.getLatencyTimeline' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

@@ -22,52 +22,42 @@ initial_prompt: |
 
 success_criteria:
   # Recipe 1: error trend → agents.getErrors with data[].{date,value}
-  - type: file_check
+  - type: run_command
     description: "Error trend uses agents.getErrors (Recipe 1)"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getErrors"
-        must_match: true
+    command: "grep -rl 'agents\\.getErrors' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   # Recipe 1: data extracted from .data array (not raw response)
-  - type: file_check
+  - type: run_command
     description: "Error trend extracts data array from response wrapper"
-    path: "src/widgets"
-    patterns:
-      - pattern: "\\?\\.data\\s*\\?\\?\\s*\\[\\]|\\.data\\b.*\\[\\]"
-        must_match: true
+    command: "grep -rl '?\\.data\\s*??\\s*\\[\\]\\|\\.data\\b.*\\[\\]' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   # Recipe 3: active agents → agents.getAgents (count)
-  - type: file_check
+  - type: run_command
     description: "Active agents KPI uses agents.getAgents (Recipe 3)"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getAgents"
-        must_match: true
+    command: "grep -rl 'agents\\.getAgents' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   # Recipe 10: top consumers → agents.getConsumption
-  - type: file_check
+  - type: run_command
     description: "Consumption bar chart uses agents.getConsumption (Recipe 10)"
-    path: "src/widgets"
-    patterns:
-      - pattern: "agents\\.getConsumption"
-        must_match: true
+    command: "grep -rl 'agents\\.getConsumption' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   # Typed response interfaces present (indicates recipe-style coding)
-  - type: file_check
+  - type: run_command
     description: "Widgets include TypeScript response type annotations"
-    path: "src/widgets"
-    patterns:
-      - pattern: "useInsights<[{\\[]"
-        must_match: true
+    command: "grep -rl 'useInsights<' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

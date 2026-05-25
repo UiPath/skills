@@ -87,12 +87,10 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "Widget files use useInsights hook"
-    path: "src/widgets"
-    patterns:
-      - pattern: "useInsights"
-        must_match: true
+    command: "grep -rl 'useInsights' src/widgets/ 2>/dev/null"
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
