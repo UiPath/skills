@@ -23,7 +23,7 @@ PULLED_MAIN = PULLED / "main.py"
 LOCAL_ENV = LOCAL / ".env"
 
 EDIT_MARKER = "echo: "
-EXPECTED_PROJECT_ID = "a54c3bf0-985c-45a7-a1c4-92e6d8888faa"
+EXPECTED_PROJECT_ID = "89852b5d-8559-4c57-b752-0e2b500902fc"
 
 
 def fail(msg: str) -> None:
