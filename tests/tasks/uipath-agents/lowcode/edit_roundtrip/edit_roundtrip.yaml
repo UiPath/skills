@@ -15,16 +15,17 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
+  max_turns: 60
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "GreetSol" containing a low-code agent
-  "GreeterAgent" that accepts a required `name` (string) and returns a
-  `greeting` (string). Validate and migrate it.
+  Create a low-code agent "GreeterAgent" that accepts a required
+  `name` (string) and returns a `greeting` (string). Validate and
+  migrate it. The solution should be named "GreetSol".
 
   Then EDIT the agent to also accept a required `language` (string)
-  input and make the user message template include both inputs. Validate
-  and migrate again.
+  input and make the user message template include both inputs.
+  Validate and migrate again.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
