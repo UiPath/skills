@@ -2,8 +2,8 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { <ICON> } from 'lucide-react'
-import { useInsights } from '../hooks/useInsights'
-import { ViewAllLink, LoadingState, EmptyState } from '../dashboard/chrome'
+import { useInsights } from '@/hooks/useInsights'
+import { ViewAllLink, LoadingState, EmptyState } from '@/dashboard/chrome'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 
 const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))']

@@ -1,8 +1,8 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { <ICON> } from 'lucide-react'
-import { useInsights } from '../hooks/useInsights'
-import { DeltaBadge, ViewAllLink, LoadingState } from '../dashboard/chrome'
+import { useInsights } from '@/hooks/useInsights'
+import { DeltaBadge, ViewAllLink, LoadingState } from '@/dashboard/chrome'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export function <COMPONENT_NAME>() {

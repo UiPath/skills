@@ -3,17 +3,21 @@
 Full pipeline: NLP prompt → plan approval → scaffold → widgets → validate → preview.
 
 ## Tool-Use Budget
-≤ 10 tool calls for a 6-widget dashboard. Never exceed 15 total.
+≤ 12 tool calls for a 6-widget dashboard. Never exceed 18 total.
 
 | Phase | Calls | How |
 |---|---|---|
+| 0 Incremental check | 1 Bash | `ls .dashboard/state.json` |
 | 1 Boot | 1 block | 4 reads issued simultaneously |
 | 2 Preflight | 1 Bash | `uip login status` |
 | 3–5 Derive + Plan + Approve | 0 | In-context, no tools |
-| 6 Scaffold | 1 Bash | cp + .env.local + npm ci combined |
-| 7 Widgets | 1 block | N Write calls in parallel (no template reads) |
-| 8 Validate | 1 Bash | `tsc --noEmit` |
-| **Total** | **≤ 6 blocks** | |
+| 6 Scaffold | 1 Bash | cp + .env.local + npm ci + routing name (foreground, 120s) |
+| 7 Widgets (≤5 widgets) | 1 Bash | Single Node.js heredoc |
+| 7 Widgets (6+ widgets) | 2 Bash | Split: widgets + views in separate calls |
+| 8 Validate pass 1 | 1 Bash | `tsc --noEmit` |
+| 8 Validate pass 2 (if errors) | 1 Bash | Fix + re-run `tsc --noEmit` |
+| 8 Dev server | 1 Bash | `npm run dev -- --open` |
+| **Total** | **≤ 10–12** | |
 
 ## Execution Rules — Non-negotiable
 
@@ -29,8 +33,8 @@ This skill serves end users, not developers. Never show npm output, TypeScript e
 
 | When | Show |
 |------|------|
-| User approves the plan (before Phase 6) | `⚙ Building your dashboard — this usually takes about 30 seconds…` |
-| Phase 6 running | *(silence — do not narrate commands or output)* |
+| User approves the plan (before Phase 6) | `⚙ Building your dashboard — first run takes 2–5 minutes while dependencies download. Subsequent builds are much faster.` |
+| Phase 6 running (npm ci in progress) | `⚙ Installing dependencies…` (shown once after ~10s if still running) |
 | Phase 7 running | *(silence — do not narrate file writes)* |
 | tsc passes (Phase 8) | Show the final summary immediately — see Summary Format below |
 
@@ -154,6 +158,9 @@ VITE_UIPATH_TENANT_NAME=<TENANT_NAME>
 VITE_INSIGHTS_TENANT_ID=${TENANT_ID}
 VITE_UIPATH_PAT=${PAT}
 EOF
+# Run npm ci in foreground — do NOT background this command.
+# With the lockfile it completes in 10-25s from cache, 60-120s cold.
+# The next phase cannot start until this finishes.
 npm ci --prefer-offline 2>/dev/null || npm ci 2>/dev/null
 
 # Derive routing name (stable across sessions)
@@ -281,7 +288,9 @@ Response Unwrapping:
 | `{ data: { errorCount, … } }` | `Object.entries((data as any)?.data ?? {}).map(([n,v])=>({name:n,value:v}))` |
 | KPI from `currentPeriodSummary` | `String((data as any)?.data?.currentPeriodSummary?.successRate?.toFixed(1)+'%' ?? '—')` |
 
-### Step 2 — Write all files in one Bash call (1 tool call)
+### Step 2 — Write all files via Bash (1–2 Bash calls)
+
+**For 1–5 widgets:** Write everything in one Node.js heredoc:
 
 ```bash
 node << 'NODESCRIPT'
@@ -289,14 +298,11 @@ const fs = require('fs'), path = require('path');
 const P = '<PROJECT_DIR>';
 
 const files = {
-  // Dashboard layout
-  [`${P}/src/dashboard/Dashboard.tsx`]: `<full Dashboard.tsx content>`,
+  [`${P}/src/dashboard/Dashboard.tsx`]: `<full Dashboard.tsx>`,
   [`${P}/src/dashboard/widgets/index.ts`]: `<barrel exports>`,
-  
-  // Per-widget files (repeat for each widget)
   [`${P}/src/dashboard/widgets/<Widget1>.tsx`]: `<full widget TSX>`,
   [`${P}/src/dashboard/views/<Widget1>View.tsx`]: `<full view TSX>`,
-  // ...
+  // ...one entry per widget...
 };
 
 for (const [fp, content] of Object.entries(files)) {
@@ -307,25 +313,53 @@ console.log('✓ ' + Object.keys(files).length + ' files written');
 NODESCRIPT
 ```
 
-> **Escaping:** backtick → `` \` ``, `${` → `\${`
+**For 6+ widgets:** The combined content may exceed shell limits. Write a temp script instead:
 
-### Step 3 — Inject routes into App.tsx (1 Edit call)
+```bash
+# Write temp script
+cat > <PROJECT_DIR>/write-widgets.mjs << 'SCRIPT'
+import { writeFileSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
+const P = '<PROJECT_DIR>';
+const files = {
+  [`${P}/src/dashboard/Dashboard.tsx`]: `<full content>`,
+  // ...all files...
+};
+for (const [fp, content] of Object.entries(files)) {
+  mkdirSync(dirname(fp), { recursive: true });
+  writeFileSync(fp, content);
+}
+console.log('✓ ' + Object.keys(files).length + ' files written');
+SCRIPT
 
-Replace the marker comments:
-```tsx
-// GENERATED_IMPORTS_START
-import { Dashboard } from './dashboard/Dashboard'
-import { <Widget1>View } from './dashboard/views/<Widget1>View'
-// ...
-// GENERATED_IMPORTS_END
+# Execute and delete
+node <PROJECT_DIR>/write-widgets.mjs && rm <PROJECT_DIR>/write-widgets.mjs
 ```
-```tsx
-{/* GENERATED_ROUTES_START */}
-<Route path="/" element={<Dashboard />} />
-<Route path="/<route1>" element={<<Widget1>View />} />
-// ...
-{/* GENERATED_ROUTES_END */}
+
+> **Escaping in both approaches:** backtick → `` \` ``, `${` → `\${`
+
+### Step 3 — Inject routes into App.tsx (included in Step 2)
+
+Add App.tsx to the `files` object in the same Bash call — do NOT use the Edit tool for this.
+The marker replacement logic:
+
+```javascript
+// Inside the node script, after building the files object:
+const appPath = `${P}/src/app/App.tsx`;
+let appContent = require('fs').readFileSync(appPath, 'utf8');
+const imports = `import { Dashboard } from '@/dashboard/Dashboard'\n` +
+  `import { <Widget1>View } from '@/dashboard/views/<Widget1>View'\n`;
+const routes = `<Route path="/" element={<Dashboard />} />\n` +
+  `<Route path="/<route1>" element={<<Widget1>View />} />\n`;
+appContent = appContent
+  .replace(/\/\/ GENERATED_IMPORTS_START[\s\S]*?\/\/ GENERATED_IMPORTS_END/,
+    `// GENERATED_IMPORTS_START\n${imports}// GENERATED_IMPORTS_END`)
+  .replace(/\{\/\* GENERATED_ROUTES_START \*\/\}[\s\S]*?\{\/\* GENERATED_ROUTES_END \*\/\}/,
+    `{/* GENERATED_ROUTES_START */}\n${routes}{/* GENERATED_ROUTES_END */}`);
+require('fs').writeFileSync(appPath, appContent);
 ```
+
+This keeps all file writes in one Bash call — no Edit tool diff shown to the user.
 
 ## Phase 8 — Validate (3-pass) + Summary
 
