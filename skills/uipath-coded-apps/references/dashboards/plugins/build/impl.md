@@ -15,6 +15,12 @@ Full pipeline: NLP prompt → plan approval → scaffold → widgets → validat
 | 8 Validate | 1 Bash | `tsc --noEmit` |
 | **Total** | **≤ 6 blocks** | |
 
+## Execution Rules — Non-negotiable
+
+1. **Never spawn subagents.** Do not use `TaskCreate`, `Agent`, or any dispatching tool. Every phase executes in this session.
+2. **Never read scaffold source files during Phase 7.** The template's `useInsights.ts`, `insights-client.ts`, `DashboardShell.tsx`, etc. are known — do not re-read them to understand their API.
+3. **Never read widget template files.** Use Widget Recipes from `insights-catalog.md` directly.
+
 ## Narration Rules — What Users See
 
 This skill serves end users, not developers. Never show npm output, TypeScript errors, file paths, bash commands, or technical logs.
