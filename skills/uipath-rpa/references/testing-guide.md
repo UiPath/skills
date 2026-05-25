@@ -54,6 +54,10 @@ Required xmlns for `InvokeWorkflowFile`:
 xmlns:ui="http://schemas.uipath.com/workflow/activities"
 ```
 
+### Default Values for Test-Case Arguments
+
+A test case authored with an `<x:Property Name="in_X" Type="InArgument(x:String)" />` argument should generally bake in a default so `uip rpa run --file-path <TestCase>.xaml` is runnable without `--input-arguments`. Use the canonical root-attribute syntax — see [xaml/xaml-basics-and-rules.md § Setting Default Values for Arguments](xaml/xaml-basics-and-rules.md#setting-default-values-for-arguments). The wrong forms (bare attribute, `<x:Property.Value>`, `<InArgument>` child of `<x:Property>`) all produce confusing `member not supported` errors — the doc explicitly lists them so you don't waste time trying.
+
 ### XAML Structure — Standalone Test Case (with Placeholder)
 
 For test cases designed to work with execution templates, use `ui:Placeholder` in the When container:

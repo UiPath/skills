@@ -310,6 +310,45 @@ Add `x:Property` elements inside the `<x:Members>` block:
 
 Argument naming convention: `in_`, `out_`, `io_` prefixes.
 
+#### Setting Default Values for Arguments
+
+Defaults go on the root `<Activity>` element using the canonical .NET Workflow Foundation self-namespace syntax:
+
+```xml
+<Activity x:Class="TestCase"
+          xmlns:this="clr-namespace:"
+          this:TestCase.in_FileName="report.pdf"
+          xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_FileName" Type="InArgument(x:String)" />
+  </x:Members>
+</Activity>
+```
+
+Two parts are mandatory:
+
+1. **`xmlns:this="clr-namespace:"`** — the empty `clr-namespace:` is what makes `this:` resolve to the class declared by `x:Class`.
+2. **`this:<ClassName>.<argName>="<value>"`** — the attribute name MUST be qualified with `this:` AND the class name; bare `<argName>="<value>"` is rejected.
+
+The default is baked into the compiled assembly at build time as a `Literal<T>` expression in the generated class's constructor. At runtime, when the workflow is invoked without that argument supplied (e.g. `uip rpa run` without `--input-arguments`), the literal is used.
+
+**Three default-value forms that DO NOT work** — every one of them is rejected by the XAML loader. Authoring agents have repeatedly tried these and lost time to confusing errors — don't:
+
+| Bad form | Error |
+|---|---|
+| `<Activity in_FileName="...">` (no `xmlns:this`, no class qualifier) | `member (in_FileName) is not supported by DynamicActivity` |
+| `<x:Property Name="in_FileName" ...><InArgument>...</InArgument></x:Property>` | `DynamicActivityProperty does not have a content property` |
+| `<x:Property.Value>...</x:Property.Value>` | `x:Property member (Value) is not supported by DynamicActivityProperty` |
+
+If you must accept an empty string as a sentinel ("user didn't provide one") and substitute a literal anyway, use a ternary inside each `CSharpValue`/`VisualBasicValue` consumer of the argument:
+
+```xml
+<CSharpValue x:TypeArguments="x:String">string.IsNullOrEmpty(in_FileName) ? "report.pdf" : in_FileName</CSharpValue>
+```
+
+But the root-attribute default above is the cleaner answer — use it first.
+
 ### Adding Variables
 
 Add `Variable` elements inside the workflow container's `.Variables` block:
