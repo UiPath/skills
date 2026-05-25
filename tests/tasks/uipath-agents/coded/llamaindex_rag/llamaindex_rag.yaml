@@ -32,6 +32,9 @@ initial_prompt: |
   Outputs:
     - `answer` (string)
 
+  Scaffold the agent project inside an `hr-helper/` directory at
+  the working-directory root.
+
   Take the agent through scaffold → schema sync. Do NOT run,
   publish, upload, or deploy. Do NOT call `uip login`. Do NOT
   pause between planning and implementation. Complete end-to-end
@@ -56,7 +59,7 @@ success_criteria:
 
   - type: file_exists
     description: "LlamaIndex framework marker present (proves framework selection)"
-    path: "llama_index.json"
+    path: "hr-helper/llama_index.json"
     weight: 2.0
     pass_threshold: 1.0
 

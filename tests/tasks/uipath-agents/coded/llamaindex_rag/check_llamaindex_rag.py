@@ -59,8 +59,8 @@ def main() -> None:
     workflows = cfg.get("workflows") or cfg.get("graphs") or {}
     if not workflows:
         fail("llama_index.json has no `workflows` entries")
-    if not any("./main.py" in str(v) for v in workflows.values()):
-        fail(f"llama_index.json workflows do not point at ./main.py: {workflows}")
+    if not any("main.py:" in str(v) for v in workflows.values()):
+        fail(f"llama_index.json workflows do not point at main.py: {workflows}")
     print("OK: llama_index.json points at a workflow in main.py")
 
     if not MAIN.is_file():
