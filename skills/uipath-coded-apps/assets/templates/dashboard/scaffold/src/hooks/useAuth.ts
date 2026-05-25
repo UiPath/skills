@@ -46,8 +46,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(true)
       setError(null)
       try {
-        await sdk.initialize()
-        setIsAuthenticated(sdk.isAuthenticated())
+        const pat = import.meta.env.VITE_UIPATH_PAT as string | undefined
+        if (pat && pat.length > 0) {
+          // Dev mode: PAT from uip login session — skip OAuth, go straight to dashboard
+          setIsAuthenticated(true)
+        } else {
+          // Production (FP surface): SDK initialises via ActionCenterTokenManager
+          await sdk.initialize()
+          setIsAuthenticated(sdk.isAuthenticated())
+        }
       } catch (err) {
         setError(err instanceof UiPathError ? err.message : 'Authentication failed')
       } finally {

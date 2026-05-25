@@ -13,7 +13,11 @@ export function <COMPONENT_NAME>() {
   if (loading) return <div className="h-40 animate-pulse rounded-lg bg-muted" />
   if (error) return <div className="rounded-lg border bg-card p-4 text-sm text-destructive">{error.message}</div>
 
-  const rows = Array.isArray(data) ? data as Record<string, unknown>[] : []
+  // Most Insights responses wrap the array in a nested object.
+  // Extract using the path from insights-catalog.md Key response fields.
+  // Example for agents.getAgents: const rows = (data as any)?.data?.agents ?? []
+  // Example for agents.getTopErroredAgents: const rows = (data as any)?.data ?? []
+  const rows: Record<string, unknown>[] = <DATA_SELECTOR>
   const totalPages = Math.ceil(rows.length / PAGE_SIZE)
   const pageRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 

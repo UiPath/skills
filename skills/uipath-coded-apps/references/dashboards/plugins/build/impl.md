@@ -111,13 +111,25 @@ No client ID, no scope, no OAuth setup required. The PAT comes from the active `
 Read the appropriate widget template files from `../../assets/templates/dashboard/widgets/`.
 For each widget in the approved plan, write one file to `<PROJECT_DIR>/src/widgets/`:
 - Fill `<COMPONENT_NAME>` → PascalCase name (e.g. `AgentSuccessRate`)
-- Fill `<DATA_HOOK>` → full `useInsights(...)` or SDK hook call with correct key
+- Fill `<DATA_HOOK>` → `useInsights<ResponseType>('namespace.method', { startTime })` — include a TypeScript interface for the response shape
 - Fill `<TITLE>` → human label from the plan
-- Fill `<X_KEY>` / `<Y_KEY>` / `<COLUMNS>` → field names from the API response structure (see insights-catalog.md)
+- Fill `<DATA_SELECTOR>` → expression to extract the array from the raw response (see below)
+- Fill `<X_KEY>` / `<Y_KEY>` / `<VALUE_EXPRESSION>` / `<COLUMNS>` → field names from `insights-catalog.md` Key response fields
+
+### Response Unwrapping — All Insights responses are wrapped objects
+Every Insights endpoint returns a nested object, not a flat array. Use the Key response fields from `insights-catalog.md` to find the correct extraction path:
+
+| Pattern | DATA_SELECTOR example |
+|---|---|
+| `data[].{field}` (most timelines) | `(data as any)?.data ?? []` |
+| `{ data: { agents[] } }` (getAgents) | `(data as any)?.data?.agents ?? []` |
+| `{ totalErrors, data[] }` (topErroredAgents) | `(data as any)?.data ?? []` |
+| `{ data: { errorCount, escalationCount } }` (incidentDistribution) | `Object.entries((data as any)?.data ?? {}).map(([name,value]) => ({name,value}))` |
+| KPI from `currentPeriodSummary` | `String((data as any)?.data?.currentPeriodSummary?.successRate?.toFixed(1) + '%' ?? '—')` |
 
 Write ALL widget files in a single message with parallel Write calls.
 Also write `<PROJECT_DIR>/src/widgets/index.ts` exporting all components.
-Update `<PROJECT_DIR>/src/App.tsx` to import and render the widgets inside `DashboardShell`.
+Update `<PROJECT_DIR>/src/App.tsx` to import widgets and pass them as children to `<DashboardShell>`.
 
 ## Phase 8 — Validate + Summary (2 Bash)
 ```bash
