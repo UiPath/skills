@@ -28,27 +28,37 @@ Full pipeline: NLP prompt → plan approval → scaffold → widgets → validat
 
 ## Narration Rules — What Users See
 
-This skill serves end users, not developers. Never show npm output, TypeScript errors, file paths, bash commands, or technical logs.
+This skill serves end users, not developers. They must never see code, file paths, CLI output, or build process details.
 
-**Show exactly these messages at these moments:**
+### The Blackout Rule
 
-| When | Show |
-|------|------|
-| User approves the plan (before Phase 6) | `⚙ Building your dashboard…` (dependencies are already installing in the background) |
-| Phase 6 running | *(silence — deps installing since Phase 3.5, usually already done)* |
-| Phase 7 running | *(silence — do not narrate file writes)* |
-| tsc passes (Phase 8) | Show the final summary immediately — see Summary Format below |
+**From the moment the user approves the plan until the final summary, produce ZERO text output.**
 
-**If tsc fails:** Fix errors silently (max 2 attempts). Never mention TypeScript to the user. If you cannot fix after 2 attempts, say: "I ran into a configuration issue — please run `npm install` in your project folder and try again."
+No intermediate messages. No "I'm generating widgets now." No "Running tsc." No "Almost done." Nothing.
+The user sees only tool call blocks (collapsed by default in Claude Code). That is acceptable.
 
-**If npm ci fails:** Say: "Dependencies are downloading — this can take a moment on first run." Retry once with `npm install`. Do not show npm output.
+The only two text outputs in the entire build flow are:
 
-**After tsc passes:** Show the summary (see Summary Format below) FIRST, then run `npm run dev -- --open`.
-The summary appears before the server starts so the user sees it immediately.
-The browser opens automatically — user sees the live dashboard.
-Server runs in foreground with HMR; Ctrl+C to stop.
+| Moment | Output |
+|---|---|
+| Immediately after plan approval (before Phase 3.5) | One line: `⚙ Building your dashboard…` |
+| After tsc passes (Phase 8) | The final summary — see Summary Format below |
 
-**Never say:** "Writing widget files", "Running tsc --noEmit", "Phase 6", "scaffold", "package.json", "useInsights", or any other implementation detail.
+Everything in between — Phase 3.5, 6, 7, 8 validation — is **complete silence on text output**.
+
+### Error exceptions (only if unrecoverable)
+
+- tsc fails after 2 fix attempts: `"There was a configuration issue — please run npm install in the project folder and try again."`
+- npm ci fails: `"Dependencies are downloading — this may take a minute on first run."` then retry silently.
+
+### After summary
+
+Show summary first (see Summary Format below), then run `npm run dev -- --open`.
+The browser opens automatically. Server runs in foreground with HMR.
+
+### Banned phrases (never say these)
+
+`writing files` · `generating code` · `running tsc` · `phase 6` · `scaffold` · `package.json` · `useInsights` · `node_modules` · `npm ci` · `widget files` · `TypeScript` · `heredoc` · `bash` · `building` (except the one allowed line above)
 
 ## Phase 0 — Incremental check (1 Bash, before anything else)
 
