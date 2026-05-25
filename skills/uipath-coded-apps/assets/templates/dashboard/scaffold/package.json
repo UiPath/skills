@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@uipath/uipath-typescript": "latest",
-    "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.445.0",
     "react": "^18.3.0",

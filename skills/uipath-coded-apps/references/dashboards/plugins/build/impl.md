@@ -142,7 +142,7 @@ VITE_UIPATH_TENANT_NAME=<TENANT_NAME>
 VITE_INSIGHTS_TENANT_ID=${TENANT_ID}
 VITE_UIPATH_PAT=${PAT}
 EOF
-npm ci 2>/dev/null
+npm ci --prefer-offline 2>/dev/null || npm ci 2>/dev/null
 ```
 
 No client ID, no scope, no OAuth setup required. The PAT comes from the active `uip login` session. For production deployment the PAT is stripped before build (failBuildIfPatSet Vite plugin enforces this).
