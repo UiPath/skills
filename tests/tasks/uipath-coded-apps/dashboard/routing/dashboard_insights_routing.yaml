@@ -23,7 +23,7 @@ success_criteria:
   # Error trend uses agents.getErrors
   - type: run_command
     description: "Error trend widget uses agents.getErrors endpoint"
-    command: "grep -rl 'agents\\.getErrors' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('agents.getErrors' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -31,7 +31,7 @@ success_criteria:
   # Latency uses agents.getLatencyTimeline
   - type: run_command
     description: "Latency widget uses agents.getLatencyTimeline endpoint"
-    command: "grep -rl 'agents\\.getLatencyTimeline' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('agents.getLatencyTimeline' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -39,7 +39,7 @@ success_criteria:
   # Top erroring agents uses agents.getTopErroredAgents
   - type: run_command
     description: "Top agents widget uses agents.getTopErroredAgents"
-    command: "grep -rl 'agents\\.getTopErroredAgents' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('agents.getTopErroredAgents' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
@@ -47,7 +47,7 @@ success_criteria:
   # All three use useInsights hook
   - type: run_command
     description: "Widgets use useInsights hook (not raw fetch)"
-    command: "grep -rl 'useInsights' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('useInsights' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

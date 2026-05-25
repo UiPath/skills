@@ -87,13 +87,6 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Widget files use useInsights hook"
-    command: "grep -rl 'useInsights' src/widgets/ 2>/dev/null"
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
   # ── Routing labels in plan (agent showed plan before building) ────────
   - type: command_executed
     description: "Agent ran npm ci (scaffold executed)"

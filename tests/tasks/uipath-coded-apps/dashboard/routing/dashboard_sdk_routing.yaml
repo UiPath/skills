@@ -23,7 +23,7 @@ success_criteria:
   # Queue items must use SDK
   - type: run_command
     description: "Queue widget uses SDK QueueItems (not Insights)"
-    command: "grep -rl 'QueueItems' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('QueueItems' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -31,7 +31,7 @@ success_criteria:
   # Jobs must use SDK
   - type: run_command
     description: "Jobs widget uses SDK Jobs (not Insights)"
-    command: "grep -rl 'Jobs\\.getAll\|jobs\\.getAll' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('Jobs.getAll' in open(os.path.join(d,f)).read() or 'jobs.getAll' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -39,7 +39,7 @@ success_criteria:
   # Tasks must use SDK
   - type: run_command
     description: "Tasks widget uses SDK Tasks (not Insights)"
-    command: "grep -rl 'Tasks\\.getAll\|tasks\\.getAll' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('Tasks.getAll' in open(os.path.join(d,f)).read() or 'tasks.getAll' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -47,7 +47,7 @@ success_criteria:
   # None of the above should use Insights jobs.* endpoints
   - type: run_command
     description: "No widget misroutes operational data to Insights jobs API"
-    command: "if grep -rl 'jobs\\.getCompletedTimeline\\|jobs\\.getSummary\\|jobs\\.getTopFailures' src/widgets/ 2>/dev/null; then exit 1; else exit 0; fi"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; bad=['jobs.getCompletedTimeline','jobs.getSummary','jobs.getTopFailures']; sys.exit(1 if any(p in open(os.path.join(d,f)).read() for f in files for p in bad) else 0)\""
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

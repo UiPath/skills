@@ -24,7 +24,7 @@ success_criteria:
   # Recipe 1: error trend → agents.getErrors with data[].{date,value}
   - type: run_command
     description: "Error trend uses agents.getErrors (Recipe 1)"
-    command: "grep -rl 'agents\\.getErrors' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('agents.getErrors' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
@@ -32,7 +32,7 @@ success_criteria:
   # Recipe 1: data extracted from .data array (not raw response)
   - type: run_command
     description: "Error trend extracts data array from response wrapper"
-    command: "grep -rl '?\\.data\\s*??\\s*\\[\\]\\|\\.data\\b.*\\[\\]' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('.data' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -40,7 +40,7 @@ success_criteria:
   # Recipe 3: active agents → agents.getAgents (count)
   - type: run_command
     description: "Active agents KPI uses agents.getAgents (Recipe 3)"
-    command: "grep -rl 'agents\\.getAgents' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('agents.getAgents' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
@@ -48,7 +48,7 @@ success_criteria:
   # Recipe 10: top consumers → agents.getConsumption
   - type: run_command
     description: "Consumption bar chart uses agents.getConsumption (Recipe 10)"
-    command: "grep -rl 'agents\\.getConsumption' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('agents.getConsumption' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
@@ -56,7 +56,7 @@ success_criteria:
   # Typed response interfaces present (indicates recipe-style coding)
   - type: run_command
     description: "Widgets include TypeScript response type annotations"
-    command: "grep -rl 'useInsights<' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('useInsights<' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0

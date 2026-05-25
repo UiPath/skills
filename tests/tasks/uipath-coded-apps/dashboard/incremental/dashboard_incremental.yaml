@@ -40,7 +40,7 @@ success_criteria:
   # New widget uses governance endpoint
   - type: run_command
     description: "New widget uses governance.getPolicyTraces or governance.getOperationSummary"
-    command: "grep -rl 'governance\\.get' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('governance.get' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

@@ -34,14 +34,14 @@ success_criteria:
 
   - type: run_command
     description: "Agent success rate widget uses Insights agents namespace"
-    command: "grep -rl 'useInsights' src/widgets/ 2>/dev/null && grep -rl 'agents\\.' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('useInsights' in open(os.path.join(d,f)).read() for f in files) and any('agents.' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Queue items widget uses SDK (not Insights)"
-    command: "grep -rl 'QueueItems\\|queues\\.getAll' src/widgets/ 2>/dev/null"
+    command: "python3 -c \"import os,sys; d='src/widgets'; files=[f for f in os.listdir(d) if f.endswith('.tsx')] if os.path.isdir(d) else []; sys.exit(0 if any('QueueItems' in open(os.path.join(d,f)).read() or 'queues.getAll' in open(os.path.join(d,f)).read() for f in files) else 1)\""
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
