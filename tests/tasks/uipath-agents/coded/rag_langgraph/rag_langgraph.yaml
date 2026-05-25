@@ -22,10 +22,8 @@ initial_prompt: |
   `Shared`, then composing the answer with the platform LLM gateway
   at `temperature=0` for reproducibility.
 
-  Input: `question` (string). Output: `answer` (string), `snippets`
-  (list of string).
-
-  Sync `bindings.json` so the index resource is declared.
+  It takes a question as input and returns an answer together with
+  the retrieved snippets.
 
   Take the agent through scaffold → init. Do NOT run, publish,
   upload, or deploy. Do NOT pause between planning and
