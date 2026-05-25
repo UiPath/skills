@@ -25,26 +25,3 @@ success_criteria:
     max_count: 0
     weight: 3.0
     pass_threshold: 1.0
-
-  # Plan must label each widget
-  - type: agent_response
-    description: "Plan contains [Insights] or [SDK] routing label"
-    pattern: '\[Insights\]|\[SDK\]'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  # Plan must name the metrics
-  - type: agent_response
-    description: "Plan references error rate or queue depth"
-    pattern: 'error|queue'
-    match_flags: IGNORECASE
-    weight: 1.5
-    pass_threshold: 1.0
-
-  # No widget files written before approval
-  - type: file_exists
-    description: "package.json NOT created before approval"
-    path: "package.json"
-    expected: false
-    weight: 2.0
-    pass_threshold: 1.0

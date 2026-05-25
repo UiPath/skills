@@ -20,19 +20,22 @@ initial_prompt: |
 
 success_criteria:
   # Named constant or clearly named variable used
-  - type: file_contains
+  - type: file_check
     description: "Widget uses a named startTime constant (not raw Date.now())"
     path: "src/widgets"
-    pattern: "SEVEN_DAYS_AGO|THIRTY_DAYS_AGO|sevenDaysAgo|thirtyDaysAgo|startTime\\s*="
+    patterns:
+      - pattern: "SEVEN_DAYS_AGO|THIRTY_DAYS_AGO|sevenDaysAgo|thirtyDaysAgo|startTime\\s*="
+        must_match: true
     weight: 3.0
     pass_threshold: 1.0
 
   # No raw Date.now() - n directly as the startTime argument
-  - type: file_contains
+  - type: file_check
     description: "No inline Date.now() subtraction passed directly to useInsights"
     path: "src/widgets"
-    pattern: "useInsights.*Date\\.now\\(\\)"
-    expected: false
+    patterns:
+      - pattern: "useInsights.*Date\\.now\\(\\)"
+        must_match: false
     weight: 2.0
     pass_threshold: 1.0
 

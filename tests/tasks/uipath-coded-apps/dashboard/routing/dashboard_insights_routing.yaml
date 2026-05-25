@@ -21,34 +21,42 @@ initial_prompt: |
 
 success_criteria:
   # Error trend uses agents.getErrors
-  - type: file_contains
+  - type: file_check
     description: "Error trend widget uses agents.getErrors endpoint"
     path: "src/widgets"
-    pattern: "agents\\.getErrors"
+    patterns:
+      - pattern: "agents\\.getErrors"
+        must_match: true
     weight: 3.0
     pass_threshold: 1.0
 
   # Latency uses agents.getLatencyTimeline
-  - type: file_contains
+  - type: file_check
     description: "Latency widget uses agents.getLatencyTimeline endpoint"
     path: "src/widgets"
-    pattern: "agents\\.getLatencyTimeline"
+    patterns:
+      - pattern: "agents\\.getLatencyTimeline"
+        must_match: true
     weight: 3.0
     pass_threshold: 1.0
 
   # Top erroring agents uses agents.getTopErroredAgents
-  - type: file_contains
+  - type: file_check
     description: "Top agents widget uses agents.getTopErroredAgents"
     path: "src/widgets"
-    pattern: "agents\\.getTopErroredAgents"
+    patterns:
+      - pattern: "agents\\.getTopErroredAgents"
+        must_match: true
     weight: 2.5
     pass_threshold: 1.0
 
   # All three use useInsights hook
-  - type: file_contains
+  - type: file_check
     description: "Widgets use useInsights hook (not raw fetch)"
     path: "src/widgets"
-    pattern: "useInsights"
+    patterns:
+      - pattern: "useInsights"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 

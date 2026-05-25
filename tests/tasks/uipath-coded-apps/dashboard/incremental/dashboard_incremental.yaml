@@ -38,10 +38,12 @@ success_criteria:
     pass_threshold: 1.0
 
   # New widget uses governance endpoint
-  - type: file_contains
+  - type: file_check
     description: "New widget uses governance.getPolicyTraces or governance.getOperationSummary"
     path: "src/widgets"
-    pattern: "governance\\.get"
+    patterns:
+      - pattern: "governance\\.get"
+        must_match: true
     weight: 3.0
     pass_threshold: 1.0
 
@@ -52,18 +54,22 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "ActiveAgentsKpi still contains original content (not overwritten)"
     path: "src/widgets/ActiveAgentsKpi.tsx"
-    pattern: "agents\\.getAgents"
+    patterns:
+      - pattern: "agents\\.getAgents"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
   # index.ts updated with new export
-  - type: file_contains
+  - type: file_check
     description: "index.ts exports both old and new widget"
     path: "src/widgets/index.ts"
-    pattern: "ActiveAgentsKpi"
+    patterns:
+      - pattern: "ActiveAgentsKpi"
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 

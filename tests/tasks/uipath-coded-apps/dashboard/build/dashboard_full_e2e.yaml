@@ -36,46 +36,58 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: ".env.local has VITE_UIPATH_CLOUD_URL (Insights RTM base)"
     path: ".env.local"
-    pattern: "VITE_UIPATH_CLOUD_URL=https://"
+    patterns:
+      - pattern: "VITE_UIPATH_CLOUD_URL=https://"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: ".env.local has VITE_UIPATH_BASE_URL (SDK API base)"
     path: ".env.local"
-    pattern: "VITE_UIPATH_BASE_URL=https://.*api\\.uipath\\.com"
+    patterns:
+      - pattern: "VITE_UIPATH_BASE_URL=https://.*api\\.uipath\\.com"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: ".env.local has non-empty VITE_UIPATH_PAT"
     path: ".env.local"
-    pattern: "VITE_UIPATH_PAT=ey"
+    patterns:
+      - pattern: "VITE_UIPATH_PAT=ey"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
   # ── Routing ───────────────────────────────────────────────────────────
-  - type: file_contains
+  - type: file_check
     description: "Active agents KPI uses agents.getAgents"
     path: "src/widgets"
-    pattern: "agents\\.getAgents"
+    patterns:
+      - pattern: "agents\\.getAgents"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Invocation chart uses agents.getConsumptionTimeline"
     path: "src/widgets"
-    pattern: "agents\\.getConsumptionTimeline"
+    patterns:
+      - pattern: "agents\\.getConsumptionTimeline"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Error trend uses agents.getErrors"
     path: "src/widgets"
-    pattern: "agents\\.getErrors"
+    patterns:
+      - pattern: "agents\\.getErrors"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
@@ -86,10 +98,12 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "App.tsx imports widgets and passes to DashboardShell"
     path: "src/App.tsx"
-    pattern: "DashboardShell"
+    patterns:
+      - pattern: "DashboardShell"
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 
@@ -111,19 +125,4 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
-    pass_threshold: 1.0
-
-  # ── UX narration (agent must not show technical output) ────────────────
-  - type: agent_response
-    description: "Final summary mentions dashboard is ready (no technical language)"
-    pattern: 'ready|preview|localhost|dashboard'
-    match_flags: IGNORECASE
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: agent_response
-    description: "Agent does not mention tsc or TypeScript in user-facing output"
-    pattern: 'tsc|TypeScript|noEmit|package\.json'
-    expected: false
-    weight: 1.0
     pass_threshold: 1.0

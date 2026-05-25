@@ -35,39 +35,49 @@ success_criteria:
     pass_threshold: 1.0
 
   # All Insights endpoints represented
-  - type: file_contains
+  - type: file_check
     description: "KPI widget uses agents.getAgents"
     path: "src/widgets"
-    pattern: "agents\\.getAgents"
+    patterns:
+      - pattern: "agents\\.getAgents"
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Error trend uses agents.getErrors"
     path: "src/widgets"
-    pattern: "agents\\.getErrors"
+    patterns:
+      - pattern: "agents\\.getErrors"
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Activity chart uses agents.getConsumptionTimeline"
     path: "src/widgets"
-    pattern: "agents\\.getConsumptionTimeline"
+    patterns:
+      - pattern: "agents\\.getConsumptionTimeline"
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Latency chart uses agents.getLatencyTimeline"
     path: "src/widgets"
-    pattern: "agents\\.getLatencyTimeline"
+    patterns:
+      - pattern: "agents\\.getLatencyTimeline"
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 
   # App.tsx wires widgets into DashboardShell
-  - type: file_contains
+  - type: file_check
     description: "App.tsx imports from widgets"
     path: "src/App.tsx"
-    pattern: "from.*widgets"
+    patterns:
+      - pattern: "from.*widgets"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 

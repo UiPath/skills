@@ -22,42 +22,52 @@ initial_prompt: |
 
 success_criteria:
   # Recipe 1: error trend → agents.getErrors with data[].{date,value}
-  - type: file_contains
+  - type: file_check
     description: "Error trend uses agents.getErrors (Recipe 1)"
     path: "src/widgets"
-    pattern: "agents\\.getErrors"
+    patterns:
+      - pattern: "agents\\.getErrors"
+        must_match: true
     weight: 2.5
     pass_threshold: 1.0
 
   # Recipe 1: data extracted from .data array (not raw response)
-  - type: file_contains
+  - type: file_check
     description: "Error trend extracts data array from response wrapper"
     path: "src/widgets"
-    pattern: "\\?\\.data\\s*\\?\\?\\s*\\[\\]|\\.data\\b.*\\[\\]"
+    patterns:
+      - pattern: "\\?\\.data\\s*\\?\\?\\s*\\[\\]|\\.data\\b.*\\[\\]"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
   # Recipe 3: active agents → agents.getAgents (count)
-  - type: file_contains
+  - type: file_check
     description: "Active agents KPI uses agents.getAgents (Recipe 3)"
     path: "src/widgets"
-    pattern: "agents\\.getAgents"
+    patterns:
+      - pattern: "agents\\.getAgents"
+        must_match: true
     weight: 2.5
     pass_threshold: 1.0
 
   # Recipe 10: top consumers → agents.getConsumption
-  - type: file_contains
+  - type: file_check
     description: "Consumption bar chart uses agents.getConsumption (Recipe 10)"
     path: "src/widgets"
-    pattern: "agents\\.getConsumption"
+    patterns:
+      - pattern: "agents\\.getConsumption"
+        must_match: true
     weight: 2.5
     pass_threshold: 1.0
 
   # Typed response interfaces present (indicates recipe-style coding)
-  - type: file_contains
+  - type: file_check
     description: "Widgets include TypeScript response type annotations"
     path: "src/widgets"
-    pattern: "useInsights<[{\\[]"
+    patterns:
+      - pattern: "useInsights<[{\\[]"
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 

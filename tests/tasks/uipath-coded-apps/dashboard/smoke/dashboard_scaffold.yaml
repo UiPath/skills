@@ -38,31 +38,39 @@ success_criteria:
     pass_threshold: 1.0
 
   # ── Required env vars (all 6 must be present) ────────────────────────
-  - type: file_contains
+  - type: file_check
     description: ".env.local has VITE_UIPATH_CLOUD_URL (Insights RTM base)"
     path: ".env.local"
-    pattern: "VITE_UIPATH_CLOUD_URL="
+    patterns:
+      - pattern: "VITE_UIPATH_CLOUD_URL="
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: ".env.local has VITE_UIPATH_BASE_URL (SDK API base)"
     path: ".env.local"
-    pattern: "VITE_UIPATH_BASE_URL="
+    patterns:
+      - pattern: "VITE_UIPATH_BASE_URL="
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: ".env.local has VITE_INSIGHTS_TENANT_ID"
     path: ".env.local"
-    pattern: "VITE_INSIGHTS_TENANT_ID="
+    patterns:
+      - pattern: "VITE_INSIGHTS_TENANT_ID="
+        must_match: true
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: ".env.local has VITE_UIPATH_PAT (dev auth token)"
     path: ".env.local"
-    pattern: "VITE_UIPATH_PAT="
+    patterns:
+      - pattern: "VITE_UIPATH_PAT="
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
@@ -79,10 +87,12 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Widget files use useInsights hook"
     path: "src/widgets"
-    pattern: "useInsights"
+    patterns:
+      - pattern: "useInsights"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
@@ -95,9 +105,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "App.tsx imports widgets"
     path: "src/App.tsx"
-    pattern: "widgets"
+    patterns:
+      - pattern: "widgets"
+        must_match: true
     weight: 1.0
     pass_threshold: 1.0

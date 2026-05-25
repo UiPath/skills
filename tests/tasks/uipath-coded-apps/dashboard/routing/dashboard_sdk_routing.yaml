@@ -21,35 +21,42 @@ initial_prompt: |
 
 success_criteria:
   # Queue items must use SDK
-  - type: file_contains
+  - type: file_check
     description: "Queue widget uses SDK QueueItems (not Insights)"
     path: "src/widgets"
-    pattern: "QueueItems"
+    patterns:
+      - pattern: "QueueItems"
+        must_match: true
     weight: 3.0
     pass_threshold: 1.0
 
   # Jobs must use SDK
-  - type: file_contains
+  - type: file_check
     description: "Jobs widget uses SDK Jobs (not Insights)"
     path: "src/widgets"
-    pattern: "Jobs\\.getAll|jobs\\.getAll"
+    patterns:
+      - pattern: "Jobs\\.getAll|jobs\\.getAll"
+        must_match: true
     weight: 3.0
     pass_threshold: 1.0
 
   # Tasks must use SDK
-  - type: file_contains
+  - type: file_check
     description: "Tasks widget uses SDK Tasks (not Insights)"
     path: "src/widgets"
-    pattern: "Tasks\\.getAll|tasks\\.getAll"
+    patterns:
+      - pattern: "Tasks\\.getAll|tasks\\.getAll"
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
   # None of the above should use Insights jobs.* endpoints
-  - type: file_contains
+  - type: file_check
     description: "No widget misroutes operational data to Insights jobs API"
     path: "src/widgets"
-    pattern: "jobs\\.getCompletedTimeline|jobs\\.getSummary|jobs\\.getTopFailures"
-    expected: false
+    patterns:
+      - pattern: "jobs\\.getCompletedTimeline|jobs\\.getSummary|jobs\\.getTopFailures"
+        must_match: false
     weight: 2.0
     pass_threshold: 1.0
 
