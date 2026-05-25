@@ -72,6 +72,15 @@ Namespaces: `UiPath.MicrosoftOffice365.Activities`
 - [activity-packages/o365-activities/overview.md](./activity-packages/o365-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/o365-activities/summary.md](./activity-packages/o365-activities/summary.md) — All playbooks for Microsoft Office 365 Activities issues
 
+## Excel Activities
+
+Desktop Excel activities from `UiPath.Excel.Activities` — read, write, and manipulate `.xlsx` / `.xls` workbooks on the host filesystem via Excel COM (Excel installed) or the OpenXML provider (Excel not required). Issues here involve workbooks locked by other processes, sheet names not found, range parsing failures, and provider-specific parsing errors on heavily formatted or sensitivity-labeled files. For cloud Excel via Microsoft Graph, see Microsoft Office 365 Activities above.
+
+Namespaces: `UiPath.Excel.Activities`
+
+- [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, providers, scopes, and common failure patterns
+- [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
+
 
 ## Playbooks
 

@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the macro-not-found branch of the excel-activities/execute-macro-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (Cannot run the macro 'RunImport' COMException) → jobs logs (VBA-module enumeration shows Module1.ProcessData and Module2.UpdateReport, neither matches 'RunImport') → workflow source. The enumeration evidence + configured-name contrast distinguishes branch 1 from branch 5 (Trust Center).",
+  "rules": [
+    {"match": "or folders list-current-user --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json", "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"},
+    {"match": "or jobs get \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-aa1111cc-output-json.json"},
+    {"match": "or jobs get aa111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-aa1111cc-output-json.json"},
+    {"match": "or jobs history \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-aa1111cc-output-json.json"},
+    {"match": "or jobs history aa111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-aa1111cc-output-json.json"},
+    {"match": "or jobs logs \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-aa1111cc-output-json.json"},
+    {"match": "or jobs logs aa111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-aa1111cc-output-json.json"}
+  ]
+}

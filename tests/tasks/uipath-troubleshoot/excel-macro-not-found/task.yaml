@@ -1,0 +1,133 @@
+task_id: skill-troubleshoot-excel-macro-not-found
+description: >
+  UiPath troubleshoot agent must diagnose an Execute Macro failure
+  (COMException 'Cannot run the macro...') where the configured
+  MacroName does not exist in the workbook's VBA project. Agent
+  must match the activity-packages/excel-activities/playbooks/execute-macro-failures.md
+  playbook, identify the macro-not-found branch from the workflow
+  source + the workbook's enumerated VBA modules in the job logs,
+  and recommend correcting the macro name or moving the macro into
+  the workbook.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, execute-macro, macro-not-found]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.Runtime.InteropServices.COMException: Cannot run the macro 'RunImport'. The macro may not be available in this workbook or all macros may be disabled.`
+  Pinned job key: aa111111-cccc-dddd-eeee-ffffaaaabbbb. The
+  workbook opens fine and the macro used to work — what's missing?
+
+  The project source for the failing process is at ./ExcelMacroProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-macro-failures playbook AND identified the macro-not-found branch (configured 'RunImport' is absent from the workbook's VBA project; the enumerated modules in the logs show only Module1.ProcessData and Module2.UpdateReport)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.Runtime.InteropServices.COMException: Cannot run the
+         macro 'RunImport'. The macro may not be available in this
+         workbook or all macros may be disabled.` Pinned job key:
+         aa111111-cccc-dddd-eeee-ffffaaaabbbb. The workbook opens
+         fine and the macro used to work — what's missing?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/execute-macro-failures.md
+        because the runtime error is the macro-not-found COMException
+        signature.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow's Execute Macro activity is configured with
+            `MacroName: "RunImport"`.
+          - The workbook's VBA project contains macros
+            `Module1.ProcessData` and `Module2.UpdateReport` -- NOT
+            `RunImport`. The configured name does not match any
+            macro in the workbook.
+          - Job logs from the activity surface the macro enumeration
+            ("VBA modules: ['Module1.ProcessData', 'Module2.UpdateReport']")
+            BEFORE the COM dispatch attempt; the enumeration is the
+            authoritative evidence.
+
+        The reference fix:
+          - Confirm the actual macro name in the workbook
+            (`Alt+F11` in Excel; the VBA editor shows the modules
+            and their public Sub names).
+          - Update the activity's `MacroName` to the correct
+            qualified name (e.g., `Module1.ProcessData`).
+          - If `RunImport` is supposed to exist (the workflow was
+            ported from a different workbook), either add it to
+            this workbook's VBA, or open the source workbook
+            instead.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the execute-macro-failures playbook AND
+             converged on the macro-not-found branch (named
+             RunImport as the configured-but-absent macro, listed
+             the actual macros present, recommended the correction).
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the macro as missing but did not
+             explicitly contrast against the workbook's actual VBA
+             modules.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (Trust Center,
+             VBA error, etc.) without supporting evidence; OR
+             identified the macro-not-found pattern without
+             matching the specific playbook.
+        0.2  Agent recognized the COMException as a macro-related
+             issue but neither matched the playbook nor identified
+             the missing macro.
+        0.0  Reached the wrong branch with no evidence (typically
+             Trust Center given the same error string), concluded
+             a different root cause, got blocked, or failed.
+
+      Be substance-focused. The contrast between the configured
+      RunImport and the workbook's actual VBA modules
+      (Module1.ProcessData, Module2.UpdateReport) is the
+      decisive signal -- penalize agents that miss it.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
