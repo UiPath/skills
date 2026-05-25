@@ -91,7 +91,7 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the us
      uip codedagent setup --force
      ```
 
-     If `has_venv == true`, just `source .venv/bin/activate` and continue. Do **not** run `uip codedagent new` or `init` (init only when `Input`/`Output` Pydantic models, the entry-function signature, or `<framework>.json` change).
+     If `has_venv == true`, just `source .venv/bin/activate` and continue. Do **not** run `uip codedagent new`. Re-run `init` only when schemas change — see step 6 for the full rule.
    - `existing-coded` → `source .venv/bin/activate`. If `has_venv == false`, run `uv venv --python 3.13 && source .venv/bin/activate && uv sync`. Then `uip codedagent setup --force` (idempotent — refreshes `uipathExePath`). Skip `uip codedagent new`. Run `uip codedagent init` only if `has_entry_points == false` or schemas changed.
    - `greenfield` → Full Workflow in [lifecycle/setup.md](lifecycle/setup.md). Infer the project name from the user's prompt or the current directory.
 
@@ -108,7 +108,12 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the us
 > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
 
 Then STOP and wait. On reply, run the matching one-shot login from [../authentication.md](../authentication.md) (maps environment → `--authority`). Never run `uip login` without `--tenant`.
-6. **Run** — Re-run `uip codedagent init` first **only when** `Input`/`Output` Pydantic models, the entry-function signature, or `<framework>.json` changed since the last run, **or** `has_entry_points == false`. Otherwise `entry-points.json` is already current — skip init. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
+6. **Run** — Re-run `uip codedagent init` first whenever any of these changed since the last init, **or** when `has_entry_points == false`:
+   - `Input`/`Output`/`State` Pydantic models or TypedDicts — any field added, removed, renamed, or retyped counts (the class name being the same does not).
+   - The entry function's signature (parameters or return type annotation).
+   - `<framework>.json` (`langgraph.json` / `llama_index.json` / `openai_agents.json` / `uipath.json` `functions`).
+
+   Skip init only when the edit is purely inside node bodies / helpers (logic, prompts, business rules) and leaves every schema and the entry signature byte-identical. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
 7. **Evaluate** — Run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report`. Idempotent by `has_evaluators` / `has_smoke_set`: create the missing one(s) only — **never overwrite an existing evaluator config or smoke set**, the user may have tuned them.
 
    **Note:** `uipath-llm-judge-trajectory-similarity` requires emitted trace spans to populate `AgentRunHistory`. Plain `StateGraph` agents without explicit OpenTelemetry tracing produce empty history → all cases score 0.0 even on successful runs. If the smoke set scores 0.0, verify the agent actually executed (via local `uip codedagent run`) before treating it as a logic failure; consider an output-only evaluator for non-conversational graphs.
