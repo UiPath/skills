@@ -1,6 +1,6 @@
 # Final Resolution
 
-**Matched playbook:** `references/products/orchestrator/playbooks/job-pending-no-host.md`
+**Matched playbook:** `references/products/orchestrator/playbooks/job-pending-stale-dispatch.md` (with `job-pending-no-host.md` as the co-matched sibling, eliminated by the discriminator below)
 
 **Scope:** orchestrator → process
 

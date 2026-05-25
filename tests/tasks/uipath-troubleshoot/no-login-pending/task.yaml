@@ -90,18 +90,29 @@ success_criteria:
       You must grade BOTH dimensions in a single score:
 
       DIMENSION A -- Correct playbook
-        The matching playbook is
+        The authoritative matching playbook is
+          references/products/orchestrator/playbooks/job-pending-stale-dispatch.md
+        because the symptom is `PendingReasons.Errors` containing
+        no-host-family codes (`TemplateNoHostsAvailable`,
+        `DynamicJobConnectedMachinesInvalid`,
+        `DynamicJobConnectedMachinesWindowsRobotVersionInvalid`) WHILE
+        the template currently has a connected runtime, credentials
+        and mode and license are all valid, and `JobHistory` has only
+        the original Pending entry — i.e. the dispatch-time reasons
+        are stale.
+
+        The sibling playbook
           references/products/orchestrator/playbooks/job-pending-no-host.md
-        because the job is stuck Pending with
-        `TemplateNoHostsAvailable` (plus
-        `DynamicJobConnectedMachinesInvalid` and
-        `DynamicJobConnectedMachinesWindowsRobotVersionInvalid`) in its
-        `PendingReasons.Errors`.
+        is the co-matched candidate (same error codes) but is
+        eliminated by the discriminator (host IS connected). Either
+        playbook path in `matched_playbooks` counts toward Dimension A
+        as long as the agent's conclusion reflects the stale-dispatch
+        reading (see Dimension B).
 
         Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` -- the
-             job-pending-no-host playbook should appear (absolute or
-             relative path).
+          1. state.json's `matched_playbooks` -- either or both of
+             job-pending-stale-dispatch / job-pending-no-host should
+             appear (absolute or relative path).
           2. The agent's tool-call summary -- a Read on a file under
              references/products/orchestrator/playbooks/.
           3. state.json's `scope.domain` -- should include
@@ -111,29 +122,27 @@ success_criteria:
         playbooks (robot-credentials, license-exhausted, attended-vs-
         unattended) while ruling them out. Exploration is normal.
 
-      DIMENSION B -- Same job-dispatch failure family as RESOLUTION.md
-        (flexible — the `job-pending-no-host` playbook is low-
-        confidence with multiple sub-causes)
+      DIMENSION B -- Same conclusion as RESOLUTION.md
 
-        The reference root cause is **at the job-dispatch layer:** the
-        job is Pending with `TemplateNoHostsAvailable` (plus
-        `DynamicJobConnectedMachinesInvalid` /
-        `DynamicJobConnectedMachinesWindowsRobotVersionInvalid`) and the
-        remediation lives in the host/template-binding family. Any of
-        these sub-causes counts as a correct conclusion as long as the
-        agent (a) recognizes the failure is at the host-availability /
-        template-binding layer (not credential / mode / license /
-        per-robot-no-value), and (b) recommends a fix in the same
-        family:
-          - Stop and re-trigger the job so Orchestrator performs a
-            fresh eligibility check against the now-connected runtime
-            (reference's preferred fix — H5 stale-PendingReasons path).
-          - Assign / re-attach the `danVM` machine template to the
-            Shared folder so the dispatcher sees an eligible host
-            (alternate sub-cause: template not bound to folder).
-          - Ensure an Unattended runtime is connected to the danVM
-            template and visible to Orchestrator at dispatch time
-            (alternate sub-cause: no host at dispatch).
+        The reference root cause is **stale dispatch-time
+        PendingReasons:** the no-host-family codes captured at the
+        original dispatch are frozen and Orchestrator has not
+        re-evaluated them, even though the underlying conditions are
+        now resolved (runtime connected, credential present, Service
+        Mode, license slot free, JobHistory shows only the original
+        Pending entry). The authoritative fix is **stop + re-trigger
+        the job** so a fresh dispatch performs a new eligibility
+        check.
+
+        Adjacent valid sub-causes within the same family still count
+        for partial credit when the agent stops short of the
+        stale-snapshot framing:
+          - "Assign / re-attach the danVM template to the Shared
+            folder so the dispatcher sees an eligible host" — close
+            but misses that the template IS already producing a
+            connected runtime.
+          - "Ensure an Unattended runtime is connected to the danVM
+            template" — close but misses that one IS connected.
 
         Penalize conclusions that:
           - Claim the robot is missing a credential.
@@ -157,17 +166,17 @@ success_criteria:
 
       SCORING RUBRIC (single score reflecting both dimensions):
 
-        1.0  Agent matched job-pending-no-host AND named the
-             stale-PendingReasons / re-trigger sub-cause exactly AND
-             recommended stop + re-trigger.
-        0.8  Agent matched job-pending-no-host AND identified a valid
-             sub-cause within the host/template-binding family
-             (template-not-assigned, no-host-at-dispatch, stale
-             PendingReasons) AND recommended a fix in that family
-             (re-trigger, assign template, ensure host connected).
-             This is the expected outcome when the agent does not have
-             a multi-turn dialog to drill into stale-state evidence.
-        0.5  Only one dimension correct (playbook OR conclusion).
+        1.0  Agent matched job-pending-stale-dispatch (with or
+             without job-pending-no-host as co-match) AND named the
+             stale-PendingReasons / frozen-snapshot framing AND
+             recommended stop + re-trigger as the primary fix.
+        0.8  Agent matched the right playbook family AND landed on a
+             remediation in the right family (re-trigger, assign
+             template, ensure host connected) but stopped short of
+             the stale-snapshot framing — instead picking an adjacent
+             sub-cause (template-not-assigned, no-host-at-dispatch).
+        0.5  Only one dimension correct (right playbook OR right
+             conclusion family, but not both).
         0.2  Recognized the surface (job is Pending) but neither
              matched the playbook nor identified the dispatch layer.
         0.0  Misdiagnosed (concluded credential / mode / license-
