@@ -108,7 +108,7 @@ All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uni
 5. **`.uipx` and `resources/solution_folder/` must always agree on the project set.** Diffing them is the fastest way to detect corrupted state. If they disagree, fix via `uip solution project add/remove` — never by editing either side directly.
 6. **Run `uip solution resource refresh` before `pack` or `upload`.** Bundled artefact files and `userProfile/<userId>/debug_overwrites.json` must reflect current cloud state. Skipping refresh ships stale bindings.
 7. **Coded apps are NOT registered in `.uipx`.** `uip solution project add` does not apply to coded-app directories; they deploy independently via `uip codedapp publish / deploy`. A coded app folder can sit alongside a solution but is not part of its manifest.
-8. **Verify the artifact after every CLI mutation.** Read `project.json`, `.uipx`, or `uip solution deploy status` output — exit codes lie. This mirrors the Design half's "verify the SDD after write" discipline.
+8. **Verify the artifact after every CLI mutation.** Read `project.json`, `.uipx`, or `uip solution deploy status` output — exit codes lie. This mirrors the Design half's "verify the SDD after write" discipline. Verification is additional; it does not replace requested read-only list commands. If the user asks to show or list registered projects, solution resources, packages, deployments, or statuses, run the matching `uip solution ... list/status --output json` command and then inspect files only as a secondary sanity check.
 9. **For multi-environment promotion, the deploy config (`-c <CONFIG_KEY>`) is the environment selector.** Same `.uipx` deploys to dev/staging/prod via different config keys, not different packages.
 
 ### Workflow

@@ -78,6 +78,8 @@ uip solution project remove ./InvoiceAutomation/OldProject --output json
 
 Enumerate the projects registered in the local `.uipx` manifest. Reads only on-disk metadata — no backend call, so safe to use offline or in CI checks.
 
+When the user asks to show or list registered projects, run this command. Reading the `.uipx` directly is useful as a follow-up verification step, but it is not a replacement for the CLI list surface.
+
 ```bash
 # from inside the solution dir
 uip solution project list --output json

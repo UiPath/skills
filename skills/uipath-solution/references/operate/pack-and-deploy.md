@@ -46,11 +46,11 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<solutionPath>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
-| `<outputPath>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'outputPath'`) | -- |
+| `<output-path>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'output-path'`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
 
-The output is a `.zip` file named `<name>.<version>.zip` written under `<outputPath>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resource refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
+The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resource refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
 ## Step 2: Publish to the Solution Feed
 

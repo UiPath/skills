@@ -105,14 +105,14 @@ uip solution upload <SolutionDir> --output json
 Pack a Case project directory into a `.nupkg` file. Only used when the user explicitly requests Orchestrator deployment via `uip solution publish` — not the default publish path.
 
 ```bash
-uip maestro case pack <project-path> <outputPath>
+uip maestro case pack <project-path> <output-path>
 uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 ```
 
 | Flag | Description |
 |------|-------------|
 | `<project-path>` | **(required)** Path to the Case project directory |
-| `<outputPath>` | **(required)** Output directory for the `.nupkg` |
+| `<output-path>` | **(required)** Output directory for the `.nupkg` |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
 
