@@ -118,6 +118,25 @@ Some properties are only required when another property has a specific value:
 
 See `ui-automation.md` NKeyboardShortcuts section for the full hotkey encoding reference.
 
+## NTypeInto `Text` with literal `[k(...)]` special-key tokens
+
+When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key tokens, use the long-form element — never the attribute form. The attribute form runs correctly but the value does not render in Studio, so the workflow looks empty even though it works.
+
+**Wrong:** `Text="[&quot;13700132[k(enter)]&quot;]"` → runs, but `Text` shows blank in Studio.
+
+**Correct:**
+```xml
+<uix:NTypeInto ...>
+  <uix:NTypeInto.Text>
+    <InArgument x:TypeArguments="x:String">["13700132[k(enter)]"]</InArgument>
+  </uix:NTypeInto.Text>
+</uix:NTypeInto>
+```
+
+Alternatives:
+- Build the bracket characters with `Chr(91)` / `Chr(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; Chr(91) &amp; &quot;k(enter)&quot; &amp; Chr(93)]"`.
+- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` (or a second `NTypeInto`) for `[k(enter)]`.
+
 ## ActivityAction/ActivityFunc Initialization
 
 Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `ActivityAction` to wrap their child content. The XAML pattern is:

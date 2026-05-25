@@ -708,6 +708,8 @@ DisplayName="My Activity" Message="[variable]" Level="Info"
 
 **Complex objects** (BackupSlot, MailboxArgument, ActivityAction, dictionaries) always require child element syntax — they cannot be expressed as a single attribute value.
 
+**Strings containing literal `[` or `]`** (e.g., UIA special-key tokens like `[k(enter)]`, `[d(ctrl)]`, `[u(ctrl)]`) require child element syntax. The attribute form `Foo="[&quot;…[k(enter)]&quot;]"` runs correctly because the runtime VB compiler reads quoted string literals correctly, but the literal brackets inside the string collide with the outer `[ … ]` VB expression markers and the value will not render in Studio. See [common-pitfalls.md § NTypeInto `Text` with literal `[k(...)]` special-key tokens](common-pitfalls.md#ntypeinto-text-with-literal-k-special-key-tokens).
+
 ### Version-Sensitive Properties
 
 Properties may exist in one package version but not another. If `validate` reports "Could not find member 'PropertyName'":

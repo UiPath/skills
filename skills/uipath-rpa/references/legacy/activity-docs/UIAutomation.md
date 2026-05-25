@@ -88,6 +88,18 @@ Legacy desktop UI automation for Windows. Click, type, find elements, manage win
 [k(F1)]         - Function key F1-F12
 ```
 
+**Authoring rule:** when any of these tokens appears in `Text`, write the value with child element syntax — not attribute form. The attribute form `Text="[&quot;13700132[k(enter)]&quot;]"` runs correctly but the value will not render in Studio because the literal `[` / `]` inside the string collide with the outer VB expression markers. Use:
+
+```xml
+<uix:NTypeInto ...>
+  <uix:NTypeInto.Text>
+    <InArgument x:TypeArguments="x:String">["13700132[k(enter)]"]</InArgument>
+  </uix:NTypeInto.Text>
+</uix:NTypeInto>
+```
+
+See `../../xaml/common-pitfalls.md` § "NTypeInto `Text` with literal `[k(...)]` special-key tokens" for alternatives (`Chr(91)`/`Chr(93)` construction, split-activity).
+
 ---
 
 ## Critical Gotchas
