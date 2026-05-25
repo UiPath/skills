@@ -33,6 +33,8 @@ name: uipath-coded-apps/dashboards
 - [primitives/build-plan.md](primitives/build-plan.md) — plan generation + approval gate
 - [primitives/data-router.md](primitives/data-router.md) — SDK vs Insights routing
 - [primitives/insights-client.md](primitives/insights-client.md) — Insights HTTP client
-- [insights-catalog.md](insights-catalog.md) — Insights capability catalog
+- [primitives/state-file.md](primitives/state-file.md) — per-project state.json (routing name, version, deployment metadata)
+- [primitives/incremental-editor.md](primitives/incremental-editor.md) — editing existing dashboards (add/remove/change widgets)
+- [insights-catalog.md](insights-catalog.md) — Insights capability catalog + widget recipes
 - [aesthetic/layout-patterns.md](aesthetic/layout-patterns.md) — Dashboard layout rules (10 rules, widget row ordering)
 - [aesthetic/charting.md](aesthetic/charting.md) — Chart type selection, colors, DeltaBadge direction guide

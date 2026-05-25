@@ -45,6 +45,18 @@ Server runs in foreground with HMR; Ctrl+C to stop.
 
 **Never say:** "Writing widget files", "Running tsc --noEmit", "Phase 6", "scaffold", "package.json", "useInsights", or any other implementation detail.
 
+## Phase 0 — Incremental check (1 Bash, before anything else)
+
+Before loading any primitives, check whether this is an edit of an existing dashboard:
+
+```bash
+ls .dashboard/state.json 2>/dev/null && echo "INCREMENTAL" || echo "FRESH"
+```
+
+**If INCREMENTAL** → Read `../../primitives/incremental-editor.md` and follow that flow instead of this pipeline. Do not continue below.
+
+**If FRESH** → Continue to Phase 1.
+
 ## Phase 1 — Boot (**MANDATORY: one parallel block, all 4 reads simultaneously**)
 
 > **This is the single biggest performance lever in the pipeline.**
@@ -315,14 +327,22 @@ import { <Widget1>View } from './dashboard/views/<Widget1>View'
 {/* GENERATED_ROUTES_END */}
 ```
 
-## Phase 8 — Validate + Summary (2 Bash)
+## Phase 8 — Validate (3-pass) + Summary
+
+### Pass 1 — TypeScript (1 Bash)
 ```bash
 cd <PROJECT_DIR> && tsc --noEmit
 ```
-If errors → fix them before proceeding. Common fixes:
+If errors → fix silently (max 2 attempts). Common fixes:
 - Missing import → add import at top of file
 - Type mismatch on `data` → add `as <ExpectedType>` cast
 
+### Pass 2 — API existence check (0 tool calls, in-context)
+For every `useInsights('namespace.method', ...)` call written in Phase 7:
+verify that `namespace.method` exists in the routing table in `data-router.md` (already in memory from Phase 1).
+If any method is unrecognised → fix the widget to use the correct endpoint before continuing.
+
+### Pass 3 — Dev server (1 Bash)
 ```bash
 # Start the dev server and open browser automatically
 # --open launches the browser; server stays running for HMR
