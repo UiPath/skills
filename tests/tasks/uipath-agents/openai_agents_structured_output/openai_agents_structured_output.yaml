@@ -22,21 +22,19 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build an OpenAI Agents UiPath coded agent named `review-analyzer` that reads
-  a product review and returns a structured analysis.
+  Build an OpenAI Agents UiPath coded agent named `review-analyzer` that
+  analyzes product reviews and returns a structured result.
 
-  The agent takes a `review_text` field as input (call the input model
-  `ReviewInput`) and returns three fields: `sentiment` (positive, negative, or
-  neutral), `confidence` (a score from 0.0 to 1.0), and `summary` (one
-  sentence). Call the output model `ReviewOutput` and set it as the agent's
-  `output_type`.
+  The agent takes a product review as input and returns the sentiment
+  (positive, negative, or neutral), a confidence score (0.0–1.0), and a
+  one-sentence summary. Name the input model `ReviewInput` (with a
+  `review_text` field) and the output model `ReviewOutput`, and set it as
+  the agent's `output_type`.
 
-  Route LLM calls through UiPath's gateway by initializing `UiPathChatOpenAI`. Use `gpt_4o_mini_2024_07_18` at temperature 0.
-
-  Scaffold, init, then run the agent with:
+  Run it with this input:
   `'{"messages": "Analyze this review", "review_text": "This product is absolutely amazing — best purchase I have made in years."}'`
 
-  Write `RAN_OK` to `run_marker.txt` after a successful run. Do NOT deploy.
+  Do NOT deploy.
 
 success_criteria:
   - type: command_executed

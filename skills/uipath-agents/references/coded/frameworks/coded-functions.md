@@ -2,7 +2,7 @@
 
 ## What Python Coded Functions Are
 
-Python Coded Functions are **atomic, bespoke units of business logic** — deterministic Python code packaged as a first-class UiPath artifact. Use them when generic activities don't cover the required logic: calling a third-party API with custom auth, processing documents with domain-specific rules, querying ERP systems via Integration Service connections, or transforming data in ways that no out-of-the-box activity handles.
+Python Coded Functions are **atomic, bespoke units of business logic** — deterministic Python code packaged as a first-class UiPath artifact. Use them when generic activities don't cover the required logic: calling a third-party API with custom auth, processing documents with domain-specific rules, querying ERP systems via Integration Service connections, transforming data in ways that no out-of-the-box activity handles, among other scenarios.
 
 A Coded Function is **not an agent**. It does not reason, route, or call LLMs. It takes typed input, executes deterministic code, and returns typed output.
 
@@ -17,7 +17,7 @@ A Python Coded Function can be invoked from any UiPath surface:
 | Coded Agents (LangGraph / LlamaIndex / OpenAI Agents) | Called as a tool or step |
 | Other Coded Functions | Direct Python call or Orchestrator job |
 | Orchestrator API | `POST /Jobs/StartJobs` |
-| CLI | `uip functions pack` → `uip functions publish` |
+| CLI | `uip functions run` |
 
 ### Python Functions vs JS Functions
 
@@ -29,8 +29,8 @@ A Python Coded Function can be invoked from any UiPath surface:
 | **SDK access** | Full UiPath Python SDK (assets, buckets, queues, connections) | Workload token forwarding only |
 | **Scaffold** | `uip functions new <name> --language py` | `uip functions new <name> --language ts` (default) |
 | **Init** | `uip functions init` (generates entry-points.json) | Not needed |
-| **Local dev** | `uip functions run` | `uip functions serve` + `uip functions run` |
-| **Best for** | Agentic process steps, ERP integration, document AI, data pipelines | Backend-for-Frontend for Coded Apps |
+| **Local dev** | `uip functions run` / `uip functions dev` | `uip functions serve` + `uip functions run` |
+| **Best for** | Deterministic, simple, atomic step in an agentic workflow | Backend-for-Frontend for Coded Apps |
 
 Use Python when the logic needs job semantics, platform SDK access, or is invoked from Maestro/agents. Use JS when the caller is a Coded App frontend and low HTTP latency matters.
 
@@ -68,7 +68,7 @@ uip functions new <name> --language js       # JavaScript Function (JS/TS, no jo
 
 ### Step 2: Define Function Schema
 
-Schemas are Python `@dataclass` types (not Pydantic BaseModel):
+Schemas use `@dataclass` or Pydantic `BaseModel` (preferred for validation):
 
 ```python
 from dataclasses import dataclass, field
@@ -96,12 +96,15 @@ class Output:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from uipath.core.tracing import traced
+from functools import lru_cache
+
 from uipath.platform import UiPath
+
 
 @dataclass
 class Input:
     document_id: str = ""
+
 
 @dataclass
 class Output:
@@ -109,21 +112,17 @@ class Output:
     error_type: str = ""
     error_message: str = ""
 
-# Lazy SDK singleton — never instantiate UiPath() at module level
-_sdk: UiPath | None = None
 
-def sdk() -> UiPath:
-    global _sdk
-    if _sdk is None:
-        _sdk = UiPath()
-    return _sdk
+@lru_cache(maxsize=1)
+def _sdk() -> UiPath:
+    return UiPath()
 
-@traced(name="my_function", run_type="uipath")
-def my_function(input: Input) -> Output:
+
+async def my_function(input: Input) -> Output:
     out = Output()
     try:
         # SDK calls, data processing, rule-based logic only
-        asset = sdk().assets.retrieve("MY_ASSET", folder_path="Shared")
+        asset = await _sdk().assets.retrieve_async("MY_ASSET", folder_path="Shared")
         out.result = str(asset.value)
     except Exception as exc:
         out.error_type = "FAILED"
@@ -132,11 +131,11 @@ def my_function(input: Input) -> Output:
 ```
 
 Key rules:
-- **`@dataclass`** for Input/Output — not `BaseModel`
-- **Sync function** — `def`, not `async def`; the function name is arbitrary
-- **Lazy SDK init** — instantiate `UiPath()` inside a getter, never at module level
+- **`@dataclass` or `BaseModel`** for Input/Output — `BaseModel` preferred for validation
+- **Async preferred** — use `async def`; sync `def` also works; function name is arbitrary
+- **Lazy SDK init** — use `@lru_cache(maxsize=1)` on a getter, never instantiate `UiPath()` at module level
 - **Errors returned, not raised** — populate `error_type`/`error_message` output fields and return; never let exceptions bubble out of the entrypoint
-- **`@traced(name=..., run_type="uipath")`** — apply to the entrypoint and any sub-functions you want visible in LLM Ops Traces
+- **Tracing** — root entrypoint is traced automatically; apply `@traced(name=..., run_type="uipath")` only to sub-functions you want visible in LLM Ops Traces
 
 ### Step 4: Register in `uipath.json`
 
@@ -162,15 +161,14 @@ authors = [{ name = "..." }]
 requires-python = ">=3.11"
 dependencies = [
     "uipath>=2.10",
-    "httpx>=0.28",          # if making HTTP calls
     "pydantic-settings>=2", # if using Settings for env/asset config
 ]
 
 [tool.uipath]
-type = "function"           # required — identifies this as a Python Coded Function
+type = "function"
 ```
 
-**`[tool.uipath] type = "function"` is required.** Without it the project is treated as a coded agent. No `[build-system]` section.
+No `[build-system]` section. The actual project-type discriminator is the `functions` key in `uipath.json`, not `pyproject.toml`.
 
 ### Step 6: Generate Entry Points
 
@@ -183,14 +181,14 @@ Python only. Discovers entrypoints and generates `entry-points.json`, `bindings.
 ### Step 7: Run Locally
 
 ```bash
-uip functions run <ENTRYPOINT_NAME> --input '<JSON_INPUT>'
+uip functions run <ENTRYPOINT_NAME> --input-file input.json --output-file output.json
 ```
 
-`<ENTRYPOINT_NAME>` is the key from the `functions` object in `uipath.json`. Always use `uip functions run` for local execution — do not invoke the function directly with Python.
+`<ENTRYPOINT_NAME>` is the key from the `functions` object in `uipath.json`. Always use `uip functions run` for local execution — do not invoke the function directly with Python. `--input` (inline JSON) is the legacy flag; prefer `--input-file`. Always pass `--output-file` to capture the result.
 
 Example:
 ```bash
-uip functions run main --input '{"invoice_number": "INV-001", "vendor_name": "Acme", "total_amount": 100.0}'
+uip functions run main --input '{"invoice_number": "INV-001", "vendor_name": "Acme", "total_amount": 100.0}' --output-file output.json
 ```
 
 ### Step 8: Pack and Publish
@@ -209,10 +207,9 @@ uip functions push
 
 ## Important Notes
 
-- `UiPath()` must never be instantiated at module level — always inside a function body
-- `[tool.uipath] type = "function"` in `pyproject.toml` is required
+- `UiPath()` must never be instantiated at module level — use `@lru_cache(maxsize=1)` on a getter
+- Project type is determined by the `functions` key in `uipath.json`, not by `pyproject.toml`
 - `uip functions init` must run before `pack` or `push` — it generates `entry-points.json`
 - Python Functions have full job semantics: Orchestrator job ID, audit trail, retry, scheduling
 - JS Functions have no job semantics and cannot be started as Orchestrator jobs — use Python when the caller is Maestro, a Flow, or an agent
 - `uip functions run` is the only supported local execution method — do not invoke the function directly with Python; `uip functions serve` is JS/TS only
-- If cloud-backed work requires authentication, run `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.
