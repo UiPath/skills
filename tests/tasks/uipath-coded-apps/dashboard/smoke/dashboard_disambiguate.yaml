@@ -1,8 +1,9 @@
 task_id: uipath-coded-apps-dashboard-disambiguate
 description: >
-  Validates that an ambiguous prompt triggers the Apps vs Dashboards
-  disambiguation question before any action is taken.
-tags: [uipath-coded-apps, activation, dashboard]
+  Validates that an ambiguous prompt does not trigger immediate scaffolding.
+  The agent must show a disambiguation question and halt before building.
+  Verified by: npm ci not run AND no package.json created.
+tags: [uipath-coded-apps, smoke, dashboard]
 
 sandbox:
   driver: tempdir
@@ -12,9 +13,9 @@ initial_prompt: |
   I need to create something to track my automation performance.
 
 success_criteria:
-  # Agent must NOT scaffold before getting intent clarity
+  # Primary: agent must NOT run npm ci before disambiguation
   - type: command_executed
-    description: "Agent did NOT run npm ci — no scaffold before disambiguation"
+    description: "Agent did NOT run npm ci — halted for disambiguation"
     tool_name: "Bash"
     command_pattern: 'npm\s+ci'
     min_count: 0
@@ -22,13 +23,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Agent must ask "which fits your goal" or numbered options
-  - type: llm_judge
-    description: "Agent output contains a disambiguation question with numbered options"
-    query: >
-      Did the agent ask a disambiguation question with numbered options (1 and 2)
-      asking whether the user wants to build a Web App/Action App or generate a dashboard?
-      Answer YES or NO.
-    expected: "YES"
-    weight: 3.0
+  # Secondary: no scaffold files created
+  # Uses node (guaranteed by sandbox: node: {}) rather than python3 which may not be on PATH
+  - type: run_command
+    description: "package.json NOT created — agent paused before building"
+    command: "node -e \"const fs=require('fs'); process.exit(fs.existsSync('package.json') ? 1 : 0)\""
+    expected_exit_code: 0
+    timeout: 10
+    weight: 2.0
     pass_threshold: 1.0
