@@ -240,14 +240,15 @@ Single Bash call — copies template, writes env vars, installs deps, inits shad
 ```bash
 cp -r assets/templates/dashboard/scaffold/. <PROJECT_DIR>/ && \
 cd <PROJECT_DIR> && \
-printf "VITE_SDK_BASE_URL=https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>\nVITE_INSIGHTS_BASE_URL=https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>/insights_/api\n" > .env.local && \
+printf "VITE_SDK_BASE_URL=https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>\nVITE_INSIGHTS_RTM_BASE_URL=https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>/insightsrtm_\nVITE_INSIGHTS_TENANT_ID=<TENANT_UUID>\n" > .env.local && \
 echo ".env.local" >> .gitignore && \
 npm install && \
 npx shadcn@latest init --defaults
 ```
 
-`<ORG_NAME>` and `<TENANT_NAME>` are substituted from auth-context resolution (Phase 2)
-before this command runs. Never interpolate them from user input directly.
+`<ORG_NAME>`, `<TENANT_NAME>`, and `<TENANT_UUID>` are substituted from auth-context
+resolution (Phase 2) before this command runs. `<TENANT_UUID>` comes from the `.auth`
+file read in auth-context Step 3. Never interpolate values from user input directly.
 
 This replaces ~30 individual Write calls. Scaffold provides:
 `package.json`, `vite.config.ts`, `tailwind.config.ts`, `tsconfig.json`,
@@ -320,16 +321,38 @@ If `isLoggedIn` is false → stop, tell user to run `uip login`.
 }
 ```
 
-## Step 3 — Construct base URLs
+## Step 3 — Resolve tenantId (UUID)
+Insights RTM endpoints require `tenantId` (UUID) in every POST body — NOT the tenant name.
+The `uip` CLI persists auth state in a local `.auth` file. Read it directly:
+```bash
+uip login status --output json
 ```
-SDK base:      https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>
-Insights base: https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>/insights_/api
+The JSON output includes a `tenantId` field alongside `accountName` and `tenantName`.
+If the field name differs across CLI versions, read the raw auth file:
+```bash
+# .auth file location (confirm with CLI docs — typically ~/.uipath/.auth or similar)
+cat ~/.uipath/.auth | node -e \
+  "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); \
+   console.log(d.tenantId || d.TenantId)"
 ```
+Cache the resolved tenantId in memory for the session — never write to disk.
+Write it to `.env.local` during scaffold Phase 6 so the React app can use it at runtime.
+
+## Step 4 — Construct base URLs
+```
+SDK base:          https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>
+Insights RTM base: https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>/insightsrtm_
+Insights Jobs base: https://cloud.uipath.com/<ORG_NAME>/<TENANT_NAME>  (path: /api/v1.0/InsightsJobs/...)
+```
+The `insightsrtm_` suffix applies to Agents, Traceview, and Governance namespaces.
+Jobs uses a different sub-path — confirm the exact base with the Insights team if the Jobs
+path pattern differs from `insightsrtm_`.
 Never hardcode these. Pass as constructor args to InsightsClient and TS SDK instance.
 
 ## Error handling
 - 401 → token expired → re-run `uip login`, retry once
 - Missing accountName/tenantName → tell user: "Run `uip login` and try again"
+- Cannot resolve tenantId from JWT → fall back to Orchestrator API call (Step 3 curl variant)
 ```
 
 ---
@@ -354,18 +377,43 @@ Rule: SDK for operational state (current counts, list views, snapshots).
 | case SLA, SLA compliance                                 | SDK      | maestro/cases → CaseInstances.getSlaSummary()|
 | action center tasks, pending approvals                   | SDK      | action-center/tasks → Tasks.getAll()         |
 | DataFabric entity records                                | SDK      | data-fabric/entities → Entities.getAll()     |
-| agent success rate, agent failure rate                   | Insights | /agent-metrics                               |
-| token consumption, LLM usage, cost per agent             | Insights | /agent-traces                                |
-| tool usage, tool guardrails, tool violations             | Insights | /governance-metrics                          |
-| P50 / P95 / P99 latency, percentile execution time       | Insights | /latency-analytics                           |
-| job execution trend (historical), process duration trend | Insights | /job-analytics                               |
-| governance violations, policy compliance                 | Insights | /governance-metrics                          |
-| trace spans, distributed tracing                         | Insights | /traces                                      |
+| agent success rate, failure rate, avg duration           | Insights | agents.getSummaryV2 → POST /Agents/summaryV2            |
+| agent error spikes, errors over time                     | Insights | agents.getErrors → POST /Agents/errors                  |
+| top erroring agents, error leaderboard                   | Insights | agents.getTopErroredAgents → POST /Agents/topErroredAgents |
+| agent incidents, recurring errors, error detail table    | Insights | agents.getIncidents → POST /Agents/incidents            |
+| agent incident type mix (error/escalation/policy split)  | Insights | agents.getIncidentDistribution → POST /Agents/incidentDistribution |
+| token consumption, AGU, PLTU, cost per agent             | Insights | agents.getConsumption → POST /Agents/consumption        |
+| consumption over time, AGU burn-rate                     | Insights | agents.getConsumptionTimeline → POST /Agents/consumptionTimeline |
+| P50 / P95 latency per agent over time                    | Insights | agents.getLatencyTimeline → POST /Agents/latencyTimeline |
+| agent fleet list, health score, stale agents             | Insights | agents.getAgents → POST /Agents/agents                  |
+| AGU/PLTU split by complete vs incomplete jobs            | Insights | agents.getUnitConsumption → POST /Agents/summary/unit-consumption |
+| agent filter dropdown (names list)                       | Insights | agents.getNames → POST /Agents/names                    |
+| trace latency P50/P95 over time                          | Insights | traceview.getLatencyTimeline → POST /Traceview/latencyTimeline |
+| trace errors by agent over time                          | Insights | traceview.getErrorsTimeline → POST /Traceview/errorsTimeline |
+| memory usage (in/out/enabled/disabled per time bucket)   | Insights | traceview.getMemoryTimeline → POST /Traceview/memoryTimeline |
+| memory API calls over time                               | Insights | traceview.getMemoryCallsTimeline → POST /Traceview/memoryCallsTimeline |
+| top memory spaces, memory adoption                       | Insights | traceview.getTopMemorySpaces → POST /Traceview/topMemorySpaces |
+| per-agent AIU/PLTU from traces                           | Insights | traceview.getUnitConsumption → POST /Traceview/unitConsumption |
+| policy Allow/Deny/NoOp ratio                             | Insights | governance.getPolicySummary → POST /Governance/policy/summary |
+| recent policy decisions, denial feed                     | Insights | governance.getPolicyTraces → POST /Governance/policy/traces |
+| governed operation volume                                | Insights | governance.getOperationSummary → POST /Governance/operation/summary |
+| completed job trend over time                            | Insights | jobs.getCompletedTimeline → POST /InsightsJobs/completed-timeline |
+| pending/running job trend over time                      | Insights | jobs.getUncompletedTimeline → POST /InsightsJobs/uncompleted-timeline |
+| top failing processes (historical)                       | Insights | jobs.getTopFailures → POST /InsightsJobs/top-failures   |
+| job failure reasons breakdown                            | Insights | jobs.getFailuresByReason → POST /InsightsJobs/failures-by-reason |
+| job aggregate KPI (total/success/avg duration)           | Insights | jobs.getSummary → POST /InsightsJobs/summary            |
+| per-process metrics table                                | Insights | jobs.getProcessDetails → POST /InsightsJobs/process-details |
 
 ## Tie-breaking Rules
-- "job count today" → SDK (current state); "job count over 30 days" → Insights (historical)
-- "queue depth" → SDK (snapshot); "queue throughput trend" → Insights
-- Any metric requiring P50/P95/P99 → always Insights
+- "job count today" → SDK Jobs.getAll() (live state); "job trend over 7 days" → Insights jobs.getCompletedTimeline
+- "queue depth" → SDK QueueItems.getAll() (snapshot); "queue processing trend" → no Insights endpoint, stay SDK
+- P50/P95/P99 latency → Insights agents.getLatencyTimeline or traceview.getLatencyTimeline
+- "agent health" snapshot → Insights agents.getAgents (has healthScore field); "agent success rate over time" → agents.getSummaryV2
+- "governance violations" → Insights governance.getPolicySummary + governance.getPolicyTraces
+- Traceview vs Agents latency: use agents.getLatencyTimeline for fleet-level; traceview.getLatencyTimeline for trace-level (per session)
+
+## All Insights API calls are POST with JSON body
+Minimum body: `{ "tenantId": "<TENANT_UUID>" }`. Add `startTime`/`endTime` (ISO 8601) per endpoint.
 
 ## SDK Import Pattern
 ```typescript
@@ -377,7 +425,8 @@ import { Jobs } from '@uipath/uipath-typescript/jobs';
 ## Insights Hook Pattern
 ```typescript
 import { useInsights } from '../hooks/useInsights';
-const { data } = useInsights('agent-metrics', { timeRange: '7d' });
+// Namespace + method: 'agents.getSummaryV2', 'traceview.getLatencyTimeline', etc.
+const { data } = useInsights('agents.getSummaryV2', { tenantId, startTime: '2025-01-01T00:00:00Z' });
 ```
 ```
 
@@ -394,39 +443,82 @@ No widget files, no hook call sites change on migration.
 
 ## Client Implementation
 
+All Insights RTM endpoints (Agents, Traceview, Governance) are POST with JSON body.
+Base URLs come from auth-context resolution — never hardcoded.
+
 ```typescript
 // src/lib/insights-client.ts
 
-interface InsightsRequestOptions {
-  timeRange?: '1h' | '24h' | '7d' | '30d' | '90d';
-  folderId?: string;
-  [key: string]: string | undefined;
+// Minimum params all RTM endpoints require
+interface InsightsParams {
+  tenantId: string;       // UUID — resolved from JWT, NOT the tenant name string
+  startTime?: string;     // ISO 8601, e.g. "2025-01-01T00:00:00Z"
+  endTime?: string;       // ISO 8601
+  limit?: number;
+  [key: string]: unknown;
 }
 
 export class InsightsClient {
   constructor(
-    private baseUrl: string,
+    private rtmBase: string,   // https://cloud.uipath.com/<ORG>/<TENANT>/insightsrtm_
+    private jobsBase: string,  // https://cloud.uipath.com/<ORG>/<TENANT>  (Jobs path: /api/v1.0/InsightsJobs/...)
     private getToken: () => Promise<string>
   ) {}
 
-  private async request<T>(path: string, params: InsightsRequestOptions = {}): Promise<T> {
+  private async post<T>(base: string, path: string, body: InsightsParams): Promise<T> {
     const token = await this.getToken();
-    const query = new URLSearchParams(
-      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
-    );
-    const res = await fetch(`${this.baseUrl}/${path}?${query}`, {
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    const res = await fetch(`${base}/${path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
     if (res.status === 401) throw new Error('INSIGHTS_AUTH_EXPIRED');
-    if (!res.ok) throw new Error(`Insights API error: ${res.status} on /${path}`);
+    if (!res.ok) throw new Error(`Insights error ${res.status}: ${base}/${path}`);
     return res.json();
   }
 
-  getAgentMetrics(opts: InsightsRequestOptions)     { return this.request('agent-metrics', opts); }
-  getJobAnalytics(opts: InsightsRequestOptions)     { return this.request('job-analytics', opts); }
-  getGovernanceMetrics(opts: InsightsRequestOptions){ return this.request('governance-metrics', opts); }
-  getTraces(opts: InsightsRequestOptions)           { return this.request('traces', opts); }
-  getLatencyAnalytics(opts: InsightsRequestOptions) { return this.request('latency-analytics', opts); }
+  // Agents namespace — base: rtmBase
+  agents = {
+    getSummaryV2:           (p: InsightsParams) => this.post(this.rtmBase, 'Agents/summaryV2', p),
+    getErrors:              (p: InsightsParams) => this.post(this.rtmBase, 'Agents/errors', p),
+    getTopErroredAgents:    (p: InsightsParams) => this.post(this.rtmBase, 'Agents/topErroredAgents', p),
+    getIncidents:           (p: InsightsParams) => this.post(this.rtmBase, 'Agents/incidents', p),
+    getIncidentDistribution:(p: InsightsParams) => this.post(this.rtmBase, 'Agents/incidentDistribution', p),
+    getConsumption:         (p: InsightsParams) => this.post(this.rtmBase, 'Agents/consumption', p),
+    getConsumptionTimeline: (p: InsightsParams) => this.post(this.rtmBase, 'Agents/consumptionTimeline', p),
+    getLatencyTimeline:     (p: InsightsParams) => this.post(this.rtmBase, 'Agents/latencyTimeline', p),
+    getAgents:              (p: InsightsParams) => this.post(this.rtmBase, 'Agents/agents', p),
+    getUnitConsumption:     (p: InsightsParams) => this.post(this.rtmBase, 'Agents/summary/unit-consumption', p),
+    getNames:               (p: InsightsParams) => this.post(this.rtmBase, 'Agents/names', p),
+  };
+
+  // Traceview namespace — base: rtmBase
+  traceview = {
+    getLatencyTimeline:    (p: InsightsParams) => this.post(this.rtmBase, 'Traceview/latencyTimeline', p),
+    getErrorsTimeline:     (p: InsightsParams) => this.post(this.rtmBase, 'Traceview/errorsTimeline', p),
+    getMemoryTimeline:     (p: InsightsParams) => this.post(this.rtmBase, 'Traceview/memoryTimeline', p),
+    getMemoryCallsTimeline:(p: InsightsParams) => this.post(this.rtmBase, 'Traceview/memoryCallsTimeline', p),
+    getTopMemorySpaces:    (p: InsightsParams) => this.post(this.rtmBase, 'Traceview/topMemorySpaces', p),
+    getUnitConsumption:    (p: InsightsParams) => this.post(this.rtmBase, 'Traceview/unitConsumption', p),
+  };
+
+  // Governance namespace — base: rtmBase
+  governance = {
+    getPolicySummary:    (p: InsightsParams & { policy: string }) => this.post(this.rtmBase, 'Governance/policy/summary', p),
+    getPolicyTraces:     (p: InsightsParams) => this.post(this.rtmBase, 'Governance/policy/traces', p),
+    getOperationSummary: (p: InsightsParams) => this.post(this.rtmBase, 'Governance/operation/summary', p),
+  };
+
+  // Jobs namespace — base: jobsBase, different URL sub-path
+  jobs = {
+    getCompletedTimeline:  (p: InsightsParams) => this.post(this.jobsBase, 'api/v1.0/InsightsJobs/completed-timeline', p),
+    getUncompletedTimeline:(p: InsightsParams) => this.post(this.jobsBase, 'api/v1.0/InsightsJobs/uncompleted-timeline', p),
+    getTopFailures:        (p: InsightsParams) => this.post(this.jobsBase, 'api/v1.0/InsightsJobs/top-failures', p),
+    getFailuresByReason:   (p: InsightsParams) => this.post(this.jobsBase, 'api/v1.0/InsightsJobs/failures-by-reason', p),
+    getSummary:            (p: InsightsParams) => this.post(this.jobsBase, 'api/v1.0/InsightsJobs/summary', p),
+    getProcessDetails:     (p: InsightsParams) => this.post(this.jobsBase, 'api/v1.0/InsightsJobs/process-details', p),
+    getFailureDetails:     (p: InsightsParams) => this.post(this.jobsBase, 'api/v1.0/InsightsJobs/failure-details', p),
+  };
 }
 ```
 
@@ -434,8 +526,10 @@ export class InsightsClient {
 
 ```typescript
 import { InsightsClient } from './insights-client';
+// orgName, tenantName, tenantId resolved from auth-context
 export const insightsClient = new InsightsClient(
-  `https://cloud.uipath.com/${orgName}/${tenantName}/insights_/api`,
+  `${import.meta.env.VITE_INSIGHTS_RTM_BASE_URL}`,   // .../insightsrtm_
+  `${import.meta.env.VITE_SDK_BASE_URL}`,             // base for Jobs /api/v1.0/InsightsJobs/...
   getToken
 );
 ```
@@ -443,12 +537,15 @@ export const insightsClient = new InsightsClient(
 ## useInsights Hook (in hooks/useInsights.ts)
 
 ```typescript
-export function useInsights<T>(
-  endpoint: keyof Pick<InsightsClient, 'getAgentMetrics' | 'getJobAnalytics' | 'getGovernanceMetrics' | 'getTraces' | 'getLatencyAnalytics'>,
-  opts: InsightsRequestOptions,
-  deps: unknown[] = []
-) {
-  const { getToken } = useAuth();
+// Namespace-qualified key e.g. 'agents.getSummaryV2' | 'traceview.getLatencyTimeline'
+type InsightsKey =
+  | `agents.${keyof InsightsClient['agents']}`
+  | `traceview.${keyof InsightsClient['traceview']}`
+  | `governance.${keyof InsightsClient['governance']}`
+  | `jobs.${keyof InsightsClient['jobs']}`;
+
+export function useInsights<T>(key: InsightsKey, params: InsightsParams, deps: unknown[] = []) {
+  const { getToken, tenantId } = useAuth();
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
@@ -456,10 +553,12 @@ export function useInsights<T>(
   useEffect(() => {
     setLoading(true);
     const client = new InsightsClient(
-      import.meta.env.VITE_INSIGHTS_BASE_URL,
+      import.meta.env.VITE_INSIGHTS_RTM_BASE_URL,
+      import.meta.env.VITE_SDK_BASE_URL,
       getToken
     );
-    (client[endpoint] as (o: InsightsRequestOptions) => Promise<T>)(opts)
+    const [ns, method] = key.split('.') as [keyof InsightsClient, string];
+    (client[ns] as Record<string, (p: InsightsParams) => Promise<T>>)[method]({ ...params, tenantId })
       .then(setData)
       .catch(setError)
       .finally(() => setLoading(false));
@@ -469,11 +568,22 @@ export function useInsights<T>(
 }
 ```
 
+## .env.local (written during scaffold Phase 6 — see build/impl.md Phase 6)
+```
+VITE_SDK_BASE_URL=https://cloud.uipath.com/<ORG>/<TENANT>
+VITE_INSIGHTS_RTM_BASE_URL=https://cloud.uipath.com/<ORG>/<TENANT>/insightsrtm_
+VITE_INSIGHTS_TENANT_ID=<TENANT_UUID>   # read from uip .auth file, not user input
+```
+`<TENANT_UUID>` is read from the `uip` CLI `.auth` file (see auth-context.md Step 3).
+`VITE_INSIGHTS_TENANT_ID` is injected into `useAuth()` return value so widgets never
+hard-reference it directly.
+
 ## SDK Migration Steps
-1. In `sdk-client.ts`: replace `new InsightsClient(...)` with `new Insights(sdk)`
+1. Replace `InsightsClient` namespaced methods with SDK equivalents in `sdk-client.ts`
 2. Delete `src/lib/insights-client.ts`
-3. Update `useInsights.ts` import to use SDK class
+3. Update `useInsights.ts` to use SDK namespace calls
 4. Update `insights-catalog.md`: remove "HTTP client" note
+No widget files change — hook interface is stable across migration.
 ```
 
 ---
@@ -483,48 +593,92 @@ export function useInsights<T>(
 ```markdown
 # Insights Capability Catalog
 
-Static catalog of available Insights API endpoints.
-Enriched at build time by `assets/scripts/discover-capabilities.mjs`
-(adds live DataFabric custom entities if the tenant has them).
+Source: Confluence "Insights APIs to use for dashboard as code (Draft)"
+Base URL pattern: `https://cloud.uipath.com/<ORG>/<TENANT>/insightsrtm_/<namespace>/<endpoint>`
+All calls: POST JSON. All require `tenantId` (UUID) in body. Add `startTime`/`endTime` (ISO 8601) as needed.
 
-## Agent Observability — /agent-metrics
-| Metric               | Shape options   | Time frames      |
-|----------------------|-----------------|------------------|
-| Success rate         | area, line, kpi | 1h, 24h, 7d, 30d |
-| Failure rate         | area, line, kpi | 1h, 24h, 7d, 30d |
-| Invocation count     | bar, line       | 24h, 7d, 30d     |
-| Avg execution time   | line, kpi       | 7d, 30d, 90d     |
+---
 
-## Latency Analytics — /latency-analytics
-| Metric               | Shape options   | Notes             |
-|----------------------|-----------------|-------------------|
-| P50 execution time   | kpi, line       | Per process/agent |
-| P95 execution time   | kpi, line       | Per process/agent |
-| P99 execution time   | kpi, line       | Per process/agent |
+## Agents namespace — POST /Agents/...
 
-## Job Analytics — /job-analytics
-| Metric               | Shape options   | Time frames   |
-|----------------------|-----------------|---------------|
-| Job duration trend   | area, line      | 7d, 30d, 90d  |
-| Success/failure rate | bar             | 7d, 30d       |
+| Method                    | Route suffix                  | Key metrics / use case                                      | Suggested shape |
+|---------------------------|-------------------------------|-------------------------------------------------------------|-----------------|
+| agents.getSummaryV2       | Agents/summaryV2              | Success rate, failure rate, avg duration, period-over-period delta | kpi, table |
+| agents.getErrors          | Agents/errors                 | Error count over time per agent (spike detection)           | area, line      |
+| agents.getTopErroredAgents| Agents/topErroredAgents       | Top-N erroring agents leaderboard, total error count        | bar, table      |
+| agents.getIncidents       | Agents/incidents              | Paged incident table: error title, count, first/last seen, folder | table     |
+| agents.getIncidentDistribution | Agents/incidentDistribution | Error / Escalation / Policy incident type split           | donut, kpi      |
+| agents.getConsumption     | Agents/consumption            | Top agents by AGU/PLTU, healthy vs unhealthy split          | bar, table      |
+| agents.getConsumptionTimeline | Agents/consumptionTimeline | AGU burn-rate over time, peak consumption detection         | area, line      |
+| agents.getLatencyTimeline | Agents/latencyTimeline        | P50 / P95 latency curve per agent over time                 | line, area      |
+| agents.getAgents          | Agents/agents                 | Fleet list: health score, last run, version, units consumed | table           |
+| agents.getUnitConsumption | Agents/summary/unit-consumption | AGU/PLTU split by complete vs incomplete jobs ("wasted units") | kpi, bar  |
+| agents.getNames           | Agents/names                  | Agent name list for filter dropdowns                        | (filter only)   |
 
-## Governance Metrics — /governance-metrics
-| Metric               | Shape options   | Time frames   |
-|----------------------|-----------------|---------------|
-| Policy violations    | line, bar       | 7d, 30d, 90d  |
-| Tool guardrail hits  | bar, kpi        | 24h, 7d, 30d  |
-| Compliance score     | kpi             | snapshot      |
+**Not for MVP:** agents.getProcessEscalations
 
-## Distributed Traces — /traces
-| Metric               | Shape options   | Notes                     |
-|----------------------|-----------------|---------------------------|
-| Span count by service| bar, donut      | Requires tracing enabled  |
-| Token consumption    | area, kpi       | LLM calls only            |
-| Tool call distribution| donut          | Per agent                 |
+---
+
+## Traceview namespace — POST /Traceview/...
+
+| Method                        | Route suffix                  | Key metrics / use case                                  | Suggested shape |
+|-------------------------------|-------------------------------|---------------------------------------------------------|-----------------|
+| traceview.getLatencyTimeline  | Traceview/latencyTimeline     | P50/P95 latency per time bucket (trace-level)           | line, area      |
+| traceview.getErrorsTimeline   | Traceview/errorsTimeline      | Trace error count per agent per time bucket             | area, line      |
+| traceview.getMemoryTimeline   | Traceview/memoryTimeline      | In/out/enabled/disabled memory counts per bucket        | area, line      |
+| traceview.getMemoryCallsTimeline | Traceview/memoryCallsTimeline | Memory API calls per bucket                          | bar, line       |
+| traceview.getTopMemorySpaces  | Traceview/topMemorySpaces     | Most-active memory spaces, adoption/wasted split        | bar, table      |
+| traceview.getUnitConsumption  | Traceview/unitConsumption     | Per-agent AIU + PLTU from trace data                    | table, bar      |
+
+**Not for MVP:** traceview.getSpansByTraceId, traceview.getSpansByReferenceId
+
+---
+
+## Governance namespace — POST /Governance/...
+
+| Method                        | Route suffix                     | Key metrics / use case                             | Suggested shape |
+|-------------------------------|----------------------------------|----------------------------------------------------|-----------------|
+| governance.getPolicySummary   | Governance/policy/summary        | Allow / Deny / NoOp counts for one policy          | donut, kpi      |
+| governance.getPolicyTraces    | Governance/policy/traces         | Per-evaluation trace: actor → target → decision    | table           |
+| governance.getOperationSummary| Governance/operation/summary     | Governed operation evaluation volume               | bar, kpi        |
+
+Note: getPolicySummary requires `policy` (UUID) in body in addition to `tenantId`.
+
+---
+
+## Jobs namespace — POST /api/v1.0/InsightsJobs/... (confirm base URL)
+
+| Method                        | Route suffix                              | Key metrics / use case                          | Suggested shape |
+|-------------------------------|-------------------------------------------|-------------------------------------------------|-----------------|
+| jobs.getSummary               | api/v1.0/InsightsJobs/summary             | KPI: total/successful count, avg processing time | kpi             |
+| jobs.getCompletedTimeline     | api/v1.0/InsightsJobs/completed-timeline  | Completed jobs over time grouped by state       | area, line      |
+| jobs.getUncompletedTimeline   | api/v1.0/InsightsJobs/uncompleted-timeline | Pending/running jobs over time                 | area, line      |
+| jobs.getTopFailures           | api/v1.0/InsightsJobs/top-failures        | Top processes by failed-job count               | bar             |
+| jobs.getFailuresByReason      | api/v1.0/InsightsJobs/failures-by-reason  | Failures grouped by exception type              | bar, donut      |
+| jobs.getProcessDetails        | api/v1.0/InsightsJobs/process-details     | Per-process success rate, avg duration, counts  | table           |
+| jobs.getFailureDetails        | api/v1.0/InsightsJobs/failure-details     | Detailed failure rows for drill-down modal      | table           |
+
+---
 
 ## Not in Insights — use SDK instead
-Operational counts (live job/queue/task state), process inventory,
-case SLA summaries, DataFabric entity records, Maestro instance lists.
+
+Current operational state only (live jobs/queues/tasks), process inventory, case SLA summaries,
+DataFabric entity records, Maestro instance lists, Action Center task counts.
+
+---
+
+## Suggested Dashboard Packages (from Confluence doc)
+
+| Dashboard                    | Primary endpoints                                                         |
+|------------------------------|---------------------------------------------------------------------------|
+| Executive Fleet Health       | agents.getSummaryV2, jobs.getSummary, agents.getIncidentDistribution, agents.getConsumptionTimeline |
+| Jobs Operations              | jobs.getCompletedTimeline, jobs.getUncompletedTimeline, jobs.getTopFailures, jobs.getProcessDetails |
+| Agent Reliability            | agents.getErrors, agents.getTopErroredAgents, agents.getIncidents, agents.getLatencyTimeline |
+| Agent Cost / FinOps          | agents.getConsumption, agents.getConsumptionTimeline, agents.getUnitConsumption, agents.getAgents |
+| Agent Lifecycle / Versions   | agents.getAgents, agents.getSummaryV2 (per processVersion)               |
+| Traces & Memory              | traceview.getLatencyTimeline, traceview.getErrorsTimeline, traceview.getMemoryTimeline, traceview.getTopMemorySpaces |
+| Governance Posture           | governance.getPolicySummary, governance.getPolicyTraces, governance.getOperationSummary |
+| Folder / Tenant Rollup       | agents.getAgents + jobs.getFailureDetails (folderPath grouping)           |
 ```
 
 ---
