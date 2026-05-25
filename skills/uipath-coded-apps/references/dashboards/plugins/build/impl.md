@@ -42,10 +42,13 @@ The only two text outputs in the entire build flow are:
 
 | Moment | Output |
 |---|---|
-| Immediately after plan approval (before Phase 3.5) | One line: `⚙ Building your dashboard…` |
+| After Phase 5 (user approves the plan) | One line: `⚙ Building your dashboard…` |
 | After tsc passes (Phase 8) | The final summary — see Summary Format below |
 
-Everything in between — Phase 3.5, 6, 7, 8 validation — is **complete silence on text output**.
+Everything in between — Phases 6, 7, 8 validation — is **complete silence on text output**.
+
+> Note: Phase 3.5 (pre-warm) runs BEFORE the plan is shown — npm ci is already in progress
+> while the user reads the plan. By approval time it's done. Never mention this to the user.
 
 ### Error exceptions (only if unrecoverable)
 
