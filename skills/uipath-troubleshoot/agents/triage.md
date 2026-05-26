@@ -41,11 +41,13 @@ Goal: get the error message and match playbooks as fast as possible.
 
    a. **Does this investigation need source?** Read each matched playbook's `## Investigation` section. If it instructs reading XAML / `project.json` / activity arguments / variable bindings / expression text / compiled-expression mapping → source is required. If it only references CLI commands and platform-side fixtures → source is not required.
 
-   b. **Is source already known?** Check `state.json.requirements.source_code_path`. It is "known" if:
-      - The user's problem description named a directory or path (e.g., "the project at C:\…", "the source for X is in cwd", "this folder"), AND you recorded it during step 4 ("Resolve identity"), OR
-      - The current working directory contains a recognisable UiPath project (`project.json`, `agent.json`, or `caseplan.json` at the top level) and you record `source_code_path = "."` here with a note that you auto-discovered it.
+   b. **Is source already known? Actively check — do NOT rely on memory.** Before declaring source unknown, run BOTH of these in order:
+      1. **Check the user's message.** If the problem description named a directory or path (e.g., "the project at C:\…", "the source for X is in cwd", "this folder"), record it as `source_code_path` and continue. This already happens during step 4 ("Resolve identity"); confirm here.
+      2. **Auto-discover the current working directory.** Run `Glob` for `project.json`, `agent.json`, and `caseplan.json` at the cwd top level (NOT recursive — top level only, to avoid false positives from nested sample projects). If any of those files exist at depth 0 of cwd, record `source_code_path = "."` in `state.json.requirements` with a `source_code_path_origin = "auto-discovered-cwd"` field noting which marker file was found, and continue. Do NOT ask the user when the project is already mounted.
 
-   c. **If source is required AND not yet known → STOP and ask the user.** Write `needs_input.json` (see shared.md) requesting the project source path. The question must be specific:
+      Source is "known" only if step (1) or (2) above produced a path. If neither did, treat it as unknown and proceed to (c).
+
+   c. **If source is required AND not yet known (after BOTH active checks in (b) failed) → STOP and ask the user.** Write `needs_input.json` (see shared.md) requesting the project source path. The question must be specific:
       ```
       "To trace the originating cause for <error class / activity name>, I need to inspect the project source (XAML / project.json / .py). Could you share the project's directory path? If you are already in the project directory, just reply `pwd` or `.`."
       ```

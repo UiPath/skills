@@ -35,6 +35,7 @@ When a robot executes a UI activity (Click, Type Into, Get Text, etc.), it uses 
 - **ImageOperationException** — image-based UI automation failure
 - **ScreenScrapingException** — screen scraping activity failure
 - **ApplicationNotFoundException** — scope-level failure from `NApplicationCard` (Use Application / Use Browser) when the target application can't be located **and** the scope's `OpenMode=Never`. Distinct from `ApplicationOpenException` (which fires when `OpenMode != Never` and launch failed) and `WrongTargetApplicationException` (selector matched the wrong process).
+- **UiAutomationException — "Cannot send input to UI element because it is outside of screen bounds."** — input activity (`NClick`, `NTypeInto`, ...) located the element but the destination coordinate is outside the runtime host's virtual screen. Wraps `COMException 0x800402bd` at `UiPath.UiNodeClass.Click`. Distinct from the selector-failure family — element was resolved, coordinate was rejected. See [click-coordinate-off-screen.md](./playbooks/click-coordinate-off-screen.md).
 
 ## Features
 
