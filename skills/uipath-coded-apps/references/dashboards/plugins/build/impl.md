@@ -35,7 +35,8 @@ No ordering violations, no cp -r on Windows, no heredoc failures.
 | 0 Incremental check | 1 Bash | `ls .dashboard/state.json` |
 | 1 Boot | 1 block | 4 reads in ONE parallel message |
 | 2 Preflight | 1 Bash | `uip login status` + read .auth |
-| 3–5 Derive + Plan + Approve | 0 | In-context |
+| 3a Feasibility gate | 0 | In-context (classify each metric GREEN/AMBER/RED) |
+| 3b–5 Derive + Plan + Approve | 0 | In-context |
 | 3.5 Pre-warm | 1 Bash | background npm ci (Node.js copy) |
 | 5.5 External client (opt) | 0–1 Bash | `uip admin external-apps create` (only if user chooses "create one") |
 | 6 Build | 1 Write + 1 Bash | write plan.json → run build-dashboard.mjs |
@@ -49,8 +50,8 @@ No ordering violations, no cp -r on Windows, no heredoc failures.
 1. **Never spawn subagents.** Do not use `TaskCreate`, `Agent`, or any dispatching tool.
 2. **Phase 3.5 MUST fire before Phase 4.** If you are about to render the plan and have NOT
    yet started pre-warm, STOP and fire Phase 3.5 first. The pre-warm runs while the user reads.
-3. **insights-catalog.md MUST be in context before showing the plan.** If you reach Phase 4
-   and insights-catalog.md is not loaded, STOP and read it first (it was in the Phase 1 block).
+3. **sdk-capabilities.md MUST be in context before showing the plan.** If you reach Phase 4
+   and sdk-capabilities.md is not loaded, STOP and read it first (it was in the Phase 1 block).
 4. **Never read scaffold source files.** App.tsx, package.json, vite.config.ts, tsconfig.json,
    src/dashboard/chrome/*, src/components/*, useInsights.ts, insights-client.ts — all forbidden.
    Their APIs are fully documented in this file.
@@ -100,11 +101,10 @@ block — do not send the message until all four paths are listed:
 
 ☐ 1. `../../primitives/auth-context.md`  
 ☐ 2. `../../primitives/build-plan.md`  
-☐ 3. `../../primitives/data-router.md`  
-☐ 4. `../../insights-catalog.md`
+☐ 3. `../../sdk-capabilities.md`  
+☐ 4. `../../aesthetic/layout-patterns.md`
 
 **DO NOT send the message until all 4 paths are in the same tool-call block.**
-**DO NOT proceed to Phase 4 unless insights-catalog.md was loaded in this block.**
 
 ---
 
@@ -144,10 +144,53 @@ fi
 
 ---
 
-## Phase 3 — Metric Derivation (0 tool calls, in-context)
+## Phase 3a — Feasibility Gate (0 tool calls, in-context)
 
-Apply four-axis decomposition from build-plan.md. Route via data-router.md.
-Use Widget Recipes from insights-catalog.md (already loaded).
+> **MUST run before Phase 3b.** If Phase 3b derives configuration for a metric before Phase 3a
+> classifies it, the feasibility gate has been bypassed. Stop and classify first.
+
+For each metric in the user's NLP request:
+
+**Step 1 — Check the Hard Refuse Table** (`sdk-capabilities.md` top section).
+If the metric matches a row: it is RED. Note the reason and suggested alternative.
+
+**Step 2 — Search registry aliases.**
+Scan each capability entry's **Aliases** field. Match the user's phrasing against them.
+- Match found + template listed → **GREEN** (template substitution via `widgets[]`)
+- Match found + no template → **AMBER** (agent writes typed SDK hook in `files{}` map)
+- No match → **RED** (hard refuse)
+
+**Refuse output (inline with the plan, not a separate step):**
+```
+⚠ "[Requested metric]" isn't available — [reason from Hard Refuse Table or "no matching API"].
+[If alternative exists: I can show [alternative] instead — want that?]
+[If no alternative: I've excluded it from the plan.]
+```
+
+RED metrics are excluded from the plan. Never silently drop — always surface with reason.
+
+AMBER metrics appear in the plan with a disclosure note:
+```
+• **[Widget Title]** — I'll write a custom data hook for this using the [ServiceName] SDK service.
+```
+
+---
+
+## Phase 3b — Widget Configuration Derivation (0 tool calls, in-context)
+
+For GREEN and AMBER metrics only (RED metrics do not reach this phase).
+
+Use four-axis decomposition from `build-plan.md`:
+- **Shape**: `line | bar | area | donut | kpi | table`
+- **Time frame**: `realtime | hourly | daily | weekly | monthly`
+- **Aggregation**: `count | sum | avg | p50 | p95`
+- **Service**: Insights RTM or SDK (already determined in Phase 3a)
+
+Use Widget Recipes from `sdk-capabilities.md` (already loaded in Phase 1 block).
+Use response shapes from capability entries — never guess field names.
+
+For AMBER metrics: write the custom hook in the `files{}` map using the exact method signature
+and response shape from the capability entry. TypeScript must compile (`tsc --noEmit` in Phase 6).
 
 ---
 
@@ -189,7 +232,7 @@ echo "PREWARM_STARTED: ${PROJECT_DIR}"
 
 Render the plan using build-plan.md format. Plain English, no API names.
 
-**STOP if insights-catalog.md is not in context — read it now before showing the plan.**
+**STOP if sdk-capabilities.md is not in context — read it now before showing the plan.**
 
 **After the plan:** Append the External Client Question block from build-plan.md.
 
@@ -245,7 +288,7 @@ After approval, derive widget configuration in-context (no tools), then:
 
 Agent never writes widget TypeScript. Provide configuration only. The script uses templates.
 
-Using Widget Recipes from insights-catalog.md, derive for each widget:
+Using Widget Recipes from sdk-capabilities.md, derive for each widget:
 - Which template to use (`template` field)
 - Endpoint + startTime/endTime for the `dataHook` expression
 - `dataSelector` path from the catalog response schema
@@ -258,7 +301,8 @@ Also generate in-context (agent still authors these directly):
 
 **Allowed template values for `template` field:**
 `line-chart` · `area-chart` · `bar-chart` · `donut-chart` · `kpi-card` ·
-`kpi-with-sparkline` · `data-table` · `ranked-table` · `progress-bar-list` · `multi-line-chart`
+`kpi-with-sparkline` · `data-table` · `ranked-table` · `progress-bar-list` · `multi-line-chart` ·
+`sdk-kpi-card` · `sdk-data-table` · `sdk-bar-chart` · `sdk-ranked-table`
 
 ### Step 2: Write plan.json (1 Write)
 
