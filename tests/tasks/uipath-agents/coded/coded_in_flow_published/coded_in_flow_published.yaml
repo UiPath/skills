@@ -22,10 +22,13 @@ agent:
   turn_timeout: 1500
 
 initial_prompt: |
-  Build a small UiPath coded agent named `tone-classifier` that
-  reads a short message and labels it as `friendly`, `neutral`,
-  or `frustrated`. Publish it into the personal workspace so it's
-  available as a regular UiPath resource.
+  Build a LangGraph UiPath coded agent named `tone-classifier` that
+  reads a short message and uses an LLM to label it as `friendly`,
+  `neutral`, or `frustrated`. Pin the LLM to a low-cost gateway
+  model (e.g. `gpt-4o-mini-2024-07-18`) with `temperature=0` for
+  deterministic runs. Scaffold the agent in a `tone-classifier/`
+  folder at the working-directory root, then publish it into the
+  personal workspace so it's available as a regular UiPath resource.
 
   Then, in a separate Maestro Flow project called `triage-flow`,
   use that published `tone-classifier` agent as one of the steps.
