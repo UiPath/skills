@@ -36,7 +36,7 @@ A request is **single-skill** when:
 
 ## Pattern 2 — Flow with local resources
 
-**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes (HITL QuickForm, script, connector, inline agent) are **not** components; `uipath-maestro-flow` authors them itself in steps 1/4, so a flow whose only "extras" are inline nodes is single-skill (load `uipath-maestro-flow` directly, no plan). Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). The flow runs locally / publishes to Studio Web per the plan's `Solution scope`.
+**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes are **not** components (see the blockquote above); `uipath-maestro-flow` authors them itself in steps 1/4. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). The flow runs locally / publishes to Studio Web per the plan's `Solution scope`.
 
 ```
 1. uipath-maestro-flow   → create solution, init flow project
