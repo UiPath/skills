@@ -1,6 +1,6 @@
 # Manual edits when the CLI doesn't cover the case
 
-The CLI now covers atomic **create** (`solution resource add`) and **delete** (`solution resource remove`) — see [develop-solution.md Step 9–10](../develop-solution.md#step-9-add-a-resource-atomically). What's still missing is `solution resource update` for field-level edits on resources already in the solution. `solution resource refresh` is import-only (it reconciles binding additions, not field edits on existing entries).
+The CLI now covers atomic **create** ([Step 9: `solution resource add`](../develop-solution.md#step-9-add-a-resource-atomically)) and **delete** ([Step 10: `solution resource remove`](../develop-solution.md#step-10-remove-a-resource)). What's still missing is `solution resource update` for field-level edits on resources already in the solution. `solution resource refresh` is import-only (it reconciles binding additions, not field edits on existing entries).
 
 For an in-place field edit, you have three options ordered by preference:
 

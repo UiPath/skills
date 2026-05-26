@@ -164,6 +164,8 @@ When a name (e.g. `orders` queue) exists in multiple cloud folders, refresh pref
 
 The placeholder `solution_folder` (and `.`) in a binding's folder field means "no folder" / tenant scope — they're not real cloud folders.
 
+> For single-resource mutations that don't need a full project scan, see [Step 9: Add a resource atomically](#step-9-add-a-resource-atomically) and [Step 10: Remove a resource](#step-10-remove-a-resource). `refresh` and `add` solve different problems — `refresh` reconciles every binding in every project, `add` operates on one resource at a time.
+
 ## Step 8: Get a Single Resource Configuration
 
 Fetch the full configuration (`spec`, `apiVersion`, `isOverridable`, `resourceOverwrite`) for a specific resource by key. Useful when you need the resolved server state for a binding — e.g., constructing a deploy override, resolving an entry-point ID, inspecting a connection's authentication mode.
@@ -212,36 +214,36 @@ If you need the full server spec for a resource that's already in the solution (
 
 Add a single resource to the solution without touching `bindings_v2.json` or re-scanning every project. Two modes:
 
-- `--source local` — create a virtual stub (no cloud counterpart). Useful for queues / assets / buckets that will be provisioned at deploy time.
-- `--source cloud` — import an existing Orchestrator resource into the solution via RCS.
+- `--source local` — create a *virtual stub*: a local-only resource record under `resources/solution_folder/<kind>/<name>.json` with no Orchestrator counterpart, to be provisioned at deploy time. Useful for new queues / assets / buckets that ship with the solution.
+- `--source remote` — import an existing Orchestrator resource into the solution via RCS lookup.
 
-`--source` is **required** with no default — the agent must be explicit about which path it wants. The command is idempotent: a second identical call returns `Status: "Unchanged"` instead of mutating, both on the local path (matched on `(kind, name, folder)`) and the cloud path (matched on cloud key).
+`--source` is required, no default — pick the path explicitly. The command is idempotent: a second identical call returns `Status: "Unchanged"` instead of mutating, both on the local path (matched on `(kind, name, folder)`, suffix-aware so `name_<N>` siblings re-match) and the remote path (matched on resource key, case-insensitive).
 
 ```bash
-# Create a local virtual queue
+# Create a local virtual queue (no auth required)
 uip solution resource add --source local --kind Queue --name InvoiceQueue --output json
 
 # Local asset with explicit subtype
 uip solution resource add --source local --kind Asset --name ApiKey --type Text --output json
 
-# Import an existing cloud queue (folder disambiguates same-name resources)
-uip solution resource add --source cloud --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
+# Import an existing remote queue (folder disambiguates same-name resources)
+uip solution resource add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
 
 # Skip RCS lookup if you already know the cloud key
-uip solution resource add --source cloud --kind Queue --name InvoiceQueue \
+uip solution resource add --source remote --kind Queue --name InvoiceQueue \
     --cloud-key 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
 ```
 
 | Option | Values | Default |
 |--------|--------|---------|
-| `--source <source>` | `local`, `cloud` | **required** |
-| `--kind <kind>` | Any kind RCS indexes (case-insensitive; trimmed, ALLCAPS → lowercase, Pascal → lowerCamel) | **required** |
-| `--name <name>` | Resource name (max 256 chars; per-kind Orchestrator limits are stricter — queues cap at 50) | **required** |
+| `--source <source>` | `local`, `remote` | **required** |
+| `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
+| `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
 | `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection) | None |
-| `--folder-path <path>` | Cloud folder for lookup; informational for local | None |
-| `--cloud-key <guid>` | Skip RCS search, import this exact resource (cloud only; must be a GUID) | None |
-| `--solution-folder <path>` | Path to solution root | Current working directory |
-| `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
+| `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
+| `--cloud-key <guid>` | Skip RCS search, import this exact resource key. Only valid with `--source remote`; must be a GUID | None |
+| `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
+| `--login-validity <minutes>` | Minimum minutes left on token before refresh. Only used on `--source remote`; `--source local` is offline | `10` |
 
 ### Output
 
@@ -254,7 +256,7 @@ uip solution resource add --source cloud --kind Queue --name InvoiceQueue \
     "Kind": "queue",
     "Type": null,
     "Name": "InvoiceQueue",
-    "FolderPath": "solution_folder",
+    "Folder": "solution_folder",
     "FolderKey": "5c2d61f4-...",
     "Source": "local",
     "Status": "Added"
@@ -262,17 +264,17 @@ uip solution resource add --source cloud --kind Queue --name InvoiceQueue \
 }
 ```
 
-`Status` is `"Added"` (newly created), `"Updated"` (cloud spec re-applied — only on `--source cloud` when SDK detects a spec drift), or `"Unchanged"` (idempotency hit).
+`Status` is `"Added"` (newly created), `"Updated"` (cloud spec re-applied when SDK detects drift on `--source remote`), or `"Unchanged"` (idempotency hit). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
 
-### Ambiguous cloud match
+### Ambiguous remote match
 
-When `--source cloud` is given without `--cloud-key` and the RCS search returns multiple resources with the same `(kind, name)` across different folders, `add` does **not** guess — it emits a structured error with every candidate inline so an agent can re-call without a separate `resource list`:
+When `--source remote` is given without `--cloud-key` and the RCS search returns multiple resources with the same `(kind, name)` across different folders, `add` does **not** guess — it emits a structured error with every candidate inline so an agent can re-call without a separate `resource list`:
 
 ```json
 {
   "Result": "Failure",
-  "Message": "Ambiguous match: 3 cloud resources matching kind=Queue name=InvoiceQueue",
-  "Instructions": "Candidates (use one folder via --folder-path, or pass --cloud-key directly):\n  - Folder=Sales/CRM            Key=8f3a1b2c-...\n  - Folder=Operations/Reporting Key=21a07d4e-...\n  - Folder=Shared               Key=c0e9f7a3-..."
+  "Message": "Ambiguous match: 3 remote resources matching kind=queue name=InvoiceQueue",
+  "Instructions": "Candidates (use one folder via --folder-path, or pass --cloud-key directly):\n  - Folder=Sales/CRM  Key=8f3a1b2c-...\n  - Folder=Operations/Reporting  Key=21a07d4e-...\n  - Folder=Shared  Key=c0e9f7a3-..."
 }
 ```
 
@@ -289,7 +291,7 @@ Resolve by re-running with `--folder-path <one-of-the-candidates>` or `--cloud-k
 
 ## Step 10: Remove a Resource
 
-Delete a single resource from the solution by key.
+Delete a single resource from the solution by key. Purely local: no auth round-trip, no `bindings_v2.json` mutation.
 
 ```bash
 uip solution resource remove 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
@@ -298,12 +300,11 @@ uip solution resource remove 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
 uip solution resource remove 8f3a1b2c-... --solution-folder ./InvoiceAutomation --output json
 ```
 
-`<resource-key>` is positional and required — same shape as `resource get`. Use `resource list --source local` to discover keys.
+`<resource-key>` is positional and required, validated as a GUID. Use `resource list --source local` to discover keys.
 
 | Option | Values | Default |
 |--------|--------|---------|
-| `--solution-folder <path>` | Path to solution root | Current working directory |
-| `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
+| `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
 
 ### Output
 
@@ -315,12 +316,12 @@ uip solution resource remove 8f3a1b2c-... --solution-folder ./InvoiceAutomation 
     "Key": "8f3a1b2c-...",
     "Kind": "queue",
     "Name": "InvoiceQueue",
-    "FolderPath": "solution_folder"
+    "Folder": "solution_folder"
   }
 }
 ```
 
-If the key isn't in the local solution, the command exits with `Failure` and `Resource not found in solution` — there's no fallback to cloud (unlike `resource get`). Use `resource list --source local` to confirm what's actually tracked.
+If the key isn't in the local solution, the command exits with `Failure` and `Resource not found in solution` — there's no fallback to remote (unlike `resource get`). Use `resource list --source local` to confirm what's actually tracked.
 
 > Removing a resource does **not** delete the binding in any `bindings_v2.json` that still references it. The next `resource refresh` will re-import it. To make a removal stick, either fix the binding through the owning product (Maestro Flow / Case, Studio Web, agent code) or remove the project from the solution first.
 
@@ -471,9 +472,9 @@ When `[solutionFile]` is omitted, the CLI walks up from the project path looking
 
 `resource list / refresh / get / add / remove` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly.
 
-### `add` / `remove` require a `.uipx` manifest in the target folder
+### `add` / `remove` / `refresh` require a `.uipx` manifest in the target folder
 
-Unlike `resource get` (which silently falls back to RCS), the mutation commands refuse to operate on a directory that doesn't directly contain a `.uipx`. This prevents `--solution-folder /tmp` from silently writing stray resource files anywhere on disk. If you see `<path> is not a UiPath solution (no .uipx manifest found)`, you're pointed at the wrong directory.
+Unlike `resource get` and `list` (which fall back to RCS when local state is missing), the write commands refuse to operate on a directory that doesn't directly contain a `.uipx`. This prevents `--solution-folder /tmp` from silently writing stray resource files anywhere on disk. If you see `<path> is not a UiPath solution (no .uipx manifest found)`, you're pointed at the wrong directory.
 
 ### `resource get` for cross-folder inspection
 
@@ -488,11 +489,11 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
 | Add a project already in the solution dir | `uip solution project add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
 | Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
-| Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
-| Add a virtual queue / asset / bucket | `uip solution resource add --source local --kind <kind> --name <name>` | Idempotent: re-run returns `Status: "Unchanged"` |
-| Import an existing cloud resource | `uip solution resource add --source cloud --kind <kind> --name <name> --folder-path <folder>` | On ambiguous match, the error lists every candidate with its key — pick one and re-call |
-| Remove a single resource | `uip solution resource remove <resource-key>` | Doesn't touch `bindings_v2.json`; next `refresh` re-imports if a binding still references it |
 | Remove a project | `uip solution project remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
+| Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
+| Add a virtual queue / asset / bucket | `uip solution resource add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |
+| Import an existing remote resource | `uip solution resource add --source remote --kind <kind> --name <name> --folder-path <folder>` | On ambiguous match, the error lists every candidate with its key — pick one and re-call |
+| Remove a single resource | `uip solution resource remove <resource-key>` | Purely local — no auth; doesn't touch `bindings_v2.json`, next `refresh` re-imports if a binding still references it |
 | List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; add `--kind <kind>` to narrow to one resource kind |
 | Pack | `uip solution pack <solution-dir> <output-dir>` | See [pack-and-deploy.md](pack-and-deploy.md) for full pack/publish/deploy flow |
 
