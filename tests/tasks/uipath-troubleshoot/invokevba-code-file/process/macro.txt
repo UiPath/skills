@@ -1,0 +1,3 @@
+ActiveWorkbook.RefreshAll
+Application.Calculate
+ActiveWorkbook.Save

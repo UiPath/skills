@@ -1,0 +1,7 @@
+Sub BuildDigest()
+    Dim ws As Worksheet
+    Set ws = ActiveWorkbook.Sheets("Digest")
+    ws.Range("A1").Value = "Daily Digest - " & Format(Now, "yyyy-mm-dd")
+    ActiveWorkbook.RefreshAll
+    ActiveWorkbook.Save
+End Sub

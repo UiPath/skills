@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-16T07:00:12.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-16T07:00:12.722Z",
+      "Message": "[Excel Process Scope] Opening workbook reports\\DailyDigest.xlsx"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-16T07:00:18.014Z",
+      "Message": "[Use Excel File] Workbook opened successfully"
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-05-16T07:00:21.502Z",
+      "Message": "[Invoke VBA] COM call to Workbook.VBProject is taking longer than expected"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-16T07:00:24.241Z",
+      "Message": "[Invoke VBA] The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-16T07:00:24.292Z",
+      "Message": "The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-16T07:00:24.305Z",
+      "Message": "Execution ended in: 00:00:12"
+    }
+  ]
+}
