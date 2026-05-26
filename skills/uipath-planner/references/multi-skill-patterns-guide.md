@@ -66,7 +66,7 @@ A request is **single-skill** when:
 **When it applies:** the flow exists; user wants it deployed to Orchestrator (not Studio Web).
 
 ```
-1. uipath-maestro-flow → validate, `uip flow pack`
+1. uipath-maestro-flow → validate, `uip maestro flow pack`
 2. uipath-maestro-flow → testing (mandatory)
 3. uipath-solution     → publish and deploy to Orchestrator via `uip solution`
 ```
