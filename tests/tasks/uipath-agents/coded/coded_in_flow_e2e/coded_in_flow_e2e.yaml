@@ -18,7 +18,6 @@ agent:
 run_limits:
   task_timeout: 1800
   turn_timeout: 1200
-  max_turns: 40
 
 initial_prompt: |
   Build a UiPath solution "GreeterSol" containing a Flow project
