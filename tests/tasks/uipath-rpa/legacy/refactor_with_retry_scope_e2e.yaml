@@ -163,6 +163,7 @@ success_criteria:
     description: "Agent did NOT use the modern `uip rpa` CLI on this Legacy project"
     tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+(?!-legacy)(validate|build|run|init|analyzer-rules|activities|packages)'
+    min_count: 0
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0

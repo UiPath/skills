@@ -83,7 +83,7 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "project.json does NOT register the test case as an entryPoint"
     path: "LoginTests/project.json"
     excludes:
