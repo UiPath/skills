@@ -39,6 +39,9 @@ initial_prompt: |
     - `issue_refund` (bool)
     - `reviewer_note` (string|null)
 
+  Scaffold the agent project inside a `refund-gate/` directory at
+  the working-directory root.
+
   Take the agent through scaffold → schema sync. Do NOT run,
   publish, upload, or deploy. Do NOT call `uip login`. Do NOT pause
   between planning and implementation. Complete end-to-end in a
