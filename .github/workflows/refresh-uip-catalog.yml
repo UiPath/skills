@@ -44,17 +44,24 @@ jobs:
         with:
           python-version: '3.13'
 
-      # Pin @uipath scope to public npm. The internal GitHub Packages feed
-      # carries divergent 1.0.0-alpha.* prereleases under the same scope; we
-      # want the stable public releases for the catalog. Same pattern as
-      # smoke-skills.yml / smoke-rpa-skills.yml.
-      - name: Configure npm to use public registry for @uipath
+      # Install from GitHub Packages under the `alpha` dist-tag so the
+      # catalog tracks `cli/main`. Every merge to `cli/main` runs
+      # cli/.github/workflows/ci.yml, which publishes a `-alpha.<date>.<run>`
+      # prerelease to https://npm.pkg.github.com/ under dist-tag `alpha`.
+      # Public npm only carries the cut-release `latest` line which lags
+      # `main` by ~2 weeks, so refreshing against `@latest` would mean the
+      # gate is always auditing skills against a CLI surface that's two
+      # weeks behind what developers actually run. Same pattern as
+      # smoke-skills.yml.
+      - name: Install uip CLI (GitHub Packages @alpha)
         if: steps.check.outputs.exists != 'true'
-        run: npm config set @uipath:registry https://registry.npmjs.org/
-
-      - name: Install uip CLI
-        if: steps.check.outputs.exists != 'true'
-        run: npm install -g @uipath/cli@latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          npm config set @uipath:registry https://npm.pkg.github.com/
+          npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
+          npm install -g @uipath/cli@alpha
+          uip --version
 
       - name: Rebuild catalog
         if: steps.check.outputs.exists != 'true'
@@ -96,6 +103,16 @@ jobs:
           git add assets/uip-catalog-snapshot.json
           git commit -m "chore: refresh uip CLI catalog ($CLI_VERSION, $VERB_COUNT verbs)"
           git push -u origin "$BRANCH"
+
+          # Ensure the `automated` label exists before referencing it on the
+          # PR. The label is the join key the auto-merger uses to identify
+          # refresh PRs (see automerge-catalog-refresh.yml). Creating it
+          # idempotently here keeps the workflow self-contained — no
+          # one-time repo setup step required after a fresh fork.
+          gh label create automated \
+            --color cccccc \
+            --description "Bot-generated automated PR" \
+            --force
 
           gh pr create \
             --title "chore: refresh uip CLI catalog ($CLI_VERSION)" \

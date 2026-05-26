@@ -34,6 +34,15 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = REPO_ROOT / "assets" / "uip-catalog-snapshot.json"
 
+# Per-line opt-out marker: `<!-- uip-check-skip -->` anywhere on a line
+# suppresses checking for that line. Used for intentional historical
+# references (e.g. CLI version-comparison tables that document a removed
+# prefix). For table rows, place the marker inside a cell so it doesn't
+# break table structure — HTML comments render as nothing. Mirrors the
+# convention from skills/uipath-maestro-{flow,bpmn}/.maintenance/
+# check-uip-commands.sh, whose docs already use this marker.
+SKIP_MARKER = "<!-- uip-check-skip -->"
+
 # `uip` followed by at least one space, then the rest of the line up to a
 # code-block end backtick or newline.
 UIP_LINE = re.compile(r"\buip(\s+[^\n`]*)?")
@@ -145,6 +154,8 @@ def scan_file(path, catalog, unwalkable):
         print(f"warning: cannot read {path}: {exc}", file=sys.stderr)
         return findings
     for lineno, line in enumerate(text.splitlines(), start=1):
+        if SKIP_MARKER in line:
+            continue
         for match in UIP_LINE.finditer(line):
             tail = match.group(1) or ""
             tokens = extract_verb_tokens(tail)

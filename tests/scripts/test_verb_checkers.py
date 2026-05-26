@@ -202,6 +202,30 @@ def test_inline_shell_comment_stops_verb_extraction(tmp_path):
     )
 
 
+# --- Issue 14: per-line `<!-- uip-check-skip -->` suppression -----------------
+
+def test_skip_marker_suppresses_line(tmp_path):
+    """The marker `<!-- uip-check-skip -->` on a line must suppress all
+    findings for that line. Used by intentional historical references — CLI
+    version-comparison tables that document removed prefixes, fallback-prefix
+    sentences. Without honoring the marker, the gate hard-fails on lines
+    that explicitly opted out (regression flagged in PR #833 review).
+    """
+    md = tmp_path / "doc.md"
+    md.write_text(
+        "Run `uip flow init MyProject` — modern form.\n"
+        "| **< 0.3.4** | `uip flow` | `uip flow init MyProject` <!-- uip-check-skip --> |\n"
+    )
+    catalog = {"maestro flow init", "maestro flow"}
+    findings = skill.scan_file(md, catalog, set())
+    lines = sorted({f["line"] for f in findings})
+    assert lines == [1], (
+        f"Expected findings only on line 1 (no skip marker); the line-2 "
+        f"version-comparison row must be suppressed by `<!-- uip-check-skip -->`. "
+        f"Got findings on lines: {lines!r}."
+    )
+
+
 # --- Issue 13: renames entry shadows shallower catalog prefix -----------------
 
 def test_renames_entry_shadows_shallower_catalog_prefix():
