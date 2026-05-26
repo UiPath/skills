@@ -1,7 +1,7 @@
 ---
 name: uipath-planner
 description: "UiPath task planner — reads SDDs from uipath-solution or elicits non-PDD requests, derives multi-skill task lists, emits live TaskCreate calls. Detects project type (.cs, .xaml, .flow, .bpmn, .py). For PDDs→uipath-solution first."
-when_to_use: "User makes a non-trivial UiPath request — 'build a UiPath solution for X', 'set up a process from scratch', 'help me plan this' — OR provides an SDD path. Skip when project type and scope are already clear for a single-skill task — invoke the specialist directly."
+when_to_use: "User makes a non-trivial UiPath request that spans SEPARATE buildable projects — e.g. 'build a UiPath solution for X', 'set up a process from scratch', a Flow that orchestrates standalone RPA processes or agents — OR provides an SDD path. Skip when the request targets a SINGLE project, even a Flow/Agent/RPA project with inline HITL, script, or connector nodes wrapped in its own solution (e.g. a Flow with an inline approval step is one uipath-maestro-flow task, not a plan) — invoke that specialist directly."
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskUpdate, TaskList
 ---
 
@@ -18,12 +18,12 @@ The lane is decided by the **Entry Guard** below.
 
 ## When to Use This Skill
 
-- The request is **non-trivial** — multi-step, multi-skill, UI automation, or unclear scope
+- The request is **non-trivial** — spans **separate buildable projects** that each need their own specialist (e.g. a Flow orchestrating standalone RPA processes or agents), or UI automation with unclear scope
 - The request is **ambiguous** — no single specialist skill clearly matches
 - The user asks "what can I build?" or needs help choosing a project type
 - The user provides an SDD path — Lane A runs
 
-Skip this planner for simple, well-defined single-skill tasks (e.g., "create a workflow that sends an email") — load the specialist directly.
+Skip this planner for single-project tasks — load the specialist directly. A request is **single-project** (one specialist owns it end-to-end) even when it bundles several things *inside one project*: a Flow with script nodes plus an inline HITL approval step plus its own solution wrapper is **one** `uipath-maestro-flow` task. Inline nodes (HITL QuickForm, script, connector, inline agent) and the solution scaffolding are author sub-steps the specialist performs itself — they are **not** separate skills to orchestrate. Counting them as distinct skills ("solution + flow + human-in-the-loop") and emitting a plan is the most common mis-trigger. The planner is only for requests spanning **separate buildable projects** — distinct `.uipx` projects (a Flow consuming standalone RPA processes, an Agent using published processes as tools).
 
 ## Critical Rules
 
@@ -31,7 +31,7 @@ Skip this planner for simple, well-defined single-skill tasks (e.g., "create a w
 2. **For PDDs, hard-block and redirect to `uipath-solution`.** A PDD (PDF, docx, or markdown describing process steps + applications + exceptions) does NOT belong in this skill. The dedicated PDD→SDD skill produces a much better deliverable. The only escape is the user explicitly saying "skip SDD".
 3. **Never exceed 5 `AskUserQuestion` calls in any planning session.** Each call is one user-facing prompt; batch related questions (e.g., the Step 4 UI elicitation in Lane B batches App type, Targeting approach, App state into one call). If you cannot fit the elicitation in 5 calls, plan with best available info and note the assumption. Lane A typically uses 0–2 calls.
 4. **Always include a mandatory Testing task per generation skill** in the plan. Testing is non-negotiable — happy path + edge cases + error scenarios + e2e for Master Projects. The Testing task routes to the specialist's testing references and does NOT describe the testing procedure inline.
-5. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe specialist-internal flows (target configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's docs own those details.
+5. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe specialist-internal flows (target configuration, OR registration, XAML authoring pipelines, **HITL field/outcome schema design**, auth flows, testing procedures). Each specialist's docs own those details. **For a HITL step, pass the business intent only** ("manager approves or rejects an expense; can add a reason if rejected") — never a field-level spec (do not prescribe field names, types like `approved: boolean`, `required` flags, or outcome lists). The HITL specialist chooses the schema shape (boolean decision field vs Approve/Reject outcomes) from the intent; a field-level prescription forces one shape and defeats that choice.
 
 ## Entry Guard
 
