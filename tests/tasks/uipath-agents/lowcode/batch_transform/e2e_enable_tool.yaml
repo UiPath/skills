@@ -5,13 +5,14 @@ description: >
   init, uip agent init, uip agent validate) registers the project in
   the parent .uipx and that resource.json uses the exact built-in shape
   (type=internal, referenceKey=null, properties.toolType=batch-transform).
-tags: [uipath-agents, e2e, low-code, lifecycle:generate]
-max_iterations: 1
+tags: [uipath-agents, e2e, low-code, lifecycle:generate, context-grounding]
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
@@ -20,6 +21,10 @@ initial_prompt: |
   a 4-digit MCC code and a confidence label. Enable the built-in
   "batch-transform" tool so the agent can produce one augmented row per
   input row.
+
+  Use the `uip` CLI to scaffold the solution and agent — do NOT
+  hand-author the solution `.uipx`, `agent.json`, `project.uiproj`,
+  or `entry-points.json` files.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
