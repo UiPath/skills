@@ -136,7 +136,7 @@ For each metric, derive internally and use to build the description:
 - **Shape**: `line | bar | area | donut | kpi | table`
 - **Time frame**: `realtime | hourly | daily | weekly | monthly`
 - **Aggregation**: `count | sum | avg | p50 | p95 | p99`
-- **Service**: `SDK` or `Insights` (resolve via data-router.md)
+- **Service**: `SDK` or `Insights` (resolve via sdk-capabilities.md)
 
 ## Anti-patterns
 - Do NOT show [Insights] or [SDK] labels in the plan

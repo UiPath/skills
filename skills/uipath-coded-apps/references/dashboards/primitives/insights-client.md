@@ -116,5 +116,5 @@ const { data, loading, error } = useInsights(
 1. In `sdk-client.ts`: replace `createInsightsClient(...)` with SDK Insights service init
 2. Update `useInsights.ts` to use the SDK namespace calls
 3. Delete `src/lib/insights-client.ts` from the scaffold template
-4. Update `insights-catalog.md`: remove "HTTP client" note
+4. Update `sdk-capabilities.md`: remove "HTTP client" note from Insights RTM section
 No widget files change on migration — hook interface is stable.
