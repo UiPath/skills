@@ -33,7 +33,7 @@ one developer workstation does not propagate to the robot host.
 - Job: InvoiceMacroRunner -- Faulted at 2026-05-12T09:14:05.310Z (ran for ~3.2 seconds)
 - Job type: Unattended, triggered manually by user "user1" on machine MOCK-HOST
 - Folder: RPA Production (key `b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e`)
-- Final error: `Programmatic access to Visual Basic Project is not trusted` -> `Main.xaml` -> `InvokeVBAX "Invoke VBA"` -> `ExcelProcessScope "Excel Process Scope"` -> `Sequence "Main Sequence"`
+- Final error: `Programmatic access to Visual Basic Project is not trusted` -> `Main.xaml` -> `InvokeVBAX "Invoke VBA"` -> `ExcelApplicationCard "Use Excel File"` -> `ExcelProcessScope "Excel Process Scope"` -> `Sequence "Main Sequence"`
 
 ### Excel Activities (Root Cause)
 - Activity: `InvokeVBAX` (DisplayName: "Invoke VBA")
