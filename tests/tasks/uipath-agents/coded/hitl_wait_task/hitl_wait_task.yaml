@@ -37,6 +37,9 @@ initial_prompt: |
     - `reviewer_note` (string) — whatever free-form note the
       reviewer left.
 
+  Scaffold the agent project inside a `purchase-gate/` directory at
+  the working-directory root.
+
   Take the agent through scaffold → schema sync. Do NOT run,
   publish, upload, or deploy. Do NOT call `uip login`. Do NOT pause
   between planning and implementation. Complete end-to-end in a
