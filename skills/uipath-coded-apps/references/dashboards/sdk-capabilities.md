@@ -286,6 +286,7 @@ All calls: POST JSON. All require `tenantId` (UUID), `startTime` (ISO 8601), `en
 // name = agentName
 ```
 **Computable metrics:** Trace error count per agent over time
+**Cannot compute:** Per-agent breakdown across fleet — use `agents.getErrors` for that
 **Templates:** `area-chart`, `line-chart`
 **Aliases:** "trace errors", "trace error trend"
 
@@ -820,13 +821,20 @@ Triggers: "incident breakdown", "error vs escalation as bars", "incident proport
 }
 ```
 
-### SDK Recipes (AMBER path — use `files{}` map, not `widgets[]`)
+### SDK Recipes
 
-For SDK widgets, write a custom TypeScript hook in the `files{}` map using the SDK capability entry
-above. Do NOT use `useInsights`. Use `const { sdk, isAuthenticated } = useAuth()` and
-`new ServiceClass(sdk as never).method(params)`.
+SDK capabilities use one of two paths based on whether a template exists:
 
-**SDK Recipe A — Running Jobs Count**
+**GREEN path (has template):** When a capability entry lists an `sdk-*` template in its **Templates**
+field, use the `widgets[]` array in plan.json with the named template and the SDK-specific fields:
+`sdkImport`, `sdkService`, `sdkCall`, `sdkResultType`. The build script handles code generation.
+
+**AMBER path (no template):** When a capability entry has no matching `sdk-*` template, write a
+custom TypeScript hook directly in the `files{}` map using the exact method signature and response
+shape from the capability entry. Do NOT use `useInsights`. Use `const { sdk, isAuthenticated } = useAuth()`
+and `new ServiceClass(sdk as never).method(params)`.
+
+**SDK Recipe A — Running Jobs Count (AMBER path — no template exists for this computation)**
 Triggers: "running jobs", "active jobs", "jobs in progress", "how many jobs are running"
 ```tsx
 // Write to files['src/dashboard/widgets/RunningJobs.tsx']:
@@ -875,15 +883,27 @@ export function RunningJobs() {
 
 **SDK Recipe B — Queue Depth**
 Triggers: "queue depth", "active queue items", "queued transactions"
-Use same pattern as Recipe A but with `new QueueItems(sdk as never).getAll({ status: 'New,InProgress' })`.
+Use `sdk-kpi-card` template (GREEN) with:
+- `sdkImport: "@uipath/uipath-typescript/queues"`
+- `sdkService: "QueueItems"`
+- `sdkCall: "getAll({ status: 'New,InProgress' })"`
+- `sdkResultType: "{ items?: Array<{ status: string; queueDefinitionName: string }> }"`
+- `valueExpression: "String((r as any)?.items?.length ?? '—')"`
+- `deltaDir: "neutral"`
 
 **SDK Recipe C — Pending Action Center Tasks**
 Triggers: "pending tasks", "action center backlog", "human tasks"
-Use same pattern as Recipe A but with `new Tasks(sdk as never).getAll({ status: 'Pending,Unassigned' })`.
+Use `sdk-kpi-card` template (GREEN) with:
+- `sdkImport: "@uipath/uipath-typescript/tasks"`
+- `sdkService: "Tasks"`
+- `sdkCall: "getAll({ status: 'Pending,Unassigned' })"`
+- `sdkResultType: "{ items?: Array<{ status: string; title: string }> }"`
+- `valueExpression: "String((r as any)?.items?.length ?? '—')"`
+- `deltaDir: "neutral"`
 
-**SDK Recipe D — Process Inventory Table**
+**SDK Recipe D — Process Inventory Table (GREEN path — use `sdk-data-table` template)**
 Triggers: "what processes are deployed", "automation inventory", "process list"
-Use `sdk-data-table` template with:
+Use `sdk-data-table` template (add to `widgets[]` array) with:
 - `sdkImport: "@uipath/uipath-typescript/processes"`
 - `sdkService: "Processes"`
 - `sdkCall: "getAll()"`
@@ -898,7 +918,10 @@ Use `sdk-data-table` template with:
 - "job count today" → SDK `Jobs.getAll`; "job count over 7 days" → `jobs.getCompletedTimeline`
 - "queue depth" → SDK `QueueItems.getAll`; "queue throughput trend" → no endpoint, stay SDK with disclaimer
 - P50/P95 latency → `agents.getLatencyTimeline` (fleet) or `traceview.getLatencyTimeline` (trace-level)
-- `governance.getPolicySummary` requires `policy` (UUID) extra body field — confirm with user
+- `governance.getPolicySummary` requires a `policy` UUID body field. If user asks for policy data
+  without specifying a policy, ask: "Which policy would you like to report on? Please provide the
+  policy name or UUID." If user cannot provide one, suggest `governance.getOperationSummary` instead
+  (broader operation volume — no policy filter required).
 - "invocation volume" → `agents.getConsumptionTimeline` (activity proxy — say so in plan)
 - `getSummaryV2` is AGGREGATE ONLY — never use for line/area/bar time-series charts
 - "real-time" → SDK operational state; "over time" / "trend" → Insights RTM analytics
