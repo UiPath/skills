@@ -23,9 +23,9 @@ initial_prompt: |
   works end-to-end. The path to folder A is in `seed.json` along with a
   unique prefix.
 
-  First, create a second folder under Shared/ named `e2e-folder-b-`
-  followed by that prefix, and save its full path (e.g.
-  `Shared/e2e-folder-b-<prefix>`) to `folder_b.txt`.
+  First, create a second folder named `e2e-folder-b-<prefix>` directly
+  inside folder A (so it lives at `<folder_a_path>/e2e-folder-b-<prefix>`).
+  Save its full path to `folder_b.txt`.
 
   Then create an asset in folder A called `e2e-asset-share-<prefix>`.
   Share it with folder B, then unshare it. By the end I want the asset

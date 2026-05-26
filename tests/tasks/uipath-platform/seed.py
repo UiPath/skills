@@ -9,7 +9,15 @@ def uip_json(*args):
     except json.JSONDecodeError:
         return {}
 
-seed = {"uuid8": uuid.uuid4().hex[:8]}
+seed = {
+    "uuid8": uuid.uuid4().hex[:8],
+    # Parent folder under which tests place any new folder they create
+    # (folders_hierarchy's tree, deploy_round_trip's deploy folder, etc.).
+    # Defaults to Shared for local dev; CI sets it to an isolated subfolder
+    # like `Shared/uipath-platform-e2e` so all test junk stays out of Shared
+    # root.
+    "parent_folder_path": os.environ.get("E2E_TEST_PARENT_FOLDER", "Shared"),
+}
 
 key = os.environ.get("E2E_PROCESS_KEY", "")
 if key:

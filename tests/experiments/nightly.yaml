@@ -26,6 +26,7 @@ defaults:
         - TRACES_SMOKE_PROCESS_KEY
         - E2E_PROCESS_KEY
         - E2E_LONG_PROCESS_KEY
+        - E2E_TEST_PARENT_FOLDER
       extra_mounts:
         - ~/.uipath:/.uipath:rw
 

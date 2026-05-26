@@ -176,6 +176,9 @@ jobs:
           BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
+          E2E_PROCESS_KEY:          ${{ secrets.E2E_PROCESS_KEY }}
+          E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
+          E2E_TEST_PARENT_FOLDER:   ${{ secrets.E2E_TEST_PARENT_FOLDER }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
         working-directory: tests
