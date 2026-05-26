@@ -1,0 +1,69 @@
+task_id: skill-agent-coded-openai-agents-structured-output
+description: >
+  OpenAI Agents coded agent zero-to-running with typed context and
+  structured output. Verifies scaffold → init → run lifecycle for a
+  single-agent project using `Agent[ReviewInput]` with
+  `output_type=ReviewOutput`, confirms `uip codedagent init` extracts
+  both schemas into `entry-points.json`, and enforces the
+  factory-function pattern (Critical Rule C4 — module-level
+  `UiPathChatOpenAI` setup breaks `uip codedagent init`).
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents, feature:schema-sync]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build an OpenAI Agents UiPath coded agent named `review-analyzer` that
+  analyzes product reviews and returns a structured result.
+
+  The agent takes a product review as input and returns the sentiment
+  (positive, negative, or neutral), a confidence score (0.0–1.0), and a
+  one-sentence summary. Name the input model `ReviewInput` (with a
+  `review_text` field) and the output model `ReviewOutput`.
+
+  Run it with this input:
+  `'{"messages": "Analyze this review", "review_text": "This product is absolutely amazing — best purchase I have made in years."}'`
+
+  Do NOT deploy.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the agent locally with uip codedagent run <entrypoint>"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run\s+\w+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "OpenAI Agents project shape, structured output schema, factory pattern"
+    command: "python3 $TASK_DIR/check_openai_agents_structured_output.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
