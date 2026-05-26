@@ -81,9 +81,23 @@ DataFabric entity records, Maestro instance lists, Action Center task counts.
 
 ## Widget Recipes
 
-Pre-written patterns for the 10 most common widgets. For each widget in the approved plan, find the matching recipe, copy the block into the widget file, and fill in only `<COMPONENT_NAME>` and `<TITLE>`. No cross-referencing required.
+Pre-written patterns for the most common widgets. When building plan.json `widgets` array entries, use these as the source for `dataHook`, `dataSelector`, `xKey`, `yKey`, `columns`, etc.
 
-**How to use:** The `useInsights` line goes at the top of the component function. The `chartData` / `rows` / `value` line goes immediately after. `X_KEY` / `Y_KEY` are filled into the template's `dataKey` props.
+### ColumnDef format — memorise this, never invent variations
+
+`RecordsTable` uses **`{ key, label, align? }`** — NOT TanStack Table's `{ accessorKey, header }`:
+
+```typescript
+// ✅ CORRECT — RecordsTable ColumnDef
+{ key: 'agentName', label: 'Agent' }
+{ key: 'healthScore', label: 'Health Score', align: 'right' as const }
+
+// ❌ WRONG — these do not exist in RecordsTable:
+{ accessorKey: 'agentName', header: 'Agent' }   // TanStack style — wrong
+{ key: 'count', label: 'Errors', numeric: true } // numeric prop — wrong
+```
+
+**`align`** must be exactly `'right' as const` or `'left' as const` (or omit for default left). Never use `numeric: true`.
 
 ---
 
@@ -314,7 +328,7 @@ const { data, loading, error } = useInsights<{ data: Array<{ agentName: string; 
   'agents.getTopErroredAgents', { startTime: SEVEN_DAYS_AGO, endTime: NOW }
 )
 const rows = [...((data as any)?.data ?? [])].sort((a, b) => b.count - a.count)
-// COLUMNS: [{ key: 'agentName', label: 'Agent' }, { key: 'count', label: 'Errors', numeric: true }]
+// COLUMNS: [{ key: 'agentName', label: 'Agent' }, { key: 'count', label: 'Errors', align: 'right' as const }]
 // X_KEY for sort: "count"
 ```
 

@@ -233,7 +233,7 @@ pre-tested templates and applies substitutions. No TypeScript errors from agent-
   "cloudUrl": "<DATA_BASE_URL>",
   "apiUrl": "<API_BASE_URL>",
   "tenantId": "<TENANT_ID>",
-  "pat": "<PAT>",
+  "pat": "FROM_AUTH",  // sentinel — script reads PAT from ~/.uipath/.auth (never put token in plan.json)
 
   "widgets": [
     {

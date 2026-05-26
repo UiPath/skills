@@ -34,6 +34,7 @@
 
 import { readFileSync, writeFileSync, copyFileSync, mkdirSync, readdirSync, existsSync, renameSync } from 'fs';
 import { join, dirname, resolve } from 'path';
+import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 import { execSync, spawn } from 'child_process';
 
@@ -164,15 +165,29 @@ const {
   cloudUrl,
   apiUrl,
   tenantId,
-  pat,
-  files = {},      // { 'relative/path': 'file content' } — agent-authored files (Dashboard.tsx, index.ts, etc.)
-  widgets: planWidgets = [],  // widget config array — script generates TypeScript via templates
-  appTsxImports,   // string to inject between GENERATED_IMPORTS markers
-  appTsxRoutes,    // string to inject between GENERATED_ROUTES markers
+  pat: patFromPlan,            // "FROM_AUTH" sentinel or empty → read from .auth file
+  files = {},                  // { 'relative/path': 'file content' } — agent-authored files
+  widgets: planWidgets = [],   // widget config array — script generates TypeScript via templates
+  appTsxImports,
+  appTsxRoutes,
 } = plan;
 
 if (!projectDir) fail('plan.projectDir is required');
 if (!routingName) fail('plan.routingName is required');
+
+// PAT — read from ~/.uipath/.auth so plan.json never contains credentials.
+// Agent writes "pat": "FROM_AUTH" (sentinel) or omits the field.
+// Script resolves it here — security classifier never sees PAT in plan.json.
+function readPatFromAuth() {
+  try {
+    const content = readFileSync(join(homedir(), '.uipath', '.auth'), 'utf8');
+    const m = content.match(/^UIPATH_ACCESS_TOKEN=(.+)/m);
+    if (m) return m[1].trim();
+    const parsed = JSON.parse(content);
+    return parsed.UIPATH_ACCESS_TOKEN || parsed.access_token || '';
+  } catch { return ''; }
+}
+const pat = (!patFromPlan || patFromPlan === 'FROM_AUTH') ? readPatFromAuth() : patFromPlan;
 
 const P = resolve(projectDir);
 
