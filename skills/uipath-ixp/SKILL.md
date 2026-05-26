@@ -50,7 +50,7 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 
 | User request | Action |
 |-------------|--------|
-| "Create an IXP project" / "Upload documents" | [Project Setup Guide](references/project-setup-guide.md) |
+| "Create an IXP project" / "Upload documents to a new project" | [Project Setup Guide](references/project-setup-guide.md) — **new** projects only (uploads + taxonomy in one call). For **existing** projects, see the "Upload a document" row below. |
 | "Import this taxonomy" / provides a taxonomy file | [Project Setup Guide](references/project-setup-guide.md) — Option B (`--skip-taxonomy` + `import-taxonomy`) |
 | "Label documents" / "Review predictions" | [Label Documents Guide](references/label-documents-guide.md) |
 | "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts-guide.md) |
@@ -58,6 +58,7 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Show metrics" / "What are the scores?" | `uip ixp projects get-metrics <project-name> --output json` |
 | "List projects" | `uip ixp projects list --output json` |
 | "Configure the model" / "Change preprocessing" | `uip ixp projects configure-model <project-name> [options] --output json` |
+| "Upload a document" / "Add documents to an existing project" | `uip ixp documents upload <project-name> <file> --output json` — see [CLI Reference § Uploading documents](references/cli-reference.md#uploading-documents-to-an-existing-project). One file per call; loop for multiple. For brand-new projects use `projects create` instead. |
 
 ## Common Pitfalls
 
