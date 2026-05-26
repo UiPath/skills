@@ -29,6 +29,8 @@ initial_prompt: |
   LlamaIndex, or OpenAI Agents. This keeps setup minimal: one lightweight
   pip install, no graph wiring needed for the stub.
 
+  Create the `ClaimsSol/` solution at the working-directory root.
+
   Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
   ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Complete the entire task end-to-end in
@@ -44,17 +46,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent scaffolded the coded agent project with uip codedagent new"
+    description: "Agent scaffolded the Coded Function project (uip functions new or uip codedagent new)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+new'
+    command_pattern: 'uip\s+(functions|codedagent)\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent generated entry-points.json with uip codedagent init"
+    description: "Agent generated entry-points.json (uip functions init or uip codedagent init)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+init'
+    command_pattern: 'uip\s+(functions|codedagent)\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
