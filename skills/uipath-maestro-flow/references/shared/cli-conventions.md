@@ -31,7 +31,7 @@ MIN_VERSION="0.3.4"
 if [ "$(printf '%s\n%s\n' "$MIN_VERSION" "$CURRENT" | sort -V | head -n1)" = "$MIN_VERSION" ]; then
   FLOW_CMD="uip maestro flow"
 else
-  FLOW_CMD="uip flow"
+  FLOW_CMD="uip flow"  # <!-- uip-check-skip -->
 fi
 echo "Using: $FLOW_CMD (CLI version $CURRENT)"
 ```
