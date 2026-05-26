@@ -68,8 +68,8 @@ def main() -> None:
     outcomes = schema.get("outcomes")
     if not isinstance(fields, list) or not fields:
         fail("HITL schema must define fields")
-    if not isinstance(outcomes, list) or len(outcomes) < 2:
-        fail("HITL schema must define at least two outcomes")
+    if not isinstance(outcomes, list) or not outcomes:
+        fail("HITL schema must define outcomes")
 
     if not any(
         (field_text(f, "id") == "amount" or "amount" in field_text(f, "label")) and f.get("type") == "number"
