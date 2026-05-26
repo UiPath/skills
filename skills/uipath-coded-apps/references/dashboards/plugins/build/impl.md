@@ -220,7 +220,7 @@ Write this to `<PROJECT_DIR>/plan.json` (it will be cleaned up by the script).
 ### Step 3: Run build-dashboard.mjs (1 Bash)
 
 ```bash
-node "${SKILL_BASE_DIR}/assets/scripts/build-dashboard.mjs" < "${PROJECT_DIR}/plan.json"
+node "${SKILL_BASE_DIR}/assets/scripts/build-dashboard.mjs" "${PROJECT_DIR}/plan.json"
 BUILD_RESULT=$?
 rm -f "${PROJECT_DIR}/plan.json"   # clean up — no PAT should sit on disk longer than needed
 ```

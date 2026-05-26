@@ -13,8 +13,8 @@
  *   8. Starts dev server and outputs the URL
  *
  * Usage:
- *   echo '<plan-json>' | node build-dashboard.mjs
- *   node build-dashboard.mjs < plan.json
+ *   node build-dashboard.mjs <plan.json>          ← recommended (cross-platform)
+ *   node build-dashboard.mjs /path/to/plan.json
  *
  * The plan JSON schema is defined at the bottom of this file.
  * Exit 0 = success, exit 1 = failure (message on stderr).
@@ -63,12 +63,15 @@ function writeAtomic(filePath, content) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+// Accept plan as file path argument — cross-platform, no /dev/stdin issues on Windows
+const planArg = process.argv[2];
+if (!planArg) fail('Usage: node build-dashboard.mjs <plan.json>');
+
 let plan;
 try {
-  const raw = readFileSync('/dev/stdin', 'utf8');
-  plan = JSON.parse(raw);
-} catch {
-  fail('Could not read plan JSON from stdin');
+  plan = JSON.parse(readFileSync(planArg, 'utf8'));
+} catch (e) {
+  fail(`Could not read plan JSON from ${planArg}: ${e.message}`);
 }
 
 const {
@@ -186,25 +189,37 @@ const newState = {
 };
 writeAtomic(statePath, JSON.stringify(newState, null, 2));
 
-// Step 8 — Start dev server and output result
+// Step 8 — Start dev server
+// Use shell:true so npm resolves correctly on Windows (npm.cmd vs npm)
 log('⚙ Starting preview server…');
-const server = spawn('npm', ['run', 'dev'], { cwd: P, detached: true, stdio: 'pipe' });
+const isWindows = process.platform === 'win32';
+const server = spawn('npm', ['run', 'dev'], {
+  cwd: P,
+  detached: true,
+  stdio: 'pipe',
+  shell: isWindows,   // required on Windows — npm is npm.cmd
+});
+server.on('error', () => {});  // suppress unhandled error if server fails to start
 server.unref();
 
-// Poll for port
+// Give server 5s to bind, then output result regardless
+// (user runs `npm run dev` themselves if this poll times out)
 let port = 5173;
-const deadline = Date.now() + 8000;
+const deadline = Date.now() + 5000;
 while (Date.now() < deadline) {
   try {
-    execSync(`node -e "require('http').get('http://localhost:${port}', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"`,
-      { stdio: 'pipe', timeout: 1000 });
+    execSync(
+      `node -e "require('http').get('http://localhost:${port}',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"`,
+      { stdio: 'pipe', timeout: 1000 }
+    );
     break;
   } catch {
     port++;
-    if (port > 5180) { port = 5173; break; } // give up, use default
+    if (port > 5180) { port = 5173; break; }
   }
 }
 
+// Output structured result — always exit 0 after this point (server runs independently)
 // Output structured result for the agent to parse
 const result = {
   success: true,
@@ -215,6 +230,7 @@ const result = {
   dashboardName,
 };
 log('\nBUILD_RESULT:' + JSON.stringify(result));
+process.exit(0);  // exit before server's detached process can throw
 
 /**
  * PLAN JSON SCHEMA
