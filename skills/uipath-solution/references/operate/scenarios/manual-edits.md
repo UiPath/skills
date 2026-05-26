@@ -1,12 +1,14 @@
 # Manual edits when the CLI doesn't cover the case
 
-There's no `solution resource update` command yet. When you need to change something on a resource that's already in the solution and `solution resource refresh` is import-only (it reconciles binding additions, not field edits on existing entries), you have three options ordered by preference:
+The CLI now covers atomic **create** (`solution resource add`) and **delete** (`solution resource remove`) — see [develop-solution.md Step 9–10](../develop-solution.md#step-9-add-a-resource-atomically). What's still missing is `solution resource update` for field-level edits on resources already in the solution. `solution resource refresh` is import-only (it reconciles binding additions, not field edits on existing entries).
+
+For an in-place field edit, you have three options ordered by preference:
 
 1. **Edit in Studio Web** — `solution upload`, edit in the SW UI, re-export. The proper way; SDK does all the validation and back-references.
 2. **`solution deploy config set` / `link` / `unlink`** — for changes that only need to apply at deploy time (per-environment values, link state). Touches only the deploy config file, not the solution-level resources.
 3. **Hand-edit the JSON directly** — the escape hatch when neither of the above fits and you don't want a full SW round-trip. Works, but **not ideal** — there's no validation, the SDK can silently undo your change on the next refresh if your edit conflicts with what bindings would re-derive, and structural mistakes corrupt the solution. Use only when you understand which fields the SDK leaves alone.
 
-This page covers (3) — what's safe to hand-edit and what's not.
+This page covers (3) — what's safe to hand-edit and what's not. For creating or deleting a whole resource (not editing fields on an existing one), prefer `solution resource add` / `remove`.
 
 ## What the SDK actually compares
 
