@@ -1,0 +1,6 @@
+{
+  "Name": "DailyDigestRunner",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Invoke VBA failure caused by COM interop HRESULT 0x80010100 RPC_E_SYS_CALL_FAILED, with a hidden modal dialog blocking the macro injection while the Excel Process Scope runs with ShowExcel=False.",
+  "MainFile": "Main.xaml"
+}

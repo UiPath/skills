@@ -1,0 +1,137 @@
+task_id: skill-troubleshoot-invokevba-trust-access
+description: >
+  UiPath troubleshooting agent must diagnose an Invoke VBA failure caused by
+  Excel's "Trust access to the VBA project object model" Trust Center setting
+  being disabled on the robot machine. Success = agent matches the
+  invoke-vba-trust-access playbook AND tells the user to enable the Trust
+  Center toggle, without attempting host-side commands the user cannot run.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 60
+turn_timeout: 1800
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InvoiceMacroRunner process is faulting in Orchestrator on every run.
+  The folder is "RPA Production".
+
+  I'm not on the Robot host right now and have no shell access to MOCK-HOST,
+  only Orchestrator. Diagnose what you can from Orchestrator. If the answer
+  needs evidence from the host itself, give me the exact things to check on
+  the host the next time I'm in front of it; I'll do them and come back with
+  the result. Do not stall waiting for host data - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the invoke-vba-trust-access playbook AND recommended enabling the Trust Center toggle"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My InvoiceMacroRunner process is faulting in Orchestrator on every
+         run. The folder is 'RPA Production'. I'm not on the Robot host
+         right now, only Orchestrator. Give me the exact things to check
+         on the host the next time I'm there."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/invoke-vba-trust-access.md
+        because the runtime error
+          "Programmatic access to Visual Basic Project is not trusted"
+        is the verbatim signature of that playbook.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The robot machine's Excel Trust Center has "Trust access to the
+            VBA project object model" disabled under the Windows user the
+            robot runs as.
+          - The Invoke VBA activity in Main.xaml tries to inject a VBA
+            module into the workbook, which Excel blocks at the
+            VBProject.VBComponents.Add API.
+        The reference fix:
+          - Enable the Trust Center toggle on the robot machine, under the
+            robot's Windows user, at File > Options > Trust Center > Trust
+            Center Settings > Macro Settings > "Trust access to the VBA
+            project object model".
+
+      DIMENSION C -- No fabricated host actions
+        Because the user said they are not on the host, the agent must
+        either (a) hand the user a short check list with the Trust Center
+        path, or (b) recommend the toggle plainly. The agent must NOT
+        claim to have flipped the toggle, edited the registry, or run any
+        host-side command itself.
+
+      SCORING RUBRIC:
+        1.0  Agent matched invoke-vba-trust-access AND recommended
+             enabling the Trust Center toggle (or equivalent path through
+             the Macro Settings dialog) AND did not fabricate host
+             actions.
+        0.8  Correct playbook AND correct toggle, but conclusion is
+             vague (e.g., "fix Excel security settings" without naming
+             the toggle).
+        0.5  Recognized the error class (VBA project trust / programmatic
+             access) but missed the specific toggle or matched a sibling
+             playbook (e.g., recommended the wrong remediation branch).
+        0.2  Surfaced the error message back to the user without
+             diagnosis or escalated to support without trying the
+             playbook.
+        0.0  Wrong cause (e.g., concluded code-file-path failure,
+             entry-method-name typo, parameter mismatch, or COM
+             interop), or the agent fabricated a host action it could
+             not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are away from the Robot host and only have Orchestrator access.
+    You trust the agent's expertise and are waiting for either a
+    diagnosis or a list of host-side things to check next time you are
+    in front of the machine.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
