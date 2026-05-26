@@ -139,7 +139,7 @@ The generated SDD must start with:
 | Case Identifier | Prefix: {2-4 char UPPER prefix}, Type: {constant \| external} |
 | Priority | Choiceset: {comma-separated values} — Default: {value} |
 | Case-Level SLA | {count} {unit: h/d/w/m} |
-| SLA Type | {Static \| Variable} |
+| SLA Type | {time-based \| condition-based} |
 
 ### Case-Level SLA Escalation Rules
 
@@ -150,7 +150,7 @@ The generated SDD must start with:
 
 ### Variable SLA Rules
 
-> Include this table only if SLA Type is Variable. Each row defines an expression-based SLA override.
+> Include this table only if SLA Type is `condition-based`. Each row defines an expression-keyed SLA override; the time-based default lives in the Case Metadata `Case-Level SLA` cell above. FE persists `slaRules[]` with non-empty `conditionExpression` per row (PO.Frontend `CaseManagementSlaProperties.tsx`).
 
 | Expression | SLA | Unit |
 |------------|-----|------|
