@@ -53,11 +53,12 @@ No ordering violations, no cp -r on Windows, no heredoc failures.
    src/dashboard/chrome/*, src/components/*, useInsights.ts, insights-client.ts — all forbidden.
    Their APIs are fully documented in this file.
 5. **Use build-dashboard.mjs for all file writes.** Never use Write or Edit tools for widget
-   files — put all generated content in plan.json and let the script write it.
-6. **Never invent component imports.** Only import what's documented in the "allowed imports"
-   section of Phase 6 Step 1. `@/components/AreaChart`, `@/components/BarChart`,
-   `@/components/KpiCard`, `@/components/ui/chart` — NONE of these exist in the scaffold.
-7. **View files never contain charts.** Detail views = `DetailViewShell` + `RecordsTable` only.
+   files — put configuration in plan.json `widgets` array and let the script generate TypeScript.
+6. **Never write widget TypeScript.** The `widgets` array takes configuration values only
+   (componentName, template, endpoint, dataSelector, icon, title, description, deltaDir).
+   The script generates TypeScript from pre-tested templates — no invented imports, no wrong props.
+7. **View files never contain charts.** The script generates views automatically as
+   `DetailViewShell` + `RecordsTable` — agent never writes view TypeScript.
 
 ---
 
@@ -182,78 +183,31 @@ HALT. Follow build-plan.md approval gate rules. Do not proceed until explicit ap
 
 ## Phase 6 — Build (1 Write + 1 Bash)
 
-After approval, generate all widget code in-context (no tools), then:
+After approval, derive widget configuration in-context (no tools), then:
 
-### Step 1: Generate all code in-context (0 tool calls)
+### Step 1: Derive widget configuration in-context (0 tool calls)
 
-Using Widget Recipes from insights-catalog.md, derive the full TypeScript source for:
-- Every widget file (`src/dashboard/widgets/<Name>.tsx`)
-- Every detail view (`src/dashboard/views/<Name>View.tsx`)
+Agent never writes widget TypeScript. Provide configuration only. The script uses templates.
+
+Using Widget Recipes from insights-catalog.md, derive for each widget:
+- Which template to use (`template` field)
+- Endpoint + startTime/endTime for the `dataHook` expression
+- `dataSelector` path from the catalog response schema
+- Icon name, title, description, deltaDir, deltaText
+
+Also generate in-context (agent still authors these directly):
 - Dashboard layout (`src/dashboard/Dashboard.tsx`)
 - Widget exports (`src/dashboard/widgets/index.ts`)
 - App.tsx import lines and route JSX
 
-#### Widget files — allowed imports
-
-```typescript
-// ✅ These exist in the scaffold:
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
-import { <IconName> } from 'lucide-react'                    // any lucide icon
-import { useInsights } from '@/hooks/useInsights'
-import { useAuth } from '@/hooks/useAuth'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { DeltaBadge, ViewAllLink, LoadingState, EmptyState } from '@/dashboard/chrome'
-import { fmtNumber, fmtPercent, fmtDuration } from '@/lib/format'
-// Recharts primitives (always import from 'recharts', not @/components):
-import { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-         XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
-// ❌ NEVER invent these — they DO NOT EXIST:
-// import { KpiCard } from '@/components/KpiCard'     ← doesn't exist
-// import { AreaChart } from '@/components/AreaChart'  ← doesn't exist
-// import { BarChart } from '@/components/BarChart'    ← doesn't exist
-// import { ChartContainer } from '@/components/ui/chart' ← not in scaffold
-```
-
-#### View files — ONLY these imports (no charts ever)
-
-Detail views show raw data tables, NOT charts. The pattern is always: DetailViewShell + RecordsTable.
-
-```typescript
-// ✅ View files can ONLY import:
-import React from 'react'
-import { DetailViewShell } from '@/dashboard/chrome/DetailViewShell'
-import { RecordsTable, type ColumnDef } from '@/dashboard/chrome/RecordsTable'
-import { useInsights } from '@/hooks/useInsights'
-import { useAuth } from '@/hooks/useAuth'
-import { LoadingState, EmptyState } from '@/dashboard/chrome'
-import { fmtNumber, fmtPercent, fmtDuration, fmtTimeAgo } from '@/lib/format'
-
-// ❌ View files NEVER import recharts or any chart component
-// ❌ View files NEVER import Card, AreaChart, BarChart, etc.
-```
-
-**View file canonical shape:**
-```tsx
-export function <Name>View() {
-  const { data, loading, error } = useInsights<ResponseType>('<endpoint>', { startTime, endTime: NOW })
-  const rows: Record<string, unknown>[] = <DATA_SELECTOR>
-  
-  if (loading) return <DetailViewShell title="<Title>" description="<Desc>"><LoadingState height="h-96" /></DetailViewShell>
-  if (error)   return <DetailViewShell title="<Title>" description="<Desc>"><EmptyState message={error.message} /></DetailViewShell>
-  
-  return (
-    <DetailViewShell title="<Title>" description="All <entities> from <time range>.">
-      <RecordsTable rows={rows} columns={COLUMNS} defaultSortKey="<key>" />
-    </DetailViewShell>
-  )
-}
-```
+**Allowed template values for `template` field:**
+`line-chart` · `area-chart` · `bar-chart` · `donut-chart` · `kpi-card` ·
+`kpi-with-sparkline` · `data-table` · `ranked-table` · `progress-bar-list` · `multi-line-chart`
 
 ### Step 2: Write plan.json (1 Write)
 
-Write the complete build plan as JSON. The script reads this and writes all files.
+The plan contains widget CONFIGURATION — not TypeScript code. The script loads
+pre-tested templates and applies substitutions. No TypeScript errors from agent-generated code.
 
 ```json
 {
@@ -266,16 +220,55 @@ Write the complete build plan as JSON. The script reads this and writes all file
   "apiUrl": "<API_BASE_URL>",
   "tenantId": "<TENANT_ID>",
   "pat": "<PAT>",
+
+  "widgets": [
+    {
+      "componentName": "ErrorRateTrend",
+      "template": "line-chart",
+      "detailRoute": "/error-rate",
+      "icon": "AlertTriangle",
+      "title": "Error Rate Trend",
+      "description": "Daily error counts — spot spikes early",
+      "dataHook": "useInsights<{data:Array<{name:string;value:number;date:string}>}>('agents.getErrors', { startTime: SEVEN_DAYS_AGO, endTime: NOW })",
+      "dataSelector": "(data as any)?.data ?? []",
+      "xKey": "date",
+      "yKey": "value",
+      "deltaDir": "down-good",
+      "deltaText": "errors today"
+    }
+  ],
+
   "files": {
     "src/dashboard/Dashboard.tsx": "<full Dashboard.tsx content>",
-    "src/dashboard/widgets/index.ts": "<export lines>",
-    "src/dashboard/widgets/<Widget1>.tsx": "<full widget TSX>",
-    "src/dashboard/views/<Widget1>View.tsx": "<full view TSX>"
+    "src/dashboard/widgets/index.ts": "export { ErrorRateTrend } from './ErrorRateTrend'\n"
   },
-  "appTsxImports": "import { Dashboard } from '@/dashboard/Dashboard'\nimport { <Widget1>View } from '@/dashboard/views/<Widget1>View'\n",
-  "appTsxRoutes": "<Route path=\"/\" element={<Dashboard />} />\n<Route path=\"/<route1>\" element={<<Widget1>View />} />\n"
+  "appTsxImports": "import { Dashboard } from '@/dashboard/Dashboard'\nimport { ErrorRateTrendView } from '@/dashboard/views/ErrorRateTrendView'\n",
+  "appTsxRoutes": "<Route path=\"/\" element={<Dashboard />} />\n<Route path=\"/error-rate\" element={<ErrorRateTrendView />} />\n"
 }
 ```
+
+**Widget field reference:**
+
+| Field | Required | Description |
+|---|---|---|
+| `componentName` | ✅ | PascalCase — used as filename and export name |
+| `template` | ✅ | Which pre-tested template to load |
+| `detailRoute` | ✅ | HashRouter path, e.g. `/error-rate` |
+| `icon` | ✅ | Any lucide-react icon name |
+| `title` | ✅ | Human label shown in CardTitle |
+| `description` | ✅ | One line in CardDescription |
+| `dataHook` | ✅ | Full `useInsights<ResponseType>(...)` call expression |
+| `dataSelector` | ✅ | Expression extracting array/value from response |
+| `xKey` | line/area/bar | X-axis field name |
+| `yKey` | line/area/bar | Y-axis field name |
+| `valueExpression` | kpi-card, kpi-with-sparkline | Expression evaluating to string value |
+| `columns` | data-table, ranked-table | `ColumnDef` array literal |
+| `deltaDir` | most | `up-good` / `up-bad` / `down-good` / `down-bad` / `neutral` |
+| `deltaText` | most | Text shown in DeltaBadge |
+| `series` | multi-line-chart | Series array literal: `[{key:"P50",color:"hsl(var(--chart-1))"}]` |
+| `pivotExpression` | multi-line-chart | Expression pivoting flat `{name,value,date}` rows to series map |
+
+The script generates widget files from templates and generates view files (DetailViewShell + RecordsTable) automatically — agent never writes these TypeScript files.
 
 Write this to `<PROJECT_DIR>/plan.json` (it will be cleaned up by the script).
 

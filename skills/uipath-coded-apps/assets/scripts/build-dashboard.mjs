@@ -12,11 +12,23 @@
  *   7. Writes .dashboard/state.json
  *   8. Starts dev server and outputs the URL
  *
+ * Plan JSON supports two modes for widget content:
+ *
+ *   Mode A — files map (legacy / agent-authored TypeScript):
+ *     "files": { "src/dashboard/widgets/Foo.tsx": "<full tsx>", ... }
+ *
+ *   Mode B — widgets array (template substitution — preferred):
+ *     "widgets": [ { "componentName": "Foo", "template": "kpi-card", ... } ]
+ *     The script loads pre-tested template files and applies <PLACEHOLDER> substitution.
+ *     TypeScript is always correct because templates are pre-validated.
+ *
+ * Both modes may coexist: widgets[] generates widget + view files; files{} writes
+ * Dashboard.tsx, index.ts, App.tsx (anything the agent still authors directly).
+ *
  * Usage:
  *   node build-dashboard.mjs <plan.json>          ← recommended (cross-platform)
  *   node build-dashboard.mjs /path/to/plan.json
  *
- * The plan JSON schema is defined at the bottom of this file.
  * Exit 0 = success, exit 1 = failure (message on stderr).
  */
 
@@ -27,6 +39,7 @@ import { execSync, spawn } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCAFFOLD_DIR = resolve(__dirname, '../templates/dashboard/scaffold');
+const WIDGETS_DIR = resolve(__dirname, '../templates/dashboard/widgets');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +74,74 @@ function writeAtomic(filePath, content) {
   renameSync(tmp, filePath);
 }
 
+// ── Template substitution ─────────────────────────────────────────────────────
+
+const TIME_CONSTANTS = `const NOW = new Date().toISOString()
+const ONE_DAY_AGO = new Date(Date.now() - 86_400_000).toISOString()
+const SEVEN_DAYS_AGO = new Date(Date.now() - 604_800_000).toISOString()
+const THIRTY_DAYS_AGO = new Date(Date.now() - 2_592_000_000).toISOString()
+const NINETY_DAYS_AGO = new Date(Date.now() - 7_776_000_000).toISOString()
+`;
+
+/**
+ * Load a widget template and apply <PLACEHOLDER> substitutions.
+ * Injects time constants after the last import line.
+ */
+function applyTemplate(templateName, subs) {
+  const templatePath = join(WIDGETS_DIR, `${templateName}.tsx`);
+  if (!existsSync(templatePath)) fail(`Template not found: ${templateName}.tsx in ${WIDGETS_DIR}`);
+  let content = readFileSync(templatePath, 'utf8');
+
+  // Apply all substitutions
+  for (const [key, value] of Object.entries(subs)) {
+    content = content.split(`<${key}>`).join(value);
+  }
+
+  // Inject time constants after the last import line
+  const lines = content.split('\n');
+  let lastImportIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('import ')) lastImportIdx = i;
+  }
+  if (lastImportIdx >= 0) {
+    lines.splice(lastImportIdx + 1, 0, '', TIME_CONSTANTS.trimEnd());
+    content = lines.join('\n');
+  }
+
+  return content;
+}
+
+/**
+ * Generate a detail view file (always DetailViewShell + RecordsTable).
+ * This is always script-generated — agents never write view files directly.
+ */
+function generateViewFile(widget) {
+  const { componentName, title, description, dataHook, dataSelector, columns } = widget;
+  const cols = columns ?? '[{key:"name",label:"Name"},{key:"value",label:"Value",align:"right" as const}]';
+  return `import React from 'react'
+import { DetailViewShell } from '@/dashboard/chrome/DetailViewShell'
+import { RecordsTable, type ColumnDef } from '@/dashboard/chrome/RecordsTable'
+import { useInsights } from '@/hooks/useInsights'
+import { LoadingState, EmptyState } from '@/dashboard/chrome'
+
+${TIME_CONSTANTS.trimEnd()}
+
+const COLUMNS: ColumnDef<Record<string, unknown>>[] = ${cols}
+
+export function ${componentName}View() {
+  const { data, loading, error } = ${dataHook}
+  const rows: Record<string, unknown>[] = ${dataSelector ?? '[]'}
+  if (loading) return <DetailViewShell title="${title ?? componentName}" description="${description ?? ''}"><LoadingState height="h-96" /></DetailViewShell>
+  if (error)   return <DetailViewShell title="${title ?? componentName}" description="${description ?? ''}"><EmptyState message={error.message} /></DetailViewShell>
+  return (
+    <DetailViewShell title="${title ?? componentName}" description="${description ?? ''}">
+      <RecordsTable rows={rows} columns={COLUMNS} defaultSortKey={COLUMNS[0]?.key as string} />
+    </DetailViewShell>
+  )
+}
+`;
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 // Accept plan as file path argument — cross-platform, no /dev/stdin issues on Windows
@@ -84,7 +165,8 @@ const {
   apiUrl,
   tenantId,
   pat,
-  files = {},      // { 'relative/path': 'file content' }
+  files = {},      // { 'relative/path': 'file content' } — agent-authored files (Dashboard.tsx, index.ts, etc.)
+  widgets: planWidgets = [],  // widget config array — script generates TypeScript via templates
   appTsxImports,   // string to inject between GENERATED_IMPORTS markers
   appTsxRoutes,    // string to inject between GENERATED_ROUTES markers
 } = plan;
@@ -129,10 +211,54 @@ if (!existsSync(lockSignal)) {
   log('✓ Dependencies already installed (pre-warm)');
 }
 
-// Step 4 — Write all generated files
+// Step 4 — Write agent-authored files (files map — Dashboard.tsx, index.ts, etc.)
 log('⚙ Writing dashboard files…');
 for (const [relativePath, content] of Object.entries(files)) {
   writeAtomic(join(P, relativePath), content);
+}
+
+// Step 4b — Process widgets array via template substitution
+const generatedWidgetNames = [];
+
+if (planWidgets.length > 0) {
+  log(`⚙ Generating ${planWidgets.length} widget(s) from templates…`);
+}
+
+for (const widget of planWidgets) {
+  const { componentName, template } = widget;
+  if (!componentName) fail(`Widget entry missing required field: componentName`);
+  if (!template) fail(`Widget "${componentName}" missing required field: template`);
+
+  // Build substitution map — all known placeholders with defaults
+  const subs = {
+    COMPONENT_NAME: componentName,
+    TITLE: widget.title ?? componentName,
+    DESCRIPTION: widget.description ?? '',
+    DETAIL_ROUTE: widget.detailRoute ?? `/${componentName.toLowerCase()}`,
+    ICON: widget.icon ?? 'Activity',
+    DATA_HOOK: widget.dataHook ?? `useInsights('agents.getAgents', { startTime: THIRTY_DAYS_AGO, endTime: NOW })`,
+    DATA_SELECTOR: widget.dataSelector ?? '[]',
+    X_KEY: widget.xKey ?? 'date',
+    Y_KEY: widget.yKey ?? 'value',
+    VALUE_EXPRESSION: widget.valueExpression ?? "'—'",
+    COLUMNS: widget.columns ?? '[{key:"name",label:"Name"},{key:"value",label:"Value",align:"right" as const}]',
+    DATA_KEY: widget.dataKey ?? 'value',
+    NAME_KEY: widget.nameKey ?? 'name',
+    DELTA_DIR: widget.deltaDir ?? 'neutral',
+    DELTA_TEXT: widget.deltaText ?? '',
+    SERIES: widget.series ?? '[{key:"value",color:"hsl(var(--chart-1))"}]',
+    PIVOT_EXPRESSION: widget.pivotExpression ?? 'rawData',
+  };
+
+  // Generate widget file from template
+  const widgetContent = applyTemplate(template, subs);
+  writeAtomic(join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`), widgetContent);
+
+  // Generate view file (always DetailViewShell + RecordsTable)
+  const viewContent = generateViewFile(widget);
+  writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent);
+
+  generatedWidgetNames.push(componentName);
 }
 
 // Step 5 — Update App.tsx route markers
@@ -174,9 +300,13 @@ const statePath = join(stateDir, 'state.json');
 const existingState = existsSync(statePath)
   ? JSON.parse(readFileSync(statePath, 'utf8'))
   : {};
-const widgetNames = Object.keys(files)
+
+// Collect widget names from both modes
+const filesWidgetNames = Object.keys(files)
   .filter(p => p.startsWith('src/dashboard/widgets/') && p.endsWith('.tsx'))
   .map(p => p.replace('src/dashboard/widgets/', '').replace('.tsx', ''));
+const allWidgetNames = [...new Set([...filesWidgetNames, ...generatedWidgetNames])];
+
 const newState = {
   ...existingState,
   app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0' },
@@ -184,7 +314,7 @@ const newState = {
   org: orgName,
   tenant: tenantName,
   cloudUrl,
-  widgets: widgetNames,
+  widgets: allWidgetNames,
   deployment: existingState.deployment ?? { systemName: null, folderKey: null, appUrl: null, lastDeployedAt: null },
 };
 writeAtomic(statePath, JSON.stringify(newState, null, 2));
@@ -220,13 +350,12 @@ while (Date.now() < deadline) {
 }
 
 // Output structured result — always exit 0 after this point (server runs independently)
-// Output structured result for the agent to parse
 const result = {
   success: true,
   projectDir: P,
   port,
   previewUrl: `http://localhost:${port}`,
-  widgets: widgetNames,
+  widgets: allWidgetNames,
   dashboardName,
 };
 log('\nBUILD_RESULT:' + JSON.stringify(result));
@@ -245,10 +374,32 @@ process.exit(0);  // exit before server's detached process can throw
  *   "apiUrl":        string  — derived ("alpha" → https://alpha.api.uipath.com etc.)
  *   "tenantId":      string  — UUID from ~/.uipath/.auth UIPATH_TENANT_ID
  *   "pat":           string  — from ~/.uipath/.auth UIPATH_ACCESS_TOKEN
- *   "files": {              — map of relative path → full file content
+ *
+ *   "widgets": [            — PREFERRED: agent provides config, script generates TypeScript
+ *     {
+ *       "componentName": string   — PascalCase; used as filename and export name
+ *       "template":      string   — one of: line-chart | area-chart | bar-chart | donut-chart |
+ *                                           kpi-card | kpi-with-sparkline | data-table |
+ *                                           ranked-table | progress-bar-list | multi-line-chart
+ *       "detailRoute":   string   — HashRouter path, e.g. "/error-rate"
+ *       "icon":          string   — any lucide-react icon name
+ *       "title":         string   — human label shown in CardTitle
+ *       "description":   string   — one line in CardDescription
+ *       "dataHook":      string   — full useInsights<ResponseType>(...) call expression
+ *       "dataSelector":  string   — expression extracting array/value from response data
+ *       "xKey":          string   — (line/area/bar) X-axis field name
+ *       "yKey":          string   — (line/area/bar) Y-axis field name
+ *       "valueExpression": string — (kpi-card/kpi-with-sparkline) expression evaluating to string
+ *       "columns":       string   — (data-table/ranked-table) ColumnDef array literal
+ *       "deltaDir":      string   — up-good | up-bad | down-good | down-bad | neutral
+ *       "deltaText":     string   — text shown in DeltaBadge
+ *       "series":        string   — (multi-line-chart) series array literal
+ *       "pivotExpression": string — (multi-line-chart) expression pivoting flat array to series map
+ *     }
+ *   ],
+ *
+ *   "files": {              — agent-authored files (Dashboard.tsx, index.ts, App.tsx)
  *     "src/dashboard/Dashboard.tsx": "...",
- *     "src/dashboard/widgets/Widget1.tsx": "...",
- *     "src/dashboard/views/Widget1View.tsx": "...",
  *     "src/dashboard/widgets/index.ts": "..."
  *   },
  *   "appTsxImports": string  — lines to inject between GENERATED_IMPORTS markers
