@@ -33,10 +33,6 @@ initial_prompt: |
   If the Atlassian Jira connector is not present in the registry, stop —
   this test exercises GenerateSchema, which has no managed-HTTP fallback.
 
-  Test connections for this task live in Orchestrator folder "Shared/uipath-maestro-flow".
-  Resolve its key with `uip or folders get "Shared/uipath-maestro-flow" -o json`
-  and pass `--folder-key <key>` on every `uip is connections list` call.
-
 success_criteria:
   - type: run_command
     description: "Flow is valid JSON with Jira Create Issue node, customFieldsRequestDetails has both parent-field tuples under GenerateSchema, and bodyParameters carries a non-empty fields.summary"
