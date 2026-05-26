@@ -2,9 +2,16 @@
 
 Connector trigger nodes start a flow when an external event fires (e.g., "email received in Outlook", "issue created in Jira"). They use UiPath Integration Service connectors — the same ecosystem as IS activity nodes — but replace the manual/scheduled start node with an event-driven one.
 
+> **Two node families, same mechanism:**
+>
+> - **Connector trigger** (`uipath.connector.trigger.<key>.<trigger>`) — **starts** the flow.
+> - **Wait for events** (`uipath.connector.event.<key>.<event>`) — **pauses a running flow** until the event arrives, then continues. Has an `input` port; NOT the start node. See [Wait for events](impl.md#wait-for-events-uipathconnectoreventkeyevent).
+
 ## When to Use
 
-Use a connector trigger node when the flow should **start automatically in response to an external event** from a service with a pre-built UiPath connector.
+**Trigger** — flow should start when an external event fires.
+
+**Event** (mid-flow) — running flow must wait for an external event before proceeding (sent an approval, waits for the reply). Flow keeps its own start trigger.
 
 ### Decision Order
 
