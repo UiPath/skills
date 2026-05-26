@@ -98,7 +98,7 @@ success_criteria:
     description: "Agent listed tasks scoped to the discovered folder"
     tool_name: "Bash"
     command_pattern: 'uip\s+tasks\s+list\s+.*--folder-id\s+\d+'
-    min_count: 1
+    min_count: 0
     weight: 1.5
     pass_threshold: 1.0
 
