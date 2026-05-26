@@ -32,15 +32,23 @@ from typing import Any, Iterable, Sequence
 def run_debug(
     *,
     inputs: dict | None = None,
+    attachments: dict[str, str] | None = None,
     timeout: int = 240,
     project_glob: str = "**/project.uiproj",
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
-    parsed ``Data`` payload. Exits on any step failing."""
+    parsed ``Data`` payload. Exits on any step failing.
+
+    ``attachments`` maps a file-typed input variable ``id`` to a local file path;
+    each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
+    ``id`` must match a ``variables.globals[]`` entry with ``direction:"in"`` and
+    ``type:"file"`` — see :func:`read_flow_file_input_vars`."""
     project_dir = _find_project(project_glob)
     cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
+    for var_id, local_path in (attachments or {}).items():
+        cmd.extend(["--attachment", f"{var_id}={local_path}"])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0:
         _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
@@ -233,6 +241,23 @@ def read_flow_input_vars(project_dir: str) -> list[str]:
         v["id"]
         for v in (variables.get("globals") or [])
         if v.get("direction") in ("in", "inout")
+    ]
+
+
+def read_flow_file_input_vars(project_dir: str) -> list[str]:
+    """Return the ordered list of file-typed input variable IDs (``direction:"in"``,
+    ``type:"file"``) declared on the first ``.flow`` file in ``project_dir``. These
+    are the ids eligible for ``uip maestro flow debug --attachment <id>=<path>``."""
+    flows = glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+    if not flows:
+        _fail(f"No .flow file found under {project_dir}")
+    with open(flows[0]) as f:
+        flow = json.load(f)
+    variables = flow.get("variables") or flow.get("workflow", {}).get("variables") or {}
+    return [
+        v["id"]
+        for v in (variables.get("globals") or [])
+        if v.get("direction") == "in" and v.get("type") == "file"
     ]
 
 

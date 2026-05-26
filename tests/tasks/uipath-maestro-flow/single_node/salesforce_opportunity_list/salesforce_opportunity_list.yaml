@@ -1,0 +1,77 @@
+task_id: skill-flow-salesforce-opportunity-list
+description: >
+  End-to-end: build a Flow whose process calls Salesforce to list records in the
+  Opportunity object via a generic connector node
+  (`uipath.connector.uipath-salesforce-sfdc.list-records`, `objectName:
+  "Opportunity"`), bind it to the tenant's Salesforce connection, then run
+  `flow debug` and assert real Opportunity records come back. Exercises connector
+  discovery (including connections in non-default folders), generic-activity
+  object-name resolution, connection binding, and live execution. The IS Salesforce
+  connector returns flattened records (top-level `Id`, `Name`, …), so the checker
+  asserts a non-empty array of objects carrying a Salesforce `Id`.
+tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, uipath-salesforce]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "OpportunityList" with a manual trigger.
+  The process must call Salesforce to list all records in the Opportunity
+  object, then surface the returned records as a flow output variable.
+
+  Use the Salesforce connector. Discover the right operation for listing
+  records of an object and configure it against the Opportunity object, bound
+  to the tenant's Salesforce connection (the connection may live in a
+  non-default folder — discover it across all folders). Then run the flow with
+  `uip maestro flow debug` to confirm it returns Opportunity records.
+
+  The task is not complete until `uip maestro flow validate` passes and the
+  debug run reports `finalStatus: "Completed"` with Opportunity records in the
+  output.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build, validate, and run end-to-end in a single
+  pass. Before starting, load the uipath-maestro-flow skill and follow its
+  workflow — in particular the connector node configuration steps (discover the
+  connection, `registry get --connection-id`, `node configure --detail`) and the
+  requirement to run `solution resource refresh` before debug. Do NOT substitute
+  a mock for the connector.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate OpportunityList/OpportunityList/OpportunityList.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Agent invoked debug ────────────────────────────────────────────────
+  - type: command_executed
+    description: "Agent ran flow debug with --output json"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # ── Execution: connector calls Salesforce and returns Opportunity rows ──
+  - type: run_command
+    description: "Salesforce list-records node on Opportunity executes and returns real records"
+    command: "python3 $TASK_DIR/check_salesforce_opportunity_list.py"
+    timeout: 320
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120
