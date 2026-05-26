@@ -1,0 +1,96 @@
+name: Test Azure/ADX Secret Access
+
+# Throwaway diagnostic. Verifies whether the repo's Azure Storage + ADX
+# secrets actually authenticate from a GitHub-hosted runner. Does NOT touch
+# the Slack webhook. Delete once we have the answer.
+#
+# Runs on this PR (paths-filtered to itself) and via manual dispatch. The
+# branch is internal (not a fork), so secrets are available.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-azure-adx-access.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  azure-blob:
+    name: Azure Blob (account key)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: List + write + delete via account key
+        env:
+          AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+          AZURE_BLOB_CONTAINER: ${{ secrets.AZURE_BLOB_CONTAINER }}
+          AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+        run: |
+          set -euo pipefail
+
+          common=(--account-name "$AZURE_STORAGE_ACCOUNT"
+                  --container-name "$AZURE_BLOB_CONTAINER"
+                  --account-key "$AZURE_STORAGE_KEY"
+                  --auth-mode key)
+
+          echo "== list (read) =="
+          az storage blob list "${common[@]}" --num-results 5 --query "[].name" -o tsv | head -20
+
+          echo "== upload (write) =="
+          name="ci-access-test/$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_RUN_ID}.txt"
+          echo "access probe $(date -u)" > probe.txt
+          az storage blob upload "${common[@]}" --name "$name" --file probe.txt --overwrite >/dev/null
+          echo "UPLOAD OK: $name"
+
+          echo "== delete (cleanup) =="
+          az storage blob delete "${common[@]}" --name "$name" >/dev/null
+          echo "DELETE OK"
+
+          echo "BLOB ACCESS: SUCCESS (read + write + delete via account key)" >> "$GITHUB_STEP_SUMMARY"
+
+  adx:
+    name: ADX query
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Attempt ADX query
+        env:
+          ADX_CLUSTER_URI: ${{ secrets.ADX_CLUSTER_URI }}
+          ADX_DATABASE: ${{ secrets.ADX_DATABASE }}
+        run: |
+          set -uo pipefail
+          pip install --quiet azure-kusto-data
+          python - <<'PY'
+          import os
+          from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
+
+          uri = os.environ["ADX_CLUSTER_URI"]
+          db = os.environ["ADX_DATABASE"]
+
+          # No ADX credential (SP/OIDC) is stored — only the cluster URI + db
+          # name. The VM authenticates via `az login` (AzureCliCredential),
+          # which does not exist on this runner. Try it anyway to record the
+          # exact failure and confirm the gap.
+          verdict = "FAILED"
+          detail = ""
+          try:
+              kcsb = KustoConnectionStringBuilder.with_az_cli_authentication(uri)
+              resp = KustoClient(kcsb).execute(db, "print probe=1")
+              print("ADX QUERY OK:", resp.primary_results[0][0]["probe"])
+              verdict = "SUCCESS"
+          except Exception as e:  # noqa: BLE001 - diagnostic
+              detail = f"{type(e).__name__}: {str(e)[:300]}"
+              print("ADX QUERY FAILED:", detail)
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              if verdict == "SUCCESS":
+                  f.write("ADX ACCESS: SUCCESS\n")
+              else:
+                  f.write(f"ADX ACCESS: FAILED — no stored credential / no `az login` on runner. {detail}\n")
+          PY
