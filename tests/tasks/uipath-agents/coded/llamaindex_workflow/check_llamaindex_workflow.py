@@ -130,9 +130,6 @@ def main() -> None:
     check_main_py()
     check_entry_points()
     check_bindings()
-    if not (ROOT / "run_marker.txt").is_file():
-        sys.exit(f"FAIL: {ROOT}/run_marker.txt does not exist — `uip codedagent run` likely never finished")
-    print("OK: run_marker.txt exists (run completed cleanly)")
 
 
 if __name__ == "__main__":

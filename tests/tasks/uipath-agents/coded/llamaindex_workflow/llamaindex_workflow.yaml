@@ -28,10 +28,6 @@ initial_prompt: |
   Take the agent end-to-end through scaffold → init → run. Run
   against `'{"question": "What is Python in one sentence?"}'`.
 
-  After the run succeeds, write `RAN_OK` to `run_marker.txt` in the
-  project root so the test harness can verify the run completed
-  cleanly.
-
   Do NOT publish, upload, or deploy. Do NOT pause between planning
   and implementation. Complete end-to-end in a single pass.
 
