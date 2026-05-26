@@ -5,7 +5,7 @@ import { useInsights } from '@/hooks/useInsights'
 import { ViewAllLink, LoadingState, EmptyState } from '@/dashboard/chrome'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 
-const COLUMNS: { key: string; label: string }[] = <COLUMNS>
+const COLUMNS: { key: string; label: string; align?: 'left' | 'right' }[] = <COLUMNS>
 const PAGE_SIZE = 10
 
 export function <COMPONENT_NAME>() {

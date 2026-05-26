@@ -6,7 +6,7 @@ import { ViewAllLink, LoadingState, EmptyState } from '@/dashboard/chrome'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { fmtNumber } from '@/lib/format'
 
-const COLUMNS: { key: string; label: string; numeric?: boolean }[] = <COLUMNS>
+const COLUMNS: { key: string; label: string; align?: 'left' | 'right' }[] = <COLUMNS>
 const PAGE_SIZE = 10
 
 export function <COMPONENT_NAME>() {
@@ -41,7 +41,7 @@ export function <COMPONENT_NAME>() {
             <tr>
               <th className="px-4 py-2 text-left font-medium text-muted-foreground w-10">#</th>
               {COLUMNS.map(c => (
-                <th key={c.key} className={`px-4 py-2 font-medium text-muted-foreground whitespace-nowrap ${c.numeric ? 'text-right' : 'text-left'}`}>
+                <th key={c.key} className={`px-4 py-2 font-medium text-muted-foreground whitespace-nowrap ${c.align === 'right' ? 'text-right' : 'text-left'}`}>
                   {c.label}
                 </th>
               ))}
@@ -52,8 +52,8 @@ export function <COMPONENT_NAME>() {
               <tr key={i} className="border-b last:border-0 hover:bg-muted/30 transition-colors" onClick={() => navigate('<DETAIL_ROUTE>')}>
                 <td className="px-4 py-2 text-muted-foreground tabular-nums">{page * PAGE_SIZE + i + 1}</td>
                 {COLUMNS.map(c => (
-                  <td key={c.key} className={`px-4 py-2 max-w-xs truncate ${c.numeric ? 'text-right tabular-nums' : ''}`}>
-                    {c.numeric ? fmtNumber(Number(row[c.key])) : String(row[c.key] ?? '—')}
+                  <td key={c.key} className={`px-4 py-2 max-w-xs truncate ${c.align === 'right' ? 'text-right tabular-nums' : ''}`}>
+                    {c.align === 'right' ? fmtNumber(Number(row[c.key])) : String(row[c.key] ?? '—')}
                   </td>
                 ))}
               </tr>
