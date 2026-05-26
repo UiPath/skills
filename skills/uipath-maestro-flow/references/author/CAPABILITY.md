@@ -96,12 +96,13 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |
-| **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [Edit/Write: Replace a mock](references/editing-operations-json.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
+| **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [plugins/mock/](references/plugins/mock/) + [Edit/Write: Replace a mock](references/editing-operations-json.md#replace-a-mock-with-a-real-resource-node) |
 | **Add data transform nodes** | [plugins/transform/impl.md](references/plugins/transform/impl.md) |
 | **Add an LLM batch transform over CSV rows** | [plugins/batch-transform/impl.md](references/plugins/batch-transform/impl.md) — `uipath.pattern.batch-transform`, gated by tenant flag `canvas.nodes.batch-transform` |
 | **Summarize / synthesize one document with optional citations** | [plugins/summarize/impl.md](references/plugins/summarize/impl.md) — `uipath.pattern.deep-rag`, gated by tenant flag `canvas.nodes.summarize` |
 | **Create a subflow** | [plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [Edit/Write: Create a subflow](references/editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [plugins/delay/](references/plugins/delay/) or [plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
+| **Add or change the start trigger (manual)** | [plugins/manual-trigger/](references/plugins/manual-trigger/) — usually scaffolded by `flow init`; author by hand only when rebuilding or swapping a trigger |
 | **Use queue nodes** | [plugins/queue/impl.md](references/plugins/queue/impl.md) |
 
 ## Anti-patterns
@@ -156,7 +157,9 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [summarize](references/plugins/summarize/) — single-document synthesis / Q&A with optional citations (`uipath.pattern.deep-rag`)
   - [delay](references/plugins/delay/) — duration or date-based pause
   - [subflow](references/plugins/subflow/) — reusable node groups
+  - [manual-trigger](references/plugins/manual-trigger/) — on-demand start (scaffolded by `flow init`)
   - [scheduled-trigger](references/plugins/scheduled-trigger/) — recurring schedule
+  - [mock](references/plugins/mock/) — placeholder for an unbuilt resource
   - [rpa](references/plugins/rpa/) — published RPA processes
   - [agentic-process](references/plugins/agentic-process/) — published orchestration processes
   - [flow](references/plugins/flow/) — published flows as subprocesses

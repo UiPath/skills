@@ -47,7 +47,9 @@ uip maestro flow registry get <nodeType> --output json
 | `core.control.end`              | [end/impl.md](plugins/end/impl.md)                             |
 | `core.logic.terminate`          | [terminate/impl.md](plugins/terminate/impl.md)                 |
 | `core.subflow`                  | [subflow/impl.md](plugins/subflow/impl.md)                     |
+| `core.trigger.manual`           | [manual-trigger/impl.md](plugins/manual-trigger/impl.md)       |
 | `core.trigger.scheduled`        | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
+| `core.logic.mock`               | [mock/impl.md](plugins/mock/impl.md)                           |
 | `core.action.queue.*`           | [queue/impl.md](plugins/queue/impl.md)                         |
 | `uipath.agent.autonomous`       | [inline-agent/impl.md](plugins/inline-agent/impl.md)           |
 | `uipath.core.agent.*`           | [agent/impl.md](plugins/agent/impl.md)                         |
@@ -103,13 +105,7 @@ If found in neither, keep the `core.logic.mock` placeholder and note the gap.
 
 ### Step 4 — Replace Mock Nodes
 
-For each `core.logic.mock` node in the architectural plan:
-
-1. Check in-solution discovery first: `uip maestro flow registry list --local --output json`
-2. If found locally: replace the mock with the in-solution resource node type, update inputs/outputs
-3. If not found locally, check tenant registry: `uip maestro flow registry search "<name>" --output json`
-4. If published: replace the mock with the real resource node type, update inputs/outputs
-5. If not found in either: keep the mock and note it in the "Open Questions" section for user resolution
+For each `core.logic.mock` node in the architectural plan, run the discovery-and-replace procedure in [mock/planning.md — Replacing a Mock](plugins/mock/planning.md#replacing-a-mock): check `--local` first, then the tenant registry, replace with the real resource node if found, otherwise keep the mock and record it in **Open Questions**.
 
 ### Step 5 — Replace Placeholders
 

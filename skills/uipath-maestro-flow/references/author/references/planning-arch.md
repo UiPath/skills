@@ -84,7 +84,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 
 | Node Type | Plugin | When to Select |
 | --- | --- | --- |
-| `core.trigger.manual` | _(inline — no plugin)_ | Flow is started on demand by a user or API call |
+| `core.trigger.manual` | [manual-trigger](plugins/manual-trigger/planning.md) | Flow is started on demand by a user or API call (usually scaffolded by `flow init`) |
 | `core.trigger.scheduled` | [scheduled-trigger](plugins/scheduled-trigger/planning.md) | Flow runs on a recurring schedule |
 | IS connector trigger | [connector-trigger](plugins/connector-trigger/planning.md) | Flow starts when an external event fires (e.g., email received, issue created). Node type: `uipath.connector.trigger.<key>.<trigger>` |
 
@@ -92,7 +92,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 - Every flow must have exactly one trigger node
 - The trigger is always the first node in the topology
 - IS connector triggers replace the manual trigger as the start node — they cannot coexist with `core.trigger.manual` or `core.trigger.scheduled`
-- `core.trigger.manual` has no inputs and outputs on port `output` — it is simple enough to use without a plugin reference
+- `core.trigger.manual` has no inputs and outputs on port `output`; it is normally inherited from `flow init` — see [manual-trigger](plugins/manual-trigger/planning.md) when authoring or swapping one by hand
 
 ### Actions
 
@@ -159,7 +159,7 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 
 | Node Type | When to Select |
 | --- | --- |
-| `core.logic.mock` | Step is TBD, resource doesn't exist yet, or prototyping. Placeholder with `input` -> `output` |
+| `core.logic.mock` ([mock](plugins/mock/planning.md)) | Step is TBD, resource doesn't exist yet, or prototyping. Placeholder with `input` -> `output` |
 
 ---
 

@@ -47,7 +47,7 @@ When you finish editing the flow, report to the user:
 2. **What changed** — summary of nodes/edges added, removed, or modified
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
 4. **Format status** — confirm `flow format` was run
-5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced
+5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced (resolution rules: [mock/planning.md](plugins/mock/planning.md))
 6. **Missing connections** — any connector nodes that need connections the user must create
 7. **What's next** — use `AskUserQuestion` to present the dropdown below (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))
 

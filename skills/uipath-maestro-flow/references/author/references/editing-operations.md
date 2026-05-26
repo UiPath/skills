@@ -112,8 +112,8 @@ See [variables-and-expressions.md](../../shared/variables-and-expressions.md) fo
 | Manage variables | [Edit/Write guide — Variable Operations](editing-operations-json.md#variable-operations) |
 | Map outputs on End nodes | [Edit/Write guide — Add output mapping](editing-operations-json.md#add-output-mapping-on-an-end-node) |
 | Create a subflow | [Edit/Write guide — Create a subflow](editing-operations-json.md#create-a-subflow) |
-| Replace a mock placeholder (non-connector) | [Edit/Write guide — Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node) |
-| Replace a trigger type (non-connector) | [Edit/Write guide — Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) |
+| Replace a mock placeholder (non-connector) | [Edit/Write guide — Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node) · semantics: [mock](plugins/mock/planning.md) |
+| Replace a trigger type (non-connector) | [Edit/Write guide — Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) · semantics: [manual-trigger](plugins/manual-trigger/planning.md) / [scheduled-trigger](plugins/scheduled-trigger/planning.md) |
 | Replace a trigger type (connector trigger) | [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) (carve-out) |
 | Understand the `.flow` JSON schema | [file-format.md](../../shared/file-format.md) |
 | Look up CLI flags and syntax | [cli-commands.md](../../shared/cli-commands.md) |
