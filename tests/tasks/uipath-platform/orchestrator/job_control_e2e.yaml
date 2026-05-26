@@ -1,0 +1,48 @@
+task_id: skill-platform-job-control-e2e
+description: >
+  E2E: agent starts a job, stops it, then restarts. Check queries tenant
+  jobs list directly to verify both jobs exist on the seeded process and
+  the stopped one is in a stop-related state.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+  turn_timeout: 600  # agent's restart/stop polling can exceed default 300s
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_LONG_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I want to make sure my stop/restart flow works on a long-running
+  process. The process ID and its folder are in `seed.json`. It's a
+  serverless coded Python agent, so the jobs need to run on serverless.
+
+  Kick off a first job and stop it before it finishes naturally — I want
+  to see it land in a stopped/halted state. Then start a second job and
+  let that one run all the way to completion.
+
+  Drop both job IDs into `job_keys.txt`, one per line, in the order you
+  started them, so I can pull them up afterwards.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant: 2 jobs on process; first stop-related, second terminal"
+    command: "python3 $TASK_DIR/check_job_control.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

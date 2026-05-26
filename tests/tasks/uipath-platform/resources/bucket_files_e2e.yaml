@@ -1,0 +1,46 @@
+task_id: skill-platform-bucket-files-e2e
+description: >
+  E2E: agent leaves the tenant with a bucket containing a file whose bytes
+  match a locally-generated source (verified by sha256 round-trip through
+  upload/download). Check queries tenant + reads local files.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I want to make sure round-tripping a file through a storage bucket
+  doesn't corrupt anything. The folder I want to use and a unique prefix
+  are in `seed.json`.
+
+  Create a bucket in that folder called `e2e-bucket-` followed by the
+  prefix. Generate roughly 64 KB of random bytes and save them locally
+  as `source.bin`. Upload that file to the bucket, then download it back
+  from the bucket as `downloaded.bin`. I'll compare the two by hash to
+  confirm they match byte for byte.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state + local: bucket has the file; sha256(source)==sha256(downloaded)"
+    command: "python3 $TASK_DIR/check_bucket_files.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

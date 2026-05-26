@@ -100,6 +100,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **skill** | flat, required | Skill under test | `uipath-<name>` — must match the skill folder (e.g. `uipath-maestro-flow`) |
 | **tier** | flat, required | Test depth / cost | `smoke`, `integration`, `e2e` |
 | **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
+| **lifecycle** | `lifecycle:X`, required | Coding Agents Scorecard lifecycle phase | `discover` (read-only exploration: list/get/inspect existing state), `generate` (produce a new local artifact: pack, scaffold, render), `setup` (mutate tenant state: create/edit/delete resources, deploy, configure) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
 | **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
@@ -108,7 +109,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 
 ### Rules
 
-1. **Required on every task: `skill` + `tier` + `mode:*`.** These drive `make` targets, coverage, and evalboard dashboards.
+1. **Required on every task: `skill` + `tier` + `mode:*` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
 2. **One value per singular dimension** (`tier`, `mode`, `shape`). A task doesn't have two tiers.
 3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
 4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
@@ -206,6 +207,49 @@ sandbox:
 initial_prompt: |
   ...
 ```
+
+## Lifecycle E2E tests (uipath-platform pattern)
+
+`tests/tasks/uipath-platform/{orchestrator,resources}/` and
+`tests/tasks/uipath-solution/operate/` follow the same shape as `traces_e2e.yaml`:
+the agent receives a process key (and derived folder) via env var, exercises
+the operational scenario, and a `check_*.py` script verifies tenant state
+directly.
+
+### Shape
+
+```yaml
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+```
+
+A single helper script (`tests/tasks/uipath-platform/seed.py`) writes
+`seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
+`process_key` + `folder_path` (resolved via `uip or processes list`, matched by Key — the `get` endpoint doesn't populate FolderPath). Tests
+that don't need a process omit the env var assignment; the script just
+writes `uuid8`.
+
+### Tenant prerequisites
+
+Two pre-existing processes on the tenant, referenced by their keys via CI
+secrets (matches the existing `TRACES_SMOKE_PROCESS_KEY` pattern):
+
+| Secret | Purpose | Used by |
+|---|---|---|
+| `E2E_PROCESS_KEY` | Standard coded-agent process, runs to terminal quickly | job/trigger/webhook/resource tests |
+| `E2E_LONG_PROCESS_KEY` | Same shape but sleeps ~30s | `job_control_e2e` (needs a stop/restart window) |
+
+Both processes live in folders, so `folder_path` is derived from the
+process key — no separate folder secret needed. Tests needing a second
+folder create it themselves as part of the scenario.
+
+### Cleanup
+
+There is no `post_run`. The agent creates and deletes its own ephemeral
+resources as part of the test scenario; the check script verifies the
+final tenant state. Shared resources (the pre-seeded processes and their
+folders) persist on the tenant across runs.
 
 ## Adding Tests for a New Skill
 

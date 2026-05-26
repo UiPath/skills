@@ -25,9 +25,13 @@
 /skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /skills/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
+/tests/tasks/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
+/tests/tasks/uipath-platform/orchestrator/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
+/tests/tasks/uipath-platform/resources/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
 /tests/tasks/uipath-platform/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
 /tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
+/tests/fixtures/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
@@ -51,8 +55,8 @@
 /skills/uipath-planner/ @RaduAna-Maria
 
 # Solution skill (design + uip solution lifecycle)
-/skills/uipath-solution/ @RaduAna-Maria
-/tests/tasks/uipath-solution/ @RaduAna-Maria
+/skills/uipath-solution/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
+/tests/tasks/uipath-solution/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
