@@ -46,9 +46,11 @@ Each entry in `output_columns` has `name` and `description`. Treat the descripti
 | `name` | 1–500 chars, regex `^[\w\s\.,!?-]+$` | Friendly column header. No special characters beyond `. , ! ? -`. |
 | `description` | 1–20000 chars | Be specific about what to extract / classify, the format (free text, enum, JSON), and what to output when uncertain. Worked examples improve quality. |
 
-Example:
+Example (note the import path — `BatchTransformOutputColumn` lives in `context_grounding`, NOT `common`):
 
 ```python
+from uipath.platform.context_grounding import BatchTransformOutputColumn
+
 [
     BatchTransformOutputColumn(
         name="MCC Code",
