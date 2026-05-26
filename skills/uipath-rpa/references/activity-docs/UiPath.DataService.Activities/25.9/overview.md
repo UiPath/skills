@@ -102,6 +102,53 @@ Assembly references for `TextExpression.ReferencesForImplementation`:
 | **DataService.Batch** | `CreateMultipleEntityRecords`, `UpdateMultipleEntityRecords`, `DeleteMultipleEntityRecords` | Bulk operations on multiple records |
 | **DataService.File** | `UploadFileToRecordField`, `DownloadFileFromRecordField`, `DeleteFileFromRecordField` | File attachment operations on entity fields |
 
+## When to Use Batch vs Single-Record Activities
+
+For Create, Update, and Delete, two activities exist: a single-record variant (`...EntityRecord`) and a batch variant (`...MultipleEntityRecords`). Choose based on **record count** and **error semantics** — not on convenience.
+
+### Pairs
+
+| Operation | Single | Batch |
+|---|---|---|
+| Create | [CreateEntityRecord](activities/CreateEntityRecord.md) | [CreateMultipleEntityRecords](activities/CreateMultipleEntityRecords.md) |
+| Update | [UpdateEntityRecord](activities/UpdateEntityRecord.md) | [UpdateMultipleEntityRecords](activities/UpdateMultipleEntityRecords.md) |
+| Delete | [DeleteEntityRecord](activities/DeleteEntityRecord.md) | [DeleteMultipleEntityRecords](activities/DeleteMultipleEntityRecords.md) |
+
+### Decision Rules
+
+| Use **single** when... | Use **batch** when... |
+|---|---|
+| Exactly one record per invocation | N records collected at runtime (query result, file rows, list variable) |
+| Field values and bindings are known at design time | Records are constructed at runtime; no design-time field UI needed |
+| You want Studio's card editor to bind fields visually via `RecordState.SelectedFields` | You want a single HTTP round-trip for the whole set |
+| Failure should throw immediately and stop the workflow | You need partial-batch tolerance via `ContinueBatchOnFailure` and per-record errors in `FailedRecords` |
+
+### Anti-patterns
+
+- **`ForEach` calling a single-record activity** — the canonical Data Service performance pitfall. N records → N HTTP requests. Replace with the batch variant for one round-trip.
+- **Batch for one known record** — adds collection construction and `Tuple<string, TEntity>` unpacking for no gain. Use the single-record activity.
+- **Batch to get "softer" error handling on one record** — wrap the single activity in `TryCatch` or set `ContinueOnError` instead.
+
+### Input contract differs between variants
+
+| Activity | Input shape | How fields are bound |
+|---|---|---|
+| Single Create / Update | `InputEntityInFieldView` expression + `State` / `RecordState.SelectedFields` | Field GUIDs declared in XAML from `EntitiesStore.json` → `Fields[].Id` |
+| Batch Create / Update | `InputRecords` — `ICollection<TEntity>` of fully constructed entities | Field values set on the entity objects at runtime; no `RecordState` |
+| Single Delete | `RecordId` — single `Guid` | n/a |
+| Batch Delete | `InputRecords` — `ICollection<Guid>` | n/a |
+
+Batch variants do NOT use `RecordState.SelectedFields` — they read entity properties directly off the records in the input collection. For Update batch, each entity object must have its `Id` property set.
+
+### Output shape differs
+
+| Activity | Success output | Failure output |
+|---|---|---|
+| Single Create / Update | `OutputEntity` (single `TEntity`) | Throws on failure (or sets `ContinueOnError`) |
+| Batch Create / Update | `OutputRecords` (`IList<TEntity>`) | `FailedRecords` (`IList<Tuple<string, TEntity>>`) — error message + failed record |
+| Single Delete | — | Throws on failure |
+| Batch Delete | — | `FailedRecords` (`IList<Guid>`) — IDs that failed |
+
 ## Generic Type Argument
 
 All activities use `x:TypeArguments` — the value **must** be a concrete entity type from the `local:` namespace, never `udd:IEntity`:

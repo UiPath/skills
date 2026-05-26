@@ -2,6 +2,8 @@
 
 Deletes multiple records from a Data Fabric entity by their IDs. Category: **DataService.Batch**.
 
+> **Batch vs single — use this for N record IDs.** For exactly one record, use [DeleteEntityRecord](DeleteEntityRecord.md) — it takes a single `RecordId` directly. Picking batch for one ID adds collection construction for no gain. Full decision guide: [overview — When to Use Batch vs Single-Record Activities](../overview.md#when-to-use-batch-vs-single-record-activities).
+
 ## Properties
 
 | Property | Type | Required | Default | Category | Description |

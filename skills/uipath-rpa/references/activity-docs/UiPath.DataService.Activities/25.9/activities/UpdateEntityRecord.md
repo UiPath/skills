@@ -2,6 +2,8 @@
 
 Updates an existing record in a Data Fabric entity. Category: **DataService.Entity Record**.
 
+> **Single vs batch — use this only for ONE record.** For N records (each entity object pre-populated with its `Id`), use [UpdateMultipleEntityRecords](UpdateMultipleEntityRecords.md) — one HTTP request and partial-batch failure reporting via `FailedRecords`. Updating inside a `ForEach` loop is a performance anti-pattern. Full decision guide: [overview — When to Use Batch vs Single-Record Activities](../overview.md#when-to-use-batch-vs-single-record-activities).
+
 ## Properties
 
 | Property | Type | Required | Default | Category | Description |

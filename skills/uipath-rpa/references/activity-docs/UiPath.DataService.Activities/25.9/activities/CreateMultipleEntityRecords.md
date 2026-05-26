@@ -2,6 +2,8 @@
 
 Creates multiple records in a Data Fabric entity in a single batch operation. Category: **DataService.Batch**.
 
+> **Batch vs single — use this for N records.** For exactly one record with design-time field bindings, use [CreateEntityRecord](CreateEntityRecord.md) — it exposes Studio's card UI via `RecordState.SelectedFields`. Picking batch for a single known record adds collection construction and `Tuple<string, TEntity>` unpacking for no gain. Full decision guide: [overview — When to Use Batch vs Single-Record Activities](../overview.md#when-to-use-batch-vs-single-record-activities).
+
 ## Properties
 
 | Property | Type | Required | Default | Category | Description |

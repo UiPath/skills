@@ -2,6 +2,8 @@
 
 Updates multiple records in a Data Fabric entity in a single batch operation. Category: **DataService.Batch**.
 
+> **Batch vs single — use this for N records.** For exactly one record with design-time field bindings, use [UpdateEntityRecord](UpdateEntityRecord.md) — it accepts `RecordId` directly and exposes Studio's card UI via `RecordState.SelectedFields`. Batch requires each entity in `InputRecords` to have its `Id` property set. Full decision guide: [overview — When to Use Batch vs Single-Record Activities](../overview.md#when-to-use-batch-vs-single-record-activities).
+
 ## Properties
 
 | Property | Type | Required | Default | Category | Description |
