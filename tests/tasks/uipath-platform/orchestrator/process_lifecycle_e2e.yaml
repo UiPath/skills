@@ -1,0 +1,51 @@
+task_id: skill-platform-process-lifecycle-e2e
+description: >
+  E2E process CRUD: create a process from v1.0.0 of the stub package, edit
+  its description, check version-history, update to v1.0.1, rollback to v1.0.0,
+  delete. Verifies each transition is reflected in subsequent `processes get`.
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup, orchestrator, processes]
+skip: true
+# Known issue: agent times out trying to reconcile CLI flag semantics for
+# `processes update-version` / `rollback` against the deploy-created process
+# (which has a non-standard version pin). Needs prompt refinement to spell out
+# exact `--package-version` values and to skip version steps that aren't
+# well-defined for a solution-deploy-created process.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill. Read `seed.json` for `process_key`.
+
+  Steps (use `--output json`):
+  1. `processes get <process_key>` → `get_initial.json` (capture initial version).
+  2. `processes edit <process_key> --description "edited-by-e2e"` → `edit.json`.
+  3. `processes get <process_key>` → `get_after_edit.json` (verify description).
+  4. `processes version-history <process_key>` → `versions.json` (expect ≥2).
+  5. `processes update-version <process_key> --package-version 1.0.1` → `update_version.json`.
+  6. `processes get <process_key>` → `get_after_update.json` (version now 1.0.1).
+  7. `processes rollback <process_key>` → `rollback.json`.
+  8. `processes get <process_key>` → `get_after_rollback.json` (version back to 1.0.0).
+  9. `processes delete <process_key>` → `delete.json`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent walked the full lifecycle (edit, update-version, rollback)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+processes\s+(edit|update-version|rollback)'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
