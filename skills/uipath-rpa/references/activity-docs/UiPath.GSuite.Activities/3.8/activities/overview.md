@@ -2,6 +2,10 @@
 
 Google Suite activity patterns for `UiPath.GSuite.Activities`. Always get full XAML from `uip rpa activities get-default-xaml --use-studio` — this file covers confirmed patterns from real workflows only.
 
+## Triggers in this package
+
+This package contains five **integration triggers** (their namespaces all contain `.Triggers`): [`NewEmailReceived`](NewEmailReceived.md) (Gmail), [`NewFileCreated`](NewFileCreated.md) (Drive), [`NewEventCreated`](NewEventCreated.md) and [`NewEventInvitationReceived`](NewEventInvitationReceived.md) (Calendar), and [`RowAddedToSheetBottom`](RowAddedToSheetBottom.md) (Sheets). All return `isTrigger: true, triggerType: "integration"` from `uip rpa activities find` and require a `ConnectionId`. **Placement: strict** — first activity of the workflow's root `Sequence`, never inside `ui:TriggerScope`. Orchestrator + Integration Service subscribe externally and dispatch a fresh job per event. The `Filter` child element narrows server-side which events fire — use it instead of an `If` inside the handler. See [trigger-pattern-guide.md](../../../../trigger-pattern-guide.md).
+
 ## Package + Connection Pattern
 
 Package: `UiPath.GSuite.Activities`
