@@ -8,7 +8,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 |---------|-------------|
 | `uip ixp projects list --output json` | List all IXP projects |
 | `uip ixp projects get <project-name> --output json` | Get a project |
-| `uip ixp projects create "<name>" <folder-path> [-d "<description>"] [--skip-taxonomy] --output json` | Create project and upload all supported docs in `<folder-path>` (see [Supported document files](#supported-document-files); unsupported files are skipped silently). By default suggests+imports taxonomy. `-d` provides context for better taxonomy suggestion. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
+| `uip ixp projects create "<name>" <folder-path> [-d "<description>"] [--skip-taxonomy] --output json` | Create project and upload supported docs in `<folder-path>` (top-level only — sub-folders are not scanned; see [Supported document files](#supported-document-files)). By default suggests+imports taxonomy. `-d` provides context for better taxonomy suggestion. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
 | `uip ixp projects import-taxonomy <project-name> <file> --output json` | Import taxonomy from a local JSON file. Accepts `{ field_types, label_group }` or `{ entity_defs, label_groups }` format. |
 | `uip ixp projects update-title <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp projects get-taxonomy <project-name> --output json` | Get taxonomy (entity_defs + label_groups with field definitions) |
@@ -35,7 +35,7 @@ Both `projects create` (bulk folder upload) and `documents upload` (single file)
 Validation differs by command:
 
 - `documents upload` rejects an unsupported file with `Unsupported file type "<ext>"` before any network call.
-- `projects create` silently skips unsupported files in the folder; fails only when **no** supported files exist (`No supported documents found in <folder>`).
+- `projects create` scans only the top level of `<folder-path>` (sub-folders are ignored), silently skips unsupported files, and fails only when **no** supported files exist (`No supported documents found in <folder>`).
 
 Each upload triggers a retrain — wait ~2 min before reading metrics or predictions for new docs.
 
