@@ -46,6 +46,15 @@ def find_call(tree: ast.Module, func_name: str) -> ast.Call | None:
     return None
 
 
+def imports_from(tree: ast.Module, module: str, name: str) -> bool:
+    """True if `tree` contains `from <module> import <name>` — single- or multi-line."""
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == module:
+            if any(alias.name == name for alias in node.names):
+                return True
+    return False
+
+
 def main() -> None:
     if not ROOT.is_dir():
         fail(f"project directory {ROOT} does not exist")
@@ -71,15 +80,15 @@ def main() -> None:
     except SyntaxError as exc:
         fail(f"main.py has a syntax error: {exc}")
 
-    if not re.search(r"from\s+llama_index\.core\.workflow\s+import\s+[^\n]*\bWorkflow\b", text):
+    if not imports_from(tree, "llama_index.core.workflow", "Workflow"):
         fail("main.py does not import `Workflow` from `llama_index.core.workflow`")
-    if not re.search(r"from\s+llama_index\.core\.workflow\s+import\s+[^\n]*\bstep\b", text):
+    if not imports_from(tree, "llama_index.core.workflow", "step"):
         fail("main.py does not import `step` from `llama_index.core.workflow`")
     if not re.search(r"@step\b", text):
         fail("main.py has no `@step` decorator — the workflow nodes must be marked with @step")
     print("OK: LlamaIndex Workflow shape (Workflow import + @step decorator) present")
 
-    if not re.search(r"from\s+uipath_llamaindex\.query_engines\s+import\s+[^\n]*\bContextGroundingQueryEngine\b", text):
+    if not imports_from(tree, "uipath_llamaindex.query_engines", "ContextGroundingQueryEngine"):
         fail(
             "main.py does not import `ContextGroundingQueryEngine` from "
             "`uipath_llamaindex.query_engines`. That is the UiPath RAG primitive "
