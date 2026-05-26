@@ -21,18 +21,48 @@ Activity patterns for `UiPath.DataService.Activities`. All activities are generi
    ```
 4. **Entity metadata** lives in `.entities/EntitiesStore.json` — use it to look up entity IDs, field IDs, field names, types, and required flags
 
-**Stop if prerequisites are not met.** Before proceeding with any Data Service activity:
-1. Read `project.json` and check `entitiesStores`. If the array is missing, empty, or has no entries → **stop and tell the user**: "No entity stores configured. Import entities via Studio > Data Service tab > Import Entities, then retry."
-2. Read the `serviceDocument` path from `entitiesStores[0]` and check that the file exists. If the file is missing → **stop and tell the user**: "EntitiesStore.json not found. The project has no imported entities. Import at least one entity via Studio > Data Service tab > Import Entities, then retry."
-3. Read `EntitiesStore.json` and check `Entities`. If the array is empty → **stop and tell the user**: "EntitiesStore.json contains no entities. The tenant may have no entities, or none were imported. Import entities via Studio, then retry."
+**Before proceeding with any Data Service activity, verify entities are installed via CLI:**
 
-Do not attempt to create Data Service XAML without a valid, non-empty `EntitiesStore.json` — the generated code will fail validation.
+1. Run:
+   ```bash
+   uip rpa data-fabric-entities list --project-dir "<PROJECT_DIR>" --output json
+   ```
+2. Check the output for entries with `"installed": true`.
+   - Needed entity present with `installed: true` → prerequisites met. Read `EntitiesStore.json` (path: `entitiesStores[0].serviceDocument` in `project.json`) for field metadata, then proceed.
+   - Needed entity absent or `installed: false` → go to **Auto-import** below.
+   - `list` itself fails → apply error mitigations below.
+
+**Auto-import (run before asking the user):**
+
+a. Resolve the entity name from context (user's request or workflow intent). If no entity name is known from context, ask the user *which entity* to use — not to manually import.
+b. Run:
+   ```bash
+   uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json
+   ```
+c. On success, re-run `data-fabric-entities list` to confirm `installed: true`, then read `EntitiesStore.json` for metadata and proceed.
+d. On failure, apply error mitigations below. Escalate to the user only for errors marked **Yes** that the mitigation cannot resolve.
+
+**CLI error paths and mitigations:**
+
+| Error signal | Cause | Mitigation | Escalate? |
+|---|---|---|---|
+| `errorMessage` contains `"read-only"` or `"cannot edit"` | Project not writable | Tell user: project is read-only; open it in editable mode, then retry | Yes |
+| `errorMessage` contains `"does not support entities"` | Tenant has no Data Service | Tell user: tenant doesn't have Data Service enabled | Yes |
+| `errorMessage` contains `"context"` or auth/connection keyword | Can't reach cloud tenant | Retry once. If still fails, tell user to check Orchestrator connection | Yes (after retry) |
+| `errorMessage` contains `"no project"` or project resolution failure | `--project-dir` wrong | Retry with explicit absolute path to folder containing `project.json` | Only if retry fails |
+| Command hangs >30 s with no output | Helm cold NuGet cache | Retry with `--timeout 180` | No — retry first |
+| Returned `entities` array missing the requested entity | Name server-deleted or misspelled | Re-run `list` and use exact `name` field from output | If name not in list |
+| Any other `isError: true` response | Internal installer failure | Retry once. If fails again, escalate | Yes (after retry) |
+
+Only if CLI fails and mitigation does not resolve it: tell the user "Entity import failed: `<errorMessage>`. Import entities manually via Studio > Data Service tab > Import Entities, then retry."
+
+Do not attempt to create Data Service XAML without first confirming `installed: true` for the needed entity via the CLI — the generated code will fail validation.
 
 Only entities explicitly imported via Studio are available as CLR types in the generated DLL. An entity present in `EntitiesStore.json` but not imported produces: `Cannot create unknown type '{clr-namespace:...}EntityName'`.
 
 ### Entity Lookup Scope
 
-**Only read `EntitiesStore.json` from the current project.** Resolve the path via `project.json` → `entitiesStores[0].serviceDocument`. Do not search for `EntitiesStore.json` in sibling directories, parent folders, or other projects — even if multiple projects are open in Studio. If the entity you need is not in the project's own `EntitiesStore.json`, ask the user to import it via Studio > Data Service tab > "Import Entities" rather than looking elsewhere.
+**Only read `EntitiesStore.json` from the current project.** Resolve the path via `project.json` → `entitiesStores[0].serviceDocument`. Do not search for `EntitiesStore.json` in sibling directories, parent folders, or other projects — even if multiple projects are open in Studio. If the entity you need does not appear with `installed: true` in `data-fabric-entities list` output, run `uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. Only if the CLI fails should you ask the user to import via Studio > Data Service tab > "Import Entities". Do not search other projects' `EntitiesStore.json` files.
 
 ## XAML Namespace Declarations
 
@@ -204,7 +234,7 @@ Do NOT check for Studio Desktop vs Studio Web to decide scope. The only factor i
 
 - `x:TypeArguments` must be a concrete entity type — `udd:IEntity` is rejected at validation
 - The `local` xmlns must include the full `assembly=DataService.<ProjectName>` qualifier
-- `EntitiesStore.json` contains all tenant entities, but only explicitly imported ones have CLR types in the generated DLL. If validation returns `Cannot create unknown type '{clr-namespace:...}EntityName'` — **stop and ask the user** to import the entity via Studio > Data Service tab > "Import Entities". Do not attempt to fix this by changing namespaces or assembly references.
+- `EntitiesStore.json` contains all tenant entities, but only explicitly imported ones have CLR types in the generated DLL. If validation returns `Cannot create unknown type '{clr-namespace:...}EntityName'` — run `uip rpa data-fabric-entities install --add "<EntityName>" --project-dir "<PROJECT_DIR>" --output json` to install the missing entity type, then retry validation. Only if the CLI fails should you ask the user to import via Studio > Data Service tab > "Import Entities". Do not attempt to fix this by changing namespaces or assembly references.
 - For Create/Update activities, set `IsInRecordView="[False]"` and populate two things:
   1. **`InputEntityInFieldView`** — object-initializer expression (runtime reads this)
   2. **`RecordState.SelectedFields`** — field GUIDs and values (Studio card UI reads this)
