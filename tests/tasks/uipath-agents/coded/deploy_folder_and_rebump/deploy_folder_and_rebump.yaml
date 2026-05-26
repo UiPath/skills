@@ -11,7 +11,7 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
-  max_turns: 30
+  max_turns: 50
   task_timeout: 600
   turn_timeout: 300
 
