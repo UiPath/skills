@@ -202,6 +202,46 @@ def test_inline_shell_comment_stops_verb_extraction(tmp_path):
     )
 
 
+# --- Issue 13: renames entry shadows shallower catalog prefix -----------------
+
+def test_renames_entry_shadows_shallower_catalog_prefix():
+    """When a subcommand is retired but its parent group is still in the
+    catalog, classify must mark the path as retired — not reachable via the
+    parent prefix. Example: `solution new` was removed in uip 1.2.0, but
+    `solution` (the group) is still a catalog verb. Without preferring the
+    more-specific renames entry, the longest-prefix walker would match the
+    parent and report the retired verb as reachable, swallowing the rename.
+    """
+    catalog = {"solution", "solution init"}
+    renames = {"solution new": "solution init"}
+    verdict, details = cli.classify(["solution new"], catalog, renames)
+    assert verdict == "retired", (
+        f"Expected 'retired' (renames shadows shallower catalog prefix), "
+        f"got {verdict!r} with details {details!r}."
+    )
+    assert details["suggestions"]["solution new"] == "solution init"
+
+
+def test_backticked_rename_cells_strip_to_bare_verbs(tmp_path, monkeypatch):
+    """The markdown table in cli-renames.md formats verb cells with backticks
+    for readability (`| `solution new` | `solution init` | ...`). The loader
+    must strip those so classify gets bare verb strings — otherwise the
+    renames dict looks like `{'`solution new`': '`solution init`'}` and no
+    extracted verb ever matches.
+    """
+    rename_file = tmp_path / "cli-renames.md"
+    rename_file.write_text(
+        "| Retired           | Canonical            | Retired at |\n"
+        "|-------------------|----------------------|------------|\n"
+        "| `solution new`    | `solution init`      | uip 1.2.0  |\n"
+    )
+    monkeypatch.setattr(cli, "RENAMES_PATH", rename_file)
+    renames = cli.load_renames()
+    assert renames == {"solution new": "solution init"}, (
+        f"Expected stripped keys/values, got {renames!r}."
+    )
+
+
 # --- Issue 12: dot-separated argument values are not verb tokens --------------
 
 def test_dot_separated_argument_value_not_treated_as_verb(tmp_path):

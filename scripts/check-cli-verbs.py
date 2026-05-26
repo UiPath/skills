@@ -82,6 +82,10 @@ def load_renames():
             continue
         if "-" in retired and set(retired) <= set("-: "):
             continue
+        retired = retired.strip("`").strip()
+        canonical = canonical.strip("`").strip()
+        if not retired:
+            continue
         renames[retired] = canonical
     return renames
 
@@ -233,9 +237,17 @@ def classify(verb_paths, catalog, renames):
     reachable = []
     retired = []
     for v in verb_paths:
-        if best_match(v, catalog):
+        cat_hit = best_match(v, catalog)
+        ren_hit = best_match(v, renames)
+        # A more specific renames entry shadows a shallower catalog prefix.
+        # Example: `solution new` was removed in 1.2.0; the parent group
+        # `solution` is still in the catalog, so catalog longest-prefix would
+        # otherwise mis-classify `solution new` as reachable.
+        if ren_hit and (not cat_hit or len(ren_hit.split()) > len(cat_hit.split())):
+            retired.append(v)
+        elif cat_hit:
             reachable.append(v)
-        elif best_match(v, renames):
+        elif ren_hit:
             retired.append(v)
     if reachable:
         return "reachable", {"reachable": reachable, "retired": retired}

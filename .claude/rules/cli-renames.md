@@ -6,9 +6,8 @@ The catalog at `assets/uip-catalog-snapshot.json` is the source of truth for whi
 
 | Retired           | Canonical            | Retired at |
 |-------------------|----------------------|------------|
-<!-- Seed entries removed: the corresponding "retired" verbs are still present
-     in uip 1.0.0 per the catalog. Add a real entry when a rename actually
-     ships, e.g. when `uip --help-all` no longer lists the old form. -->
+| `flow`            | `maestro flow`       | uip 1.2.0  |
+| `solution new`    | `solution init`      | uip 1.2.0  |
 
 
 ## When to add an entry
