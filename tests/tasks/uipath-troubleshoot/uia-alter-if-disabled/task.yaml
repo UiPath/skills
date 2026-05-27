@@ -46,13 +46,21 @@ success_criteria:
     path: .local/investigations/state.json
     weight: 0.5
 
+  - type: command_executed
+    description: "Agent interrogated the faulted job via the uip CLI (uip or jobs get on the job key). Enforced here — not in the judge — so it stays robust across iterations and sub-agents."
+    tool_name: "Bash"
+    command_pattern: '(?<![\./\w])uip\s+or\s+jobs\s+get\s+["\x27]?49655b57'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: llm_judge
     description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
+    include_tool_calls: false
     files:
       - .local/investigations/state.json
       - .local/investigations/hypotheses.json
@@ -82,18 +90,14 @@ success_criteria:
 
       You must grade BOTH dimensions in a single score:
 
-      DIMENSION A -- Correct playbook + actual CLI work
+      DIMENSION A -- Correct playbook
         The agent must match the UI-automation disabled-element playbook
         (disabled-element.md) in state.json's `matched_playbooks`.
         Acceptable: the agent also Reads neighboring playbooks during
         exploration.
-
-        Independently, the agent's tool-call history must show real
-        Orchestrator interrogation via the uip CLI — at minimum
-        `uip or jobs get <key>` on the faulted job. If the agent
-        reached a conclusion without invoking uip on the faulted job,
-        the playbook dimension is failed regardless of which playbook
-        was named.
+        (Orchestrator CLI interrogation is verified separately by a
+        command_executed criterion — do NOT grade it here, and do not
+        penalize based on which tool calls are or aren't visible.)
 
       DIMENSION B -- Correct fix per playbook branch (D)
         The reference fix names ALL of:
