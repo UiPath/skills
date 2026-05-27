@@ -102,7 +102,7 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the us
    - Ensure importing `main.py` works without UiPath auth.
 
    See [lifecycle/build.md](lifecycle/build.md) § Additional Instructions for the detailed Build-stage rules. After implementing, re-run `uip codedagent init` to update schemas from the actual code.
-4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md). Non-interactive default: add/update missing bindings automatically; report no-op silently; ask only before deletion or for dynamic values.
+4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
 5. **Auth (one-shot)** — Run `uip login status --output json` once. If `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
 
 > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?

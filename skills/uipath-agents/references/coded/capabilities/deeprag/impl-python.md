@@ -77,22 +77,6 @@ citations = [c if isinstance(c, dict) else c.model_dump() for c in (raw_citation
 
 Pass `citation_mode=CitationMode.SKIP | INLINE` on `CreateDeepRag`. Default `SKIP` (lowest latency, no citations). `INLINE` interleaves citations in `content.text`. Verify the available enum values at your SDK version: `from uipath.platform.context_grounding import CitationMode; list(CitationMode)`.
 
-## Bindings
-
-Source bucket (if files come from a bucket) goes in `bindings.json`. Attachments and ephemeral indexes are NOT bindable.
-
-```json
-{
-  "resource": "bucket",
-  "key": "<BUCKET_NAME>.<BUCKET_FOLDER_PATH>",
-  "value": {
-    "name": {"defaultValue": "<BUCKET_NAME>", "isExpression": false, "displayName": "Name"},
-    "folderPath": {"defaultValue": "<BUCKET_FOLDER_PATH>", "isExpression": false, "displayName": "Folder Path"}
-  },
-  "metadata": {"ActivityName": "download_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName"}
-}
-```
-
 ## Local-Run Verification
 
 ```bash

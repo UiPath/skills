@@ -12,6 +12,7 @@ user-invocable: true
 - Treat "build/create/scaffold/implement a UiPath agent" as the full One-Prompt Flow by default. Do not stop after file creation or local run unless the user explicitly says to stop there.
 - A normal completion point is after smoke eval and the mandatory Delivery fork question. A final build summary before that is premature unless run/eval is blocked or the user opted out.
 - **Probe the `solution` verb once per session before the first scaffold or deploy.** Run `uip solution init --help --output json`. Result `Success` → use `solution init` and `solution deploy run --parent-folder-path` / `--parent-folder-key` (post-rename, default). `unknown command` / non-zero exit → CLI predates the rename; substitute `uip solution new <Name>` and `--folder-path` / `--folder-key` (same arguments otherwise) wherever this skill calls those.
+- **Coded agents only — bindings are always derived from UiPath Python SDK calls and must never be hand-authored.** To derive them, always run the sync workflow in [coded/lifecycle/bindings-reference.md](references/coded/lifecycle/bindings-reference.md) — scan code, regenerate `bindings.json`. Without this, resources cannot be overridden per execution environment and will always default to the hardcoded values in the SDK calls. Derive bindings whenever you add, remove, or modify any UiPath SDK resource call — for instance `assets`, `queues`, `processes`, `buckets`, `indexes`, `connections`, `apps`, `MCP servers`, or `InvokeProcess|CreateTask|CreateEscalation(...)`.
 
 ## Project Type Detection
 
