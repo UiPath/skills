@@ -28,7 +28,7 @@ graph LR
     B --> F[project remove]
 ```
 
-`refresh` does bulk reconciliation from `bindings_v2.json`. `add` / `remove` are the atomic, idempotent siblings — use them when you're mutating one resource at a time (a coding agent making a single change, scripted CI step, etc.) and don't want to re-scan the whole solution.
+`refresh` does bulk reconciliation from `bindings_v2.json`. `add` and `remove` are the atomic, single-resource siblings — use them when you're mutating one resource at a time (a coding agent making a single change, scripted CI step, etc.) and don't want to re-scan the whole solution. `add` is idempotent (a re-run returns `Status: "Unchanged"`); `remove` is not — it fails cleanly with `Resource not found in solution` if the key is already gone.
 
 ---
 
@@ -394,6 +394,12 @@ ls -1 ./MySolution/resources/solution_folder/package/
 ls -1 ./MySolution/resources/solution_folder/process/
 
 # 3. The two sets MUST agree by name. If not, the solution is corrupt.
+```
+
+Steps 1–3 verify *project* mutations (`project add`/`remove`, `refresh`). For *resource* mutations (`resource add`/`remove`) the relevant files live under other `resources/solution_folder/<kind>/` subtrees (`queue/`, `asset/`, `bucket/`, …), so verify at the resource level instead:
+
+```bash
+uip solution resource list --source local --output json
 ```
 
 If `.uipx` and `resources/solution_folder/` disagree, follow the recovery procedure in the matching gotcha below.
