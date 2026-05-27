@@ -14,7 +14,7 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. **Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Two outcomes:
+Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
