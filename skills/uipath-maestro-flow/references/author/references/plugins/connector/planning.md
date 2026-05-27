@@ -83,8 +83,10 @@ Lock the chosen connector key in the planning notes — never re-derive per node
 For each connector found in registry search, verify a healthy connection exists. Extract the connector key from the node type name (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` -> key is `uipath-microsoft-outlook365`).
 
 ```bash
-uip is connections list "<connector-key>" --output json
+uip is connections list "<connector-key>" --all-folders --output json
 ```
+
+> `--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<connector-key>"` is forbidden for discovery.
 
 - If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for implementation planning.
 - **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing.
