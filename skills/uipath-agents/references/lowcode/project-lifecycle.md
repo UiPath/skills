@@ -367,6 +367,8 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
 | Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
 | Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |
+| Add one resource (local stub or remote import) | `uip solution resource add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
+| Remove one resource by key | `uip solution resource remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |

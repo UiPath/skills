@@ -11,6 +11,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | Commands | What | Auth |
 |----------|------|------|
 | `solution init`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution resource add --source local\|remote`, `solution resource remove <key>` | Atomic single-resource mutations (local stub or remote import; delete by key) — see [uipath-solution Step 9–10](/uipath:uipath-solution) | Only `--source remote` requires auth |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
