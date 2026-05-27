@@ -62,16 +62,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "LangGraph project config present"
-    path: "purchase-gate/langgraph.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "interrupt(WaitTask) shape, correct imports, no CreateTask/CreateEscalation, graph exported"
+    description: "LangGraph config, interrupt(WaitTask) shape, correct imports, no CreateTask/CreateEscalation, graph exported"
     command: "python3 $TASK_DIR/check_hitl_wait_task.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 6.0
+    weight: 7.0
     pass_threshold: 1.0
