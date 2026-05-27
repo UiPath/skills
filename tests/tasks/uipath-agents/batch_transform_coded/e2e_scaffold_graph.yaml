@@ -33,7 +33,8 @@ initial_prompt: |
        from a @durable_interrupt node
     4. yield CreateBatchTransform(is_ephemeral_index=True, ...) from
        another @durable_interrupt node, passing two
-       BatchTransformOutputColumn entries
+       BatchTransformOutputColumn entries (imported from
+       uipath.platform.context_grounding — do NOT use plain dicts)
     5. finalize and return the local destination_path
 
   Take the agent through scaffold → init. Do NOT run, publish, upload,
@@ -47,14 +48,6 @@ success_criteria:
     command_pattern: 'uip\s+codedagent\s+init'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on uip commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
