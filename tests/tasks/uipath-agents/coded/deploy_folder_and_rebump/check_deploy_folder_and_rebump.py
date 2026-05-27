@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """Deploy-to-folder + patch-bump-on-redeploy check.
 
-The agent must deploy twice to the same Orchestrator folder. The
-second deploy fails with `Version already exists` unless the agent
-bumps the patch version in `pyproject.toml` between the deploys
-(documented in the skill's Troubleshooting table).
+The agent must bump the patch version in `pyproject.toml` before
+redeploying — without a bump the deploy fails with `Version already
+exists` (documented in the skill's Troubleshooting table).
 
 Asserts:
   1. `acme-echo/pyproject.toml` is valid TOML with a `[project]` table.
   2. The `version` follows semver `MAJOR.MINOR.PATCH`.
-  3. The `version` is strictly greater than `0.0.1` (the scaffold default
-     `uip codedagent new` writes). Any of `0.0.2`, `0.1.0`, `1.0.0`, etc.
-     proves a bump happened.
-  4. The edit landed: `main.py` mentions the `acme: ` prefix the user
-     asked for (otherwise the second deploy would be a no-op rebump).
-  5. No `[build-system]` section (Critical Rule C1).
+  3. The `version` is strictly greater than `0.0.1` (the pre-seeded
+     version), with `0.0.2` being the expected patch bump.
+  4. No `[build-system]` section (Critical Rule C1).
 """
 
 from __future__ import annotations
@@ -73,24 +69,14 @@ def main() -> None:
 
     version = parse_version(text)
     print(f"OK: pyproject.toml [project].version parses as {version}")
-    if version <= SCAFFOLD_VERSION:
+    EXPECTED_VERSION = (0, 0, 2)
+    if version != EXPECTED_VERSION:
         fail(
-            f"version {version} is not greater than the scaffold default 0.0.1. "
-            "The second deploy fails with `Version already exists` unless the "
-            "patch was bumped — bump the version in pyproject.toml between the "
-            "two deploys."
+            f"version {version} is not the expected patch bump {EXPECTED_VERSION}. "
+            "The agent should read pyproject.toml, see version 0.0.1, and bump "
+            "the patch to 0.0.2 before redeploying."
         )
-    print(f"OK: version {version} is greater than the scaffold default 0.0.1 — re-deploy bump happened")
-
-    if not MAIN.is_file():
-        fail(f"missing {MAIN}")
-    main_text = MAIN.read_text(encoding="utf-8")
-    if "acme: " not in main_text:
-        fail(
-            "main.py does not contain the `acme: ` prefix the user asked for in "
-            "the second iteration — the edit was not applied before the second deploy"
-        )
-    print("OK: main.py contains the `acme: ` prefix (edit applied)")
+    print(f"OK: version bumped to {version} — correct patch bump before redeploy")
 
     print("OK: deploy-to-folder + patch-bump roundtrip verified")
 

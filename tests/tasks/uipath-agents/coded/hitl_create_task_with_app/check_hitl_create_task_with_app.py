@@ -12,7 +12,9 @@ Asserts:
   6. `bindings.json` declares the `app` resource for `RefundReview` /
      `Compliance`.
   7. A top-level `graph =` variable is exported.
-  8. No module-level UiPath* construction (Critical Rule C4).
+  8. `langgraph.json` exists at the resolved project root and points at
+     the exported graph.
+  9. No module-level UiPath* construction (Critical Rule C4).
 """
 
 from __future__ import annotations
@@ -26,6 +28,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.project_root import find_project_root  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
+from _shared.langgraph_assertions import assert_langgraph_config  # noqa: E402
 from _shared.bindings_assertions import (  # noqa: E402
     load_bindings,
     find_resource,
@@ -129,6 +132,8 @@ def main() -> None:
     if not re.search(r"^\s*graph\s*=\s*", text, re.M):
         fail("main.py does not export a top-level `graph =` variable")
     print("OK: top-level `graph` variable exported")
+
+    assert_langgraph_config(ROOT, module)
 
     violations = find_module_level_llm_clients(module)
     if violations:

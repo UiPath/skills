@@ -21,6 +21,6 @@ success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-agents skill"
     expected_skill: "uipath-agents"
-    expected: "yes"
+    skill_name: "uipath-agents"
     weight: 3.0
     pass_threshold: 1.0

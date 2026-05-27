@@ -30,7 +30,9 @@ jobs:
       - name: Detect changed skills and map to test tasks
         id: detect
         run: |
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          BASE_REF="${{ github.base_ref }}"
+          BASE_REF="${BASE_REF:-main}"
+          CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
 
           # RPA skill (modern + legacy) runs on the Windows workflow
           # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
@@ -441,3 +443,58 @@ jobs:
               print(f'::error::Pass rate {rate:.1%} < threshold {threshold:.0%}')
               sys.exit(1)
           PY
+
+  # Advisory consistency gate. Does every task YAML in the repo still load
+  # under coder_eval@main's TaskDefinition schema? This is the skills-side
+  # mirror of coder_eval's `validate-skills-yamls` gate: it catches the class
+  # of bug where a task YAML uses a criterion type/field coder_eval's schema
+  # doesn't accept, surfacing it here at authoring time instead of weeks later
+  # (and on the wrong repo) in coder_eval CI.
+  #
+  # Validates the WHOLE tree, not just changed files, so pre-existing drift is
+  # always visible. `continue-on-error` shows the job red for visibility but
+  # keeps the workflow conclusion green — non-blocking, like the coder_eval
+  # gate. Flip to a hard gate by removing `continue-on-error` once the tree is
+  # clean and the convention has bedded in.
+  validate-task-schema:
+    name: Validate task schema (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    continue-on-error: true
+    # Skip forks: GH_PAT for the private coder_eval checkout isn't available
+    # to forked PRs (matches the e2e job's secret requirements).
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/coder_eval
+          token: ${{ secrets.GH_PAT }}
+          path: .coder_eval
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install coder-eval
+        working-directory: .coder_eval
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system .
+
+      - name: Validate every task YAML against coder_eval@main schema
+        # `coder-eval plan` exits non-zero if any file fails to load under the
+        # current TaskDefinition schema. Job-level continue-on-error keeps a
+        # failure here non-blocking.
+        run: |
+          set -uo pipefail
+          YAMLS=$(find tests/tasks -type f -name '*.yaml' | grep -v '/_shared/' | sort)
+          if [ -z "$YAMLS" ]; then
+            echo "No task YAMLs found under tests/tasks — checkout layout drift?"
+            exit 1
+          fi
+          echo "Validating $(printf '%s\n' "$YAMLS" | wc -l | xargs) task YAML(s) against coder_eval@main."
+          printf '%s\n' "$YAMLS" | tr '\n' '\0' | xargs -0 coder-eval plan

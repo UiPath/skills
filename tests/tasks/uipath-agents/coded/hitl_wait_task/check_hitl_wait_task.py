@@ -10,7 +10,9 @@ This is the "wait on a task that already exists" pattern, distinct from
   4. `main.py` does NOT use `CreateTask` / `CreateEscalation` — the
      scenario is monitoring an existing task, not creating one.
   5. A top-level `graph =` variable is exported (LangGraph entrypoint).
-  6. No module-level UiPath* client construction (Critical Rule C4).
+  6. `langgraph.json` exists at the resolved project root and points at
+     the exported graph.
+  7. No module-level UiPath* client construction (Critical Rule C4).
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.project_root import find_project_root  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
+from _shared.langgraph_assertions import assert_langgraph_config  # noqa: E402
 
 ROOT = find_project_root("purchase-gate")
 
@@ -97,6 +100,8 @@ def main() -> None:
     if not re.search(r"^\s*graph\s*=\s*", text, re.M):
         fail("main.py does not export a top-level `graph =` variable")
     print("OK: top-level `graph` variable exported")
+
+    assert_langgraph_config(ROOT, module)
 
     violations = find_module_level_llm_clients(module)
     if violations:

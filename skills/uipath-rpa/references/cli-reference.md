@@ -120,8 +120,10 @@ uip rpa studio start --project-dir "<PROJECT_DIR>" --output json
 Create a new UiPath project from a template.
 
 ```bash
-uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --output json
+uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --target-framework <Windows|Portable> --expression-language <VisualBasic|CSharp> --output json
 ```
+
+> **Always pass `--target-framework` and `--expression-language`.** Both are fixed at creation and immutable afterward; omitting `--target-framework` silently produces a **Windows** project. The example shows the two new-project options (`Windows`, `Portable`). Windows - Legacy is a last resort (explicit ask or hard .NET 4.6.1 need) and is created/authored in **Legacy mode**, not via this command. Decide each per SKILL.md Common Rule 2a before running `init`.
 
 > **Flag names are non-standard.** Most `uip rpa` commands take `--project-dir` to identify the project. `init` instead uses `--name` (project name) + `--location` (parent directory). Do NOT use `--project-name` or `--project-dir` here — both fail with `error: required option '--name <string>' not specified`.
 
@@ -134,8 +136,8 @@ uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --output json
 | `--template-package-version` | No | (latest) | Version of the template package |
 | `--allow-prerelease-packages` | No | false | Allow prerelease activity package versions |
 | `--description` | No | -- | Project description |
-| `--expression-language` | No | -- | `VisualBasic` or `CSharp` |
-| `--target-framework` | No | -- | `Legacy`, `Windows`, or `Portable` |
+| `--expression-language` | No (decide explicitly — Rule 2a) | none | `VisualBasic` or `CSharp`. Immutable after creation |
+| `--target-framework` | No (decide explicitly — Rule 2a) | none → **Windows** | `Windows` or `Portable` (Cross-platform) for new projects. The flag accepts `Legacy`, but Windows - Legacy projects are created/authored in **Legacy mode**, not via this command (last resort — explicit ask or hard .NET 4.6.1 need). Immutable after creation; omitting it yields a Windows project |
 
 For template selection logic (when to use `--template-package-id` vs `--template-id`), see [environment-setup.md § Template selection](environment-setup.md#template-selection).
 

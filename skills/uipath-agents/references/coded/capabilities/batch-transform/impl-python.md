@@ -74,22 +74,6 @@ Instantiate `UiPath()` inside nodes only — never at module level.
 
 Runtime raises `UiPathFaultedTriggerError` (imported as `from uipath.core.errors import UiPathFaultedTriggerError`) on terminal `Failed`. There is no `CreateBatchTransformRaw` — to inspect a failed ingestion without raising, yield `CreateEphemeralIndexRaw` instead.
 
-## Bindings
-
-Bind the **source bucket** (where the input CSV lives) in `bindings.json`. The augmented CSV is written to a local `destination_path` on resume — that is NOT bindable. Attachments and ephemeral indexes are NOT bindable either. Add a destination bucket binding only if the agent re-uploads the augmented CSV after resume.
-
-```json
-{
-  "resource": "bucket",
-  "key": "<SOURCE_BUCKET>.<SOURCE_FOLDER>",
-  "value": {
-    "name": {"defaultValue": "<SOURCE_BUCKET>", "isExpression": false, "displayName": "Name"},
-    "folderPath": {"defaultValue": "<SOURCE_FOLDER>", "isExpression": false, "displayName": "Folder Path"}
-  },
-  "metadata": {"ActivityName": "download_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName"}
-}
-```
-
 ## Local-Run Verification
 
 ```bash

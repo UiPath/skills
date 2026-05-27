@@ -1,0 +1,10 @@
+[project]
+name = "acme-echo"
+version = "0.0.1"
+description = "Minimal echo agent"
+authors = [{ name = "Test" }]
+requires-python = ">=3.11"
+dependencies = ["uipath"]
+
+[dependency-groups]
+dev = ["uipath-dev"]

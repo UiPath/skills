@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "FolderGet",
+  "Data": {
+    "Name": "Shared",
+    "ID": 1500287,
+    "Key": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+    "Description": "No description",
+    "Path": "Shared",
+    "ParentID": "Root",
+    "FolderType": "Standard",
+    "IsPersonal": "No",
+    "ProvisionType": "Automatic",
+    "PermissionModel": "FineGrained",
+    "FeedType": "Processes"
+  }
+}

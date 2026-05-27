@@ -12,6 +12,7 @@ user-invocable: true
 - Treat "build/create/scaffold/implement a UiPath agent" as the full One-Prompt Flow by default. Do not stop after file creation or local run unless the user explicitly says to stop there.
 - A normal completion point is after smoke eval and the mandatory Delivery fork question. A final build summary before that is premature unless run/eval is blocked or the user opted out.
 - **Probe the `solution` verb once per session before the first scaffold or deploy.** Run `uip solution init --help --output json`. Result `Success` → use `solution init` and `solution deploy run --parent-folder-path` / `--parent-folder-key` (post-rename, default). `unknown command` / non-zero exit → CLI predates the rename; substitute `uip solution new <Name>` and `--folder-path` / `--folder-key` (same arguments otherwise) wherever this skill calls those.
+- **Coded agents only — bindings are always derived from UiPath Python SDK calls and must never be hand-authored.** To derive them, always run the sync workflow in [coded/lifecycle/bindings-reference.md](references/coded/lifecycle/bindings-reference.md) — scan code, regenerate `bindings.json`. Without this, resources cannot be overridden per execution environment and will always default to the hardcoded values in the SDK calls. Derive bindings whenever you add, remove, or modify any UiPath SDK resource call — for instance `assets`, `queues`, `processes`, `buckets`, `indexes`, `connections`, `apps`, `MCP servers`, or `InvokeProcess|CreateTask|CreateEscalation(...)`.
 
 ## Project Type Detection
 
@@ -39,6 +40,7 @@ Determine the agent mode before proceeding:
 | Create/build/deploy coded agent | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/lifecycle/*`, `coded/frameworks/*` |
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
+| Call an Integration Service connector (Slack, Jira, Web Search) from a coded agent | Coded | [coded/capabilities/integration-service.md](references/coded/capabilities/integration-service.md) **+ then immediately read** [`uipath-platform/references/integration-service/agent-workflow.md`](../uipath-platform/references/integration-service/agent-workflow.md) — discovery lives there, not in `uipath-agents` | `coded/capabilities/sdk-services.md` § Connections |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
 | Create or scaffold a new low-code agent project | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Quick Start | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
 | Edit `agent.json` (prompts, model, schemas, contentTokens, entry-points.json) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/agent-definition.md` |

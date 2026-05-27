@@ -8,7 +8,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 |---------|-------------|
 | `uip ixp projects list --output json` | List all IXP projects |
 | `uip ixp projects get <project-name> --output json` | Get a project |
-| `uip ixp projects create "<name>" <folder-path> [-d "<description>"] [--skip-taxonomy] --output json` | Create project and upload docs. By default suggests+imports taxonomy. `-d` provides context for better taxonomy suggestion. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
+| `uip ixp projects create "<name>" <folder-path> [-d "<description>"] [--skip-taxonomy] --output json` | Create project and upload supported docs in `<folder-path>` (top-level only — sub-folders are not scanned; see [Supported document files](#supported-document-files)). By default suggests+imports taxonomy. `-d` provides context for better taxonomy suggestion. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
 | `uip ixp projects import-taxonomy <project-name> <file> --output json` | Import taxonomy from a local JSON file. Accepts `{ field_types, label_group }` or `{ entity_defs, label_groups }` format. |
 | `uip ixp projects update-title <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp projects get-taxonomy <project-name> --output json` | Get taxonomy (entity_defs + label_groups with field definitions) |
@@ -24,6 +24,40 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 |---------|-------------|
 | `uip ixp documents list <project-name> [-l <limit>] [--offset <n>] --output json` | List documents — returns `[{ DocumentId, AttachmentRef }]`. Paginated: defaults to 50 items per page (max 10000). Pass `-l` for larger pages or `--offset` to skip ahead. |
 | `uip ixp documents download <project-name> <document-id> -o <path> --output json` | Download the original document file (PDF/PNG/JPG/etc.). The CLI auto-corrects the file extension to match the actual content; use the response `Path` field as the resolved location. |
+| `uip ixp documents upload <project-name> <file> --output json` | Upload a single document file to an existing project. See [Uploading documents](#uploading-documents-to-an-existing-project) below for validation, output shape, and the multi-file loop pattern. |
+
+### Supported document files
+
+Both `projects create` (bulk folder upload) and `documents upload` (single file) validate against the same extension whitelist, case-insensitive:
+
+`.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.tif`, `.tiff`, `.bmp`
+
+Validation differs by command:
+
+- `documents upload` rejects an unsupported file with `Unsupported file type "<ext>"` before any network call.
+- `projects create` scans only the top level of `<folder-path>` (sub-folders are ignored), silently skips unsupported files, and fails only when **no** supported files exist (`No supported documents found in <folder>`).
+
+Each upload triggers a retrain — wait ~2 min before reading metrics or predictions for new docs.
+
+### Uploading documents to an existing project
+
+`uip ixp documents upload <project-name> <file> --output json` pushes one document to an existing project.
+
+For supported extensions, validation error strings, and retrain timing, see [Supported document files](#supported-document-files) above.
+
+Returns `{ ProjectName, FileName, AttachmentRef, DocumentId }` (Code: `IxpDocumentsUpload`). Capture `DocumentId` for later `documents download` or `labellings confirm` calls.
+
+**Multiple files** — one file per call; loop the command:
+
+```bash
+cd "<folder-with-docs>"
+for f in *.pdf *.png *.jpg *.jpeg *.gif *.tif *.tiff *.bmp; do
+    [ -e "$f" ] || continue   # skip unmatched glob patterns
+    uip ixp documents upload <project-name> "$f" --output json
+done
+```
+
+**When NOT to use this:** for filling a brand-new project, prefer `projects create <name> <folder-path>` — uploads the whole folder and suggests a taxonomy in one call.
 
 ## Labellings
 
