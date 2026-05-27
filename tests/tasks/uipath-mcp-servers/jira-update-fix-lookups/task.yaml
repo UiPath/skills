@@ -1,0 +1,65 @@
+task_id: skill-mcp-servers-jira-update-fix-lookups
+description: >
+  An existing `Create Issue` tool renders raw "MOCKPROJ" and "10" in the form
+  because designTimeLookups is empty. Agent must fetch, diagnose, rebuild with
+  labels, and update with --dry-run.
+tags: [uipath-mcp-servers, integration, mode:build]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write"]
+  max_turns: 10
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+initial_prompt: |
+  Use the mocked `uip` CLI.
+
+  TASK: The 'Create Issue' tool on my `test-mcp-skill` MCP server renders raw
+  'MOCKPROJ' and '10' in the configuration form instead of the project name
+  and issue type name. Diagnose why and fix it. Use --dry-run on the update.
+
+  Refs:
+    - tool name: "Create Issue"
+    - MCP server: test-mcp-skill (folder-mock-shared)
+    - connector: uipath-atlassian-jira
+    - connection: conn-mock-jira-01
+
+  Fetch the existing tool first via `uip agenthub mcp-tools get --name "Create Issue" --mcp test-mcp-skill --folder-path Shared --output json`.
+
+  Save: current-metadata.json (the broken state), fixed-metadata.json (with
+  populated designTimeLookups), update-command.sh (the --dry-run update),
+  trajectory.md, summary.txt.
+
+success_criteria:
+  - type: file_exists
+    path: current-metadata.json
+  - type: file_exists
+    path: fixed-metadata.json
+  - type: file_contains
+    description: "fixed metadata contains both lookups in canonical format"
+    path: fixed-metadata.json
+    includes: ["fields.project.key", "Mock Project - MOCKPROJ", "fields.issuetype.id", "Task - 10"]
+  - type: file_contains
+    path: update-command.sh
+    includes: ["mcp-tools update", "--dry-run", "--metadata"]
+  - type: command_executed
+    description: "Agent called mcp-tools get to fetch existing state"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agenthub\s+mcp-tools\s+get'
+    min_count: 1
+  - type: command_executed
+    description: "Agent ran `execute list` for label resolution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+execute\s+list'
+    min_count: 1
+
+max_iterations: 1

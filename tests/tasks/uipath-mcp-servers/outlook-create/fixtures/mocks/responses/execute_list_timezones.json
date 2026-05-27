@@ -1,0 +1,5 @@
+{"Result":"Success","Code":"ExecuteOperation","Data":{"items":[
+  {"alias":"UTC",                 "displayName":"(UTC) Coordinated Universal Time"},
+  {"alias":"GTB Standard Time",   "displayName":"(UTC+02:00) Athens, Bucharest"},
+  {"alias":"Pacific Standard Time","displayName":"(UTC-08:00) Pacific Time (US & Canada)"}
+]}}

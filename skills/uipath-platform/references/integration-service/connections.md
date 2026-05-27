@@ -168,6 +168,34 @@ For webhook URL retrieval after the trigger is configured, see [triggers.md — 
 
 ---
 
+## Folder Scoping
+
+`uip is connections list <connector-key>` defaults to filtering by the **current** folder context — results from other folders (including the user's personal workspace) are silently excluded. Empty response on the filtered side looks like:
+
+```json
+{"Message":"No connections found for connector '<connector-key>'."}
+```
+
+even though a connection exists in another folder.
+
+**Cross-folder pattern** — pass `--folder` explicitly:
+
+```bash
+uip is connections list "<connector-key>" --folder "<folder-name-or-key>" --output json
+```
+
+**Enumerate every folder** — iterate folders and list per folder:
+
+```bash
+uip or folders list --output json
+# → for each folder, call:
+uip is connections list "<connector-key>" --folder "<folder-name-or-key>" --output json
+```
+
+> If the user reports "connection exists in my personal workspace but CLI can't see it", suspect default folder filtering — re-list with `--folder` set to that workspace before creating a new connection.
+
+---
+
 ## Identifying a JDBC Connection's Target DB
 
 For the JDBC gateway connector (`uipath-uipath-jdbc`, "Database Hub"), `connections list` does **not** expose `jdbcUrl` or `driverClass` — config is intentionally hidden. The only signal for "what DB does this JDBC connection point to?" is the connection **`name`**.

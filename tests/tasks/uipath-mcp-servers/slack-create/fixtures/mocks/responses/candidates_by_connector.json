@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsCandidates",
+  "Data": {
+    "items": [
+      { "objectName": "send_message_to_channel_v2", "methodName": "POST", "displayName": "Send Message to Channel", "curated": true },
+      { "objectName": "send_message_to_user_v2",    "methodName": "POST", "displayName": "Send Message to User",    "curated": true },
+      { "objectName": "send_reply_v2",              "methodName": "POST", "displayName": "Send Reply",              "curated": true }
+    ],
+    "total": 3
+  }
+}

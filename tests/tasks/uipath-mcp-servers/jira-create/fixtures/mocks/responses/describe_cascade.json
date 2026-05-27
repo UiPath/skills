@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "IsResourcesDescribe",
+  "Data": {
+    "name": "curated_create_issue",
+    "displayName": "Create Issue",
+    "elementKey": "uipath-atlassian-jira",
+    "operation": { "name": "Create", "path": "/curated_create_issue", "method": "POST" },
+    "parameters": [],
+    "requestFields": [
+      { "name": "fields.project.key",   "displayName": "Project",    "required": true, "type": "string", "reference": { "objectName": "project", "lookupNames": ["name","key"], "lookupValue": "key" } },
+      { "name": "fields.issuetype.id",  "displayName": "Issue Type", "required": true, "type": "string", "reference": { "objectName": "project", "lookupNames": ["name","id"],  "lookupValue": "id" } },
+      { "name": "fields.summary",       "displayName": "Summary",     "required": true, "type": "string", "description": "Short, one-line summary of the issue." },
+      { "name": "fields.description",   "displayName": "Description", "required": false,"type": "string", "description": "Detailed description of the issue (plain text or ADF)." }
+    ],
+    "responseFields": [
+      { "name": "id",  "type": "string", "displayName": "Issue ID" },
+      { "name": "key", "type": "string", "displayName": "Issue key" }
+    ]
+  }
+}

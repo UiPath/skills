@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "rules": [
+    { "match": "agenthub mcp-tools get",                                  "file": "mcp_tools_get.json" },
+    { "match": "is resources execute list uipath-atlassian-jira project",   "file": "execute_list_project.json" },
+    { "match": "is resources execute list uipath-atlassian-jira issuetype", "file": "execute_list_issuetype.json" },
+    { "match": "agenthub mcp-tools update",                               "file": "mcp_tools_update_dryrun.json" }
+  ],
+  "unmocked_default": { "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked\"}\n", "exit_code": 1 }
+}
