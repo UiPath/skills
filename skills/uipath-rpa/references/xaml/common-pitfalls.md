@@ -368,6 +368,8 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - **Retry policies**: Complex interaction between `RetryPolicyType`, `RetryCount`, `PreferRetryAfterValue`, and `MaxRetryAfterDelay`
 - **Default timeout**: 10,000ms (10 seconds)
 
+**Studio re-expansion injects default expressions that need imports (CLI-clean, Studio-red).** `validate`/`build` accept a minimally-authored `NetHttpRequest`. When the file is later opened in Studio / Studio Web, Studio re-serializes the activity with its full default property set — including default expressions for `FormDataParts` (`New List(Of FormDataPart) From {New FileFormDataPart(), New BinaryFormDataPart(), New TextFormDataPart()}`) and `RetryStatusCodes`. `FormDataParts` names types from `UiPath.Web.Activities.Http.Models`, so Studio reports `BC30002: Type 'FormDataPart' is not defined` though the CLI was clean — even when `RequestBodyType="None"`. **Fix:** add `UiPath.Web.Activities.Http.Models` to `TextExpression.NamespacesForImplementation`. A type referenced by simple name in a VB expression must be **imported** there; an `xmlns:` prefix on the root element only resolves element/attribute type names, not expression compilation.
+
 ## Connection Service Pattern (Office 365, GSuite, IS Connectors)
 
 - `ConnectionId` is marked `[Browsable(false)]` — it won't appear in the Properties panel, but it is **required** when `UseConnectionService=True`
