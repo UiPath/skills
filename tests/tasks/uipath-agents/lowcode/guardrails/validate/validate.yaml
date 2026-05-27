@@ -84,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "harmful_content guardrail threshold keys match entities list (no extra key)"
-    command: "python3 $TASK_DIR/check_guardrail_validate.py"
+    command: "python3 $TASK_DIR/check_validate.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

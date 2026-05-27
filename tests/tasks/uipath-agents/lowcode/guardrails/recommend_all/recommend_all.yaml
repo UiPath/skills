@@ -59,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "At least 2 guardrails added including Llm-scoped and content-safety guardrails"
-    command: "python3 $TASK_DIR/check_guardrail_recommend_all.py"
+    command: "python3 $TASK_DIR/check_recommend_all.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

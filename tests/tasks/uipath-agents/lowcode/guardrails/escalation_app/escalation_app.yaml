@@ -117,7 +117,7 @@ success_criteria:
 
   - type: run_command
     description: "PII escalation guardrail shape (builtInValidator, pii_detection, escalate action, app fields, recipient)"
-    command: "python3 $TASK_DIR/check_guardrail_escalation_app.py"
+    command: "python3 $TASK_DIR/check_escalation_app.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

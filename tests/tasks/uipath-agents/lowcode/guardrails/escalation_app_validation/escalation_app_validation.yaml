@@ -80,7 +80,7 @@ success_criteria:
 
   - type: run_command
     description: "Agent rejected the incompatible app — no escalate guardrail written in agent.json"
-    command: "python3 $TASK_DIR/check_guardrail_escalation_app_validation.py"
+    command: "python3 $TASK_DIR/check_escalation_app_validation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
