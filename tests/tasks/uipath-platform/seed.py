@@ -15,8 +15,9 @@ seed = {
     # (folders_hierarchy's tree, deploy_round_trip's deploy folder, etc.).
     # Defaults to Shared for local dev; CI sets it to an isolated subfolder
     # like `Shared/uipath-platform-e2e` so all test junk stays out of Shared
-    # root.
-    "parent_folder_path": os.environ.get("E2E_TEST_PARENT_FOLDER", "Shared"),
+    # root. `or` (not get's default): the pre_run `VAR=$VAR python3 …` pattern
+    # sets the var to "" when unset locally, so get(key, default) wouldn't fire.
+    "parent_folder_path": os.environ.get("E2E_TEST_PARENT_FOLDER") or "Shared",
 }
 
 key = os.environ.get("E2E_PROCESS_KEY", "")
