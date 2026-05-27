@@ -13,10 +13,6 @@ For other context variants, see [context.md](context.md).
 
 **Only `contextType: "index"` with a StorageBucket data source is supported.** `attachments` and `datafabricentityset` contexts, and indexes backed by GoogleDrive / OneDrive / Dropbox / Confluence, emit a warning from refresh and must be hand-authored.
 
-## Index Creation Note
-
-**Index creation requires the `uipath` (Python) CLI** (`pip install uipath`) — `uip` does not yet expose index creation. Listing and binding existing indexes via `uip` work as documented below. This applies to all agents (autonomous and conversational).
-
 ## Conversational Support
 
 **Status: Supported.**

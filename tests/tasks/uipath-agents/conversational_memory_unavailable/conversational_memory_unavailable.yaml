@@ -1,0 +1,95 @@
+task_id: skill-agent-conversational-memory-unavailable
+description: >
+  Negative smoke test for the "memory Not Yet Available for conversational"
+  rule (agent-definition.md § Not Yet Available). The prompt explicitly
+  asks for cross-session memory — wording that tempts the autonomous
+  memory pattern (`agentMemory: true`, `uipath.agent.resource.memory.*`
+  resources, `isAgentMemoryEnabled: true`). Passes if the skill restrains
+  the agent from enabling any memory artifact on the conversational agent
+  — either by refusing the request, telling the user memory is not yet
+  available, or scaffolding the agent without memory configuration.
+  Fails if any of the autonomous memory patterns appear enabled.
+tags: [uipath-agents, smoke, mode:build, low-code, conversational, memory]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a low-code conversational (multi-turn chat) agent named
+  "MemoryAgent" inside a UiPath solution named "MemorySol". The agent
+  helps users plan trips and should remember the user's preferences
+  (preferred airlines, dietary restrictions, past destinations) across
+  sessions so it can give personalized recommendations on return visits.
+
+  Add a memory space so the agent can recall prior conversations and
+  user preferences across sessions.
+
+  This is a conversational (multi-turn chat) agent — not an autonomous
+  single-turn agent.
+
+  Validate the agent successfully at the end.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire build end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new/init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(new|init)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "MemoryAgent/agent.json was created"
+    path: "MemorySol/MemoryAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "agent.json has conversational shape — isConversational true + engine conversational-v1"
+    path: "MemorySol/MemoryAgent/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+      - expression: "settings.engine"
+        operator: "equals"
+        expected: "conversational-v1"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No autonomous memory patterns enabled anywhere in the agent project (Not Yet Available for conversational)"
+    command: "python3 $TASK_DIR/check_no_memory_artifacts.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
