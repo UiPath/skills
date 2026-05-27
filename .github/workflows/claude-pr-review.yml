@@ -41,6 +41,8 @@ jobs:
           fetch-depth: 0
 
       - name: Claude Code Action
+        id: claude_review
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -90,3 +92,18 @@ jobs:
 
             Follow the output format specified in `.github/code_review.md`.
             Always include the "What's Missing" section, even if empty.
+
+      # The review step runs with continue-on-error so a transient Anthropic
+      # API usage-limit (HTTP 400) does not block the merge. This guard passes
+      # the job ONLY for that specific error and re-fails for any other failure,
+      # so genuine review problems still surface.
+      - name: Tolerate Anthropic API usage-limit (HTTP 400)
+        if: steps.claude_review.outcome == 'failure'
+        run: |
+          OUTPUT_FILE="${{ runner.temp }}/claude-execution-output.json"
+          if grep -qiE "workspace API usage limit|API Error: 400" "$OUTPUT_FILE" 2>/dev/null; then
+            echo "::warning title=Claude Code Review skipped::Anthropic workspace API usage limit reached (HTTP 400). Review treated as non-blocking until the limit resets."
+            exit 0
+          fi
+          echo "::error title=Claude Code Review failed::The review step failed for a reason other than the API usage limit. See the step log above."
+          exit 1
