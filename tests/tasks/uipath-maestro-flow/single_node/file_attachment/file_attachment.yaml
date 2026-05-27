@@ -20,26 +20,19 @@ run_limits:
 
 initial_prompt: |
   Create a UiPath Flow project named "AttachmentEcho" that accepts a file as
-  input and echoes the file's name back as output.
-
-  Requirements:
-  - The flow has one `in` variable of `type: "file"` named `inputDoc`, bound to
-    the trigger (`triggerNodeId`). Its runtime payload is a full Flow Attachment
-    object with PascalCase keys: `{ ID, FullName, MimeType, Metadata }`.
-  - A Script node reads the attachment from the trigger output and returns the
-    file name, e.g. `return { fileName: $vars.<triggerId>.output.inputDoc.FullName };`
-  - An End node surfaces that file name as a flow output variable named `fileName`.
+  input and echoes the uploaded file's name back as a flow output. Use a
+  file-typed input variable named `inputDoc` and surface the name as an output
+  variable named `fileName`.
 
   Validate the flow, then run it with `uip maestro flow debug`, binding a local
-  file to `inputDoc` via `--attachment inputDoc=<localPath>`. The task is not
-  complete until the debug run reports `finalStatus: "Completed"` and the output
-  reflects the attached file's name.
+  file to the input. The task is not complete until the debug run reports
+  `finalStatus: "Completed"` and the output reflects the attached file's name.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build, validate, and run end-to-end in a single
   pass. Before starting, load the uipath-maestro-flow skill and follow its
-  workflow steps exactly — in particular the `--attachment <variableId>=<path>`
-  pre-flight and the requirement to run `solution resource refresh` before debug.
+  workflow steps exactly — in particular the file-attachment binding pre-flight
+  and the requirement to run `solution resource refresh` before debug.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
