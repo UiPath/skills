@@ -1,0 +1,47 @@
+{
+  "connector": "uipath-salesforce-slack",
+  "object": "send_message_to_channel_v2",
+  "operation": {
+    "method": "POST",
+    "name": "Create",
+    "curated": "Send Message to Channel",
+    "description": "Posts a message to a Slack channel.",
+    "path": "/send_message_to_channel_v2"
+  },
+  "parameters": [
+    {
+      "name": "send_as",
+      "type": "query",
+      "dataType": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "Post as the authed user (user) or as a bot (bot)."
+    }
+  ],
+  "requestFields": [
+    { "name": "channel", "type": "string", "displayName": "Channel", "required": true, "description": "Channel ID to post to." },
+    { "name": "messageToSend", "type": "string", "displayName": "Message", "required": true, "description": "Message text." },
+    { "name": "attachment.image_url", "type": "string", "displayName": "Attachment Image URL", "required": false },
+    { "name": "attachment.text", "type": "string", "displayName": "Attachment Text", "required": false },
+    { "name": "buttons", "type": "array", "displayName": "Buttons", "required": false },
+    { "name": "fields", "type": "array", "displayName": "Fields", "required": false },
+    { "name": "icon_emoji", "type": "string", "displayName": "Icon Emoji", "required": false },
+    { "name": "icon_url", "type": "string", "displayName": "Icon URL", "required": false },
+    { "name": "image", "type": "string", "displayName": "Image", "required": false },
+    { "name": "link_names", "type": "boolean", "displayName": "Link Names", "required": false },
+    { "name": "metadata", "type": "string", "displayName": "Metadata", "required": false },
+    { "name": "mrkdwn", "type": "boolean", "displayName": "Markdown", "required": false },
+    { "name": "parse", "type": "string", "displayName": "Parse", "required": false },
+    { "name": "reply_broadcast", "type": "boolean", "displayName": "Reply Broadcast", "required": false },
+    { "name": "thread_ts", "type": "string", "displayName": "Thread Timestamp", "required": false },
+    { "name": "unfurl_links", "type": "boolean", "displayName": "Unfurl Links", "required": false },
+    { "name": "unfurl_media", "type": "boolean", "displayName": "Unfurl Media", "required": false },
+    { "name": "username", "type": "string", "displayName": "Username", "required": false }
+  ],
+  "responseFields": [
+    { "name": "ok", "type": "boolean", "displayName": "OK" },
+    { "name": "ts", "type": "string", "displayName": "Timestamp" },
+    { "name": "channel", "type": "string", "displayName": "Channel" },
+    { "name": "message", "type": "object", "displayName": "Message" }
+  ]
+}

@@ -184,7 +184,7 @@ uip codedagent eval main evaluations/eval-sets/smoke-test.json --no-report
 ### Flow Validation
 
 ```bash
-uip flow validate <ProjectName>.flow --output json
+uip maestro flow validate <ProjectName>.flow --output json
 ```
 
 **Checks performed by the CLI:**
@@ -223,7 +223,7 @@ Are all required files present, correctly formatted, and schema-compliant?
 | RPA | `project.json`, entry point file (.xaml or .cs) | `uip rpa validate` |
 | Agent (Low-Code) | `agent.json` | `uip agent validate` |
 | Agent (Coded) | `main.py`, framework config, `pyproject.toml` | Import check + eval |
-| Flow | `.flow`, `project.uiproj` | `uip flow validate` |
+| Flow | `.flow`, `project.uiproj` | `uip maestro flow validate` |
 | Coded App | `package.json`, `.uipath/`, build output | `uip codedapp pack --dry-run` |
 | Solution | `.uipx`, project subdirectories | `uip solution pack` |
 
@@ -318,7 +318,7 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 
 ### Automated Validation & Workflow Analyzer Results
 
-> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
+> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip maestro flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
 
 | Project | File | Command | Errors | Warnings | Info |
 |---|---|---|---|---|---|

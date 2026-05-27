@@ -39,6 +39,7 @@ Determine the agent mode before proceeding:
 | Create/build/deploy coded agent | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/lifecycle/*`, `coded/frameworks/*` |
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
+| Call an Integration Service connector (Slack, Jira, Web Search) from a coded agent | Coded | [coded/capabilities/integration-service.md](references/coded/capabilities/integration-service.md) **+ then immediately read** [`uipath-platform/references/integration-service/agent-workflow.md`](../uipath-platform/references/integration-service/agent-workflow.md) — discovery lives there, not in `uipath-agents` | `coded/capabilities/sdk-services.md` § Connections |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
 | Create or scaffold a new low-code agent project | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Quick Start | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
 | Edit `agent.json` (prompts, model, schemas, contentTokens, entry-points.json) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/agent-definition.md` |
