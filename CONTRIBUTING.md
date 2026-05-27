@@ -178,7 +178,28 @@ Links to reference documents in the `references/` folder for detailed topics.
 - **Include anti-patterns.** A "What NOT to Do" section saves more time than a "What to Do" section.
 - **Link to references for depth.** Keep SKILL.md focused on workflow and rules. Move detailed API docs, schemas, and examples into `references/`.
 
-### 4. Add Reference Documents (Optional)
+### 4. Register Lifecycle Status
+
+Every skill must declare its maturity in [`assets/skill-status.json`](assets/skill-status.json) — the single source of truth (status is NOT stored in SKILL.md). Add an entry under `skills`:
+
+```json
+"uipath-<your-skill>": {
+  "status": "public-preview",
+  "confluence": { "page_id": null, "url": null },
+  "last_synced": null
+}
+```
+
+Use one of: `ga`, `public-preview`, `private-preview`, `in-development`. Then regenerate the README status table and validate:
+
+```bash
+python3 scripts/check-skill-status.py --write-readme
+python3 scripts/check-skill-status.py
+```
+
+CI (`validate-skill-status.yml`) fails if a skill is missing from the manifest, has an invalid status, leaves a stale `[PREVIEW]` / `> **Preview**` marker in SKILL.md, or if the README table is out of date.
+
+### 5. Add Reference Documents (Optional)
 
 Reference files go in `references/` and follow these conventions:
 
@@ -187,7 +208,7 @@ Reference files go in `references/` and follow these conventions:
 - **Organize by subdomain** when a skill covers multiple areas (e.g., `references/integration-service/`, `references/lifecycle/`)
 - **Link from SKILL.md** so the agent can discover them
 
-### 5. Add Templates/Assets (Optional)
+### 6. Add Templates/Assets (Optional)
 
 Static files like code templates go in `assets/`:
 
@@ -292,6 +313,7 @@ Before submitting your PR, verify:
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
+- [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
 
 ### References
 - [ ] File names use kebab-case

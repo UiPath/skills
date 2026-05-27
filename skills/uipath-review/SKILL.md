@@ -7,8 +7,6 @@ user-invocable: true
 
 # UiPath Solution & Artifact Reviewer
 
-> **Preview** — skill is under active development; review surface and report format may change.
-
 Review UiPath solutions and individual artifacts for structural validity, quality, best practices, optimization, and correctness. Produces a structured review report with findings and recommendations.
 
 ## When to Use This Skill

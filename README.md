@@ -82,6 +82,41 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-troubleshoot** | Root-cause investigation across any UiPath product — errors, failures, regressions, stuck jobs, traces, incidents. |
 | **uipath-feedback** | Submit bug reports and improvement suggestions via `uip feedback send`. |
 
+### Lifecycle Status
+
+Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-status.json) — the source of truth. The table below is generated; refresh it with `python3 scripts/check-skill-status.py --write-readme`.
+
+<!-- BEGIN GENERATED SKILL STATUS -->
+| Skill | Status |
+|-------|--------|
+| `uipath-admin` | Public Preview |
+| `uipath-agents` | GA |
+| `uipath-api-workflow` | Public Preview |
+| `uipath-coded-apps` | Public Preview |
+| `uipath-data-fabric` | Public Preview |
+| `uipath-feedback` | GA |
+| `uipath-governance` | Public Preview |
+| `uipath-human-in-the-loop` | Public Preview |
+| `uipath-ixp` | Public Preview |
+| `uipath-maestro-bpmn` | GA |
+| `uipath-maestro-case` | Public Preview |
+| `uipath-maestro-flow` | GA |
+| `uipath-planner` | GA |
+| `uipath-platform` | GA |
+| `uipath-review` | Public Preview |
+| `uipath-rpa` | GA |
+| `uipath-solution` | GA |
+| `uipath-tasks` | Public Preview |
+| `uipath-test` | Public Preview |
+| `uipath-troubleshoot` | GA |
+
+**Status legend:**
+- **GA** — Generally available; stable surface, safe for production.
+- **Public Preview** — Pre-GA but available to all tenants; surface and behavior may change.
+- **Private Preview** — Gated or allowlisted; may be inaccessible in a tenant.
+- **In-development** — Skill itself is incomplete or unstable; coverage is partial.
+<!-- END GENERATED SKILL STATUS -->
+
 ## Agents
 
 | Agent | Description |

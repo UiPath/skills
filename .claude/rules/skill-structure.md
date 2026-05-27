@@ -32,7 +32,7 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 - `description` MUST be under 1024 characters. Claude Code truncates `description` + `when_to_use` at 1,536 chars in the skill listing ([source](https://code.claude.com/docs/en/skills.md)); 1024 is the repo cap to keep descriptions focused and leave headroom
 - `description` MUST front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`) within the first ~100 characters — the first ~100 chars carry the most matching signal
 - `description` MUST start with the brand or domain identity (e.g., `UiPath`, `UiPath RPA`, `UiPath Maestro Flow`). Do NOT prefix with metadata tags like `[PREVIEW]`, `[BETA]`, etc. — those displace high-value matching tokens and semantically de-prioritize the skill
-- Preview / beta status MUST be indicated in the SKILL.md body (e.g., a `> **Preview**` callout under the H1), NOT in the frontmatter description
+- Lifecycle status (GA / Public Preview / Private Preview / In-development) MUST be recorded ONLY in [`assets/skill-status.json`](../../assets/skill-status.json) — the single source of truth. Do NOT put status markers in the frontmatter `description` OR the body (no `> **Preview**` callouts). See [Lifecycle Status](#lifecycle-status) below
 - `description` MUST include compact redirects for commonly confused sibling skills using `→` notation (e.g., `For XAML→uipath-rpa`)
 - `description` MUST NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — these waste characters and get truncated. Use `→` redirects for sibling disambiguation instead
 - All frontmatter fields (`allowed-tools`, `user-invocable`, etc.) MUST be at the top level — NOT nested under a `metadata:` key (Claude Code only reads top-level fields)
@@ -48,6 +48,25 @@ The markdown body SHOULD follow this order:
 4. **Quick Start / Workflow** — step-by-step common use case
 5. **Reference Navigation** — links to files in `references/`
 6. **Anti-patterns** (optional) — "What NOT to Do" section
+
+## Lifecycle Status
+
+Every skill has a maturity status recorded in [`assets/skill-status.json`](../../assets/skill-status.json) — the single source of truth. There is NO status marker in SKILL.md (frontmatter or body). Keeping status in one machine-readable file lets agents and the generated README table report it consistently, and keeps status changes out of frontmatter (so they don't trigger the `activation-gate.yml` recall-eval gate).
+
+| Status | Meaning |
+|--------|---------|
+| `ga` | Generally available; stable surface, safe for production. |
+| `public-preview` | Pre-GA but available to all tenants; surface and behavior may change. |
+| `private-preview` | Gated or allowlisted; may be inaccessible in a tenant. |
+| `in-development` | Skill itself is incomplete or unstable; coverage is partial. |
+
+When adding or changing a skill, set its entry under `skills` in the manifest to one of these values, then regenerate the README table:
+
+```bash
+python3 scripts/check-skill-status.py --write-readme
+```
+
+`scripts/check-skill-status.py` (run in CI by `validate-skill-status.yml`) enforces that every skill has a manifest entry with a valid status, that the README table is current, and that no status markers leak into SKILL.md frontmatter or body.
 
 ## Naming Conventions
 
