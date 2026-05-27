@@ -98,9 +98,9 @@ uip solution resource refresh <SolutionDir> --output json
 
 The argument is the solution directory (containing the `.uipx` file). Defaults to the current directory if omitted.
 
-## uip solution resource add / remove
+## uip solution resource add / remove / edit
 
-Atomic single-resource mutations. Use these when you need to add or delete one resource and don't want to scan every project's bindings the way `refresh` does — for example, when a flow needs a new local queue but no `bindings_v2.json` change is involved yet.
+Atomic single-resource mutations. Use these when you need to add, delete, or change one resource and don't want to scan every project's bindings the way `refresh` does — for example, when a flow needs a new local queue but no `bindings_v2.json` change is involved yet.
 
 ```bash
 # Local virtual stub (offline, no auth)
@@ -111,9 +111,13 @@ uip solution resource add --source remote --kind Queue --name InvoiceQueue --fol
 
 # Delete one resource by key
 uip solution resource remove <KEY> --output json
+
+# Patch an existing resource's spec by key
+uip solution resource edit <KEY> --patch '{"maxNumberOfRetries":5}' --output json
+uip solution resource edit <KEY> --set acceptAutomaticallyRetry=false --output json
 ```
 
-`add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: "Unchanged"`. Neither command touches `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–10](/uipath:uipath-solution) for the full contract.
+`add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: "Unchanged"`. `edit` is the only command that mutates an existing resource's spec — `refresh` never overwrites; it skips resources already in the solution. None of these touch `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–11](/uipath:uipath-solution) for the full contract.
 
 ## uip solution upload
 

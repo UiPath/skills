@@ -369,6 +369,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |
 | Add one resource (local stub or remote import) | `uip solution resource add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
 | Remove one resource by key | `uip solution resource remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
+| Edit one resource's spec | `uip solution resource edit <KEY> --patch '{...}'` (or `--set <prop>=<value>`) `--output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |
