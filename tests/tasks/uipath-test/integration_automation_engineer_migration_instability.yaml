@@ -1,0 +1,109 @@
+task_id: skill-test-integration-automation-engineer-migration-instability
+description: >
+  Integration test: agent analyzes automation instability caused by
+  desktop-to-web migration. After migration, nightly regression became
+  unstable. Agent needs to compare pre/post migration executions,
+  identify failure patterns, and diagnose root causes (outdated selectors,
+  sync issues, env instability). Asserts agent (a) checks auth,
+  (b) discovers WEB project, (c) lists execution history,
+  (d) analyzes failed executions and patterns, (e) generates
+  instability diagnosis report.
+tags: [uipath-test, integration, mode:diagnose, lifecycle:validate, feature:test-case]
+
+# Project Reference
+# Use WEB project (Web Migration) for this test.
+# Fixture: 8 test cases; 2 test sets (Legacy Desktop vs New Web);
+# multiple executions with pre-migration passes and post-migration failures.
+# Failures documented with execution timestamps for before/after analysis.
+
+agent:
+  type: claude-code
+  max_turns: 60
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  **Project Context: WEB (Web Migration)** — use this specific project
+  for all queries.
+
+  I'm a senior automation engineer on the customer-portal team. Two weeks
+  ago we finished migrating our customer-portal regression suite from
+  desktop UiPath workflows to web-based Studio Web workflows (Chromium
+  selectors instead of UIAutomation). Since the cutover, our nightly
+  regression in our **WEB** project has been a mess — failure rate jumped
+  from ~5% to ~35% and the team is losing trust in the suite.
+
+  I need an evidence-based root-cause analysis from Test Manager. Please:
+
+  - Discover the WEB project and enumerate both test sets:
+    `Legacy Desktop Suite` (pre-migration baseline) and
+    `New Web Suite` (post-migration replacement)
+  - Pull recent execution history for both suites and the testcase-level
+    logs so we can see actual pass/fail/error data
+  - Compare pre vs post behavior on the equivalent test cases — are the
+    same scenarios failing now that used to pass, or are the new failures
+    on new tests entirely?
+  - Cluster the failures by hypothesis category:
+      * **Selector drift** — element-not-found errors (web locators
+        diverged from desktop locators)
+      * **Sync issues** — timeout / element-not-interactable (page-load
+        timing the legacy suite never had to handle)
+      * **Environment instability** — random failures across tests with
+        no pattern (suggests infra, not code)
+  - Recommend which tests/test sets to quarantine vs. fix immediately
+
+  Save the analysis as `web-migration-instability-report.md` in the
+  current working directory.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rule #1 + #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered Web Migration project (`project list --filter` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+tm\s+project\s+list\s+.*--filter\s+\S*web.*--output\s+json|uip\s+tm\s+project\s+list\s+.*--output\s+json.*--filter\s+\S*web'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test sets (`testsets list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved execution history (`executions list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test case logs from executions (`executions testcaselogs list --execution-id --project-key` + `--output json` — all three flags required)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id)(?=.*--project-key)(?=.*--output\s+json)uip\s+tm\s+executions\s+testcaselogs\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Migration instability analysis report generated with failure patterns and root-cause hypothesis"
+    command: |
+      ls web-migration-instability-report.md 2>/dev/null >/dev/null \
+        && grep -qiE 'failure|pattern|failed|unstable' web-migration-instability-report.md \
+        && grep -qiE 'selector|sync|environment|root cause|issue' web-migration-instability-report.md \
+        && grep -qiE 'test case|affected|impacted|scenario' web-migration-instability-report.md
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
