@@ -56,6 +56,8 @@ Run from inside the flow project directory. If the resource (RPA, agent, flow, A
 
 For each connector found in registry search, verify a healthy connection exists. See [plugins/connector/planning.md](plugins/connector/planning.md) for the full connection check workflow.
 
+**Never type a connector key from memory.** Use the key from the `registry search` node type only. `uipath-gmail` / `uipath-microsoft-office365` are wrong; the real keys (`uipath-google-gmail`, `uipath-microsoft-outlook365`) appear only in `registry search` output.
+
 ```bash
 uip is connections list "<connector-key>" --all-folders --output json
 ```
@@ -63,7 +65,7 @@ uip is connections list "<connector-key>" --all-folders --output json
 > `--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<connector-key>"` is forbidden for discovery.
 
 - If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for Phase 2.
-- **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing. Creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2.
+- **If the result is empty, do not conclude "no connection exists."** An empty `connections list` is suspicious, not authoritative. Three things must hold before you treat it as real: (a) the key came from `registry search`, not memory; (b) the call used `--all-folders`; (c) a `--refresh` retry was still empty. Only then surface it in **Open Questions** so the user can create one while reviewing (creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2). Never ask the user a connection-creation question on an unverified empty result. See [connector/impl.md](plugins/connector/impl.md) for the platform-skill empty-result recovery path shared with implementation.
 
 > This is a lightweight existence check, not full connection binding. Phase 2 will ping the connection, fetch enriched metadata, and resolve reference fields.
 
