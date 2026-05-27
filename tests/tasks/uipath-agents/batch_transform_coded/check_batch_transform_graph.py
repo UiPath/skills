@@ -4,18 +4,13 @@
 Asserts that the agent scaffolded a Python coded agent that:
 
   1. Has a graph module (main.py or graph.py) under the project root.
-  2. Imports `CreateBatchTransform` and `CreateEphemeralIndex` from
+  2. Imports `CreateBatchTransform` and `WaitEphemeralIndex` from
      `uipath.platform.common`.
   3. Imports `BatchTransformOutputColumn` and `EphemeralIndexUsage`
      from `uipath.platform.context_grounding`.
-  4. Imports `durable_interrupt` from
-     `uipath_langchain._utils.durable_interrupt`.
-  5. References `CreateBatchTransform(...)` somewhere (the durable
-     interrupt body).
-  6. Passes `is_ephemeral_index=True` on `CreateBatchTransform`
-     (required so the runtime routes the call as ephemeral when
-     `index_id` came from `CreateEphemeralIndex`; missing it fails
-     server-side).
+  4. Imports `interrupt` from `langgraph.types`.
+  5. Calls `create_ephemeral_index_async`.
+  6. Passes `is_ephemeral_index=True` on `CreateBatchTransform`.
   7. Does NOT instantiate `UiPath()` at module top level.
 
 The project root is whichever of `<cwd>/pyproject.toml` or
@@ -78,7 +73,7 @@ def assert_import(tree: ast.AST, text: str, module: str, symbols: list[str]) -> 
 def assert_no_module_level_uipath(text: str) -> None:
     for m in re.finditer(r"^(\s*)([A-Za-z_][\w]*\s*=\s*UiPath\s*\()", text, re.MULTILINE):
         if m.group(1) == "":
-            sys.exit("FAIL: UiPath() instantiated at module top level (must be lazy, inside node bodies)")
+            sys.exit("FAIL: UiPath() instantiated at module top level (must be inside node bodies)")
 
 
 def main() -> None:
@@ -90,16 +85,16 @@ def main() -> None:
     except SyntaxError as exc:
         sys.exit(f"FAIL: graph module is not valid Python ({exc})")
 
-    assert_import(tree, text, "uipath.platform.common", ["CreateBatchTransform", "CreateEphemeralIndex"])
+    assert_import(tree, text, "uipath.platform.common", ["CreateBatchTransform", "WaitEphemeralIndex"])
     assert_import(tree, text, "uipath.platform.context_grounding", ["BatchTransformOutputColumn", "EphemeralIndexUsage"])
-    assert_import(tree, text, "uipath_langchain._utils.durable_interrupt", ["durable_interrupt"])
+    assert_import(tree, text, "langgraph.types", ["interrupt"])
 
+    if not re.search(r"\bcreate_ephemeral_index_async\s*\(", text):
+        sys.exit("FAIL: graph module never calls create_ephemeral_index_async(...)")
     if not re.search(r"\bCreateBatchTransform\s*\(", text):
         sys.exit("FAIL: graph module never calls CreateBatchTransform(...)")
-    if not re.search(r"\bCreateEphemeralIndex\s*\(", text):
-        sys.exit("FAIL: graph module never calls CreateEphemeralIndex(...)")
     if not re.search(r"is_ephemeral_index\s*=\s*True", text):
-        sys.exit("FAIL: CreateBatchTransform must pass is_ephemeral_index=True when index_id came from CreateEphemeralIndex (runtime routes as ephemeral on this flag)")
+        sys.exit("FAIL: CreateBatchTransform must pass is_ephemeral_index=True")
 
     assert_no_module_level_uipath(text)
     print("PASS")
