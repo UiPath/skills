@@ -39,6 +39,7 @@ build the case in the Case Designer without guessing.
    - `wait-for-connector` — an Integration Service event received
    - `adhoc` — ad-hoc / manual trigger
    - `runs-sequentially` — runs sequentially
+   - `user-selected-stage` - target of an upstream `wait-for-user` exit
 
 4. **Exit conditions:** Every exit condition MUST specify:
    - **Exit Type:** `exit-only` | `return-to-origin` | `wait-for-user`
@@ -290,11 +291,11 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage Exit Conditions
 
-> **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed`; `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
+> **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` or `wait-for-connector`; `No` row MAY use `selected-tasks-completed(...)` or `wait-for-connector`. Mixing is invalid.
 
 | WHEN | IF | Exit Type | Marks Stage Complete |
 |------|-----|-----------|---------------------|
-| {`required-tasks-completed` for Yes; `selected-tasks-completed("TaskName")` or other rule for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} |
+| {`required-tasks-completed` or `wait-for-connector` for Yes; `selected-tasks-completed("TaskName")` or `wait-for-connector` for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} |
 
 #### Stage SLA
 
