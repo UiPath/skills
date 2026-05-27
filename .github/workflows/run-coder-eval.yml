@@ -15,7 +15,7 @@ on:
         required: false
         default: ''
       parallelism:
-        description: 'Parallel tasks (-j). Empty = 1, or 20 for full suite'
+        description: 'Parallel tasks (-j); blank = auto'
         type: string
         required: false
         default: ''
