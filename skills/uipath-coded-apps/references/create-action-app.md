@@ -178,19 +178,19 @@ Write to the project root. All four sections are always present — use `"proper
 
 Without SDK services:
 ```typescript
-import { CodedActionAppsService } from '@uipath/coded-action-app';
+import { CodedActionAppService } from '@uipath/coded-action-app';
 
-export const codedActionAppsService = new CodedActionAppsService();
+export const codedActionAppService = new CodedActionAppService();
 ```
 
 With SDK services:
 ```typescript
 import { UiPath } from '@uipath/uipath-typescript/core';
 import { Entities } from '@uipath/uipath-typescript/entities';  // example
-import { CodedActionAppsService } from '@uipath/coded-action-app';
+import { CodedActionAppService } from '@uipath/coded-action-app';
 
 const sdk = new UiPath();
-export const codedActionAppsService = new CodedActionAppsService();
+export const codedActionAppService = new CodedActionAppService();
 export const entities = new Entities(sdk);  // example
 ```
 
@@ -229,7 +229,7 @@ Generate based on the collected schema. Key patterns:
 ```typescript
 import { useState, useEffect, ChangeEvent } from 'react';
 import { Theme } from '@uipath/coded-action-app';
-import { codedActionAppsService } from '../uipath';
+import { codedActionAppService } from '../uipath';
 import './Form.css';
 
 // Generate from schema — one property per field across all sections
@@ -255,7 +255,7 @@ function Form({ onInitTheme }: FormProps) {
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   useEffect(() => {
-    codedActionAppsService.getTask().then((task) => {
+    codedActionAppService.getTask().then((task) => {
       if (task.data) setFormData(task.data as FormData);
       setIsReadOnly(task.isReadOnly);
       onInitTheme(isDarkTheme(task.theme));
@@ -267,7 +267,7 @@ function Form({ onInitTheme }: FormProps) {
     const { name, value } = e.target;
     const updated = { ...formData, [name]: value };
     setFormData(updated);
-    codedActionAppsService.setTaskData(updated);
+    codedActionAppService.setTaskData(updated);
   };
 
   // isFormValid: false when read-only OR when required output/inout fields are empty
@@ -275,9 +275,9 @@ function Form({ onInitTheme }: FormProps) {
 
   // One async handler per outcome
   const handleApprove = async () =>
-    codedActionAppsService.completeTask('Approve', formData);
+    codedActionAppService.completeTask('Approve', formData);
   const handleReject = async () =>
-    codedActionAppsService.completeTask('Reject', formData);
+    codedActionAppService.completeTask('Reject', formData);
 
   return (
     <form className="action-form">

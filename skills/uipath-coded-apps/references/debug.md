@@ -471,11 +471,11 @@ The `--@uipath:registry` flag overrides the scoped registry for this install onl
 
 ### Action App: Form Data Not Loading
 
-**Cause:** `codedActionAppsService.getTask()` failed silently.
+**Cause:** `codedActionAppService.getTask()` failed silently.
 
 **Fix:** Add error handling and logging:
 ```typescript
-codedActionAppsService.getTask()
+codedActionAppService.getTask()
   .then((task) => {
     console.log('Task loaded:', task);
     if (task.data) setFormData(task.data as FormData);
