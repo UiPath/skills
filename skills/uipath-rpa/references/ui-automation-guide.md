@@ -191,6 +191,12 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 
 > This gate applies regardless of how simple the target seems. Even a `<webctrl tag='BODY' />` selector will fail validation without proper attributes. The cost of running target configuration is always lower than debugging hand-written selectors.
 
+### Don't override a step whose purpose is to replace your judgment
+
+When a procedure exists specifically to check something against ground truth, doing it by your own judgment instead — because that seems faster or "low-risk" — defeats the point: your call is verified against nothing. It is also false economy, since a shortcut that silently produces a wrong result costs far more to debug later than the step would have cost up front. Being terse and following the steps are not in tension — cut narration and redundant round-trips, never the correctness step itself.
+
+Concretely: don't hand-author or patch a fragile selector; run it through the assessment + `uia-improve-selector` flow, which probes the candidate against the live app.
+
 ---
 
 ## Common UIA Pitfalls

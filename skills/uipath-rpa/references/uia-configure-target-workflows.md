@@ -34,7 +34,7 @@ Some UI elements only become visible after interacting with earlier elements (e.
 
 ### Advancing UI State
 
-After registering an element in the Object Repository, interact with it (or a sibling element) to reveal the next screen via the `uip rpa uia interact` CLI. See the skill at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`.
+After registering an element in the Object Repository, advance to the next screen by interacting with it (or a sibling element) via the `uip rpa uia interact` CLI. Interact here **only to move the app to the next state you need to capture** — as many verbs as that legitimately takes (e.g. open a menu then click an item, or type then press Enter), never to map the app ahead of need or to verify behavior (see complete-then-advance above). Read `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Read it rather than improvising from `--help`. Do not use `interact` to read attributes and hand-write or edit a selector; selector construction and improvement are the configure-target flow's job (live-probe default + `uia-improve-selector`).
 
 **Reuse refs from the current `uia-configure-target` capture — do not re-inspect.** The `uip rpa uia interact` CLI resolves element refs against the most recent snapshot in memory regardless of which CLI wrote it (the two write to different folders, but the snapshot is shared). Pass the same e-refs (`e28`, `e35`, etc.) directly to `uip rpa uia interact click`/`type`/`select`. Running `uip rpa uia snapshot inspect` just to re-mint refs for an unchanged UI is wasted work — the refs you have are still live.
 
