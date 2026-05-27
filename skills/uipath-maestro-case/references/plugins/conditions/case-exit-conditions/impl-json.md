@@ -67,26 +67,7 @@ Requires `marksCaseComplete: false`. Swap `rule` to `selected-stage-exited` for 
 
 ### wait-for-connector — bind a connector event
 
-Build `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) — a bare rule (no `uipath`) is rejected by Studio Web. **Case-exit is root-scoped: `elementId = root-<ruleId>`** (not a stage id). Run the shared `case spec --type trigger` pipeline, `serviceType: "Intsvc.WaitForEvent"`, append root bindings + `bindings_v2` sync.
-
-```json
-"rules": [[
-  {
-    "id": "Rule_xxxxxx",
-    "rule": "wait-for-connector",
-    "uipath": {
-      "serviceType": "Intsvc.WaitForEvent",
-      "context": "<caseShape.context — placeholders substituted>",
-      "inputs": "<minted, elementId = root-<ruleId>>",
-      "outputs": "<minted, dedup applied>",
-      "bindings": []
-    },
-    "conditionExpression": "=js:event.type === 'case_closed'"
-  }
-]]
-```
-
-Valid for both `marksCaseComplete: true` and `false`. The connector configuration (`uipath`) is required; `conditionExpression` is optional.
+Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Root-scoped: `elementId = root-<ruleId>`** (not a stage id). Valid for both `marksCaseComplete: true` and `false`. `conditionExpression` optional.
 
 ## Rule-Type × marksCaseComplete Matrix
 

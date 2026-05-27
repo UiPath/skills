@@ -69,28 +69,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ### wait-for-connector — bind a connector event
 
-Build `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) — a bare rule (no `uipath`) is rejected by Studio Web. Run the shared `case spec --type trigger` pipeline, `serviceType: "Intsvc.WaitForEvent"`, `elementId = <stageId>-<ruleId>`, append root bindings + `bindings_v2` sync.
-
-```json
-"type": "exit-only",
-"marksStageComplete": true,
-"rules": [[
-  {
-    "id": "Rule_xxxxxx",
-    "rule": "wait-for-connector",
-    "uipath": {
-      "serviceType": "Intsvc.WaitForEvent",
-      "context": "<caseShape.context — placeholders substituted>",
-      "inputs": "<minted, elementId = <stageId>-<ruleId>>",
-      "outputs": "<minted, dedup applied>",
-      "bindings": []
-    },
-    "conditionExpression": "=js:event.type === 'approved'"
-  }
-]]
-```
-
-The connector configuration (`uipath`) is required; `conditionExpression` is optional. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.
+Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Stage-scoped: `elementId = <stageId>-<ruleId>`.** Place it in the exit condition with `type` / `marksStageComplete` like the other exit rules above. `conditionExpression` optional.
 
 ### wait-for-user — manual decision gate
 

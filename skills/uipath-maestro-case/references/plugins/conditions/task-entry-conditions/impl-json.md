@@ -74,26 +74,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ### wait-for-connector — bind a connector event
 
-Build `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) — a bare rule (no `uipath`) is rejected by Studio Web. Task-entry rules are **stage-scoped**: `elementId = <stageId>-<ruleId>`. Run the shared `case spec --type trigger` pipeline, `serviceType: "Intsvc.WaitForEvent"`, append root bindings + `bindings_v2` sync.
-
-```json
-"rules": [[
-  {
-    "id": "rxxxxxxxx",
-    "rule": "wait-for-connector",
-    "uipath": {
-      "serviceType": "Intsvc.WaitForEvent",
-      "context": "<caseShape.context — placeholders substituted>",
-      "inputs": "<minted, elementId = <stageId>-<ruleId>>",
-      "outputs": "<minted, dedup applied>",
-      "bindings": []
-    },
-    "conditionExpression": "=js:event.type === 'order_received'"
-  }
-]]
-```
-
-The connector configuration (`uipath`) is required; `conditionExpression` is optional. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.
+Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Stage-scoped: `elementId = <stageId>-<ruleId>`.** `conditionExpression` optional.
 
 ### runs-sequentially — sequential group with optional parallel siblings
 
