@@ -56,7 +56,7 @@ Run from inside the flow project directory. If the resource (RPA, agent, flow, A
 
 For each connector found in registry search, verify a healthy connection exists. See [plugins/connector/planning.md](plugins/connector/planning.md) for the full connection check workflow.
 
-**Never type a connector key from memory.** Use the key from the `registry search` node type only. `uipath-gmail` / `uipath-microsoft-office365` are wrong; the real keys (`uipath-google-gmail`, `uipath-microsoft-outlook365`) appear only in `registry search` output.
+**Never type a connector key from memory.** Use the key from the `registry search` node type only. The registry key is frequently prefixed or qualified differently than the service's brand name, so a guessed key silently misses the real connector and makes `connections list` return a false "No connections found."
 
 ```bash
 uip is connections list "<connector-key>" --all-folders --output json

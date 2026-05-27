@@ -82,7 +82,7 @@ Lock the chosen connector key in the planning notes — never re-derive per node
 
 For each connector found in registry search, verify a healthy connection exists. Extract the connector key from the node type name (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` -> key is `uipath-microsoft-outlook365`).
 
-**Never type a connector key from memory.** Use the key from the `registry search` node type only. `uipath-gmail` / `uipath-microsoft-office365` are wrong; the real keys (`uipath-google-gmail`, `uipath-microsoft-outlook365`) appear only in `registry search` output.
+**Never type a connector key from memory.** Use the key from the `registry search` node type only. The registry key is frequently prefixed or qualified differently than the service's brand name (e.g. an Outlook connector keys as `uipath-microsoft-outlook365`, not `outlook`), so a guessed key silently misses the real connector and makes `connections list` return a false "No connections found."
 
 ```bash
 uip is connections list "<connector-key>" --all-folders --output json
