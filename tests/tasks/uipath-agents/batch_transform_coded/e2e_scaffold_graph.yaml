@@ -33,8 +33,7 @@ initial_prompt: |
        from a @durable_interrupt node
     4. yield CreateBatchTransform(is_ephemeral_index=True, ...) from
        another @durable_interrupt node, passing two
-       BatchTransformOutputColumn entries (imported from
-       uipath.platform.context_grounding — do NOT use plain dicts)
+       BatchTransformOutputColumn entries
     5. finalize and return the local destination_path
 
   Take the agent through scaffold → init. Do NOT run, publish, upload,

@@ -24,6 +24,7 @@ The project root is whichever of `<cwd>/pyproject.toml` or
 
 from __future__ import annotations
 
+import ast
 import os
 import re
 import sys
@@ -50,13 +51,27 @@ def find_graph_module(root: Path) -> Path:
     sys.exit(f"FAIL: neither main.py nor graph.py found under {root}")
 
 
-def assert_import(text: str, module: str, symbols: list[str]) -> None:
-    pat = rf"from\s+{re.escape(module)}\s+import\s+[^\n]*"
-    matches = re.findall(pat, text)
-    if not matches:
+def imported_symbols(tree: ast.AST, module: str) -> set[str]:
+    """Return the set of symbol names imported from `module` in `tree`.
+
+    Robust to single-line, multi-line parenthesized, backslash-continued,
+    and aliased imports — anything Python itself accepts as `from <mod>
+    import ...`.
+    """
+    found: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == module:
+            for alias in node.names:
+                found.add(alias.name)
+    return found
+
+
+def assert_import(tree: ast.AST, text: str, module: str, symbols: list[str]) -> None:
+    found = imported_symbols(tree, module)
+    if not found:
         sys.exit(f"FAIL: graph module never imports from {module}")
     for sym in symbols:
-        if not any(re.search(rf"\b{re.escape(sym)}\b", m) for m in matches):
+        if sym not in found:
             sys.exit(f"FAIL: graph module does not import {sym} from {module}")
 
 
@@ -70,10 +85,14 @@ def main() -> None:
     root = find_project_root()
     module = find_graph_module(root)
     text = module.read_text(encoding="utf-8")
+    try:
+        tree = ast.parse(text, filename=str(module))
+    except SyntaxError as exc:
+        sys.exit(f"FAIL: graph module is not valid Python ({exc})")
 
-    assert_import(text, "uipath.platform.common", ["CreateBatchTransform", "CreateEphemeralIndex"])
-    assert_import(text, "uipath.platform.context_grounding", ["BatchTransformOutputColumn", "EphemeralIndexUsage"])
-    assert_import(text, "uipath_langchain._utils.durable_interrupt", ["durable_interrupt"])
+    assert_import(tree, text, "uipath.platform.common", ["CreateBatchTransform", "CreateEphemeralIndex"])
+    assert_import(tree, text, "uipath.platform.context_grounding", ["BatchTransformOutputColumn", "EphemeralIndexUsage"])
+    assert_import(tree, text, "uipath_langchain._utils.durable_interrupt", ["durable_interrupt"])
 
     if not re.search(r"\bCreateBatchTransform\s*\(", text):
         sys.exit("FAIL: graph module never calls CreateBatchTransform(...)")
