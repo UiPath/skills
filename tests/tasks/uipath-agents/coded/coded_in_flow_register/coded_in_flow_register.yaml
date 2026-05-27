@@ -24,6 +24,8 @@ initial_prompt: |
   (Python, simple stub — no LLM call needed, just Input/Output Pydantic
   models). Register the coded agent in the solution and confirm it is
   registered as a local resource using `uip solution resource list`.
+  When confirming local registration, use structured CLI output:
+  `uip solution resource list ... --output json`.
 
   Use the Coded Function framework (package: `uipath`) — NOT LangGraph,
   LlamaIndex, or OpenAI Agents. This keeps setup minimal: one lightweight
@@ -75,6 +77,14 @@ success_criteria:
     command_pattern: 'uip\s+solution\s+resource\s+list'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used structured output when listing solution resources"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--output\s+json'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
