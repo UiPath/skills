@@ -53,8 +53,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    expected: "yes"
-    skill_name: "uipath:uipath-maestro-flow"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
     description: "Agent invoked the uipath-maestro-flow Skill"
     weight: 2.0
     pass_threshold: 1.0
@@ -72,18 +72,9 @@ success_criteria:
   # `"type": "core.logic.mock"` when the agent writes a large flow file in a
   # single Write call.  Per references/plugins/ixp/impl.md, the agent must land
   # either an `uipath.ixp.*` node or a `core.logic.mock` placeholder.
-  #
-  # Searches `../..` rather than `.` so the assertion still passes if the agent
-  # `cd`s out of the stated sandbox dir before creating the solution. The cwd
-  # for run_command is the sandbox dir (coder_eval Sandbox.run_command), which
-  # for dataset-fanout tasks resolves to
-  #   <run_dir>/artifacts/<outer_task_id>/<row_id>/
-  # so `../..` is the row's iteration `artifacts/` root and stays isolated
-  # from other rows. ASSUMES dataset fan-out (2-segment task_id); flattening
-  # this task to a non-dataset form would require dropping a `..`.
   - type: run_command
     description: "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/plugins/ixp/impl.md)"
-    command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" ../..'
+    command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .'
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

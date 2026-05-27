@@ -68,8 +68,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    expected: "yes"
-    skill_name: "uipath:uipath-maestro-flow"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
     description: "Agent invoked the uipath-maestro-flow Skill"
     weight: 2.0
     pass_threshold: 1.0

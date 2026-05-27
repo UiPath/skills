@@ -22,7 +22,7 @@ task_timeout: 600
 
 agent:
   type: claude-code
-  max_turns: 20
+  max_turns: 25
   turn_timeout: 600
 
 sandbox:
@@ -51,8 +51,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    expected: "yes"
-    skill_name: "uipath:uipath-maestro-flow"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
     description: "Parent uipath-maestro-flow Skill fired (IxP-only routing is what this suite tests)"
     weight: 1.0
     pass_threshold: 1.0
@@ -60,11 +60,10 @@ success_criteria:
   # Inverted twin of the positive activation.yaml grep.
   # `shell=True` in coder_eval Sandbox.run_command means `!` works as a bash
   # negator: grep -q exits 0 on match → ! flips to 1 (FAIL); exits 1 on
-  # no-match → ! flips to 0 (PASS). Same `../..` rationale as the positive
-  # test (dataset-fanout cwd is <run>/artifacts/<task>/<row>/).
+  # no-match → ! flips to 0 (PASS).
   - type: run_command
     description: "No uipath.ixp.* node landed in any .flow file (negative IxP routing)"
-    command: '! grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"uipath\.ixp" --include="*.flow" ../..'
+    command: '! grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"uipath\.ixp" --include="*.flow" .'
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

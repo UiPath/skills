@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "Always invoke for `.flow` files. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow, ixp; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For agents→uipath-agents."
+description: "Always invoke for `.flow` files OR when the user asks what IxP / document-extraction models are available in Maestro. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow, ixp; list IxP / document-extraction models for a flow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
