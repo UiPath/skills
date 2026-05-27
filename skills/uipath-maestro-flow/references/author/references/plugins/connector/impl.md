@@ -41,7 +41,7 @@ To classify a node, read `Node.form.sections[0].fields[0].componentProps.connect
 
 If you cannot run `node configure` (no live connection, sandbox forbids it, the user asked for planning only):
 
-1. Confirm the connector operation exists: `uip maestro flow registry search <keyword>` and `registry get <nodeType>`.
+1. Confirm the connector operation exists: `uip maestro flow registry search <keyword>` and `registry get <nodeType>` (see [cli-commands.md — registry](../../../../shared/cli-commands.md#uip-maestro-flow-registry) for the `search` output shape).
 2. Add the connector node with `uip maestro flow node add <file> <nodeType> --output json`. This is still required — it inserts the node and copies the definition into `definitions[]`.
 3. Write the planned `--detail` payload to a separate file (e.g. `<nodeId>.detail.json`) with placeholder values for missing connection/folder UUIDs. Do **not** put a partial `inputs.detail` on the node.
 4. **The node will not pass `flow validate` until `node configure` is run.** Surface this explicitly in your completion report under "Missing connections" or "Open questions" — do not let the user discover it via a validation failure later.

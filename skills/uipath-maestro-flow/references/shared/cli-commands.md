@@ -309,6 +309,22 @@ uip maestro flow registry search <keyword> --output json   # search by name, tag
 uip maestro flow registry get <nodeType> --output json     # get full schema for a node type
 ```
 
+`registry search` returns `Data` as a flat array (not `Data.Nodes`); fields are PascalCase. `NodeType` is the identifier you pass to `registry get <nodeType>` (and later `node add`).
+
+```json
+{ "Data": [
+  {
+    "NodeType": "uipath.connector.uipath-salesforce-sfdc.list-records",
+    "Category": "connector.196536",
+    "DisplayName": "List Records",
+    "Description": "(Salesforce) List records in Salesforce",
+    "Version": "1.0.0",
+    "Tags": "connector, activity",
+    "AvailableOnTenant": true
+  }
+] }
+```
+
 The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array.
 
 Run `uip maestro flow registry <subcommand> --help` for additional options (e.g., `--force`, `--filter`, `--connection-id`).
