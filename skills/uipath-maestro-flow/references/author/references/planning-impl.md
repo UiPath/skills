@@ -4,7 +4,7 @@ Resolve all implementation details for the approved architectural plan. This pha
 
 > **Prerequisite:** The user must have explicitly approved the architectural plan (`.arch.plan.md`) before starting this phase.
 >
-> **Always validate with the registry,** even for OOTB nodes. This phase ensures that every node type (built-in or connector-based) is confirmed against the current registry state. Port names, input requirements, and output schemas can change — do not assume OOTB nodes match the planning guides without verification.
+> **Confirm every node type's definition before building.** Built-in `core.*` nodes (script, transform, decision, loop, etc.) use the **embedded** definition in their plugin `impl.md` — no CLI call. HTTP, `core.action.queue.*`, `uipath.*`, connector, and resource nodes are validated against the live registry. Port names, inputs, and output schemas matter — do not assume a node matches the planning guides without checking its definition source.
 
 ---
 
@@ -19,15 +19,17 @@ Scan the approved `.arch.plan.md` node table and connector summary. Validate eac
 | Connector nodes   | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Step 2 (follow [connector/impl.md](plugins/connector/impl.md))                                                                                                                                                                                                         |
 | Resource nodes    | Node type starts with `uipath.core.*` or Notes say "resource:"       | Run Step 3 (follow the relevant resource plugin: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [agentic-process](plugins/agentic-process/impl.md), [flow](plugins/flow/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md)) |
 | Mock placeholders | Node type is `core.logic.mock`                                       | Run Step 4 (check if published, replace if available)                                                                                                                                                                                                                      |
-| OOTB nodes        | Everything else (Script, HTTP, Decision, Loop, etc.)                 | Run Step 1a below (validate with registry using the relevant plugin's `impl.md`)                                                                                                                                                                                           |
+| Built-in `core.*` | Script, Transform, Decision, Loop, etc. (not HTTP/queue)             | Run Step 1a — copy the **embedded** `## Definition` from the plugin's `impl.md`, no CLI call                                                                                                                                                                               |
+| CLI-fetched OOTB  | `core.action.http(.v2)`, `core.action.queue.*`, `uipath.*`           | Run Step 1a — fetch via `registry get` (no embedded copy)                                                                                                                                                                                                                  |
 
-**All nodes, including OOTB, must be validated via registry in Step 1a before proceeding.**
+**Every node type's definition must be confirmed in Step 1a before proceeding** — embedded definitions for built-in `core.*` nodes, `registry get` for the CLI-fetched types above.
 
-#### Step 1a — Validate All Node Types with Registry
+#### Step 1a — Confirm Each Node Type's Definition
 
-Even built-in nodes can change. For each node type in your plan, read the relevant plugin's `impl.md` for the registry validation command and expected ports/inputs:
+For each node type in your plan, read the relevant plugin's `impl.md` and confirm ports/inputs against its definition. Built-in `core.*` nodes carry an **embedded** `## Definition` block — copy it from there. The CLI-fetched types below have no embedded copy; fetch them from the registry:
 
 ```bash
+# Only for core.action.http(.v2), core.action.queue.*, uipath.* — NOT for embedded core.* nodes:
 uip maestro flow registry pull --force
 uip maestro flow registry get <nodeType> --output json
 ```

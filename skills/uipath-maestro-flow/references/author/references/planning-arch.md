@@ -4,7 +4,8 @@ Discover available capabilities, then design the flow topology — select node t
 
 > **Registry rules for this phase:**
 > - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
-> - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get <nodeType> --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+> - **Most built-in `core.*` action/logic/trigger nodes have their definition EMBEDDED in the plugin `impl.md`** — script, transform, decision, switch, loop, merge, delay, end, terminate, subflow, manual/scheduled triggers, mock. Copy the verbatim definition from that node's plugin (`## Definition` section), no CLI call. Port names, inputs, and the full schema are in the embedded block.
+> - **`registry get` IS REQUIRED only for** `core.action.http` / `core.action.http.v2`, `core.action.queue.*` (`core.*`-named but tenant-gated, not embedded), and `uipath.*` OOTB nodes. These have no embedded copy; their schema is only visible via `registry get <nodeType> --output json`.
 > - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](planning-impl.md).
 
 ---
@@ -37,10 +38,12 @@ uip maestro flow registry search "invoice process" --output json  # example: is 
 uip maestro flow registry search agent --output json         # example: what agents are available?
 uip maestro flow registry list --output json                 # list all available node types
 
-# OOTB action nodes — fetch full schema during discovery (no --connection-id needed):
-uip maestro flow registry get core.action.script --output json  # script node inputs/outputs and language options
-# Repeat for every OOTB action node the flow will use (transform, queue actions, etc.)
-# Note: `core.action.http.v2` is a managed-HTTP connector node, not OOTB — discover it
+# Built-in core.* nodes (script, transform, decision, loop, etc.) — definition is EMBEDDED
+# in the node's plugin impl.md (## Definition section); no registry get needed.
+
+# Only these OOTB-ish nodes still need registry get (no embedded copy):
+uip maestro flow registry get core.action.queue.create --output json  # queue node — tenant-gated, not embedded
+# Note: `core.action.http.v2` is a managed-HTTP connector node — discover it
 #       via the connector flow ([http/planning.md](plugins/http/planning.md)).
 ```
 
@@ -72,7 +75,7 @@ uip is connections list "<connector-key>" --output json
 
 Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http.v2` (manual mode) or note it as a gap in Open Questions.
 
-> **Run `registry get` for OOTB action nodes during discovery; defer for connector and resource nodes.** OOTB nodes (HTTP, Script, Transform, queue actions, etc.) have no `--connection-id` dependency — fetch their full schemas now so the planned topology references real ports and fields. Connector field metadata (required fields, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2; resource schemas (RPA, agent, flow, API workflow) require `--local` or published resolution and also belong to Phase 2. `is connections list` is enough to confirm connector connection availability in this phase.
+> **Definition sources during discovery; defer connector and resource nodes.** Built-in `core.*` nodes (Script, Transform, Decision, Loop, etc.) have their schema **embedded** in the plugin `impl.md` — read it there, no CLI call. Only `core.action.http` / `core.action.http.v2`, `core.action.queue.*`, and `uipath.*` OOTB nodes need `registry get` (no `--connection-id` dependency — fetch now so the planned topology references real ports and fields). Connector field metadata (required fields, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2; resource schemas (RPA, agent, flow, API workflow) require `--local` or published resolution and also belong to Phase 2. `is connections list` is enough to confirm connector connection availability in this phase.
 
 ---
 
@@ -529,7 +532,7 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 When the architectural plan is approved, Phase 2 ([Planning Phase 2: Implementation](planning-impl.md)) takes over to:
 
-1. Validate all node types via `uip maestro flow registry get` — read each plugin's `impl.md` for registry validation steps
+1. Validate all node types — built-in `core.*` nodes against the embedded definition in each plugin's `impl.md`; HTTP / `core.action.queue.*` / `uipath.*` / connector / resource nodes via `uip maestro flow registry get`
 2. Resolve connector and resource nodes — see the relevant plugin's `impl.md` ([connector](plugins/connector/impl.md), [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), etc.)
 3. Resolve resource nodes (confirm published, get definitions)
 4. Validate required fields against user-provided values

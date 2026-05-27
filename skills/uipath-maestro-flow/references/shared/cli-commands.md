@@ -309,7 +309,7 @@ uip maestro flow registry search <keyword> --output json   # search by name, tag
 uip maestro flow registry get <nodeType> --output json     # get full schema for a node type
 ```
 
-The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array.
+The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array. For built-in `core.*` nodes (script, transform, decision, loop, etc.) the same object is **pre-embedded** in the node's plugin `impl.md` (`## Definition` section) — paste from there instead of running `registry get`. `registry get` is still needed for `core.action.http(.v2)`, `core.action.queue.*`, `uipath.*`, connector, and resource nodes.
 
 Run `uip maestro flow registry <subcommand> --help` for additional options (e.g., `--force`, `--filter`, `--connection-id`).
 

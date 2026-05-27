@@ -14,7 +14,7 @@ When editing the `.flow` file with `Edit` / `Write`, **you** are responsible for
 
 | Concern | CLI handles | Edit / Write — you must |
 |---------|------------|------------------------|
-| Definitions | Auto-copied from registry cache | Copy the returned node definition object from `uip maestro flow registry get` into `definitions` array |
+| Definitions | Auto-copied from registry cache | Copy the node definition object into `definitions` — embedded `## Definition` block in the plugin `impl.md` for built-in `core.*` nodes, else `uip maestro flow registry get` |
 | Node variables | Auto-added to `variables.nodes` | Add output variable entries manually (or accept that `variables.nodes` may need regeneration) |
 | Edge cleanup on delete | Auto-removes connected edges | Find and remove all edges referencing the deleted node |
 | Orphan cleanup | Auto-removes unused definitions and orphaned bindings | Remove definitions no longer referenced by any node; remove connector bindings only when no remaining node uses that connector |
@@ -28,7 +28,7 @@ When editing the `.flow` file with `Edit` / `Write`, **you** are responsible for
 Before editing the `.flow` file, ensure each of the following is handled. These are the concerns the CLI used to manage automatically; under the Edit / Write default, **you** are responsible for them.
 
 1. **Locate the canonical `.flow` file.** Before any `Edit` / `Write`, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution init <Name>` + `uip maestro flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `Edit` / `Write` call to the sibling file. `uip maestro flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
-2. **Definitions and versions.** For every new node type, run `uip maestro flow registry get <type> --output json`. Copy the returned node definition object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Depending on CLI/plugin version, the node definition may appear as `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`; copy that node object, not the surrounding `Result` / `Code` envelope. Then set each node instance's `typeVersion` to the exact copied definition `version` value. The validator matches `type:typeVersion` exactly; `typeVersion: "1.0.0"` does not match a registry definition with `"version": "1.0"`. Never hand-write or paraphrase definitions (see "Every node type needs a `definitions` entry" in [the Author capability index](../CAPABILITY.md)).
+2. **Definitions and versions.** Every new node type needs its definition object **verbatim** in `definitions[]` — one entry per unique `type:typeVersion`. For built-in `core.*` nodes (script, transform, decision, switch, loop, merge, delay, end, terminate, subflow, manual/scheduled triggers, mock) the verbatim object is **embedded** in that node's plugin `impl.md` (`## Definition` section) — copy from there, no CLI call. For `core.action.http(.v2)`, `core.action.queue.*`, `uipath.*`, connector, and resource nodes, run `uip maestro flow registry get <type> --output json` and copy the returned node object (it may appear as `Data.Node` or as the top-level object with `nodeType`/`version`/`handleConfiguration`; copy that node object, not the surrounding `Result` / `Code` envelope). Then set each node instance's `typeVersion` to the exact definition `version` value. The validator matches `type:typeVersion` exactly; `typeVersion: "1.0.0"` does not match a definition with `"version": "1.0"`. Never hand-write or paraphrase definitions (see "Every node type needs a `definitions` entry" in [the Author capability index](../CAPABILITY.md)).
 3. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
 4. **`sourcePort` and `targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (see "`targetPort` is required on every edge" in [the Author capability index](../CAPABILITY.md)). Use `sourcePort`, never `sourceHandle`; `sourceHandle` is not part of the `.flow` edge schema and produces a precise schema error such as `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` (the path tells you exactly which edge entry is missing the `sourcePort` key). Look up ports in the relevant plugin's `planning.md` or in [file-format.md — Standard ports](../../shared/file-format.md).
 5. **Node outputs block (End / Terminate only).** End-style nodes consume their `outputs` block at runtime to map workflow-level `out` variables — see [end/impl.md](plugins/end/impl.md). For action / trigger nodes the instance `outputs` block is **not** consumed by BPMN serialization; the runtime reads the manifest's `outputDefinition` instead. Authoring an action-node `outputs` block matching the manifest is fine and is what the canonical examples show, but adding it does **not** make `$vars.<sourceNodeId>.output` resolve downstream — that contract is `variables.nodes[]` (next item).
@@ -94,7 +94,7 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 
 **Tool:** `Edit` (insert into `nodes[]` + `definitions[]` + `variables.nodes` + `layout.nodes`)
 
-1. Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
+1. Get the node definition object: for built-in `core.*` nodes copy the **embedded** `## Definition` block from the node's plugin `impl.md` (no CLI call); for `core.action.http(.v2)`, `core.action.queue.*`, `uipath.*`, connector, and resource nodes run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the returned node object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
 2. Use `Edit` to add a node entry to the `nodes` array:
 
 ```json
@@ -391,7 +391,7 @@ Use `Edit` to modify the start node in-place (no delete/re-add needed):
    ```
 3. Update the definition in `definitions`:
    - Remove the `core.trigger.manual` definition
-   - Add the `core.trigger.scheduled` definition from `uip maestro flow registry get core.trigger.scheduled --output json` (the new definition carries the correct `model.type` and `model.eventDefinition`)
+   - Add the `core.trigger.scheduled` definition — copy the embedded `## Definition` block from [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) (it carries the correct `model.type` and `model.eventDefinition`)
 4. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
 
 ### Create a subflow

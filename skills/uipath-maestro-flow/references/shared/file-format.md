@@ -235,10 +235,10 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 
 ## Definition entry
 
-Every node type appearing in `nodes` must have a matching entry in `definitions`. Get the correct definition from:
+Every node type appearing in `nodes` must have a matching entry in `definitions`. For CLI-fetched node types, get the definition from:
 
 ```bash
-uip maestro flow registry get core.action.script --output json
+uip maestro flow registry get core.action.queue.create --output json
 ```
 
 Copy the returned node definition object into your `definitions` array. Depending on CLI/plugin version, that object may appear at `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
@@ -442,15 +442,15 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 }
 ```
 
-### Step 2 — Populate definitions from the registry
+### Step 2 — Populate definitions
 
-Run one command per node type used in `nodes`. Copy the returned node definition object from each response into the `definitions` array, and set each matching node instance's `typeVersion` to the copied definition's exact `version`.
+This dice-roller uses three built-in `core.*` nodes (`core.trigger.manual`, `core.action.script`, `core.logic.terminate`) — copy each verbatim `## Definition` block from its plugin `impl.md` into the `definitions` array (no CLI call), and set each node instance's `typeVersion` to the definition's exact `version`:
 
-```bash
-uip maestro flow registry get core.trigger.manual --output json
-uip maestro flow registry get core.action.script --output json
-uip maestro flow registry get core.logic.terminate --output json
-```
+- `core.trigger.manual` → [manual-trigger/impl.md](../author/references/plugins/manual-trigger/impl.md)
+- `core.action.script` → [script/impl.md](../author/references/plugins/script/impl.md)
+- `core.logic.terminate` → [terminate/impl.md](../author/references/plugins/terminate/impl.md)
+
+(For `core.action.http(.v2)`, `core.action.queue.*`, `uipath.*`, connector, and resource nodes you would instead run `uip maestro flow registry get <type> --output json` — those have no embedded copy.)
 
 The `definitions` array must contain exactly one entry per unique `type:typeVersion` used — not one per node instance. If two nodes share the same type and version, one definition covers both.
 
