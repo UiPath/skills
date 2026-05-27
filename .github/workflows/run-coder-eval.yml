@@ -243,10 +243,10 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      # Durable result storage in Azure Blob via keyless OIDC. Federated
-      # credentials cover main and bai/* branches (+ pull_request), so this
-      # works from feature branches too. Best-effort: a missing FIC / login
-      # failure shouldn't lose the run — GH artifacts above still capture it.
+      # Durable result storage in Azure Blob via keyless OIDC. The federated
+      # credential matches any branch in this repo (+ pull_request), so this
+      # works from feature branches too. Best-effort: a login/upload failure
+      # shouldn't lose the run — GH artifacts above still capture it.
       - name: Azure login (OIDC)
         if: always()
         continue-on-error: true
