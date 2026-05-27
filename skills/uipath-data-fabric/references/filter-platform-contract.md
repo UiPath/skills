@@ -84,7 +84,7 @@ Higher-level display types ride on these SQL types:
 
 ## 4. Operator support by field type
 
-This is the **supported filter contract** — build filters only within it. ✅ = supported, ❌ = not supported. (The raw API executes several ❌ combinations anyway — see §4.1 — but treat anything outside this matrix as unsupported and follow the unsupported-operator decision flow in [`records-query.md` → Operators and support](records-query.md#operators-and-per-type-support) / SKILL.md Rule 17.)
+This is the **supported filter contract** — build filters only within it. ✅ = supported, ❌ = not supported. The raw API executes several ❌ combinations anyway (§4.1); treat anything outside this matrix as unsupported and follow the decision flow in SKILL.md Rule 17.
 
 ### Operators
 
@@ -124,23 +124,18 @@ This is the **supported filter contract** — build filters only within it. ✅ 
 | Is in (`in`) | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
 | Is not in (`not in`) | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
 
-**Notes**
+**Notes** (the matrix is canonical; these add only what it can't show)
 
-- ¹ **Encrypted text** fields support only `=`, `!=`, is empty, is not empty, `in`, `not in` — not `contains` / `not contains` / `startswith` / `endswith` (§5.2).
-- **Number** fields also support `contains` / `not contains` (implicit string cast) alongside the comparison operators.
-- **Boolean** supports only equality (`=`, `!=`) and empty checks.
-- **Choice Set** (single & multiple) support `contains` / `=` / `!=` / empty checks — no comparison and no `in` / `not in`. `ChoiceSetMultiple` value semantics: §5.5.
-- **Relationship** fields are filtered by the related record's FK `Id` — supported operators: `=`, `!=`, `in`, `not in`, plus empty checks. Comparison (`<` / `>`) and substring operators do not apply. See [`records-query.md` → Filtering on Relationship Fields](records-query.md#filtering-on-relationship-fields).
-- **File** fields support only presence checks (is empty / is not empty).
-- **Unique ID** supports the full operator set.
-- **Comparison** (`<`, `>`, `<=`, `>=`) is available only on Number, Date/DateTime, and Unique ID — never on Text/Multiline, Boolean, Choice Set, Relationship, or File.
-- **`MULTILINE_MAX`** (very long text) is non-filterable for *every* operator (§5.4).
+- ¹ **Encrypted text** drops the `LIKE` operators — only `=`, `!=`, `in`, `not in`, empty (§5.2).
+- **Choice Set**: filter on the integer `NumberId`; `CHOICE_SET_MULTIPLE` `=` vs `contains` semantics — §5.5.
+- **Relationship**: filter by the target record's UUID `Id` — see [records-query.md](records-query.md#filtering-on-relationship-fields).
+- **`MULTILINE_MAX`** (very long text) is non-filterable by any operator (§5.4).
 
 ### 4.1 The raw API is more permissive than this matrix
 
 The matrix is the **supported** contract. The underlying `uip df records query` API will still *execute* several ❌ combinations — verified live: `<` / `>` on Text (lexicographic, collation-ordered), `<` on Boolean, and `in` on a Choice Set all return `Result: Success`, not a 400.
 
-Do not rely on that. Outside the matrix the result is unsupported and frequently wrong — e.g. Text `<` orders lexicographically under `SQL_Latin1_General_CP1_CI_AS` (so `"user2@…" < "user20@…"`, and symbols sort before digits). When a request needs an out-of-matrix operator/type combination, **do not silently run it** — follow the decision flow (§ records-query.md): ask the user whether to run the query *without* that filter or to stop and add a different, supported filter. What the API *does* reject outright is unknown operators (`==`, `Equals`, `like`, …) → 400 (§2, §6).
+Do not rely on that. Outside the matrix the result is unsupported and frequently wrong — e.g. Text `<` orders lexicographically under `SQL_Latin1_General_CP1_CI_AS` (so `"user2@…" < "user20@…"`). Don't silently run out-of-matrix combinations — follow SKILL.md Rule 17. Unknown operators (`==`, `Equals`, `like`) are rejected outright → 400 (§2, §6).
 
 ---
 

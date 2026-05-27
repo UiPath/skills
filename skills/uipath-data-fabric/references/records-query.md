@@ -85,30 +85,11 @@ uip df records query <entity-id> \
 
 > **Return all fields by default.** Omit `selectedFields` — the query then returns every field. Add `selectedFields` *only* when the user explicitly asks for a specific subset. Do not project to a subset on your own (e.g. to shorten output); the default is the full record.
 
-### Operators and per-type support
+### Operators
 
-14 operators: `=`, `!=`, `contains`, `not contains`, `startswith`, `endswith`, `>`, `<`, `>=`, `<=`, `in`, `not in`, plus **is empty** (`=` with `value: null`) and **is not empty** (`!=` with `value: null`). `logicalOperator` is `0`/`1` or a case-insensitive string (`AND`/`OR`). `in` / `not in` take `valueList`, not `value`.
+`=` `!=` `>` `<` `>=` `<=` `contains` `not contains` `startswith` `endswith` `in` `not in`, plus is-empty / is-not-empty (`=` / `!=` with `value: null`). `in` / `not in` take `valueList` (not `value`); `logicalOperator` is `0`/`1` or case-insensitive `AND`/`OR`.
 
-**Not every operator works on every field type.** Supported combinations are the matrix in [`filter-platform-contract.md` → Operator support by field type](filter-platform-contract.md#4-operator-support-by-field-type). Key limits:
-
-- **Comparison** (`<`, `>`, `<=`, `>=`) — only Number, Date/DateTime, Unique ID. **Not** Text, Boolean, Choice Set, Relationship.
-- **`contains` / `startswith` / `endswith`** — Text (plus `contains` on Number, Choice Set, Unique ID); not Date or Boolean.
-- **Boolean** — only `=` / `!=` and empty checks.
-- **`in` / `not in`** — not Boolean or Choice Set.
-- **Choice Set** — `=` / `!=` / `contains` / empty only (no comparison, no `in`). Filter on the integer `NumberId`. `CHOICE_SET_MULTIPLE`: `=` is whole-array set equality (sorted JSON-array value), `contains` is membership (bare `NumberId`) — see [Filtering on Choice-Set Fields](#filtering-on-choice-set-fields).
-- **Relationship** — `=` / `!=` / `in` / `not in` + empty checks, filtering by the related record's FK `Id` (no comparison or substring) — see [Filtering on Relationship Fields](#filtering-on-relationship-fields).
-- **File** — presence checks only (is empty / is not empty).
-
-Encrypted fields, `MULTILINE_MAX` non-filterability, GUID ordering, and validation order: see [`filter-platform-contract.md`](filter-platform-contract.md).
-
-> **The API is more permissive than this matrix** — it will *execute* unsupported combinations (e.g. `<` on Text, lexicographically) instead of rejecting them. Do not depend on that; treat the matrix as the contract.
-
-#### When a request needs an unsupported operator
-
-1. **Operator not supported for the field type (per the matrix)** — do **not** silently run it. Ask the user to choose:
-   - **(a)** execute the query *without* this filter (run with the remaining filters, or unfiltered if it was the only one), or
-   - **(b)** stop and add a different, supported filter.
-2. **No value supplied** (and the operator is not *is empty* / *is not empty*) — do not proceed. Every operator except the empty checks requires a `value` (or `valueList`); ask the user for it or report the request as incomplete. Never substitute a default.
+Operator support varies by field type — see the authoritative [operator support matrix](filter-platform-contract.md#4-operator-support-by-field-type). When an operator isn't supported for a field's type, or a value is missing, do not silently run it — follow the unsupported-operator flow in **SKILL.md Rule 17**.
 
 ### Verifying a filter applied
 
