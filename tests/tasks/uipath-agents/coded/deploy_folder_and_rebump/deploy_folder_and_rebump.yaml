@@ -1,0 +1,50 @@
+task_id: skill-agent-coded-deploy-folder-and-rebump
+description: >
+  Verifies the agent knows to bump the patch version in pyproject.toml
+  before redeploying to an Orchestrator folder. Project is pre-seeded at
+  version 0.0.1 (already deployed once); agent must bump and redeploy.
+tags: [uipath-agents, integration, mode:build, coded, lifecycle:deploy, feature:deploy]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  max_turns: 100
+  task_timeout: 600
+  turn_timeout: 300
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/deploy_folder_and_rebump/_fixtures/acme-echo ."
+    timeout: 10
+  - command: "bash -c 'cd acme-echo && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 120
+
+initial_prompt: |
+  I've updated my `acme-echo` agent and need to redeploy it to the
+  `Shared` folder in Orchestrator. The project is already set up locally.
+
+  Bump the version and attempt the deploy — if the deploy fails due to a
+  cloud error, that's fine, just move on. Do NOT scaffold a new project.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent deployed to the Shared folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--folder\s+["'']?Shared'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "pyproject.toml version bumped past 0.0.1 before redeployment"
+    command: "python3 $TASK_DIR/check_deploy_folder_and_rebump.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

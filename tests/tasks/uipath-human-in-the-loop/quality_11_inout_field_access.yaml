@@ -13,10 +13,6 @@ run_limits:
   max_turns: 90
   turn_timeout: 900
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow named "RCAReview" for AI-generated root cause analysis review:
 
@@ -42,8 +38,7 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Script (log) → End
 
-  Use the inline quickform node (uipath.human-in-the-loop).
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command

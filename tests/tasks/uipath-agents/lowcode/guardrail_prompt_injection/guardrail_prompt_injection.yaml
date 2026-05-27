@@ -14,10 +14,6 @@ agent:
   max_turns: 30
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "InjGuardSol" containing a low-code agent
   "InjSafeAgent" that answers user questions. Then add a built-in

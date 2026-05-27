@@ -1,0 +1,109 @@
+task_id: skill-api-workflow-if-else-grade
+description: >
+  Skill-guided evaluation: agent uses the uipath-api-workflow skill to author
+  a basic If/Else workflow that classifies a numeric score as PASS or FAIL.
+  Tests whether the skill teaches: WorkflowStart, the If wrapper pattern
+  (#Wrapper / #Then / #Else / then:exit), single-key Assigns, wrapped string
+  literals (${'PASS'} for StudioWeb roundtrip), and Response with then:end.
+tags: [uipath-api-workflow, smoke, lifecycle:generate, feature:if-else]
+
+agent:
+  type: claude-code
+  max_turns: 30
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Takes a numeric `score` input
+  - Returns { "grade": "PASS" } if score >= 50, else { "grade": "FAIL" }
+  - Uses an If activity for the branching
+
+  Test the workflow locally with:
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"score":75}' --output json
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"score":30}' --output json
+
+  Confirm both runs return Result: "Success" and the correct grade.
+
+  Important:
+  - The `uip` CLI is already available.
+  - The workflow must be StudioWeb-roundtrip-safe: single-key Assigns, string
+    literals wrapped as ${'literal'}, If branches end with then:"exit",
+    Response with then:"end".
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Has WorkflowStart system activity (rule 2)"
+    path: "Workflow.json"
+    includes:
+      - "WorkflowStart"
+      - "isTransparent"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses If wrapper pattern with #Then and #Else branches (rule 7)"
+    path: "Workflow.json"
+    includes:
+      - "If_1#Wrapper"
+      - "If_1#Then"
+      - "If_1#Else"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Branches end with then:exit (rule 7)"
+    path: "Workflow.json"
+    includes:
+      - '"then": "exit"'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Wraps string literals as expressions (rule 5 — StudioWeb roundtrip)"
+    path: "Workflow.json"
+    includes:
+      - "${'PASS'}"
+      - "${'FAIL'}"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Response activity ends workflow with then:end (rule 15)"
+    path: "Workflow.json"
+    includes:
+      - '"then": "end"'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow runs PASS path successfully (score=75 → grade=PASS)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"score":75}'' --output json | grep -q ''"PASS"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow runs FAIL path successfully (score=30 → grade=FAIL)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"score":30}'' --output json | grep -q ''"FAIL"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

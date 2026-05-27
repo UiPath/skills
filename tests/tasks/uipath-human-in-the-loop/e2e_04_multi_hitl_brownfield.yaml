@@ -16,10 +16,6 @@ run_limits:
   max_turns: 50
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I have an HR onboarding flow. Create it by writing to
   HROnboarding/HROnboarding/HROnboarding.flow:

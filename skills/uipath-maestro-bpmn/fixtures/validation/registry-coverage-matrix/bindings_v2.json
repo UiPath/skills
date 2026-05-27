@@ -12,7 +12,9 @@
         "SolutionsSupport": "Required",
         "SubType": "connection",
         "Connector": "synthetic-connector"
-      }
+      },
+      "resource": "SyntheticConnector",
+      "resourceSubType": "connection"
     }
   ]
 }

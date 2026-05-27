@@ -54,6 +54,10 @@ Required xmlns for `InvokeWorkflowFile`:
 xmlns:ui="http://schemas.uipath.com/workflow/activities"
 ```
 
+### Default Values for Test-Case Arguments
+
+A test case authored with an `<x:Property Name="in_X" Type="InArgument(x:String)" />` argument should generally bake in a default so `uip rpa run --file-path <TestCase>.xaml` is runnable without `--input-arguments`. Use the canonical root-attribute syntax — see [xaml/xaml-basics-and-rules.md § Setting Default Values for Arguments](xaml/xaml-basics-and-rules.md#setting-default-values-for-arguments). The wrong forms (bare attribute, `<x:Property.Value>`, `<InArgument>` child of `<x:Property>`) all produce confusing `member not supported` errors — the doc explicitly lists them so you don't waste time trying.
+
 ### XAML Structure — Standalone Test Case (with Placeholder)
 
 For test cases designed to work with execution templates, use `ui:Placeholder` in the When container:
@@ -86,7 +90,7 @@ If the workflow has arguments, pass them in the `InvokeWorkflowFile.Arguments` d
 
 ### project.json Registration
 
-Register XAML test cases in `fileInfoCollection`. Add `entryPoints` only for **Process** projects — **Tests and Library projects do NOT use `entryPoints`**:
+Register every XAML test case in `designOptions.fileInfoCollection` — this is **Common Rule 10** in SKILL.md and applies to both XAML and coded test cases. Test cases live **only** in `fileInfoCollection`, never in `entryPoints` — `entryPoints` is for executable workflow files in Process projects (e.g. `Main.xaml`), and test cases are not workflow entry points regardless of project type.
 
 ```json
 {
@@ -100,22 +104,19 @@ Register XAML test cases in `fileInfoCollection`. Add `entryPoints` only for **P
         "fileName": "TestCase.xaml"
       }
     ]
-  },
-  "entryPoints": [
-    {
-      "filePath": "TestCase.xaml",
-      "uniqueId": "<SAME_GUID_AS_testCaseId>",
-      "input": [],
-      "output": []
-    }
-  ]
+  }
 }
 ```
 
-> **Note:** The `entryPoints` block above applies to Process projects only. For Tests and Library projects, only `fileInfoCollection` is needed.
+**Required keys per entry:**
+
+- `editingStatus` — `"InProgress"` on creation; `"Publishable"` only on explicit user request (see lifecycle note below).
+- `testCaseId` — fresh GUID, lowercase 8-4-4-4-12 hex (e.g. `2d81aebd-fbc1-4a66-8418-be77a34a3a21`). Generate via `[guid]::NewGuid()` in PowerShell or `uuidgen` on Unix.
+- `testCaseType` — `"TestCase"`.
+- `executionTemplateInvokeIsolated` — `false` unless the test runs under an execution template that requires isolation.
+- `fileName` — relative path of the `.xaml` or `.cs` test case file from the project root.
 
 > **`editingStatus` lifecycle:** Set to `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
-```
 
 ### What NOT to Do
 

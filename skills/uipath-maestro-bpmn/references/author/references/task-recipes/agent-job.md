@@ -1,13 +1,25 @@
 # Agent Job Recipe
 
-The current supported implementation wrapper for confirmed agent execution is
-`bpmn:serviceTask`.
+Agent wrappers are authored as `bpmn:serviceTask`, but the executable runtime
+contract depends on the process type reported by
+`uip or processes list --all-fields`, not the source project label. Some coded
+Python "agents" are published as `processType: "Function"` and are not the same
+runtime contract as low-code Agent Builder processes published as
+`processType: "Agent"`.
 
-Supported shells:
+| Agent deployment style | Wrapper shell | Notes |
+| --- | --- | --- |
+| Coded Python dependency published as `Function` | Use the process wrapper contract, not `StartAgentJob`, unless discovery documents a different wrapper | Resolve process identity, folder scope, input schema, and output schema before Operate. |
+| Low-code Agent Builder agent published as `Agent` | `Orchestrator.StartAgentJob` shell | Use resolved process identity fields, generated bindings, and current input/output schema metadata. Do not claim executable success from local XML validation alone. |
+| External A2A agent addressed by URL / skillId / authToken | `A2A.AgentExecution` | Studio Web renders this as an external A2A node and disables the Action dropdown. Do not use for folder-deployed agents — the canvas will treat the task as misconfigured. |
+| Integration Service external agent | `Intsvc.SyncAgentExecution`, `Intsvc.AsyncAgentExecution`, or legacy `Intsvc.AsyncExecution` | CLI must enrich connector resource key, connection binding, dynamic schemas, and operation metadata. |
 
-- `Orchestrator.StartAgentJob` for UiPath agent jobs.
-- `A2A.AgentExecution` for A2A agent execution.
-- `Intsvc.SyncAgentExecution`, `Intsvc.AsyncAgentExecution`, or legacy `Intsvc.AsyncExecution` for Integration Service external-agent execution; these require CLI enrichment.
+Common authoring mistake: assuming local validation or packaging proves the
+agent wrapper is executable. Validation checks structure and package shape; an
+authorized target-environment run is needed before claiming runtime behavior.
+Put the `JobArguments` input payload and `Process response` output payload as
+direct children of `uipath:activity`; do not put them in a sibling
+`uipath:mapping`.
 
 The model may draft:
 

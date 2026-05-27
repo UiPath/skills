@@ -16,10 +16,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
 initial_prompt: |
   Create a new Flow project called "PathParamsTest" with a manual trigger.
   Build a flow that retrieves a single Jira issue using the Jira "Get Issue"

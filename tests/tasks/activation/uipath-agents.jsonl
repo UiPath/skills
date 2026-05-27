@@ -48,3 +48,11 @@
 {"id": "uipath-agents-048", "prompt": "Job stuck in Running forever in Orchestrator after publish, but works locally. What's different about the serverless runtime?", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-049", "prompt": "I want to build a Python agent that reads invoices from a queue, extracts fields, asks a human for low-confidence ones, and writes results back", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-050", "prompt": "Add a multi-classification evaluator to my eval set and threshold the suite at 0.85 macro-F1", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-051", "prompt": "Call a Slack channel from a Python UiPath coded agent via Integration Service", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-052", "prompt": "Use sdk.connections.invoke_activity to file a Jira issue from my coded agent", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-053", "prompt": "How do I write an ActivityMetadata literal for a curated Integration Service activity?", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-054", "prompt": "My coded agent's send-mail call returns 'Unable to parse multipart body' — what's wrong with my ActivityMetadata?", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-055", "prompt": "Bind a Slack connection in bindings.json for a coded Python agent so retrieve(<key>) works locally", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-056", "prompt": "Sync my coded agent's connection resource overwrite — sdk.connections.retrieve is returning CNS1026 locally", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-057", "prompt": "Curated Jira create_issue keeps silently ignoring my custom field — how do I tell if it's a rename mismatch?", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-058", "prompt": "Add a Salesforce integration tool to my LangGraph coded agent so the model can call it", "expected_skill": "uipath-agents"}

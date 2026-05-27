@@ -7,12 +7,12 @@ inline-in-flow structural pattern only — not the agent's prompt or
 input/output schema:
 
   1. The flow contains a `uipath.agent.autonomous` node.
-  2. The node's source (read from `inputs.source`, falling back to
-     `model.source` for legacy fixtures) points to an existing
-     directory (the inline agent's UUID-named subdirectory). Per
-     inline-in-flow.md Critical Rule 15, the registry definition
-     declares `model.source: true` but flow-core hoists the source
-     identity onto `inputs.source` on each node instance.
+  2. The node's `inputs.source` points to an existing directory (the
+     inline agent's UUID-named subdirectory). Per inline-in-flow.md
+     Critical Rule 15, the registry definition declares
+     `model.source: true` but flow-core hoists the source identity
+     onto `inputs.source` on each node instance — the legacy
+     `model.source` location on the instance is not accepted.
   3. If `model.serviceType` is present, it must be
      `Orchestrator.StartInlineAgentJob` (not the solution-agent
      variant `StartAgentJob`). The field is optional on the instance —
@@ -54,23 +54,21 @@ def main() -> None:
     inputs = agent_node.get("inputs") or {}
     model = agent_node.get("model") or {}
 
-    source = inputs.get("source") or model.get("source")
+    source = inputs.get("source")
     if not isinstance(source, str) or not source:
         sys.exit(
-            f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no inputs.source "
-            f"(checked model.source fallback too)"
+            f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no inputs.source"
         )
-    source_location = "inputs.source" if inputs.get("source") else "model.source"
 
     agent_dir = FLOW_PATH.parent / source
     if not agent_dir.is_dir():
         sys.exit(
-            f"FAIL: {source_location} {source!r} does not point to an "
+            f"FAIL: inputs.source {source!r} does not point to an "
             f"existing directory ({agent_dir})"
         )
 
     print(
-        f"OK: {INLINE_AGENT_NODE_TYPE} node's {source_location} points to "
+        f"OK: {INLINE_AGENT_NODE_TYPE} node's inputs.source points to "
         f"inline agent directory {source}"
     )
 

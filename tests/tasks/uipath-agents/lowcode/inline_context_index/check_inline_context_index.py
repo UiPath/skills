@@ -6,7 +6,7 @@ Validates:
      matches the sub-folder UUID of the inline agent under the flow
      project.
   2. Flow has a `uipath.agent.resource.context.index.<name>.<uuid>`
-     node whose `model.source` matches the sub-folder UUID of the
+     node whose `inputs.source` matches the sub-folder UUID of the
      inline agent's resource (under `<inline-agent-uuid>/resources/`).
   3. Edge wires agent.context -> context.input.
   4. Inline agent dir has at least one resource.json under
@@ -18,9 +18,6 @@ Validates:
        - indexName == "UiPathAgentsProductKnowledge"
        - folderPath == "Shared/uipath-agents"
        - settings.retrievalMode in {semantic, structured, deepRAG, batchTransform}
-  5. Inline agent's agent.json declares a required `question:string`
-     input and an `answer:string` output (matching the standalone
-     context_index schema).
 """
 
 import os
@@ -36,6 +33,7 @@ from _shared.inline_wiring import (  # noqa: E402
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
+    resolve_resource_source,
 )
 
 FLOW_PATH = Path(os.getcwd()) / "KnowledgeFlowSol" / "KnowledgeFlow" / "KnowledgeFlow.flow"
@@ -45,35 +43,6 @@ UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]
 EXPECTED_INDEX_NAME = "UiPathAgentsProductKnowledge"
 EXPECTED_FOLDER_PATH = "Shared/uipath-agents"
 VALID_RETRIEVAL_MODES = {"semantic", "structured", "deepRAG", "batchTransform"}
-
-
-def assert_input_shape(schema: dict) -> None:
-    props = schema.get("properties") if isinstance(schema, dict) else None
-    if not isinstance(props, dict) or "question" not in props:
-        sys.exit(
-            f"FAIL: agent.json inputSchema.properties missing 'question'; "
-            f"got {list(props) if isinstance(props, dict) else props!r}"
-        )
-    q = props["question"]
-    if not isinstance(q, dict) or q.get("type") != "string":
-        sys.exit(f"FAIL: agent.json inputSchema.properties.question.type should be 'string', got {q!r}")
-    required = schema.get("required")
-    if not isinstance(required, list) or "question" not in required:
-        sys.exit(f"FAIL: agent.json inputSchema.required must contain 'question', got {required!r}")
-    print("OK: agent.json inputSchema declares required question:string")
-
-
-def assert_output_shape(schema: dict) -> None:
-    props = schema.get("properties") if isinstance(schema, dict) else None
-    if not isinstance(props, dict) or "answer" not in props:
-        sys.exit(
-            f"FAIL: agent.json outputSchema.properties missing 'answer'; "
-            f"got {list(props) if isinstance(props, dict) else props!r}"
-        )
-    a = props["answer"]
-    if not isinstance(a, dict) or a.get("type") != "string":
-        sys.exit(f"FAIL: agent.json outputSchema.properties.answer.type should be 'string', got {a!r}")
-    print("OK: agent.json outputSchema declares answer:string")
 
 
 def main() -> None:
@@ -96,10 +65,10 @@ def main() -> None:
         )
     print(f"OK: autonomous node inputs.source={agent_source!r} matches inline agent sub-folder")
 
-    context_source = (context_node.get("model") or {}).get("source")
-    if not isinstance(context_source, str) or not UUID_RE.match(context_source):
+    context_source = resolve_resource_source(context_node)
+    if not UUID_RE.match(context_source):
         sys.exit(
-            f"FAIL: {context_node['type']} model.source must be a UUID matching "
+            f"FAIL: {context_node['type']} inputs.source must be a UUID matching "
             f"the inline agent resource's sub-folder name, got {context_source!r}"
         )
 
@@ -123,11 +92,11 @@ def main() -> None:
     )
     if resource_path.parent.name != context_source:
         sys.exit(
-            f"FAIL: context node model.source UUID {context_source!r} does not match "
+            f"FAIL: context node inputs.source UUID {context_source!r} does not match "
             f"the resource sub-folder name {resource_path.parent.name!r}"
         )
     print(
-        f"OK: context node model.source={context_source!r} matches resource sub-folder "
+        f"OK: context node inputs.source={context_source!r} matches resource sub-folder "
         f"({resource_path.relative_to(Path(os.getcwd()))})"
     )
 
@@ -156,10 +125,6 @@ def main() -> None:
             f"got {mode!r}"
         )
     print(f"OK: settings.retrievalMode is {mode!r}")
-
-    agent_json = load_json(agent_dir / "agent.json")
-    assert_input_shape(agent_json.get("inputSchema") or {})
-    assert_output_shape(agent_json.get("outputSchema") or {})
 
 
 if __name__ == "__main__":

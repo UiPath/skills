@@ -18,17 +18,13 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "ProcurementFlowSol" containing a flow
   project "ProcurementFlow" with an inline low-code agent. The agent
   accepts a required `productId` (number) and returns a boolean
-  `status`. It must determine the status by delegating to a Maestro /
-  agentic process named "ProcurementProcess" that is already deployed
-  in the tenant — not by reasoning about the answer itself.
+  `status`. It must determine the status by delegating to an Agentic
+  process named "ProcurementProcess" that is already deployed in the
+  tenant — not by reasoning about the answer itself.
 
   Use the real folder and process name from the tenant — do not
   hard-code or guess these values. Name the agent's tool resource

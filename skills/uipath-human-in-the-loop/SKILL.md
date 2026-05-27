@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop node authoring for Flow, Maestro, or Coded Agent. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly. For operating existing approval/validation tasks in Action Center→uipath-tasks."
+description: "UiPath Human-in-the-Loop / HITL / Human Task node authoring for Flow, Maestro, or Low-Code Agents. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly. For operating existing approval/validation tasks in Action Center→uipath-tasks."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -8,7 +8,9 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 
 > **Preview** — skill is under active development; surface and behavior may change.
 
-Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, or Coded Agent.
+Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, or Agent.
+
+> **Coded agents:** for wiring HITL inside a coded agent, use the `uipath-agents` skill — see `skills/uipath-agents/references/coded/capabilities/human-in-the-loop.md`.
 
 ## When to Use This Skill
 
@@ -23,6 +25,8 @@ Recognizes when a business process needs a human decision point, designs the tas
 - User describes **customer communication approval** — agent-drafted reply that needs human sign-off before sending
 - User explicitly asks to **add a HITL node**, human review step, or Action Center task
 - User is building any automation where **a human must act before the process can continue**
+
+**Do not use this skill for:** managing, reassigning, escalating, or monitoring existing Action Center tasks at runtime — use the `uipath-tasks` skill for those operations.
 
 See [references/hitl-patterns.md](references/hitl-patterns.md) for the full business pattern recognition guide.
 
@@ -63,7 +67,7 @@ Run these checks in order:
 # Check for a .flow file (Flow project)
 find . -name "*.flow" -maxdepth 4 | head -5
 
-# Check for agent.json (Coded Agent project)
+# Check for agent.json (Low-Code Agent project)
 find . -name "agent.json" -maxdepth 4 | head -3
 
 # Check for Maestro .bpmn (Maestro process)
@@ -73,7 +77,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 | Found | Surface | How HITL is added |
 |---|---|---|
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
-| `agent.json` | **Coded Agent** | Escalation CLI in-flight — guide manually for now |
+| `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Not yet — guide user manually |
 
 **If the user mentioned a specific file path**, use that directly.
@@ -141,13 +145,15 @@ Present the user with three options. Do not choose on their behalf or perform an
 | 2 | **New Coded Action App** | `"custom"` | Scaffold a new React + TypeScript app inside the solution — full UI control |
 | 3 | **Existing Deployed App** | `"custom"` | Reference an app already deployed to Orchestrator |
 
+> **If the user's request is purely business-oriented** (no mention of a deployed app, coded action app, or custom UI): skip the question and proceed directly with QuickForm. Do not ask. Say: "I'll use QuickForm — it's inline, no deployment step needed, and works for most approval and review tasks."
+
 > **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a Coded Action App later."
 
 | User selects | Next step |
 |---|---|
-| QuickForm | Read [references/hitl-node-quickform.md](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
-| New Coded Action App | Read [references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
-| Existing Deployed App → ask: "What is the name of the deployed action app?" | Read [references/hitl-node-apptask.md](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
+| QuickForm | Read [How to write a QuickForm HITL node](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
+| New Coded Action App | Read [How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
+| Existing Deployed App → ask: "What is the name of the deployed action app?" | Read [How to wire an existing deployed Action App](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
 
 **Fallback rules — what to do when the chosen path hits a blocker:**
 
@@ -189,6 +195,10 @@ If the user says something like "just add some fields" or "use whatever makes se
 2. Show the proposed schema explicitly before writing: "Here's what I'm proposing — let me know if you want to change anything."
 3. If there are no upstream nodes to bind to (flow is just a trigger), use output-direction fields only and note: "There are no upstream nodes to pull data from, so the reviewer will fill in all fields from scratch."
 
+### Empty field labels block validation
+
+Every field in `inputs.schema.fields` must have a non-empty `label`. `flow validate` emits `HITL_QUICK_FORM_FIELD_LABEL_REQUIRED` (error severity) for each field with an empty or whitespace-only `label` — Debug and Publish are blocked until all labels are filled in. Never generate a field with `"label": ""` or omit the `label` key.
+
 ### Partial confirmation
 
 If the user says "yes but change X" or gives conditional approval, apply the change and re-show the full updated schema for final confirmation before writing. Never write with an unresolved change.
@@ -201,7 +211,7 @@ If the user says "yes but change X" or gives conditional approval, apply the cha
 
 Write the node JSON directly into `workflow.nodes`, add the definition to `workflow.definitions` (once), wire edges into `workflow.edges`, and regenerate `workflow.variables.nodes`. **Direct JSON is the default.**
 
-Full reference: **[references/hitl-node-quickform.md](references/hitl-node-quickform.md)** — complete node JSON, definition entry, edge format, `variables.nodes` regeneration algorithm, and four worked schema conversion examples.
+Node JSON, definition entry, edge format, `variables.nodes` algorithm, and four worked examples: **[How to write a QuickForm HITL node](references/hitl-node-quickform.md)**
 
 **CLI (opt-in):** When the user explicitly requests a CLI command:
 
@@ -228,7 +238,7 @@ Step 4c must be completed first — app name confirmed, solution directory locat
 
 Scaffold the project directory and all source files, add the project to the solution, write the solution resource files, then write the HITL node with `inputs.type = "custom"` and `inputs.app` referencing the new app (`appSystemName: null` since the app has not been deployed yet).
 
-Full reference: **[references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md)** — complete project structure, all file templates, UUID generation, solution CLI commands, resource file templates (`resources/solution_folder/app/codedAction/` and `resources/solution_folder/package/`), node JSON with `inputs.app` field mapping, and post-creation build instructions.
+Full project template, UUID generation, solution CLI commands, resource file templates, node JSON, and post-creation build steps: **[How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md)**
 
 After writing, validate:
 
@@ -242,7 +252,7 @@ Step 4b must be completed first — app resolved, configuration retrieved. Then:
 
 Resolve the solution context (`.uipx` file), write solution resource files, register the app reference, merge `debug_overwrites.json`, then write the node JSON with `inputs.type = "custom"` and `inputs.app` populated from the Step 3b configuration.
 
-Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask.md)** — credential sourcing from `~/.uipath/.auth`, solution context resolution, app search/selection (with multi-match list), retrieve-configuration, resource file writing, reference registration, debug overwrites, complete node JSON, `inputs.app` field mapping.
+App search/selection, retrieve-configuration, resource file writing, complete node JSON with `appInputBindings`: **[How to wire an existing deployed Action App](references/hitl-node-apptask.md)**
 
 After writing, validate:
 
@@ -250,9 +260,9 @@ After writing, validate:
 uip maestro flow validate <file> --output json
 ```
 
-### Surface: Coded Agent
+### Surface: Low-Code Agent
 
-The Coded Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, configure manually:
+The Low-Code Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, configure manually:
 
 **`agent.json` escalation entry:**
 ```json
@@ -303,8 +313,8 @@ After completing the wiring:
 
 ## References
 
-- **[QuickForm Node JSON](references/hitl-node-quickform.md)** — Full node JSON, definition entry, edge format, `variables.nodes` regeneration, four schema conversion examples.
-- **[AppTask Node JSON](references/hitl-node-apptask.md)** — App lookup via direct API, node JSON with `inputs.type = "custom"`, app field mapping.
-- **[Coded Action App (inline)](references/hitl-node-coded-action-app.md)** — Scaffold a new React coded action app inside the solution; full project template, resource files, HITL node JSON.
-- **[HITL Business Pattern Recognition](references/hitl-patterns.md)** — Signal tables for detecting when a process needs a human checkpoint. Includes proactive recommendation language and when NOT to recommend HITL.
-- **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Canonical task deep-link forms. Read before surfacing any task URL to the user; covers the missing-tenant-slug anti-pattern (which the portal-UI misclassifies as "Orchestrator not enabled") and the API-host vs UI-host mapping.
+- **[How to write a QuickForm HITL node](references/hitl-node-quickform.md)** — Read this after the user confirms QuickForm in Step 3. Covers the complete node JSON, definition entry, edge wiring, `variables.nodes` regeneration algorithm, and four worked schema examples.
+- **[How to wire an existing deployed Action App](references/hitl-node-apptask.md)** — Read this when the user selects an existing deployed app in Step 3. Covers app lookup via the Orchestrator API, `inputs.app` field mapping, `appInputBindings`, and solution resource files.
+- **[How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md)** — Read this when the user wants to build a new React app inside the solution. Covers full project template, UUID generation, solution CLI commands, and post-creation build steps.
+- **[HITL business pattern recognition](references/hitl-patterns.md)** — Read this during Step 2 / Step 2b to identify whether a process needs a human checkpoint and which pattern applies. Includes proactive recommendation language and when NOT to recommend HITL.
+- **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Read this before surfacing any Action Center task URL to the user. Covers the missing-tenant-slug anti-pattern and the API-host vs UI-host mapping.

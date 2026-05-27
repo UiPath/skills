@@ -14,10 +14,6 @@ agent:
 run_limits:
   max_turns: 80
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Create a new UiPath Case Management project called "OnboardingCase" with
   a manual trigger and a single stage named "Intake", and make sure the

@@ -9,6 +9,11 @@ Used by inline-agent tests that verify the combined shape of:
   - a `resource.json` inside the inline agent's UUID subdirectory (pointed
     to by `inputs.source` on the autonomous node).
 
+Source identity for every inline-agent-related node (autonomous agent +
+attached resource nodes) lives at `inputs.source`. There is no `model.source`
+fallback — checks fail loudly when the legacy location is used so authors
+regenerate the fixture.
+
 Import pattern in a check script:
 
     import os
@@ -19,6 +24,7 @@ Import pattern in a check script:
         find_autonomous_agent_node,
         find_resource_node,
         resolve_inline_agent_dir,
+        resolve_resource_source,
         find_inline_resource,
         assert_edge,
     )
@@ -93,16 +99,15 @@ def find_resource_node(
 def resolve_inline_agent_dir(flow_path: Path, agent_node: dict) -> Path:
     """Return the inline agent's UUID subdirectory.
 
-    Reads the projectId from `inputs.source` on the node instance. Falls
-    back to `model.source` for back-compat with older fixtures.
+    Reads the projectId from `inputs.source` on the node instance. The
+    legacy `model.source` location is no longer accepted — fixtures using it
+    fail loudly so the author regenerates them with the current convention.
     """
     inputs = agent_node.get("inputs") or {}
-    model = agent_node.get("model") or {}
-    source = inputs.get("source") or model.get("source")
+    source = inputs.get("source")
     if not source or not isinstance(source, str):
         sys.exit(
-            f"FAIL: {AUTONOMOUS_NODE_TYPE} node has no inputs.source "
-            f"(checked model.source fallback too)"
+            f"FAIL: {AUTONOMOUS_NODE_TYPE} node has no inputs.source"
         )
     agent_dir = flow_path.parent / source
     if not agent_dir.is_dir():
@@ -111,6 +116,24 @@ def resolve_inline_agent_dir(flow_path: Path, agent_node: dict) -> Path:
             f"directory ({agent_dir})"
         )
     return agent_dir
+
+
+def resolve_resource_source(node: dict) -> str:
+    """Return the resource UUID from a resource node's `inputs.source`.
+
+    Resource nodes (`uipath.agent.resource.tool.*`,
+    `uipath.agent.resource.escalation`, `uipath.agent.resource.context.*`)
+    carry their `<RES_UUID>` at `inputs.source`, identical to the autonomous
+    agent. The legacy `model.source` location is no longer accepted.
+    """
+    inputs = node.get("inputs") or {}
+    source = inputs.get("source")
+    if not source or not isinstance(source, str):
+        node_type = node.get("type", "<unknown>")
+        sys.exit(
+            f"FAIL: {node_type} node has no inputs.source"
+        )
+    return source
 
 
 def find_inline_resource(

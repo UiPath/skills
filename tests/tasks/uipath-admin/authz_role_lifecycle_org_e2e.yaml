@@ -21,10 +21,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I need a read-only role that applies to my whole organization — not
   to any single tenant — for auditors who should only be able to view

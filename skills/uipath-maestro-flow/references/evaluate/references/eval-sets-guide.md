@@ -165,6 +165,54 @@ The data point's `inputs` JSON must match the flow's input schema at the chosen 
 1. Inspect `<flow>.flow` in the project for `variables` entries with `direction: "in"`.
 2. Run `uip maestro flow variable list <flow_file> --output json`.
 
+## Simulations on Data Points
+
+Simulations replace selected nodes during an eval run with controlled outputs, so the flow is evaluated without calling real external services. Each simulation targets one component by its node `id` from the `.flow` file.
+
+```bash
+# Add an LLM simulation (non-deterministic, prompt-guided)
+uip maestro flow eval simulation add <component-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --strategy Llm \
+  --component-type connector \
+  --simulation-instructions "Pretend to send the email and return success." \
+  --output-schema '{"type":"object","properties":{"status":{"type":"string"},"messageId":{"type":"string"}}}' \
+  --path <flow_project> --output json
+
+# Add a Static simulation (fixed JSON output)
+uip maestro flow eval simulation add <component-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --strategy Static \
+  --component-type agent \
+  --mock-value '{"status":"ok"}' \
+  --path <flow_project> --output json
+
+# List simulations on a data point
+uip maestro flow eval simulation list \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --path <flow_project> --output json
+
+# Remove a simulation
+uip maestro flow eval simulation remove <component-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --path <flow_project> --output json
+```
+
+**Strategy selection:**
+
+| Strategy | Use when | Key flags |
+|----------|----------|-----------|
+| `Llm` | Output should be plausible but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |
+| `Static` | Output must be identical every run | `--mock-value <json>` |
+
+For `Llm` simulations, `--output-schema` is **auto-resolved from the `.flow` file** — the CLI reads the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`) and injects it automatically. Pass `--output-schema` explicitly only when you need to override the derived schema or the node has no declared outputs.
+
+Simulations are stored inline in the data point's `simulations` array within the eval set JSON. Running `simulation add` twice for the same `<component-id>` on the same data point replaces the existing simulation.
+
 ## Anti-patterns
 
 - **Don't hand-write `id` UUIDs on data points.** Use `uip maestro flow eval add` so the CLI generates fresh UUIDs and keeps `evalSetId` consistent with the parent set.

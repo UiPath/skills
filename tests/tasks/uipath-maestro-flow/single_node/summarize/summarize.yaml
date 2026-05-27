@@ -7,7 +7,7 @@ description: >
   flow-level input variable. A `flow debug` step is intentionally omitted —
   Summarize requires a pre-uploaded Orchestrator attachment and the ECS.DeepRag
   service backend, neither of which the test sandbox can provision deterministically.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, node:summarize]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, node:summarize, context-grounding]
 
 agent:
   type: claude-code
@@ -16,10 +16,6 @@ agent:
 
 run_limits:
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Create a UiPath Flow project named "SummarizeDemo" that uses a Summarize

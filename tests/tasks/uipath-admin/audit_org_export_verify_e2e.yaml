@@ -45,10 +45,6 @@ agent:
   turn_timeout: 600
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Export ORGANIZATION-level audit events (memberships, license changes,
   tenant lifecycle) for the single UTC day **2 days ago** to

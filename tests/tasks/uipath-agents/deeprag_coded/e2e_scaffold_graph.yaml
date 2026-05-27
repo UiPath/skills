@@ -1,0 +1,63 @@
+task_id: skill-agents-deeprag-coded-e2e-scaffold-graph
+description: >
+  E2E: scaffold a Python coded agent that runs DeepRAG on a PDF
+  attachment via the durable-interrupt pattern. Verifies the agent
+  scaffolds with `uip codedagent init` and emits a graph module that
+  imports CreateDeepRag / CreateEphemeralIndex from
+  uipath.platform.common, EphemeralIndexUsage from
+  uipath.platform.context_grounding, and durable_interrupt — passes
+  is_ephemeral_index=True on CreateDeepRag, and does NOT instantiate
+  UiPath() at module top level.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, context-grounding]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Scaffold a Python coded UiPath agent named `deep-rag-agent` that
+  takes a PDF attachment and produces a single grounded summary with
+  citations. Implement the canonical durable-interrupt pipeline:
+
+    1. accept the PDF attachment id at runtime
+    2. yield CreateEphemeralIndex(usage=EphemeralIndexUsage.DEEP_RAG)
+       from a @durable_interrupt node
+    3. yield CreateDeepRag(is_ephemeral_index=True, index_id=...,
+       prompt=...) from another @durable_interrupt node
+    4. finalize and return the synthesized text + citations
+
+  Take the agent through scaffold → init. Do NOT run, publish, upload,
+  or deploy. Do NOT pause between planning and implementation. Complete
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Graph imports CreateDeepRag / CreateEphemeralIndex / EphemeralIndexUsage / durable_interrupt; passes is_ephemeral_index=True; no module-level UiPath()"
+    command: "python3 $TASK_DIR/check_deep_rag_graph.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

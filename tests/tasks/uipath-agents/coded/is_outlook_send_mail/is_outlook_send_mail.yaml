@@ -1,0 +1,110 @@
+task_id: skill-agents-coded-is-outlook-send-mail
+description: >
+  Exercises the multipart edge case in the coded Integration Service
+  capability. The agent must read the raw schema cache (since
+  `describe` filters multipart out of the compact summary) to recover
+  `multipart_params` for Outlook's `send-mail-v2`, build the correct
+  `ActivityMetadata(content_type="multipart/form-data",
+  json_body_section="body", multipart_params=[...])` literal, wire
+  bindings + 2-field resourceOverwrites, and send a real email from
+  the test connection. The tenant check polls the destination inbox
+  via the same Outlook connection to confirm delivery.
+
+  Tenant prerequisite: a `uipath-microsoft-outlook365` connection in
+  folder `Shared/uipath-agents` named `outlook-coded-eval`. The mailbox
+  behind it must accept self-sends.
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, feature:integration-service, feature:multipart, uipath-microsoft-outlook365, connector]
+skip: true
+# Tenant-gated e2e. Requires a `uipath-microsoft-outlook365` connection named
+# `outlook-coded-eval` in folder `Shared/uipath-agents` on the run tenant and a
+# self-sendable mailbox (OUTLOOK_TEST_TO). The nightly runs e2e (the PR gate is
+# --tags smoke only), so this would fail there until the tenant is provisioned.
+# Flip to `skip: false` once set up per coded/is-e2e-setup.md.
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 80
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/is_outlook_send_mail/seed_outlook.py"
+    timeout: 30
+
+initial_prompt: |
+  Build a UiPath coded Python agent named `mailer` that sends an email
+  via the Outlook 365 Integration Service connector. Use the
+  `uipath-agents` skill and its coded Integration Service capability.
+
+  Test connection: in folder `Shared/uipath-agents`, named
+  `outlook-coded-eval`. Bind to it under the key `outlook-coded-eval`.
+
+  Operation: `send-mail-v2`. Read `seed.json` for the recipient
+  (`to_address`) and subject token (`subject`) — pass them through to
+  your agent's input untouched. Agent input shape:
+  `{"to": "<email>", "subject": "<str>", "body": "<str>"}`. Output:
+  `{"ok": bool}`.
+
+  Note: `send-mail-v2` is one of the connectors where the compact
+  `describe` output is incomplete. Follow the capability doc's
+  recovery guidance for that case — do not assume the JSON defaults.
+
+  Run the agent locally with the seeded `to` and `subject` values, then
+  exit. Do NOT publish or deploy. Do NOT pause. Do NOT ask for approval.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the uipath-agents skill"
+    tool_name: "Skill"
+    command_pattern: "uipath-agents"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Loaded platform IS discovery reference into context (agent-workflow.md — mandatory preload, not just the coded capability doc)"
+    tool_name: "Read"
+    command_pattern: 'uipath-platform/references/integration-service/agent-workflow\.md'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the raw IS schema cache (multipart workaround)"
+    tool_name: "Bash"
+    command_pattern: '\.uipath/cache/integrationservice/[\s\S]+?send-mail-v2\.schema\.json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the coded agent locally"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project shape: multipart ActivityMetadata literal, bindings, 2-field resourceOverwrites (connectionId + folderKey, no elementInstanceId)"
+    command: "python3 $TASK_DIR/check_is_outlook_send_mail.py shape"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outlook tenant state: the seeded subject token appears in the destination inbox"
+    command: "python3 $TASK_DIR/check_is_outlook_send_mail.py tenant"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

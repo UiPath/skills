@@ -6,11 +6,6 @@ description: >
   `--include-connection-details` flag for resolving connector metadata.
 tags: [uipath-platform, smoke, llmgateway, byo-connections, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
-  node: {}
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

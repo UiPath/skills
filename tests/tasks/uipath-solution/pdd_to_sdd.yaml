@@ -13,10 +13,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Analyze the following Process Design Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.

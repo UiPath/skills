@@ -1,0 +1,62 @@
+task_id: skill-agent-coded-antipattern-openai-agents-hitl
+description: >
+  Negative test for the OpenAI Agents framework capability boundary:
+  OpenAI Agents has NO first-class HITL support
+  (`references/coded/capabilities/human-in-the-loop.md` and
+  `frameworks/openai-agents-integration.md`). The seed wires up
+  `interrupt(...)` — a LangGraph primitive — inside an OpenAI Agents
+  project. The skill must recognise the framework/feature mismatch
+  and remove the broken `interrupt(...)` invocation (and its
+  langgraph import) without breaking the OpenAI Agents shape. Closes
+  the explicit gap that no negative test enforces this constraint.
+tags: [uipath-agents, smoke, "mode:build", coded, "lifecycle:edit", "feature:antipattern", "feature:framework-openai-agents"]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/antipattern_openai_agents_hitl/seed_antipattern_openai_agents_hitl.py"
+    timeout: 30
+
+initial_prompt: |
+  The broken UiPath coded agent project already exists under
+  `triage-broken/`. Fix it in place.
+
+  This is an OpenAI Agents project, not a LangGraph project. OpenAI
+  Agents does not support `interrupt(...)` HITL. Do not research or
+  add a replacement HITL API. The correct fix is to remove the
+  `langgraph.types` import, remove the `interrupt(...)` call path, and
+  keep the existing triage behavior: return an OpenAI Agents `Agent`
+  factory that routes customer messages to billing or technical
+  handoffs.
+
+  The project must still expose a top-level `main` factory that returns
+  an `Agent`, and `openai_agents.json` must keep pointing at it.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "main.py still exists under triage-broken/"
+    path: "triage-broken/main.py"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "openai_agents.json framework marker preserved"
+    path: "triage-broken/openai_agents.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "main.py no longer uses `interrupt(...)` or langgraph imports; OpenAI Agents `Agent` factory still exported"
+    command: "python3 $TASK_DIR/check_antipattern_openai_agents_hitl.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

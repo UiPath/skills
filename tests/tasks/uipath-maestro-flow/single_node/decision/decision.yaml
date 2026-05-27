@@ -14,10 +14,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "TemperatureChecker" that takes a
   temperature in Fahrenheit as input. If the temperature is greater than 75,
@@ -45,3 +41,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

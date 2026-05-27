@@ -40,22 +40,22 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
 ```bash
 cd tests
 
-# Run all tests (smoke + integration + e2e)
+# Run everything under the default config (full lifecycle, longest budget)
 make all
 
-# Run all smoke tests
+# Run smoke tests (Linux, fast PR-gate budget)
 make smoke
 
-# Run all integration tests
-make integration
+# Run Windows RPA smoke tests (tempdir)
+make smoke_rpa
 
-# Run all e2e tests
+# Run e2e-tagged tests under the default config
 make e2e
 
 # Run tests matching a combination of tags (AND semantics — tasks must carry all listed tags) (defaults to experiments/default.yaml):
 make tags TAGS="integration connector-feature"
 # Optionally override the experiment config 
-make tags TAGS="integration connector-feature" EXPERIMENT=experiments/integration.yaml
+make tags TAGS="integration connector-feature" EXPERIMENT=experiments/smoke.yaml
 
 # Run all tests for a specific skill
 make test-uipath-maestro-flow
@@ -100,6 +100,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **skill** | flat, required | Skill under test | `uipath-<name>` — must match the skill folder (e.g. `uipath-maestro-flow`) |
 | **tier** | flat, required | Test depth / cost | `smoke`, `integration`, `e2e` |
 | **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
+| **lifecycle** | `lifecycle:X`, required | Coding Agents Scorecard lifecycle phase | `discover` (read-only exploration: list/get/inspect existing state), `generate` (produce a new local artifact: pack, scaffold, render), `setup` (mutate tenant state: create/edit/delete resources, deploy, configure) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
 | **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
@@ -108,7 +109,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 
 ### Rules
 
-1. **Required on every task: `skill` + `tier` + `mode:*`.** These drive `make` targets, coverage, and evalboard dashboards.
+1. **Required on every task: `skill` + `tier` + `mode:*` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
 2. **One value per singular dimension** (`tier`, `mode`, `shape`). A task doesn't have two tiers.
 3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
 4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
@@ -137,9 +138,13 @@ tests/
 ├── README.md
 ├── Makefile
 ├── experiments/
-│   ├── default.yaml              # Smoke config
-│   ├── integration.yaml          # Integration config (longer timeouts)
-│   └── e2e.yaml                  # E2E config (staging tenant, full lifecycle)
+│   ├── default.yaml              # Dev / ad-hoc — tempdir, full lifecycle (no docker image required)
+│   ├── nightly.yaml              # Nightly cron — docker, full lifecycle, staging tenant
+│   ├── smoke.yaml                # PR-gate smoke (Linux, docker, faster budget)
+│   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir)
+│   ├── activation.yaml           # Opt-in skill-activation benchmark (1-turn)
+│   ├── skill-comparison-playbook.md      # A/B comparison playbook (research)
+│   └── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
 ├── tasks/
 │   └── <skill-name>/             # One folder per skill (must match skills/<name>/)
 │       ├── _shared/              # Optional — helpers, cleanup scripts, per-skill pytest
@@ -161,12 +166,13 @@ Experiment files define shared agent defaults per test type. Tasks inherit these
 
 Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
 
-| Experiment | Used by | max_turns | task_timeout | turn_timeout |
-|------------|---------|-----------|--------------|--------------|
-| `default.yaml` | Smoke | 40 | 900s | 900s |
-| `integration.yaml` | Integration | 30 | 900s | 300s |
-| `e2e.yaml` | E2E | 200 | 1200s | 300s |
-| `activation.yaml` | Skill activation classifier | 1 | 120s | 120s |
+| Experiment | Driver | Used by | max_turns | task_timeout | turn_timeout |
+|------------|--------|---------|-----------|--------------|--------------|
+| `default.yaml` | tempdir | Devs locally, ad-hoc runs | 200 | 1200s | 900s |
+| `nightly.yaml` | docker | Nightly cron (`daily.sh`) | 200 | 1200s | 900s |
+| `smoke.yaml` | docker | PR-gate smoke (Linux) | 40 | 900s | 900s |
+| `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
+| `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 1 | 120s | 120s |
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent for exactly one turn against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
@@ -201,6 +207,49 @@ sandbox:
 initial_prompt: |
   ...
 ```
+
+## Lifecycle E2E tests (uipath-platform pattern)
+
+`tests/tasks/uipath-platform/{orchestrator,resources}/` and
+`tests/tasks/uipath-solution/operate/` follow the same shape as `traces_e2e.yaml`:
+the agent receives a process key (and derived folder) via env var, exercises
+the operational scenario, and a `check_*.py` script verifies tenant state
+directly.
+
+### Shape
+
+```yaml
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+```
+
+A single helper script (`tests/tasks/uipath-platform/seed.py`) writes
+`seed.json` with a fresh `uuid8` and — when `E2E_PROCESS_KEY` is set —
+`process_key` + `folder_path` (resolved via `uip or processes list`, matched by Key — the `get` endpoint doesn't populate FolderPath). Tests
+that don't need a process omit the env var assignment; the script just
+writes `uuid8`.
+
+### Tenant prerequisites
+
+Two pre-existing processes on the tenant, referenced by their keys via CI
+secrets (matches the existing `TRACES_SMOKE_PROCESS_KEY` pattern):
+
+| Secret | Purpose | Used by |
+|---|---|---|
+| `E2E_PROCESS_KEY` | Standard coded-agent process, runs to terminal quickly | job/trigger/webhook/resource tests |
+| `E2E_LONG_PROCESS_KEY` | Same shape but sleeps ~30s | `job_control_e2e` (needs a stop/restart window) |
+
+Both processes live in folders, so `folder_path` is derived from the
+process key — no separate folder secret needed. Tests needing a second
+folder create it themselves as part of the scenario.
+
+### Cleanup
+
+There is no `post_run`. The agent creates and deletes its own ephemeral
+resources as part of the test scenario; the check script verifies the
+final tenant state. Shared resources (the pre-seeded processes and their
+folders) persist on the tenant across runs.
 
 ## Adding Tests for a New Skill
 
@@ -468,16 +517,17 @@ runs/
    - Agent ran out of turns -> increase `max_turns` or simplify the prompt
    - Sandbox issue -> check that `uip` CLI is available in the test environment
 
-## Test Coverage Analysis
+## Authoring Workflow
 
-Use the `/test-coverage` slash command to generate a coverage report that maps what a skill teaches against what its tests verify:
+Author tests in this order. Each step has a dedicated slash command.
+
+### 1. `/test-coverage <skill-name>` — find the gap
+
+Generates a coverage report that maps what a skill teaches against what its tests verify.
 
 ```bash
-# Analyze a single skill
-/test-coverage uipath-maestro-flow
-
-# Analyze all skills
-/test-coverage all
+/test-coverage uipath-maestro-flow   # single skill
+/test-coverage all                   # cross-skill roll-up
 ```
 
 Reports are written to `tests/reports/<skill-name>.md` and include:
@@ -485,11 +535,11 @@ Reports are written to `tests/reports/<skill-name>.md` and include:
 - Weighted overall score
 - Priority-ranked coverage gaps with concrete test recommendations
 
-The command is defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
+Defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
 
-### Generating a Test Task
+### 2. `/generate-task <description>` — scaffold the YAML
 
-Use the `/generate-task` slash command to scaffold a single task YAML from a free-form description of the scenario to cover. The command always infers the target skill from the description — do not pass a skill name.
+Scaffolds a single task YAML from a free-form description of the scenario to cover. The command always infers the target skill from the description — do not pass a skill name.
 
 ```bash
 /generate-task smoke test for folder listing via uip orchestrator
@@ -497,9 +547,31 @@ Use the `/generate-task` slash command to scaffold a single task YAML from a fre
 /generate-task cover the new uip flow registry get subcommand
 ```
 
-This generates one task YAML (and optional check script) in `tests/tasks/<skill-name>/`. Generated tasks are **unverified scaffolds** — before merging, run the task end-to-end with `coder-eval` and add a passing-run claim to the PR description (the lint workflow flags missing claims as High severity). Verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
+Output lands in `tests/tasks/<skill-name>/` as one task YAML (and optional check script). Generated tasks are **unverified scaffolds** — verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
 
-The command is defined in [`.claude/commands/generate-task.md`](../.claude/commands/generate-task.md).
+Defined in [`.claude/commands/generate-task.md`](../.claude/commands/generate-task.md).
+
+### 3. `/lint-task <path>` — lint before committing
+
+Lints the generated YAML against repo conventions (sandbox rules, tag taxonomy, criterion shape, CLI verb reachability) before it lands in a PR. Run this before step 4.
+
+### 3a. `/audit-verbs` — full CLI-verb sweep (conditional)
+
+When step 3 surfaces **CLI verb reachability** findings, run `/audit-verbs` to see whether the same stale verb appears in other tasks or in skill docs. Writes `tests/reports/cli-verb-audit.md` and `tests/reports/skill-verb-audit.md`, both regenerated from the `uip` catalog at `assets/uip-catalog-snapshot.json`. Skip this step when `/lint-task` reports clean.
+
+Defined in [`.claude/commands/audit-verbs.md`](../.claude/commands/audit-verbs.md).
+
+### 4. Run with `coder-eval` and attach a passing-run claim
+
+Run the task end-to-end (see [Running Tests](#running-tests)) and add a passing-run claim to the PR description. The lint workflow flags missing claims as High severity.
+
+### Tooling self-tests
+
+Regression tests for the audit pipeline live under `tests/scripts/`. Run them when you modify any of `scripts/build-uip-catalog.py`, `scripts/check-cli-verbs.py`, or `scripts/check-skill-verbs.py`:
+
+```bash
+pytest tests/scripts/
+```
 
 ## Further Reading
 

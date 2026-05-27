@@ -1,0 +1,47 @@
+task_id: skill-solution-deploy-e2e
+description: >
+  E2E: agent publishes the committed e2e-stub solution .zip and deploys it.
+  Final state: a deploy with the expected name exists on the tenant, and a
+  folder containing a process has been provisioned.
+tags: [uipath-solution, e2e, mode:build, lifecycle:setup]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+  turn_timeout: 600  # publish + deploy + uninstall on tenant exceeds default 300s
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 10
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-solution` skill.
+
+  I want to deploy our `e2e-stub` solution onto the tenant end-to-end.
+  Use the unique prefix from `seed.json` so the names don't collide.
+
+  The source .zip lives at
+  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`.
+  Publish it, then deploy it under the name `e2e-deploy-` followed by
+  the prefix. The deployment should provision a folder under Shared/
+  called `e2e-deploy-folder-` followed by the prefix, and that folder
+  should end up with a process from the package inside it.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: deploy present in list; folder + process exist"
+    command: "python3 $TASK_DIR/check_deploy_round_trip.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,40 @@
+task_id: skill-agent-guardrail-coded-pii-middleware
+description: >
+  Middleware-style PII detection guardrail for a coded agent. A simple LangGraph
+  customer support agent (with a lookup_account_info tool) is seeded with no guardrails.
+  Use the skill to add a PII detection middleware guardrail at Agent and Tool scope
+  that logs Email and PhoneNumber entities. Verifies that the guardrails list was
+  the correct middleware class is imported and spread into create_agent().
+tags: [uipath-agents, e2e, coded, mode:build]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py. It handles customer support questions
+  and uses a lookup_account_info tool. I want to add a PII detection guardrail
+  using the middleware style. It should detect Email and PhoneNumber entities
+  at both Agent and Tool scope and log them as warnings so the agent keeps running.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "PII middleware guardrail correctly added to graph.py"
+    command: "python3 $TASK_DIR/check_guardrail_coded_pii_middleware.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

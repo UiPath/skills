@@ -19,10 +19,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
 initial_prompt: |
   Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
   or any command that requires a live connection — this sandbox has no

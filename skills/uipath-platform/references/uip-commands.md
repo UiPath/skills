@@ -124,4 +124,4 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 ## Naming gotchas
 
 - Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never singular, never `queueitems`/`bucketfiles`.
-- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist).
+- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist). <!-- uip-check-skip -->

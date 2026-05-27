@@ -234,6 +234,36 @@ The entrypoint name comes from the key in `llama_index.json` `"workflows"`.
 
 ---
 
+## Conversational Agents
+
+For the cross-framework contract (the `isConversational` flag, local-run options), see `../capabilities/conversational-agents.md`.
+
+### In-Process Input
+
+Type the workflow's `StartEvent` with a single `user_msg: str` field — the runtime extracts the inline text from the wire envelope's `contentParts` and hands the workflow `user_msg: str`.
+
+```python
+from llama_index.core.workflow import StartEvent
+
+class ChatStartEvent(StartEvent):
+    user_msg: str
+```
+
+The wire envelope (see `../capabilities/conversational-agents.md` § Wire Envelope) is converted before your workflow sees it; the workflow does not handle `role` / `contentParts`.
+
+### Two Implementation Options
+
+Both are valid — pick based on the agent's needs:
+
+- **Prebuilt agent** — `AgentWorkflow.from_tools_or_functions(...)` from `llama_index.core.agent.workflow`. The `user_msg` input is wired in automatically; export the workflow instance from your entry point.
+- **Custom workflow** — any `Workflow` subclass whose first step accepts a `StartEvent` with `user_msg: str`. The first step can be fully deterministic (e.g. validation or routing) before any LLM call.
+
+### Local Run
+
+See `../capabilities/conversational-agents.md` § Running Locally for the `--keep-state-file` flag (required on every turn) and § Wire Envelope for the `turn1.json` shape.
+
+---
+
 ## UiPath Platform Integration
 
 ### Context Grounding (RAG)

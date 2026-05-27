@@ -91,7 +91,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 **Field semantics on the T-entry:**
 
 - `category` — required, one of `In`, `Out`, `Variable`
-- `type` — required, one of `string`, `number`, `boolean`, `date`, `object`, `array`, `jsonSchema`
+- `type` — required, one of `string`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`
 - `triggerRef` — T-number of the trigger this In-arg is attached to (single-trigger). For In-args only.
 - `sourceTrigger` — T-number when the value comes from a single trigger's payload (Variable category)
 - `sourceTriggers` — CSV of T-numbers when multiple triggers populate this Variable
@@ -108,7 +108,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 
 ## Types
 
-`"string"` | `"number"` | `"boolean"` | `"date"` | `"object"` | `"array"` | `"jsonSchema"`
+`"string"` | `"integer"` | `"float"` | `"double"` | `"boolean"` | `"datetime"` | `"date"` | `"jsonSchema"` | `"file"`
 
 ## Naming
 

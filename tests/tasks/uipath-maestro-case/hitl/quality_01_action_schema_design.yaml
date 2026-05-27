@@ -1,0 +1,277 @@
+task_id: skill-case-hitl-quality-action-schema-design
+description: >
+  Quality test: agent maps a business description to a correctly-shaped
+  `action` task — taskTitle, priority, recipient, and the planned input/
+  output fields. Verifies that even when the action-app is unresolved
+  (skeleton path), the agent still records the planning fields in tasks.md
+  and writes valid JSON. Tests action-task field design (priority enum,
+  recipient handling, taskTitle requirement).
+tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 90
+  turn_timeout: 900
+
+initial_prompt: |
+  Create a UiPath Case Management project named "VendorPOReviewCase" with
+  this shape:
+
+    Manual Trigger
+      → Stage "Fetch" (one process task: fetch PO data)
+      → Stage "Review" (one HITL action task with full schema design)
+      → Stage "Closed" (no tasks; required for case completion)
+
+  Use the same name for solution and project so the case file lives at
+  VendorPOReviewCase/VendorPOReviewCase/caseplan.json.
+
+  HITL action task design requirements:
+  - **task-title**: "Please review this PO and approve or reject"
+  - **priority**: High
+  - **recipient**: po-approvals@corp.com
+  - **Inputs the reviewer sees** (read-only): poNumber (Text),
+    vendorName (Text), totalAmount (Number)
+  - **Outputs the reviewer fills in**: decision (Text — "Approve" / "Reject"),
+    notes (Text, optional)
+  - **isRequired**: true
+  - **runOnlyOnce**: false
+
+  Write this sdd.md to sdd.md first, then build from it:
+
+  ```
+  # SDD — VendorPOReviewCase
+
+  Three-stage case where a HITL action task captures reviewer decision on a
+  vendor purchase order.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | VendorPOReviewCase |
+  | Case Description | Procurement officer reviews a vendor purchase order. |
+  | Case Identifier | Prefix: VPR, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: High |
+  | Case-Level SLA | - |
+  | SLA Type | - |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | poNumber | Variable | string | | | | Purchase order number; populated by Fetch PO Data. |
+  | vendorName | Variable | string | | | | Vendor name; populated by Fetch PO Data. |
+  | totalAmount | Variable | number | | | | PO total amount; populated by Fetch PO Data. |
+  | decision | Variable | string | | | | Reviewer decision; populated by Review PO. |
+  | notes | Variable | string | | | | Reviewer free-form notes; populated by Review PO. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Fetch (`fetch`)
+  **Type:** Stage
+  **Description:** Fetch PO data into the case.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `fetch.fetchPoData` | Fetch PO Data | process | System |
+
+  ##### Task 1.1: Fetch PO Data (`fetch.fetchPoData`)
+
+  **Type:** process
+  **Description:** Fetches the PO record into case variables.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | poNumber | string | -> poNumber |
+  | vendorName | string | -> vendorName |
+  | totalAmount | number | -> totalAmount |
+
+  ### Stage 2: Review (`review`)
+  **Type:** Stage
+  **Description:** Procurement officer reviews the PO.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed("Fetch") | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `review.reviewPo` | Review PO | action | Procurement Officer |
+
+  ##### Task 2.1: Review PO (`review.reviewPo`)
+
+  **Type:** action
+  **Description:** Officer approves or rejects the PO.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Action App Reference | Name "Review PO", Folder "Shared" |
+  | Component Type | ACTION_APP |
+  | Task Title | Please review this PO and approve or reject |
+  | Priority | High |
+  | Recipient | po-approvals@corp.com |
+
+  **Inputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | poNumber | string | =vars.poNumber |
+  | vendorName | string | =vars.vendorName |
+  | totalAmount | number | =vars.totalAmount |
+
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | decision | string | -> decision |
+  | notes | string | -> notes |
+
+  ### Stage 3: Closed (`closed`)
+  **Type:** Stage
+  **Description:** Case closed.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed("Review") | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Stage Task Summary
+  (none)
+  ```
+
+  Important:
+  - The `uip` CLI is already available.
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step.
+  - If the action-app or the process resource is unresolved, write a
+    skeleton task per the skeleton-tasks reference. The `tasks.md` plan
+    must still capture taskTitle, priority, recipient, and the intended
+    inputs/outputs in a fenced wiring-notes block.
+  - Do NOT run `uip maestro case debug`.
+
+  **REQUIRED — before finishing, write report.json at the sandbox root**:
+  {
+    "caseplan_path": "<path to caseplan.json>",
+    "action_task_id": "<id of the action task>",
+    "skeleton": <true|false>,
+    "schema": {
+      "input_fields":  ["<field names>"],
+      "output_fields": ["<field names>"]
+    },
+    "task_title": "<taskTitle from tasks.md or caseplan.json>",
+    "priority":   "<priority value>",
+    "recipient":  "<recipient or empty if none>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes"
+    command: "uip maestro case validate VendorPOReviewCase/VendorPOReviewCase/caseplan.json --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan contains an action-typed task"
+    path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
+    includes:
+      - '"type": "action"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tasks.md captures the task-title (resolved or skeleton path)"
+    command: "grep -i 'task-title\\|taskTitle\\|Task Title' tasks/tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tasks.md captures priority: High"
+    command: "grep -i 'priority.*high' tasks/tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tasks.md captures the recipient email"
+    command: "grep -i 'po-approvals@corp.com' tasks/tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json schema has at least 3 input fields, 1 output field, priority High"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "length(schema.input_fields)"
+        operator: gte
+        expected: 3
+      - expression: "length(schema.output_fields)"
+        operator: gte
+        expected: 1
+      - expression: "priority"
+        operator: equals
+        expected: "High"
+    weight: 2.5
+    pass_threshold: 0.75
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

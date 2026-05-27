@@ -15,8 +15,7 @@
   "data": {
     "taskTitle": "Please review this PO and approve or reject",
     "priority": "High",
-    "recipient": "approver@corp.com",
-    "actionCatalogName": "<deploymentTitle>",
+    "recipient": { "Type": 2, "Value": "approver@corp.com" },
     "labels": "<labels string>",
     "name": "=bindings.bG0SraLpg",
     "folderPath": "=bindings.bH1iJK2lm",
@@ -31,12 +30,14 @@
 
 ## Action-Specific Fields
 
+> **Unresolved → `"data": {}`.** When `action-app-id` is `<UNRESOLVED>` (or `action-apps-index.json` returned 0 nodes), the entire shape collapses to `"data": {}`. **No exception** for `taskTitle`, `priority`, `recipient`, `labels`, `name`, `folderPath`, `inputs`, `outputs`, or optional `actionCatalogName` — omit every `data.*` key. See [placeholder-tasks.md](../../../placeholder-tasks.md).
+
 | Field | Notes |
 |---|---|
 | `data.taskTitle` | Required on **resolved** action tasks — validator rejects empty. Placeholders omit it (along with every other `data.*` action-specific key); see [placeholder-tasks.md](../../../placeholder-tasks.md). |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
 | `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
-| `data.actionCatalogName` | `deploymentTitle` from tasks.md |
+| `data.actionCatalogName` | **Optional.** Must bind to an existing action catalog resource. Omit unless tasks.md references a known catalog. |
 | `data.labels` | Label set from tasks.md |
 
 `recipient.Type` values: `0` = user ID (sdd `User:`), `1` = group ID (sdd `UserGroup:` / `Role:`), `2` = email address, `3` = `"=vars.<varId>"`. **Fallback when sdd.md value is not a resolved UUID:** write `{ "Type": <picked>, "Value": "<sdd-string-as-is>" }` — schema-conformant placeholder, user resolves Value later. Drop `data.recipient` only when no Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes silently; CLI validate misses it.
@@ -64,7 +65,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 **Step 2 — Write task:**
 
 1. Generate `id` (`t` + 8 chars) and `elementId` (`<stageId>-<taskId>`)
-2. Set `data.taskTitle`, `data.priority`, `data.recipient`, `data.actionCatalogName`, `data.labels` from tasks.md
+2. Set `data.taskTitle`, `data.priority`, `data.recipient`, `data.labels` from tasks.md. Set `data.actionCatalogName` only when tasks.md references an existing action catalog — otherwise omit.
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 

@@ -21,10 +21,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   My account needs a built-in global template role that's available
   across every tenant in the organization. Pick an appropriate

@@ -62,6 +62,30 @@ What the agent does as the user responds:
 
 Listen does not ask shaping questions — those belong in Ask. The single exception is technical: when a referenced doc is unreadable (see `.docx` / `.pptx` / scanned-PDF row above), request a paste so Listen can keep reading. Inferences are private to the sketch.
 
+#### Domain-vocabulary capture (during Listen)
+
+The user's first description is the corpus of verbatim domain terms. While listening, capture into the working sketch:
+
+- **Roles** (exact casing): `CFO`, `Senior Underwriter`, `Triage Nurse`, `Onboarding Specialist`. Quote verbatim.
+- **Domain nouns**: `Vendor` vs `Supplier` vs `Partner`; `Loan File` vs `Application`; `PO` vs `Purchase Request`. Pick the one the user used; never homogenize.
+- **Stage labels**: `Triage`, `Underwriting`, `Adverse Action Notice`, `Funding`. Preserve casing and spelling.
+- **Decision outcomes**: `Approve` / `Decline` / `Needs Info` (NOT `Approve` / `Reject` / `Pending` unless those were the user's words).
+- **Integration shortnames**: if the user says `Workday`, never write `the HR system`.
+
+Every captured term lands in the source ledger with provenance `verbatim:"<quoted exact phrase>"` (truncated at 40 chars in the ledger; full quote stays in working memory). The Sketch and Approve renderings MUST use the verbatim phrase. Synonym drift is a fidelity defect — see [sdd-generation-rules.md § Domain fidelity](sdd-generation-rules.md#domain-fidelity).
+
+#### File / attachment / document detection (during Listen)
+
+When the user mentions any of: `file`, `attachment`, `document`, `PDF`, `image`, `scan`, `upload`, `evidence`, `receipt`, `invoice` (as an artifact, not as a domain noun) — flag the conversation for a file-type Ask in §Ask, do not silently default. Three patterns to distinguish:
+
+| Pattern | Indicator phrases | SDD shape |
+|---|---|---|
+| Caller pre-uploads a file at case start | "caller submits a PDF", "uploaded with the request", "comes in as an attachment" | `Category: In`, `Type: file` — see Use Case 9 in `sdd-template-examples.md`. Caller-obligation surfaces in Approve summary (§Approve summary). |
+| Connector activity downloads / produces a file mid-case | "fetch the attachment from email", "download from Drive / S3", "pull the receipt from the vendor portal" | `Category: Variable`, `Type: file` populated by a task's Outputs `-> ` row — Use Case 10. |
+| User stores a URL or metadata, not the bytes | "we just store the link", "we keep the document ID", "we reference the file in their system" | `Type: string` (URL) or `Type: jsonSchema` (metadata blob). NOT `file`. |
+
+In Ask, present the three options when the indicator is detected. Default is forbidden — the wrong type breaks downstream binding (file → JobAttachment record, string → opaque URL, jsonSchema → arbitrary object).
+
 ### Sketch
 
 The agent privately fills out the SDD shape against [`sdd-template.md`](../assets/templates/sdd-template.md). When picking a value for any field, follow the priority order in [sdd-generation-rules.md § Content authority hierarchy](sdd-generation-rules.md#content-authority-hierarchy) — platform schema and compliance constraints override user preference.
@@ -88,7 +112,36 @@ Write `sdd.draft.md` as the sketch firms up. Update in place each time a gap clo
 
 ### Ask
 
-Only for required gaps. **One question at a time**, ranked by information value. Each ask is a single AskUserQuestion or plain-text follow-up. Update `sdd.draft.md` after each answer lands. Never bundle three asks into one message.
+Two cadences. Default is **single-question** for shape-changing gaps. **Batched** is reserved for independent low-impact follow-ups so a 14-task case doesn't burn 14 prompts.
+
+#### Single-question (default for shape-changing gaps)
+
+**One question at a time**, ranked by information value. Use plain AskUserQuestion. Update `sdd.draft.md` after each answer. Apply to:
+
+- Trigger type (when external system / portal / form / schedule / signup / event is mentioned)
+- Task type on ambiguous verbs or compliance-override conflicts
+- Case exit condition
+- Stage exit `Marks Stage Complete: Yes` ↔ WHEN pairing
+- SLA value when user mentioned timing
+- Variable Type when file / attachment / document is in scope (see §Listen file detection)
+
+These fields change the generated case shape; bundling them obscures the decision and survives the Approve scan.
+
+#### Batched (low-impact follow-ups only)
+
+One AskUserQuestion with up to 4 `multiSelect: true` rows for fields whose value can be defaulted safely AND whose default does NOT change case shape:
+
+| Field | Default if not picked |
+|---|---|
+| Case-level description (Section 1.1) | `—` (Phase 1 leaves blank) |
+| Persona descriptions (Section 3) | `—` |
+| Exception-stage descriptions | `—` |
+| Optional `conditionExpression` cells in Entry / Exit rows | `—` (no IF filter) |
+| Optional `Business Calendar` cell on timers | `—` (use 24×7) |
+| Optional task SLA on `action` tasks | `—` (inherits case SLA) |
+| App-view detail (Section 3) | "Case list" + "Case detail" baseline view names |
+
+Use sparingly — at most one batched prompt in the whole interview. Each row defaulted records `inferred-default:<reason>` in the source ledger.
 
 #### When to Ask vs Default
 
@@ -176,7 +229,28 @@ Run `uip maestro case registry pull` first if cache absent. See [registry-discov
 
 > `Searching registry for "InvoiceValidation"… 2 matches.`
 
-Then per-task AskUserQuestion (4 options max):
+#### Resolve cadence — auto-confirm gate (one upfront prompt, then auto-pick single-match)
+
+Before per-task prompts, run all task searches in parallel, then bucket results:
+
+| Bucket | Definition |
+|---|---|
+| **A — single high-confidence** | Exactly 1 match, AND the match's name shares ≥ 1 token (case-insensitive, ≥ 3 chars) with the task's `Task Name` |
+| **B — ambiguous** | Multiple matches, OR single match with no token overlap |
+| **C — empty** | 0 matches across cache files |
+
+Present a single upfront AskUserQuestion **only when bucket A is non-empty**:
+
+| Option | Effect |
+|---|---|
+| `Auto-confirm <N> single-match high-confidence resolutions; ask me about the rest` | Record bucket A picks silently; proceed to per-task prompts only for bucket B + C |
+| `Ask me about every task` | Skip auto-confirm; present per-task prompt for every task |
+
+For each bucket A auto-confirm, record `tenant-registry:<resource-name>` provenance in `tasks/registry-resolved.json` with an additional `auto_confirmed: true` flag. The Approve summary's `Inferred / defaulted` block surfaces the count: `Auto-confirmed: N registry matches (single-match high-confidence).` The user re-validates at Approve.
+
+#### Per-task prompts (bucket B + bucket C remainder)
+
+Per-task AskUserQuestion (4 options max):
 
 | Option | Effect |
 |---|---|
@@ -185,7 +259,7 @@ Then per-task AskUserQuestion (4 options max):
 | `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. |
 | `Something else` | Free-text re-search keyword, retry. |
 
-**Empty registry match** across the batch → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` (Rule 17), applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
+**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` (Rule 17), applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
 
 After all picks, write `tasks/registry-resolved.json` (Rule 9 shape). Update `sdd.draft.md` with concrete resource names. Any unresolved task carries a paired `review_items[]` entry in the same JSON.
 
@@ -193,7 +267,7 @@ After all picks, write `tasks/registry-resolved.json` (Rule 9 shape). Update `sd
 
 ### Approve
 
-Before renaming, run the **Finalization checks** in [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization): schema check, render-required check, variable-lineage check, override-conflict check, review-items high-severity acknowledgment, source-ledger check. Any failure blocks the rename and routes back to `Re-edit` / `Restart` / `Abort`.
+Before renaming, run the **Finalization checks** in [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization) — the full 14-step list including stage-graph connectivity (step 12), domain-fidelity scan (step 13), and architect's-lens advisory pass (step 14). Any blocking failure (steps 1–10, 12, 13) routes back to `Re-edit` / `Restart` / `Abort`. Advisory passes (step 14) emit `medium` review items but do not block.
 
 On pass:
 
@@ -214,14 +288,30 @@ Personas:     N
 Child cases:  N
 Threshold status: WITHIN | EXCEEDED (<which>)
 Review items:    high=N  medium=N  low=N
+Auto-confirmed:  N registry matches (single-match high-confidence)
 
 Inferred / defaulted (please confirm — these were NOT stated verbatim):
   - <field>: <value>  (<source>)
   - <field>: <value>  (<source>)
   ...
+
+Caller obligation (file In-arg detected — omit block when no file In-arg present):
+  File In-args:  evidenceDoc, signedAgreement
+  Programmatic callers must pre-create each JobAttachment via POST /odata/Attachments,
+  PUT bytes to the returned blob URI, then pass {ID,FullName,MimeType,Metadata} as the
+  In-arg value AND include the attachment ID in StartProcessDto.Attachments[].
+  Maestro Studio Web's "Start case" dialog does this automatically.
+
+Architect advisories (medium review items — non-blocking):
+  - <id>: <one-line>  (target: <stage/task>)
+  ...
 ```
 
 The **`Inferred / defaulted` block is mandatory** whenever Sketch defaulted ANY field. List every defaulted value with source attribution. Omit the block only if zero fields were defaulted. This is the user's last chance to catch wrong defaults before Rule 2 locks the file — never collapse to counts alone when defaults exist.
+
+The **`Caller obligation` block** is mandatory when any §1.5 row has `Category: In` + `Type: file`. Omit otherwise. The text is fixed; do not paraphrase.
+
+The **`Architect advisories` block** lists each `medium` review item emitted by the architect's-lens pass ([sdd-generation-rules.md § Architect's lens](sdd-generation-rules.md#architects-lens)). Omit when count is 0. These do not block Approve but should be visible.
 
 Source-attribution examples: `(PascalCase derivation)`, `(no roles mentioned → Process Owner)`, `(no SLA stated → 3-day default)`, `(verb "review" — defaulted to action)`, `(user said "ad-hoc" → trigger=Manual)`.
 

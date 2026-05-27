@@ -25,7 +25,7 @@ Use the exact CamelCase `Name` (e.g. `BankDetails`). For Create/Update, also run
 
 ## Step 3 — Set Up the Flow File
 
-Author the standard top-level `bindings[]` pair (`ConnectionId` + `FolderKey`) per [parent impl.md § Authoring top-level `bindings[]`](../impl.md#authoring-top-level-bindings). Data Fabric specifics:
+Author the standard top-level `bindings[]` pair (`ConnectionId` + `FolderKey`) per [parent impl.md § Top-level `bindings[]` shape](../impl.md#top-level-bindings-shape-cli-emitted-reference-only). Data Fabric specifics:
 
 - Connection binding `name` = the IS connection display name (not the `<CONNECTOR_KEY> connection` placeholder), since `node configure` is run with this value pre-resolved.
 - Both bindings share the same `resourceKey` = `<connectionId>`.

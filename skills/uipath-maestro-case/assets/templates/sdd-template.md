@@ -38,6 +38,8 @@ build the case in the Case Designer without guessing.
    - `required-tasks-completed` — all required tasks in stage completed
    - `wait-for-connector` — an Integration Service event received
    - `adhoc` — ad-hoc / manual trigger
+   - `runs-sequentially` — runs sequentially
+   - `user-selected-stage` - target of an upstream `wait-for-user` exit
 
 4. **Exit conditions:** Every exit condition MUST specify:
    - **Exit Type:** `exit-only` | `return-to-origin` | `wait-for-user`
@@ -47,8 +49,8 @@ build the case in the Case Designer without guessing.
    **WHEN ↔ Marks Complete pairing (hard constraint — schema-enforced; applies identically to STAGE exit and CASE exit):**
 
    *Stage exit:*
-   - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` (typical) or `required-stages-completed`. **NEVER** `selected-tasks-completed(...)`.
-   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `selected-stage-completed(...)`, `wait-for-connector`, etc.
+   - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` (typical) or `wait-for-connector`. **NEVER** `required-stages-completed` or  `selected-tasks-completed(...)`.
+   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `wait-for-connector`, etc.
    - Same stage may carry one completion exit (`Yes` + `required-tasks-completed`) plus zero or more routing exits (`No` + `selected-tasks-completed`).
 
    *Case exit (preferred pattern: one row, `Yes` + `required-stages-completed`):*
@@ -139,7 +141,7 @@ The generated SDD must start with:
 | Case Identifier | Prefix: {2-4 char UPPER prefix}, Type: {constant \| external} |
 | Priority | Choiceset: {comma-separated values} — Default: {value} |
 | Case-Level SLA | {count} {unit: h/d/w/m} |
-| SLA Type | {Static \| Variable} |
+| SLA Type | {time-based \| condition-based} |
 
 ### Case-Level SLA Escalation Rules
 
@@ -150,7 +152,7 @@ The generated SDD must start with:
 
 ### Variable SLA Rules
 
-> Include this table only if SLA Type is Variable. Each row defines an expression-based SLA override.
+> Include this table only if SLA Type is `condition-based`. Each row defines an expression-keyed SLA override; the time-based default lives in the Case Metadata `Case-Level SLA` cell above. FE persists `slaRules[]` with non-empty `conditionExpression` per row (PO.Frontend `CaseManagementSlaProperties.tsx`).
 
 | Expression | SLA | Unit |
 |------------|-----|------|
@@ -196,11 +198,11 @@ DO NOT include in Configuration:
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| {camelCase name} | {In \| Out \| Variable} | {string \| number \| boolean \| date \| object \| array \| jsonSchema} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
+| {camelCase name} | {In \| Out \| Variable} | {string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
 
 **Category semantics (author-facing summary; canonical definition in [`global-vars/impl-json.md` § Pattern shapes by category](../../references/plugins/variables/global-vars/impl-json.md)):**
 
-- **`In`** — formal case argument supplied at case start by an external caller (manual trigger via API) OR initialized from `Default` (event / timer triggers, which have no caller). Works with any trigger type. For event-trigger-payload-extraction (where the value comes from the event's payload), use `Variable` with `sourceTriggers` + `sourceFields` (Use Case 2) instead — that's a different operation.
+- **`In`** — formal case argument supplied at case start by an external caller (manual trigger via API) OR initialized from `Default` (event / timer triggers, which have no caller). Works with any trigger type. For event-trigger-payload-extraction (where the value comes from the event's payload), use `Variable` with `sourceTriggers` + `sourceFields` (Use Case 2) instead — that's a different operation. **File-type In-args:** the runtime caller must pre-create the JobAttachment (`POST /odata/Attachments`, then `PUT` the bytes to the returned blob URI) and pass the resulting `{ID, FullName, MimeType, Metadata}` record as the In-arg value plus the attachment ID in `StartProcessDto.Attachments[]`. The Maestro Studio Web "Start case" dialog handles this automatically when the user picks a file; programmatic callers must do it themselves.
 - **`Out`** — formal case argument returned to the caller at case end. Value comes from a task's Outputs row that targets this Name (the producer) OR from a `Default` value if no task fires. `sourceTriggers` MUST be empty (direction mismatch — values flow case→caller, not trigger→case).
 - **`Variable`** — case-internal state. May be populated by one trigger's payload (single T-number in `sourceTriggers` + single path in `sourceFields`), by multiple triggers' payloads sharing the same slot (CSV in `sourceTriggers` + keyed `T<N>: <path>` format in `sourceFields`), by a task output (use `->` operator in that task's Outputs table — same Name on both sides drives the wiring), or initialized via `Default` only.
 
@@ -228,7 +230,7 @@ If neither holds, the io-binding validator surfaces the misalignment.
 | caseStarter | Variable | string | T02, T03 | T02: response.user; T03: response.initiator | | Shared slot — whichever trigger fires populates it |
 | applicantName | In | string | | | | Formal In-arg supplied by API caller (manual trigger) |
 | finalDecision | Out | string | | | "Pending" | Out-arg; producer is "Approve Decision" task; "Pending" returned if no task fires |
-| reviewCount | Variable | number | | | 0 | Counter incremented by tasks via `=` operator |
+| reviewCount | Variable | integer | | | 0 | Counter incremented by tasks via `=` operator |
 
 ---
 
@@ -277,17 +279,23 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage Entry Conditions
 
+> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (event-driven entry / interrupt — typically pairs with `Interrupting: Yes`). Other rule types from Key Rule 3 are NOT valid here.
+>
+> **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it — used for exception / fraud / escalation flows on `ExceptionStage`. `No` for normal sequential entry on regular stages.
+>
+> Each row is a separate entry condition. List multiple rows when a stage can be entered through more than one path (e.g., normal completion of an upstream stage AND an interrupting connector event).
+
 | WHEN | IF | Interrupting |
 |------|-----|-------------|
-| {rule type with target, e.g., selected-stage-completed("Previous Stage Name")} | {conditionExpression, or "—" if none} | {Yes \| No} |
+| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector`} | {conditionExpression, or "—" if none} | {Yes \| No} |
 
 #### Stage Exit Conditions
 
-> **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
+> **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` or `wait-for-connector`; `No` row MAY use `selected-tasks-completed(...)` or `wait-for-connector`. Mixing is invalid.
 
 | WHEN | IF | Exit Type | Marks Stage Complete |
 |------|-----|-----------|---------------------|
-| {`required-tasks-completed` for Yes; `selected-tasks-completed("TaskName")` or other rule for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} |
+| {`required-tasks-completed` or `wait-for-connector` for Yes; `selected-tasks-completed("TaskName")` or `wait-for-connector` for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} |
 
 #### Stage SLA
 
@@ -314,9 +322,13 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Entry Condition:**
 
+> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (default — fires when the containing stage is entered; typical for first task or any task with no sibling gate), `selected-tasks-completed("TaskA", "TaskB")` (fires when specific sibling tasks in the same stage complete), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start), `runs-sequentially` (sequential ordering within the stage; parallel members of the group share a lane, solo members get their own lane). Other rule types from Key Rule 3 are NOT valid here.
+>
+> Each row is a separate entry condition. List multiple rows when a task can be entered through more than one path. Connector tasks (`execute-connector-activity`, `wait-for-connector`) receive a default `current-stage-entered` condition on creation — still author the row explicitly if it applies.
+
 | WHEN | IF |
 |------|-----|
-| {rule type with target, or "current-stage-entered" for first task} | {conditionExpression, or "—" if none} |
+| {one of: `current-stage-entered` \| `selected-tasks-completed("TaskA", "TaskB")` \| `wait-for-connector` \| `adhoc` \| `runs-sequentially`} | {conditionExpression, or "—" if none} |
 
 ---
 

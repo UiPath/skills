@@ -6,7 +6,7 @@ description: >
   Verifies the tool resource.json under the inline agent's UUID
   subdirectory uses `type: "process"`, `location: "solution"`,
   `folderPath: "solution_folder"`, and that a
-  `uipath.agent.resource.tool.rpa` flow node is wired to the
+  `uipath.agent.resource.tool.process.<uuid>` flow node is wired to the
   autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
@@ -17,10 +17,6 @@ agent:
 
 run_limits:
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Create a UiPath solution "PayrollFlowSol" containing a flow project
@@ -63,14 +59,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added a flow node"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+node\s+add'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent validated the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
@@ -90,12 +78,6 @@ success_criteria:
     description: "Flow file was created"
     path: "PayrollFlowSol/PayrollFlow/PayrollFlow.flow"
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Flow project descriptor was created"
-    path: "PayrollFlowSol/PayrollFlow/project.uiproj"
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command

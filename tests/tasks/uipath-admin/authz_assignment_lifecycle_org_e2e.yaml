@@ -22,10 +22,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Grant me organization-wide access by giving my account an existing
   organization-level built-in role. After it's assigned, confirm it

@@ -16,10 +16,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
 initial_prompt: |
   Create a new Flow project called "GenerateSchemaTest" with a manual trigger
   that runs the Atlassian Jira "Create Issue" connector activity
@@ -36,10 +32,6 @@ initial_prompt: |
   Validate the final flow file.
   If the Atlassian Jira connector is not present in the registry, stop —
   this test exercises GenerateSchema, which has no managed-HTTP fallback.
-
-  Test connections for this task live in Orchestrator folder "Shared/uipath-maestro-flow".
-  Resolve its key with `uip or folders get "Shared/uipath-maestro-flow" -o json`
-  and pass `--folder-key <key>` on every `uip is connections list` call.
 
 success_criteria:
   - type: run_command

@@ -91,24 +91,31 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the us
      uip codedagent setup --force
      ```
 
-     If `has_venv == true`, just `source .venv/bin/activate` and continue. Do **not** run `uip codedagent new` or `init` (init only when `Input`/`Output` Pydantic models, the entry-function signature, or `<framework>.json` change).
+     If `has_venv == true`, just `source .venv/bin/activate` and continue. Do **not** run `uip codedagent new`. Re-run `init` only when schemas change — see step 6 for the full rule.
    - `existing-coded` → `source .venv/bin/activate`. If `has_venv == false`, run `uv venv --python 3.13 && source .venv/bin/activate && uv sync`. Then `uip codedagent setup --force` (idempotent — refreshes `uipathExePath`). Skip `uip codedagent new`. Run `uip codedagent init` only if `has_entry_points == false` or schemas changed.
    - `greenfield` → Full Workflow in [lifecycle/setup.md](lifecycle/setup.md). Infer the project name from the user's prompt or the current directory.
 
-   **Do NOT authenticate yet** — auth happens after build.
+   **Do NOT authenticate yet** — auth happens after build (step 5).
+
+   **Exception — Integration Service / SaaS-connector agents:** if the agent calls IS connector activities (`sdk.connections.invoke_activity`), you cannot author its `body_fields` / `ActivityMetadata` without `uip is resources describe` output, which is auth-gated. For these agents, do the step-5 auth one-shot **and** IS discovery (per [capabilities/integration-service.md](capabilities/integration-service.md) § Discovery) NOW, before Build, then resume at Build with the discovered metadata in hand. Non-IS agents keep the default order (auth after build).
 3. **Build** — Implement agent logic using the selected framework's patterns. **For `local-workspace`: skip only the scaffold-cleanup sub-step below** — Studio Web supplied a clean shell, so the module-level-client checks aren't needed. Logic edits in `main.py` proceed normally. For `greenfield` / `existing-coded`, after scaffolding and before running `uip codedagent init`, inspect the generated code and clean up scaffold hazards:
    - No module-level `UiPathChat`, `UiPathAzureChatOpenAI`, `UiPath`, or other auth-dependent clients.
    - Instantiate LLM/SDK clients inside graph nodes/functions only.
    - Ensure importing `main.py` works without UiPath auth.
 
    See [lifecycle/build.md](lifecycle/build.md) § Additional Instructions for the detailed Build-stage rules. After implementing, re-run `uip codedagent init` to update schemas from the actual code.
-4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md). Non-interactive default: add/update missing bindings automatically; report no-op silently; ask only before deletion or for dynamic values.
+4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
 5. **Auth (one-shot)** — Run `uip login status --output json` once. If `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
 
 > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
 
 Then STOP and wait. On reply, run the matching one-shot login from [../authentication.md](../authentication.md) (maps environment → `--authority`). Never run `uip login` without `--tenant`.
-6. **Run** — Re-run `uip codedagent init` first **only when** `Input`/`Output` Pydantic models, the entry-function signature, or `<framework>.json` changed since the last run, **or** `has_entry_points == false`. Otherwise `entry-points.json` is already current — skip init. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
+6. **Run** — Re-run `uip codedagent init` first whenever any of these changed since the last init, **or** when `has_entry_points == false`:
+   - `Input`/`Output`/`State` Pydantic models or TypedDicts — any field added, removed, renamed, or retyped counts (the class name being the same does not).
+   - The entry function's signature (parameters or return type annotation).
+   - `<framework>.json` (`langgraph.json` / `llama_index.json` / `openai_agents.json` / `uipath.json` `functions`).
+
+   Skip init only when the edit is purely inside node bodies / helpers (logic, prompts, business rules) and leaves every schema and the entry signature byte-identical. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
 7. **Evaluate** — Run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report`. Idempotent by `has_evaluators` / `has_smoke_set`: create the missing one(s) only — **never overwrite an existing evaluator config or smoke set**, the user may have tuned them.
 
    **Note:** `uipath-llm-judge-trajectory-similarity` requires emitted trace spans to populate `AgentRunHistory`. Plain `StateGraph` agents without explicit OpenTelemetry tracing produce empty history → all cases score 0.0 even on successful runs. If the smoke set scores 0.0, verify the agent actually executed (via local `uip codedagent run`) before treating it as a logic failure; consider an output-only evaluator for non-conversational graphs.
@@ -228,7 +235,7 @@ Infer the framework from the user's prompt when possible. If ambiguous, ask them
 3. **LlamaIndex** — Workflow with events and RAG support. Best for knowledge retrieval.
 4. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence.
 
-**Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. RAG or knowledge retrieval → LlamaIndex. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → Coded Function. When in doubt, ask.
+**Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. RAG or knowledge retrieval → LlamaIndex. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → Coded Function. Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — see [capabilities/deeprag/planning.md](capabilities/deeprag/planning.md). Per-row CSV extraction → see [capabilities/batch-transform/planning.md](capabilities/batch-transform/planning.md). When in doubt, ask.
 
 **Always tell the user which framework you selected and why** before proceeding to build. Example: "I'll use **LangGraph** for this agent since it involves tool calling and multi-step orchestration."
 

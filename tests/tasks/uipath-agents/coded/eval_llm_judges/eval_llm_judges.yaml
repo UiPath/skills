@@ -1,0 +1,52 @@
+task_id: skill-agent-coded-eval-llm-judges
+description: >
+  Coded-agent eval lifecycle, LLM-judge path. Verifies the agent
+  authors two LLM-judge evaluator configs in one eval set —
+  `LLMJudgeOutputEvaluator`
+  (`uipath-llm-judge-output-semantic-similarity`) and
+  `LLMJudgeTrajectoryEvaluator`
+  (`uipath-llm-judge-trajectory-similarity`) — and runs them against
+  a LangGraph classifier with `--no-report` and `--mocker-cache` so
+  the judges are reproducible.
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1800
+  turn_timeout: 1200
+  max_turns: 40
+
+initial_prompt: |
+  Build a LangGraph UiPath coded agent named `intent-classifier` that
+  classifies a free-text user request into one of: `weather`, `news`,
+  `joke`. Input: `text` (str). Output: `category` (str), `text` (str).
+  Use `gpt-4o-mini-2024-07-18` with `temperature=0`.
+
+  Add an evaluation harness with two LLM judges in one eval set: one
+  that scores the agent's output and one that scores its decision
+  trajectory. Use three test cases. Run locally with reproducible LLM
+  responses and save the results to `eval-results.json`.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran the eval suite with --no-report"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--no-report'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both LLM-judge evaluator configs + eval-set + results shape"
+    command: "python3 $TASK_DIR/check_eval_llm_judges.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

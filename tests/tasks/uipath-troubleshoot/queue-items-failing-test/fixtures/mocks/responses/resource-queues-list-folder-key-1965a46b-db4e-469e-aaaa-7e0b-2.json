@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "QueueList",
+  "Data": [
+    {
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "itemsToProcess": 0,
+      "itemsInProgress": 0,
+      "queueDefinitionId": 13713,
+      "queueDefinitionKey": "36e2cd45-f47f-4850-9a94-ac5f723faf3c",
+      "queueDefinitionName": "ItemsQueue",
+      "queueDefinitionDescription": "",
+      "queueDefinitionAcceptAutomaticallyRetry": false,
+      "queueDefinitionRetryAbandonedItems": false,
+      "queueDefinitionMaxNumberOfRetries": 1,
+      "queueDefinitionEnforceUniqueReference": false,
+      "processingMeanTime": 0.265,
+      "successfulTransactionsNo": 4,
+      "applicationExceptionsNo": 0,
+      "businessExceptionsNo": 4,
+      "successfulTransactionsProcessingTime": 0.38,
+      "applicationExceptionsProcessingTime": 0,
+      "businessExceptionsProcessingTime": 0.15,
+      "totalNumberOfTransactions": 8,
+      "specificDataJsonSchemaExists": false,
+      "outputDataJsonSchemaExists": false,
+      "analyticsDataJsonSchemaExists": false,
+      "queueFoldersCount": 1,
+      "tags": [],
+      "id": 13713
+    }
+  ]
+}

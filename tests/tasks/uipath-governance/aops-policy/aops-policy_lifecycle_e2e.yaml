@@ -24,10 +24,6 @@ agent:
 run_limits:
   max_turns: 40
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Walk the full lifecycle of an AOps governance policy on the current
   login tenant. Use the product `AITrustLayer`.

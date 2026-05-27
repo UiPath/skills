@@ -1,0 +1,87 @@
+task_id: skill-agents-coded-is-smoke
+description: >
+  Smoke test for the coded Integration Service capability. The agent
+  hand-authors a coded-Python agent that invokes a Slack IS activity
+  via `sdk.connections.invoke_activity`. Validates the artefact shape
+  WITHOUT a live tenant — Critical Rule checks: ActivityMetadata
+  literal is inline (not a JSON sidecar), no module-level `UiPath()`,
+  bindings.json carries a `connection` resource with the documented
+  Connection Service envelope, and no `resources/<Tool>/resource.json`
+  sidecar (that path is lowcode-only and ignored in coded agents).
+tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, feature:integration-service]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  turn_timeout: 900
+  max_turns: 30
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  Hand-author (do NOT scaffold via the CLI) a UiPath coded Python
+  agent at `./slack-notifier/` that posts a Slack message via
+  Integration Service. Operation: Slack's curated `send_message_to_channel_v2`.
+
+  Use the `uipath-agents` skill and its coded Integration Service
+  capability doc to determine what artifacts to write and what shape
+  they need to take. Follow the doc's mandatory discovery step (read the
+  platform `agent-workflow.md` reference) even though discovery's live
+  `uip is resources describe` call is pre-recorded for you here.
+
+  The describe output for this operation is provided at
+  `./slack_send_message_describe.json` (staged in your cwd). Treat it as
+  the live `uip is resources describe --output json` result and map it to
+  your `ActivityMetadata` literal per the capability doc's mapping table.
+  Do NOT invent field names from worked examples; derive them from the
+  provided describe JSON.
+
+  No live tenant: do not run `uip codedagent init` / `run`. For the
+  required `__uipath/uipath.json` resourceOverwrite, use placeholder values
+  per the capability doc's local-run binding recipe (a real run would source
+  them from `uip is connections list`).
+
+  Agent input: `channel` (str), `message` (str). Output: `ok` (bool).
+  Bind to the connection under the key `slack-notifier`.
+
+  Do NOT pause between planning and implementation. Do NOT ask for
+  approval. Complete in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the uipath-agents skill"
+    tool_name: "Skill"
+    command_pattern: "uipath-agents"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Loaded the platform IS discovery reference into context (mandatory preload — the capability doc requires reading agent-workflow.md before authoring an invoke_activity call, not just following the coded doc)"
+    tool_name: "Read"
+    command_pattern: 'uipath-platform/references/integration-service/agent-workflow\.md'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "slack-notifier project root exists"
+    path: "slack-notifier/pyproject.toml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project shape: bindings.json + ActivityMetadata mapped from describe fixture + lazy SDK init + no lowcode sidecar + 2-field resourceOverwrites"
+    command: "python3 $TASK_DIR/check_is_smoke.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

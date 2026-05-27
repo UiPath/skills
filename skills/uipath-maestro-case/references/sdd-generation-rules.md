@@ -89,7 +89,7 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | Identifier prefix | yes | UPPER, 2-4 chars (e.g., `MLO`) | Default mechanically from PascalCase first letters; record in source ledger. |
 | Priority | optional | `Low` / `Medium` / `High` / `Critical` | Default `Medium`; record in source ledger. |
 | Case SLA | conditional | Duration (e.g., `5 business days`) | `—` when case has no SLA; otherwise block Approve. |
-| SLA Type | conditional | `Calendar` / `BusinessHours` | Default `BusinessHours` when Case SLA set. |
+| SLA Type | conditional | `time-based` (single unconditional duration) / `condition-based` (one or more conditionExpression-keyed overrides + a default time-based row) | Default `time-based` when Case SLA set with no per-condition overrides. The FE persists `condition-based` whenever ≥ 1 `slaRules[]` entry carries a non-empty `conditionExpression` (see PO.Frontend `CaseManagementSlaProperties.tsx:27-30`). `condition-based` requires populating the §Variable SLA Rules table; `time-based` omits it. |
 
 ### 1.2 Case-level SLA escalation
 
@@ -110,16 +110,33 @@ Required when Case SLA is set. Always renders with both rows; no `—` allowed i
 
 ### 1.3 Triggers
 
-≥ 1 trigger required. One row per triggering event.
+≥ 1 trigger required. One row per triggering event. Number triggers sequentially starting at **T02** (T01 reserved for the case file). The T-number is the reference key used by Case Variables rows whose value comes from this trigger's payload (§1.5).
 
 | Field | Required? | Value |
 |---|---|---|
-| Type | yes | `Manual` / `Timer` / `Connector Event` |
-| Source | conditional | Connector key for `Connector Event`; schedule expression for `Timer`; `—` for `Manual` |
-| Config | conditional | Concrete configuration block (connector trigger config / cron / `—`). `Connector Event` MUST have concrete `Config`. |
-| Initial Mapping | optional | Variable bindings populated from the trigger payload at case start |
+| T# | yes | `T<N>` — sequential, starts at `T02` |
+| Trigger Type | yes | `Manual` / `Intsvc.TimerTrigger` / `Intsvc.EventTrigger` / `None` |
+| Source | conditional | Connector or system for `Intsvc.EventTrigger`; schedule expression for `Intsvc.TimerTrigger`; `Manual` literal for `Manual` |
+| Configuration | conditional | User-stated intent only — see Configuration rules below. `Intsvc.EventTrigger` MUST have a concrete operation phrase. |
 
-Unresolved `Connector Event` config (`connectionId` / `activityTypeId` missing) → `high`-severity review item.
+**Configuration cell — what to write (user intent only, business terms):**
+
+| Trigger type | Write |
+|---|---|
+| Event | The operation in business terms (`Calendar created`, `Email received`). Append a filter clause when the user wants filtering (`Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param ONLY when the user supplies it (`Email received in folder "<folder name>"`). |
+| Timer | Cycle or duration (`every 24 hours`, `daily at 09:00 UTC`). |
+| Manual | `N/A` or omit. |
+
+**Forbidden in Configuration** (skill resolves these at planning time — not author surface):
+
+- CLI enum values like `CALENDAR_CREATED`, `createdRecord`.
+- Default modes (`polling` vs `webhook`).
+- Meta notes like `No required event parameters` or `No user filter` (absence IS the default).
+- Connector activity slug, HTTP method, spec-discovered detail.
+
+> Variable mapping (which trigger payload field populates which case variable) is declared in **§1.5 Case Variables** via the `sourceTriggers` / `sourceFields` columns — NOT in this table. The Triggers table only identifies and configures each trigger; payload extraction is owned by Case Variables.
+
+Unresolved `Intsvc.EventTrigger` resolution (`connectionId` / `activityTypeId` missing) → `high`-severity review item.
 
 ### 1.3a Trigger Filter (conditional)
 
@@ -156,17 +173,44 @@ Optional. `Marks Case Complete: No`. Used for ExceptionStage terminals (Withdraw
 
 ### 1.5 Case Variables
 
-Every variable used anywhere in the plan (task inputs/outputs, conditions, mappings, exit rules) appears in this table.
+Every variable used anywhere in the plan (task inputs / outputs, conditions, mappings, exit rules) appears in this table. Authoring is **declarative** — the row's `Category` + `sourceTriggers` + `sourceFields` columns drive build-time classification. Inference from prose or other columns is no longer supported.
 
 | Column | Required? | Notes |
 |---|---|---|
-| Variable | yes | camelCase, no role suffix |
-| Category | yes | `In` / `Out` / `Variable` — NEVER `—` |
-| Type | yes | Platform enum from [case-schema.md § Variables](case-schema.md): `string`, `boolean`, `number`, `entity`, `array`, `object`. Use `string` for JSON-shaped values; never emit `json` or `jsonSchema`. |
-| Default | optional | Concrete default or `—` |
-| Description | yes | One-line meaning |
-| Produced By | yes | `trigger`, `system`, or `"<Stage Name>"."<Task Name>".<outputName>`. NEVER blank. |
-| Consumed By | yes | Every consumer task + `case-exit-condition` when used in exit rules. List ALL — never abbreviate. |
+| Name | yes | camelCase, no role suffix |
+| Category | yes | `In` / `Out` / `Variable` — NEVER `—`. Drives the [`global-vars` plugin's](plugins/variables/global-vars/impl-json.md) pattern shape. |
+| Type | yes | Platform enum from [case-schema.md § Variables](case-schema.md): `string`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`. **`file`** is a JobAttachment record (`{ID, FullName, MimeType, Metadata}`) — see `[sdd-template-examples.md](../assets/templates/sdd-template-examples.md)` Use Cases 9–11 for caller-pre-upload, connector-download, and multipart-send patterns. File-typed In-args carry an implicit caller obligation (see §1.5 In semantics + Approve summary reminder). Use `string` for JSON-shaped values; never emit `json` or `jsonSchema`. |
+| sourceTriggers | conditional | T-number(s) — single `T<N>` or comma-separated CSV (`T02, T03`) when multiple triggers feed the same Variable. Empty for pure state, `In`, `Out`. |
+| sourceFields | conditional | Single bare payload path when one trigger; **keyed format** `T<N>: <path>; T<M>: <path>` when `sourceTriggers` is CSV. Dot-paths only — no array indexing in v1. |
+| Default | optional | Concrete default or empty. |
+| Description | yes | One-line meaning. |
+
+**Category semantics** (canonical definition in [`global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md)):
+
+- **`In`** — caller-supplied case argument (manual trigger via API) OR `Default`-initialized (event / timer triggers, which have no caller). `sourceTriggers` MUST be empty. For event-payload-extraction, use `Variable` + `sourceTriggers` + `sourceFields` instead (see Use Case 2 in [sdd-template-examples.md](../assets/templates/sdd-template-examples.md)). **`In` of `Type: file`** — programmatic caller must pre-create a JobAttachment (`POST /odata/Attachments` then `PUT` bytes) and pass `{ID, FullName, MimeType, Metadata}` plus `StartProcessDto.Attachments[]`. Maestro Studio Web's "Start case" dialog does this automatically; non-Studio callers do it themselves. Surface this obligation in the Approve summary whenever any file-In-arg exists; see §Finalization step 11.
+- **`Out`** — case argument returned to caller. Value comes from a producer (a task's Outputs row that targets this Name via `-> {name}` or `{name} = {expr}`) OR from `Default` when no producer fires. `sourceTriggers` MUST be empty (direction mismatch: trigger → case is forbidden for `Out`).
+- **`Variable`** — case-internal state. Populated by one trigger's payload (`T<N>` + single path), multiple triggers sharing the same slot (CSV + keyed `T<N>: <path>` format), a task's Outputs row, or `Default` only.
+
+**`sourceFields` notation:**
+
+- **Single-trigger:** bare path. `response.subject`, `response.user.id`, `Error.code`.
+- **Multi-trigger:** keyed `T<N>: <path>; T<M>: <path>` — every T-number listed in `sourceTriggers` MUST have a matching keyed entry. Mismatch = Phase 2 validator error. Example: `T02: response.user; T03: response.initiator`.
+
+**Out-arg producer rule.** Every `Out` row MUST have at least one of:
+
+1. A `Default` value, OR
+2. A task whose Outputs table has a row that targets this Out-arg's Name via `-> {name}` or `{name} = {expr}`.
+
+If neither, the io-binding validator surfaces the misalignment at end of Phase 3. Phase 0's Approve gate pre-checks this — see §Variable lineage closure.
+
+**`->` vs `=` operators in Outputs rows** (used by every task's Outputs table — defined in §Task content rules):
+
+| Operator | Meaning | `Field` column |
+|---|---|---|
+| `-> caseVar` | Extract: value at the runtime path in `Field` is written to `vars.<caseVar>`. The skill emits `source: "=<Field>"` verbatim — no envelope inference. | Non-empty full runtime path (`response.status`, `Action`, `Error.code`). |
+| `caseVar = <expr>` | Set / compute / copy: case variable receives the expression result at task completion. Expression may be a literal (`"InReview"`, `5`), computed (`=js:(vars.count + 1)`), or copy (`=vars.X.Y`). | `—` |
+
+For worked patterns by Category and operator (single-trigger, multi-trigger, `In` / `Out` / `Variable`, sub-field consumer, Out-arg with Default fallback), see [`sdd-template-examples.md`](../assets/templates/sdd-template-examples.md).
 
 Lineage closure rules in §Variable lineage closure.
 
@@ -316,7 +360,7 @@ No recipient and no role/email known → drop the cell, emit a `high`-severity r
 |---|---|---|
 | `<label>` (e.g., `Approve`) | `<varName> = "<value>"` | One sentence describing what the button does |
 
-`Maps To` LHS MUST reference a declared case variable from Section 1.5 OR the conventional `taskOutcome` handle. NEVER an undeclared identifier.
+`Maps To` LHS MUST reference a declared case variable from §1.5 (matching a row's `Name` cell) OR the conventional `taskOutcome` handle. NEVER an undeclared identifier.
 
 ### `wait-for-connector` / `execute-connector-activity` task — required cells
 
@@ -331,8 +375,8 @@ No recipient and no role/email known → drop the cell, emit a `high`-severity r
 | Account / Endpoint | Connection account/endpoint identifier | IS connection cache |
 | Operation / Trigger | Operation or trigger name | IS catalog |
 | Operation Configuration | `essentialConfiguration` carry-through as `=jsonString:<json>` literal | IS activity/trigger typecache |
-| Inputs | Table: `Field | Type | Binding` — `Field` MUST match IS activity schema verbatim |
-| Outputs | Table: `Field | Type | Binding` (arrow form) |
+| Inputs | Table: `Field | Type | Binding` — `Field` MUST match IS activity schema verbatim; `Binding` per §Binding cell |
+| Outputs | Table: `Field | Binding / Value` — see §Outputs cell operators |
 
 **Auto-injected entry condition.** These two task types auto-receive `current-stage-entered` at consumer-side creation. Render explicitly as the first row; explicit additional rules APPEND, never replace.
 
@@ -366,8 +410,8 @@ These four runnable types share a single render block — the SDD surfaces only 
 
 | Cell | Value |
 |---|---|
-| Inputs | Table: `Variable | Type | Binding` — `Variable` MUST match the runnable's declared In argument name verbatim |
-| Outputs | Table: `Variable | Type | Binding` (arrow form) — `Variable` MUST match the runnable's declared Out argument name verbatim |
+| Inputs | Table: `Field | Type | Binding` — `Field` MUST match the runnable's declared In argument name verbatim; `Binding` per §Binding cell |
+| Outputs | Table: `Field | Binding / Value` — `Field` MUST match the runnable's declared Out argument name verbatim for `->` rows (or `—` for `=` rows); see §Outputs cell operators |
 
 **Where per-type metadata lives.** The rendered SDD does NOT carry per-type runtime cells (agent prompt, RPA package version, api-workflow endpoint, process release tag). That metadata is resolved during §Resolve in [phase-0-interview.md](phase-0-interview.md#resolve) and persisted in `tasks/registry-resolved.json` under the task's resolution entry (per SKILL.md Rule 9 shape). Phase 1 reads it from there when emitting `caseplan.json`. Mapping:
 
@@ -384,14 +428,15 @@ Unresolved registry identity → `high`-severity review item (§Review items). T
 
 **Externally-hosted AI agents** (CrewAI, Salesforce Einstein, Databricks, LangChain, etc.) are NOT first-class. Model them as `api-workflow` (system-to-system) or `execute-connector-activity` when a connector exists. Never invent `external-agent`.
 
-### Binding cell — allowed expressions
+### Binding cell — allowed expressions (Inputs)
 
-Every `Binding` cell carries one of (case-sensitive):
+Every Inputs `Binding` cell carries one of (case-sensitive):
 
 | Form | Meaning |
 |---|---|
-| `<literal>` | Plain string / number / boolean |
-| `=vars.<id>` | Case variable from Section 1.5 (`<id>` must match a Section 1.5 row's `Variable` cell) |
+| `<literal>` | Plain string / number / boolean (`"50"`, `0`, `true`) |
+| `=vars.<id>` | Case variable from §1.5 (`<id>` must match a §1.5 row's `Name` cell) |
+| `=vars.<id>.<subfield>` | Sub-field of a structured case variable (dot-path) |
 | `=bindings.<id>` | Registered resource (action app, process, connection) |
 | `=metadata.<key>` | Case metadata |
 | `=trigger.<field>` | Trigger payload field |
@@ -402,27 +447,94 @@ Every `Binding` cell carries one of (case-sensitive):
 | `=response` / `=result` / `=Error` | Conventional handles for connector / agent / process responses |
 | `"<Stage Name>"."<Task Name>".<outputName>` | Cross-task output reference — Phase 1 resolves to `=vars.<id>` at build time |
 
-Output `Binding` cells use the `-> <case variable>` arrow form.
-
 **Bare field-name lists** (`**Inputs:** loanId, borrowerLegalEntity`) are FORBIDDEN. They force Phase 1 into name-match inference — the exact failure mode the table form prevents.
+
+### Outputs cell operators
+
+Every Outputs `Binding / Value` cell carries one of two operators (case-sensitive). The `Field` column rule differs by operator:
+
+| Operator | Cell form | `Field` cell | Purpose |
+|---|---|---|---|
+| Extract | `-> <caseVar>` | **Non-empty** — full runtime path relative to task root (`response.status`, `Action`, `Error.code`). Skill emits `source: "=<Field>"` verbatim. | Capture a runtime response field into a case variable. |
+| Set / compute / copy | `<caseVar> = <expr>` | `—` (em-dash literal) | Assign a literal, computed (`=js:(...)`), or copied (`=vars.X.Y`) value at task completion. |
+
+**Authoring rules:**
+
+- The LHS case variable (after `->` or before `=`) MUST already be declared in §1.5 Case Variables. Outputs rows DO NOT declare new variables — they wire existing ones.
+- Per task: each target case variable appears in at most one Outputs row. No double-binding. Mixing `->` and `=` for the same target in the same task is rejected.
+- A single task may carry both `->` rows (extract) AND `=` rows (literal / computed) targeting different variables.
+
+**Example (any task's Outputs table):**
+
+```
+| Field           | Binding / Value                          |
+|-----------------|-------------------------------------------|
+| response.status | -> sendStatus                             |
+| Action          | -> userDecision                           |
+| —               | caseStatus = "InReview"                   |
+| —               | reviewCount = =js:(vars.reviewCount + 1)  |
+```
+
+For worked patterns by Category and operator, see [`sdd-template-examples.md`](../assets/templates/sdd-template-examples.md).
 
 ## Variable lineage closure
 
-Every variable referenced in `sdd.md` must close — there must be a producer earlier in stage order, or it must be `In`-scoped (set by trigger or parent case).
+Every variable referenced in `sdd.md` must close — every consumer must have a producer that fires before it, OR the variable must carry a `Default` value that holds at case start.
 
-For each variable in Section 1.5:
+The new SDD shape carries producer / consumer signal across three places (NOT a `Produced By` / `Consumed By` pair of cells — those columns were retired):
 
-- **Produced By** — `trigger` (set by trigger payload), `system` (set by case framework), or the producing task as `"<Stage Name>"."<Task Name>".<outputName>`.
-- **Consumed By** — every task that reads the variable, plus `case-exit-condition` when used in case exit rules. List ALL — never abbreviate or use "etc."
+| Producer signal | Where it lives |
+|---|---|
+| Trigger payload extraction | §1.5 row's `sourceTriggers` (T-number) + `sourceFields` (payload path) |
+| Task-output extraction | Producing task's Outputs row → `-> <caseVar>` |
+| Task-output set / compute / copy | Producing task's Outputs row → `<caseVar> = <expr>` |
+| Case-start default | §1.5 row's `Default` |
 
-**Closure rule.** For every `Consumed By` entry, the producer must fire before the consumer in stage order. A consumer reading a variable whose producer is in a later stage is an open-lineage error and blocks Approve.
+| Consumer signal | Where it lives |
+|---|---|
+| Task input reads variable | Task's Inputs row `Binding` cell → `=vars.<caseVar>` or `=vars.<caseVar>.<subfield>` |
+| Condition / exit rule reads variable | `IF` column `conditionExpression` → `=vars.<caseVar>` or `=js:` expression referencing `vars.<caseVar>` |
+| Action button writes variable | `Maps To` cell → `<caseVar> = "<value>"` (the button IS a producer for that variable) |
+
+**Closure rule.** For every consumer of `vars.<caseVar>`, at least one of these must hold:
+
+1. There is a producer earlier in stage order (or earlier in same-stage task order).
+2. The §1.5 row for `<caseVar>` declares `Category: In` (caller-supplied — closure satisfied at case start).
+3. The §1.5 row for `<caseVar>` carries a non-empty `Default` value (closure satisfied at case start, even if no producer fires).
+
+Otherwise the variable is open-lineage and Phase 0 cannot Approve.
+
+**Self-binding rule.** An Outputs row of the form `caseVar = =vars.caseVar` or `caseVar = =js:vars.caseVar` (LHS and only-referenced-RHS variable are the same `caseVar`) is FORBIDDEN — it's a no-op that masks a missing producer. Phase 0 strips such rows from the draft, narrates the strip, and emits a `high`-severity review item asking the user whether they meant to (a) wire a different producer, (b) drop the row entirely, or (c) initialize via §1.5 `Default`. Computed self-references like `caseVar = =js:(vars.caseVar + 1)` are allowed (incrementers / accumulators) — the RHS expression mutates the value.
+
+**Stage exit pattern — XOR terminal stages.** When the user describes mutually-exclusive happy-path terminals (e.g., "Funding on approve, Adverse Action Notice on decline"), the case has two valid endings but only one fires per run. Key Rule 4 forbids `selected-stage-*` on case-exit `Yes` rows, so the XOR is modeled at the stage-entry level, not the case-exit level. Two sanctioned patterns:
+
+**Pattern X1 — gated entry + required terminal closes** (default — works on every tenant, no connector emission needed):
+
+- Both terminal stages declared with `Required for case completion: Yes`.
+- Each terminal stage's Entry Condition: `selected-stage-completed("<DecisionStage>")` + `IF` = the condition guarding its lane (e.g., `IF: =vars.decision == "Approve"` for Funding, `IF: =vars.decision == "Decline"` for AAN).
+- **Stage Completion Conditions on each terminal stage:** `required-tasks-completed` (`Marks Stage Complete: Yes`) — the terminal closes normally when its tasks finish.
+- **Stage-skip rule** (Phase 1 validator):  the runtime evaluates Entry Condition `IF` at stage activation time; a terminal whose `IF` is false at activation is auto-completed (`status = "Skipped"`) so `required-stages-completed` still resolves cleanly across the case. This is documented FE behavior — see PO.Frontend stage validation rules. The skipped stage counts as "completed" for required-stages closure.
+- Case Exit §1.4: ONE row, `Marks Case Complete: Yes`, WHEN = `required-stages-completed` (default form), `IF: —`.
+
+**Pattern X2 — connector-event close** (use when both terminals end by emitting a common case-done event):
+
+- Both terminal stages: `Required for case completion: No`.
+- Each terminal stage Entry Condition: as in X1.
+- Each terminal's last task is a `wait-for-connector` or `execute-connector-activity` that emits a shared case-completion event (e.g., funding-confirmed AND aan-sent both fire `caseDone`).
+- Case Exit §1.4: ONE row, `Marks Case Complete: Yes`, WHEN = `wait-for-connector` keyed on `caseDone`.
+
+Pattern X1 is preferred unless an actual connector emits the close event. When the pattern is detected at Sketch time (multiple terminal candidates AND a branching decision earlier in the case), narrate the choice and surface BOTH patterns to the user via AskUserQuestion before drafting the rows.
 
 **Audit checklist** (run before Approve renames the draft):
 
-1. Every variable used in a task input has an entry in Section 1.5.
-2. Every variable used in an exit condition or stage entry rule has `Consumed By: case-exit-condition` (or the consuming stage's entry).
-3. Every variable has a non-blank `Produced By` value.
-4. Producer's stage index < min(Consumer's stage indices). If producer and consumer are in the same stage, producer's task index < consumer's task index.
+1. Every variable referenced by any `=vars.<name>` (or `=vars.<name>.<sub>`) anywhere in `sdd.md` (task Inputs, IF columns, exit rules, button `Maps To`, SLA expressions) has a matching §1.5 row whose `Name` equals `<name>`.
+2. Every §1.5 row's `Category` is exactly one of `In` / `Out` / `Variable` — never blank, never `—`.
+3. **`In` row consistency:** `sourceTriggers` and `sourceFields` are BOTH empty.
+4. **`Out` row consistency:** `sourceTriggers` is empty. Closure requires either (a) non-empty `Default`, OR (b) a task Outputs row in the case plan targeting this Name via `-> {name}` or `{name} = {expr}`. (PR 860 added a Phase 2 validator: `Out` + non-empty `sourceTriggers` → reject.)
+5. **`Variable` row consistency:** if `sourceTriggers` is non-empty, `sourceFields` MUST have a matching entry for every T-number listed. For CSV `sourceTriggers`, `sourceFields` MUST use keyed `T<N>: <path>; T<M>: <path>` format with one keyed entry per T-number — strict, no defaults. Single-T-number rows use a bare path.
+6. **Stage-order closure.** For each consumer of `vars.<caseVar>`, identify producers (trigger-extraction, task Outputs row `->` or `=`). At least one producer's stage index ≤ consumer's stage index AND (same stage) task index < consumer's task index. If no producer exists, the §1.5 row MUST satisfy the `Category: In` or non-empty `Default` escape.
+7. **`->` row payload path present.** Every Outputs `-> {caseVar}` row has a non-empty `Field` cell (the runtime path). Every `=` row has `Field` exactly `—`.
+8. **Forbidden body vocabulary.** No occurrence in any narrative cell of: `Pattern C`, `bridge`, `companion`, `inputOutputs[]`, `=jsonString:` (outside connector `Operation Configuration` cells), `groupOperator`, `essentialConfiguration` (as prose), `savedFilterTrees`, `dispatcher`, `Phase 2 validator`, `Phase 3 dispatcher`, `Q10 II`, `Finding #N`, `io-binding`, `aliased into / from / back into`, `reassign`, `originalVar`, `auto-mint`. These are skill-internal terms — see [sdd-template.md § Output Rules](../assets/templates/sdd-template.md).
 
 Any failure → Phase 0 cannot Approve. Surface in edit-validation errors. AskUserQuestion `Re-edit` / `Restart` / `Abort`.
 
@@ -452,6 +564,58 @@ Severity:
 
 **Approve gate behavior.** When any `high` review items exist, Approve adds an explicit follow-up: `Approve despite N high-severity items` (with the count populated). User must opt in — silent approval is forbidden. Medium and low items show in the Approve summary count but do not require explicit acknowledgment.
 
+## Domain fidelity
+
+Phase 0's narrative cells (Description, persona names, stage names, task names, button labels, prose under §Section 3 personas, §Section 4 integrations) MUST preserve the user's domain vocabulary verbatim. The skill is a transcription layer for business terms, not a paraphraser.
+
+**Preserve verbatim** (do NOT swap to a synonym, even if it sounds more "standard"):
+
+- Customer-named roles (`CFO`, `Underwriter II`, `Compliance Officer`, `Triage Nurse`, `Onboarding Specialist`). Do NOT substitute `Approver`, `Reviewer`, `Manager` unless the user used that exact term.
+- Customer-named domain nouns (`Vendor`, `Supplier`, `Partner`, `Claim`, `Application`, `Loan File`, `PO`, `Ticket`, `Member`, `Patient`). Pick the one the user used. Do NOT homogenize to `Record` or `Item`.
+- Customer-named stage labels (`Triage`, `Underwriting`, `Adverse Action Notice`). Use the user's casing and word choice. Prefix-pad to PascalCase only at the Case Name level (e.g., `MortgageLoanOrigination`).
+- Customer-named decision outcomes (`Approve` / `Decline` / `Needs Info` not `Approve` / `Reject` / `Pending`).
+- Customer-named integration shortnames (if user said `Workday`, never write `the HR system`).
+
+**Allowed normalization** (mechanical, narrate in ledger as `mechanical:<derivation>`):
+
+- PascalCase Case Name from a spaced phrase (`vendor onboarding` → `VendorOnboarding`).
+- 2-4 char identifier prefix from the PascalCase name.
+- camelCase variable names from spaced phrases (`loan amount` → `loanAmount`).
+
+**Detection — when user writes a term once, surface it in the source ledger** as `verbatim:"<quoted exact phrase>"` (see §Source ledger). On Approve, the user is asked to confirm spelling/casing for every customer-named entity.
+
+**Anti-paraphrase rule.** When the agent feels the urge to write `the manager approves the request` and the user said `the senior underwriter signs off`, the agent MUST use `the senior underwriter signs off`. Synonyms are a fidelity bug, not a polish improvement.
+
+## Logical integrity — stage graph
+
+Beyond schema-pairing checks (§Finalization step 1), the case must be a connected graph:
+
+1. **Every stage reachable from a trigger.** Walk forward from each trigger row through Stage Entry Conditions (`case-entered` from root, `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`). Every primary stage's id must be reached. Unreachable stage → blocking error (orphan stage).
+2. **Every stage exits.** Every primary stage must have either (a) a row in §Stage Completion Conditions, OR (b) a row in §Stage Exit Conditions whose `Exit-To Stage` points to another primary stage or a case-exit, OR (c) feed an ExceptionStage. Stages with no exit path → blocking error (terminal-loop stage).
+3. **Every case-exit row references a stage that exists.** No dangling `Required Stages` references.
+4. **Every `Required Stages` cell in §1.4 names ≥ 1 primary stage with `Required for case completion: Yes`.** Otherwise the case can never complete.
+5. **ExceptionStages must have at least one entry condition.** They're not orphan terminals — the case-management runtime requires `wait-for-connector` or `selected-*` rules.
+
+Failure on any step → blocking error in Finalization. AskUserQuestion `Re-edit` / `Restart` / `Abort`.
+
+## Architect's lens
+
+Phase 0's job is to surface execution-readiness gaps, not just schema validity. Run these advisory checks at Finalization and emit `medium` review items (not blocking, but visible to the user) whenever they fire:
+
+| Check | Trigger | Review item |
+|---|---|---|
+| **Single-recipient bottleneck** | An `action` task's `Recipient` is `User: <single uuid>` or `Email: <single>` AND the stage runs on every case AND the case has no documented volume limit | `rev_bottleneck_<task>`: "Single named recipient for an always-on `action` task — confirm volume or change to UserGroup / Role." |
+| **No escalation when SLA exists** | Stage has SLA AND escalation table absent or omitted | `rev_escalation_<stage>`: "Stage SLA defined but no escalation recipients — leadership will not be paged on breach." |
+| **Escalation routes to same group already breaching** | Stage SLA escalation Recipient equals the stage's primary recipient | `rev_escalation_loop_<stage>`: "Escalation recipient is the same actor already missing the SLA — pick a tier-up group or skip-level recipient." |
+| **Synchronous child case in critical path** | `case-management` task `Wait for Completion: Yes` AND the parent has SLA AND no exception-path stage covers child-case timeouts | `rev_childcase_<task>`: "Synchronous child case in SLA-bound parent — consider Wait for Completion: No + completion connector, or an exception path on timeout." |
+| **All-`action` stage** | A stage's tasks are 100% `action` AND stage has > 2 tasks | `rev_human_only_<stage>`: "All tasks in this stage are HITL — consider whether agent / process / api-workflow can pre-fill or pre-screen before human review." |
+| **Missing happy-path exit on first stage** | The first primary stage has only routing exits (`Marks Stage Complete: No`) and no `required-tasks-completed` row | `rev_no_happy_path_<stage>`: "First stage has no happy-path completion — the case may not reach Stage 2 cleanly." |
+| **Decision-button outcome unread** | An `action` task with `is_decision: Yes` writes a case variable in its `Maps To` cell AND that variable is NOT consumed by any downstream condition / stage entry / task input / case exit | `rev_orphan_decision_<task>`: "Decision button writes `<var>` but no downstream rule reads it — branching has no effect on case path. Either consume the variable or downgrade `is_decision` to No." |
+| **Connector-task failure has no exception path** | `execute-connector-activity` / `wait-for-connector` task in a primary stage AND no ExceptionStage entered via `wait-for-connector` failure or task failure rule | `rev_no_failure_path_<task>`: "Connector activity in critical path with no exception-stage cover — runtime failure halts the case." |
+| **Multiple parallel single-recipient bottlenecks** | ≥ 2 stages have single-recipient bottleneck check fire AND they fan-in to the same downstream stage | `rev_multi_bottleneck_<stages>`: "Multiple single-recipient bottlenecks gate a downstream stage — fan-in stalls cascade." |
+
+These items DO NOT block Approve. They surface in the Approve summary's `Review items` count and in §Section 5 of `sdd.md`. The user can `Approve despite N high-severity items` only — `medium` requires no acknowledgment but should not be silently buried.
+
 ## Source ledger (provenance)
 
 When Phase 0 defaults or infers a value, record provenance so Phase 1 and downstream auditors can trace it. The ledger has two surfaces:
@@ -463,7 +627,8 @@ Provenance kinds:
 
 | Kind | When |
 |---|---|
-| `user-stated` | User wrote the value verbatim in chat (no annotation needed) |
+| `user-stated` | User wrote the value in chat (no annotation needed). Paraphrased rendition acceptable. |
+| `verbatim:"<quote>"` | User wrote the value AND the rendered cell is exactly that phrase (no paraphrase). Strongest grounding signal — preferred over `user-stated` for any customer-named entity (role, stage, domain noun, outcome label). Quote is truncated at 40 chars in the ledger; full quote stays in the agent's working memory for Phase 1. |
 | `user-doc:<filename>` | Lifted from a user-shared doc |
 | `mechanical:<derivation>` | One-step derivation (e.g., `mechanical:PascalCase→prefix`) |
 | `compliance-override:<rule>` | Regulatory constraint forced this value (e.g., `compliance-override:ECOA→action`) |
@@ -471,7 +636,7 @@ Provenance kinds:
 | `connector-priority:<connector>` | Hierarchy tier 4 selected `execute-connector-activity` over `api-workflow` |
 | `inferred-default:<reason>` | Defaulted because no source matched (used sparingly — most defaults should be Ask) |
 
-A non-`user-stated` field without provenance is a validation error. Approve blocks until annotated.
+A non-`user-stated` and non-`verbatim` field without provenance is a validation error. Approve blocks until annotated.
 
 ## Finalization
 
@@ -481,16 +646,32 @@ Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these ch
    - Case-exit `Yes` + `selected-stage-*` → error
    - Stage-exit `Yes` + `selected-tasks-completed` → error
 2. **Render-contract check.** Every required cell in §Case content rules, §Stage content rules, §Task content rules has a concrete value (no banned `—` / `<UNRESOLVED>`).
-3. **Decision-task button check.** Every `action` task with `is_decision: Yes` has ≥ 2 buttons; every button's `Maps To` LHS references a declared Section 1.5 variable or `taskOutcome`.
+3. **Decision-task button check.** Every `action` task with `is_decision: Yes` has ≥ 2 buttons; every button's `Maps To` LHS references a declared §1.5 variable (by `Name`) or `taskOutcome`.
 4. **Recipient encoding check.** Every `action` task recipient uses one of the five typed prefixes (`Email:` / `User:` / `UserGroup:` / `Role:` / `Expression:`) — no bare strings.
 5. **Connector-id check.** Every `wait-for-connector` / `execute-connector-activity` task has concrete `Connection ID` AND `Activity Type ID`, OR a paired `high`-severity review item.
 6. **Variable-lineage check.** Every variable closes (producer before consumer; no orphans).
 7. **Override-conflict check.** No compliance trigger phrase paired with a non-`action` task type without explicit user reconciliation in the transcript.
 8. **Alt-disposition coverage.** If ≥ 1 ExceptionStage exists, Section 1.4a is non-empty OR a `high`-severity review item is open.
 9. **Review-items high-severity acknowledgment.** Approve adds the explicit follow-up when `high` items exist.
-10. **Source-ledger check.** Every non-`user-stated` field has provenance.
+10. **Source-ledger check.** Every non-`user-stated` and non-`verbatim` field has provenance.
+11. **File-In-arg caller-obligation surfacing.** When ≥ 1 §1.5 row has `Category: In` AND `Type: file`, the Approve summary MUST include a `Caller obligation` block:
 
-On pass: atomic rename `sdd.draft.md` → `sdd.md`, print Approve summary (with Inferred / defaulted block + review-items count), run Approve AskUserQuestion.
+    ```
+    Caller obligation (file In-arg detected):
+      File In-args:  <comma-separated names>
+      Programmatic callers must pre-create each JobAttachment via POST /odata/Attachments,
+      PUT bytes to the returned blob URI, then pass {ID,FullName,MimeType,Metadata} as the
+      In-arg value AND include the attachment ID in StartProcessDto.Attachments[].
+      Maestro Studio Web's "Start case" dialog does this automatically.
+    ```
+
+    This is informational, not blocking. But missing it suppresses a known integration gotcha.
+
+12. **Stage-graph connectivity check.** Run the §Logical integrity stage-graph checks (every stage reachable, every stage exits, every Required Stages cell points to existing primary stages, every ExceptionStage has ≥ 1 entry condition). Any failure → blocking error.
+13. **Domain-fidelity scan.** Run a single pass over every narrative cell (Description, persona name, stage name, task name, button label, app-view purpose). For each customer-named entity surfaced in §Source ledger as `verbatim:"..."`, confirm the rendered cell still uses the verbatim phrase (no synonym drift). Mismatch → list and offer `Re-edit` with the verbatim phrase pre-filled.
+14. **Architect's-lens advisory pass.** Run the §Architect's lens checks. Emit `medium` review items for each trigger. Non-blocking; Approve summary surfaces the count.
+
+On pass: atomic rename `sdd.draft.md` → `sdd.md`, print Approve summary (with Inferred / defaulted block + Caller obligation block when applicable + review-items count), run Approve AskUserQuestion.
 
 On fail: list specific errors, return to AskUserQuestion `Re-edit` / `Restart` / `Abort`. No Approve until all checks pass.
 
@@ -505,6 +686,10 @@ On fail: list specific errors, return to AskUserQuestion `Re-edit` / `Restart` /
 - **Do NOT emit SLA cells on `process` / `agent` / `rpa` / `api-workflow` / timer / connector / `case-management` tasks.** SLA supports case, stage, and `action` tasks ONLY (sdd-template Key Rule 1).
 - **Do NOT invent `external-agent`, `connector-activity`, `connector-trigger`, or `wait-for-event` as task types.** Closed enum of 9 (Rule 16).
 - **Do NOT author task inputs as bare field-name lists** (`**Inputs:** a, b, c`). Use the `Field | Type | Binding` table — bare lists force Phase 1 into name-match inference.
-- **Do NOT close variable lineage by guessing producers.** If no producer fires before a consumer, that is an error — surface it, do not silently mark the variable `In`.
+- **Do NOT close variable lineage by guessing producers.** If no producer fires before a consumer AND the §1.5 row has no `Default`, that is an open-lineage error — surface it. Never silently retag the row's `Category` to `In` or invent a `Default` to suppress the failure.
+- **Do NOT populate `sourceTriggers` on `In` or `Out` rows.** PR 860 added a Phase 2 validator that rejects `Out` + non-empty `sourceTriggers`. For trigger-payload extraction, use `Category: Variable` (see §1.5 and [sdd-template-examples.md](../assets/templates/sdd-template-examples.md) Use Case 2).
+- **Do NOT use bare `sourceFields` paths when `sourceTriggers` is CSV.** Multi-trigger rows MUST use keyed `T<N>: <path>; T<M>: <path>` format with one entry per T-number. Mismatch is a Phase 2 validator error.
+- **Do NOT mix `->` and `=` operators on the same target case variable within one task's Outputs.** Each target appears in at most one row per task — no double-binding.
+- **Do NOT leak skill-internal vocabulary into SDD narrative cells.** `Pattern C`, `bridge`, `companion`, `io-binding`, `dispatcher`, `Finding #N`, `aliased into`, `auto-mint`, etc. belong inside skill references — not in `sdd.md` Descriptions or notes. See [sdd-template.md § Output Rules](../assets/templates/sdd-template.md).
 - **Do NOT downgrade a `high` review item to `medium` to pass the Approve gate.** The severity ladder is mechanical; downgrade only when the underlying issue actually resolves.
 - **Do NOT omit provenance on inferred values.** Silent inference reaches Phase 1 under Rule 2 trust — provenance is the audit trail.

@@ -25,9 +25,9 @@ Manage UiPath Test Manager resources (projects, test cases, test sets, execution
 UiPath Test Manager is a web application that manages the testing lifecycle of projects, enabling requirements traceability, test planning, and reporting. Its key business objects are:
 
 - **Requirements** - Defines what needs to be tested.
-- **Test cases** - Defines the scenarios to be tested. A testcase can have **teststeps**..
-- **Test sets** - Groups of test cases for execution..
-- **Test executions** - When a test set is run, a test execution is created..
+- **Test cases** - Defines the scenarios to be tested. A testcase can have **teststeps**. A testcase can be executed or run directly.
+- **Test sets** - Groups of test cases for execution.
+- **Test executions** - When a test set or a test case is run, a test execution is created.
 - **Test case logs** - Logs of a **test case** in an execution. A **testcase** can be navigated from **testcaselogs**.
 - **Test step logs** — Step-level logs within a **test case log**.
 - **Test case log assertions** - Assertion steps of a test case log in an execution.

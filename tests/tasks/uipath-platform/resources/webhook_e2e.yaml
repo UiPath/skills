@@ -1,0 +1,48 @@
+task_id: skill-platform-webhook-lifecycle-e2e
+description: >
+  E2E: agent leaves the tenant with a webhook subscription that exists,
+  subscribes to at least one event type, and is currently disabled (so the
+  agent exercises the disable transition).
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 10
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I want to register a webhook on our tenant but keep it paused for now
+  until I'm ready to wire up the receiver. Use the unique prefix in
+  `seed.json` so the name doesn't collide.
+
+  Name it `e2e-webhook-` followed by that prefix. Point it at any
+  reasonable URL (something like `https://webhook.site/test` is fine —
+  it won't fire while disabled). Subscribe it to at least one event
+  type so it's a valid subscription.
+
+  Create it first, then disable it — I want it left in the disabled
+  state at the end.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: webhook exists with subscribed events, disabled"
+    command: "python3 $TASK_DIR/check_webhook.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

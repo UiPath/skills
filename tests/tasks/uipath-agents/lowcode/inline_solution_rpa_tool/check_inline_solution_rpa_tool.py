@@ -3,9 +3,8 @@
 
 Validates:
   1. Flow has a `uipath.agent.autonomous` node whose `inputs.source`
-     (falling back to `model.source` for legacy fixtures) resolves to
-     an existing UUID subdirectory.
-  2. Flow has a `uipath.agent.resource.tool.rpa` node.
+     resolves to an existing UUID subdirectory.
+  2. Flow has a `uipath.agent.resource.tool.process.<uuid>` node.
   3. Edge wires the autonomous node's `tool` handle (source) to the
      RPA tool node's `input` handle (target).
   4. Inside the inline agent dir, at least one resource.json under
@@ -33,13 +32,13 @@ from _shared.inline_wiring import (  # noqa: E402
 )
 
 FLOW_PATH = Path(os.getcwd()) / "PayrollFlowSol" / "PayrollFlow" / "PayrollFlow.flow"
-RPA_TOOL_NODE_TYPE = "uipath.agent.resource.tool.rpa"
+RPA_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.process."
 
 
 def main() -> None:
     flow = load_json(FLOW_PATH)
     agent_node = find_autonomous_agent_node(flow)
-    tool_node = find_resource_node(flow, node_type=RPA_TOOL_NODE_TYPE)
+    tool_node = find_resource_node(flow, node_type_prefix=RPA_TOOL_NODE_TYPE_PREFIX)
     print(f"OK: flow has {agent_node['type']} and {tool_node['type']} nodes")
 
     assert_edge(

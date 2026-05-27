@@ -15,10 +15,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "PayrollSol" containing a low-code agent
   "PayrollAgent". The agent should call an RPA process called

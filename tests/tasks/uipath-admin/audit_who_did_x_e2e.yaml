@@ -18,10 +18,6 @@ agent:
   turn_timeout: 600
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Find out who deleted the `Sales-Reports` folder on the active tenant
   in the last 7 days.

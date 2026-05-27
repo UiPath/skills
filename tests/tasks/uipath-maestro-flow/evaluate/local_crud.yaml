@@ -6,12 +6,7 @@ description: >
   no upload, no run. Tests whether the skill teaches the correct local-CRUD
   workflow and `--output json` discipline on every `uip maestro flow eval`
   command.
-tags: [uipath-maestro-flow, smoke-blocked, mode:build, lifecycle:generate]
-skip: true
-# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
-# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
-# under `maestro flow`). Re-enable once a release exposes the Flow eval
-# surface to the public registry used by CI. See MST-9675.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
 
 agent:
   type: claude-code

@@ -1,0 +1,40 @@
+task_id: skill-agent-guardrail-coded-deterministic
+description: >
+  Deterministic (custom rule) guardrail for a coded agent. A simple LangGraph
+  customer support agent with a lookup_account_info tool is seeded with no guardrails.
+  Use the skill to add a deterministic guardrail that blocks tool calls containing
+  the word "secret" in the input. The user may choose middleware or decorator style.
+  Verifies that the guardrails list was fetched, a rule checking for "secret" is
+  present, and BlockAction is used.
+tags: [uipath-agents, e2e, coded, mode:build]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py with a lookup_account_info tool.
+  I want to add a deterministic guardrail that blocks the lookup_account_info tool
+  whenever the customer_id input contains the word "secret". Use a block action.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "Deterministic guardrail with 'secret' rule correctly added to graph.py"
+    command: "python3 $TASK_DIR/check_guardrail_coded_deterministic.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
