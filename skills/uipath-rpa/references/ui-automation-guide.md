@@ -25,14 +25,6 @@ Do not re-inspect or keep polling after the initial check — subsequent capture
 
 ---
 
-## Launching, Inspecting & Interacting with GUI apps (uia-interact)
-
-`uia-interact` is the sub-skill for any one-shot UIA action against a live app: launching, advancing UI state between captures, inspecting top-level windows, screenshots, attribute reads, element interaction. It is **not** for authoring workflow activities — those go through `uia-configure-target`.
-
-**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Mandatory before any `uip rpa uia interact` or `uip rpa uia snapshot inspect` call.
-
----
-
 ## Capturing from Manual Test Steps
 
 When the source is a Test Manager test case, a PDD, or any written list of "Click X / Enter Y / Select Z / Verify W" steps, treat each interaction step as a capture target before writing any workflow code.
