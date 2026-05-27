@@ -16,15 +16,17 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a LangGraph UiPath coded agent named `expense-approver` that
-  escalates expense-reimbursement requests over `$1000` to a human
-  reviewer in Action Center. Below the threshold, the agent
-  auto-approves.
+  Build a Python UiPath coded agent (LangGraph)
+  named `expense-approver`. It handles expense-reimbursement
+  requests: requests at or below `$1000` are auto-approved, but
+  anything above that limit is an exception that must be escalated
+  to a manager for sign-off before it can be approved.
 
-  The escalation should target an Action Center app named
-  `ExpenseReview` in folder `Finance`, passing the full request
-  payload to the reviewer. The graph must support pause/resume so
-  the escalation can wait for the human response.
+  When an amount breaches the limit, escalate the request to a
+  reviewer through an Action Center app named `ExpenseReview` in
+  folder `Finance`, passing the full request payload. The agent
+  must pause while the escalation is outstanding and resume once the
+  reviewer's decision comes back.
 
   Input: `amount` (number), `description` (string), `submitter`
   (string).
