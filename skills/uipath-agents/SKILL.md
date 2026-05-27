@@ -1,7 +1,7 @@
 ---
 name: uipath-agents
-description: "Always invoke for `agent.json` files or Python projects with `uipath-*` deps. UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
-allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
+description: "Always invoke for low-code agents (Agent Builder / `agent.json`) or Python projects with `uipath-*` deps. UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
+allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
 ---
 
@@ -45,9 +45,11 @@ Determine the agent mode before proceeding:
 | Add a low-code tool (Orchestrator process — RPA / agent / API / agentic — or Integration Service) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/process/*`, `lowcode/capabilities/integration-service/*` |
 | Accept files as agent input / call the Analyze Files built-in tool | Low-code | [lowcode/capabilities/built-in-tools/built-in-tools.md](references/lowcode/capabilities/built-in-tools/built-in-tools.md) | `lowcode/capabilities/built-in-tools/analyze-attachments.md`, `lowcode/agent-definition.md` § File Attachments |
 | Work with file attachments (input, output, or created mid-run) | Coded | [coded/capabilities/file-attachments.md](references/coded/capabilities/file-attachments.md) | |
+| Build a conversational (chat-style) coded agent | Coded | [coded/capabilities/conversational-agents.md](references/coded/capabilities/conversational-agents.md) | |
 | Add a low-code context (Context Grounding RAG / attachments / DataFabric entity set) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/context/*` |
 | Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
 | Add guardrails (PII, harmful content, custom rules) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/guardrails/guardrails.md` |
+| Add guardrails to a coded agent | Coded | [coded/capabilities/guardrails.md](references/coded/capabilities/guardrails.md) | fetch official docs via WebFetch, ask middleware vs decorator, read agent code, write Python |
 | Add escalation guardrail (escalate action / Action Center app) | Low-code | [lowcode/capabilities/guardrails/guardrails.md](references/lowcode/capabilities/guardrails/guardrails.md) § escalate — Hand Off to Action Center | Run `uip solution resource list --kind App` to confirm app exists |
 | Recommend guardrails for a low-code agent based on its context | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) | fetch catalog + list, analyze agent context, apply + validate |
 | Recommend guardrails for a specific scope or tool | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) § Scoped or Tool-Specific Filtering | filter candidates by scope or tool name after catalog analysis |
@@ -58,6 +60,10 @@ Determine the agent mode before proceeding:
 | Embed coded agent in a flow (solution-level) | Coded | [coded/embedding-in-flows.md](references/coded/embedding-in-flows.md) | |
 | Use coded agent in a flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) | |
 | Use coded agent as tool for another agent in flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) § Pattern 3 | |
+| Summarize / research / synthesize over PDF or TXT (DeepRAG, coded) | Coded | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [coded/capabilities/deeprag/planning.md](references/coded/capabilities/deeprag/planning.md) |
+| Summarize / research / synthesize over PDF or TXT (DeepRAG, low-code) | Low-code | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [lowcode/capabilities/built-in-tools/deeprag/planning.md](references/lowcode/capabilities/built-in-tools/deeprag/planning.md) |
+| Process CSV rows with LLM per row (BatchTransform, coded) | Coded | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [coded/capabilities/batch-transform/planning.md](references/coded/capabilities/batch-transform/planning.md) |
+| Process CSV rows with LLM per row (BatchTransform, low-code) | Low-code | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [lowcode/capabilities/built-in-tools/batch-transform/planning.md](references/lowcode/capabilities/built-in-tools/batch-transform/planning.md) |
 
 ## Resources
 

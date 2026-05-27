@@ -10,10 +10,6 @@ description: >
   what matters is the agent's CLI invocation pattern.
 tags: [uipath-admin, smoke, mode:diagnose, audit, pagination]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   A compliance reviewer wants the 500 most recent tenant audit events
   from the last 30 days.

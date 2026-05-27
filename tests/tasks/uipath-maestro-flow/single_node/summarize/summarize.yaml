@@ -17,10 +17,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath Flow project named "SummarizeDemo" that uses a Summarize
   pattern node to synthesize a response over an attached document. The flow

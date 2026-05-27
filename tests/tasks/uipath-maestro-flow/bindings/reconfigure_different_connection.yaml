@@ -1,0 +1,101 @@
+task_id: skill-flow-bindings-reconfigure-different-connection
+description: >
+  When the same connector node is reconfigured against a different connection,
+  the resulting .flow must reference ONLY the new connection — no stale
+  bindings from the previous configure should remain, and no empty-keyed
+  stubs should be left behind. This exercises the fallback-by-(name, resource)
+  path of `upsertConnectionResourceBinding` against a non-empty-keyed row.
+  See https://github.com/UiPath/cli/pull/2197.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, bindings, regression]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 3600
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Load the uipath-maestro-flow skill and follow its workflow exactly.
+
+  Build a flow named "BindingsReconfigure" — Manual Trigger → IS connector
+  node → End — saved as `BindingsReconfigure/flow_files/BindingsReconfigure.flow`
+  with `BindingsReconfigure/project.uiproj`.
+
+  Pick two distinct connections (different connectionIds) backed by the same
+  connector — if the tenant only has one connection for a given connector,
+  fall back to any connector that has two live connections.
+
+  Record the ids at the sandbox root and snapshot the .flow after each configure:
+
+      echo '{"a":"<connection-a-id>","b":"<connection-b-id>"}' > conn_ids.json
+
+  After configuring with A:
+      cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_a.flow
+
+  After reconfiguring the SAME node with B:
+      cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_b.flow
+
+success_criteria:
+  - type: command_executed
+    description: "Agent called `node configure` at least twice"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Snapshots and conn_ids.json exist with two distinct ids"
+    command: "python3 -c \"import json; d=json.load(open('conn_ids.json')); a,b=d['a'],d['b']; assert a and b and a!=b, f'Expected two distinct connection ids, got a={a} b={b}'\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "after_a.flow references connection A"
+    command: "python3 $TASK_DIR/check_bindings.py has_connection_key_from_json after_a.flow conn_ids.json a"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "after_b.flow has zero references to connection A (no stale rows)"
+    command: "python3 $TASK_DIR/check_bindings.py no_connection_leak_from_json after_b.flow conn_ids.json a"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "after_b.flow ConnectionId binding points at connection B"
+    command: "python3 $TASK_DIR/check_bindings.py connection_id_is_from_json after_b.flow conn_ids.json b"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Reconfigure did not grow bindings count"
+    command: "python3 $TASK_DIR/check_bindings.py count_equal 'after_a.flow' 'after_b.flow'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No empty-keyed Connection bindings in final snapshot"
+    command: "python3 $TASK_DIR/check_bindings.py no_empty_stubs 'after_b.flow'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

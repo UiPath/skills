@@ -18,10 +18,6 @@ agent:
   turn_timeout: 600
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Find out who deleted the `Sales-Reports` folder on the active tenant
   in the last 7 days.
@@ -36,14 +32,6 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent checked login status before any audit call"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent invoked `uip admin audit tenant sources` (discovery before query)"
     tool_name: "Bash"

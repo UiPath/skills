@@ -17,6 +17,10 @@ uip maestro flow eval
 │   ├── add    — Add an evaluator to the flow project
 │   ├── list   — List evaluators in a flow project
 │   └── remove — Remove an evaluator from a flow project
+├── simulation
+│   ├── add    — Add or update a simulation on a data point
+│   ├── list   — List simulations on a data point
+│   └── remove — Remove a simulation from a data point
 └── run
     ├── start    — Start a Studio Web evaluation run
     ├── status   — Check the status of a run
@@ -124,6 +128,97 @@ List evaluators in the project.
 
 Remove an evaluator. `<id>` accepts UUID, name, or file base name. Removing an evaluator does not auto-clean `evaluatorRefs` in eval sets — verify after removing.
 
+## Simulations
+
+Simulations intercept specific nodes (connectors, agents, sub-flows) during an eval run and replace their real execution with a controlled response. Each simulation targets a single component by its `componentId` and applies one of three strategies.
+
+### `uip maestro flow eval simulation add <component-id>`
+
+Add or replace a simulation on a data point. If a simulation for `<component-id>` already exists on the data point it is overwritten.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--set <name>` | Yes | Eval set name or ID |
+| `--data-point <id>` | Yes | Data point name or ID |
+| `--strategy <strategy>` | Yes | `Llm` or `Static` |
+| `--component-type <type>` | Yes | Component type (e.g. `connector`, `agent`, `subflow`) |
+| `--component-description <text>` | No | Human-readable label for the component |
+| `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |
+| `--mock-value <json>` | No | Static JSON output (for `Static` strategy) |
+| `--output-schema <json>` | No | JSON Schema describing the expected output shape; passed to the LLM to constrain its response. **Auto-resolved from the `.flow` file when omitted for `Llm` strategy** — fails if the node is not found or has no outputs. Pass explicitly to override. |
+| `--path <path>` | No | (see Common Options) |
+
+**Strategy guide:**
+
+| Strategy | When to use | Key flags |
+|----------|-------------|-----------|
+| `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |
+| `Static` | Output is fixed and deterministic | `--mock-value` |
+
+**`--output-schema` auto-resolution for Llm simulations:** When omitted, the CLI reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`). Fails with an actionable error if the node is not found or has no outputs. Pass `--output-schema` explicitly to override. The JSON Schema is sent alongside `--simulation-instructions` to the LLM, telling it what shape the output must conform to. Without it the LLM generates free-form text. For a connector that returns `{ status, message }` you would pass:
+
+```bash
+--output-schema '{"type":"object","properties":{"status":{"type":"string"},"message":{"type":"string"}}}'
+```
+
+Example — LLM strategy:
+
+```bash
+uip maestro flow eval simulation add connector-send-email \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --strategy Llm \
+  --component-type connector \
+  --simulation-instructions "Pretend to send the email and return a success confirmation." \
+  --path ./MySolution/MyFlow --output json
+```
+
+Example — Static strategy:
+
+```bash
+uip maestro flow eval simulation add agent-lookup \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --strategy Static \
+  --component-type agent \
+  --mock-value '{"result": "found", "items": []}' \
+  --path ./MySolution/MyFlow --output json
+```
+
+### `uip maestro flow eval simulation list`
+
+List all simulations configured on a data point.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--set <name>` | Yes | Eval set name or ID |
+| `--data-point <id>` | Yes | Data point name or ID |
+| `--path <path>` | No | (see Common Options) |
+
+```bash
+uip maestro flow eval simulation list \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --path ./MySolution/MyFlow --output json
+```
+
+### `uip maestro flow eval simulation remove <component-id>`
+
+Remove a simulation from a data point. Returns an error if no simulation with the given `<component-id>` exists on the data point.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--set <name>` | Yes | Eval set name or ID |
+| `--data-point <id>` | Yes | Data point name or ID |
+| `--path <path>` | No | (see Common Options) |
+
+```bash
+uip maestro flow eval simulation remove connector-send-email \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --path ./MySolution/MyFlow --output json
+```
+
 ## Run
 
 ### `uip maestro flow eval run start`
@@ -200,6 +295,7 @@ The CLI emits a `Code` field on every JSON response. Useful when filtering or sc
 | `eval remove` | `FlowEvalRemove` |
 | `eval set add` / `list` / `remove` | `FlowEvalSetAdd` / `FlowEvalSetList` / `FlowEvalSetRemove` |
 | `eval evaluator add` / `list` / `remove` | `FlowEvalEvaluatorAdd` / `FlowEvalEvaluatorList` / `FlowEvalEvaluatorRemove` |
+| `eval simulation add` / `list` / `remove` | `FlowEvalSimulationAdd` / `FlowEvalSimulationList` / `FlowEvalSimulationRemove` |
 | `eval run start` (no `--wait`) | `MaestroFlowEvalRunStarted` |
 | `eval run start --wait` (summary) | `MaestroFlowEvalRunCompleted` |
 | `eval run status` | `MaestroFlowEvalRunStatus` |

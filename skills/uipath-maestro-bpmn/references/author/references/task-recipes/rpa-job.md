@@ -3,6 +3,10 @@
 The current supported implementation wrapper for confirmed RPA process
 execution is `bpmn:serviceTask` with `Orchestrator.StartJob`.
 
+Use a complete `StartJob` context: process key, folder key, folder ID, folder
+path, and process name. Resolve these values from process and folder discovery
+before execution; keep examples public-safe.
+
 The model may draft:
 
 - Stable service task ID, display name, incoming/outgoing flows, and BPMN DI.

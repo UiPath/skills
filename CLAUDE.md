@@ -35,3 +35,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 - Preserve the Critical Rules section — these prevent expensive agent mistakes
 - Validate YAML frontmatter — broken frontmatter breaks skill discovery
 - Ensure `description` field has both TRIGGER and DO NOT TRIGGER conditions
+
+## When Writing or Modifying Tests
+
+Tests live in `tests/tasks/<skill-name>/` as coder_eval task YAMLs. Before authoring or editing a task, read [tests/README.md](tests/README.md) for the full framework: tag taxonomy, experiment configs, success-criteria types, weight guidance, and the `/generate-task` and `/test-coverage` slash commands. Repo-specific authoring constraints (workflow, required tags, sandbox rules, anti-patterns) are in [.claude/rules/test-writing.md](.claude/rules/test-writing.md).

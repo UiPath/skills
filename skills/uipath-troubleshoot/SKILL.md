@@ -170,7 +170,7 @@ Only after all actions are complete (accepted, declined, or surfaced as blocked)
 
 ## 7. Operational Details
 
-**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions, context, working directory path, and the absolute path to `.local/investigations/` in the prompt.
+**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions and context in the prompt.
 
 **Progress:** Use `TaskCreate`/`TaskUpdate` for each phase. Tailor subjects to the user's problem.
 

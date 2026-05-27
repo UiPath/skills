@@ -18,10 +18,6 @@ agent:
 run_limits:
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.
 
@@ -42,7 +38,15 @@ initial_prompt: |
      Fields[].fieldDataType.{lengthLimit,minValue,maxValue} — print them so
      they are visible in the transcript.
 
-  4. Add a new field to the entity: Notes (MULTILINE_TEXT, lengthLimit 2000).
+  4. Add a new field to the entity using a unique name: `Notes_<EPOCH>`
+     (MULTILINE_TEXT, lengthLimit 2000), where `<EPOCH>` is the current
+     Unix epoch seconds. The epoch suffix guarantees the field does not
+     yet exist on the reused entity, so the `addFields` call always
+     applies a fresh field.
+     # Operational note: each successful run leaves one Notes_<EPOCH> field
+     # on the shared LifecycleTest entity. Periodic cleanup via
+     # `entities update --body '{"removeFields":[...]}'` is required once
+     # the destructive-ops CLI support lands (separate PR).
 
   5. Update the Score field: set displayName to "Test Score", isRequired to
      true, and tighten maxValue from 1000 to 500. Use the field ID from
@@ -140,9 +144,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used fieldName (not name) in entity create body"
+    description: "Agent used the `fieldName` key when defining a field (entity create or update addFields)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*fieldName'
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*fieldName'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

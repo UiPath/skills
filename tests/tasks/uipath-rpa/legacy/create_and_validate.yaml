@@ -30,10 +30,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 900
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Create a new legacy UiPath RPA project called "HelloLegacy" with a Main.xaml
   that logs "Hello from legacy" using a LogMessage activity. Follow the skill's

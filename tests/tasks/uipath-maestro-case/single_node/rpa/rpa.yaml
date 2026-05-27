@@ -18,10 +18,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1500
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Case Management solution named "RpaSingleCase" containing
   a project also named "RpaSingleCase" from the sdd.md below. Write the
@@ -55,10 +51,10 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | in_ProblemNumber | input | number | 123 | Project Euler problem number to solve | trigger:Manual | runRpa.runProjectEuler |
-  | problemTitle | implementation | string | - | Problem title returned by the ProjectEuler RPA workflow | runRpa.runProjectEuler | - |
+  | in_ProblemNumber | In | number | | | 123 | Project Euler problem number to solve. |
+  | problemTitle | Variable | string | | | | Problem title returned by the ProjectEuler RPA workflow; populated by Run RPA. |
 
   ## Section 2: Stages & Tasks
 
@@ -133,3 +129,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

@@ -13,10 +13,6 @@ run_limits:
   max_turns: 80
   turn_timeout: 600
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow named "LeaveRequest" with this structure:
 

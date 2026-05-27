@@ -17,10 +17,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "FraudSol" containing a low-code agent
   "FraudTriageAgent". The agent accepts a required `transaction`

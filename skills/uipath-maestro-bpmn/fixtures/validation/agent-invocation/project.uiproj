@@ -1,0 +1,7 @@
+{
+  "projectVersion": "1.0.0",
+  "ProjectType": "ProcessOrchestration",
+  "Name": "AgentInvocation",
+  "description": "End-to-end fixture: start-scoped entry input plus Orchestrator.StartAgentJob with the name+folderPath binding pair.",
+  "main": "agent-invocation.bpmn"
+}

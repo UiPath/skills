@@ -1,0 +1,101 @@
+task_id: skill-test-integration-developer-workflow-impact
+description: >
+  Integration test: agent uses uipath-test skill to analyze workflow impact
+  on linked test cases. Developer updates shipment-routing workflows and
+  needs to understand which test cases are affected before merge.
+  Asserts agent (a) checks auth, (b) discovers the SHIP project,
+  (c) lists test sets in project, (d) lists test cases per test set,
+  (e) identifies impacted test sets based on workflow name pattern,
+  (f) generates impact analysis report.
+tags: [uipath-test, integration, mode:diagnose, lifecycle:discover, feature:test-case]
+
+# Project Reference
+# Use SHIP project (Shipment Routing) for this test.
+# Fixture: 5 test cases covering shipment workflows; 1 test set
+# with 3-4 linked test cases; execution history available.
+
+agent:
+  type: claude-code
+  max_turns: 60
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  **Project Context: SHIP (Shipment Routing)** — use this specific project
+  for all queries.
+
+  I'm a developer on the logistics platform team. This sprint I refactored
+  two core workflows in our shipment-routing system:
+
+  1. `ShipmentCreation.xaml` — changed the carrier-selection algorithm to
+     factor in real-time fuel prices instead of static carrier ratings
+  2. `RouteOptimization.xaml` — switched from greedy nearest-neighbor to
+     a constraint-based solver to handle multi-stop deliveries
+
+  My PR is ready for review and I need to know what testing coverage I'll
+  break before I hit "merge". Please query the **SHIP** project in Test
+  Manager and tell me:
+
+  - Which test sets contain test cases that exercise these two workflows
+    (look for names mentioning "Shipment Creation", "Route Optimization",
+    "Carrier Selection", or "Delivery Routing")
+  - The full list of test cases in those affected test sets, with their
+    current state
+  - Most recent execution results for those test cases — pass rate,
+    last-run date, any flaky tests
+  - A merge-readiness summary: which test cases must be rerun before
+    merge, and which scenarios are at highest risk given my changes
+
+  Save your analysis as `shipment-impact-analysis.md` in the current
+  working directory.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rule #1 + #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent looked up Shipment Routing project with `project list --filter` + `--output json`"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+tm\s+project\s+list\s+.*--filter\s+\S*ship.*--output\s+json|uip\s+tm\s+project\s+list\s+.*--output\s+json.*--filter\s+\S*ship'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test sets scoped to project (`testsets list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent enumerated test cases in test set (`testsets list-testcases --project-key --test-set-key` + `--output json` — all three flags required; SKILL.md documents `--project-key` as required)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key)(?=.*--test-set-key)(?=.*--output\s+json)uip\s+tm\s+testsets\s+list-testcases\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved execution history (`executions list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Impact analysis report generated with workflow-test mapping and validation recommendations"
+    command: |
+      ls shipment-impact-analysis.md 2>/dev/null >/dev/null \
+        && grep -qiE 'shipment|carrier|route|test case|impact|workflow' shipment-impact-analysis.md
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

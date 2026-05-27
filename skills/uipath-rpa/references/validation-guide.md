@@ -32,22 +32,30 @@ When an error occurs, identify the root cause, fix **only** that one thing, and 
 
 ## Validation Iteration Loop
 
-After every file create or edit, validate with **both** `validate` and `build`. They catch disjoint error classes — neither alone is sufficient. Run them in sequence on every iteration; do not stop at "`validate` is clean".
+Phase 1 — per-file `validate` after every edit. Phase 2 — one project-level `build` per edit session.
 
 ```
-REPEAT:
-  1. uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
-  2. IF validate has errors -> fix one thing, GOTO 1
-  3. uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
-  4. IF build has errors -> fix one thing, GOTO 1
-  5. EXIT to Smoke Test
+PHASE 1 — validate-clean (per-file):
+  FOR each file created or edited in this session:
+    REPEAT:
+      1. uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+      2. IF validate has errors -> fix one root cause, GOTO 1
+      3. EXIT inner loop when validate is clean
+
+PHASE 2 — build-clean (per-project, once per edit session):
+  REPEAT:
+    1. uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+    2. IF build has errors -> identify offending file from build output
+       a. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output json   # cheap targeted re-check
+       b. fix one root cause, GOTO 1
+    3. EXIT to Smoke Test
 ```
 
-**Why both.** `validate` is static analysis: it catches structural XAML, missing references, analyzer rules, and schema violations. `build` is the compiler: it catches **unknown member names** (e.g. `NGetText.Value` when the property is `Text`), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these classes; `build` flags them at compile time. Trusting only `validate` ships broken workflows.
+**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the property is `Text`), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
 
-**Target the specific file:** Use `--file-path` on `validate` to validate only the file you changed -- faster than validating the whole project. `build` is project-scoped (no `--file-path`); when it errors, identify the offending file from the build output and re-run `validate --file-path` on that file as part of the fix loop.
+**Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
 
-**Cap at 5 fix attempts** across the combined `validate` + `build` loop. After 5 failed iterations, present the remaining errors to the user. They may require domain knowledge or environment-specific fixes.
+**5-attempt cap per loop** — 5 attempts for each file's Phase 1 `validate` loop; a separate 5 attempts for the Phase 2 `build` loop. After a loop exhausts its budget, present the remaining errors to the user. They may require domain knowledge or environment-specific fixes.
 
 ### Rules
 
@@ -61,13 +69,13 @@ See [cli-reference.md](cli-reference.md) for full `validate` and `run` command d
 
 ## Project Build Verification (Required Before Returning a Project)
 
-Every project returned to the user must compile. The per-file iteration loop above already includes `build` after `validate` is clean — if that loop completed cleanly on the project's current state, this gate is already satisfied. Otherwise, run:
+Every project returned to the user must compile. Phase 2 of the iteration loop above is this gate — when Phase 2 exits clean, the gate is satisfied. The standalone command below also satisfies it (for example, when re-verifying after a small fix outside an iteration loop):
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-`validate` is static analysis and misses compile-time failures: unknown member names, invalid enum values, member resolution / CacheMetadata failures, and JIT failures like `JIT compilation is disabled for non-Legacy projects` — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md). If `build` fails, apply the same fix loop as above (fix one thing, re-run, cap at 5). A successful `run` smoke test substitutes for `build` — `run` compiles internally.
+`validate` is static analysis and misses compile-time failures: unknown member names, invalid enum values, member resolution / CacheMetadata failures, and JIT failures like `JIT compilation is disabled for non-Legacy projects` — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md). If `build` fails, apply the Phase 2 fix loop (fix one root cause, re-run, cap at 5 attempts). A successful `run` smoke test substitutes for `build` — `run` compiles internally. Prefer the `run --skip-build` form when `build` has just passed (see Smoke Test below).
 
 ### Errors `build` catches that `validate` misses
 
@@ -84,16 +92,18 @@ When you see "no diagnostics found" from `validate`, you have not validated the 
 
 `validate` (static analysis) and `run` (runtime compilation) use different validation paths. Some errors -- such as invalid enum values on activity properties -- pass static validation but fail at runtime. Always treat the smoke test as a critical validation step, not just an optional extra.
 
-After reaching 0 validation errors, run the workflow to catch runtime errors (wrong credentials, missing files, logic bugs) that static validation cannot detect:
+After reaching 0 validation errors AND a clean project-level build (Phase 2), run the workflow to catch runtime errors (wrong credentials, missing files, logic bugs) that static validation cannot detect. Use `--skip-build` because the project has just been built clean — default `run` re-validates and re-builds internally, repeating ~10s of compilation:
 
 ```bash
-# Run with default arguments:
-uip rpa run --file-path "<FILE>" --output json
+# Run with default arguments (post-build, skip the redundant rebuild):
+uip rpa run --file-path "<FILE>" --skip-build --output json
 # Run with input arguments:
-uip rpa run --file-path "<FILE>" --input-arguments '{"key": "value"}' --output json
+uip rpa run --file-path "<FILE>" --skip-build --input-arguments '{"key": "value"}' --output json
 # Run with verbose logging for debugging:
-uip rpa run --file-path "<FILE>" --log-level Verbose --output json
+uip rpa run --file-path "<FILE>" --skip-build --log-level Verbose --output json
 ```
+
+Use bare `run` (without `--skip-build`) whenever the build artifact may be stale: **(a)** no recent project-level `build` has been performed, OR **(b)** any file has been edited between the last successful `build` and this `run`. `--skip-build` executes the existing compiled artifact, so any post-build edit is silently ignored until a fresh `build` runs.
 
 **When to run:**
 1. Workflow has no compilation errors but you want to verify runtime behavior

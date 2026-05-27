@@ -111,6 +111,10 @@ For each trigger in `trigger-spec-cache.json`:
 | Referenced as `Category=In` | — (In doesn't reference a payload field; the value comes from caller or Default at fire) | Bridge entry per § In argument below — `{name: <sdd-name>, type: <sdd-row.type>, source: "=vars.<inputId>", var: <sdd-name>}`. Works on ANY trigger type (manual, timer, event). For event triggers, the bridge propagates the formal slot's `default` to the companion at trigger fire (no caller-override path, but mechanics are identical). | per § In argument below | — | per § In argument below |
 | Referenced as `Category=Out` | — | **REJECT** (direction mismatch — Out-args flow case→caller) | — | — | — |
 
+**File-type carve-out:** when the spec output's `type` is `"file"` (or `"octet-stream"` — normalize to `"file"`), both rows above additionally require:
+- `triggerNode.outputs[]` entry: add `target: "=orchestrator.JobAttachments"` — runtime persists attachment bytes via this expression. Without it, the JobAttachment record is never written.
+- `root.inputOutputs[]` companion: add `body: <FILE_TYPE_JSON_SCHEMA verbatim>` (see [`## file type`](#file-type)). Pattern C companions normally have no body, but file-type companions MUST carry the FILE_TYPE_JSON_SCHEMA so the FE picker can navigate `=vars.<id>.FullName` sub-fields and activate the JobAttachment widget.
+
 **Dedup rule:** if multiple SDD rows reference the same trigger spec output (rare, but possible across multi-trigger cases), each writes its own `triggerNode.outputs[]` entry but they share one `root.inputOutputs[]` declaration (first-write-wins on type / default; Phase 2 validator rejects conflicts).
 
 **Top-level match semantics:** matching is by **top-level spec output name only** (i.e., the `name` field of an entry in `caseShape.outputs[]` — `response`, `Error`, etc.). When an SDD row's Name equals the top-level spec name, the SDD-named entry **replaces** the would-be plain-name auto-emit for that exact entry; do not write both.
@@ -228,6 +232,12 @@ Three entries — formal slot + companion + bridge:
 
 > **Placeholder trigger interaction:** if the trigger is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.uipath.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
 
+**File-type In-arg carve-out:** when `type === "file"`:
+- Formal slot (entry 1) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` (see [`## file type`](#file-type)) — drives entry-points.json `$ref: "#/definitions/job-attachment"` at packaging
+- Companion (entry 2) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` — drives FE picker sub-field navigation (`=vars.<id>.FullName`)
+- Bridge (entry 3) unchanged — no `target` on the bridge; the runtime caller has already uploaded the bytes via JobAttachments API before case-start
+- `default` MUST stay `""` — FE rejects any other value for file Variables (`InputOutputArgumentsDialog.tsx:148`)
+
 ### Out argument
 
 SDD row: `Category=Out`. **Companion is ALWAYS emitted at write time** (per FE convention — `UnifiedBuildCaseDataManager.tsx:298-324` always writes the companion when an Out-arg is created). The BPMN packager's `collapseArgumentCompanions` (`CaseManagementRootConverterUtils.ts:211-237`) may collapse the companion at packaging time, but that's downstream of the skill.
@@ -329,6 +339,45 @@ Custom outputs are an existing task-plugin concept, unchanged by B's redesign. T
 { "id": "caseData", "name": "caseData", "type": "jsonSchema",
   "body": { "type": "object", "properties": { "status": { "type": "string" } } },
   "_jsonSchema": { "type": "object", "properties": { "status": { "type": "string" } } } }
+```
+
+## file type
+
+File Variables hold a JobAttachment record (`{ID, FullName, MimeType, Metadata}`), not a path or bytes. Runtime writes the record when the producing task completes.
+
+`body` MUST be the FILE_TYPE_JSON_SCHEMA constant **byte-for-byte** (matches FE `VariableConstants.ts:10-36`). The `x-uipath-resource-kind: "JobAttachment"` marker activates the FE picker; missing `description` / `additionalProperties` fields cause round-trip drift on FE re-save.
+
+Normalize `"octet-stream"` → `"file"` before emitting. The FE's `isFileType` accepts both, but only `"file"` round-trips through CLI emission.
+
+```json
+{ "id": "evidenceDoc", "name": "evidenceDoc", "type": "file",
+  "body": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "ID":       { "type": "string", "description": "Orchestrator attachment key" },
+      "FullName": { "type": "string", "description": "File name" },
+      "MimeType": { "type": "string", "description": "The MIME type of the content, such as application/json or image/png" },
+      "Metadata": { "type": "object",
+                    "description": "Dictionary<string, string> of metadata",
+                    "additionalProperties": { "type": "string" } }
+    },
+    "required": ["ID"],
+    "x-uipath-resource-kind": "JobAttachment"
+  },
+  "default": "", "custom": true, "elementId": "root" }
+```
+
+## date / datetime types
+
+Primitive — no body, no target. FE renders DatePicker / DateTimePicker based on the type.
+
+```json
+{ "id": "submittedOn", "name": "submittedOn", "type": "date",
+  "default": "", "custom": true, "elementId": "root" }
+
+{ "id": "lastSeen", "name": "lastSeen", "type": "datetime",
+  "default": "=js:new Date().toISOString()", "custom": true, "elementId": "root" }
 ```
 
 ## Expression Syntax

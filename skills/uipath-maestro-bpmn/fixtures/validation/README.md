@@ -13,7 +13,8 @@ Public-safe fixture corpus for the `uipath-maestro-bpmn` skill maintenance check
 | `subprocess-multi-instance/` | Subprocess scoped variables, multi-instance loop metadata, script task metadata, mappings, message event, and diagram/waypoint coverage. |
 | `contract-variants/` | Representative public-safe Orchestrator agent, A2A, API workflow, business rule, queue, agentic/case call activity, message send event, case-management draft/preserve shells, `Intsvc.WaitForEvent`, numeric migration, legacy script, and preserve-only extension variants. |
 | `registry-coverage-matrix/` | Synthetic static wrapper coverage for current registry rows not otherwise covered by the corpus, including HITL, plain RPA, timer, HTTP, unified HTTP, and remaining Integration Service execution variants. |
-| `wrapper-family-contract/` | Maestro BPMN wrapper coverage for `A2A.AgentExecution`, API workflow, business rule, queue wait, case-management call activity, and `Intsvc.WaitForEvent` enrichment paths. |
+| `wrapper-family-contract/` | Maestro BPMN wrapper coverage for `Orchestrator.StartAgentJob` (folder-deployed coded or low-code agent with the required `name`+`folderPath` binding pair), API workflow, business rule, queue wait, case-management call activity, and `Intsvc.WaitForEvent` enrichment paths. `A2A.AgentExecution` (external A2A) coverage stays in `contract-variants/`. |
+| `agent-invocation/` | End-to-end runnable example for invoking a folder-deployed coded (Python) or low-code agent: start-scoped `uipath:inputOutput` entry input, `Orchestrator.StartAgentJob` with the `name`+`folderPath` binding pair, and direct `JobArguments` / `Process response` payloads on `uipath:activity`. Matches the shape enforced by the Maestro BPMN packager validator. |
 
 ## Contract Coverage Scope
 
@@ -41,13 +42,14 @@ The corpus was piloted against these public-safe authoring and debugging request
 | Review imported XML that mixes public Orchestrator wrappers, Integration Service waits, message events, case-management draft/preserve shells, numeric migrations, legacy script metadata, and unsupported UiPath extension payloads. | `contract-variants/` | Added structural checks that wrappers stay on the documented BPMN element classes and preserve-only payloads are retained without private identifiers. |
 | Compare the static fixture corpus against the registry surface exposed by `uip maestro bpmn registry list`. | `registry-coverage-matrix/` plus existing fixtures | Filled the missing wrapper rows with synthetic placeholders while keeping cloud resource resolution as a later authenticated test. |
 | Verify that Maestro BPMN XML keeps the documented wrapper family for agent execution, API workflow, business rules, queue wait, case management, and connector wait nodes. | `wrapper-family-contract/` | Added contract checks for wrapper-to-service-type alignment so coverage fails if supported behavior drifts to the wrong BPMN element family. |
+| Invoke a folder-deployed coded Python agent end-to-end from BPMN with the binding-pair shape (`name`+`folderPath`, `resource="process"`, `resourceSubType="Agent"`) and a downstream-readable entry input. | `agent-invocation/` | Demonstrates the shape that survives both `uip maestro bpmn pack` and `uip solution pack` validation. |
 
 ## Validation Output
 
 Latest local fixture validation from this pilot:
 
 ```text
-validation_fixture_projects=8 bpmn_files=8 errors=0
+validation_fixture_projects=9 bpmn_files=9 errors=0
 ```
 
 The local checker also runs a narrow negative regression for a misnamed
@@ -74,11 +76,15 @@ Full skill maintenance suite from the repository root:
 bash skills/uipath-maestro-bpmn/.maintenance/check-all.sh
 ```
 
-CI should run the same two commands before skill evals. The smoke eval task for this corpus is:
+`check-all.sh` includes real `uip maestro bpmn pack` coverage for every fixture.
+When `uip login status` reports a logged-in tenant, it also runs
+`uip solution pack` for the `agent-invocation/` runnable contract fixture.
+
+CI should run the same commands before skill evals. The smoke eval task for this corpus is:
 
 ```bash
 cd tests
-make tags TAGS="uipath-maestro-bpmn smoke" EXPERIMENT=experiments/default.yaml
+make tags TAGS="uipath-maestro-bpmn smoke" EXPERIMENT=experiments/smoke.yaml
 ```
 
 ## Public-Safety Rules

@@ -73,12 +73,14 @@ Fires when an upstream stage exits via a `wait-for-user` exit condition and the 
   {
     "id": "Rule_xxxxxx",
     "rule": "wait-for-connector",
-    "conditionExpression": "event.fraudScore > 0.8"
+    "conditionExpression": "=js:event.fraudScore > 0.8"
   }
 ]]
 ```
 
 Set `isInterrupting: true` for exception/fraud/escalation flows.
+
+`conditionExpression` uses bare `=js:<expr>` (no outer parens). For combined boolean expressions, wrap each sub-clause in parens before joining: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## Rule-Type Catalog
 

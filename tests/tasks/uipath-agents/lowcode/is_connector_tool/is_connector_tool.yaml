@@ -20,10 +20,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a UiPath solution "ResearchSol" containing a single low-code
   agent "ResearchAgent". The agent should be able to search the web

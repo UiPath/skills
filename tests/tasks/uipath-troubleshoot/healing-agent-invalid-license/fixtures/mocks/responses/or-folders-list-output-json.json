@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "No description",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

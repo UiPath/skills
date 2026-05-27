@@ -19,10 +19,6 @@ agent:
 run_limits:
   max_turns: 60
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Scaffold a UiPath Flow project called "SmokeEval" inside a solution of the
   same name, then build the eval scaffolding for it — purely local, no Studio

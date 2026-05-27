@@ -1,5 +1,7 @@
 # Do While
 
+> **On the [Common Activity Card](../../../../common-activity-card.md)** — prefer the card for routine authoring.
+
 `UiPath.Core.Activities.InterruptibleDoWhile`
 
 Executes contained activities first and then loops if the condition is True.
@@ -31,7 +33,7 @@ Executes contained activities first and then loops if the condition is True.
 
 ```xml
 <ui:InterruptibleDoWhile
-    xmlns:ui="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities"
+    xmlns:ui="http://schemas.uipath.com/workflow/activities"
     DisplayName="Do While">
   <ui:InterruptibleDoWhile.Body>
     <Sequence DisplayName="Body">

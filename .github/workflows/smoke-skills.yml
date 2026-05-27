@@ -30,7 +30,9 @@ jobs:
       - name: Detect changed skills and map to test tasks
         id: detect
         run: |
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          BASE_REF="${{ github.base_ref }}"
+          BASE_REF="${BASE_REF:-main}"
+          CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
 
           # RPA skill (modern + legacy) runs on the Windows workflow
           # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
@@ -56,12 +58,11 @@ jobs:
           # If test infrastructure changed, run all smoke tests except
           # the Windows-only ones and opt-in benchmarks.
           #
-          # We only fan out for the smoke config (default.yaml) — other
-          # experiment files (integration.yaml, e2e.yaml, activation.yaml,
-          # ...) drive their own jobs/dashboards and don't change smoke
-          # behavior, so editing them shouldn't trigger a 30-min full-suite
-          # run on every PR.
-          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
+          # We only fan out for the smoke config (smoke.yaml) — other
+          # experiment files (e2e.yaml, activation.yaml, ...) drive their
+          # own jobs/dashboards and don't change smoke behavior, so editing
+          # them shouldn't trigger a 30-min full-suite run on every PR.
+          if echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -215,23 +216,19 @@ jobs:
           UV_INDEX_UIPATH_PASSWORD: ${{ secrets.UV_INDEX_UIPATH_PASSWORD }}
         run: make docker-image
 
-      # Install from GitHub Packages under the `alpha` dist-tag so smoke
-      # tracks `cli/main`. Every merge to `cli/main` runs
-      # cli/.github/workflows/ci.yml, which publishes a
-      # `-alpha.<date>.<run>` prerelease to
-      # https://npm.pkg.github.com/ under dist-tag `alpha`. Public npm
-      # only carries the cut-release `latest` line which lags `main` by
-      # days, so smoke against `@latest` was masking CLI changes that
-      # task YAMLs and skills had already been updated for.
-      - name: Install uip CLI + admin tool (GitHub Packages @alpha)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+      # Build custom smoke image extending coder-eval-agent with @uipath/cli
+      # and @uipath/admin-tool from GitHub Packages @alpha.
+      # Every merge to `cli/main` publishes a `-alpha.<date>.<run>` prerelease;
+      # smoke tracks this so changes in task YAMLs/skills are tested against main,
+      # not stale `latest` from public npm (which lags by days).
+      - name: Build skills smoke Docker image
         run: |
-          npm config set @uipath:registry https://npm.pkg.github.com/
-          npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
-          npm install -g @uipath/cli@alpha @uipath/admin-tool@alpha
-          uip --version
-          uip admin --help
+          docker build \
+            --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
+            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
+            -t skills-image:latest \
+            -f tests/docker/Dockerfile \
+            .
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
       # smoke tasks (orchestrator / integration-service / data-fabric / ...)
@@ -263,13 +260,6 @@ jobs:
             echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
           } >> "$GITHUB_ENV"
-          UIPATH_CLI_ENABLE_ENV_AUTH=true \
-          UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
-          UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
-          UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
-          UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
-          UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
-            uip login status --output json
           mkdir ~/.uipath
 
       - name: Run smoke tests
@@ -294,9 +284,10 @@ jobs:
         working-directory: tests
         id: smoke
         run: |
+          shopt -s globstar nullglob
           echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml \
+            -e experiments/smoke.yaml \
             -j "$TASK_PARALLELISM" -v \
             --run-dir /tmp/runs \
             --tags smoke
@@ -452,3 +443,58 @@ jobs:
               print(f'::error::Pass rate {rate:.1%} < threshold {threshold:.0%}')
               sys.exit(1)
           PY
+
+  # Advisory consistency gate. Does every task YAML in the repo still load
+  # under coder_eval@main's TaskDefinition schema? This is the skills-side
+  # mirror of coder_eval's `validate-skills-yamls` gate: it catches the class
+  # of bug where a task YAML uses a criterion type/field coder_eval's schema
+  # doesn't accept, surfacing it here at authoring time instead of weeks later
+  # (and on the wrong repo) in coder_eval CI.
+  #
+  # Validates the WHOLE tree, not just changed files, so pre-existing drift is
+  # always visible. `continue-on-error` shows the job red for visibility but
+  # keeps the workflow conclusion green — non-blocking, like the coder_eval
+  # gate. Flip to a hard gate by removing `continue-on-error` once the tree is
+  # clean and the convention has bedded in.
+  validate-task-schema:
+    name: Validate task schema (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    continue-on-error: true
+    # Skip forks: GH_PAT for the private coder_eval checkout isn't available
+    # to forked PRs (matches the e2e job's secret requirements).
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/coder_eval
+          token: ${{ secrets.GH_PAT }}
+          path: .coder_eval
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install coder-eval
+        working-directory: .coder_eval
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system .
+
+      - name: Validate every task YAML against coder_eval@main schema
+        # `coder-eval plan` exits non-zero if any file fails to load under the
+        # current TaskDefinition schema. Job-level continue-on-error keeps a
+        # failure here non-blocking.
+        run: |
+          set -uo pipefail
+          YAMLS=$(find tests/tasks -type f -name '*.yaml' | grep -v '/_shared/' | sort)
+          if [ -z "$YAMLS" ]; then
+            echo "No task YAMLs found under tests/tasks — checkout layout drift?"
+            exit 1
+          fi
+          echo "Validating $(printf '%s\n' "$YAMLS" | wc -l | xargs) task YAML(s) against coder_eval@main."
+          printf '%s\n' "$YAMLS" | tr '\n' '\0' | xargs -0 coder-eval plan

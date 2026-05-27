@@ -12,10 +12,6 @@ agent:
 run_limits:
   max_turns: 65
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   I want to build a UiPath Case Management definition that includes a HITL
   action-app task and an RPA-style process task. Before planning, explore

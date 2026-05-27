@@ -16,10 +16,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I want to automate our expense approval workflow. Here's the rough idea:
 

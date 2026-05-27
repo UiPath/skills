@@ -22,10 +22,6 @@ run_limits:
   max_turns: 50
   turn_timeout: 1800
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I have a UiPath Flow project and a deployed Action Center app called
   "Expense Review" in the Shared folder. I need to add a HITL node to my

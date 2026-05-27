@@ -16,11 +16,9 @@ run_limits:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
-    - type: template_dir
-      path: ../../../../skills/uipath-maestro-bpmn
+  - type: template_dir
+    path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

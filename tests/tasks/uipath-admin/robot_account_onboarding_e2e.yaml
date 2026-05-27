@@ -14,10 +14,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Onboard an unattended invoice-processing robot ("smoke-e2e-bot" /
   "Smoke E2E Bot") and add it to the "Automation Users" group.

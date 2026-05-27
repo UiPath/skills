@@ -139,7 +139,7 @@ The generated SDD must start with:
 | Case Identifier | Prefix: {2-4 char UPPER prefix}, Type: {constant \| external} |
 | Priority | Choiceset: {comma-separated values} — Default: {value} |
 | Case-Level SLA | {count} {unit: h/d/w/m} |
-| SLA Type | {Static \| Variable} |
+| SLA Type | {time-based \| condition-based} |
 
 ### Case-Level SLA Escalation Rules
 
@@ -150,7 +150,7 @@ The generated SDD must start with:
 
 ### Variable SLA Rules
 
-> Include this table only if SLA Type is Variable. Each row defines an expression-based SLA override.
+> Include this table only if SLA Type is `condition-based`. Each row defines an expression-keyed SLA override; the time-based default lives in the Case Metadata `Case-Level SLA` cell above. FE persists `slaRules[]` with non-empty `conditionExpression` per row (PO.Frontend `CaseManagementSlaProperties.tsx`).
 
 | Expression | SLA | Unit |
 |------------|-----|------|
@@ -196,11 +196,11 @@ DO NOT include in Configuration:
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| {camelCase name} | {In \| Out \| Variable} | {string \| number \| boolean \| date \| object \| array \| jsonSchema} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
+| {camelCase name} | {In \| Out \| Variable} | {string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
 
 **Category semantics (author-facing summary; canonical definition in [`global-vars/impl-json.md` § Pattern shapes by category](../../references/plugins/variables/global-vars/impl-json.md)):**
 
-- **`In`** — formal case argument supplied at case start by an external caller (manual trigger via API) OR initialized from `Default` (event / timer triggers, which have no caller). Works with any trigger type. For event-trigger-payload-extraction (where the value comes from the event's payload), use `Variable` with `sourceTriggers` + `sourceFields` (Use Case 2) instead — that's a different operation.
+- **`In`** — formal case argument supplied at case start by an external caller (manual trigger via API) OR initialized from `Default` (event / timer triggers, which have no caller). Works with any trigger type. For event-trigger-payload-extraction (where the value comes from the event's payload), use `Variable` with `sourceTriggers` + `sourceFields` (Use Case 2) instead — that's a different operation. **File-type In-args:** the runtime caller must pre-create the JobAttachment (`POST /odata/Attachments`, then `PUT` the bytes to the returned blob URI) and pass the resulting `{ID, FullName, MimeType, Metadata}` record as the In-arg value plus the attachment ID in `StartProcessDto.Attachments[]`. The Maestro Studio Web "Start case" dialog handles this automatically when the user picks a file; programmatic callers must do it themselves.
 - **`Out`** — formal case argument returned to the caller at case end. Value comes from a task's Outputs row that targets this Name (the producer) OR from a `Default` value if no task fires. `sourceTriggers` MUST be empty (direction mismatch — values flow case→caller, not trigger→case).
 - **`Variable`** — case-internal state. May be populated by one trigger's payload (single T-number in `sourceTriggers` + single path in `sourceFields`), by multiple triggers' payloads sharing the same slot (CSV in `sourceTriggers` + keyed `T<N>: <path>` format in `sourceFields`), by a task output (use `->` operator in that task's Outputs table — same Name on both sides drives the wiring), or initialized via `Default` only.
 
@@ -228,7 +228,7 @@ If neither holds, the io-binding validator surfaces the misalignment.
 | caseStarter | Variable | string | T02, T03 | T02: response.user; T03: response.initiator | | Shared slot — whichever trigger fires populates it |
 | applicantName | In | string | | | | Formal In-arg supplied by API caller (manual trigger) |
 | finalDecision | Out | string | | | "Pending" | Out-arg; producer is "Approve Decision" task; "Pending" returned if no task fires |
-| reviewCount | Variable | number | | | 0 | Counter incremented by tasks via `=` operator |
+| reviewCount | Variable | integer | | | 0 | Counter incremented by tasks via `=` operator |
 
 ---
 
@@ -258,7 +258,7 @@ If neither holds, the io-binding validator surfaces the misalignment.
 | Error            | -> sendError                              | ← top-level Error sibling → vars.sendError
 | Action           | -> userDecision                           | ← action task top-level output → vars.userDecision
 | —                | caseStatus = "InReview"                   | ← set caseStatus literally
-| —                | reviewCount = =js:(vars.reviewCount + 1)  | ← increment counter
+| —                | reviewCount = =js:vars.reviewCount + 1    | ← increment counter
 | —                | summary = =vars.response.message.text     | ← copy another variable's sub-field
 ```
 

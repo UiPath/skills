@@ -11,10 +11,6 @@ description: >
   correct command shape.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I created a robot account in Identity Service called "InvoiceRunner"
   with id `f1b2c3d4-0000-0000-0000-000000000001`. I want to import it

@@ -13,10 +13,6 @@ run_limits:
   max_turns: 75
   turn_timeout: 900
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow named "ExpenseReview" for expense claim approval:
 
@@ -34,8 +30,7 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Script (log) → End
 
-  Use the inline quickform node (uipath.human-in-the-loop).
-  Do NOT run flow debug. Validate after building.
+  Validate the flow after building.
 
 success_criteria:
   - type: run_command

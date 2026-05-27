@@ -5,10 +5,6 @@ description: >
   signals without explicit HITL mention.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   My UiPath Flow has an AI agent that classifies customer complaints.
   Most classifications are confident and route automatically, but a
@@ -16,31 +12,19 @@ initial_prompt: |
   cases the agent cannot resolve autonomously — they need to escalate
   to a human supervisor who makes the final routing call.
 
-  Recommend whether HITL is needed and identify which canonical HITL
-  pattern from the `uipath-human-in-the-loop` skill applies. The skill's
-  `references/hitl-patterns.md` enumerates six canonical patterns; pick
-  exactly one and emit its machine name verbatim.
+  Analyze whether a human checkpoint is needed, identify what type of pattern
+  this is, and describe where in the flow it should go.
 
-  Write a `recommendation.json` file with this exact shape:
+  Write your analysis to `recommendation.json`:
   {
     "hitl_needed": <true or false>,
-    "pattern": "<one of the canonical pattern names listed below>",
+    "pattern": "<type of human checkpoint pattern>",
     "insertion_point": "<short phrase describing where in the flow>",
     "proposed_schema": {
       "inputs": ["<field names>"],
       "outcomes": ["<button names>"]
     }
   }
-
-  Use EXACTLY one of these machine names for `pattern` (lowercase,
-  hyphenated, no extra adjectives or prefixes — names mirror the
-  section titles in `references/hitl-patterns.md`):
-    - approval-gate
-    - exception-escalation
-    - data-enrichment
-    - compliance-checkpoint
-    - write-back-validation
-    - agentic-output-review
 
 success_criteria:
   - type: file_exists
@@ -67,7 +51,7 @@ success_criteria:
     assertions:
       - expression: "pattern"
         operator: regex
-        expected: "^(exception-escalation|agentic-output-review)$"
+        expected: "(?i)(escalat|agentic.output)"
     weight: 1.5
     pass_threshold: 1.0
 

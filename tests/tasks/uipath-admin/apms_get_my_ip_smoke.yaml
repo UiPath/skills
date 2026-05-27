@@ -9,10 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, get, apms]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   What public IP does the UiPath platform see for me right now?
 

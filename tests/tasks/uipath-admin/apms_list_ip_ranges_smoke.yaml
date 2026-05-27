@@ -9,10 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, list, apms]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   List all the IP range allowlist entries configured for my UiPath organization.
 

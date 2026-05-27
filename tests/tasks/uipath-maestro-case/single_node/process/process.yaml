@@ -19,10 +19,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1500
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Case Management solution named "ProcessSingleCase" containing
   a project also named "ProcessSingleCase" from the sdd.md below. Write the
@@ -56,9 +52,9 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | procurementCompleted | implementation | boolean | false | ProcurementProcess completion flag | runProcess.runProcurementProcess | - |
+  | procurementCompleted | Variable | boolean | | | false | ProcurementProcess completion flag; populated by Run Process. |
 
   ## Section 2: Stages & Tasks
 
@@ -123,3 +119,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

@@ -5,39 +5,21 @@ description: >
   direct HITL language and that the agent identifies the correct pattern.
 tags: [uipath-human-in-the-loop, smoke]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
-  I have a UiPath Flow. Add a Human-in-the-Loop node before the final data
-  write step so a manager can review and approve the data before it is posted.
+  I have a UiPath Flow. Before the final data write step, a manager
+  needs to review and approve the data before it is posted.
 
-  Recommend whether HITL is needed and identify which canonical HITL
-  pattern from the `uipath-human-in-the-loop` skill applies. The skill's
-  `references/hitl-patterns.md` enumerates six canonical patterns; pick
-  exactly one and emit its machine name verbatim.
-
-  Write a `recommendation.json` file with this exact shape:
+  Analyze whether a human checkpoint is needed and what kind of approval
+  pattern applies. Write your analysis to `recommendation.json`:
   {
     "hitl_needed": <true or false>,
-    "pattern": "<one of the canonical pattern names listed below>",
+    "pattern": "<type of human checkpoint pattern>",
     "proposed_schema": {
       "inputs": ["<field names the human will see>"],
       "outputs": ["<field names the human fills in>"],
       "outcomes": ["<action button names>"]
     }
   }
-
-  Use EXACTLY one of these machine names for `pattern` (lowercase,
-  hyphenated, no extra adjectives or prefixes — names mirror the
-  section titles in `references/hitl-patterns.md`):
-    - approval-gate
-    - exception-escalation
-    - data-enrichment
-    - compliance-checkpoint
-    - write-back-validation
-    - agentic-output-review
 
 success_criteria:
   - type: file_exists
@@ -65,7 +47,7 @@ success_criteria:
     assertions:
       - expression: "pattern"
         operator: regex
-        expected: "^(approval-gate|write-back-validation)$"
+        expected: "(?i)(approval.gate|write.back)"
     weight: 1.5
     pass_threshold: 1.0
 

@@ -72,9 +72,6 @@ uip admin users invite \
 
 Use `create` instead of `invite` when:
 - **Migrations & batch imports** — syncing users from external systems
-- **Service accounts** — accounts with admin-set passwords, no email workflow needed
-- **Admin-provisioned access** — user needs immediate login without waiting for email acceptance
-- **No email available** — `create` does not require an email address; `invite` does
 
 1. Check for duplicates: `uip admin users list --search "<USERNAME>" --output json`
 2. Create: `uip admin users create "<USERNAME>" --email "<EMAIL>" --name "<FIRST_NAME>" --surname "<LAST_NAME>" --output json`

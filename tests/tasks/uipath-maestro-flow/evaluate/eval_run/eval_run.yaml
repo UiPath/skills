@@ -23,10 +23,6 @@ run_limits:
   max_turns: 90
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a deterministic UiPath Flow and run a Studio Web evaluation
   end-to-end. Use the `uipath-maestro-flow` skill — both the `author` and

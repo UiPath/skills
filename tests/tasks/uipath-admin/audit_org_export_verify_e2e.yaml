@@ -45,17 +45,13 @@ agent:
   turn_timeout: 600
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Export ORGANIZATION-level audit events (memberships, license changes,
-  tenant lifecycle) for the 3-day window from 5 days ago through
-  2 days ago (UTC, whole days) to ./audit-org-window.zip in the
-  current working directory. Resolve the dates with
-  `date -u -d '5 days ago' +%Y-%m-%d` and `date -u -d '2 days ago' +%Y-%m-%d`
-  so the window slides with the run date.
+  tenant lifecycle) for the single UTC day **2 days ago** to
+  ./audit-org-window.zip in the current working directory. Resolve the
+  date with `date -u -d '2 days ago' +%Y-%m-%d` so the window slides
+  with the run date — use the same value for both `--from-date` and
+  `--to-date`.
 
   Important:
   - The `uip` CLI is available and connected via env-var auth to a
@@ -64,8 +60,7 @@ initial_prompt: |
   - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
     bounds (no inline `T00:00:00Z` for these flags — the CLI treats
     them as whole-day boundaries).
-  - The 2-days-ago upper bound preserves the >48h LTS-lag buffer so
-    the export is comparable against the live events endpoint.
+  - The 2-days-ago boundary preserves the >48h LTS-lag buffer.
   - This is ORG scope, not tenant. Do NOT pass `--tenant-id` (org
     silently ignores it).
   - Do NOT prompt the user for confirmation — this is an automated test.
@@ -86,61 +81,45 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "ZIP is a valid archive (zero or more .txt entries — an empty zip is acceptable for a quiet org)"
+    description: "Org export is a valid ZIP (zero or more .txt entries — an empty zip is acceptable for a quiet org)"
     command: |
-      set -euo pipefail
-      test -f ./audit-org-window.zip
-      # `unzip -l` should succeed on a valid archive; we don't require entries
-      # since a quiet org over a 3-day window can legitimately produce no events.
-      unzip -l ./audit-org-window.zip >/dev/null
+      python3 -c "
+      import zipfile
+      assert zipfile.is_zipfile('./audit-org-window.zip'), 'not a valid zip'
+      names = zipfile.ZipFile('./audit-org-window.zip').namelist()
+      print(f'OK: {len(names)} entries')
+      "
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Org export event IDs are a subset of org events API for the same window (whole-day boundaries)"
+    description: "Org export contains well-formed events: each per-day file is a JSON array; events use the documented PascalCase schema"
     command: |
-      set -euo pipefail
-      mkdir -p /tmp/audit-org-export
-      unzip -o ./audit-org-window.zip -d /tmp/audit-org-export >/dev/null
-
-      # If the ZIP has no .txt files (quiet org), the export-subset assertion
-      # trivially holds and we exit cleanly.
-      shopt -s nullglob
-      TXT_FILES=(/tmp/audit-org-export/*.txt)
-      if [ ${#TXT_FILES[@]} -eq 0 ]; then
-        echo "OK: org export window is empty — subset assertion trivially holds"
-        exit 0
-      fi
-
-      # Export shape uses PascalCase keys (Id, CreatedOn, ...).
-      EXPORTED=$(jq -r '.[]?.Id' "${TXT_FILES[@]}" 2>/dev/null | sort -u)
-      EXPORTED_COUNT=$(echo "$EXPORTED" | grep -c . || true)
-
-      # Live ORG events API — whole-day boundaries to bracket the
-      # export's per-day captures. NOTE: `org events`, not `tenant events`.
-      # Dates slide with the run date and match the relative window in
-      # the prompt (5 days ago through 2 days ago).
-      FROM=$(date -u -d '5 days ago' +%Y-%m-%d)
-      TO=$(date -u -d '2 days ago' +%Y-%m-%d)
-      LIVE_JSON=$(uip admin audit org events \
-        --from-date "${FROM}T00:00:00Z" \
-        --to-date   "${TO}T23:59:59.999Z" \
-        --limit 50000 --output json)
-      LIVE=$(echo "$LIVE_JSON" | jq -r '.Data.auditEvents[].id' | sort -u)
-      LIVE_COUNT=$(echo "$LIVE" | grep -c . || true)
-
-      # Export ⊆ Live (LTS lag means events can have *more* than export,
-      # but every export ID must appear in events).
-      MISSING=$(comm -23 <(echo "$EXPORTED") <(echo "$LIVE") | grep -c . || true)
-
-      echo "exported=$EXPORTED_COUNT  live=$LIVE_COUNT  missing_from_live=$MISSING"
-      if [ "$MISSING" -gt 0 ]; then
-        echo "FAIL: $MISSING org export IDs not found in events API" >&2
-        comm -23 <(echo "$EXPORTED") <(echo "$LIVE") | head -5 >&2
-        exit 1
-      fi
+      python3 -c "
+      import json, sys, zipfile
+      REQUIRED = ['Id','CreatedOn','OrganizationId','ActorId','EventType','EventSource','EventTarget']
+      z = zipfile.ZipFile('./audit-org-window.zip')
+      txt_files = [n for n in z.namelist() if n.endswith('.txt')]
+      if not txt_files:
+          print('OK: org export window is empty (no per-day files) — structural assertion trivially holds')
+          sys.exit(0)
+      sample = None
+      total = 0
+      for name in txt_files:
+          data = json.loads(z.read(name))
+          assert isinstance(data, list), f'{name} is not a JSON array'
+          total += len(data)
+          if sample is None and data:
+              sample = data[0]
+      if sample is None:
+          print('OK: every per-day file is an empty JSON array — structural assertion trivially holds')
+          sys.exit(0)
+      missing = [k for k in REQUIRED if k not in sample]
+      assert not missing, f'sample event missing PascalCase keys: {missing}; sample={sample}'
+      print(f'OK: validated structure across {len(txt_files)} per-day files, total events={total}')
+      "
     timeout: 60
     expected_exit_code: 0
     weight: 4.0

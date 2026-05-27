@@ -16,10 +16,6 @@ run_limits:
   max_turns: 70
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I have a UiPath Flow project. First, create this starting flow by writing
   it to ExpenseApproval/ExpenseApproval/ExpenseApproval.flow:

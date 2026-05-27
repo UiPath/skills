@@ -6,10 +6,6 @@ description: >
   command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   List the unattended robot sessions available in the current UiPath tenant.
 

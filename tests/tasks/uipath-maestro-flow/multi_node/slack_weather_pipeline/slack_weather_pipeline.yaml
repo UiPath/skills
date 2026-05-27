@@ -14,20 +14,12 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description to find out which city the office is in, then fetch the current weather for that city from open-meteo. If it's above 60F output 'warm office today', otherwise 'cold office today'.
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
-
-  Test connections for this task live in Orchestrator folder "Shared/uipath-maestro-flow".
-  Resolve its key with `uip or folders get "Shared/uipath-maestro-flow" -o json`
-  and pass `--folder-key <key>` on every `uip is connections list` call.
 
 success_criteria:
   - type: run_command
@@ -45,3 +37,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

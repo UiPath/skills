@@ -18,10 +18,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1500
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Case Management solution named "ParentCaseSingle" containing
   a project also named "ParentCaseSingle" from the sdd.md below. Write the
@@ -55,9 +51,9 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | childCaseSpawned | implementation | boolean | false | ChildOnboardingCase spawn flag | delegate.spawnChildOnboardingCase | - |
+  | childCaseSpawned | Variable | boolean | | | false | ChildOnboardingCase spawn flag; populated by Delegate. |
 
   ## Section 2: Stages & Tasks
 
@@ -124,3 +120,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

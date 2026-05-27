@@ -14,10 +14,6 @@ agent:
 run_limits:
   max_turns: 30
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
   Every uip df command will fail with an auth error — that is expected and normal.

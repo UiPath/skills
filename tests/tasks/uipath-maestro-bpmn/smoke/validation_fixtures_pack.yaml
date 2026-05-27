@@ -14,11 +14,9 @@ run_limits:
   turn_timeout: 900
 
 sandbox:
-  driver: docker
-  python: {}
   template_sources:
-    - type: template_dir
-      path: ../../../../skills/uipath-maestro-bpmn
+  - type: template_dir
+    path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
@@ -34,6 +32,7 @@ initial_prompt: |
   - `fixtures/validation/contract-variants/`
   - `fixtures/validation/registry-coverage-matrix/`
   - `fixtures/validation/wrapper-family-contract/`
+  - `fixtures/validation/agent-invocation/`
 
   Requirements:
   - Use the installed `uip` CLI to pack each fixture project. Send packed

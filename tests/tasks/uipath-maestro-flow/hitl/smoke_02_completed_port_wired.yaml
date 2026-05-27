@@ -13,19 +13,15 @@ run_limits:
   max_turns: 105
   turn_timeout: 600
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow named "PurchaseApproval" with this structure:
     Manual Trigger -> HITL (manager approves purchase) -> Script (log approval) -> End
 
-  Use the inline quickform HITL node (uipath.human-in-the-loop).
+  The reviewer's form should be inline — rendered by Action Center.
   The HITL node shows the reviewer: purchase amount and vendor name.
   Outcomes: Approve and Reject.
 
-  Wire the HITL node's completed handle to the Script node.
+  Wire the output of the HITL step to the Script node.
   The Script node logs: "Approval recorded."
 
   Validate the flow after building.

@@ -17,15 +17,12 @@ Administrative operations on UiPath via `uip admin` — Identity Server, Authori
 - **Manage identity users** — list, create, invite, update, delete
 - **Manage groups** — CRUD + add/remove members
 - **Manage robot accounts** — create, update, delete unattended robot identities
-- **Manage external apps** — OAuth2 clients, generate/rotate secrets
 - **Manage external apps** — OAuth2 clients, secrets, federated credentials
 - **Manage personal access tokens (PATs)** — create, list, revoke, regenerate
 - **Configure SMTP** — get, update, test, delete email settings
 - **Browse OAuth2 scopes** — list available scopes for external apps and PATs
 - **Onboard human user** — invite, assign to groups
 - **Onboard robot account** — create account, assign to groups
-- **Identity concepts** — partitions, organizations, OAuth2 scopes
-- **Generate Client ID/Secret** — credentials for API or robot authentication
 
 ### Authz
 
@@ -81,7 +78,7 @@ Each rule is the agent contract. Per-area detail is in the linked reference file
 
 6. **Discover before creating.** `list` before `create` to avoid duplicates (robot accounts, groups, external apps — `users invite` excepted).
 7. **Secrets shown only once** on external-app create and `generate-secret` — warn the user to save immediately.
-8. **External apps require scopes at creation** — `--scope` is required (e.g., `OR.Folders`, `OR.Assets`, `OR.Queues`, `OR.Jobs`, `OR.Machines`).
+8. **External apps require scopes at creation** — `--app-scope` or `--user-scope` is required (e.g., `--app-scope "OR.Folders"`).
 9. **Group membership uses user IDs.** Resolve via `users list` per Rule 5, then `groups members add/revoke`.
 10. **Confirm before delete** on users / groups / robot accounts / external apps — after resolving the named target per Rule 5.
 
@@ -147,7 +144,7 @@ One row per common goal. Per-area workflows are in the reference files.
 | **Grant permission(s) to a principal** ("grant me X", "give alice Y, Z") | [grant-permissions.md](references/authorization/grant-permissions.md) — intersection-and-menu flow |
 | **Assign a role to a principal** | (1) Resolve principal per Rule 5. (2) `roles get <ROLE_ID>` → echo `ownerServiceName` + verify scope-path service segment matches (Rule 17). (3) `roles assignments create --role-id <ROLE_ID> --identity-id <ID> --identity-type <User\|Group\|Robot\|ExternalApplication> --output json` |
 | **See what a principal can do** | `uip admin authorization check-access <USER_GUID_OR_EMAIL> --scope <Tenant\|Folder> --output json` (Rule 15) |
-| **Create a tenant** | `organizations regions list` → `tenants create --name <N> --region <R>` → poll `organizations operation get <OP_ID>` (Rule 18) |
+| **Create a tenant** | [tenant-management.md](references/tenant-management.md) — region + default-services resolution, file-body shape, operation polling (Rule 18) |
 | **Add a tenant service** | `tenants services list-available --region <R>` → `tenants services add --tenant-id <TID> --service <SVC>` (verify post-state per Rule 22) |
 | **Enable IP allowlist enforcement** | `ip-restriction my-ip` → verify covered by `ip-ranges list` → `ip-restriction enforcement enable --confirm` (Rule 31) |
 | **Query audit events / export** | [audit-workflow-guide.md](references/audit-workflow-guide.md) — scope disambiguation + 4 investigation playbooks (who-did-X, login history, date-range dump, overview) |
@@ -198,7 +195,9 @@ For per-area full checklists, follow the table's inline links: Identity → [ide
 | Manage users (list / create / invite / update / delete) | [references/user-management.md](references/user-management.md) |
 | Manage groups (CRUD + membership) | [references/group-management.md](references/group-management.md) |
 | Manage robot accounts | [references/robot-account-management.md](references/robot-account-management.md) |
-| Manage external apps (OAuth2 + secrets) | [references/external-app-management.md](references/external-app-management.md) |
+| Manage external apps (OAuth2 + secrets + federated credentials) | [references/external-app-management.md](references/external-app-management.md) |
+| Manage personal access tokens (PATs) | [references/pat-management.md](references/pat-management.md) |
+| Configure SMTP email settings | [references/smtp-management.md](references/smtp-management.md) |
 | Authorization CLI reference | [references/authorization/authorization-commands.md](references/authorization/authorization-commands.md) |
 | Manage custom roles | [references/authorization/role-management.md](references/authorization/role-management.md) |
 | Grant permission(s) to a principal — scope/service intersection flow | [references/authorization/grant-permissions.md](references/authorization/grant-permissions.md) |

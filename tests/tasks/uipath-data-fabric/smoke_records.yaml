@@ -13,11 +13,7 @@ agent:
   type: claude-code
 
 run_limits:
-  max_turns: 30
-
-sandbox:
-  driver: docker
-  python: {}
+  max_turns: 50
 
 initial_prompt: |
   OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
@@ -55,6 +51,10 @@ initial_prompt: |
       Use placeholder record ID "id-single".
 
   Additional constraints:
+  - Each of the 10 steps MUST be its OWN Bash tool call. Do NOT batch
+    multiple `uip df` invocations into a single shell command using `&&`,
+    `;`, or `|` — the criterion checker counts Bash tool calls, not
+    invocations inside a chained shell command.
   - Pagination MUST use CLI flags (--limit, --cursor, --offset). Do NOT put
     "start", "limit", "offset", or "pageSize" inside any --body JSON.
   - Never pass both --offset and --cursor on the same command.

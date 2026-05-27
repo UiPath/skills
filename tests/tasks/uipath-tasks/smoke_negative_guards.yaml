@@ -9,10 +9,6 @@ description: >
   complete already-completed tasks) without a live tenant.
 tags: [uipath-tasks, smoke, negative]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Before starting, load the uipath-tasks skill and follow its workflow.
 

@@ -1,5 +1,7 @@
 # For Each
 
+> **On the [Common Activity Card](../../../../common-activity-card.md)** — prefer the card for routine authoring.
+
 `UiPath.Core.Activities.ForEach`1`
 
 Performs an activity or a series of activities on each element of an enumeration.
@@ -13,7 +15,7 @@ Performs an activity or a series of activities on each element of an enumeration
 
 | Name | Display Name | Kind | Type | Required | Default | Description |
 |------|-------------|------|------|----------|---------|-------------|
-| `Values` | Values | `InArgument` | `IEnumerable<T>` | No | — | The collection to iterate over. The element type `T` is inferred from the collection and determines the type of the iterator variable. |
+| `Values` | Values | `InArgument` | `System.Collections.IEnumerable` (non-generic) | No | — | The collection to iterate over. The element type `T` is set on the outer `<ui:ForEach x:TypeArguments="...">`, NOT on `Values`. Declare `xmlns:sc="clr-namespace:System.Collections;assembly=System.Private.CoreLib"` and bind as `<InArgument x:TypeArguments="sc:IEnumerable">`. |
 | `MaxIterations` | Max Iterations | `InArgument` | `int` | No | — | Maximum number of iterations. A value of `0` means unlimited. |
 
 ### Configuration
@@ -32,21 +34,24 @@ Performs an activity or a series of activities on each element of an enumeration
 
 ```xml
 <ui:ForEach x:TypeArguments="x:String"
-    xmlns:ui="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities"
+    xmlns:ui="http://schemas.uipath.com/workflow/activities"
+    xmlns:sc="clr-namespace:System.Collections;assembly=System.Private.CoreLib"
     DisplayName="For Each">
   <ui:ForEach.Values>
-    <InArgument x:TypeArguments="scg:IEnumerable(x:String)">
-      <VisualBasicValue x:TypeArguments="scg:IEnumerable(x:String)" ExpressionText="myList" />
+    <InArgument x:TypeArguments="sc:IEnumerable">
+      <VisualBasicValue x:TypeArguments="sc:IEnumerable" ExpressionText="myList" />
     </InArgument>
   </ui:ForEach.Values>
-  <ActivityAction x:TypeArguments="x:String">
-    <ActivityAction.Argument>
-      <DelegateInArgument x:TypeArguments="x:String" Name="item" />
-    </ActivityAction.Argument>
-    <Sequence DisplayName="Body">
-      <!-- child activities reference the iterator variable "item" -->
-    </Sequence>
-  </ActivityAction>
+  <ui:ForEach.Body>
+    <ActivityAction x:TypeArguments="x:String">
+      <ActivityAction.Argument>
+        <DelegateInArgument x:TypeArguments="x:String" Name="item" />
+      </ActivityAction.Argument>
+      <Sequence DisplayName="Body">
+        <!-- child activities reference the iterator variable "item" -->
+      </Sequence>
+    </ActivityAction>
+  </ui:ForEach.Body>
 </ui:ForEach>
 ```
 

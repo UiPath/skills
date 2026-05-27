@@ -2,7 +2,6 @@
 
 How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
 
-
 ## Configuration Workflow
 
 Follow these steps for every IS trigger node.
@@ -11,13 +10,19 @@ Follow these steps for every IS trigger node.
 
 Extract the connector key from the node type (`uipath.connector.trigger.<connector-key>.<trigger-name>`) and the operation name from the `registry get` response (`model.context[].operation`).
 
-**1a. Get any enabled connection** — needed as `--connection-id` for `triggers objects` below. Pick any enabled one (prefer `IsDefault: Yes`):
+**1a. Get any enabled connection** — needed as `--connection-id` for `triggers objects` below.
+
+Discovery call is **always**:
 
 ```bash
-uip is connections list "<connector-key>" --output json
+uip is connections list "<connector-key>" --all-folders --output json
 ```
 
-If empty, follow the recovery in [/uipath:uipath-platform — connections.md — For Native Connectors](../../../../../../uipath-platform/references/integration-service/connections.md#for-native-connectors) (`--refresh` retry, then create-or-prompt).
+`--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<connector-key>"` is forbidden for discovery.
+
+> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules, BYOA filtering, empty-result recovery, ping verification.
+
+Pick any enabled connection (prefer `IsDefault: Yes`) and capture its `Id` for Step 1b.
 
 **1b. Query trigger objects** — **mandatory** for every trigger node. Do NOT skip:
 
@@ -346,8 +351,8 @@ uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" -
 uip is triggers describe "<connector-key>" "<operation>" "<objectName>" --connection-id "<id>" --output json
 
 # Connections — see /uipath:uipath-platform — connections.md for selection rules (Native, BYOA, --refresh)
-uip is connections list "<connector-key>" --output json               # list connections
-uip is connections list "<connector-key>" --byoa --output json        # BYOA only (Step 1c)
+uip is connections list "<connector-key>" --all-folders --output json         # discover connections (--all-folders is mandatory)
+uip is connections list "<connector-key>" --byoa --all-folders --output json  # BYOA only (Step 1c)
 uip is connections ping "<connection-id>" --output json               # verify health
 
 # Reference resolution (same as IS activity)

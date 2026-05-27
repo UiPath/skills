@@ -21,10 +21,6 @@ agent:
   turn_timeout: 600
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Show me login attempts for jane.doe@example.com over the last month.
 

@@ -120,13 +120,31 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 # Pass input arguments to the flow
 UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
+
+# Bind local files to file-typed input variables (repeatable).
+# Replace <variableId> and <localPath> with your own values.
+UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+  --attachment <variableId>=<localPath> \
+  --attachment <variableId>=<localPath>
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. Always run `uip maestro flow validate` first.
 
 Use `--inputs` to pass a JSON object of input arguments when the flow has input parameters (e.g. trigger inputs or workflow arguments).
 
-Run `uip maestro flow debug --help` to discover additional options.
+Use `--attachment <variableId>=<localPath>` to upload a local file and bind it to a file-typed input variable. Repeat the flag for multiple files. The `<variableId>` (left of `=`) is required and must match the `id` of an entry in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [Pre-flight](#attachment-preflight). A bare path with no `<variableId>=` prefix is rejected.
+
+<a id="attachment-preflight"></a>
+
+#### Pre-flight: `--attachment` binding
+
+The CLI does not validate `<variableId>` — a mismatch uploads successfully then faults at runtime when the binding resolves to undefined.
+
+1. Read `<flow>.flow` (it is plain JSON) and inspect `variables.globals[]`. Valid `<variableId>` values are entries where `direction` is `"in"` and `type` is `"file"`.
+2. Confirm each `<variableId>` passed to `--attachment` appears in that list.
+3. If none exist, add one to `variables.globals[]`: `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`.
+
+Run `uip maestro flow debug --help` for other options.
 
 ### Reporting the run back to the user
 
@@ -148,9 +166,23 @@ Manage deployed Flow processes in Orchestrator. **Requires `uip login`.**
 ```bash
 uip maestro flow process list --output json
 uip maestro flow process run <process-key> <folder-key> --output json
+
+# Pass input arguments (JSON or @file.json)
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --inputs '{"numberA": 5, "numberB": 7}'
+
+# Bind local files to file-typed input variables (repeatable).
+# Replace <variableId> and <localPath> with your own values.
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --attachment <variableId>=<localPath>
 ```
 
-Run `uip maestro flow process --help` for all subcommands and options.
+`--attachment <variableId>=<localPath>` uploads a local file and binds it to a file-typed input variable. The `<variableId>` must match the `id` of an entry in `variables.globals[]` with `direction:"in"` and `type:"file"` — see [Pre-flight](#attachment-preflight). Repeat the flag for multiple files. Two `flow process run`-specific behaviors:
+
+- **Precedence on key collision:** when `--inputs` and `--attachment` both supply the same key, `--attachment` wins and the CLI logs an override warning.
+- **`--validate` accepts pre-uploaded attachment references** for file-typed slots — the flag's JSON-schema check passes even though the slot's nominal type is `string`.
+
+Run `uip maestro flow process --help` for other subcommands.
 
 ## uip maestro flow job
 

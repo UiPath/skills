@@ -247,7 +247,7 @@ Never construct activity XAML from memory. Two sources, in this order:
 4. **Diff your step-2 checklist against the step-3 starter.** Add every checklist property that isn't already in the starter. An empty checklist with no third-party flag from step 2 means step 2 was skipped — go back to step 2; do NOT author from the starter alone.
 5. Validate with `uip rpa validate`.
 
-**The rule binds for every activity, not just complex ones.** "This activity is simple — `LogMessage`, `Delay`, `StartProcess` — I can author from the starter alone" is the failure mode. Self-exemption is the bug; the procedure is the only check.
+**The rule binds for every activity not on the [common-activity card](../common-activity-card.md).** Check the card first. If the activity is listed there, author from the card entry and skip `activities find`, `activities get-default-xaml`, and the per-activity doc read. If the activity is not listed there, follow the full workflow above. Self-extending the card by personal judgment ("this one feels simple — `StartProcess`, `InvokeWorkflowFile`, I can skip the procedure") is the bug. For card activities the surface is authoritative — version-anchored, source-verified, curated centrally. For everything else, the procedure is the only check.
 
 **Anti-pattern.** Treating `activities get-default-xaml` output as the complete property surface. The CLI runs XAML serialization on a default-constructed instance; type-default values are omitted by design.
 
@@ -274,7 +274,7 @@ Container activities have body or branch slots typed `Activity` or `ActivityActi
 
 **Validators do not catch this.** `validate` and `build` both accept any single `Activity` in a body slot — `<If.Then><Throw /></If.Then>` is structurally legal. The wrap is a Studio-idiomatic convention (drop-zone ergonomics + canonical emission), not a static-analysis requirement.
 
-**Cheapest enforcement.** Run `uip rpa activities get-default-xaml --activity-class-name "<FullClassName>"` for every container activity emitted, including `System.Activities.Statements.*` (`If`, `While`, `DoWhile`, `TryCatch`, `Switch`, `ForEach<T>`, `Pick`). Starter comes back wrapped — copy the shape. See SKILL.md Rules 21, 21a, 24.
+**Cheapest enforcement.** For card-listed containers (`If`, `Switch<T>`, `TryCatch`, `While`, `DoWhile`, `ForEach<T>`), copy the wrapped shape from the common-activity card. For off-card containers (`Pick`, `Parallel`, `ParallelForEach<T>`, package-specific body activities), run `uip rpa activities get-default-xaml --activity-class-name "<FullClassName>"` after the Rule 21 doc read and copy the wrapped shape from the starter. See SKILL.md Rules 21, 21a, 24.
 
 **Worked example.** [§ Example 1: Basic Activities (LogMessage, If/Else, Assign)](#example-1-basic-activities-logmessage-ifelse-assign) below — `If.Then` and `If.Else` each carry a `<Sequence>`.
 
@@ -309,6 +309,45 @@ Add `x:Property` elements inside the `<x:Members>` block:
 ```
 
 Argument naming convention: `in_`, `out_`, `io_` prefixes.
+
+#### Setting Default Values for Arguments
+
+Defaults go on the root `<Activity>` element using the canonical .NET Workflow Foundation self-namespace syntax:
+
+```xml
+<Activity x:Class="TestCase"
+          xmlns:this="clr-namespace:"
+          this:TestCase.in_FileName="report.pdf"
+          xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_FileName" Type="InArgument(x:String)" />
+  </x:Members>
+</Activity>
+```
+
+Two parts are mandatory:
+
+1. **`xmlns:this="clr-namespace:"`** — the empty `clr-namespace:` is what makes `this:` resolve to the class declared by `x:Class`.
+2. **`this:<ClassName>.<argName>="<value>"`** — the attribute name MUST be qualified with `this:` AND the class name; bare `<argName>="<value>"` is rejected.
+
+The default is baked into the compiled assembly at build time as a `Literal<T>` expression in the generated class's constructor. At runtime, when the workflow is invoked without that argument supplied (e.g. `uip rpa run` without `--input-arguments`), the literal is used.
+
+**Three default-value forms that DO NOT work** — every one of them is rejected by the XAML loader. Authoring agents have repeatedly tried these and lost time to confusing errors — don't:
+
+| Bad form | Error |
+|---|---|
+| `<Activity in_FileName="...">` (no `xmlns:this`, no class qualifier) | `member (in_FileName) is not supported by DynamicActivity` |
+| `<x:Property Name="in_FileName" ...><InArgument>...</InArgument></x:Property>` | `DynamicActivityProperty does not have a content property` |
+| `<x:Property.Value>...</x:Property.Value>` | `x:Property member (Value) is not supported by DynamicActivityProperty` |
+
+If you must accept an empty string as a sentinel ("user didn't provide one") and substitute a literal anyway, use a ternary inside each `CSharpValue`/`VisualBasicValue` consumer of the argument:
+
+```xml
+<CSharpValue x:TypeArguments="x:String">string.IsNullOrEmpty(in_FileName) ? "report.pdf" : in_FileName</CSharpValue>
+```
+
+But the root-attribute default above is the cleaner answer — use it first.
 
 ### Adding Variables
 
@@ -707,6 +746,8 @@ DisplayName="My Activity" Message="[variable]" Level="Info"
 **Output properties** (`OutArgument`, `Result`) may require child element syntax. Some activities accept `Result="[var]"` as an attribute; others only work with the expanded child element form. If an attribute-form output binding causes a validation error, try the child element form.
 
 **Complex objects** (BackupSlot, MailboxArgument, ActivityAction, dictionaries) always require child element syntax — they cannot be expressed as a single attribute value.
+
+**Strings containing literal `[` or `]`** (e.g., UIA special-key tokens like `[k(enter)]`, `[d(ctrl)]`, `[u(ctrl)]`) require child element syntax. The attribute form `Foo="[&quot;…[k(enter)]&quot;]"` runs correctly because the runtime VB compiler reads quoted string literals correctly, but the literal brackets inside the string collide with the outer `[ … ]` VB expression markers and the value will not render in Studio. See [common-pitfalls.md § NTypeInto `Text` with literal `[k(...)]` special-key tokens](common-pitfalls.md#ntypeinto-text-with-literal-k-special-key-tokens).
 
 ### Version-Sensitive Properties
 

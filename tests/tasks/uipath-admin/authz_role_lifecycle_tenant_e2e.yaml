@@ -20,10 +20,6 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a read-only Studio role called "TenantStudioReader" that
   only applies to the tenant I'm currently logged into — not the

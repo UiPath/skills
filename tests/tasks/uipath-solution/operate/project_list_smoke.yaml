@@ -5,13 +5,9 @@ description: >
   in the sandbox tempdir — no tenant interaction.
 tags: [uipath-solution, smoke, mode:build, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
-  Create a new UiPath solution called "ProjectListDemo" and then show me the
-  list of projects registered in its manifest.
+  Create a new UiPath solution called "ProjectListDemo" and then tell me
+  what projects are registered in its manifest.
 
 success_criteria:
   - type: command_executed
@@ -28,19 +24,21 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent listed projects via uip solution project list"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+list'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+  - type: llm_judge
+    description: "Final reply correctly states the project list is empty"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. A freshly created UiPath
+      solution has zero projects registered in its manifest.
 
-  - type: command_executed
-    description: "Agent used --output json on uip commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
+      Score 1.0 if the reply communicates this — e.g. "no projects",
+      "empty", "0 projects", "the list is empty", "none registered yet",
+      or equivalent phrasing. Both languages (English / Romanian) are
+      acceptable.
+
+      Score 0.0 if the reply lists fictional project names, claims
+      projects exist, dodges the question, or only shows raw command
+      output without an interpretation.
+    weight: 1.5
     pass_threshold: 1.0
 

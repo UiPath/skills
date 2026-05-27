@@ -76,7 +76,7 @@ Rules use DNF — outer array is OR, inner array is AND.
   {
     "id": "Rule_xxxxxx",
     "rule": "wait-for-connector",
-    "conditionExpression": "event.type = 'approved'"
+    "conditionExpression": "=js:event.type === 'approved'"
   }
 ]]
 ```
@@ -110,7 +110,7 @@ Routes the case back to the originating stage.
 | `false` | `selected-tasks-completed` | `selectedTasksIds` (array) |
 | `false` | `wait-for-connector` | — |
 
-`conditionExpression` is optional on every rule — add it to any rule to further gate when it fires.
+`conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); for combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## Post-Write Verification
 

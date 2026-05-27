@@ -18,6 +18,7 @@ What can cause it:
 - Element hidden behind an overlay, popup, or dialog
 - Timing issue — element not loaded yet when activity executed
 - Wrong application window targeted
+- Scope container (`NApplicationCard`, `NBrowser`, `Use Application/Browser`, `NWindow`) attached to a different page/window than the selector expects — see [scope-container-wrong-page.md](./scope-container-wrong-page.md)
 
 What to look for:
 - Get the faulted activity name and selector from job traces or XAML source
@@ -27,13 +28,14 @@ What to look for:
 
 ## Investigation
 
-1. Locate the faulted activity in XAML by `IdRef`
-2. Extract the selector from the XAML (decode XML encoding: `&amp;` -> `&`, `&lt;` -> `<`, etc.)
-3. Analyze the selector: which attributes are used? Are any dynamic (idx, tableRow, etc.)?
-4. Check selector attributes — fragile selectors use title/name, robust selectors use automationId/className
-5. Check if the target application has changed recently
-6. Compare against Object Repository if available
-7. If HA data exists but no fix was produced: check eligibility and confidence threshold
+1. **Read the enclosing scope container** (`NApplicationCard`, `NBrowser`, `Use Application/Browser`, `NWindow`, `Attach Browser`, `Attach Window`) from the XAML — record `AttachMode`, `OpenMode` (defaults to `IfNotOpen` when absent), and `TargetApp.{Selector,Url}`. If the scope is permissive enough to attach to an unintended tab/window (`AttachMode=ByInstance` + `OpenMode=IfNotOpen` + loose `TargetApp.Selector`, or `TargetApp.Url` not matching the inner selector's intended page), the defect is the scope, not the selector — switch to [scope-container-wrong-page.md](./scope-container-wrong-page.md) before proceeding.
+2. Locate the faulted activity in XAML by `IdRef`
+3. Extract the selector from the XAML (decode XML encoding: `&amp;` -> `&`, `&lt;` -> `<`, etc.)
+4. Analyze the selector: which attributes are used? Are any dynamic (idx, tableRow, etc.)?
+5. Check selector attributes — fragile selectors use title/name, robust selectors use automationId/className
+6. Check if the target application has changed recently
+7. Compare against Object Repository if available
+8. If HA data exists but no fix was produced: check eligibility and confidence threshold
 
 ## Resolution
 

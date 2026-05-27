@@ -46,18 +46,16 @@ For detailed agent configuration (contentTokens format, model settings, resource
 
 ## Wiring Flow Variables into Agent Prompts
 
-The agent runtime cannot read `$vars.*` directly. Every flow value the prompt needs (trigger output, upstream node output, flow variable) must travel through the **agent input bridge**, and every prompt token must use the runtime form `{{input.<id>}}`. Bare `{{emailSubject}}` (no `input.` prefix) and raw `{{$vars.X}}` inside `agent.json` resolve to literal text — the prompt looks plausible but the agent receives no data.
-
-The bridge is one binding plus three matching declarations. Author all four whenever the prompt references a flow value:
+Inline-agent prompts reference upstream flow nodes **directly** via `{{ $vars.<flowNodeId>.output[.<field>] }}` tokens in `agent.json messages[].content`. No agent-side input bridge, no `inputSchema` slot, no `agentInputVariables[]` binding.
 
 | Where | What | Example |
 | --- | --- | --- |
-| Flow node `inputs.agentInputVariables[]` | Binding from `$vars` source to a flat slot id | `{ "id": "emailSubject", "type": "string", "binding": "=js:$vars.emailReceived1.output.subject" }` |
-| `agent.json` `inputSchema.properties.<id>` | Slot declaration matching the binding `id` and `type` | `"emailSubject": { "type": "string" }` |
-| `agent.json` `messages[].content` | Runtime token referencing the slot | `"Email subject: {{input.emailSubject}}"` |
-| `agent.json` `messages[].contentTokens[]` | Mirror of `content` with one `{ "type": "variable", "rawString": "input.<id>" }` per `{{input.X}}` token | `{ "type": "variable", "rawString": "input.emailSubject" }` |
+| `agent.json` `messages[].content` | Token referencing an upstream flow node's output | `"Email subject: {{ $vars.emailReceived1.output.subject }}"` |
+| `agent.json` `messages[].contentTokens[]` | One `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }` per `{{ ... }}` token in `content`. **`rawString` must include leading and trailing space** to match the spaced-brace form. | `{ "type": "variable", "rawString": " $vars.emailReceived1.output.subject " }` |
+| Flow node `inputs.agentInputVariables` | `[]` for prompt-only flow-data references. | `"agentInputVariables": []` |
+| `agent.json` `inputSchema.properties` | `{}` for prompt-only flow-data references. | `"inputSchema": { "type": "object", "properties": {} }` |
 
-The `id` is a flat identifier you choose (alphanumeric + `_`, no dots). Use it consistently in all four places. The binding `=js:$vars.<sourceNodeId>.output.<field>` follows the standard `=js:` rule — see [../../../../shared/node-output-wiring.md](../../../../shared/node-output-wiring.md) for the full expression contract.
+`<flowNodeId>` must exactly match a node `id` in the `.flow` file, with an edge path reaching the inline-agent node. See [../../../../shared/node-output-wiring.md](../../../../shared/node-output-wiring.md) for the full expression contract.
 
 ### Worked example — wire an email-trigger payload into the agent prompt
 
@@ -71,11 +69,7 @@ Flow node (excerpt):
     "systemPrompt": "Triage the inbound email.",
     "userPrompt": "Process the inbound email payload.",
     "source": "<projectId-uuid>",
-    "agentInputVariables": [
-      { "id": "emailSubject", "type": "string", "binding": "=js:$vars.emailReceived1.output.subject" },
-      { "id": "emailFrom",    "type": "string", "binding": "=js:$vars.emailReceived1.output.from" },
-      { "id": "emailBody",    "type": "string", "binding": "=js:$vars.emailReceived1.output.body" }
-    ],
+    "agentInputVariables": [],
     "agentOutputVariables": [{ "id": "content", "type": "string" }]
   }
 }
@@ -87,11 +81,7 @@ Matching `agent.json` (excerpt):
 {
   "inputSchema": {
     "type": "object",
-    "properties": {
-      "emailSubject": { "type": "string" },
-      "emailFrom":    { "type": "string" },
-      "emailBody":    { "type": "string" }
-    }
+    "properties": {}
   },
   "messages": [
     {
@@ -101,38 +91,38 @@ Matching `agent.json` (excerpt):
     },
     {
       "role": "user",
-      "content": "From {{input.emailFrom}}\nSubject: {{input.emailSubject}}\n\n{{input.emailBody}}",
+      "content": "From {{ $vars.emailReceived1.output.from }}\nSubject: {{ $vars.emailReceived1.output.subject }}\n\n{{ $vars.emailReceived1.output.body }}",
       "contentTokens": [
         { "type": "simpleText", "rawString": "From " },
-        { "type": "variable",   "rawString": "input.emailFrom" },
+        { "type": "variable",   "rawString": " $vars.emailReceived1.output.from " },
         { "type": "simpleText", "rawString": "\nSubject: " },
-        { "type": "variable",   "rawString": "input.emailSubject" },
+        { "type": "variable",   "rawString": " $vars.emailReceived1.output.subject " },
         { "type": "simpleText", "rawString": "\n\n" },
-        { "type": "variable",   "rawString": "input.emailBody" }
+        { "type": "variable",   "rawString": " $vars.emailReceived1.output.body " }
       ]
     }
   ]
 }
 ```
 
-The flow-node `inputs.systemPrompt` / `inputs.userPrompt` stay as short, generic validator placeholders — **do not copy the templated agent.json prompt with `{{input.<id>}}` tokens here**. Those runtime tokens only resolve inside `agent.json messages[].content`; in the flow-node they are inert text that just duplicates content and obscures which prompt is canonical. The contract that matters is: every `{{input.<id>}}` token in `agent.json` has a matching `inputSchema.properties.<id>` slot and a matching `agentInputVariables[]` binding on the flow node.
+The flow-node `inputs.systemPrompt` / `inputs.userPrompt` are short, generic validator placeholders — **do not copy the templated `agent.json` prompt with `{{ $vars.X }}` tokens here**. The contract: every `{{ $vars.<flowNodeId>.output[.<field>] }}` token in `agent.json content` has a matching `{ type: "variable", rawString: " $vars.<flowNodeId>.output[.<field>] " }` entry in the same message's `contentTokens[]` (leading and trailing spaces inside `rawString`).
 
 ### When the source field name is unknown at authoring time
 
 Some upstream nodes (notably connector triggers like email-received) only expose their full output shape after a real run — `subject`, `from`, `body` are not knowable from the registry definition alone. In that case:
 
-1. Pick descriptive slot ids (`emailSubject`, `emailFrom`, `emailBody`) and write the prompt + `inputSchema` against them.
-2. Record the `binding` strings as your **best guess** based on the connector's documented output schema (e.g., `=js:$vars.emailReceived1.output.subject`).
-3. Surface the assumption to the user with `AskUserQuestion` — list the bindings and ask the user to correct any source paths before they run or upload the flow. Do not invent field names silently.
-4. After the first real run, the author can verify the actual output paths and update the bindings; the prompt and `inputSchema` do not need to change because the slot ids are stable.
+1. Write the prompt against your **best guess** of the upstream node's output paths based on the connector's documented output schema (e.g., `{{ $vars.emailReceived1.output.subject }}`).
+2. Surface the assumption to the user with `AskUserQuestion` — list the referenced paths and ask the user to correct any wrong fields before they run or upload the flow. Do not invent field names silently.
+3. After the first real run, the author can verify the actual output paths and update the prompt tokens (and matching `contentTokens[].rawString` mirrors).
 
 ### Anti-patterns
 
-- **Never write `{{plainName}}` (no `input.` prefix) in `agent.json` prompts.** It is treated as literal text by the agent runtime.
-- **Never write `{{$vars.X}}` or `{{ $vars.X }}` directly in `agent.json` prompts.** That mustache form is canvas-input syntax, not the runtime token; without the workbench rewrite step, it ships verbatim and resolves to nothing. The runtime form is `{{input.<id>}}`, paired with an `agentInputVariables[]` binding.
-- **Never copy `{{input.<id>}}` tokens into the flow-node `inputs.systemPrompt` / `inputs.userPrompt`.** Those fields are validator placeholders — keep them as short, generic strings. Runtime tokens belong in `agent.json messages[].content` only.
-- **Never leave `agentInputVariables: []` while the prompt references flow data.** Empty bindings means no values reach the agent.
-- **Never declare an `inputSchema.properties.<id>` slot without a matching `agentInputVariables[]` binding** (the slot stays empty at runtime), and never the reverse (the binding has nowhere to land).
+- **Never write `{{input.<id>}}` (or any `input.X` form) in `agent.json` prompts.** Use `{{ $vars.<flowNodeId>.output[.<field>] }}` referencing the upstream flow node directly.
+- **Never write `{{plainName}}` (no prefix) in `agent.json` prompts.** Use the `{{ $vars.<flowNodeId>.output[.<field>] }}` form.
+- **Never omit the leading and trailing space inside `contentTokens[].rawString` for variable tokens.** `rawString` is `" $vars.X "`, matching the `{{ $vars.X }}` spaced-brace form in `content`.
+- **Never copy `{{ $vars.X }}` tokens into the flow-node `inputs.systemPrompt` / `inputs.userPrompt`.** Those fields are validator placeholders — keep them as short, generic strings. Canvas tokens belong in `agent.json messages[].content` only.
+- **Never populate `agentInputVariables[]` on the flow node for prompt-data passing.** Use `{{ $vars.<flowNodeId>.output[.<field>] }}` in `agent.json messages[].content` instead. For prompt-only flow-data references, set `inputs.agentInputVariables: []` on the flow node.
+- **Never declare an `inputSchema.properties.<id>` slot for prompt-data wiring.** For prompt-only flow-data references, leave `inputSchema.properties` as `{}`.
 
 ## Registry Validation
 
@@ -246,7 +236,7 @@ Inline tool nodes come in four kinds. Discovery, node-add, edge-wire, and `resou
 | API workflow | `uipath.agent.resource.tool.api` | `api` | Coded API workflow |
 | Process Orchestration | `uipath.agent.resource.tool.processorchestration` | `processOrchestration` | Agentic / orchestrated process |
 
-Discover the tool via the flow registry, then add the tool resource node directly in the `.flow` JSON. Generate a resource UUID and use it as both the tool node's `model.source` and the `resource.json` directory/id.
+Discover the tool via the flow registry, then add the tool resource node directly in the `.flow` JSON. Generate a resource UUID and use it as both the tool node's `inputs.source` and the `resource.json` directory/id.
 
 ```bash
 # 1. Search the registry, picking the prefix from the matrix above
@@ -266,12 +256,13 @@ Tool node instance:
   "type": "<NodeType>",
   "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "<ToolName>" },
-  "inputs": {},
-  "model": {
+  "inputs": {
     "source": "<RES_UUID>"
   }
 }
 ```
+
+The definition declares `model.source: true`; flow-core hoists that identity field onto the node instance as `inputs.source` (same hoisting rule as `uipath.agent.autonomous`). No instance `model` block is written.
 
 Also add:
 
@@ -283,21 +274,22 @@ Also add:
 After adding the tool node, you must also:
 
 - Hand-write the per-tool `resource.json` at `<FlowProjectDir>/<inlineAgentProjectId>/resources/<RES_UUID>/resource.json`. **Use the exact `resource.json` shape documented in the `uipath-agents` skill: `lowcode/capabilities/process/process.md` § Tool resource.json Shape.** Read that section before writing the file — it defines all required fields. The subtype is selected by the `type` field (`process` | `agent` | `api` | `processOrchestration`) — see § Subtypes in `process.md`. For RPA the schema uses raw .NET arrays (Template A in `solution-files.md`); for Agent / API / Process Orchestration it uses JSON Schema V2 (Template B). Run `uip solution resource list` + `uip solution resource get` to populate `referenceKey`, `folderPath`, `inputSchema`, and `outputSchema` with real values. Key inline-in-flow notes:
-  - Set `id` to `<RES_UUID>` (same value used as the tool node's `model.source` and as the resource directory name).
+  - Set `id` to `<RES_UUID>` (same value used as the tool node's `inputs.source` and as the resource directory name).
   - Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents).
   - Set `properties.folderPath` to the **literal folder path from discovery** (e.g., `"Shared/TestRPA"`) — do **not** leave it empty.
   - `inputSchema.properties` must include `"guardrails": { "type": "array" }` alongside the process arguments.
-  - A `resource.json` missing `$resourceType: "tool"` or other required fields will not be recognized by `uip agent validate`, resulting in `"resources": 0` and an empty `bindings_v2.json`.
+  - A `resource.json` missing `$resourceType: "tool"` or other required fields will not be recognized by `uip agent validate` (it reports `"resources": 0`); the subsequent `uip agent migrate` will then write an empty `bindings_v2.json`.
 - Set prompts in `agent.json` (system + user messages with `contentTokens` of `type: "simpleText"` and `rawString`)
-- Run `uip agent validate --inline-in-flow` after the flow graph edits. For tool-bearing inline agents, first confirm the installed CLI supports `--bindings-target` with `uip agent validate --help`. When supported, pass it to propagate tool bindings to the flow project level:
+- Run `uip agent validate --inline-in-flow` after the flow graph edits to check the agent schema. Then run `uip agent migrate --inline-in-flow` to apply the migration and regenerate `.agent-builder/`; for tool-bearing inline agents, pass `--bindings-target <FlowProjectDir>/bindings_v2.json` on the migrate call to propagate tool bindings to the flow project level:
 
   ```bash
-  uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow \
+  uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
+  uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow \
     --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
   ```
 
-  If the installed CLI does not expose `--bindings-target`, run the supported validation command without that option and treat tool-binding propagation as a CLI capability blocker for tool-bearing inline agents; do not invent or hand-edit `bindings_v2.json`.
-  **Verify the output shows `"resources": N` where N > 0.** If it shows `"resources": 0`, the `resource.json` is malformed or missing required fields — fix it and re-run before proceeding.
+  Do not hand-edit `bindings_v2.json` — it is regenerated by `uip agent migrate`.
+  **Verify both validate and migrate report `"resources": N` where N > 0.** If either shows `"resources": 0`, the `resource.json` is malformed or missing required fields — fix it and re-run before proceeding.
 - Run `uip solution resource refresh` before upload
 
 For agent.json prompt configuration and solution resource mechanics, see the `uipath-agents` skill (`lowcode/capabilities/inline-in-flow/inline-in-flow.md`).
@@ -342,7 +334,7 @@ Notes:
 
 - `inputs.source` — the inline agent's `projectId`; must match the subdirectory name and `agent.json.projectId`. The definition still declares `model.source: true`, but flow-core hoists that identity field onto `inputs.source` for the node instance.
 - `inputs.systemPrompt` / `inputs.userPrompt` must be non-empty for current `flow validate`. Treat them as validator placeholders; the canonical inline-agent prompts live in `agent.json`.
-- `inputs.agentInputVariables` is `[]` only for agents whose prompts reference no flow data. Whenever the prompt needs a trigger output, upstream-node output, or flow variable, populate this array per § Wiring Flow Variables into Agent Prompts above — and add matching `inputSchema.properties.<id>` slots in `agent.json`.
+- `inputs.agentInputVariables` is `[]` for prompt-only flow-data references — which covers the common case. The canvas does not read this array when resolving prompt tokens; flow values flow into prompts directly via `{{ $vars.<flowNodeId>.output[.<field>] }}` in `agent.json messages[].content` (see § Wiring Flow Variables into Agent Prompts above). Populate `agentInputVariables[]` only for non-prompt typed-schema uses.
 - **No `model` block on the inline-agent node instance.** The node inherits serviceType/version/context from `definitions[]`; `source` lives at `inputs.source`. Stale instance fields such as `model.serviceType`, `model.version`, or `model.context` override the inherited definition and can cause runtime mismatch.
 
 ## Accessing Output
@@ -356,19 +348,22 @@ return { classification: response };
 - `$vars.{nodeId}.output.content` — the agent's text response
 - `$vars.{nodeId}.error` — error details if the agent fails
 
-## Validate
+## Validate and Migrate
 
-Validate the inline agent definition, then validate the flow:
+Validate the inline agent (read-only check), migrate it (writes `.agent-builder/` and, for tool-bearing agents, propagates bindings into the flow project's `bindings_v2.json`), then validate the flow:
 
 ```bash
-# 1. Validate the inline agent
+# 1. Validate the inline agent (read-only schema check)
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
-# For tool-bearing inline agents, when supported by `uip agent validate --help`:
-# uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow \
-#   --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+# 2. Migrate the inline agent (writes .agent-builder/ and applies migrations)
+uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
-# 2. Validate the flow
+# 2b. For tool-bearing inline agents, migrate with --bindings-target to propagate tool bindings:
+uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow \
+  --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+
+# 3. Validate the flow
 uip maestro flow validate <FlowName>.flow --output json
 ```
 
@@ -382,15 +377,17 @@ uip maestro flow validate <FlowName>.flow --output json
 | `inputs.source` UUID does not match any subdirectory | Wrong source value, or folder renamed | Set `inputs.source` to the exact UUID of the inline agent directory |
 | Flow runs a different agent than expected | `inputs.source` points to a stale/leftover inline agent dir | Check subdirectory names — only one inline agent dir should correspond to each agent node |
 | `Orchestrator.StartAgentJob` error at runtime | Stale instance `model` fields override the inherited inline-agent definition | Remove the inline-agent node's instance `model` block and keep the registry definition's `model.serviceType: "Orchestrator.StartInlineAgentJob"` in `definitions[]` |
-| Studio Web reports "System prompt is required" | Inline agent's `agent.json.messages[]` has empty `content`, OR `.agent-builder/agent.json` is stale | Set prompts in `agent.json`, re-run `uip agent validate --inline-in-flow` — see `uipath-agents` skill |
-| Studio Web debug: "Could not find process for tool" | Flow project's `bindings_v2.json` is missing the tool's process binding, so `uip solution resource refresh` never created the solution-level resource | If the installed CLI supports it, re-run `uip agent validate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json`, then `uip solution resource refresh`, then re-upload; if unsupported, report the CLI capability blocker |
-| `bindings_v2.json` is empty or missing tool bindings | Tool bindings were not propagated to the flow project level, or a later tool overwrote the file | Re-run validation with `--bindings-target <FlowProjectDir>/bindings_v2.json` after all flow node and edge edits are complete when supported; otherwise do not hand-edit the generated file |
-| Agent tool (process / agent / api / processOrchestration) cannot resolve at runtime | Missing top-level `bindings[]` entries, mismatched tool-node `model.source` / `resource.json` id, stale solution resources, or missing project-level `bindings_v2.json` | Add the resource bindings from the tool definition, keep the tool node's `model.source` equal to the resource UUID, run `uip agent validate --inline-in-flow` with `--bindings-target` when supported, and run `uip solution resource refresh` |
+| Studio Web reports "System prompt is required" | Inline agent's `agent.json.messages[]` has empty `content`, OR `.agent-builder/agent.json` is stale | Set prompts in `agent.json`, re-run `uip agent validate --inline-in-flow` to check, then `uip agent migrate --inline-in-flow` to regenerate `.agent-builder/agent.json` — see `uipath-agents` skill |
+| Studio Web debug: "Could not find process for tool" | Flow project's `bindings_v2.json` is missing the tool's process binding, so `uip solution resource refresh` never created the solution-level resource | Re-run `uip agent validate --inline-in-flow` to check schema, then `uip agent migrate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` to propagate bindings, then `uip solution resource refresh`, then re-upload |
+| `bindings_v2.json` is empty or missing tool bindings | Tool bindings were not propagated to the flow project level, or a later tool overwrote the file | Re-run `uip agent migrate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` after all flow node and edge edits are complete. Migrate is the verb that writes the file — do not hand-edit it |
+| Agent tool (process / agent / api / processOrchestration) cannot resolve at runtime | Missing top-level `bindings[]` entries, mismatched tool-node `inputs.source` / `resource.json` id, stale solution resources, or missing project-level `bindings_v2.json` | Add the resource bindings from the tool definition, keep the tool node's `inputs.source` equal to the resource UUID, run `uip agent validate --inline-in-flow` to check, then `uip agent migrate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` to write bindings, then run `uip solution resource refresh` |
 | `inputs.agentProjectId` unrecognized | Wrong field name | Use `inputs.source` — `agentProjectId` is not valid for inline agents |
 | Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
 | Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and the `projectId` field inside `agent.json` |
 | Agent runs but returns empty `output.content` | Missing or malformed `contentTokens` in `agent.json` | Rebuild `messages[].contentTokens` using `{ "type": "simpleText", "rawString": "..." }` entries; see `uipath-agents` for detail |
-| Agent prompt receives literal `{{X}}` text instead of flow data, or one prompt slot resolves to nothing while others work | Bare `{{X}}` placeholders without the `input.` prefix; or `{{input.<id>}}` token written without a matching `inputSchema.properties.<id>` slot in `agent.json` and `agentInputVariables[]` binding on the flow node | Adopt the four-place contract from § Wiring Flow Variables into Agent Prompts: pick a flat slot id, add an `agentInputVariables[]` entry with `{ id, type, binding: "=js:$vars.<sourceNode>.output.<field>" }`, declare `inputSchema.properties.<id>`, write the prompt token as `{{input.<id>}}`, and add a matching `{ "type": "variable", "rawString": "input.<id>" }` to `messages[].contentTokens` |
+| `Prompt references "$vars.<id>" but that variable is not available in this scope` | Token written as `{{input.<id>}}` or `{{<id>}}` | Rewrite to `{{ $vars.<flowNodeId>.output[.<field>] }}` and mirror in `contentTokens[]` as `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }`. See § Wiring Flow Variables into Agent Prompts. |
+| `uip agent validate` fails with `Expected " $vars.X " but got "$vars.X"` | Variable `contentToken` `rawString` missing leading/trailing space | Add one leading and one trailing space inside `rawString`. The `content` field is `{{ $vars.X }}` (spaced braces); `rawString` is `" $vars.X "` (spaced). |
+| Agent prompt receives literal `{{X}}` text instead of flow data | Bare `{{plainName}}` (no `$vars.`), or `<flowNodeId>` typo not matching any node `id` | Use `{{ $vars.<flowNodeId>.output[.<field>] }}` with an exact upstream node `id`. |
 
 ## Repair Recipes
 
@@ -410,8 +407,10 @@ for i, d in enumerate(flow["definitions"]):
     if d.get("nodeType") == "uipath.agent.autonomous":
         flow["definitions"][i] = new_def
         break
+INLINE_TYPES = ("uipath.agent.autonomous", "uipath.agent.resource.")
 for node in flow["nodes"]:
-    if node.get("type") == "uipath.agent.autonomous":
+    t = node.get("type", "")
+    if t == "uipath.agent.autonomous" or t.startswith("uipath.agent.resource."):
         model = node.pop("model", None) or {}
         if isinstance(model.get("source"), str):
             node.setdefault("inputs", {})["source"] = model["source"]
@@ -420,7 +419,7 @@ PY
 uip maestro flow validate <FILE>.flow --output json
 ```
 
-Same pattern works for any node type — substitute the `nodeType` string in both the `registry get` command and the loop guard.
+Same pattern works for any node type — substitute the `nodeType` string in both the `registry get` command and the loop guard. The `model.source` → `inputs.source` rewrite above is applied to both the inline agent node and every attached resource node (tool, escalation, context) — all of them carry source identity at `inputs.source` and never on an instance `model` block.
 
 ### Resolve a `[REQUIRED_FIELD] systemPrompt is required` validator error
 
@@ -433,20 +432,22 @@ Current flow validation requires non-empty placeholder prompts on the flow node 
     import json
     flow = json.load(open("<FILE>.flow"))
     for node in flow["nodes"]:
-        if node.get("type") == "uipath.agent.autonomous":
-            print("inputs.source:", node.get("inputs", {}).get("source"))
-            print("model.source: ", node.get("model", {}).get("source"))
+        t = node.get("type", "")
+        if t == "uipath.agent.autonomous" or t.startswith("uipath.agent.resource."):
+            print(t, "inputs.source:", node.get("inputs", {}).get("source"))
+            print(t, "model.source: ", node.get("model", {}).get("source"))
     PY
     ```
 
-    If a stale flow has the UUID at `model.source`, move it to `inputs.source` and remove the instance `model` block:
+    If a stale flow has the UUID at `model.source` on the inline agent node **or any attached resource node** (tool, escalation, context), move it to `inputs.source` and remove the instance `model` block:
 
     ```bash
     python3 - <<'PY'
     import json
     flow = json.load(open("<FILE>.flow"))
     for node in flow["nodes"]:
-        if node.get("type") == "uipath.agent.autonomous":
+        t = node.get("type", "")
+        if t == "uipath.agent.autonomous" or t.startswith("uipath.agent.resource."):
             inputs = node.setdefault("inputs", {})
             model = node.pop("model", None) or {}
             uuid = model.get("source")
@@ -467,8 +468,8 @@ Current flow validation requires non-empty placeholder prompts on the flow node 
 - **Do not use Flow CLI `node add`, `edge add`, or `variable` commands for inline-agent graph edits** — inline-agent node, edge, variable, layout, and tool-resource node changes are non-carve-out structural `.flow` mutations and must be authored directly with `Edit` / `Write`.
 - **Do not treat `inputs.systemPrompt` / `inputs.userPrompt` as canonical prompts** — current validation requires non-empty placeholders on the flow node, but prompts live in `agent.json`.
 - **Do not put a `model` block on the inline-agent node instance** — the node inherits serviceType/version/context from `definitions[]`; the inline-agent source lives at `inputs.source`.
-- **Do not use `model.agentProjectId`, `inputs.agentProjectId`, or `model.source`** — use `inputs.source` for the `uipath.agent.autonomous` node.
+- **Do not use `model.agentProjectId`, `inputs.agentProjectId`, or `model.source` on any inline-agent-related node instance** — both `uipath.agent.autonomous` and every attached resource node (`uipath.agent.resource.tool.*`, `uipath.agent.resource.escalation`, `uipath.agent.resource.context.*`) carry source identity at `inputs.source` and have no instance `model` block.
 - **Do not create `entry-points.json` or `project.uiproj` inside the inline agent directory** — those belong only to standalone agent projects.
 - **Do not name the inline agent folder with a human-readable name** — the folder name must be the `projectId` UUID.
 - **Do not use `uip agent tool add`** for inline-in-flow agents — hand-author the tool's `resource.json` instead.
-- **Do not skip `uip agent validate --inline-in-flow`** after editing `agent.json` or any `resources/*/resource.json`; for tool-bearing inline agents, use `--bindings-target <FlowProjectDir>/bindings_v2.json` when the installed CLI supports it.
+- **Do not skip `uip agent validate --inline-in-flow` followed by `uip agent migrate --inline-in-flow`** after editing `agent.json` or any `resources/*/resource.json`; for tool-bearing inline agents, pass `--bindings-target <FlowProjectDir>/bindings_v2.json` on the migrate call to propagate tool bindings.

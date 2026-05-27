@@ -5,10 +5,6 @@ description: >
   entirely in the sandbox tempdir — no tenant interaction.
 tags: [uipath-solution, smoke, mode:build, lifecycle:discover]
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
   Create a new UiPath solution called "ResourceListDemo" and then list the
   solution-level resources auto-registered for it.

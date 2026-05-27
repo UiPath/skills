@@ -1,0 +1,128 @@
+task_id: skill-case-multi-multi-trigger
+description: >
+  Build a Case Management definition with THREE case-level triggers —
+  one manual trigger, one infinite timer trigger ("every 1 hour",
+  canonical R/PT1H), and one BOUNDED + SCHEDULED timer trigger ("every
+  day at 09:00 UTC, 5 times", canonical R5/<iso>/P1D). Each trigger
+  has its own outgoing edge to the single Run stage. Exercises the
+  multi-trigger code path (≥3 trigger nodes, three TriggerEdges), the
+  manual trigger plugin's serviceType "None", AND all three forms of
+  the timer plugin's timeCycle composition — infinite (R), bounded
+  (R<n>), and bounded-with-explicit-start-time (R<n>/<iso>/<dur>) —
+  closing the bounded-count + scheduled-start gaps in the timer
+  trigger plugin. Validates and asserts on the trigger nodes plus all
+  three TriggerEdges.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:trigger, feature:timer, feature:multi-trigger, feature:bounded-timer, feature:scheduled-timer]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "MultiTrigger" containing
+  a project also named "MultiTrigger" from the sdd.md below. Use v20 schema.
+  Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — MultiTrigger
+
+  **Case Definition Blueprint** · Generic — Multi-Trigger Coverage
+
+  Three case-level triggers — one manual, one infinite timer (R/PT1H), one bounded + scheduled timer (R5/<iso>/P1D) — each with its own outgoing edge to a single Run stage. Exercises the multi-trigger code path (≥3 trigger nodes, three TriggerEdges), the manual trigger plugin's serviceType "None", AND all three forms of the timer plugin's timeCycle composition — infinite (R), bounded (R<n>), and bounded-with-explicit-start-time (R<n>/<iso>/<dur>).
+
+  Prepared date: 2026-05-19
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | MultiTrigger |
+  | Case Description | Three case-level triggers (manual + two timer triggers) each fire the case into a single Run stage. |
+  | Case Identifier | Prefix: MT, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Display Name | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | (default) | User-initiated start of the case. serviceType "None". | - |
+  | timer | Hourly | timeCycle "R/PT1H" — infinite repeating interval, every 1 hour, no fixed start time, no repeat count. | - |
+  | timer | Daily 9am Limited | timeCycle "R5/2026-04-26T09:00:00.000Z/P1D" — five repetitions starting at 2026-04-26T09:00:00 UTC with a 1-day cadence. Exercises the bounded-count and explicit-start-time branches of the timer plugin's timeCycle composition. | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Run (`run`)
+  **Type:** Stage
+  **Description:** Receives the case after any trigger fires. Each of the three triggers carries its own TriggerEdge to this stage.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate MultiTrigger/MultiTrigger/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan has 3 triggers (manual + infinite-hourly R/PT1H + bounded-daily R5/2026-04-26T09:00:00.000Z/P1D) each with its own TriggerEdge to Run"
+    command: "python3 $TASK_DIR/check_multi_trigger.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

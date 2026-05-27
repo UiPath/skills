@@ -11,11 +11,6 @@ skip: true
 # @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
 # Re-enable when the CLI ships the consumables surface. See PLT-103133.
 
-sandbox:
-  driver: docker
-  python: {}
-  node: {}
-
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

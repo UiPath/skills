@@ -49,6 +49,7 @@ Respond that the operation is not supported. Do not try to work around it.
 | Change a field's data type | Not supported; type is fixed at creation |
 | Create a federated entity | Not supported via CLI or UiPath portal |
 | Write records to a federated entity | Federated entities are read-only |
+| Create / update / delete a choice set | Choice sets are authored in the Data Fabric web UI; the CLI exposes only `choice-sets list` / `choice-sets get` for browsing |
 
 ---
 
@@ -75,6 +76,14 @@ Respond that the operation is not supported. Do not try to work around it.
 10. **Never attempt entity delete.** No command exists. Respond: *"Deleting entities is not supported via the CLI."*
 
 11. **Never attempt field delete.** Do not pass `removeFields` in `entities update`. Respond: *"Removing fields is not supported via the CLI."*
+
+12. **Complex field types need extra config and lookups, just like `DECIMAL` needs `decimalPrecision`.** `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` require `choiceSetId` (from `choice-sets list`); `RELATIONSHIP` requires `referenceEntityName` (target's technical `Name`) + `referenceFieldName` (usually `Id`), and the target entity must exist first. Full shape in [`references/entity-schema.md`](references/entity-schema.md).
+
+13. **`choice-sets` is read-only.** CLI has only `list` / `get` — author choice sets in the Data Fabric web UI. If a needed choice set is missing, stop and ask; do not fall back to `STRING`.
+
+14. **Choice / relationship record values use lookup tokens, not labels.** Choice value → integer `NumberId` (single) or array of `NumberId`s (multi), from `choice-sets get`. Relationship value → target record's UUID `Id` regardless of `referenceFieldName`. Filter / `groupBy` use the same tokens; `CHOICE_SET_MULTIPLE` filtering has special operator semantics — see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
+
+15. **Answer with `records query`, not from memory.** Counts, sums, filters, lookups — issue a fresh `records query` (or `records list`) and use the server's response. Do not reuse cached insert responses, IDs you generated earlier, or values from previous tool results. Exception: the `Id` returned by the same `records insert` you just made.
 
 ---
 
@@ -115,6 +124,8 @@ uip df records query <entity-id> \
   --output json
 ```
 
+For Complex types  field shapes and value formats, see [`references/entity-schema.md`](references/entity-schema.md#supported-field-types) and [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
+
 ---
 
 ## Task Navigation
@@ -123,21 +134,23 @@ uip df records query <entity-id> \
 |------|----------------|
 | Explore what entities exist | `entities list` → `entities get <id>` |
 | Explore only native entities | `entities list --native-only` |
-| Create a new entity | `entities create <name> --body '{"fields":[{"fieldName":"Title","type":"STRING"}]}'` |
+| Browse / inspect choice sets (read-only) | `choice-sets list`, `choice-sets get <choice-set-id>` |
+| Create a new entity | `entities create <name> --body '{"fields":[{"fieldName":"Title","type":"STRING"}]}'` — for complex field types (`CHOICE_SET_*`, `RELATIONSHIP`) and their required extras, see [`references/entity-schema.md`](references/entity-schema.md#supported-field-types) |
 | Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"NewField","type":"STRING"}]}'` |
 | Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — `id` is the field UUID from `entities get Fields[].ID` |
 | Update entity metadata | `entities update <id> --body '{"displayName":"New Name","description":"desc"}'` |
 | Read records (first page) | `records list <entity-id> --limit 50` |
 | Read records (next page) | `records list <entity-id> --cursor <NextCursor>` |
 | Get one record | `records get <entity-id> <record-id>` |
-| Insert one record | `records insert <entity-id> --body '{...}'` (or `--file`) |
+| Insert one record | `records insert <entity-id> --body '{...}'` (or `--file`). Choice / relationship value formats: see [`references/records-query.md`](references/records-query.md#writing-choice-set-and-relationship-values) |
 | Batch insert | `records insert <entity-id> --body '[{...},{...}]'` |
 | Update one record | `records update <entity-id> --body '{"Id":"<record-id>","field":"val"}'` |
 | Batch update | `records update <entity-id> --body '[{"Id":"<id1>","field":"val"},{"Id":"<id2>","field":"val"}]'` |
 | Delete records | `records delete <entity-id> <id1> <id2>` |
-| Filter/search records | `records query <entity-id> --body '{...}'` |
+| Filter/search records | `records query <entity-id> --body '{...}'`. Choice / relationship filter operators: see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields) |
 | Aggregate / group-by metrics | `records query <entity-id> --body '{"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}],"groupBy":["FieldName"]}'` |
-| Bulk import from CSV | `records import <entity-id> --file data.csv` |
+| Bulk import from CSV (Basic field types only — `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, `AUTO_NUMBER` are silently dropped) | `records import <entity-id> --file data.csv` |
+| Bulk seed records that include complex fields | `records insert <entity-id> --file records.json` with a JSON array body |
 | Upload file to record | `files upload <entity-id> <record-id> <field-name> --file path` |
 | Download file | `files download <entity-id> <record-id> <field-name> --destination path` |
 | Delete file | `files delete <entity-id> <record-id> <field-name>` |
@@ -146,7 +159,7 @@ uip df records query <entity-id> \
 
 ## Field Types
 
-Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`. For the full type table with SQL backing types, see [`references/entity-schema.md`](references/entity-schema.md).
+Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`, `FILE`. Complex types that require extra config: `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` (need `choiceSetId`), `RELATIONSHIP` (needs `referenceEntityName` + `referenceFieldName`), `AUTO_NUMBER`. Full table with SQL backing types, required extras, and value semantics in [`references/entity-schema.md`](references/entity-schema.md).
 
 ### Advanced Field Constraints
 
@@ -213,13 +226,15 @@ Pass via `--body` or `--file`. Use `--limit`, `--cursor`, and `--offset` CLI fla
 | `Each field must include a 'fieldName' string` | Invalid field in `entities create` | Use `{"fieldName":"myfield"}` not `{"name":"myfield"}` |
 | `Entity name resolution failed` | Query/import with bad ID | Verify entity exists with `entities list` |
 | Import errors in CSV | Header mismatch | Run `entities get` and check exact field names (case-sensitive) |
+| `records import` succeeded but choice / relationship / file column is `null` on every row | `records import` silently drops complex field types (Basic only) | Re-seed via `records insert` with a JSON body — see [`references/bulk-import.md`](references/bulk-import.md) |
 | Write to federated entity | Entity is read-only | Use `--native-only`; federated entities cannot be written to |
 
 ---
 
 ## References
 
-- `references/entity-schema.md` — Field definitions, supported types, schema update patterns
-- `references/records-query.md` — Query filter syntax, pagination, sorting examples
+- `references/entity-schema.md` — Field definitions, supported types, schema update patterns, choice-set + relationship field shapes
+- `references/choice-sets.md` — Browse choice sets, look up `NumberId`s, add CHOICE_SET fields to entities, write choice values on records
+- `references/records-query.md` — Query filter syntax, pagination, sorting, choice/relationship semantics on read & write
 - `references/file-attachments.md` — File field upload/download/delete file
-- `references/bulk-import.md` — CSV format requirements and bulk import patterns
+- `references/bulk-import.md` — CSV format requirements and the Basic-fields-only limitation (complex types are silently dropped — use `records insert` with a JSON body instead)

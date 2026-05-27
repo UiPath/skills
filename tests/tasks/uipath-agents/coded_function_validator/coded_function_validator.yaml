@@ -1,0 +1,68 @@
+task_id: skill-agent-coded-function-validator
+description: >
+  Coded Function inference via the updated `uip functions` CLI. A naturally-phrased
+  validation request — no mention of LLM, AI, or frameworks — must be recognised as
+  a Python Coded Function. Verifies the agent passes `-l py` to `uip functions new`,
+  runs `uip functions init`, produces a correct @dataclass schema, includes SDK
+  tracing, declares `[tool.uipath] type = "function"` in pyproject.toml, and
+  contains no LLM imports.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I need a UiPath Python Coded Function named `invoice-validator` that checks
+  whether invoice data is complete and well-formed.
+
+  It takes `invoice_number` (str), `vendor_name` (str), `total_amount` (float),
+  and `currency` (str). Return `is_valid` (bool), `validation_errors` (list of
+  strings), and `normalized_currency` (the currency code uppercased).
+  Use this hardcoded list of accepted currencies: ["USD", "EUR", "GBP", "JPY", "CHF", "AUD", "CAD"].
+  Validate the currency field against this list. Make execution observable through UiPath tracing.
+
+  Run it with:
+  `'{"invoice_number": "INV-001", "vendor_name": "Acme Corp", "total_amount": 1500.0, "currency": "usd"}'`
+  and write `RAN_OK` to `run_marker.txt` after success. Do NOT deploy.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded a Python Functions project with uip functions new -l py"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions\s+new\s+.*(-l\s+(py|python)|--language\s+(py|python))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip functions init to generate entry-points.json (Python-only command)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the function locally with uip functions run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions\s+run'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Correct @dataclass schema, [tool.uipath] type=function, no LLM imports, init ran, SDK tracing present"
+    command: "python3 $TASK_DIR/check_coded_function_validator.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

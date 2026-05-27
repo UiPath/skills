@@ -14,17 +14,12 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
-  max_turns: 30
   turn_timeout: 1200
 
-sandbox:
-  driver: docker
-  python: {}
-
 initial_prompt: |
-  Create a UiPath solution "QuerySol" containing a low-code agent
-  "QueryAgent". The agent accepts a required `userQuery` (string) and
-  returns a `reply` (string). Validate the agent.
+  Create a low-code agent "QueryAgent" that accepts a required
+  `userQuery` (string) and returns a `reply` (string). Validate the
+  agent. The solution should be named "QuerySol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

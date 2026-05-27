@@ -12,10 +12,6 @@ agent:
 run_limits:
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 

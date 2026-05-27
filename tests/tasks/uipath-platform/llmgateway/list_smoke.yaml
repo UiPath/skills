@@ -1,0 +1,50 @@
+task_id: skill-platform-llmgateway-list
+description: >
+  Smoke test: agent uses the uipath-platform skill to inspect existing BYO LLM
+  product configurations on the tenant via `uip llm-configuration byo-connections
+  list`. Verifies the agent uses the read-only list command and knows the
+  `--include-connection-details` flag for resolving connector metadata.
+tags: [uipath-platform, smoke, llmgateway, byo-connections, lifecycle:discover]
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  I want to audit which BYO LLM product configurations are currently active on
+  this tenant.
+
+  1. List all BYO LLM product configurations.
+  2. Then list them again with connection details resolved from Integration
+     Service so I can see the underlying connector and connection names.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected.
+    You MUST still run each command listed above. Do NOT retry or attempt
+    to login.
+  - Use `--output json` on every uip command.
+  - Do NOT run `create`, `update`, or `delete` — this audit is read-only.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed BYO LLM configurations"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list(?!\-product\-configs)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved connection details with --include-connection-details"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list.*--include-connection-details'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the list commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

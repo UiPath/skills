@@ -1,0 +1,26 @@
+task_id: skill-agents-deeprag-coded-smoke-trigger
+description: >
+  Smoke test: agent should trigger the uipath-agents skill when the
+  user asks to summarize / synthesize across PDF or TXT documents from
+  a Python coded agent (LangGraph). Verifies the skill fires for the
+  Python-coded-agent + PDF/TXT signal pair.
+tags: [uipath-agents, smoke, coded, lifecycle:discover, context-grounding]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a Python coded-agent project (`pyproject.toml` with uipath +
+  uipath-langchain, plus `langgraph.json`). I want it to receive a PDF
+  attachment at runtime and produce a single grounded summary with
+  citations. Tell me which skill applies and outline the durable-interrupt
+  pipeline. Do NOT scaffold any files.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    expected_skill: "uipath-agents"
+    skill_name: "uipath-agents"
+    weight: 3.0
+    pass_threshold: 1.0

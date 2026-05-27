@@ -63,7 +63,7 @@ resource context; task payload inputs and outputs belong in sibling
 
 | Extension type | BPMN wrapper | XML tag | Ownership |
 | --- | --- | --- | --- |
-| `BPMN.Variables` | `bpmn:task`, start/end mapping contexts | `uipath:mapping` | Model-owned |
+| `BPMN.Variables` | `bpmn:task` | `uipath:mapping` | Model-owned |
 | `BPMN.ScriptTask` | `bpmn:scriptTask` | `uipath:mapping` plus `uipath:scriptVersion` | Model-owned; parser executes as `Scp.Script` |
 | `Actions.HITL` | `bpmn:userTask` | `uipath:activity` | Model may draft shell; resource/form binding resolved by CLI or operator |
 | `Orchestrator.StartJob` | `bpmn:serviceTask` | `uipath:activity` | Model may draft shell; resource binding and schemas resolved by CLI or operator |

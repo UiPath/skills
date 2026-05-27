@@ -361,17 +361,36 @@ The entrypoint name comes from the key in `langgraph.json` `"graphs"` or `uipath
 
 ## Conversational Agents
 
-For chat-style agents that maintain conversation history, set `isConversational` in `uipath.json`:
+For the cross-framework contract (the `isConversational` flag, local-run options), see `../capabilities/conversational-agents.md`.
 
-```json
-{
-  "runtimeOptions": {
-    "isConversational": true
-  }
-}
+### In-Process Input
+
+Type the graph state's `messages` field as a list of `AnyMessage` with the `add_messages` reducer:
+
+```python
+from typing import Annotated
+from langchain_core.messages import AnyMessage
+from langgraph.graph.message import add_messages
+from pydantic import BaseModel
+
+class State(BaseModel):
+    messages: Annotated[list[AnyMessage], add_messages] = []
 ```
 
-This enables the UiPath runtime to manage message history and thread state across turns.
+`langgraph.graph.MessagesState` is the equivalent shorthand.
+
+The wire envelope (see `../capabilities/conversational-agents.md` § Wire Envelope) lands as the `messages` field; the `uipath-langchain` runtime converts each `UiPathConversationMessage` dict into a LangChain `HumanMessage` before the graph runs.
+
+### Two Implementation Options
+
+Both are valid — pick based on the agent's needs:
+
+- **Prebuilt ReAct agent** — `from langchain.agents import create_agent`. The input contract above is already wired in; just export the compiled graph from your entry point.
+- **Custom graph** — any `StateGraph` topology consuming the same `messages` field. The first node can be fully deterministic (e.g. validation or routing) before any LLM call.
+
+### Local Run
+
+See `../capabilities/conversational-agents.md` § Running Locally for the `--keep-state-file` flag (required on every turn) and § Wire Envelope for the `turn1.json` shape.
 
 ---
 

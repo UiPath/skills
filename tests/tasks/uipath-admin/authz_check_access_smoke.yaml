@@ -10,10 +10,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, authz, check-access]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   What can the user with id b44fc962-d544-4c99-b520-71121070ec17 do
   right now?

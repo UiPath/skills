@@ -1,0 +1,60 @@
+{
+  "Result": "Success",
+  "Code": "QueueItem",
+  "Data": {
+    "queueDefinitionId": 13713,
+    "queueDefinition": {
+      "key": "36e2cd45-f47f-4850-9a94-ac5f723faf3c",
+      "name": "ItemsQueue",
+      "description": "",
+      "maxNumberOfRetries": 1,
+      "acceptAutomaticallyRetry": true,
+      "retryAbandonedItems": false,
+      "enforceUniqueReference": false,
+      "encrypted": false,
+      "creationTime": "2026-05-14T11:25:32.653Z",
+      "slaInMinutes": 0,
+      "riskSlaInMinutes": 0,
+      "organizationUnitId": 28927,
+      "tags": [],
+      "id": 13713
+    },
+    "processingException": {
+      "reason": "Unsupported country: ZZ",
+      "type": "BusinessException",
+      "creationTime": "2026-05-14T12:06:49.687Z"
+    },
+    "error": {
+      "code": "User.QueueItemBusinessException",
+      "title": "Unsupported country: ZZ",
+      "detail": "",
+      "category": "User",
+      "timestamp": "2026-05-14T12:06:49.687Z"
+    },
+    "encrypted": false,
+    "specificContent": {
+      "InvoiceId": "INV-006",
+      "Amount": "75.00",
+      "Country": "ZZ"
+    },
+    "status": "Failed",
+    "reviewStatus": "None",
+    "key": "3b021051-08e0-4140-9448-ea073a4e7e66",
+    "processingExceptionType": "BusinessException",
+    "priority": "High",
+    "robotId": 6979,
+    "executorJobKey": "af31127b-1083-4304-930d-ad638022a248",
+    "startProcessing": "2026-05-14T12:06:49.553Z",
+    "endProcessing": "2026-05-14T12:06:49.680Z",
+    "secondsInPreviousAttempts": 0,
+    "retryNumber": 0,
+    "manualRetryNumber": 0,
+    "uniqueKey": "3b021051-08e0-4140-9448-ea073a4e7e66",
+    "hasVideoRecorded": false,
+    "specificData": "{\"DynamicProperties\":{\"InvoiceId\":\"INV-006\",\"Amount\":\"75.00\",\"Country\":\"ZZ\"}}",
+    "creationTime": "2026-05-14T12:05:33.287Z",
+    "rowVersion": "AAAAAADkxLM=",
+    "organizationUnitId": 28927,
+    "id": 3569514
+  }
+}

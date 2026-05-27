@@ -18,6 +18,7 @@ CHECKERS=(
   "check-orphans.sh"
   "check-plugin-pairs.sh"
   "check-validation-fixtures.sh"
+  "check-real-pack.sh"
   "check-uip-commands.sh"
 )
 

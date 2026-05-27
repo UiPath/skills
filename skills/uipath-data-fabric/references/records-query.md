@@ -33,6 +33,17 @@ uip df records list <entity-id> --limit 100 --cursor "<NextCursor>" --output jso
 uip df records list <entity-id> --limit 100 --offset 250 --output json
 ```
 
+## Always Query the Server for Answers
+
+Issue a fresh `records query` (or `records list`) — don't filter cached transcript data. Records mutate between turns, and the CLI call is the audit trail.
+
+Common shapes:
+
+- **By relationship:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"<rel-field>","operator":"=","value":"<target-uuid>"}]}}'`
+- **Resolve unique key before write:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}'`
+- **Set membership over UUIDs:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"<rel-field>","operator":"in","valueList":["<u1>","<u2>","<u3>"]}]}}'`
+- **Counts / sums / groupings:** `aggregates` + `groupBy` — see [Aggregates (server-side)](#aggregates-server-side).
+
 ## Filtered Query
 
 ```bash
@@ -88,6 +99,8 @@ uip df records query <entity-id> \
 
 > `in` and `not in` use `valueList` (string array), **not** `value`. Using `value` for these operators will be ignored.
 
+> `CHOICE_SET_MULTIPLE` is a special case — `=` means whole-array set equality, `contains` is membership, others are unsupported. See [Filtering on Choice-Set Fields](#filtering-on-choice-set-fields) below.
+
 ### logicalOperator
 
 - `0` = AND (all filters must match)
@@ -116,6 +129,55 @@ uip df records query <entity-id> \
     ]
   }
 }
+```
+
+### Filtering on Choice-Set Fields
+
+Filter on the integer `NumberId` (as a string in `value` / `valueList`), never the display label. Resolve via `choice-sets get <choice-set-id>` first.
+
+```bash
+# CHOICE_SET_SINGLE — category == "travel" (NumberId 1)
+uip df records query <entity-id> --body \
+  '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"category","operator":"=","value":"1"}]}}' \
+  --output json
+```
+
+**`CHOICE_SET_MULTIPLE`** is stored as a JSON-encoded integer array (e.g. `[1,3]`) and has special operator semantics:
+
+| Operator | Value form | Meaning |
+|----------|-----------|---------|
+| `contains` / `not contains` | bare NumberId string (`"1"`) | Membership — the usual case |
+| `=` / `!=` | JSON-array string (`"[1,3]"`) | Whole-set equality, order-insensitive |
+| anything else | — | Not supported |
+
+```bash
+# Membership — records tagged with NumberId 1
+uip df records query <entity-id> --body \
+  '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"tags","operator":"contains","value":"1"}]}}' \
+  --output json
+
+# Set equality — tags == exactly {1,3}
+uip df records query <entity-id> --body \
+  '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"tags","operator":"=","value":"[1,3]"}]}}' \
+  --output json
+```
+
+Failure modes: `=` with a bare value (`"1"`) → HTTP 400. `contains` with brackets (`"[1]"`) → HTTP 400. For per-value reporting, run `contains` per `NumberId`; for distribution of exact combinations, use `groupBy: ["tags"]` with `COUNT`.
+
+### Filtering on Relationship Fields
+
+Filter on the target record's UUID `Id`, regardless of `referenceFieldName`. If the user describes the parent by another field (email, name, etc.), resolve the UUID first on the parent entity, then filter the child.
+
+```bash
+# Direct
+uip df records query <child-entity-id> --body \
+  '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"customerId","operator":"=","value":"<parent-uuid>"}]}}' \
+  --output json
+
+# Resolve-first: email → Id on parent, then filter child
+uip df records query <parent-entity-id> --body \
+  '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}' \
+  --output json
 ```
 
 ## Aggregates (server-side)
@@ -223,6 +285,21 @@ Single insert response: `{ Code: "RecordInserted", Data: { ...record with Id } }
 
 Batch insert response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
 
+### Writing Choice-Set and Relationship Values
+
+| Field type | Value | Resolve via |
+|------------|-------|-------------|
+| `CHOICE_SET_SINGLE` | Integer `NumberId` | `choice-sets get <choice-set-id>` |
+| `CHOICE_SET_MULTIPLE` | Integer `NumberId` array | `choice-sets get <choice-set-id>` |
+| `RELATIONSHIP` | Target record's UUID `Id` (always, even if `referenceFieldName` ≠ `Id`) | `records query <target-entity-id>` on the unique field |
+
+```bash
+uip df records insert <entity-id> \
+  --body '{"amount":250,"category":1,"tags":[1,3],"customerId":"<target-uuid>"}' --output json
+```
+
+Display labels, choice-value UUIDs, and non-UUID relationship values are rejected — resolve first. Reads echo the same shape.
+
 ## Update Records
 
 The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint. Both require `Id` in the body.
@@ -236,6 +313,8 @@ uip df records update <entity-id> \
   --body '[{"Id":"<id1>","Score":100},{"Id":"<id2>","Score":90}]' \
   --output json
 ```
+
+Choice / relationship fields use the same value form as insert — see [Writing Choice-Set and Relationship Values](#writing-choice-set-and-relationship-values).
 
 Single update response: `{ Code: "RecordUpdated", Data: { ...updated record } }`
 

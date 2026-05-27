@@ -19,11 +19,6 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
-
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new
   Outlook inbox emails and routes each one based on two signals: whether
