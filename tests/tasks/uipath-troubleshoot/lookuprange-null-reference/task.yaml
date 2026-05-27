@@ -1,0 +1,140 @@
+task_id: skill-troubleshoot-lookup-null-reference
+description: >
+  UiPath troubleshooting agent must diagnose a classic Lookup Range failure
+  caused by the activity being placed outside any Excel Application Scope: with
+  no workbook context object, the Lookup Range dereferences null and faults
+  with System.NullReferenceException at startup. The fault stack and Main.xaml
+  both show no enclosing Excel scope. Success = agent matches the
+  lookup-range-null-reference playbook AND identifies the missing Excel scope
+  (found in Main.xaml) as the cause.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 60
+turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My OrderLookup process faults on every run in Orchestrator with an
+  "Object reference not set to an instance of an object" error. The folder
+  is "RPA Production". It is supposed to look up order IDs in an orders
+  spreadsheet.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the lookup-range-null-reference playbook AND identified the Lookup Range being outside any Excel scope"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My OrderLookup process faults on every run with 'Object reference
+         not set to an instance of an object'. Folder 'RPA Production'. It
+         is supposed to look up order IDs in an orders spreadsheet."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/lookup-range-null-reference.md
+        because the runtime error
+          "System.NullReferenceException: Object reference not set to an
+           instance of an object"
+        originating inside a classic Lookup Range is the playbook's
+        signature. This scenario stages the playbook's "no surrounding
+        scope" cause.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - In Main.xaml the Lookup Range sits directly in the Main Sequence
+            with NO surrounding Excel Application Scope (or Use Excel File).
+          - The classic Lookup Range needs a scope to supply its workbook
+            context; with none, the context is null and the activity
+            dereferences null, throwing NullReferenceException at startup.
+          - The fault stack is LookUpRange -> Sequence "Main Sequence" ->
+            Main with no scope in between, and the log shows no "workbook
+            opened" line - confirming there is no workbook context.
+        The reference fix:
+          - Wrap the Lookup Range in an Excel Application Scope (classic)
+            bound to the workbook (or Use Excel File / Excel Process Scope +
+            LookUpRangeX on the modern surface).
+
+      DIMENSION C -- Discoverable in the workflow
+        The agent has the workflow source; the missing scope is visible in
+        Main.xaml (the LookUpRange is a direct child of the Sequence) and in
+        the fault stack. Reward finding it there. Do not require reading the
+        binary .xlsx.
+
+      SCORING RUBRIC:
+        1.0  Agent matched lookup-range-null-reference AND identified that
+             the Lookup Range is outside any Excel scope (no workbook
+             context) as the cause of the NRE, AND recommended wrapping it in
+             an Excel Application Scope / Use Excel File.
+        0.8  Correct playbook and "missing scope / no workbook context"
+             cause, but the fix is vague (e.g. "add a scope" without naming
+             Excel Application Scope / Use Excel File).
+        0.5  Matched the null-reference playbook but attributed the NRE to a
+             sibling cause (missing/renamed sheet, undefined named range)
+             without identifying the missing scope, OR identified the
+             missing scope but did not connect it to the null workbook
+             context.
+        0.2  Surfaced the NullReferenceException to the user without
+             diagnosis.
+        0.0  Wrong cause (e.g. concluded Excel is not installed, the file is
+             locked, the range is invalid, or the order ID is genuinely
+             absent), or matched no playbook.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You know only
+    that it faults on every run with an "Object reference not set" error and
+    that it is supposed to look up order IDs in an orders spreadsheet. You
+    have just the information in your initial report.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks whether the workflow was recently changed, say you are not sure - you did not build it and do not know its internals."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the workflow source and the job evidence already gathered."
+    - "Never invent factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

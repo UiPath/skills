@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T08:18:55.670Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T08:18:57.771Z",
+      "Message": "[Lookup Range] Object reference not set to an instance of an object."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T08:18:57.838Z",
+      "Message": "Lookup Range: Object reference not set to an instance of an object.\r\nin Main.xaml\r\n    at LookUpRange \"Lookup Range\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T08:18:57.884Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "CatalogLookup",
+  "ProjectType": "Process",
+  "Description": "Reproduces a classic Lookup Range failure caused by the Range property set to a literal empty string (\"\") instead of left blank for a whole-sheet search.",
+  "MainFile": "Main.xaml"
+}
