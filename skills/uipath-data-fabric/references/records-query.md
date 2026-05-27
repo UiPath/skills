@@ -35,14 +35,7 @@ uip df records list <entity-id> --limit 100 --offset 250 --output json
 
 ## Always Query the Server for Answers
 
-Issue a fresh `records query` (or `records list`) — don't filter cached transcript data. Records mutate between turns, and the CLI call is the audit trail.
-
-Common shapes:
-
-- **By relationship:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"<rel-field>","operator":"=","value":"<target-uuid>"}]}}'`
-- **Resolve unique key before write:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}'`
-- **Set membership over UUIDs:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"<rel-field>","operator":"in","valueList":["<u1>","<u2>","<u3>"]}]}}'`
-- **Counts / sums / groupings:** `aggregates` + `groupBy` — see [Aggregates (server-side)](#aggregates-server-side).
+Issue a fresh `records query` (or `records list`) — don't filter cached transcript data. Records mutate between turns, and the CLI call is the audit trail. Patterns: [filtered query](#filtered-query), [choice-set](#filtering-on-choice-set-fields), [relationship](#filtering-on-relationship-fields), [aggregates](#aggregates-server-side).
 
 ## Filtered Query
 
@@ -52,16 +45,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Pagination for query also uses `--limit`, `--cursor`, and `--offset` flags — not body keys.
-
-```bash
-# Query with pagination
-uip df records query <entity-id> \
-  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Score","operator":">=","value":"80"}]}}' \
-  --limit 100 \
-  --cursor <NextCursor> \
-  --output json
-```
+Pagination for query uses the same `--limit` / `--cursor` / `--offset` flags (not body keys).
 
 ### Query Body Schema
 
@@ -89,7 +73,7 @@ uip df records query <entity-id> \
 
 `=` `!=` `>` `<` `>=` `<=` `contains` `not contains` `startswith` `endswith` `in` `not in`, plus is-empty / is-not-empty (`=` / `!=` with `value: null`). `in` / `not in` take `valueList` (not `value`); `logicalOperator` is `0`/`1` or case-insensitive `AND`/`OR`.
 
-Operator support varies by field type — see the authoritative [operator support matrix](filter-platform-contract.md#4-operator-support-by-field-type). When an operator isn't supported for a field's type, or a value is missing, do not silently run it — follow the unsupported-operator flow in **SKILL.md Rule 17**.
+Operator support varies by field type — see the authoritative [operator support matrix](filter-platform-contract.md#operator-support-by-field-type). When an operator isn't supported for a field's type, or a value is missing, do not silently run it — follow the unsupported-operator flow in **SKILL.md Rule 17**.
 
 ### Verifying a filter applied
 
@@ -182,19 +166,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response:
-
-```json
-{
-  "Result": "Success",
-  "Code": "RecordQuery",
-  "Data": {
-    "TotalCount": 1,
-    "Records": [{ "total": 250 }],
-    "HasNextPage": false
-  }
-}
-```
+Response: `Data.Records` is a single row — `[{ "total": 250 }]`.
 
 ```bash
 # Count per group (one result row per distinct value)
@@ -203,22 +175,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response shape (one row per group, each row contains the group fields + every aggregate alias):
-
-```json
-{
-  "Result": "Success",
-  "Code": "RecordQuery",
-  "Data": {
-    "TotalCount": 2,
-    "Records": [
-      { "Status": "Open",   "total": 12 },
-      { "Status": "Closed", "total":  5 }
-    ],
-    "HasNextPage": false
-  }
-}
-```
+Response: one row per group, each with the group fields + every aggregate alias — `[{ "Status": "Open", "total": 12 }, { "Status": "Closed", "total": 5 }]`.
 
 ### Functions
 
@@ -251,7 +208,7 @@ Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
 - The same `filterGroup`, `sortOptions`, and pagination flags (`--limit`, `--cursor`) work alongside aggregates. Filters are applied **before** grouping (SQL `WHERE`).
 - Choice-set fields in `groupBy` / filters require the numeric `numberId`, not the display label. Discover via the choice-set lookup if you need to filter / group by a choice value.
 
-> Tooling requirement: server-side aggregates ship in version `1.0.1`+ of `@uipath/data-fabric-tool` only. Older versions silently strip `aggregates` / `groupBy` from the body (the SDK they bundle prefixes unknown keys with OData `$`, which the API ignores) and the query falls back to a plain record list. If aggregates aren't returning the expected one-row-per-group shape, re-run `uip tools install @uipath/data-fabric-tool@latest` to pick up the latest.
+> Needs `@uipath/data-fabric-tool` `1.0.1+`; older versions silently drop `aggregates`/`groupBy` and return a plain record list — `uip tools install @uipath/data-fabric-tool@latest`.
 
 ## Insert Records
 
