@@ -215,6 +215,8 @@ uip solution upload ./InvoiceAutomation --output json
 
 If the `SolutionId` in `.uipx` matches an existing Studio Web solution, the upload overwrites it.
 
+> A project's target framework (platform) is fixed at creation and **cannot be mutated** — re-uploading or editing configuration will not change it. To target a different platform (e.g., Windows → Cross-platform), **recreate the project** with the correct target framework and upload that.
+
 ## Step 10: Delete from Studio Web
 
 Remove a solution from Studio Web by its UUID (returned by `upload`).

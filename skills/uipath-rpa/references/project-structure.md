@@ -94,9 +94,9 @@ MyProject/
 | `name` | Project name (used in package output) |
 | `main` | Entry point workflow file (relative path) |
 | `dependencies` | NuGet package dependencies with version constraints |
-| `expressionLanguage` | `CSharp` or `VisualBasic` — determines expression syntax in XAML. Prefer `VisualBasic` for Windows target framework projects |
+| `expressionLanguage` | `CSharp` or `VisualBasic` — determines expression syntax in XAML. Default `VisualBasic`. Immutable after creation (decide at init — SKILL.md Rule 2a) |
 | `designOptions.outputType` | `Process`, `Library`, or `Tests` |
-| `targetFramework` | `Windows` (.NET 6 Windows, default) or `Portable` (cross-platform .NET 6+) |
+| `targetFramework` | `Windows` (.NET 6 Windows-only), `Portable` (Cross-platform .NET 6+), or `Legacy` (Windows - Legacy, .NET Framework 4.6.1). Set explicitly at init (Rule 2a); omitting `--target-framework` yields `Windows` |
 | `entryPoints` | Per-workflow metadata: filePath, uniqueId, input/output definitions (**Process projects only** — Tests and Library projects use empty `[]`) |
 
 ## Rules
