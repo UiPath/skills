@@ -9,7 +9,7 @@ description: >
   object-name resolution, connection binding, and live execution. The IS Salesforce
   connector returns flattened records (top-level `Id`, `Name`, …), so the checker
   asserts a non-empty array of objects carrying a Salesforce `Id`.
-tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, uipath-salesforce]
+tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, uipath-salesforce-sfdc]
 
 agent:
   type: claude-code
@@ -26,10 +26,9 @@ initial_prompt: |
   The process must call Salesforce to list all records in the Opportunity
   object, then surface the returned records as a flow output variable.
 
-  Use the Salesforce connector. Discover the right operation for listing
-  records of an object and configure it against the Opportunity object, bound
-  to the tenant's Salesforce connection (the connection may live in a
-  non-default folder — discover it across all folders). Then run the flow with
+  Use the Salesforce connector, configured against the Opportunity object and
+  bound to the tenant's Salesforce connection. The connection may live in a
+  non-default folder, so discover it wherever it is. Then run the flow with
   `uip maestro flow debug` to confirm it returns Opportunity records.
 
   The task is not complete until `uip maestro flow validate` passes and the
@@ -39,10 +38,8 @@ initial_prompt: |
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build, validate, and run end-to-end in a single
   pass. Before starting, load the uipath-maestro-flow skill and follow its
-  workflow — in particular the connector node configuration steps (discover the
-  connection, `registry get --connection-id`, `node configure --detail`) and the
-  requirement to run `solution resource refresh` before debug. Do NOT substitute
-  a mock for the connector.
+  connector node configuration workflow. Do NOT substitute a mock for the
+  connector.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
