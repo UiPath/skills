@@ -15,10 +15,10 @@ on:
         required: false
         default: ''
       parallelism:
-        description: 'Parallel tasks (-j); blank = auto'
+        description: 'Parallel tasks (-j); full suite uses 20'
         type: string
         required: false
-        default: ''
+        default: '1'
       confirm_large_run:
         description: 'Allow >50 tasks (cost guardrail)'
         type: boolean
@@ -110,7 +110,7 @@ jobs:
             fi
             echo "globs=${MATCHES[*]}" >> "$GITHUB_OUTPUT"
             echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-            echo "parallelism=${INPUT_PARALLELISM:-20}" >> "$GITHUB_OUTPUT"
+            echo "parallelism=20" >> "$GITHUB_OUTPUT"
             echo "full_suite=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -197,8 +197,8 @@ jobs:
           E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ steps.globs.outputs.globs }}
           TASK_COUNT:               ${{ steps.globs.outputs.count }}
-          # Host-level concurrency. Resolved by the globs step: the
-          # `parallelism` input wins; else 20 (full suite) / 1 (targeted).
+          # Host-level concurrency from the globs step: 20 for the full
+          # suite, else the `parallelism` input (default 1).
           TASK_PARALLELISM:         ${{ steps.globs.outputs.parallelism }}
         working-directory: tests
         id: eval
@@ -243,12 +243,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      # Durable result storage in Azure Blob via keyless OIDC. The federated
-      # credential is scoped to repo:UiPath/skills:ref:refs/heads/main, so this
-      # only authenticates on main (dispatch-from-main).
-      # Ad-hoc branch runs skip it — GH artifacts above still capture results.
+      # Durable result storage in Azure Blob via keyless OIDC. Federated
+      # credentials cover main and bai/* branches (+ pull_request), so this
+      # works from feature branches too. Best-effort: a missing FIC / login
+      # failure shouldn't lose the run — GH artifacts above still capture it.
       - name: Azure login (OIDC)
-        if: always() && github.ref == 'refs/heads/main'
+        if: always()
+        continue-on-error: true
         uses: azure/login@v2
         with:
           client-id:       ${{ vars.AZURE_CLIENT_ID }}
@@ -256,7 +257,8 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Upload results to Azure Blob
-        if: always() && github.ref == 'refs/heads/main'
+        if: always()
+        continue-on-error: true
         env:
           AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
           AZURE_BLOB_CONTAINER:  ${{ vars.AZURE_BLOB_CONTAINER }}
@@ -279,12 +281,13 @@ jobs:
             --no-progress >/dev/null
           echo "Blob upload complete: $AZURE_BLOB_CONTAINER/$run_id"
 
-      # Full-suite Slack ping (from main only). Self-contained payload built
-      # from per-task task.json (the direct `coder-eval run` doesn't emit the
-      # dashboard's run.json that the VM's slack_summary.py consumes).
-      # Suppressed for small/broken runs to avoid spamming the 300-person channel.
+      # Full-suite Slack ping. Self-contained payload built from per-task
+      # task.json (the direct `coder-eval run` doesn't emit the dashboard's
+      # run.json that the VM's slack_summary.py consumes). Only fires on
+      # full-suite runs and suppresses under 100 tasks, so targeted/test
+      # dispatches don't spam the 300-person channel.
       - name: Slack summary
-        if: always() && github.ref == 'refs/heads/main' && steps.globs.outputs.full_suite == 'true'
+        if: always() && steps.globs.outputs.full_suite == 'true'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
