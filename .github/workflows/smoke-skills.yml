@@ -30,7 +30,9 @@ jobs:
       - name: Detect changed skills and map to test tasks
         id: detect
         run: |
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          BASE_REF="${{ github.base_ref }}"
+          BASE_REF="${BASE_REF:-main}"
+          CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
 
           # RPA skill (modern + legacy) runs on the Windows workflow
           # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
