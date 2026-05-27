@@ -65,29 +65,38 @@ Requires `marksCaseComplete: true`. Completes when every stage flagged `data.isR
 
 Requires `marksCaseComplete: false`. Swap `rule` to `selected-stage-exited` for exit-without-completion semantics.
 
-### wait-for-connector — external event
+### wait-for-connector — bind a connector event
+
+Build `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) — a bare rule (no `uipath`) is rejected by Studio Web. **Case-exit is root-scoped: `elementId = root-<ruleId>`** (not a stage id). Run the shared `case spec --type trigger` pipeline, `serviceType: "Intsvc.WaitForEvent"`, append root bindings + `bindings_v2` sync.
 
 ```json
 "rules": [[
   {
     "id": "Rule_xxxxxx",
     "rule": "wait-for-connector",
+    "uipath": {
+      "serviceType": "Intsvc.WaitForEvent",
+      "context": "<caseShape.context — placeholders substituted>",
+      "inputs": "<minted, elementId = root-<ruleId>>",
+      "outputs": "<minted, dedup applied>",
+      "bindings": []
+    },
     "conditionExpression": "=js:event.type === 'case_closed'"
   }
 ]]
 ```
 
-Valid for both `marksCaseComplete: true` and `false`.
+Valid for both `marksCaseComplete: true` and `false`. The connector binding (`uipath`) is required; `conditionExpression` is optional.
 
 ## Rule-Type × marksCaseComplete Matrix
 
 | `marksCaseComplete` | `rule` | Required extra field |
 |---|---|---|
 | `true` | `required-stages-completed` | — |
-| `true` | `wait-for-connector` | — |
+| `true` | `wait-for-connector` | `uipath` connector binding |
 | `false` | `selected-stage-completed` | `selectedStageId` |
 | `false` | `selected-stage-exited` | `selectedStageId` |
-| `false` | `wait-for-connector` | — |
+| `false` | `wait-for-connector` | `uipath` connector binding |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
@@ -98,3 +107,5 @@ Confirm the schema-appropriate array contains the new object with `id`, `marksCa
 - **v20** → `metadata.caseExitRules[]`
 
 Verify NO leakage: in v19 mode there is no `metadata.caseExitRules`; in v20 mode there is no `root` key at all.
+
+For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `root-<ruleId>`, and ConnectionId + FolderKey root bindings exist. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.

@@ -72,17 +72,28 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 `conditionExpression` uses bare `=js:<expr>` (no outer parens) — per FE convention for conditions. Operators (`>`, `<`, `===`, etc.) and function calls go inline. For combined boolean expressions, wrap each sub-clause in parens before joining: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
-### wait-for-connector — external event
+### wait-for-connector — bind a connector event
+
+Build `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) — a bare rule (no `uipath`) is rejected by Studio Web. Task-entry rules are **stage-scoped**: `elementId = <stageId>-<ruleId>`. Run the shared `case spec --type trigger` pipeline, `serviceType: "Intsvc.WaitForEvent"`, append root bindings + `bindings_v2` sync.
 
 ```json
 "rules": [[
   {
     "id": "rxxxxxxxx",
     "rule": "wait-for-connector",
+    "uipath": {
+      "serviceType": "Intsvc.WaitForEvent",
+      "context": "<caseShape.context — placeholders substituted>",
+      "inputs": "<minted, elementId = <stageId>-<ruleId>>",
+      "outputs": "<minted, dedup applied>",
+      "bindings": []
+    },
     "conditionExpression": "=js:event.type === 'order_received'"
   }
 ]]
 ```
+
+The connector binding (`uipath`) is required; `conditionExpression` is optional. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.
 
 ### runs-sequentially — sequential group with optional parallel siblings
 
@@ -98,7 +109,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 |---|---|
 | `current-stage-entered` | — |
 | `selected-tasks-completed` | `selectedTasksIds` (array) |
-| `wait-for-connector` | — |
+| `wait-for-connector` | `uipath` connector binding (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
 | `adhoc` | — |
 | `runs-sequentially` | — |
 
@@ -106,4 +117,4 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`) and `rules` with the expected `rule` value plus any required side field.
+Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`) and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated, inputs/outputs `elementId` is `<stageId>-<ruleId>`, and ConnectionId + FolderKey root bindings exist. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.

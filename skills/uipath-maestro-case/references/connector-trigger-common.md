@@ -1,10 +1,11 @@
 # Connector Trigger — Shared Pipeline
 
-Shared planning and implementation logic for connector-based triggers. Used by both:
-- [connector-trigger task](plugins/tasks/connector-trigger/planning.md) — in-stage `wait-for-connector`
-- [event trigger](plugins/triggers/event/planning.md) — case-level `Intsvc.EventTrigger`
+Shared planning and implementation logic for connector-based triggers. Used by three:
+- [connector-trigger task](plugins/tasks/connector-trigger/planning.md) — in-stage `wait-for-connector` task
+- [event trigger](plugins/triggers/event/planning.md) — case-level `Intsvc.EventTrigger` (case start)
+- **connector-bound condition rule** — a `wait-for-connector` rule in any condition scope (stage-entry / stage-exit / case-exit / task-entry). See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule) and each condition plugin's `impl-json.md`.
 
-Both use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task vs trigger node), `serviceType`, and a few node-shape details differ — see each plugin's own docs for those specifics.
+All three use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task `data` / trigger node `data.uipath` / rule `uipath`), `serviceType`, and a few shape details differ — see each plugin's own docs.
 
 > Mirrors the [connector-activity](plugins/tasks/connector-activity/planning.md) flow. Same CLI surface (`uip maestro case spec` with `--skip-case-shape` for planning, `--input-details` for Phase 3); `--type trigger` swaps in trigger-shaped inputs/outputs and the trigger-specific `metadata.body.bindings[Property]` registration entry.
 
@@ -319,7 +320,7 @@ Per-plugin: each plugin's `impl-json.md` mints these onto `caseShape.inputs[]` /
 Conventions (shared with activity):
 - `var` = `v` + 8 alphanumeric chars (unique across the case — see [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule))
 - `id` = same as `var`
-- `elementId` = the task's elementId (for in-stage `wait-for-connector` task) or the trigger node's id (for case-level event trigger)
+- `elementId` = the task's elementId (in-stage `wait-for-connector` task), the trigger node's id (case-level event trigger), or `<ownerNodeId>-<ruleId>` (connector-bound condition rule — see [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule))
 
 For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks/triggers), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged.
 
@@ -363,6 +364,55 @@ Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of
 After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
 
 > **`bindings_v2.json` regeneration is deferred** — runs once at end of Step 9.7 (after all connector tasks/triggers), not per-task. See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md).
+
+---
+
+## Target: connector-bound condition rule
+
+A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) binds the connector under the rule's **`uipath`** — structurally the same block the in-stage task writes under `data`. **The CLI cannot author this** (`buildRule` in `case-tool` emits a bare `{ rule, id, conditionExpression }` with no `uipath`); write `rule.uipath` directly per this recipe. Used by all four condition plugins.
+
+### Differences vs the in-stage task
+
+| Aspect | In-stage task | Connector-bound rule |
+|---|---|---|
+| Container | `task.data` | `rule.uipath` |
+| `serviceType` | `Intsvc.WaitForEvent` | `Intsvc.WaitForEvent` (same) |
+| `elementId` on inputs/outputs | `<stageId>-<taskId>` | `<ownerNodeId>-<ruleId>` |
+| Task-level fields (`type`, `displayName`, `isRequired`, `shouldRunOnlyOnce`) | yes | none — it's a rule, not a node |
+| `conditionExpression` | n/a | optional extra payload gate on the event |
+
+`<ownerNodeId>` = the **stage id** for stage-entry / stage-exit / task-entry rules (all stage-scoped); **`root`** for case-exit rules (v19 `root.caseExitConditions` / v20 `metadata.caseExitRules`).
+
+### Procedure (Phase 3)
+
+1. Resolve the connector in planning exactly as the task does — [§ Planning Pipeline](#planning-pipeline). The condition plugin's `planning.md` records the same fields (`connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`).
+2. Run `case spec --type trigger --input-details` ([§ Phase 3 Implementation](#phase-3-implementation--single-cli-call)) to mint the populated `caseShape`.
+3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` in `caseShape.context` ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext)). **No trigger-registration key applies to a rule.**
+4. Mint `var` / `id` / `elementId` on `caseShape.inputs[]` / `outputs[]` ([§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs)), with `elementId = <ownerNodeId>-<ruleId>`. Apply the output dedup rule.
+5. Write the rule:
+
+```json
+{
+  "id": "<ruleId>",
+  "rule": "wait-for-connector",
+  "uipath": {
+    "serviceType": "Intsvc.WaitForEvent",
+    "context": "<caseShape.context — placeholders substituted>",
+    "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
+    "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
+    "bindings": []
+  },
+  "conditionExpression": "<optional =js: payload gate>"
+}
+```
+
+6. Append root bindings (ConnectionId + FolderKey) and run the deferred `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
+
+### Caveats
+
+- **No entry-points.json entry and no trigger-registration key.** A connector rule compiles to an in-flight wait (ReceiveTask / event subprocess), not a case-start trigger. FE `PackagingUtil` registration is gated on `Intsvc.EventTrigger` start events only; the registration binding is derived downstream at packaging — never authored here.
+- **CLI `validate` does NOT check `rule.uipath`.** The case-tool connector validator is task-only (reads `task.data`). A passing Phase-4 validate does **not** confirm a connector rule is valid — Studio Web (or an FE round-trip) is the real check. Emit the `uipath` block correctly; do not rely on validate to catch omissions.
+- **Graceful degradation** mirrors the task: on `case spec` failure, leave the bare rule (`{ rule, id, conditionExpression? }`) + `<UNRESOLVED>` marker per Rule 8, and log per [logging/impl-json.md](plugins/logging/impl-json.md).
 
 ---
 

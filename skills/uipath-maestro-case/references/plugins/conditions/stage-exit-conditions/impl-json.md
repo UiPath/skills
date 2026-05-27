@@ -67,7 +67,9 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 `selectedTasksIds` is a JSON string array, not a comma-separated string.
 
-### wait-for-connector — external event
+### wait-for-connector — bind a connector event
+
+Build `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) — a bare rule (no `uipath`) is rejected by Studio Web. Run the shared `case spec --type trigger` pipeline, `serviceType: "Intsvc.WaitForEvent"`, `elementId = <stageId>-<ruleId>`, append root bindings + `bindings_v2` sync.
 
 ```json
 "type": "exit-only",
@@ -76,10 +78,19 @@ Rules use DNF — outer array is OR, inner array is AND.
   {
     "id": "Rule_xxxxxx",
     "rule": "wait-for-connector",
+    "uipath": {
+      "serviceType": "Intsvc.WaitForEvent",
+      "context": "<caseShape.context — placeholders substituted>",
+      "inputs": "<minted, elementId = <stageId>-<ruleId>>",
+      "outputs": "<minted, dedup applied>",
+      "bindings": []
+    },
     "conditionExpression": "=js:event.type === 'approved'"
   }
 ]]
 ```
+
+The connector binding (`uipath`) is required; `conditionExpression` is optional. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.
 
 ### wait-for-user — manual decision gate
 
@@ -106,9 +117,9 @@ Routes the case back to the originating stage.
 | `marksStageComplete` | `rule` | Required extra field |
 |---|---|---|
 | `true` | `required-tasks-completed` | — |
-| `true` | `wait-for-connector` | — |
+| `true` | `wait-for-connector` | `uipath` connector binding |
 | `false` | `selected-tasks-completed` | `selectedTasksIds` (array) |
-| `false` | `wait-for-connector` | — |
+| `false` | `wait-for-connector` | `uipath` connector binding |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); for combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
