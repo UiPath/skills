@@ -138,7 +138,7 @@ The generated SDD must start with:
 |----------|-------|
 | Case Name | {PascalCase name} |
 | Case Description | {2-3 sentence description of what the case manages} |
-| Case Identifier | Prefix: {2-4 char UPPER prefix}, Type: {constant \| external} |
+| Case Identifier | Type: {constant \| external}. Constant → Prefix: {2-4 char UPPER prefix}. External → Source: {=vars.<In/InOut variable> \| =js:`expression`} |
 | Priority | Choiceset: {comma-separated values} — Default: {value} |
 | Case-Level SLA | {count} {unit: h/d/w/m} |
 | SLA Type | {time-based \| condition-based} |

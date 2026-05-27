@@ -253,6 +253,8 @@ Title format: `Create case file "<name>"`
 
 Consult [`plugins/case/planning.md`](plugins/case/planning.md) for required fields (name, file path, case-identifier, identifier-type, case-app-enabled, description). Source all fields from sdd.md.
 
+When `identifier-type: external`, `case-identifier` carries the sdd.md expression verbatim (`=vars.<varId>` or `=js:…`); any `=vars.<varId>` it references must be a variable declared in §4.2.1 (an **In** argument or **Variable**). See [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
+
 ### 4.2.1 Declare global variables and arguments
 
 Title format: `Declare <category> "<name>"` where category is `In argument`, `Out argument`, or `variable`.

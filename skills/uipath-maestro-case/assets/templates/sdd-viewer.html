@@ -497,8 +497,9 @@
       "case": {
         "name": string,                       // PascalCase
         "description": string,
-        "prefix": string,                     // 2-4 UPPER
+        "prefix": string,                     // 2-4 UPPER (constant only)
         "identifierType": "constant" | "external",
+        "identifierExpression": string | null, // external only: =vars.<id> or =js:`...`
         "priority": { "values": string[], "default": string } | null,
         "sla": { "count": number, "unit": "h"|"d"|"w"|"m", "type": "Static"|"Variable" } | null,
         "slaEscalation": [{ "status": "At-Risk"|"Breached", "threshold": string, "action": string }],
@@ -611,7 +612,11 @@
       const t = $("#case-title");
       t.innerHTML = "";
       t.appendChild(document.createTextNode(c.name || "Untitled Case"));
-      if (c.prefix) {
+      if (c.identifierType === "external" && c.identifierExpression) {
+        const s = document.createElement("small");
+        s.textContent = "id " + c.identifierExpression;
+        t.appendChild(s);
+      } else if (c.prefix) {
         const s = document.createElement("small");
         s.textContent = "prefix " + c.prefix;
         t.appendChild(s);
@@ -675,7 +680,9 @@
       const rows = [
         ["Case Name", c.name],
         ["Description", c.description],
-        ["Identifier", c.prefix ? `${c.prefix} (${c.identifierType || "constant"})` : null],
+        ["Identifier", c.identifierType === "external"
+          ? `${c.identifierExpression || "—"} (external)`
+          : (c.prefix ? `${c.prefix} (${c.identifierType || "constant"})` : null)],
         ["Priority", c.priority ? `${(c.priority.values || []).join(", ")} — default ${c.priority.default || "—"}` : null],
         ["Case-Level SLA", c.sla ? `${c.sla.count} ${c.sla.unit} — ${c.sla.type || "Static"}` : null]
       ];

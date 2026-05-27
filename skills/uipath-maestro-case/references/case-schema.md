@@ -141,8 +141,8 @@ Metadata and configuration for the case definition. **v19** wraps everything und
 | `id` | string | Unique ID (auto-generated) |
 | `name` | string | Human-readable name |
 | `type` | `"case-management:root"` | Literal — do not change |
-| `caseIdentifier` | string | Identifier used at runtime |
-| `caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
+| `caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
+| `caseIdentifierType` | `"constant"` \| `"external"` | Selects how `caseIdentifier` is read. Default `constant`. |
 | `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
 | `version` | string | Schema version — `"v19"` for current schema. Emitted by the `case` plugin at T01. |
 | `publishVersion` | number? | Publish version — `2` for current schema |
@@ -151,6 +151,13 @@ Metadata and configuration for the case definition. **v19** wraps everything und
 | `data.uipath` | object? | Variable and binding declarations |
 | `caseExitConditions` | CaseExitCondition[]? | Conditions that mark the case as complete |
 | `description` | string? | Case description |
+
+### Case identifier (constant vs external)
+
+`caseIdentifierType` picks how `caseIdentifier` resolves at runtime:
+
+- **`constant`** (default) — `caseIdentifier` is a literal 2-4 char prefix (`"LOAN"`). Runtime emits the case external id as `<prefix>-<generated>`.
+- **`external`** — `caseIdentifier` is a `=`-prefixed expression (bare `=vars.<id>` or `=js:<expr>`). Runtime evaluates it; the result becomes the case external id verbatim (no prefix). Same `=vars.<id>` / `=js:` convention as [bindings-and-expressions.md](bindings-and-expressions.md) — no other engine. v20: field lives under `metadata` (see field-mapping table). Authoring forms + variable eligibility: [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
 
 ### CaseExitCondition
 
