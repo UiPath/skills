@@ -23,12 +23,12 @@ graph LR
     B --> C[resource refresh]
     C --> D[resource list]
     D --> G[resource get]
-    D --> H[resource add / remove]
+    D --> H[resource add / remove / edit]
     D --> E[upload]
     B --> F[project remove]
 ```
 
-`refresh` does bulk reconciliation from `bindings_v2.json`. `add` and `remove` are the atomic, single-resource siblings — use them when you're mutating one resource at a time (a coding agent making a single change, scripted CI step, etc.) and don't want to re-scan the whole solution. `add` is idempotent (a re-run returns `Status: "Unchanged"`); `remove` is not — it fails cleanly with `Resource not found in solution` if the key is already gone.
+`refresh` does bulk reconciliation from `bindings_v2.json`. `add`, `remove`, and `edit` are the atomic, single-resource siblings — use them when you're mutating one resource at a time (a coding agent making a single change, scripted CI step, etc.) and don't want to re-scan the whole solution. `add` is idempotent (a re-run returns `Status: "Unchanged"`); `remove` fails cleanly with `Resource not found in solution` if the key is already gone; `edit` patches an existing resource's spec (the only command that mutates one — `refresh` never overwrites).
 
 ---
 
@@ -164,7 +164,7 @@ When a name (e.g. `orders` queue) exists in multiple cloud folders, refresh pref
 
 The placeholder `solution_folder` (and `.`) in a binding's folder field means "no folder" / tenant scope — they're not real cloud folders.
 
-> For single-resource mutations that don't need a full project scan, see [Step 9: Add a resource atomically](#step-9-add-a-resource-atomically) and [Step 10: Remove a resource](#step-10-remove-a-resource). `refresh` and `add` solve different problems — `refresh` reconciles every binding in every project, `add` operates on one resource at a time.
+> For single-resource mutations that don't need a full project scan, see [Step 9: Add a Resource Atomically](#step-9-add-a-resource-atomically), [Step 10: Remove a Resource](#step-10-remove-a-resource), and [Step 11: Edit a Resource](#step-11-edit-a-resource). `refresh` and these solve different problems — `refresh` reconciles every binding in every project (and **never overwrites** a resource already in the solution); `add`/`remove`/`edit` operate on one resource at a time. To change an existing resource's spec, `edit` is the only path — `refresh` won't.
 
 ## Step 8: Get a Single Resource Configuration
 
@@ -325,7 +325,58 @@ If the key isn't in the local solution, the command exits with `Failure` and `Re
 
 > Removing a resource does **not** delete the binding in any `bindings_v2.json` that still references it. The next `resource refresh` will re-import it. To make a removal stick, either fix the binding through the owning product (Maestro Flow / Case, Studio Web, agent code) or remove the project from the solution first.
 
-## Step 11: Upload to Studio Web
+## Step 11: Edit a Resource
+
+Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them).
+
+```bash
+# Set one scalar property
+uip solution resource edit <resource-key> --set maxNumberOfRetries=5 --output json
+
+# Patch several properties from a JSON object
+uip solution resource edit <resource-key> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
+
+# Read the patch from stdin (pipeline-friendly)
+echo '{"slaInHours":"4"}' | uip solution resource edit <resource-key> --patch - --output json
+```
+
+| Option | Values | Default |
+|--------|--------|---------|
+| `<resource-key>` | Solution resource key (GUID, positional) — discover via `resource list --source local` | **required** |
+| `--patch <json\|->` | JSON object of spec property → value; `-` reads the JSON from stdin | — |
+| `--set <prop>=<value>` | Repeatable. One top-level spec property = scalar (JSON-parsed, string fallback). Wins over `--patch` on key collision | — |
+| `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
+
+At least one of `--patch` / `--set` is required. Purely local — no auth round-trip (a secret-property edit may need login; that surfaces as an SDK error if so).
+
+### What the SDK enforces (and silently ignores)
+
+`edit` is a thin wrapper over the SDK's `updateConfigurationAsync`, which classifies each property against kind metadata and **merges into `resource.spec`**:
+
+- **Unknown / reference / read-only** properties are **silently skipped** — passing them is not an error, but nothing changes. (This is how the SDK enforces "don't hand-edit `*Reference` fields".)
+- **Identity fields** (`key`, `kind`, `type`, `apiVersion`, `dependencies`, `folders`) are top-level, not `spec` — structurally unreachable through `edit`.
+- **Secret** properties are stored via the secret-upsert path (you pass the value, the SDK keeps a key).
+- **Name** is editable (renames the resource) with duplicate-name protection — supersedes the old "rename is Studio-Web-only" guidance.
+- Merge is **top-level spec replacement**, not deep merge: `--patch '{"obj":{...}}'` replaces the whole `obj`, and `--set` keys are property names (no dotted paths).
+
+### Output
+
+```json
+{
+  "Result": "Success",
+  "Code": "ResourceEdited",
+  "Data": {
+    "key": "8f3a1b2c-...",
+    "spec": { "name": "InvoiceQueue", "maxNumberOfRetries": 5 },
+    "locks": [],
+    "apiVersion": "orchestrator.uipath.com/v1"
+  }
+}
+```
+
+`Data` is the SDK's `ResourceConfiguration` — the **same shape `resource get` returns**, so `get`↔`edit` round-trips cleanly: `resource get <key> --output json`, mutate the JSON, feed it back via `--patch`. If you need a before/after diff, run `get` first.
+
+## Step 12: Upload to Studio Web
 
 Upload the solution for browser-based editing. Accepts a directory, `.uipx` file, or `.uis` archive.
 
@@ -337,7 +388,7 @@ If the `SolutionId` in `.uipx` matches an existing Studio Web solution, the uplo
 
 > A project's target framework (platform) is fixed at creation and **cannot be mutated** — re-uploading or editing configuration will not change it. To target a different platform (e.g., Windows → Cross-platform), **recreate the project** with the correct target framework and upload that.
 
-## Step 12: Delete from Studio Web
+## Step 13: Delete from Studio Web
 
 Remove a solution from Studio Web by its UUID (returned by `upload`).
 
@@ -476,9 +527,9 @@ When `[solutionFile]` is omitted, the CLI walks up from the project path looking
 
 ### `--solution-folder` defaults to cwd
 
-`resource list / refresh / get / add / remove` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly.
+`resource list / refresh / get / add / remove / edit` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly.
 
-### `add` / `remove` / `refresh` require a `.uipx` manifest in the target folder
+### `add` / `remove` / `edit` / `refresh` require a `.uipx` manifest in the target folder
 
 Unlike `resource get` and `list` (which fall back to RCS when local state is missing), the write commands refuse to operate on a directory that doesn't directly contain a `.uipx`. This prevents `--solution-folder /tmp` from silently writing stray resource files anywhere on disk. If you see `<path> is not a UiPath solution (no .uipx manifest found)`, you're pointed at the wrong directory.
 
@@ -500,6 +551,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Add a virtual queue / asset / bucket | `uip solution resource add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |
 | Import an existing remote resource | `uip solution resource add --source remote --kind <kind> --name <name> --folder-path <folder>` | On ambiguous match, the error lists every candidate with its key — pick one and re-call |
 | Remove a single resource | `uip solution resource remove <resource-key>` | Purely local — no auth; doesn't touch `bindings_v2.json`, next `refresh` re-imports if a binding still references it |
+| Edit a resource's spec | `uip solution resource edit <resource-key> --patch '{...}'` (or `--set <prop>=<value>`) | Only command that mutates an existing resource; unknown/reference/read-only props are silently ignored |
 | List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; add `--kind <kind>` to narrow to one resource kind |
 | Pack | `uip solution pack <solution-dir> <output-dir>` | See [pack-and-deploy.md](pack-and-deploy.md) for full pack/publish/deploy flow |
 

@@ -85,7 +85,8 @@ uip solution
   │     ├── refresh                       Sync resource declarations from project bindings (--solution-folder, default cwd)
   │     ├── get <resource-key>            Get full configuration for a single resource — local or remote (--solution-folder, default cwd)
   │     ├── add                           Add one resource atomically: --source local|remote --kind <kind> --name <name>
-  │     └── remove <resource-key>         Delete one resource from the solution by key (offline, no auth)
+  │     ├── remove <resource-key>         Delete one resource from the solution by key (offline, no auth)
+  │     └── edit <resource-key>           Patch an existing resource's spec: --patch '<json>' / --set <prop>=<value>
   ├── deploy
   │     ├── run -n <name>                 Deploy a published solution package (auto-activates by default; pass --skip-activate to opt out)
   │     ├── status <id>                   Check deployment status
