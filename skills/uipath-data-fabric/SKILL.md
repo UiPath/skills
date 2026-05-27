@@ -85,6 +85,30 @@ Respond that the operation is not supported. Do not try to work around it.
 
 15. **Answer with `records query`, not from memory.** Counts, sums, filters, lookups — issue a fresh `records query` (or `records list`) and use the server's response. Do not reuse cached insert responses, IDs you generated earlier, or values from previous tool results. Exception: the `Id` returned by the same `records insert` you just made.
 
+16. **`records query` filter body.** Shape: `{"filterGroup":{"logicalOperator":<0|1|"AND"|"OR">,"queryFilters":[{"fieldName":"<name>","operator":"<symbol>","value":"<string>"}]}}`. Operators: `=`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `not contains`, `startswith`, `endswith`, `in`, `not in`, plus is-empty (`=` with `value: null`) and is-not-empty (`!=` with `value: null`) — symbol form only; `==` / `Equals` / `eq` / `like` are rejected (400). `in` / `not in` use `valueList` (array), not `value`. **Operators are field-type-specific** — comparison (`<` `>` `<=` `>=`) only on Number / Date / Unique ID; Boolean only `=`/`!=`/empty; Choice Set has no comparison and no `in`/`not in`; Relationship supports `=`/`!=`/`in`/`not in` + empty (filter by the related record's FK `Id`); File presence only. Full support matrix, encrypted-field allow-list, `MULTILINE_MAX` non-filterability, GUID ordering, and `ChoiceSetMultiple` semantics — see [`references/filter-platform-contract.md` → Operator support by field type](references/filter-platform-contract.md#4-operator-support-by-field-type). The API will *execute* unsupported combinations instead of rejecting them — never rely on that (Rule 17). **Return all fields by default** — omit `selectedFields`; add it only when the user explicitly asks for a specific subset, never to trim output yourself.
+
+17. **When any requested operation isn't supported, stop and confirm an alternative with the user. Never silently substitute. If no alternative works, recommend the right sibling skill.** Applies to any request Data Fabric (CLI or API) can't serve as stated — examples, not exhaustive:
+    - Filter operator outside Rule 16's symbol list (`==`, `Equals`, `like`, regex, `BETWEEN`, full-text search, etc.) — rejected with 400.
+    - Filter operator unsupported for the field's type per the support matrix (e.g. `<` / `>` on Text or Boolean, `in` / `not in` on Choice Set, `startswith` on a Number, comparison on Relationship). The API often *executes* these and returns wrong or unfiltered results — treat them as unsupported, never silent-run them.
+    - Filter whose `value` is missing (any operator other than is-empty / is-not-empty) — an incomplete request.
+    - `fieldName` that isn't in the entity's schema (typo, dropped column, wrong field for the entity).
+    - Entity name that doesn't exist in the tenant or that's federated when a native operation was requested.
+    - CLI verb that doesn't exist (`removeFields`, choice-set authoring, full entity rename, distinct case-insensitive equality, `groupBy` with expansions, etc. — see the *Not Supported* table).
+    - Cross-entity joins or aggregations the API doesn't expose.
+    - Value forms outside the SDK contract for a given field type.
+
+    Required sequence:
+    1. State precisely what was requested and which part isn't supported (cite the relevant Critical Rule, the schema, or the *Not Supported* table).
+    2. Propose a concrete alternative and name it explicitly. By category:
+        - **Unknown `fieldName`** — run `entities get` to list the entity's real fields, surface the candidates with the same type / a similar name, and ask which one to use. Example: prompt says *"filter by `Department`"* but the schema has `Dept`, `Role`, `Manager` → respond *"`Department` isn't a field on this entity. Did you mean `Dept`? Other STRING fields on this entity: `Role`, `Manager`. Which one should I filter on?"*
+        - **Operator not in the symbol list** (`==`, `like`, regex, `BETWEEN`) — propose the closest supported operator or a composition (`BETWEEN x AND y` → `>=` + `<=` combined in `queryFilters` with `logicalOperator: 0`; regex → `contains` / `startswith` / `endswith` if a substring approximation fits).
+        - **Operator unsupported for the field's type** (matrix) — do not silently run it. Offer the user two choices: **(a)** execute the request *without* this filter (run with the remaining filters, or return the unfiltered result set if it was the only one), or **(b)** stop and add a different, supported filter. Apply only the choice they pick.
+        - **Missing `value`** (operator other than is-empty / is-not-empty) — do not proceed. Ask for the value (or `valueList`); report the request as incomplete. Never substitute a default.
+        - **Missing CLI verb** — name the supported verb if one exists (`records query` vs `records list` for filtered reads), or hand off to the right sibling skill.
+        - **Unsupported value form / type** — show the SDK-typed shape and ask the user to confirm the conversion.
+    3. Ask the user to confirm. Apply **only** what they explicitly approve, using their exact choice. Never silently fall back to your own pick.
+    4. If the user declines every alternative and Data Fabric genuinely cannot satisfy the request, stop and recommend the appropriate sibling skill — for example: in-flow connector activity → `uipath-maestro-flow`; Orchestrator / Integration Service ops → `uipath-platform`; UI / robot automation → `uipath-rpa`; agent lifecycle → `uipath-agents`; Test Manager → `uipath-test`. Do not fabricate a result or proceed with a degraded one.
+
 ---
 
 ## Tool Version Requirements
@@ -236,5 +260,6 @@ Pass via `--body` or `--file`. Use `--limit`, `--cursor`, and `--offset` CLI fla
 - `references/entity-schema.md` — Field definitions, supported types, schema update patterns, choice-set + relationship field shapes
 - `references/choice-sets.md` — Browse choice sets, look up `NumberId`s, add CHOICE_SET fields to entities, write choice values on records
 - `references/records-query.md` — Query filter syntax, pagination, sorting, choice/relationship semantics on read & write
+- `references/filter-platform-contract.md` — Authoritative filter contract sourced from `CommonEntityPlatform`: per-type operator support matrix, encrypted-field rules, GUID ordering, `MULTILINE_MAX` non-filterability, `ChoiceSetMultiple` JSON-array semantics, `$expand` dotted-field resolution, validation order, limits, source file paths
 - `references/file-attachments.md` — File field upload/download/delete file
 - `references/bulk-import.md` — CSV format requirements and the Basic-fields-only limitation (complex types are silently dropped — use `records insert` with a JSON body instead)
