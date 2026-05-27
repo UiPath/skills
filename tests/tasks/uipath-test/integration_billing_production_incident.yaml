@@ -1,0 +1,152 @@
+task_id: skill-test-integration-billing-production-incident
+description: >
+  Integration test: agent investigates a production duplicate-invoice
+  incident by tracing the failure history through QA and UAT execution
+  cycles in the BILL project. Agent must surface whether similar failures
+  appeared in earlier runs before hitting production, identify untracked
+  failures (failures with no linked defect), and deliver a risk verdict
+  — rollback, hotfix, or investigate further. Asserts agent (a) checks
+  auth, (b) discovers the BILL project, (c) lists test sets,
+  (d) retrieves execution history across release cycles, (e) drills into
+  testcase logs across multiple executions to trace the QA→UAT→production
+  failure chain, (f) produces a report grounded in real fixture data
+  (BILL:N test-case keys and UUIDs from API responses).
+tags: [uipath-test, integration, mode:diagnose, lifecycle:validate,
+       feature:test-case, feature:compliance]
+
+sandbox:
+  driver: tempdir
+
+agent:
+  type: claude-code
+  max_turns: 50
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+initial_prompt: |
+  We had a production incident with duplicate invoices — three enterprise
+  customers were affected by today's 02:00 UTC billing release. Before we
+  decide whether to rollback or hotfix, I need a complete forensic trail
+  from Test Manager.
+
+  The **BILL** project covers this product. Please:
+
+  - Pull the execution history across the last few release cycles and
+    drill into the testcase logs — I need actual pass/fail data, not
+    just summary counts
+  - Check whether a duplicate-invoice failure appeared in any QA or UAT
+    run before it reached production. If it did, that is the smoking gun
+  - For every failure found, tell me whether a defect was linked or
+    silently ignored — untracked failures in a billing system are the
+    most damaging and need to be called out explicitly
+  - Give me a clear verdict: **Rollback now**, **Hotfix and continue**,
+    or **Investigate before deciding** — backed by the evidence you find
+
+  Save the assessment as `billing-incident-report.md` in the current
+  working directory.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (--output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered BILL project (project list --filter bill + --output json)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+tm\s+project\s+list\s+.*--filter\s+\S*bill.*--output\s+json|uip\s+tm\s+project\s+list\s+.*--output\s+json.*--filter\s+\S*bill'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test sets (testsets list --project-key + --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved execution history (executions list --project-key + --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent drilled into testcase logs across ≥2 executions (executions testcaselogs list --execution-id --project-key --output json — all three flags required; multiple calls needed to trace QA→UAT→production failure chain)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id)(?=.*--project-key)(?=.*--output\s+json)uip\s+tm\s+executions\s+testcaselogs\s+list\b'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Billing incident report cites real fixture data (BILL:N key + UUID from API) AND covers failure history across release cycles, duplicate-invoice pattern, defect correlation (tracked vs. untracked), and a risk verdict"
+    command: |
+      python3 -c "
+      import re, sys
+      try:
+          body = open('billing-incident-report.md', encoding='utf-8', errors='replace').read()
+      except FileNotFoundError:
+          sys.stderr.write('billing-incident-report.md not found' + chr(10))
+          sys.exit(2)
+      lower = body.lower()
+      checks = {
+          'failure history across release cycles (QA/UAT/production)': any(
+              t in lower for t in
+              ['qa', 'uat', 'production', 'history', 'cycle', 'release']),
+          'duplicate-invoice or idempotency pattern identified': any(
+              t in lower for t in
+              ['duplicate', 'recurring', 'pattern', 'repeated',
+               'invoice', 'idempoten', 'double-bill', 'double bill']),
+          'defect correlation — tracked vs. untracked': any(
+              t in lower for t in
+              ['defect', 'tracked', 'linked', 'untracked', 'gap', 'silently']),
+          'risk verdict (rollback / hotfix / investigate)': any(
+              t in lower for t in
+              ['rollback', 'hotfix', 'investigate', 'recommend',
+               'verdict', 'risk', 'decision']),
+          'cites at least one BILL:N test case key (data-grounded)':
+              re.search(r'\bBILL:\d+\b', body) is not None,
+          'cites at least one UUID from API response':
+              re.search(
+                  r'\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b',
+                  body, re.IGNORECASE) is not None,
+      }
+      missing = [k for k, ok in checks.items() if not ok]
+      if missing:
+          sys.stderr.write('missing: ' + ', '.join(missing) + chr(10))
+          sys.exit(1)
+      sys.exit(0)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 15
+  max_turns: 50
+
+# ---------------------------------------------------------------------------
+# Tenant fixture this task expects to exist (persistent shared fixture).
+#
+#   Tenant: codereval / DefaultTenant
+#   Project: BILL ("Billing & Invoicing")
+#   Test cases: 12 under BILL (billing/invoicing-themed names)
+#   Test sets:
+#     - "Billing Regression Suite"  — full coverage suite (QA + UAT runs)
+#     - "Invoice Processing Suite"  — focused smoke suite
+#   Executions: 3 across release cycles:
+#     1. QA execution   — all passed
+#     2. UAT execution  — 2 failures (including duplicate-invoice case)
+#     3. Production     — failure repeating the same pattern
+#   Defect linkage: 2 failures have linked defects; 1 is untracked.
+#
+# Fixture is created once and persists; no pre_run/post_run cleanup.
+# ---------------------------------------------------------------------------
