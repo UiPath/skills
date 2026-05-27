@@ -24,19 +24,20 @@ initial_prompt: |
 
   Use --output json on every uip df command.
 
+  The harness has pre-seeded an `CE_ErrorPathsTest` entity with two records:
+    SEED-001 / Score 10 / Tag "tag-unique"
+    SEED-002 / Score 20 / Tag "tag-other"
+  Schema: Code (STRING, isRequired, lengthLimit 50), Score (INTEGER),
+  Tag (STRING, isUnique, lengthLimit 50). The harness resets the entity to
+  this seed state in post_run.
+
   1. Check login: run `uip login status --output json`. Do NOT re-login.
 
-  2. List native-only entities. Use "ErrorPathsTest" if it already exists.
-     If not, create it with fields:
-       - Code (STRING, isRequired=true)
-       - Score (INTEGER)
-       - Tag (STRING, isUnique=true)
+  2. Resolve the entity ID: list native-only entities and capture the ID of
+     `CE_ErrorPathsTest`.
 
-  3. Insert a valid seed record: { "Code": "SEED-001", "Score": 10, "Tag": "tag-unique" }
-     Save the returned record ID as seed_id.
-
-  4. Insert a second valid record: { "Code": "SEED-002", "Score": 20, "Tag": "tag-other" }
-     Save the returned record ID as seed_id2.
+  3. Resolve seed IDs: query records on Code = "SEED-001" → capture Id as
+     `seed_id`; query records on Code = "SEED-002" → capture Id as `seed_id2`.
 
   Now attempt each error scenario below. Run each command once, do NOT retry
   or attempt to fix the error, and do NOT call the DataFabric REST API.
@@ -60,12 +61,12 @@ initial_prompt: |
   12. Delete record not found: records delete <entity-id> does-not-exist-bbb.
 
   13. CSV header mismatch: create wrong_headers.csv with header "WrongField,Score"
-      and one row "val,10". Import it into ErrorPathsTest.
+      and one row "val,10". Import it into CE_ErrorPathsTest.
 
   14. Malformed CSV: create malformed.csv with content:
         Code,Score
         "unclosed-quote,5
-      Import it into ErrorPathsTest.
+      Import it into CE_ErrorPathsTest.
 
   15. File upload to non-FILE field: create a temp file temp.txt with content "x".
       Run: uip df files upload <entity-id> <seed_id> Score --file temp.txt
@@ -89,11 +90,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attempted records insert (seed + error scenarios)"
+    description: "Agent attempted records insert (error scenarios — seed already pre-seeded)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 4
+    min_count: 3
     weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved seed records via records query (not via insert)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*Code'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -128,6 +137,19 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CE_ErrorPathsTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/error_paths.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/error_paths.records.json
+    timeout: 180
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
-    timeout: 60
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_ErrorPathsTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/error_paths.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/error_paths.records.json
+    timeout: 180

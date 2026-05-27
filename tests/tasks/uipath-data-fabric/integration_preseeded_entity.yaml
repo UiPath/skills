@@ -19,51 +19,21 @@ run_limits:
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.
 
+  The harness has pre-seeded `CodeEvalTestEntity` with the canonical 20
+  records (see `_shared/seeds/codeeval_test_entity.records.json`). Schema:
+  Title (STRING, isRequired, lengthLimit 200), Score (DECIMAL, minValue 0,
+  maxValue 10, decimalPrecision 1), Active (BOOLEAN, isRequired,
+  defaultValue true), ReleaseDate (DATE), Email (STRING, isRequired,
+  isUnique, lengthLimit 100), Notes (MULTILINE_TEXT, lengthLimit 1000),
+  Poster (FILE). The harness resets the entity to the canonical seed in
+  post_run.
+
   Use --output json on every uip df command.
 
   1. Check login: run `uip login status --output json`. Do NOT re-login.
 
-  2. List native-only entities. Look for "CodeEvalTestEntity".
-
-     If it IS in the list: save the entity ID and proceed to step 3.
-
-     If it is NOT in the list, set it up now:
-     a. Create the entity with exactly these 7 fields:
-        Title (STRING), Score (DECIMAL), Active (BOOLEAN),
-        ReleaseDate (DATE), Email (STRING, isUnique: true),
-        Notes (MULTILINE_TEXT), Poster (FILE).
-        Save the new entity ID.
-     b. Write seed_20.csv using Python with exactly these 20 records
-        (do not change any Active values):
-
-        import csv
-        rows = [
-          ["Title","Score","Active","ReleaseDate","Email","Notes"],
-          ["The Matrix","5.0","true","1999-03-31","user1@test.com",""],
-          ["The Matrix Reloaded","6.0","false","2003-05-15","user2@test.com",""],
-          ["The Matrix Revolutions","7.0","true","2003-11-05","user3@test.com",""],
-          ["Star Wars","7.5","true","1977-05-25","user4@test.com",""],
-          ["The Dark Knight","8.0","true","2008-07-18","user5@test.com",""],
-          ["Inception","8.5","true","2010-07-16","user6@test.com",""],
-          ["Interstellar","9.0","true","2014-11-07","user7@test.com",""],
-          ["The Shawshank Redemption","9.5","true","1994-09-23","user8@test.com",""],
-          ["Pulp Fiction","10.0","true","1994-10-14","user9@test.com",""],
-          ["Fight Club","1.0","false","1999-10-15","user10@test.com",""],
-          ["Se7en","1.5","false","1995-09-22","user11@test.com",""],
-          ["Goodfellas","2.0","false","1990-09-19","user12@test.com",""],
-          ["Forrest Gump","2.5","true","1994-07-06","user13@test.com","A classic"],
-          ["The Silence of the Lambs","3.0","true","1991-02-14","user14@test.com",""],
-          ["Schindler's List","3.5","true","1993-12-15","user15@test.com",""],
-          ["The Godfather","4.0","true","1972-03-24","user16@test.com",""],
-          ["The Godfather Part II","4.5","false","1974-12-20","user17@test.com",""],
-          ["Casablanca","5.0","false","1942-11-26","user18@test.com",""],
-          ["Citizen Kane","5.5","false","1941-09-05","user19@test.com",""],
-          ["12 Angry Men","6.5","false","1957-04-10","user20@test.com",""],
-        ]
-        with open("seed_20.csv","w",newline="") as f: csv.writer(f).writerows(rows)
-
-     c. Import: uip df records import <entity-id> --file seed_20.csv --output json
-        Confirm the import reports 20 records created.
+  2. Resolve the entity ID: list native-only entities and capture the ID of
+     `CodeEvalTestEntity`. Do NOT create or seed it — the harness handles that.
 
   3. Retrieve the full schema with entities get.
      Confirm the entity has exactly 7 fields:
@@ -195,4 +165,19 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-# No post_run: CodeEvalTestEntity is a shared persistent fixture — never deleted between runs.
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CodeEvalTestEntity
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/codeeval_test_entity.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/codeeval_test_entity.records.json
+    timeout: 240
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CodeEvalTestEntity
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/codeeval_test_entity.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/codeeval_test_entity.records.json
+    timeout: 240

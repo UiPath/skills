@@ -19,8 +19,7 @@ initial_prompt: |
   Build an e-commerce product catalogue in UiPath Data Fabric.
   Load the uipath-data-fabric skill before starting.
 
-  Create entity `ProductCatalogue_<EPOCH>` (Unix epoch seconds suffix —
-  e.g. `ProductCatalogue_1716163200`) with fields:
+  Create entity `CE_ProductCatalogue` with fields:
     - ProductName  STRING
     - Category     STRING   (values: Electronics | Clothing | Home)
     - Price        DECIMAL
@@ -140,5 +139,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
     timeout: 60

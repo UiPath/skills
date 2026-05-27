@@ -21,8 +21,7 @@ initial_prompt: |
   HR needs a digital employee directory in UiPath Data Fabric.
   Load the uipath-data-fabric skill before starting.
 
-  Create entity `EmployeeDirectory_<EPOCH>` (Unix epoch seconds suffix —
-  e.g. `EmployeeDirectory_1716163200`) with fields:
+  Create entity `CE_EmployeeDirectory` with fields:
     - FullName    STRING
     - Department  STRING   (values: Engineering | Sales | Finance | HR)
     - JobTitle    STRING
@@ -141,5 +140,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory"
     timeout: 60

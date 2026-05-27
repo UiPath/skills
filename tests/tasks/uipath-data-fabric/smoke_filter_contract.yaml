@@ -1,0 +1,219 @@
+task_id: skill-datafabric-smoke-filter-contract
+description: >
+  Smoke test: validates the records-query filter contract end-to-end against a
+  live tenant. The agent constructs documented filter shapes (supported
+  operators, logicalOperator forms, valueList, nested filterGroups, sortOptions,
+  aggregates, is-empty/is-not-empty), returns all fields by default (no
+  gratuitous `selectedFields`), and avoids the anti-pattern shapes the skill
+  warns against (`filters`/`field`/`==`/`Equals`, comparison on Text). An
+  independent run_command oracle
+  (verify_filter_contract.py) then probes every documented shape directly
+  against the CLI and asserts each is accepted — or, for anti-patterns, silently
+  dropped. Asserts command-shape validity, not record counts.
+tags: [uipath-data-fabric, smoke, records]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  The harness has pre-seeded `CodeEvalTestEntity` with the canonical 20 records
+  (see `_shared/seeds/codeeval_test_entity.records.json`). Schema:
+  Title (STRING), Score (DECIMAL), Active (BOOLEAN), ReleaseDate (DATE),
+  Email (STRING, unique), Notes (MULTILINE_TEXT), Poster (FILE). The harness
+  reverts the entity to seed state in post_run — run read-only queries only.
+
+  Use --output json on every uip df command. Do NOT insert, update, or delete
+  records, and do NOT delete the entity.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login —
+     use whatever tenant is currently active.
+
+  2. Resolve the entity ID: list native-only entities and capture the ID of
+     `CodeEvalTestEntity`.
+
+  3. Run each of these `records query --body` calls. Use ONLY the documented
+     filter shape: `filterGroup` → `queryFilters` array → each item has
+     `fieldName`, `operator`, and `value` (or `valueList` for set operators).
+     Use the `=` operator symbol — never the aliases `==`, `Equals`, or `eq`.
+
+     a. Equality:    Title = "Inception"
+     b. Comparison:  Score >= "7"
+     c. Substring:   Title contains "Matrix"
+     d. Set:         Title in ["Inception","Star Wars"]   (use valueList)
+     e. AND group:   Score >= "7" AND Active = "true"     (logicalOperator 0)
+     f. OR group:    Active = "false" OR Score < "2"       (logicalOperator 1)
+     g. Nested:      outer OR over two inner AND groups
+     h. Sort:        sortOptions Score isDescending true (no filter)
+     i. Aggregate:   groupBy ["Active"] + aggregates COUNT(Id) alias "total"
+     j. Is empty:     Notes is empty      (operator "=",  value null)
+     k. Is not empty: Notes is not empty  (operator "!=", value null)
+
+  Every query must return Result == "Success". If any is rejected, fix the
+  body shape against the skill's filter contract and re-run it.
+
+  Comparison operators (<, >, <=, >=) are valid only on Number/Date/Unique ID
+  fields — do NOT use them on the STRING fields Title or Email.
+
+  Return ALL fields — do NOT add `selectedFields` to any query. The aggregate
+  query (step i) is the only one that uses it, because `groupBy` requires it.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter queries with --body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query\s+.*--body'
+    min_count: 5
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # --- Documented-correct shape guards ---
+  - type: command_executed
+    description: "Filter body uses supported keys `queryFilters` and `fieldName`"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*"queryFilters")(?=.*"fieldName")'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used valueList with the `in` operator"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"in".*valueList'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used logicalOperator (AND=0 / OR=1)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*logicalOperator'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used sortOptions with isDescending"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*sortOptions'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran an aggregate query (groupBy + aggregates)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:aggregates.*groupBy|groupBy.*aggregates)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used is-empty / is-not-empty (value: null)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"value"\s*:\s*null'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Returned all fields by default — selectedFields only in an aggregate (groupBy) query, never as a bare projection"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*selectedFields)(?!.*groupBy)'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # --- Anti-pattern shape guards (must NEVER appear) ---
+  - type: command_executed
+    description: "Never used the array key `filters` (must be `queryFilters`)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"filters"\s*:'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Never used the per-filter key `field` (must be `fieldName`)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"field"\s*:\s*"[^"]*"\s*,\s*"operator"'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Never used the `==` operator alias"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"=="'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Never used the named operator aliases `Equals` / `equals` / `eq`"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"([Ee]quals?|eq)"'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Never used comparison (< > <= >=) on a STRING field (Title/Email) — unsupported per the matrix"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"fieldName"\s*:\s*"(Title|Email)"\s*,\s*"operator"\s*:\s*"(>=?|<=?)"'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # --- Independent CLI contract oracle ---
+  - type: run_command
+    description: "Filter contract holds against the live CLI for every documented shape"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/verify_filter_contract.py --entity-name CodeEvalTestEntity"
+    timeout: 240
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: CodeEvalTestEntity unchanged (agent ran read-only queries)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/assert_record_count.py --entity-name CodeEvalTestEntity --expected 20"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CodeEvalTestEntity
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/codeeval_test_entity.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/codeeval_test_entity.records.json
+    timeout: 240
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CodeEvalTestEntity
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/codeeval_test_entity.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/codeeval_test_entity.records.json
+    timeout: 240

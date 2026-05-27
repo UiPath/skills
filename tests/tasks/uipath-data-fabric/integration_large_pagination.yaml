@@ -18,12 +18,21 @@ run_limits:
   turn_timeout: 600
 
 pre_run:
+  # 1. Stage helper scripts the agent uses for pagination assertions.
   - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/extract_page_ids.py $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/verify_pagination.py ."
     timeout: 10
     fail_on_error: true
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/wipe_entity_records.py --entity-name LargePaginationTest"
+
+  # 2. Schema-only seed: ensure CE_LargePaginationTest exists with the right
+  #    schema, and wipe any leftover records from a prior run (the agent's
+  #    job is to import 500 records via CSV; entity must start empty).
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CE_LargePaginationTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/large_pagination.schema.json
+      --reset
     timeout: 300
-    fail_on_error: true
+    fail_on_error: false
 
 initial_prompt: |
   Load the uipath-data-fabric skill and follow its workflow. Pass
@@ -41,10 +50,12 @@ initial_prompt: |
 
   1. `uip login status --output json`. Do not re-login.
 
-  2. List native-only entities. Reuse `LargePaginationTest` if present
-     (the harness wipes its records before the run starts; the entity is
-     guaranteed empty). Otherwise create it with fields `Name` (STRING),
-     `Score` (INTEGER), `Active` (BOOLEAN).
+  2. Resolve the entity ID: list native-only entities and capture the ID of
+     `CE_LargePaginationTest`. The harness has pre-seeded the entity
+     (schema only, zero records). Schema: Name (STRING, isRequired,
+     isUnique, lengthLimit 100), Score (INTEGER, isRequired, minValue 0),
+     Active (BOOLEAN, isRequired). Do NOT call `entities create` — the
+     entity already exists.
 
   3. Generate `bulk_500.csv`:
        header:        Name,Score,Active
@@ -170,5 +181,11 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
-    timeout: 60
+  # Schema-only revert: wipe whatever the agent imported. Entity is
+  # preserved across runs (brownfield); next pre_run is a no-op if the
+  # schema is already correct.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_LargePaginationTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/large_pagination.schema.json
+    timeout: 300

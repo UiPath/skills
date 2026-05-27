@@ -16,24 +16,28 @@ run_limits:
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login — use
-     whatever tenant is currently active.
+  The harness has pre-seeded an `CE_IntegrationInventory` entity (schema only,
+  no records). Schema:
+    - SKU (STRING, isRequired, isUnique, lengthLimit 30)
+    - Quantity (INTEGER, isRequired, minValue 0)
+    - UnitCost (DECIMAL, isRequired, minValue 0, decimalPrecision 2)
+    - Available (BOOLEAN, isRequired, defaultValue true)
+    - LastRestocked (DATE, optional)
+  The harness resets the entity to zero records in post_run.
 
-  2. List native-only entities. Use an entity named "IntegrationInventory" if it
-     exists. If not, create it with fields:
-       - SKU (STRING)
-       - Quantity (INTEGER)
-       - UnitCost (DECIMAL)
-       - Available (BOOLEAN)
-       - LastRestocked (DATE)
+  1. Check login: run `uip login status --output json`. Do NOT re-login.
 
-  3. Get the entity schema using entities get to confirm the exact field names
-     (case-sensitive) before creating the CSV.
+  2. Resolve the entity ID: list native-only entities and capture the ID of
+     `CE_IntegrationInventory`.
+
+  3. Get the entity schema using entities get to confirm the exact field
+     names (case-sensitive) before creating the CSV.
 
   4. Create a file named inventory.csv with:
-     - A header row using the exact field names from the schema
-     - 4 data rows of realistic inventory data
-     - Do NOT include system fields (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime)
+     - A header row using the exact field names from the schema.
+     - 4 data rows of realistic inventory data with UNIQUE SKU values
+       (`SKU` is isUnique-constrained).
+     - Do NOT include system fields (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime).
 
   5. Run the bulk import: records import --file inventory.csv
 
@@ -110,6 +114,20 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+pre_run:
+  # Schema-only seed: entity is created if missing, no records inserted.
+  # The agent's job is to populate records via `records import` (CSV).
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CE_IntegrationInventory
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_inventory.schema.json
+    timeout: 180
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
-    timeout: 60
+  # Schema-only revert: wipes whatever the agent imported. No records to re-insert.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_IntegrationInventory
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_inventory.schema.json
+    timeout: 180
