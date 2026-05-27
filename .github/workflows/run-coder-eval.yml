@@ -1,21 +1,21 @@
 name: Run Coder Eval
 
-# GH-hosted runner for coder-eval against the skills task tree. Two modes:
-#   - Scheduled nightly: full suite (minus Windows-only + benchmark dirs),
-#     results pushed to Azure Blob + Slack. Replacement for the
-#     coder-eval-runner VM cron.
-#   - Manual dispatch: single task, a folder, or (with confirmation) the
-#     full suite. Ad-hoc runs on a branch skip blob/Slack.
+# GH-hosted runner for coder-eval against the skills task tree. Manual
+# dispatch only (schedule TBD — intended replacement for the coder-eval-runner
+# VM cron). Run a single task, a folder, or — with no globs — the full suite
+# (minus Windows-only + benchmark dirs) at j=20, with results pushed to Azure
+# Blob + Slack when run from main.
 
 on:
-  schedule:
-    # 04:00 UTC daily — same slot as the coder-eval-runner VM cron it
-    # replaces. Scheduled runs only fire from the default branch (main).
-    - cron: '0 4 * * *'
   workflow_dispatch:
     inputs:
       task_globs:
         description: 'Tasks to run (empty = full suite). E.g. tasks/uipath-agents/**/*.yaml'
+        type: string
+        required: false
+        default: ''
+      parallelism:
+        description: 'Parallel tasks (-j). Empty = 1, or 20 for full suite'
         type: string
         required: false
         default: ''
@@ -72,9 +72,9 @@ jobs:
       - name: Resolve task globs + enforce large-run gate
         id: globs
         env:
-          INPUT_GLOBS: ${{ inputs.task_globs }}
-          CONFIRMED:   ${{ inputs.confirm_large_run }}
-          EVENT_NAME:  ${{ github.event_name }}
+          INPUT_GLOBS:       ${{ inputs.task_globs }}
+          INPUT_PARALLELISM: ${{ inputs.parallelism }}
+          CONFIRMED:         ${{ inputs.confirm_large_run }}
         run: |
           set -euo pipefail
           shopt -s globstar nullglob
@@ -82,9 +82,8 @@ jobs:
           cd tests
 
           # uipath-rpa is Windows/Studio-only (runs on smoke-rpa-skills.yml);
-          # activation is an opt-in dashboard benchmark, not a nightly task.
-          # Both are pruned from the scheduled full sweep (mirrors
-          # smoke-skills.yml).
+          # activation is an opt-in dashboard benchmark, not a suite task. Both
+          # are pruned from the full sweep (mirrors smoke-skills.yml).
           WINDOWS_SKILLS="uipath-rpa"
           BENCHMARK_DIRS="activation"
           is_excluded() {
@@ -95,28 +94,29 @@ jobs:
             return 1
           }
 
-          # Scheduled run, or dispatch with no explicit globs → full suite
-          # minus the excluded dirs. No >50 gate (the schedule IS the
-          # authorization).
-          if [ "$EVENT_NAME" = "schedule" ] || [ -z "$INPUT_GLOBS" ]; then
+          # No explicit globs → full suite minus the excluded dirs, j=20
+          # default, no >50 gate.
+          if [ -z "$INPUT_GLOBS" ]; then
             MATCHES=()
             for f in tasks/**/*.yaml; do
               is_excluded "$f" && continue
               [ -f "$f" ] && MATCHES+=("$f")
             done
             COUNT=${#MATCHES[@]}
-            echo "Full nightly suite: $COUNT task file(s) (excluding: $WINDOWS_SKILLS $BENCHMARK_DIRS)"
+            echo "Full suite: $COUNT task file(s) (excluding: $WINDOWS_SKILLS $BENCHMARK_DIRS)"
             if [ "$COUNT" -eq 0 ]; then
               echo "::error::No task files matched the full-suite glob"
               exit 1
             fi
             echo "globs=${MATCHES[*]}" >> "$GITHUB_OUTPUT"
             echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+            echo "parallelism=${INPUT_PARALLELISM:-20}" >> "$GITHUB_OUTPUT"
+            echo "full_suite=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # Manual dispatch with explicit globs — honor them verbatim and keep
-          # the >50 guardrail. No silent exclusions here: the user chose the set.
+          # Explicit globs — honor them verbatim, keep the >50 guardrail, j=1
+          # default. No silent exclusions: the user chose the set.
           MATCHES=()
           for pat in $INPUT_GLOBS; do
             for f in $pat; do
@@ -135,6 +135,8 @@ jobs:
           fi
           echo "globs=$INPUT_GLOBS" >> "$GITHUB_OUTPUT"
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "parallelism=${INPUT_PARALLELISM:-1}" >> "$GITHUB_OUTPUT"
+          echo "full_suite=false" >> "$GITHUB_OUTPUT"
 
       - name: Install coder-eval
         working-directory: .coder_eval
@@ -195,9 +197,9 @@ jobs:
           E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ steps.globs.outputs.globs }}
           TASK_COUNT:               ${{ steps.globs.outputs.count }}
-          # Host-level concurrency. Tunable via repo variable; bump once on a
-          # larger runner (see runs-on TODO).
-          TASK_PARALLELISM:         ${{ vars.TASK_PARALLELISM || '20' }}
+          # Host-level concurrency. Resolved by the globs step: the
+          # `parallelism` input wins; else 20 (full suite) / 1 (targeted).
+          TASK_PARALLELISM:         ${{ steps.globs.outputs.parallelism }}
         working-directory: tests
         id: eval
         run: |
@@ -243,7 +245,7 @@ jobs:
 
       # Durable result storage in Azure Blob via keyless OIDC. The federated
       # credential is scoped to repo:UiPath/skills:ref:refs/heads/main, so this
-      # only authenticates on main (scheduled runs + dispatch-from-main).
+      # only authenticates on main (dispatch-from-main).
       # Ad-hoc branch runs skip it — GH artifacts above still capture results.
       - name: Azure login (OIDC)
         if: always() && github.ref == 'refs/heads/main'
@@ -277,12 +279,12 @@ jobs:
             --no-progress >/dev/null
           echo "Blob upload complete: $AZURE_BLOB_CONTAINER/$run_id"
 
-      # Nightly-only Slack ping. Self-contained payload built from per-task
-      # task.json (the direct `coder-eval run` doesn't emit the dashboard's
-      # run.json that the VM's slack_summary.py consumes). Suppressed for
-      # small/broken runs to avoid spamming the 300-person channel.
+      # Full-suite Slack ping (from main only). Self-contained payload built
+      # from per-task task.json (the direct `coder-eval run` doesn't emit the
+      # dashboard's run.json that the VM's slack_summary.py consumes).
+      # Suppressed for small/broken runs to avoid spamming the 300-person channel.
       - name: Slack summary
-        if: always() && github.event_name == 'schedule'
+        if: always() && github.ref == 'refs/heads/main' && steps.globs.outputs.full_suite == 'true'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
@@ -321,7 +323,7 @@ jobs:
       - name: Plaintext summary + verdict
         if: always()
         env:
-          EVENT_NAME: ${{ github.event_name }}
+          FULL_SUITE: ${{ steps.globs.outputs.full_suite }}
         run: |
           set -uo pipefail
           run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1 || true)
@@ -339,10 +341,10 @@ jobs:
           sys.exit(0 if rows and ok == len(rows) else 1)
           PY
           rc=${PIPESTATUS[0]}
-          # Scheduled full-suite runs are monitoring, not a gate — partial
-          # failures are expected, so don't fail the job (Slack/blob carry the
-          # signal). Manual dispatch is a targeted check: surface any failure.
-          if [ "$EVENT_NAME" = "schedule" ]; then
+          # Full-suite runs are monitoring, not a gate — partial failures are
+          # expected, so don't fail the job (Slack/blob carry the signal).
+          # Targeted runs are a check: surface any failure.
+          if [ "$FULL_SUITE" = "true" ]; then
             exit 0
           fi
           exit "$rc"
