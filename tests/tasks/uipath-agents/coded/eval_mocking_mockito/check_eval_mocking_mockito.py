@@ -18,16 +18,16 @@ is structured JSON, so JsonSimilarity is the natural fit and it
 exercises a separate evaluator type from `eval_exact_match`.
 
 Checks:
-  1. `secret-peek/pyproject.toml` exists with no `[build-system]`.
-  2. `secret-peek/main.py` imports `mockable` and `ExampleCall` from
+  1. `asset-retriever/pyproject.toml` exists with no `[build-system]`.
+  2. `asset-retriever/main.py` imports `mockable` and `ExampleCall` from
      `uipath.eval.mocks` AND has at least one `@mockable(...)`
      decorator.
-  3. `secret-peek/evaluations/evaluators/*.json` contains an
+  3. `asset-retriever/evaluations/evaluators/*.json` contains an
      evaluator with `evaluatorTypeId == "uipath-json-similarity"`.
-  4. `secret-peek/evaluations/eval-sets/*.json` is v1.0; at least
+  4. `asset-retriever/evaluations/eval-sets/*.json` is v1.0; at least
      one test case carries `mockingStrategy.type == "mockito"` with
      a non-empty return behavior.
-  5. `secret-peek/eval-results.json` has the documented shape and
+  5. `asset-retriever/eval-results.json` has the documented shape and
      every recorded evaluator run scored >= 0.5.
 """
 
@@ -41,7 +41,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.project_root import find_project_root  # noqa: E402
 
-ROOT = find_project_root("secret-peek")
+ROOT = find_project_root("asset-retriever")
 
 
 def _read_text(path: Path) -> str:
