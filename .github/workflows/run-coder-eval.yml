@@ -278,7 +278,19 @@ jobs:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      - name: Configure NuGet feed for Helm packages
+      # Two-feed config. UiPath-Internal is required for Helm itself
+      # (`UiPath.Studio.Helm.*` only lives there) and carries the
+      # newer .NET-6 activity line. UiPath-Official is the public
+      # stable feed Studio Desktop uses by default and is the only
+      # source of net461-compatible legacy activity package versions
+      # (e.g. `UiPath.System.Activities@23.4.4`,
+      # `UiPath.Excel.Activities@2.21.4`) that the legacy RPA tasks
+      # pin in their `initial_prompt` project.json fixtures. Without
+      # Official configured, `find-package` only returns the newer
+      # line and `find-activities` returns empty for net461 projects,
+      # which burns the legacy refactor task's turn budget before any
+      # edit lands.
+      - name: Configure NuGet feeds (Helm + legacy activity packages)
         shell: bash
         run: |
           dotnet nuget add source \
@@ -287,6 +299,9 @@ jobs:
             --username az \
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
+          dotnet nuget add source \
+            "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Official/nuget/v3/index.json" \
+            --name UiPath-Official
 
       # Two-feed install: `@uipath/cli` comes from the internal GitHub
       # Packages feed (so the `cli_version` input — e.g. `alpha`, pinned
