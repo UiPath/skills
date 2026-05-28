@@ -1,0 +1,70 @@
+task_id: skill-agent-guardrail-coded-recommend-scoped
+description: >
+  Tool-scoped guardrail recommendation for a coded agent. SimpleCodedAgent has
+  a `lookup_account_info` tool that may leak PII. Use the skill to recommend
+  and add a Tool-scoped guardrail targeting that specific tool. Verifies that
+  the catalog/list/SDK docs are fetched, the guardrail is Tool-scoped on
+  lookup_account_info (decorator above @tool, OR middleware with
+  tools=[lookup_account_info] and scopes=[GuardrailScope.TOOL]), and that
+  graph.py still parses. Forbids configuring both representations simultaneously.
+tags: [uipath-agents, e2e, coded, mode:build, guardrail]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  max_turns: 40
+  turn_timeout: 1200
+
+task_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py. I'm worried that the
+  lookup_account_info tool could leak customer PII back to the user. What
+  Tool-scoped guardrail should I add to graph.py to address that, and can you
+  add it? Use the catalog to choose the right validator. Make sure graph.py
+  still parses when you're done.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or
+  feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the guardrail catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the guardrails list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the UiPath Python SDK guardrail docs"
+    tool_name: "WebFetch"
+    command_pattern: 'uipath\.github\.io/uipath-python/.*guardrails'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tool-scoped guardrail targets lookup_account_info; graph.py parses; exactly one representation used"
+    command: "python3 $TASK_DIR/check_recommend_scoped.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

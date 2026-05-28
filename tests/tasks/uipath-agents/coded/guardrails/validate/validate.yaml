@@ -1,0 +1,91 @@
+task_id: skill-agent-guardrail-coded-validate
+description: >
+  Coded guardrail validation/fix flow. SimpleCodedAgent is seeded with no
+  guardrails. The user asks the skill to first add a deliberately misconfigured
+  user-prompt-attacks decorator (placed above @tool def lookup_account_info —
+  user_prompt_attacks is LLM-scope only), then validate, then fix the misuse
+  by moving the @guardrail above the create_llm() factory instead. Verifies
+  the catalog/list/SDK docs were consulted, the misuse is gone after the fix,
+  the user_prompt_attacks guardrail now decorates the LLM factory, and graph.py
+  still parses.
+tags: [uipath-agents, e2e, coded, mode:build, guardrail]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  max_turns: 40
+  turn_timeout: 1200
+
+task_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py. I tried to add a user-prompt-
+  attacks guardrail but I'm not sure I placed it right. First add the snippet
+  below to graph.py exactly as-is (do not modify it yet) — it puts a
+  @guardrail decorator above @tool def lookup_account_info using
+  UserPromptAttacksValidator and BlockAction at GuardrailExecutionStage.PRE:
+
+      @guardrail(
+          validator=UserPromptAttacksValidator(),
+          action=BlockAction(reason="Adversarial input detected."),
+          name="Block prompt attacks",
+          stage=GuardrailExecutionStage.PRE,
+      )
+      @tool
+      def lookup_account_info(customer_id: str) -> str:
+          ...
+
+  Add the necessary imports for it. Then fetch the guardrail catalog with
+  `uip agent guardrails catalog`, the definitions with
+  `uip agent guardrails list`, and the SDK docs from
+  https://uipath.github.io/uipath-python/core/guardrails/ and
+  https://uipath.github.io/uipath-python/langchain/guardrails/ . Run a
+  validation pass against the snippet — `user_prompt_attacks` is LLM-scope
+  only, so decorating a `@tool` is wrong. Fix it by moving the @guardrail
+  above the existing create_llm() factory function instead, and remove it
+  from above @tool def lookup_account_info. Make sure graph.py still parses.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or
+  feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the guardrail catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the guardrails list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the UiPath Python SDK guardrail docs"
+    tool_name: "WebFetch"
+    command_pattern: 'uipath\.github\.io/uipath-python/.*guardrails'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "user_prompt_attacks guardrail moved off @tool and onto LLM factory; graph.py parses"
+    command: "python3 $TASK_DIR/check_validate.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
