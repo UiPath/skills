@@ -1,4 +1,4 @@
-# No Login Pending — Faithful Replay
+# Job Pending — Stale Dispatch — Faithful Replay
 
 This scenario replays a real UiPath diagnostic investigation where the
 agent reached a verified resolution. The fixtures are the verbatim
@@ -42,5 +42,5 @@ If the source transcript or project changes, regenerate the scenario:
 ```bash
 python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \
     --investigation <path> --project <path> --transcript <path> \
-    --scenario-name no-login-pending --apply
+    --scenario-name job-pending-stale-dispatch --apply
 ```

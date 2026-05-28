@@ -1,4 +1,4 @@
-task_id: skill-troubleshoot-no-login-pending
+task_id: skill-troubleshoot-job-pending-stale-dispatch
 description: >
   UiPath diagnostic agent must diagnose a job stuck in `Pending` state in
   Orchestrator from a vague user report (no job key supplied). The
