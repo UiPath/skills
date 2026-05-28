@@ -4,7 +4,7 @@ Quick reference for UI automation in UiPath workflows — covers both coded work
 
 ## Prerequisites
 
-See [uia-prerequisites.md](uia-prerequisites.md).
+[uia-prerequisites.md](uia-prerequisites.md) MUST be read IN FULL first.
 
 **Required package:** `UiPath.UIAutomation.Activities`
 
@@ -212,11 +212,11 @@ When a procedure exists specifically to check something against ground truth, do
 
 ## Configuring Targets (Object Repository)
 
-See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
+[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers the configure-target workflow, rules, indication fallback, and multi-step UI flows.
 
 ### Multi-Step UI Flows (Advancing Application State)
 
-See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows).
+Procedure: [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) — the capture loop and Complete-then-advance rule.
 
 ---
 
@@ -337,7 +337,7 @@ using <PackageNamespace>.ObjectRepository;
 
 #### Step 3 — Configure the target
 
-See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the full configure-target workflow.
+[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first.
 
 After the skill completes, re-read `ObjectRepository.cs` and search for the returned reference IDs to find the exact `Descriptors.<App>.<Screen>.<Element>` paths.
 
@@ -360,7 +360,7 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 > "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uip rpa uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
-For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
+For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. [uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first (see § Multi-Step UI Flows for the capture loop and the Complete-then-advance rule).
 
 ### Key Concepts
 
@@ -370,7 +370,7 @@ Every UI automation workflow starts with an **Application Card** (`uix:NApplicat
 
 #### Target Configuration
 
-Follow [uia-configure-target-workflows.md](uia-configure-target-workflows.md) to register the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers registering the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 
 Do NOT hand-write `<uix:TargetApp>` or `<uix:TargetAnchorable>` XAML from scratch. Attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` — never fabricate them.
 

@@ -23,7 +23,7 @@ Never upgrade UIA silently. Every upgrade requires explicit user consent before 
 | Patch / build upgrade within the preview band | Ask before installing the newer preview build. |
 | Already at or above `<MIN_VERSION>` | Proceed without prompting. |
 
-If the user declines, do NOT install. Warn that `uip rpa uia` commands will fail without UIA at `<MIN_VERSION>` and fall back to indication authoring (see [uia-configure-target-workflows.md](uia-configure-target-workflows.md) § Indication Fallback). Record `UI capture: indication-only` in the plan header so downstream tasks do not route to `uia-configure-target`.
+If the user declines, do NOT install. Warn that `uip rpa uia` commands will fail without UIA at `<MIN_VERSION>` and fall back to indication authoring — [uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first (see § Indication Fallback). Record `UI capture: indication-only` in the plan header so downstream tasks do not route to `uia-configure-target`.
 
 ## Commands
 
