@@ -53,6 +53,25 @@ Every `uip rpa` invocation accepts these flags:
 
 > **Always use `--output json`** when calling `uip rpa` commands programmatically. The `table` format pads columns and can produce extremely large output (100KB+). JSON is compact and machine-readable.
 
+### Shell quoting on Windows for JSON-bearing flags
+
+Several `uip rpa` flags accept a JSON value — most commonly `packages install --packages` (JSON array) and `run` / `debug start --input-arguments` (JSON object). Pass these from `bash` on Windows when possible.
+
+PowerShell's argument parser mangles JSON containing `:`, `/`, `=`, or `?` depending on how the surrounding string is quoted. The behavior is also inconsistent across flags — escaping that satisfies one flag has been observed to fail on another in the same session. `bash` (Git Bash, WSL, MSYS) passes single-quoted JSON straight through.
+
+```bash
+# bash — works for any JSON-bearing flag:
+uip rpa packages install --packages '[{"id":"<PackageId>","version":"<version>"}]'
+uip rpa run --input-arguments '{"<argName>":"<value>"}'
+```
+
+If you must use PowerShell, single-quote the whole value and escape inner quotes with backslash. This works for `--packages`; for `--input-arguments` it has been observed not to work and `bash` was required:
+
+```powershell
+# PowerShell — known-working for --packages:
+uip rpa packages install --packages '[{\"id\":\"<PackageId>\",\"version\":\"<version>\"}]'
+```
+
 ### STUDIO_DIR Resolution
 
 `--studio-dir` is **only consulted when Studio Desktop is in use** (i.e. you ran `studio start`, called `files diff`/`focus-activity`, or set `UIPATH_RPA_TOOL_USE_STUDIO=1`). Headless Studio (Helm) ignores it. When Studio Desktop is needed and auto-detection fails, the resolution waterfall is:

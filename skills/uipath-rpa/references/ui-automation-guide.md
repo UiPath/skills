@@ -32,7 +32,7 @@ When the source is a Test Manager test case, a PDD, or any written list of "Clic
 1. **Inventory.** Read every step. Each interaction (`Click`, `Enter`, `Type`, `Select`, `Choose`, `Verify visible`, `Read`) maps to **one** Object Repository element. Note: assertions ("Verify text contains X") still need an OR element to read from.
 2. **Group by screen state.** Sort steps into screen batches — every step before an action that advances the UI (submit, navigate, dialog confirm) belongs to the current screen; the next batch starts after the advance.
 3. **Build the checklist** — three columns per row: `manual step → element name → screen`. Lock the count before opening the app. If the user later adds requirements, capture deltas, do not re-inventory the whole thing.
-4. **Capture screen by screen.** Pre-flight Window Baseline (above) → run `uia-configure-target` for the current screen's batch → register each element in the OR before advancing → use the UIA interact CLI to advance → repeat. The "Complete-then-advance" rule from [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) is mandatory; never advance with elements still un-registered.
+4. **Capture screen by screen.** Pre-flight Window Baseline (above) → run `uia-configure-target` for the current screen's batch → register each element in the OR before advancing → use the UIA interact CLI to advance → repeat. The "Complete-then-advance" rule from [uia-configure-target-workflows.md § The per-screen loop](uia-configure-target-workflows.md#the-per-screen-loop) is mandatory; never advance with elements still un-registered.
 5. **Then code.** With every checklist row registered in the OR, write the `.cs` / `.xaml` workflow that calls them in step order. Authoring-phase prerequisites (analyzer rules, project context discovery) run NOW, not earlier.
 
 > Coverage check: after capture, every checklist row must have a matching `Descriptors.<App>.<Screen>.<Element>` path (coded) or OR reference (XAML). Rows without a match indicate a missed capture or an obsolete manual step — reconcile before writing code.
@@ -45,7 +45,7 @@ When the source is a Test Manager test case, a PDD, or any written list of "Clic
 
 | Sense | Used in | What it is | Boundary / identity |
 |-------|---------|------------|---------------------|
-| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (via the `uip rpa uia interact` CLI) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
+| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-configure-target-workflows.md § The per-screen loop](uia-configure-target-workflows.md#the-per-screen-loop) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (via the `uip rpa uia interact` CLI) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
 | **OR screen** | Object Repository CLI, `.objects/` layout, `Descriptors.<App>.<Screen>.<Element>`, [uia-configure-target-workflows.md](uia-configure-target-workflows.md) | A data-model entity in the Object Repository, registered via `create-screen` / matched via `get-screens`. | Identified by its window selector. |
 | **Screen handle** (coded only) | "Screen Handle Affinity" under § For Coded Workflows | A runtime `UiTargetApp` returned by `uiAutomation.Open` / `Attach`, bound to one OR screen. | Element descriptors are valid only on the handle for their own OR screen. |
 
@@ -216,7 +216,7 @@ When a procedure exists specifically to check something against ground truth, do
 
 ### Multi-Step UI Flows (Advancing Application State)
 
-Procedure: [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) — the capture loop and Complete-then-advance rule.
+Procedure: [uia-configure-target-workflows.md § The per-screen loop](uia-configure-target-workflows.md#the-per-screen-loop) — the capture loop and Complete-then-advance rule.
 
 ---
 
@@ -360,7 +360,11 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 > "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uip rpa uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
-For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. [uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first (see § Multi-Step UI Flows for the capture loop and the Complete-then-advance rule).
+For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. [uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first (see § The per-screen loop for the capture loop and the Complete-then-advance rule).
+
+#### How many OR screens to create
+
+The resolver picks a window selector for the page it sees. If the next capture screen still matches that selector — same title, same URL stem — one OR screen covers both. **If the next page doesn't match, just register a new screen — don't try to broaden the existing one. There's no CLI for that** (broadening means hand-editing `.objects/` content files), and engineering one broad selector up front means guessing what later pages' titles and URLs will be. The natural number of OR screens is whichever number falls out of letting the resolver produce its default selector for each capture screen, page by page.
 
 ### Key Concepts
 
