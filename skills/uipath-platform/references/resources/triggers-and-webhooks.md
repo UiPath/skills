@@ -34,7 +34,7 @@ The CLI uses `--type` to select the trigger kind. Defaults to `time` if omitted.
 | Schedule | Quartz cron | Common mistake (Unix 5-field) |
 |----------|------------|-------------------------------|
 | Daily at noon | `0 0 12 * * ?` | `0 12 * * *` |
-| Weekdays 9 AM | `0 0 9 ? * 1-5` | `0 9 * * 1-5` |
+| Weekdays 9 AM | `0 0 9 ? * MON-FRI` | `0 9 * * 1-5` |
 | Every 30 min | `0 0/30 * * * ?` | `*/30 * * * *` |
 
 **RuntimeType values**: `Serverless`, `Unattended`, `Headless`, `NonProduction`, `AgentService`
@@ -58,7 +58,7 @@ uip or processes list --folder-path "Finance" --output json
 uip resource triggers create --type time \
   --name "WeekdayInvoiceRun" \
   --release-key <process-key> \
-  --cron "0 0 9 ? * 1-5" \
+  --cron "0 0 9 ? * MON-FRI" \
   --time-zone "Europe/Bucharest" \
   --runtime-type Unattended \
   --job-priority Normal --output json
@@ -127,7 +127,7 @@ uip resource triggers get <trigger-key> --type time --folder-path "Finance" --ou
 
 # Update (only provided fields change)
 uip resource triggers update <trigger-key> --type time \
-  --cron "0 30 8 ? * 1-5" --folder-path "Finance" --output json
+  --cron "0 30 8 ? * MON-FRI" --folder-path "Finance" --output json
 ```
 
 > **`--type` matters on get/update/delete.** Default is `time`. If you pass an api or queue trigger key without `--type api` / `--type queue`, the command hits ProcessSchedules and returns `HTTP 404: ProcessSchedule does not exist.` The error instructions surface a hint pointing at the right `--type` — re-run with the correct one. (`triggers list` shows the type per entry.)
@@ -230,7 +230,7 @@ uip or calendars list --output json   # get calendar key
 uip resource triggers create --type time \
   --name "WeekdayInvoiceRun" \
   --release-key "c3d4e5f6-..." \
-  --cron "0 0 9 ? * 1-5" --time-zone "UTC" \
+  --cron "0 0 9 ? * MON-FRI" --time-zone "UTC" \
   --calendar-key "<calendar-key>" \
   --runtime-type Unattended --job-priority Normal --output json
 
