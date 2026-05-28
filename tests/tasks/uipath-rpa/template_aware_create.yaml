@@ -5,7 +5,7 @@ description: >
   with `--template-package-id UiPath.Template.REFramework`, not with
   `--template-id BlankTemplate`. Tests whether the skill teaches the
   template-detection decision before `init`.
-tags: [uipath-rpa, smoke, lifecycle:generate]
+tags: [uipath-rpa, windows, smoke, lifecycle:generate]
 
 initial_prompt: |
   I want to create a new UiPath REFramework project called "InvoiceREF"

@@ -15,7 +15,7 @@ description: >
   and edit shape — the agent must produce the right command sequence,
   preserve baseline assemblies, and emit XAML that matches the legacy
   schema.
-tags: [uipath-rpa, legacy, e2e, mode:edit-validate]
+tags: [uipath-rpa, windows, legacy, e2e, mode:edit-validate]
 max_iterations: 2
 
 agent:

@@ -54,7 +54,7 @@ Per the tier table in `tests/README.md`:
 
 ### 2b. Tags
 
-Required, in this order: `<skill-name>` first, then `<tier>`, then `mode:<X>`. Optional dimensions (`shape:*`, `node:*`, `resource`, `connector`, `feature:*`) follow per `tests/README.md#tag-taxonomy`.
+Required, in this order: `<skill-name>` first, then `<tier>`, then `mode:<X>`. Optional dimensions (`shape:*`, `node:*`, `resource`, `connector`, `windows`, `feature:*`) follow per `tests/README.md#tag-taxonomy`.
 
 - **`<skill-name>`** — always the first tag. Must match the `skills/<name>/` folder exactly (e.g. `uipath-maestro-flow`, `uipath-agents`). Never abbreviate or drop the `uipath-` prefix.
 - **`<tier>`** — `smoke`, `integration`, or `e2e`.
@@ -65,7 +65,7 @@ Required, in this order: `<skill-name>` first, then `<tier>`, then `mode:<X>`. O
 
 **Use only the closed-vocabulary values listed in `tests/README.md`.** If no value fits an optional dimension, omit it and surface it in the Phase 4 summary so the taxonomy can be extended deliberately. Never invent tag values inline.
 
-Final tag order: `[<skill-name>, <tier>, mode:X, shape:X, node:..., resource, connector, feature:...]`.
+Final tag order: `[<skill-name>, <tier>, mode:X, shape:X, node:..., resource, connector, windows, feature:...]`.
 
 Example:
 
