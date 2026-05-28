@@ -1,0 +1,55 @@
+task_id: skill-flow-delay
+description: >
+  Create a UiPath Flow with a single OOTB Delay node (`core.logic.delay`)
+  that waits a fixed duration before reaching the End node. Exercises Delay
+  node discovery, the `timerType`/`timerPreset` input shape, and correct
+  incoming/outgoing edge wiring (Trigger -> Delay -> End).
+  Validate-only and pure-OOTB — no tenant, no `flow debug` (a delay node
+  would block the run for its full wait duration, and the timer fires only
+  inside a live BPMN engine the test sandbox cannot provision).
+tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:delay]
+
+run_limits:
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "DelayDemo" with the shape
+  Trigger -> Delay -> End. The middle node must be an OOTB Delay node of
+  type `core.logic.delay` that waits a fixed duration:
+
+    - `inputs.timerType` must be `"timeDuration"`.
+    - `inputs.timerPreset` must be a fixed ISO 8601 duration preset such as
+      `"PT15M"` (15 minutes). Do NOT use `"custom"` for this smoke test.
+    - Set `typeVersion` to the `version` field from
+      `uip maestro flow registry get core.logic.delay --output json`.
+      Do NOT hardcode a guessed version.
+
+  Wire the Delay node so that it has an incoming edge from the trigger and an
+  outgoing edge to the End node (an `edges[]` entry whose `targetNodeId` is
+  the delay node id, and one whose `sourceNodeId` is the delay node id).
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its
+  workflow steps exactly — in particular, the delay plugin's `inputs` shape
+  (`timerType` + `timerPreset`).
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate DelayDemo/DelayDemo/DelayDemo.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Structural checks (node type, timer inputs, edge wiring) ───────────
+  - type: run_command
+    description: "Flow has exactly one core.logic.delay node with valid timer inputs and incoming/outgoing edges"
+    command: "python3 $TASK_DIR/check_delay_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
