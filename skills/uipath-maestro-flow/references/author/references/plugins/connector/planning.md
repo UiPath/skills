@@ -41,10 +41,20 @@ Examples:
 ## Discovery
 
 ```bash
-uip maestro flow registry search <service> --output json
+uip maestro flow registry search <service> --output json \
+  --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"
 ```
 
-Confirm `category: "connector"` in the results. If the connector key fails, list all connectors:
+`registry search` returns `Data` as a flat array, and each row uses PascalCase fields (`NodeType`, `DisplayName`, `Description`, `AvailableOnTenant`). Do **not** parse `Data.Nodes`, lowercase `type`, or lowercase `category`; those shapes do not exist in the CLI JSON output.
+
+For connector activities, use `NodeType` as the source of truth:
+
+- Activity rows start with `uipath.connector.<connector-key>.`
+- Trigger rows start with `uipath.connector.trigger.` and belong to the connector-trigger guide
+- `NodeType` is the exact value to pass to `registry get` and `node add`
+- `Category` can be tenant/internal metadata such as `connector.<id>` and is not a reliable connector-key source
+
+If the connector key fails, list all connectors:
 
 ```bash
 uip is connectors list --output json
