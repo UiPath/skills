@@ -61,7 +61,7 @@ Case exit conditions are created **after** all stages exist (so `selectedStageId
 - marks-case-complete: true
 - rule-type: required-stages-completed
 - selected-stage: "<stage-name>"        # only for selected-stage-* rule-types
-- condition-expression: "=js:vars.X..."  # optional gate on case state, NOT the event payload (wait-for-connector also needs connector fields — see catalog)
+- condition-expression: "=js:vars.X..."  # optional gate on case state, NOT the event payload
 - order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```

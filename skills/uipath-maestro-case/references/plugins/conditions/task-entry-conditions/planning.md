@@ -47,7 +47,7 @@ Task entry conditions are created **after** all tasks in the stage have been add
 - display-name: "<name>"
 - rule-type: selected-tasks-completed
 - selected-tasks: "<Task A>, <Task B>"
-- condition-expression: "<expr>"          # optional gate (adhoc / wait-for-connector); wait-for-connector also needs connector fields
+- condition-expression: "=js:vars.X..."   # optional gate on case state, NOT the event payload
 - order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```

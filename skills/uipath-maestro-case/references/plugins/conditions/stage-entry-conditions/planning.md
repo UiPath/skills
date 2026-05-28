@@ -52,6 +52,7 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 - is-interrupting: false
 - rule-type: selected-stage-completed
 - selected-stage: "<upstream-stage-name>"
+- condition-expression: "=js:vars.X..."   # optional gate on case state, NOT the event payload
 - order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```

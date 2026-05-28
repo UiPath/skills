@@ -66,6 +66,7 @@ Stage exit conditions are created **after** all tasks in the stage have been add
 - marks-stage-complete: true
 - rule-type: required-tasks-completed
 - selected-tasks: "<Task A>, <Task B>"          # only if rule-type requires
+- condition-expression: "=js:vars.X..."         # optional gate on case state, NOT the event payload
 - order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
