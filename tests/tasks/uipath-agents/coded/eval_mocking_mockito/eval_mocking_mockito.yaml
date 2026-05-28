@@ -20,19 +20,78 @@ agent:
   turn_timeout: 1800
 
 initial_prompt: |
-  Build a Simple Function UiPath coded agent named `secret-peek` that
-  returns a structured summary of a UiPath asset: the first 4
-  characters followed by stars to pad out to the original length,
-  alongside a human-readable label looked up from a remote registry.
+  Recreate the coded agent project under `asset-retriever/`
+  exactly as below.
 
-  The agent has two external calls:
-    1. Reads the asset `api_key` from the `Shared` folder via the
-       UiPath SDK.
-    2. Calls a helper `fetch_label(key_id: str) -> str` that talks
-       to a remote registry (just `requests.get` against a URL).
+  **asset-retriever/pyproject.toml**:
+  [project]
+  name = "asset-retriever"
+  version = "0.0.1"
+  description = "UiPath agent that returns a structured summary of an asset with masked value and remote label"
+  authors = [{ name = "john doe", email = "john.doe@example.com" }]
+  dependencies = [
+      "requests>=2.34.2",
+      "uipath>=2.10.0, <2.11.0",
+  ]
+  requires-python = ">=3.11"
 
-  Output shape (Pydantic):
-    `{"masked_key": "abcd******", "label": "production-stripe"}`
+  [dependency-groups]
+  dev = [
+      "uipath-dev>=0.0.79",
+  ]
+
+  **asset-retriever/main.py**:
+  from dataclasses import dataclass
+  import requests
+  from uipath.platform import UiPath
+
+  @dataclass
+  class SecretPeekInput:
+      asset_name: str
+
+  @dataclass
+  class SecretPeekOutput:
+      masked_key: str
+      label: str
+
+  def fetch_label(key_id: str) -> str:
+      """Fetch human-readable label from remote registry."""
+      url = f"https://registry.example.com/labels/{key_id}"
+      try:
+          response = requests.get(url, timeout=5)
+          response.raise_for_status()
+          data = response.json()
+          return data.get("label", "unknown")
+      except Exception:
+          return "unknown"
+
+  def mask_secret(secret: str) -> str:
+      """Mask secret: first 4 chars + stars padded to original length."""
+      if len(secret) < 4:
+          return "*" * len(secret)
+      return secret[:4] + "*" * (len(secret) - 4)
+
+  def main(input: SecretPeekInput) -> SecretPeekOutput:
+      sdk = UiPath()
+
+      # Read asset from Shared folder
+      asset = sdk.assets.retrieve(input.asset_name, folder_name="Shared")
+      secret_value = asset.value
+
+      # Mask the secret
+      masked = mask_secret(secret_value)
+
+      # Fetch label from registry
+      label = fetch_label(input.asset_name)
+
+      return SecretPeekOutput(masked_key=masked, label=label)
+
+    **asset-retriever/uipath.json**:
+      {
+    "functions": {
+      "main": "main.py:main"
+      }
+    }
 
   Add a smoke evaluation suite with 2–3 cases covering different
   asset values and run it locally. The evals must pass without
@@ -40,34 +99,13 @@ initial_prompt: |
   remote registry being reachable. Save the eval output to
   `eval-results.json` in the project root.
 
-  Two constraints on how the mocking is wired (both matter — we use
-  this project as a reference for new joiners learning the eval
-  framework, so it has to demonstrate both approaches):
-    - For the `fetch_label` helper, bake the mock outputs **into the
-      Python code** so reviewers can see the example values right
-      next to the function definition. The mock data should travel
-      with `main.py`.
-    - For the asset retrieval, supply the mock value **from the
-      eval-set definitions** so each test case can use a different
-      asset value without code changes.
-
   For scoring, use a **structured-output evaluator** — we care
-  about the shape of `{"masked_key": ..., "label": ...}` matching
-  the expected JSON per case, not character-for-character string
-  equality. We want the eval to flag a case where one field is
-  right but the other is subtly wrong.
+  about the shape of `{"masked_key": ..., "label": ...}. Those
+  should be as similar as possible to what we expect.
 
-  Take the agent through scaffold → init → run the eval suite. Do
-  NOT publish, upload, or deploy. Complete it in a single pass.
+  Do NOT publish, upload, or deploy. Complete it in a single pass.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent scaffolded the project with uip codedagent new"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+new'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran uip codedagent init to generate entry-points.json"
