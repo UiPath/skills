@@ -330,8 +330,8 @@ If the key isn't in the local solution, the command exits with `Failure` and `Re
 Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them).
 
 ```bash
-# Set one scalar property
-uip solution resource edit <resource-key> --set maxNumberOfRetries=5 --output json
+# Patch a single spec property
+uip solution resource edit <resource-key> --patch '{"maxNumberOfRetries":5}' --output json
 
 # Patch several properties from a JSON object
 uip solution resource edit <resource-key> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
@@ -343,11 +343,10 @@ echo '{"slaInHours":"4"}' | uip solution resource edit <resource-key> --patch - 
 | Option | Values | Default |
 |--------|--------|---------|
 | `<resource-key>` | Solution resource key (GUID, positional) — discover via `resource list --source local` | **required** |
-| `--patch <json\|->` | JSON object of spec property → value; `-` reads the JSON from stdin | — |
-| `--set <prop>=<value>` | Repeatable. One top-level spec property = scalar (JSON-parsed, string fallback). Wins over `--patch` on key collision | — |
+| `--patch <json\|->` | JSON object of spec property → value; `-` reads the JSON from stdin | **required** |
 | `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
 
-At least one of `--patch` / `--set` is required. Purely local — no auth round-trip (a secret-property edit may need login; that surfaces as an SDK error if so).
+`--patch` is the only input. Purely local — no auth round-trip (a secret-property edit may need login; that surfaces as an SDK error if so). **Why no `--set k=v` shortcut?** Scalar coercion was ambiguous on numeric-looking strings (`--set slaInHours=2` would have become number `2`, but Queue's schema requires string `"2"`). JSON is unambiguous: the agent decides the type, the SDK gets exactly what was emitted.
 
 ### What the SDK enforces (and silently ignores)
 
@@ -357,7 +356,7 @@ At least one of `--patch` / `--set` is required. Purely local — no auth round-
 - **Identity fields** (`key`, `kind`, `type`, `apiVersion`, `dependencies`, `folders`) are top-level, not `spec` — structurally unreachable through `edit`.
 - **Secret** properties are stored via the secret-upsert path (you pass the value, the SDK keeps a key).
 - **Name** is editable (renames the resource) with duplicate-name protection — supersedes the old "rename is Studio-Web-only" guidance.
-- Merge is **top-level spec replacement**, not deep merge: `--patch '{"obj":{...}}'` replaces the whole `obj`, and `--set` keys are property names (no dotted paths).
+- Merge is **top-level spec replacement**, not deep merge: `--patch '{"obj":{...}}'` replaces the whole `obj`.
 
 ### Output
 
@@ -551,7 +550,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Add a virtual queue / asset / bucket | `uip solution resource add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |
 | Import an existing remote resource | `uip solution resource add --source remote --kind <kind> --name <name> --folder-path <folder>` | On ambiguous match, the error lists every candidate with its key — pick one and re-call |
 | Remove a single resource | `uip solution resource remove <resource-key>` | Purely local — no auth; doesn't touch `bindings_v2.json`, next `refresh` re-imports if a binding still references it |
-| Edit a resource's spec | `uip solution resource edit <resource-key> --patch '{...}'` (or `--set <prop>=<value>`) | Only command that mutates an existing resource; unknown/reference/read-only props are silently ignored |
+| Edit a resource's spec | `uip solution resource edit <resource-key> --patch '{...}'` | Only command that mutates an existing resource; unknown/reference/read-only props are silently ignored. JSON is the only input — types preserved verbatim |
 | List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; add `--kind <kind>` to narrow to one resource kind |
 | Pack | `uip solution pack <solution-dir> <output-dir>` | See [pack-and-deploy.md](pack-and-deploy.md) for full pack/publish/deploy flow |
 
