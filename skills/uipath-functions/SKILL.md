@@ -1,3 +1,9 @@
+---
+name: uipath-functions
+description: "Always invoke for UiPath Python Coded Functions: pyproject.toml with `[tool.uipath] type=\"function\"`, @dataclass Input/Output, @traced, lazy `UiPath()` singleton from `uipath.platform`, errors-returned-not-raised. Triggers on `uip functions new -l py / init / pack / publish / run`, `uipath.json` `functions` key, `entry-points.json`, `bindings.json` bucket/asset/queue/process/connection entries. Atomic deterministic logic, invocable from Maestro Service Task, Maestro Flow Coded Agent node, Orchestrator Run Job, Orchestrator API. Runs on Serverless or local unattended robot. For framework agents (LangGraph/LlamaIndex)→uipath-agents. For `uip` platform ops→uipath-platform."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+---
+
 # UiPath Python Coded Functions
 
 ## What Python Coded Functions Are
