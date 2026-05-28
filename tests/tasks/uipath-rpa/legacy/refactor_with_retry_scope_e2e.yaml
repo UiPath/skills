@@ -190,7 +190,7 @@ success_criteria:
   # Edit shape: Retry Scope correctly wraps the Excel read
   - type: run_command
     description: "Main.xaml has a Retry Scope that nests the Excel read inside its body"
-    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); sys.exit(0 if re.search(r'<RetryScope\\b[^>]*>[\\s\\S]*?(?:ExcelApplicationScope|ExcelReadRange|<ui:ExcelReadRange|<ui:ExcelApplicationScope)[\\s\\S]*?</RetryScope>', s) else 1)\""
+    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); sys.exit(0 if re.search(r'<(?:ui:|uca:|uic:)?RetryScope\\b[^>]*>[\\s\\S]*?<(?:ui:|uea:|ueab:)?(?:ExcelApplicationScope|ExcelReadRange)\\b[\\s\\S]*?</(?:ui:|uca:|uic:)?RetryScope>', s) else 1)\""
     timeout: 5
     expected_exit_code: 0
     weight: 2.5
