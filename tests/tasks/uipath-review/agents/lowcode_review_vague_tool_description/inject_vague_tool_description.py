@@ -1,17 +1,31 @@
 #!/usr/bin/env python3
-"""Inject VAGUE_TOOL_DESCRIPTION violation: create a tool resource.json
-with an empty `description`. The catalog rule fires when description
-is missing, empty after strip, or shorter than MIN_TOOL_DESC_LEN.
+"""Scaffold a lowcode agent and inject VAGUE_TOOL_DESCRIPTION.
+
+Creates a tool resource.json with an empty `description`. The catalog
+rule fires when description is missing, empty after strip, or shorter
+than MIN_TOOL_DESC_LEN.
 """
 
 import json
+import os
+import sys
 from pathlib import Path
 
+sys.path.insert(
+    0,
+    os.path.join(
+        os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
+    ),
+)
+from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+
+SOLUTION = Path("ReviewSol")
 BASE = Path("ReviewSol/SampleAgent/resources/VagueTool")
 TOOL_NAME = "vague_tool"
 
 
 def main() -> None:
+    write_baseline_lowcode_agent(SOLUTION)
     BASE.mkdir(parents=True, exist_ok=True)
     resource = {
         "$resourceType": "tool",

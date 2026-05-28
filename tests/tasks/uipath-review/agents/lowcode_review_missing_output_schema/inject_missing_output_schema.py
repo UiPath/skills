@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Inject MISSING_OUTPUT_SCHEMA violation: strip
-entry-points.json.entryPoints[0].output.properties to {}. The catalog
-rule fires when the runtime output contract has no properties, leaving
-downstream consumers nothing to bind to.
+"""Scaffold a lowcode agent and inject MISSING_OUTPUT_SCHEMA.
+
+Strips entry-points.json.entryPoints[0].output.properties to {}. The
+catalog rule fires when the runtime output contract has no properties,
+leaving downstream consumers nothing to bind to.
 
 agent-builder layout: entry-points.json is the runtime contract.
 We also strip agent.json.outputSchema.properties so the two files
@@ -11,13 +12,25 @@ alongside this rule).
 """
 
 import json
+import os
+import sys
 from pathlib import Path
 
+sys.path.insert(
+    0,
+    os.path.join(
+        os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
+    ),
+)
+from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+
+SOLUTION = Path("ReviewSol")
 AGENT_JSON = Path("ReviewSol/SampleAgent/agent.json")
 ENTRY_POINTS = Path("ReviewSol/SampleAgent/entry-points.json")
 
 
 def main() -> None:
+    write_baseline_lowcode_agent(SOLUTION)
     # Strip entry-points.json output.properties to {}
     ep = json.loads(ENTRY_POINTS.read_text())
     entries = ep.get("entryPoints") or []

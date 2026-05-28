@@ -18,11 +18,6 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "uip solution init ReviewSol --output json"
-    timeout: 60
-  - command: "uip agent init ReviewSol/SampleAgent --output json"
-    timeout: 60
-  # $TASK_DIR is not exposed to pre_run subprocess env; use $SKILLS_REPO_PATH.
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_orphan_placeholder/inject_orphan_placeholder.py"
     timeout: 30
 

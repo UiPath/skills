@@ -1,19 +1,33 @@
 #!/usr/bin/env python3
-"""Inject ORPHAN_PLACEHOLDER violation: add `{{input.bogus_field}}` to
-a user message in agent.json where `bogus_field` is NOT declared in
-inputSchema.properties. The catalog rule fires when a placeholder
-references a property that does not exist in the input schema.
+"""Scaffold a lowcode agent and inject ORPHAN_PLACEHOLDER.
+
+Adds `{{input.bogus_field}}` to a user message in agent.json where
+`bogus_field` is NOT declared in inputSchema.properties. The catalog
+rule fires when a placeholder references a property that does not
+exist in the input schema.
 """
 
 import json
+import os
+import sys
 from pathlib import Path
 
+sys.path.insert(
+    0,
+    os.path.join(
+        os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
+    ),
+)
+from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+
+SOLUTION = Path("ReviewSol")
 AGENT_JSON = Path("ReviewSol/SampleAgent/agent.json")
 ORPHAN_FIELD = "bogus_field"
 ORPHAN_PLACEHOLDER = "{{input.bogus_field}}"
 
 
 def main() -> None:
+    write_baseline_lowcode_agent(SOLUTION)
     d = json.loads(AGENT_JSON.read_text())
 
     # Ensure messages[] exists and find or create a user message.

@@ -19,13 +19,7 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "uip solution init ReviewSol --output json"
-    timeout: 60
-  - command: "uip agent init ReviewSol/SampleAgent --output json"
-    timeout: 60
-  # Inject LOWCODE_SCHEMA_DRIFT: add a property to agent.json.inputSchema
-  # but DO NOT update entry-points.json. The two files now disagree.
-  - command: "python3 -c \"import json; p='ReviewSol/SampleAgent/agent.json'; d=json.load(open(p)); s=d.setdefault('inputSchema',{'type':'object','properties':{},'required':[]}); s.setdefault('properties',{})['drifted_field']={'type':'string','title':'Drifted Field','description':'Test fixture: in agent.json only, NOT entry-points.json — triggers LOWCODE_SCHEMA_DRIFT.'}; s.setdefault('required',[]).append('drifted_field') if 'drifted_field' not in s.get('required',[]) else None; json.dump(d,open(p,'w'),indent=2); print('Injected drifted_field into agent.json only')\""
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_schema_drift/inject_schema_drift.py"
     timeout: 30
 
 initial_prompt: |

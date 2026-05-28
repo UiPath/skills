@@ -19,11 +19,6 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "uip solution init ReviewSol --output json"
-    timeout: 60
-  - command: "uip agent init ReviewSol/SampleAgent --output json"
-    timeout: 60
-  # $TASK_DIR is not exposed to pre_run subprocess env; use $SKILLS_REPO_PATH.
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_missing_output_schema/inject_missing_output_schema.py"
     timeout: 30
 

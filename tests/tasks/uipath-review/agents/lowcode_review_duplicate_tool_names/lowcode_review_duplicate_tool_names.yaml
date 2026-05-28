@@ -18,14 +18,6 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "uip solution init ReviewSol --output json"
-    timeout: 60
-  - command: "uip agent init ReviewSol/SampleAgent --output json"
-    timeout: 60
-  # Inject DUPLICATE_TOOL_NAMES via a separate script (multi-line setup
-  # is cleaner in its own file than inline in YAML). $TASK_DIR is only
-  # set in run_command criterion env, not in pre_run env, so use
-  # $SKILLS_REPO_PATH to locate the inject script.
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_duplicate_tool_names/inject_duplicate_tool_names.py"
     timeout: 30
 

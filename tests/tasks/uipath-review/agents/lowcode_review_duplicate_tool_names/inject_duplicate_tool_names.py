@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
-"""Inject DUPLICATE_TOOL_NAMES violation: create two resource.json files
-that share the same `name` field. Runtime uses tool name as a unique
-handle; duplicates collide.
+"""Scaffold a lowcode agent and inject DUPLICATE_TOOL_NAMES.
+
+Creates two `resources/<X>/resource.json` files that share the same
+`name` field. Runtime uses tool name as a unique handle; duplicates
+collide.
 """
 
 import json
 import os
+import sys
 from pathlib import Path
 
+sys.path.insert(
+    0,
+    os.path.join(
+        os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
+    ),
+)
+from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+
+SOLUTION = Path("ReviewSol")
 BASE = Path("ReviewSol/SampleAgent/resources")
 SHARED_NAME = "duplicated_handle"
 
@@ -33,6 +45,7 @@ def make_resource(uid: str) -> dict:
 
 
 def main() -> None:
+    write_baseline_lowcode_agent(SOLUTION)
     for dir_name, uid in TOOLS:
         d = BASE / dir_name
         d.mkdir(parents=True, exist_ok=True)
