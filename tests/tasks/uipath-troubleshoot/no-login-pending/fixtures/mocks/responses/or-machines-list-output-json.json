@@ -3,9 +3,9 @@
   "Code": "MachineList",
   "Data": [
     {
-      "Name": "danVM",
-      "ID": 106816,
-      "Key": "ba627e42-0edd-4260-97a4-f92737c45e1a",
+      "Name": "DanLaptopNew",
+      "ID": 1890824,
+      "Key": "b8d82bd0-1d19-4a23-8b34-fc26927d4cfa",
       "Type": "Template",
       "Scope": "Default",
       "Description": "",
@@ -13,25 +13,12 @@
       "HeadlessSlots": 0,
       "NonProductionSlots": 0,
       "TestAutomationSlots": 0,
-      "LicenseKey": "75b781fd-0d8f-4844-a3e8-3f74a4ac6f46"
-    },
-    {
-      "Name": "MyTemplate",
-      "ID": 28182,
-      "Key": "2ac2a9e6-12b2-4efc-958c-a20737282f94",
-      "Type": "Template",
-      "Scope": "Serverless",
-      "Description": "",
-      "UnattendedSlots": 0,
-      "HeadlessSlots": 0,
-      "NonProductionSlots": 0,
-      "TestAutomationSlots": 0,
-      "LicenseKey": "21fd2790-63c4-48f3-b48f-502d28f3f632"
+      "LicenseKey": "605b37db-dc58-460f-99ed-93fcfb2f2062"
     },
     {
       "Name": "[Default] Cloud Robots - Serverless",
-      "ID": 21707,
-      "Key": "6477b341-3791-4867-b40f-305d99c969ce",
+      "ID": 1104780,
+      "Key": "3b82fc7a-8154-4c17-ac05-60f026904b8b",
       "Type": "Template",
       "Scope": "Serverless",
       "Description": "Automatically generated for use in Personal Workspaces",
@@ -39,16 +26,16 @@
       "HeadlessSlots": 0,
       "NonProductionSlots": 0,
       "TestAutomationSlots": 0,
-      "LicenseKey": "8b15ed62-5392-4870-b59c-b6b52549caef"
+      "LicenseKey": "78d93cb4-23ae-4d30-9f56-2640d6584221"
     },
     {
       "Name": "original_email@test.com's workspace machine",
-      "ID": 21706,
-      "Key": "850f2eee-d0a8-47c8-9c4b-8364ab3deecc",
+      "ID": 961460,
+      "Key": "6f12f3e7-75f5-475e-aa34-3f5bd5c564e1",
       "Type": "Template",
       "Scope": "PersonalWorkspace",
       "Description": "",
-      "UnattendedSlots": 0,
+      "UnattendedSlots": 1,
       "HeadlessSlots": 0,
       "NonProductionSlots": 0,
       "TestAutomationSlots": 0,
@@ -56,7 +43,7 @@
     }
   ],
   "Pagination": {
-    "Returned": 4,
+    "Returned": 3,
     "Limit": 50,
     "Offset": 0,
     "HasMore": false
