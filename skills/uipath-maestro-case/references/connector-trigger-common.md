@@ -408,6 +408,8 @@ A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) b
 }
 ```
 
+5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when `uipath` is absent.
+
 6. Append root bindings (ConnectionId + FolderKey) and run the deferred `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
 
 ### tasks.md fields (planning)

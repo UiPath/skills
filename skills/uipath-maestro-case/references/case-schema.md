@@ -388,7 +388,7 @@ Rules = Rule[][]
 
 | `rule` | Additional fields | Description |
 |--------|-------------------|-------------|
-| `wait-for-connector` | `id?`, `uipath` (connector configuration — required), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
+| `wait-for-connector` | `id?`, `uipath?` (connector configuration — required for Studio Web validity; bare form is a valid deferred/placeholder state), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
 | `case-entered` | `id?`, `conditionExpression?` | Fires when the case is first entered |
 | `selected-stage-completed` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has completed |
 | `selected-stage-exited` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has been exited |

@@ -271,7 +271,7 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 2. Remove the node from `schema.nodes` by ID.
 3. Remove every edge where `source` or `target` equals the removed node's ID.
 4. If the node was a stage containing a connector task **or a connector condition rule** (in `entryConditions[]` / `exitConditions[]` / task `entryConditions[]`), prune entries from the bindings array (v19: `root.data.uipath.bindings`; v20: top-level `bindings`) referenced only by that task/rule. A connector rule contributes the same Connection/Folder binding pair as a task — `rule.uipath.context[name="connection"|"folderKey"]` references `=bindings.<bindingId>`. Walk every remaining task/trigger/rule; an entry whose `resourceKey` is no longer referenced anywhere is the one to prune. Case-exit rules are NOT in scope here — they live on root, not inside a node; use § Delete a connector condition rule for those.
-5. If the removed node held connector rule outputs that were bound to case variables (B/C feature), prune the matching companion entries from `root.inputOutputs[]` whose `elementId` was `<removedStageId>-<ruleId>` and that no longer have a producer.
+5. If the removed node held connector rule outputs that were bound to case variables (B/C feature), prune their `root.inputOutputs[]` companions. The companion's `elementId` is `"root"` — `<removedStageId>-<ruleId>` is the rule output entry's `elementId`, not the companion's. For each removed rule output at `elementId = <removedStageId>-<ruleId>`, read its `var`, then prune the companion whose `id == <var>` and `elementId == "root"` that no longer has a producer.
 6. Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
 7. Edit — separate slices for `schema.nodes`, `schema.edges`, the bindings array, and (if applicable) `inputOutputs[]`. Never whole-file Write.
 
@@ -283,7 +283,7 @@ When removing a single rule from a condition (without deleting the parent stage/
 2. Locate the rule by `id`. **FE composes one rule per condition** (OR-style across multiple condition objects), so the target is almost always a condition object that contains exactly this one rule. The underlying shape is DNF (`rules[][]`), so honor it: if other rules share the inner AND-array, remove just the rule; if the rule is the sole entry, remove the entire condition object.
 3. Remove the rule (or the parent condition object when it becomes empty).
 4. Walk all remaining tasks/triggers/rules; prune root `bindings[]` entries whose `resourceKey` is no longer referenced.
-5. Prune `root.inputOutputs[]` companions that were tied to this rule's outputs (`elementId = <ownerNodeId>-<ruleId>`) and whose case variable has no other producer.
+5. Prune `root.inputOutputs[]` companions tied to this rule's outputs. The companion's `elementId` is `"root"`; `<ownerNodeId>-<ruleId>` is the rule output entry's `elementId`, not the companion's. For each of this rule's outputs at `elementId = <ownerNodeId>-<ruleId>`, read its `var`, then prune the companion whose `id == <var>` and `elementId == "root"` when its case variable has no other producer.
 6. Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
 7. Edit — separate slices for the conditions array, the bindings array, and (if applicable) `inputOutputs[]`. Never whole-file Write.
 
