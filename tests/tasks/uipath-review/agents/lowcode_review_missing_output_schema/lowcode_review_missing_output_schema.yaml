@@ -2,11 +2,12 @@ task_id: skill-review-agents-lowcode-missing-output-schema
 description: >
   Smoke test for uipath-review on a low-code agent project with an
   injected MISSING_OUTPUT_SCHEMA violation. pre_run scaffolds a
-  minimal agent then strips
-  entry-points.json.entryPoints[0].output.properties to {} — downstream
-  consumers cannot bind to the agent's output. The reviewer must cite
-  `MISSING_OUTPUT_SCHEMA` (error/warning, schema category — exercises
-  the multi-severity row in the catalog).
+  minimal agent (non-conversational by default) then strips
+  entry-points.json.entryPoints[0].output.properties to {} —
+  downstream consumers cannot bind to the agent's output. The reviewer
+  must cite `MISSING_OUTPUT_SCHEMA` (error, schema category — the
+  non-conversational variant; `MISSING_OUTPUT_SCHEMA_CONVERSATIONAL`
+  is the warning sibling for conversational agents).
 tags: [uipath-review, smoke, mode:diagnose]
 
 run_limits:

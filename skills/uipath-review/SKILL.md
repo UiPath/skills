@@ -31,8 +31,8 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 7. **Do not duplicate what validation commands catch.** Reference the validation output by rule ID and message — do not manually re-describe the same issue. But DO include every validation result (Error, Warning, Info) in the report.
 8. **Cap the review at 30 minutes of analysis.** For very large solutions (10+ projects), provide a summary review with deep dives on the 3 highest-risk projects. Offer to review remaining projects if the user wants.
 9. **Apply the rule catalog for every supported artifact type encountered.** For low-code or coded agents, load `references/agents/agents-common-rules.md` plus the format-specific file (`agents-lowcode-rules.md` or `agents-coded-rules.md`) per the detection table in Step 2.5. For the agent-builder coded layout (both `agent.json` and `main.py` present), load all three files. Future phases add catalogs for RPA, flows, coded apps; load each project's catalog without being told.
-10. **The catalog is authoritative for the rules it covers.** Use the catalog's `rule_id`, `severity`, `trigger`, and `suggested_fix` verbatim. Map severity to the report's bands: catalog `error` → Critical, `warning` → Warning, `info` → Info. `judgment` severity rows default to Warning; the agent may escalate or de-escalate with reasoning logged in the finding's `description`. For multi-severity rows (e.g., `error|warning`), the `trigger` column states the condition for each — pick the severity whose condition matches. Do not re-rank otherwise.
-11. **Report rules that could not be applied** (missing tooling, missing file, not a git repo, `status: deferred`, `uip agent review` CLI not available) in a dedicated "Rules Skipped" subsection of the report — never silently skip.
+10. **The catalog is authoritative for the rules it covers.** Use the catalog's `rule_id`, `severity`, `trigger`, and `suggested_fix` verbatim. Map severity to the report's bands: catalog `error` → Critical, `warning` → Warning, `info` → Info. `judgment` severity rows default to Warning; the agent may escalate or de-escalate with reasoning logged in the finding's `description`. Do not re-rank otherwise.
+11. **Report rules that could not be applied** (missing tooling, missing file, not a git repo, `status: deferred`) in a dedicated "Rules Skipped" subsection of the report — never silently skip.
 
 ## Review Workflow
 
@@ -50,16 +50,16 @@ find . -maxdepth 3 \( -name "*.uipx" -o -name "project.json" -o -name "agent.jso
 find . -maxdepth 3 \( -name "*PDD*" -o -name "*pdd*" -o -name "*Process_Design*" -o -name "*process_design*" -o -name "*Process-Design*" -o -name "*ProcessDesign*" -o -name "*SDD*" -o -name "*Solution_Design*" -o -name "*design_document*" -o -name "*DesignDocument*" -o -name "*requirements*" -o -name "*specification*" \) 2>/dev/null
 ```
 
-#### 0b. Locate the PDD (Process Design Document) or Agent Spec
+#### 0b. Locate the PDD (Process Design Document)
 
-The PDD (RPA) or agent spec (agents / flows / coded apps) is the **source of truth** for the review. It defines what the automation should do, its business context, expected inputs/outputs, exception handling requirements, and success criteria. The review evaluates whether the implementation matches the spec.
+The PDD is the **source of truth** for the review. It defines what the automation should do, its business context, expected inputs/outputs, exception handling requirements, and success criteria. The review evaluates whether the implementation matches the PDD.
 
-**Search order:**
+**Search for PDD in this order:**
 
-1. **Common locations:** `./docs/`, `./documentation/`, `./Design/`, project root
-2. **Common names (RPA):** `PDD.docx`, `PDD.pdf`, `PDD.md`, `Process_Design_Document.*`, `SDD.*`, `Solution_Design_Document.*`, `Requirements.*`
-3. **Common names (agents / flows / coded apps):** `AGENTS.md`, `agent-spec.*`, `system-prompt.md`, `README.md`, `prompt.md`, `behavior.md`
-4. **In-project metadata:** `project.json` `description` field; `agent.json` `name` + `description`; `pyproject.toml` `[project] description`; `main.py` module docstring
+1. **Check common locations:** `./docs/`, `./documentation/`, `./Design/`, project root
+2. **Check common names:** `PDD.docx`, `PDD.pdf`, `PDD.md`, `Process_Design_Document.*`, `SDD.*`, `Solution_Design_Document.*`, `Requirements.*`
+3. **Check AGENTS.md or README.md** at project root — may contain or reference the PDD
+4. **Check project.json** `description` field or any metadata pointing to documentation
 
 **If PDD is found:**
 - Read it (supports .md, .pdf, .docx via appropriate tools)
@@ -204,7 +204,6 @@ If `uip rpa analyze` is not available, `uip rpa validate` includes Workflow Anal
 | Project Type | Validation Command | Report All Severities |
 |---|---|---|
 | Agent (Low-Code) | `uip agent validate ./path --output json` | Yes — errors, warnings, info |
-| Agent (Coded) | `uip codedagent eval main evaluations/eval-sets/smoke-test.json --no-report` (if eval sets exist) | Yes — pass/fail per test case |
 | Flow | `uip maestro flow validate <ProjectName>.flow --output json` | Yes — schema errors, reference errors, warnings |
 | Coded App | `uip codedapp pack dist --dry-run` | Yes — build errors, pack warnings |
 | Solution | `uip solution pack <SolutionDir> <OutputDir> --output json` | Yes — per-project pack results |

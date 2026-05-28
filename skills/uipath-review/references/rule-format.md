@@ -15,8 +15,8 @@ Every catalog file uses a single H2 section per logical checker (e.g., `## Evals
 | Column | Type | Source |
 |---|---|---|
 | `rule_id` | UPPER_SNAKE_CASE identifier in backticks | Verbatim from POC. Stable contract. Never rename. |
-| `severity` | `error` / `warning` / `info` / `judgment` | Verbatim from POC. Mapped at report time (see below). |
-| `category` | `evals` / `schema` / `tools` / `guardrails` / `general` / `lowcode` | Matches the `uip agent review --checks <name>` argument vocabulary. Drives report grouping. |
+| `severity` | One of `error` / `warning` / `info` / `judgment` (always a single value — rules with observation-dependent severity are split into distinct `rule_id`s, e.g., `TOO_MANY_TOOLS` / `EXCESSIVE_TOOL_COUNT`). | Verbatim from POC. Mapped at report time (see below). |
+| `category` | `evals` / `schema` / `tools` / `guardrails` / `general` / `lowcode` / `code` / `security` / `runtime` / `eval-results` | Matches the `uip agent review --checks <name>` argument vocabulary. Drives report grouping. Not every catalog uses every value — the low-code catalog uses `evals` / `schema` / `tools` / `guardrails` / `general` / `lowcode`; the coded catalog additionally uses `code` / `security` / `runtime` / `eval-results`. |
 | `trigger` | Short condition phrase | Verbatim from POC. |
 | `detection_method` | One of the forms below | Concrete instruction the agent executes (mechanical) or reasons through (judgment). |
 | `suggested_fix` | One imperative sentence | Verbatim from POC `_fix_suggestion()` / rule body. |
@@ -74,7 +74,7 @@ When a row's `detection_method` is the CLI form, the agent runs:
 uip agent review --project-dir "<PROJECT_DIR>" --checks <name>[,<name>...] --output json
 ```
 
-`--checks` accepts a comma-separated list of checker names matching the H2 sections of the catalog (`evals`, `schema`, `tools`, `guardrails`, `general`, `lowcode`). The CLI returns JSON containing findings keyed by `rule_id` — the agent picks out the ones it needs.
+`--checks` accepts a comma-separated list of checker names matching the H2 sections of the catalog. Low-code catalog: `evals`, `schema`, `tools`, `guardrails`, `general`, `lowcode`. Coded catalog adds: `code`, `security`, `runtime`, `eval-results`. The CLI returns JSON containing findings keyed by `rule_id` — the agent picks out the ones it needs.
 
 > Batching multiple checks in one invocation is preferred when several CLI-form rules belong to the same checker (e.g., all eval rules in one `--checks evals` call).
 

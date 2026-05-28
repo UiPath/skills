@@ -48,7 +48,8 @@ Emit one finding per schema (input vs output) when each independently exceeds th
 
 | rule_id | severity | category | trigger | detection_method | suggested_fix |
 |---|---|---|---|---|---|
-| `TOO_MANY_TOOLS` | warning\|error | tools | `tool_count > MAX_TOOLS_WARNING` (warning); `tool_count > MAX_TOOLS_ERROR` (error) | Compute `tool_count` per [Tool count](#tool-count) below. Emit with `severity=error` if `tool_count > MAX_TOOLS_ERROR`; else `severity=warning` if `tool_count > MAX_TOOLS_WARNING`; else do not emit. file = project root. | Split into multiple specialized agents (each ≤ `MAX_TOOLS_WARNING` tools) or remove tools the agent does not exercise in any eval. |
+| `TOO_MANY_TOOLS` | warning | tools | `MAX_TOOLS_WARNING < tool_count <= MAX_TOOLS_ERROR` | Compute `tool_count` per [Tool count](#tool-count) below. Emit when `MAX_TOOLS_WARNING < tool_count <= MAX_TOOLS_ERROR`; do not emit when `tool_count > MAX_TOOLS_ERROR` (handled by `EXCESSIVE_TOOL_COUNT`). file = project root. | Split into multiple specialized agents (each ≤ `MAX_TOOLS_WARNING` tools) or remove tools the agent does not exercise in any eval. |
+| `EXCESSIVE_TOOL_COUNT` | error | tools | `tool_count > MAX_TOOLS_ERROR` | Compute `tool_count` per [Tool count](#tool-count) below. Emit when `tool_count > MAX_TOOLS_ERROR`. file = project root. Mutually exclusive with `TOO_MANY_TOOLS`. | Split into multiple specialized agents (each ≤ `MAX_TOOLS_WARNING` tools) — at this count, a single agent cannot select reliably between tools and tool descriptions cease to fit in context. |
 
 ### Tool count
 
@@ -65,4 +66,4 @@ Emit one finding per schema (input vs output) when each independently exceeds th
 | `MIN_EVAL_COUNT` | 5 | `TOO_FEW_EVALS` |
 | `TARGET_EVAL_COUNT` | 30 | `FEW_EVALS`, `TOO_FEW_EVALS` (suggested fix) |
 | `MAX_TOOLS_WARNING` | 20 | `TOO_MANY_TOOLS` |
-| `MAX_TOOLS_ERROR` | 30 | `TOO_MANY_TOOLS` |
+| `MAX_TOOLS_ERROR` | 30 | `EXCESSIVE_TOOL_COUNT` |
