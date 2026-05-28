@@ -18,6 +18,7 @@ Failures can originate at any layer — Excel security policy (step 3), code fil
 
 - **Invoke VBA** (`InvokeVBAX`, display name "Invoke VBA") — execute a VBA macro stored in an external code file against the workbook currently open in the parent `Excel Process Scope`. Properties: `CodeFilePath` (path to `.txt`/`.vba`/`.bas` containing the macro source), `EntryMethodName` (name of the `Sub` or `Function` to invoke), `EntryMethodParameters` (`IEnumerable<Object>` of arguments), `Output` (return value when `EntryMethodName` points to a `Function`).
 - **Lookup Range** — find the cell address of a value within a worksheet range. Two surfaces: classic `UiPath.Excel.Activities.LookUpRange` (inside an `Excel Application Scope`, **Excel Interop / COM only**) and modern `UiPath.Excel.Activities.LookUpRangeX` (inside a `Use Excel File` / `Excel Process Scope`). Properties: `Range` (A1 range to search; leave **blank** — not `""` — to search the whole used range), `Value` (the value to find), `SheetName` (target sheet), `Output` (the matched cell address). Searches only *visible* cells, so active AutoFilters change the result.
+- **Excel Lookup Range** (`UiPath.Excel.Activities.ExcelLookUpRange`, display name "Excel Lookup Range") — the canonical Interop "Lookup Range" activity in the package's Interop set (child of `Excel Application Scope`); modern StudioX sibling is `VLookupX` (child of `Excel Application Card`). Same purpose and properties as the entry above, exposed under the canonical class name. See [excel-lookup-range.md](./playbooks/excel-lookup-range.md) for the umbrella reference covering its three common error categories.
 
 ## Common Failure Patterns
 
@@ -34,6 +35,14 @@ Failures can originate at any layer — Excel security policy (step 3), code fil
 - **Workbook locked / file in use** — opening the workbook faults with `The process cannot access the file because it is being used by another process` / `locked for editing`. Causes: file open interactively, an orphaned `EXCEL.EXE` holding the handle, a concurrent job, or a sync/AV client. Distinct from the COM `0x80010100` dispatcher failure above.
 - **Object reference not set (sheet/range missing or no scope)** — `NullReferenceException` when the `SheetName` does not exist (typo/rename/case), a named range/table is undefined, or the activity runs outside an `Excel Application Scope` / `Use Excel File` so there is no workbook context.
 - **Invalid range syntax or value misconfiguration** — `Range` set to an empty-string `""` instead of left blank (whole-sheet search is *blank*, not `""`), a malformed A1 reference, unescaped wildcards (`*`/`?`/`~`) in the search `Value`, or a type mismatch (text-vs-number, stray whitespace) that makes a present value fail to match.
+
+### Excel Lookup Range (canonical `ExcelLookUpRange`)
+
+Three error categories cluster under the canonical `UiPath.Excel.Activities.ExcelLookUpRange` activity — covered together in the umbrella playbook [excel-lookup-range.md](./playbooks/excel-lookup-range.md):
+
+- **Activity fails or returns nothing (silent miss / wrong result)** — three sub-causes: active AutoFilters (hidden row not in the visible-only search), formula cells (Interop reads an unrefreshed/misread computed value), or wildcard misinterpretation in the search `Value` (`*`/`?`/`~` parsed as patterns, not literals).
+- **"Excel is not installed" / `ComException`** — Interop-only activity faults at scope start on hosts without desktop Excel (`REGDB_E_CLASSNOTREG`, `Excel is not installed`). Migration target: Workbook `Read Range` (OpenXML) + `Lookup Data Table`.
+- **"Activity must be placed inside an Excel Application Scope"** — `ExcelLookUpRange` is missing its container; needs an `Excel Application Scope` (classic) or `Use Excel File` (modern) to supply the workbook handle.
 
 ## Package
 
