@@ -720,6 +720,19 @@ The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Va
 
 ---
 
+## Generic Type Arguments Cannot Wrap Array Types
+
+`<Variable x:TypeArguments="scg:List(x:Object[])">` fails with *"Cannot create unknown type … List(Object[])"*. The XAML type system refuses to construct `List<Object[]>` — an array element type nested inside a generic. Same for `<InArgument x:TypeArguments="scg:IEnumerable(x:Object[])">` on `ForEach.Values`. This blocks the natural shape for projecting LINQ rows into `AddDataRow.ArrayRow` (which is `InArgument<Object[]>`).
+
+**Fix — box each row as `Object` so the collection's element type is non-array:**
+
+- Variable: `<Variable x:TypeArguments="scg:List(x:Object)" Name="rows" />`
+- Producing LINQ: `… .Select(Function(g) DirectCast(New Object(){g.Key, mean}, Object)).ToList()`
+- `ForEach`: `<ForEach x:TypeArguments="x:Object">` over `scg:IEnumerable(x:Object)`
+- Consumer cast: `<ui:AddDataRow ArrayRow="[CType(row, Object())]" …>`
+
+The boxed array reaches `ArrayRow` (whose property type is `Object[]`) correctly because `CType(row, Object())` unboxes it.
+
 ## Variable Scope and "Not Declared" Errors
 
 **Error:** `"'variableName' is not declared. It may be inaccessible due to its protection level"`
