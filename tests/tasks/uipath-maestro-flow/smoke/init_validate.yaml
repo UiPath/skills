@@ -2,7 +2,7 @@ task_id: skill-flow-init-validate
 description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
   a new UiPath Flow project inside a solution and validate it. Tests whether
-  the skill teaches the correct solution-first workflow and CLI usage.
+  the skill teaches the CLI auto-solution workflow and validation usage.
 tags: [uipath-maestro-flow, smoke, lifecycle:generate]
 
 run_limits:
@@ -12,14 +12,12 @@ initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.
 
-  A Flow project MUST be created
-  inside a solution:
-  1. Create the solution first.
-  2. Create the Flow project inside that solution.
-  3. Confirm the flow project is registered in the parent solution.
+  A Flow project lives inside a solution, and the CLI creates/registers that
+  solution automatically when you run `uip maestro flow init` outside an
+  existing solution.
 
   The correct flow-file path is:
-    WeatherAlert/WeatherAlert/WeatherAlert.flow
+    WeatherAlertSolution/WeatherAlert/WeatherAlert.flow
 
   The task is NOT complete until `uip maestro flow validate` has passed for
   that exact file path.
@@ -30,19 +28,11 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent created a solution with uip solution init (or legacy new)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+(init|new)'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent initialized a Flow project with uip maestro flow init"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
     min_count: 1
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -53,11 +43,9 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Outcome-based check (auto-registration via `flow init` OR explicit
-  # `uip solution project add` both populate Projects[] in the .uipx).
   - type: json_check
     description: "Flow project is registered in the parent solution .uipx"
-    path: "WeatherAlert/WeatherAlert.uipx"
+    path: "WeatherAlertSolution/WeatherAlertSolution.uipx"
     assertions:
       - expression: "length(Projects)"
         operator: "gte"
@@ -70,7 +58,6 @@ success_criteria:
 
   - type: file_exists
     description: "Flow file was created inside the solution"
-    path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
+    path: "WeatherAlertSolution/WeatherAlert/WeatherAlert.flow"
     weight: 1.5
     pass_threshold: 1.0
-

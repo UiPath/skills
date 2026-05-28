@@ -35,13 +35,13 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 
 | Turn | Steps | What you emit in ONE assistant message |
 |---|---|---|
-| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
+| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (flow init + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. |
 | **T2 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
 | **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
 
 ### Batching anti-patterns
 
-- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`. Same for `node configure && validate && format`.
+- **One CLI per turn.** Never issue `flow init`, then `registry pull`, then `node add` as three separate Bash calls — chain with `&&`. Same for `node configure && validate && format`.
 - **Sequential `registry get`s.** Emit every `registry get` as a parallel `Bash` in one message alongside the T1 scaffold chain.
 - **Validating after every Edit.** Validate once at the end of T3 (or after a recovery Edit). Intermediate states are expected to be invalid.
 - **Re-reading the `.flow` every turn.** `Read` once at the start of T2; subsequent `Edit`s in the same conversation don't need re-reading unless an external command (e.g., `node configure`, `format`) rewrites the file between Edits.
@@ -71,61 +71,39 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 
 When you do need it, emit `uip login status --output json` as a parallel `Bash` inside T1.
 
-## Step 2 — Create a solution, THEN a Flow project inside it **[T1]**
+## Step 2 — Create the Flow project **[T1]**
 
-> **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
-
-Check for existing solutions with `ls *.uipx */*.uipx 2>/dev/null` (each solution is its own folder — `<Solution>/<Solution>.uipx` — so a bare `*.uipx` misses them). If any are found, **STOP before the T1 chain — do not run `uip solution init` yet** — and ask via `AskUserQuestion`, presenting a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option. The user wanting a new solution does not let you skip this; you only learn that by asking. If none are found, create a new one automatically. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
-
-- If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
-- Otherwise, create a new solution (Step 2a)
+Run `uip maestro flow init <ProjectName>` from any directory. The CLI takes care of the solution layout — you do not need to run `uip solution init` first or `cd` anywhere special.
 
 ### Canonical T1 chain — issue this as ONE `Bash` call
 
-This is the consolidated command that does Steps 2a + 2b + Step 3 + (optionally) one `node add` per CLI-owned node, in one chained Bash. `node add` signature is `<file> <node-type>` (file first):
+This is the consolidated command that does Step 2 + Step 3 + (optionally) one `node add` per CLI-owned node, in one chained Bash. `node add` signature is `<file> <node-type>` (file first):
 
 ```bash
-uip solution init "<SolutionName>" --output json \
-  && cd "<SolutionName>" \
-  && uip maestro flow init "<ProjectName>" --output json \
-  && cd "<ProjectName>" \
+uip maestro flow init "<ProjectName>" --output json \
+  && cd "<ProjectName>Solution/<ProjectName>" \
   && uip maestro flow registry pull \
   && uip maestro flow node add "<ProjectName>.flow" core.action.http.v2 --label "<NodeLabel>" --output json
 ```
+
+If `flow init` runs inside an existing solution, replace the `cd "<ProjectName>Solution/<ProjectName>"` segment with `cd "<ProjectName>"` or, better, use `Data.Path` from the init response as the project directory.
 
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
 
 In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB `registry get <NODE_TYPE>` you'll need in T2 (always `core.control.end` — see Step 4), and parallel `Read` calls for any plugin `impl.md`s you'll consult.
 
-> **Older `solution-tool` (< 1.0.0)** used `solution new` (see [.claude/rules/cli-renames.md](../../../../../.claude/rules/cli-renames.md)). If `solution init` returns `unknown command`, substitute `solution new`.
-
-The sub-steps below describe what each command in the chain does and how to verify the result.
-
-### 2a. Create a new solution
+The details below describe what `flow init` does and how to verify the result.
 
 ```bash
-uip solution init "<SolutionName>" --output json
+uip maestro flow init <ProjectName> --output json
 ```
 
-Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution directory before Step 2b.**
+**What happens automatically:**
 
-> **Naming convention:** Use the same name for both the solution and the project unless the user specifies otherwise. If the user only provides a project name, use it as the solution name too.
+- **If cwd is already inside a solution** (a `.uipx` file exists in cwd or any parent directory), the new project is created in cwd and registered with that existing solution. No new solution is scaffolded.
+- **If cwd is NOT inside a solution**, the CLI auto-creates a parent solution named `<ProjectName>Solution/` in cwd, then nests the project inside it at `<ProjectName>Solution/<ProjectName>/<ProjectName>.flow`. The new solution is reported in the success envelope under `Data.AutoCreatedSolution`.
 
-### 2b. Create the Flow project inside the solution folder
-
-```bash
-cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
-```
-
-The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
-
-> **Bash session state persists across tool calls.** This `cd` is **not scoped to one Bash invocation** — your cwd remains inside `<SolutionName>/` for every subsequent `Bash` call until you `cd` somewhere else. Plan the rest of Step 2 (and Steps 3–6) accordingly: either keep using paths relative to the solution dir, or anchor with `$(pwd)` / the absolute `Data.Path` returned by `flow init`. Do NOT prefix later commands with the original `<directory>/<SolutionName>/...` — that would resolve as `<SolutionName>/<directory>/<SolutionName>/...` and look like a layout bug when it isn't.
-
-`--output json` is required so Step 2c can inspect `Data.SolutionRegistration.Status` to confirm the project was auto-registered with the parent solution.
-
-### 2c. Verify the project is registered in the solution
-
-When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx` (pass `--skip-solution-registration` to skip this). The success envelope always reports the outcome in `Data.SolutionRegistration`:
+Either way, the success envelope tells you exactly what was created:
 
 ```json
 {
@@ -134,6 +112,11 @@ When `uip maestro flow init` is run from inside a solution directory (Step 2b), 
   "Data": {
     "Status": "Created successfully",
     "Path": ".../<SolutionName>/<ProjectName>",
+    "AutoCreatedSolution": {                       // present only when cwd was outside any solution
+      "Name": "<ProjectName>Solution",
+      "Path": ".../<ProjectName>Solution",
+      "SolutionFile": ".../<ProjectName>Solution/<ProjectName>Solution.uipx"
+    },
     "SolutionRegistration": {
       "Status": "Registered",                     // or "AlreadyRegistered"
       "Solution": ".../<SolutionName>.uipx",
@@ -144,25 +127,15 @@ When `uip maestro flow init` is run from inside a solution directory (Step 2b), 
 }
 ```
 
-If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check. If it is `OptedOut`, you passed `--skip-solution-registration` and the skip was intentional.
+`Data.Path` is the absolute path to the new project directory; use it (or join `Data.Path + "/<ProjectName>.flow"`) when editing the flow file. No separate `ls` verification is needed — `SolutionRegistration.Status: "Registered"` already proves the layout is correct.
 
-**Fallback** — when `Status` is `NotInSolution` (no parent `.uipx` found — `init` was run outside the solution directory and produced a single-nested layout), `Skipped` (ambiguous discovery), or `Failed` (the `.uipx` write failed): wire the project manually.
-
-```bash
-uip solution project add \
-  <directory>/<SolutionName>/<ProjectName> \
-  <directory>/<SolutionName>/<SolutionName>.uipx
-```
-
-If the registration was skipped because of single-nesting, **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
-
-### Expected layout after Steps 2a–2c
+**Resulting layout (same in both cases):**
 
 ```
 <cwd>/
-└── <SolutionName>/                    ← from `uip solution init`
+└── <SolutionName>/                    ← either pre-existing OR auto-created as <ProjectName>Solution/
     ├── <SolutionName>.uipx
-    └── <ProjectName>/                 ← from `uip maestro flow init` (run from inside <SolutionName>/)
+    └── <ProjectName>/                 ← from `uip maestro flow init`
         ├── <ProjectName>.flow         ← the file you edit
         ├── project.uiproj
         ├── bindings_v2.json
@@ -171,19 +144,15 @@ If the registration was skipped because of single-nesting, **delete the partial 
         └── package-descriptor.json
 ```
 
-**Self-check — run this before Step 3:**
+> **Naming when the CLI auto-creates a solution:** the parent solution is always named `<ProjectName>Solution`. If you want a different name, run `uip solution init <YourName>` first, `cd` into it, then run `uip maestro flow init <ProjectName>`.
 
-After Step 2b your cwd is inside `<SolutionName>/` (the `cd` persists). Verify the flow file using a `$(pwd)`-anchored absolute path so the check is robust to that cwd drift:
+**Fallback** — only if `SolutionRegistration.Status` is `Skipped` or `Failed` (e.g., multiple `.uipx` files were found in a parent directory, or the `.uipx` write failed): wire the project manually.
 
 ```bash
-ls "$(pwd)/<ProjectName>/<ProjectName>.flow"
+uip solution project add \
+  <SolutionDir>/<ProjectName> \
+  <SolutionDir>/<SolutionName>.uipx
 ```
-
-Equivalent: use the absolute project dir reported by `flow init` in `Data.Path` and append `/<ProjectName>.flow`. Either form gives an absolute path that doesn't depend on the current cwd.
-
-> **Don't write `<SolutionName>/<ProjectName>/<ProjectName>.flow` here.** From inside `<SolutionName>/` that resolves to `<SolutionName>/<SolutionName>/<ProjectName>/<ProjectName>.flow` (triple-nested) and the `ls` will fail even though the layout is correct. That false negative wastes turns chasing a non-bug.
-
-If the file does not exist at the absolute double-nested path, Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
 
 See [shared/file-format.md](../../shared/file-format.md) for the full project structure.
 

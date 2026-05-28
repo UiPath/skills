@@ -17,11 +17,9 @@ initial_prompt: |
   Create a UiPath Flow project named "ParallelSync" that runs two branches in
   parallel and synchronizes them with a Merge node before finishing.
 
-  A Flow project MUST live inside a solution:
-    1. Create the solution first (`uip solution init`).
-    2. Create the Flow project inside it (`uip maestro flow init`). The correct
-       flow-file path is:
-         ParallelSync/ParallelSync/ParallelSync.flow
+  A Flow project lives inside a solution, and `uip maestro flow init` handles
+  that layout automatically. The correct flow-file path is:
+    ParallelSyncSolution/ParallelSync/ParallelSync.flow
 
   Build this exact fork/join topology (the default manual trigger is fine — keep
   it as the start node and use it as the fork):
@@ -68,7 +66,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate ParallelSync/ParallelSync/ParallelSync.flow"
+    command: "uip maestro flow validate ParallelSyncSolution/ParallelSync/ParallelSync.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

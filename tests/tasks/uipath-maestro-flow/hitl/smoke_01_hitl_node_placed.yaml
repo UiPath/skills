@@ -24,26 +24,27 @@ initial_prompt: |
   Validate the flow after building it.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    command: "test -n \"$(find . -name InvoiceApproval.flow -print -quit)\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains the inline HITL node type"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"uipath.human-in-the-loop.quick-form"'
+    command: "FLOW=$(find . -name InvoiceApproval.flow -print -quit); test -n \"$FLOW\" && grep -q '\"uipath.human-in-the-loop.quick-form\"' \"$FLOW\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
 
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
+    command: "FLOW=$(find . -name InvoiceApproval.flow -print -quit); test -n \"$FLOW\" && uip maestro flow validate \"$FLOW\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
-

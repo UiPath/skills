@@ -17,11 +17,9 @@ initial_prompt: |
   Create a UiPath Flow project named "ScheduledReport" whose flow is started by
   a **scheduled trigger** that runs every hour.
 
-  A Flow project MUST live inside a solution:
-    1. Create the solution first (`uip solution init`).
-    2. Create the Flow project inside it (`uip maestro flow init`). The correct
-       flow-file path is:
-         ScheduledReport/ScheduledReport/ScheduledReport.flow
+  A Flow project lives inside a solution, and `uip maestro flow init` handles
+  that layout automatically. The correct flow-file path is:
+    ScheduledReportSolution/ScheduledReport/ScheduledReport.flow
 
   `uip maestro flow init` scaffolds the flow with a default **manual** trigger
   (`core.trigger.manual`). REPLACE that manual trigger with a **scheduled**
@@ -56,7 +54,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate ScheduledReport/ScheduledReport/ScheduledReport.flow"
+    command: "uip maestro flow validate ScheduledReportSolution/ScheduledReport/ScheduledReport.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

@@ -46,7 +46,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate TransformMapDemo/TransformMapDemo/TransformMapDemo.flow"
+    command: "FLOW=$(find . -name TransformMapDemo.flow -print -quit); test -n \"$FLOW\" && uip maestro flow validate \"$FLOW\""
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

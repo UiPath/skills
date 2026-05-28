@@ -12,13 +12,13 @@ run_limits:
   max_turns: 90
 
 initial_prompt: |
-  Create a new UiPath Flow project called "EmailTriage" (inside a solution) and
+  Create a new UiPath Flow project called "EmailTriage" and
   add an inline agent node that classifies an inbound support email into a
   category and priority.
 
-  A Flow project MUST be created
-  inside a solution, so the inline agent lands at:
-    EmailTriage/EmailTriage/<agent-uuid>/agent.json
+  A Flow project lives inside a solution, and `uip maestro flow init` handles
+  that layout automatically, so the inline agent lands at:
+    EmailTriageSolution/EmailTriage/<agent-uuid>/agent.json
 
   Configure the inline agent to a production standard, not the scaffold default:
   - Pick an appropriate current model (do not keep the scaffold default).
@@ -27,7 +27,7 @@ initial_prompt: |
     `content` string.
 
   The task is NOT complete until `uip maestro flow validate` passes for
-  EmailTriage/EmailTriage/EmailTriage.flow.
+  EmailTriageSolution/EmailTriage/EmailTriage.flow.
 
   Important:
   - The `uip` CLI is already available in the environment.
@@ -52,13 +52,13 @@ success_criteria:
 
   - type: file_exists
     description: "Flow file was created inside the solution"
-    path: "EmailTriage/EmailTriage/EmailTriage.flow"
+    path: "EmailTriageSolution/EmailTriage/EmailTriage.flow"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: file_contains
     description: "Flow contains the inline agent node type"
-    path: "EmailTriage/EmailTriage/EmailTriage.flow"
+    path: "EmailTriageSolution/EmailTriage/EmailTriage.flow"
     includes:
       - '"uipath.agent.autonomous"'
     weight: 2.0
@@ -72,7 +72,7 @@ success_criteria:
   # _shared is its sibling.
   - type: run_command
     description: "Inline agent.json: model overridden, real system prompt, typed outputSchema"
-    command: 'python3 "$TASK_DIR/../_shared/check_inline_agent.py" "EmailTriage/EmailTriage/*/agent.json"'
+    command: 'python3 "$TASK_DIR/../_shared/check_inline_agent.py" "EmailTriageSolution/EmailTriage/*/agent.json"'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0

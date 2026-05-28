@@ -41,7 +41,7 @@ def _read_flow() -> dict:
         _fail("no ParallelSync*.flow found under cwd")
     # Prefer the canonical project path; fall back to the first match so the
     # read is deterministic even if stray *.flow files exist.
-    canonical = "ParallelSync/ParallelSync/ParallelSync.flow"
+    canonical = "ParallelSyncSolution/ParallelSync/ParallelSync.flow"
     path = canonical if canonical in flows else flows[0]
     with open(path) as f:
         return json.load(f)

@@ -33,43 +33,40 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "uip maestro flow validate LeaveRequest/LeaveRequest/LeaveRequest.flow --output json"
+    command: "FLOW=$(find . -name LeaveRequest.flow -print -quit); test -n \"$FLOW\" && uip maestro flow validate \"$FLOW\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains inline HITL node"
-    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
-    includes:
-      - '"uipath.human-in-the-loop.quick-form"'
+    command: "FLOW=$(find . -name LeaveRequest.flow -print -quit); test -n \"$FLOW\" && grep -q '\"uipath.human-in-the-loop.quick-form\"' \"$FLOW\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains a Decision node"
-    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
-    includes:
-      - '"core.logic.decision"'
+    command: "FLOW=$(find . -name LeaveRequest.flow -print -quit); test -n \"$FLOW\" && grep -q '\"core.logic.decision\"' \"$FLOW\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Decision node references HITL output variable"
-    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
-    includes:
-      - "$vars."
-      - ".output"
+    command: "FLOW=$(find . -name LeaveRequest.flow -print -quit); test -n \"$FLOW\" && grep -q '\\$vars\\.' \"$FLOW\" && grep -q '\\.output' \"$FLOW\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Both Decision branches are wired (true and false handles present)"
-    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
-    includes:
-      - '"true"'
-      - '"false"'
+    command: "FLOW=$(find . -name LeaveRequest.flow -print -quit); test -n \"$FLOW\" && grep -q '\"true\"' \"$FLOW\" && grep -q '\"false\"' \"$FLOW\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-

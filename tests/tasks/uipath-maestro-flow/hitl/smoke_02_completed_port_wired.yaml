@@ -24,17 +24,19 @@ initial_prompt: |
   Validate the flow after building.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created"
-    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    command: "test -n \"$(find . -name PurchaseApproval.flow -print -quit)\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow wires the HITL completed output port"
-    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
-    includes:
-      - 'completed'
+    command: "FLOW=$(find . -name PurchaseApproval.flow -print -quit); test -n \"$FLOW\" && grep -q completed \"$FLOW\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
@@ -45,7 +47,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "uip maestro flow validate PurchaseApproval/PurchaseApproval/PurchaseApproval.flow --output json"
+    command: "FLOW=$(find . -name PurchaseApproval.flow -print -quit); test -n \"$FLOW\" && uip maestro flow validate \"$FLOW\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

@@ -26,7 +26,7 @@ jobs:
         run: pip install pytest
 
       - name: Run pytest
-        run: pytest tests/tasks/uipath-maestro-flow/ -v
+        run: pytest --import-mode=importlib tests/tasks/uipath-maestro-flow/ -v
 
   pytest-case-check:
     runs-on: ubuntu-latest
@@ -42,7 +42,7 @@ jobs:
         run: pip install pytest
 
       - name: Run pytest
-        run: pytest tests/tasks/uipath-maestro-case/ -v
+        run: pytest --import-mode=importlib tests/tasks/uipath-maestro-case/ -v
 
   runtime-payload-casing-guard:
     runs-on: ubuntu-latest
