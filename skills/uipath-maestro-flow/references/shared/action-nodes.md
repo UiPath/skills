@@ -29,7 +29,14 @@ uip maestro flow registry get <node-type> --output json
 }
 ```
 
-Inspect `Data.Node.handleConfiguration` for the input port name and output port name(s), `Data.Node.inputDefinition` for required inputs, `Data.Node.outputDefinition` for downstream payloads, and `Data.Node.model.serviceType` where applicable. `handleConfiguration` is an array of position groups, not a map with a top-level `handles` field. Plugin `impl.md` records what to confirm for that specific node type.
+Inspect:
+
+- `Data.Node.handleConfiguration` — input port name and output port name(s). Array of position groups, not a map with a top-level `handles` field.
+- `Data.Node.inputDefinition` — required inputs.
+- `Data.Node.outputDefinition` — downstream payloads.
+- `Data.Node.model.serviceType` — where applicable.
+
+Plugin `impl.md` records what to confirm for that specific node type.
 
 ## Standard JSON skeleton
 
