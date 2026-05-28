@@ -193,10 +193,10 @@ def main():
     if not priority:
         names = [v.get("name") for v in io_vars]
         sys.exit(f"FAIL: missing root variable 'priorityScore'; got {names}")
-    if priority.get("type") != "number":
+    if priority.get("type") not in ("integer", "float", "double"):
         sys.exit(
-            f"FAIL: variable 'priorityScore' should be type=number; "
-            f"got {priority.get('type')!r}"
+            f"FAIL: variable 'priorityScore' should be a numeric type "
+            f"(integer/float/double); got {priority.get('type')!r}"
         )
 
     payload = start_debug(timeout=540)

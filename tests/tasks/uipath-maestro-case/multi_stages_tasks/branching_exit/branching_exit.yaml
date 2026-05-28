@@ -76,7 +76,7 @@ initial_prompt: |
   ### 1.5 Case Variables
   | Variable | Category | Type | Default | Description |
   |---|---|---|---|---|
-  | - | - | - | - | No case-level variables declared. |
+  | decision | Variable | string | approved | Routing decision evaluated by the Triage stage-exit connector expressions; selects which downstream branch (approved/rejected/pending) the case exits to. |
 
   ## Section 2: Stages & Tasks
 

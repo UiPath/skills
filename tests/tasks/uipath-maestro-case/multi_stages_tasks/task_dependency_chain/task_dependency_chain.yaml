@@ -83,7 +83,7 @@ initial_prompt: |
   | Variable | Category | Type | Default | Description | Produced By | Consumed By |
   |---|---|---|---|---|---|---|
   | region | Variable | string | "US" | Case-level region flag referenced inside the Region Check task-entry conditionExpression. | - | finalize.regionCheck |
-  | priorityScore | Variable | number | 0 | Case-level numeric score referenced alongside region inside the same task-entry conditionExpression. | - | finalize.regionCheck |
+  | priorityScore | Variable | integer | 0 | Case-level numeric score referenced alongside region inside the same task-entry conditionExpression. | - | finalize.regionCheck |
 
   ## Section 2: Stages & Tasks
 
