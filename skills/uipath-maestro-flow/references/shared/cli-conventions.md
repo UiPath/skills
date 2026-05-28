@@ -72,7 +72,7 @@ uip maestro flow registry search slack --output json \
   --output-filter "[?starts_with(NodeType,'uipath.connector.uipath-salesforce-slack.')].{NodeType:NodeType,DisplayName:DisplayName}"
 ```
 
-`registry search` returns `Data` as a **flat array of PascalCase objects** — `NodeType`, `Category`, `DisplayName`, `Description`, `Version`, `Tags`, `AvailableOnTenant`. Not `Data.Nodes`, not lowercase `type`/`category`; those shapes do not exist. Pinning the shape inside `--output-filter` makes a shape-mismatch fail loudly with a non-zero exit on call #1, rather than silently returning `[]` and prompting a retry loop.
+`registry search` returns `Data` as a **flat array of PascalCase objects** — `NodeType`, `Category`, `DisplayName`, `Description`, `Version`, `Tags`, `AvailableOnTenant`. Not `Data.Nodes`, not lowercase `type`/`category`; those shapes do not exist. Knowing the shape lets you write the right expression on call #1 — which is the actual protection. Do **not** rely on `--output-filter` to *catch* a wrong-shape guess: a syntactically valid expression that simply doesn't match (e.g. `--output-filter "Nodes"` or `"Nodes[*].NodeType"` against the flat array) returns `Data: []` with **exit 0** — the same silent trap as `python3`/`jq` (see the silent-`[]` note below). Only an *invalid* expression fails loudly with exit 3: a syntax error, or a type error such as `keys(@)` on an array.
 
 ### When to fall back to `python3` / `jq`
 
