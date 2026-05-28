@@ -16,10 +16,6 @@ description: >
 
 tags: [uipath-maestro-flow, smoke, activation, ixp, negative]
 
-# Trimmed vs the positive activation suite (40 turns / 900s) — negative rows
-# do not need to drive a full registry-search → node-add → validate loop.
-task_timeout: 600
-
 dataset:
   rows:
 
@@ -62,3 +58,4 @@ success_criteria:
 run_limits:
   max_turns: 25
   turn_timeout: 600
+  task_timeout: 600

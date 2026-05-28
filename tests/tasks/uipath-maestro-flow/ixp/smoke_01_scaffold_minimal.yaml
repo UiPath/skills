@@ -10,9 +10,6 @@ description: >
   correctness only.
 
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:ixp]
-
-task_timeout: 600
-
 initial_prompt: |
   Create a new Maestro Flow project called "Smoke" with a manual trigger, an
   extract node, and a script node that just logs "ok". Wire the extracted
@@ -81,3 +78,4 @@ success_criteria:
 run_limits:
   max_turns: 40
   turn_timeout: 600
+  task_timeout: 600

@@ -16,7 +16,6 @@ agent:
   # which pushes long-workflow tasks (validate + migrate at the end) past the
   # turn cap. Empirically: 6 Task* calls → SUCCESS, 20 Task* calls → FAIL.
   disallowed_tools: ["TaskCreate", "TaskUpdate", "TaskList", "TaskGet"]
-task_timeout: 1800
 
 initial_prompt: |
   Create a UiPath solution "EscalateSol" with an agent "ComplianceAgent" for
@@ -120,3 +119,4 @@ success_criteria:
 run_limits:
   max_turns: 40
   turn_timeout: 1200
+  task_timeout: 1800

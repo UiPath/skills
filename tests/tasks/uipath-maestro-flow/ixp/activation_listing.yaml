@@ -14,9 +14,6 @@ description: >
 
 tags: [uipath-maestro-flow, smoke, activation, ixp, listing]
 
-# Listing is a one-shot Q&A — no need for the full activation budget.
-task_timeout: 300
-
 dataset:
   rows:
     - id: ixp-models
@@ -59,3 +56,4 @@ success_criteria:
 run_limits:
   max_turns: 20
   turn_timeout: 300
+  task_timeout: 300

@@ -10,7 +10,6 @@ description: >
   pipeline runs offline.
 tags: [uipath-agents, e2e, coded, mode:build, feature:eval, feature:eval-mocking, feature:framework-simple]
 max_iterations: 1
-task_timeout: 1800
 
 initial_prompt: |
   Build a Simple Function UiPath coded agent named `secret-peek` that
@@ -89,3 +88,4 @@ success_criteria:
 run_limits:
   max_turns: 80
   turn_timeout: 1800
+  task_timeout: 1800

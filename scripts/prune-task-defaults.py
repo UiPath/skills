@@ -68,6 +68,31 @@ def process(path: Path, default_agent: dict, default_rl: dict, default_sandbox: 
     agent = data.get("agent")
     run_limits = data.get("run_limits")
 
+    # Hoist deprecated top-level {max_turns,turn_timeout,task_timeout} → run_limits.
+    # These also get auto-hoisted by the coder_eval loader (with a deprecation
+    # warning) — see coder_eval/src/coder_eval/models/tasks.py:484-510.
+    for field in HOISTABLE:
+        if field not in data:
+            continue
+        if run_limits is None:
+            from ruamel.yaml.comments import CommentedMap
+
+            run_limits = CommentedMap()
+            data["run_limits"] = run_limits
+            data.yaml_set_comment_before_after_key("run_limits", before="\n")
+        if isinstance(run_limits, dict) and field in run_limits:
+            if run_limits[field] == data[field]:
+                del data[field]
+                changes.append(f"drop top-level {field} (duplicate of run_limits.{field})")
+            else:
+                changes.append(
+                    f"drop top-level {field}={data[field]!r} (conflicts with run_limits.{field}={run_limits[field]!r}; kept run_limits)"
+                )
+                del data[field]
+        else:
+            run_limits[field] = data.pop(field)
+            changes.append(f"hoist top-level {field} → run_limits.{field}")
+
     # Hoist deprecated agent.{max_turns,turn_timeout,task_timeout} → run_limits.
     if isinstance(agent, dict):
         for field in HOISTABLE:

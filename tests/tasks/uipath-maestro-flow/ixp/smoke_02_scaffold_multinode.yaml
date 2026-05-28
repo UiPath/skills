@@ -17,9 +17,6 @@ description: >
   Validate-only: no `uip maestro flow debug`.
 
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:ixp]
-
-task_timeout: 600
-
 initial_prompt: |
   Create a flow called "ReceiptIntake" with a manual trigger, an extractor
   node, and add three script nodes named `postReceipt`, `sendToValidation`,
@@ -97,3 +94,4 @@ success_criteria:
 run_limits:
   max_turns: 40
   turn_timeout: 600
+  task_timeout: 600

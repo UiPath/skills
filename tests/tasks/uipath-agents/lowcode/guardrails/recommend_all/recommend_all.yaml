@@ -9,8 +9,6 @@ description: >
 tags: [uipath-agents, e2e, low-code, guardrail]
 max_iterations: 1
 
-task_timeout: 1800
-
 sandbox:
   template_sources:
     - type: template_dir
@@ -61,3 +59,4 @@ success_criteria:
 run_limits:
   max_turns: 40
   turn_timeout: 1200
+  task_timeout: 1800

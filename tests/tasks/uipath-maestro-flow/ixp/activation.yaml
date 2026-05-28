@@ -13,9 +13,6 @@ description: >
   do NOT relax assertions; feed findings back in.
 
 tags: [uipath-maestro-flow, smoke, activation, ixp]
-
-task_timeout: 900
-
 dataset:
   rows:
     - id: explicit
@@ -72,3 +69,4 @@ success_criteria:
 
 run_limits:
   max_turns: 40
+  task_timeout: 900
