@@ -16,7 +16,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a low-code agent "PayrollAgent" that calls an RPA process
+  Create a UiPath low-code agent "PayrollAgent" that calls an RPA process
   called "CalculatePay" living INSIDE this same solution as a separate
   project. Expose it to the agent as a tool resource. The solution
   should be named "PayrollSol".

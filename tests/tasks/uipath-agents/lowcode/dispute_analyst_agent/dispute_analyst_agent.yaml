@@ -19,7 +19,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a low-code agent "DisputeAnalystAgent" that analyzes a billing
+  Create a UiPath low-code agent "DisputeAnalystAgent" that analyzes a billing
   dispute by synthesizing data from four systems and producing a
   structured analysis. The solution should be named "DisputeSol".
 

@@ -18,7 +18,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a flow project "ReviewFlow" that uses an inline low-code agent
+  Create a UiPath Flow project "ReviewFlow" that uses an inline low-code agent
   to moderate user content and escalate uncertain cases to a human
   reviewer via a UiPath ActionCenter app provisioned INSIDE this same
   solution. Wire the escalation as a resource on the inline agent.

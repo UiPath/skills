@@ -18,7 +18,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a flow project "FraudFlow" that uses an inline low-code agent
+  Create a UiPath Flow project "FraudFlow" that uses an inline low-code agent
   to triage transactions and escalate uncertain cases to an EXISTING
   EXTERNAL ActionCenter app named "FraudEscalationQueue" already
   deployed to the Orchestrator "Shared" folder (not inside this

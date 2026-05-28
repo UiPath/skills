@@ -18,7 +18,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build two low-code agents, "ParentAgent" and "ToolAgent". ToolAgent
+  Create two UiPath low-code agents, "ParentAgent" and "ToolAgent". ToolAgent
   echoes back the string it receives. ParentAgent should use ToolAgent
   as a tool. The solution should be named "OrchestratorSol".
 

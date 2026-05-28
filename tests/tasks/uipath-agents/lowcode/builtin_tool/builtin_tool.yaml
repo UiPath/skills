@@ -18,7 +18,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a low-code agent "DocAnalystAgent" that helps users understand
+  Create a UiPath low-code agent "DocAnalystAgent" that helps users understand
   uploaded documents. Enable the built-in "Analyze Files" tool so the
   agent can analyze PDF and image attachments. The solution should be
   named "DocsSol".

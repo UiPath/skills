@@ -19,7 +19,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a flow project "OutreachFlow" with an inline low-code agent
+  Create a UiPath Flow project "OutreachFlow" with an inline low-code agent
   that accepts a required `subject` (string) and returns a string
   `content`. It must compose the content by delegating to an agent
   named "EmailDrafter" that is already deployed in the tenant — not by

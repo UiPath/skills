@@ -19,7 +19,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a flow project "PayrollFlow" that uses an inline low-code
+  Create a UiPath Flow project "PayrollFlow" that uses an inline low-code
   agent to call an RPA process called "CalculatePay" living inside
   this same solution as a separate project. Wire the RPA process as a
   tool on the inline agent. The solution should be named

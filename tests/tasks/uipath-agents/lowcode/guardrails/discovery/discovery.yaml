@@ -18,7 +18,7 @@ agent:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a low-code agent "DiscoverAgent". Discover what guardrail
+  Create a UiPath low-code agent "DiscoverAgent". Discover what guardrail
   validators are available using the CLI and add any built-in validator
   guardrail to the agent based on the discovery results. Use a block
   action. The solution should be named "DiscoverSol".

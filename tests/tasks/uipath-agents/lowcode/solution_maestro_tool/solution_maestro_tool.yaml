@@ -16,7 +16,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a low-code agent "OnboardingAgent" that calls an Agentic
+  Create a UiPath low-code agent "OnboardingAgent" that calls an Agentic
   process called "EmployeeOnboarding" living INSIDE this same solution
   as a separate project. Expose it to the agent as a tool resource.
   The solution should be named "OnboardingSol".

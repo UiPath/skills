@@ -18,7 +18,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a flow project "ShippingFlow" that uses an inline low-code
+  Create a UiPath Flow project "ShippingFlow" that uses an inline low-code
   agent to call an API workflow called "CalculateShippingRate" living
   inside this same solution as a separate project. Wire the API
   workflow as a tool on the inline agent. The solution should be named

@@ -16,7 +16,7 @@ agent:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a low-code agent "ReviewAgent" that handles compliance review
+  Create a UiPath low-code agent "ReviewAgent" that handles compliance review
   requests. Add a built-in PII detection guardrail that escalates
   violations to a human reviewer instead of blocking. The solution
   should be named "ValidationSol".

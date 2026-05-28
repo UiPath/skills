@@ -22,7 +22,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a low-code agent "ProcurementAgent" that accepts a required
+  Create a UiPath low-code agent "ProcurementAgent" that accepts a required
   `productId` (number) and returns a boolean `status`. It must
   determine the status by delegating to an Agentic process named
   "ProcurementProcess" that is already deployed in the tenant — not by

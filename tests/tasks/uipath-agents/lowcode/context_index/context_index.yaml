@@ -17,7 +17,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a low-code agent "ProductSupportAgent" that accepts a required
+  Create a UiPath low-code agent "ProductSupportAgent" that accepts a required
   `question` (string) and returns a string `answer`. It must ground its
   answers in the existing semantic index named
   "UiPathAgentsProductKnowledge" that is already deployed in the tenant.
