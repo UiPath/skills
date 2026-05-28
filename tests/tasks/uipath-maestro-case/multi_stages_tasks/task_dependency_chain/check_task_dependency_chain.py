@@ -36,6 +36,18 @@ def _stage_task_by_label(stage: dict, label: str) -> dict:
     )
 
 
+def _stage_task_lane(stage: dict, label: str) -> int:
+    lanes = (stage.get("data") or {}).get("tasks") or []
+    for lane_idx, lane in enumerate(lanes):
+        for task in lane or []:
+            if (task or {}).get("displayName") == label or (task or {}).get("label") == label:
+                return lane_idx
+    sys.exit(
+        f"FAIL: task with displayName/label={label!r} not found in any lane of stage "
+        f"{(stage.get('data') or {}).get('label')!r}"
+    )
+
+
 def _task_entry_rule(task: dict) -> str | None:
     conds = task.get("entryConditions") or []
     for cond in conds:
@@ -116,6 +128,19 @@ def main():
             sys.exit(
                 f"FAIL: task {name!r} task-entry rule should be {want!r}; got {got!r}"
             )
+
+    # First Step and Second Step are parallel members of the same
+    # runs-sequentially group, so they MUST share one lane (shared lane =
+    # parallel siblings inside the sequential group, semantic — not the
+    # default one-task-per-lane FE layout).
+    first_step_lane = _stage_task_lane(process, "First Step")
+    second_step_lane = _stage_task_lane(process, "Second Step")
+    if first_step_lane != second_step_lane:
+        sys.exit(
+            f"FAIL: 'First Step' and 'Second Step' are parallel members of the "
+            f"runs-sequentially group and must share the same lane in Process "
+            f"data.tasks; got lane {first_step_lane} and lane {second_step_lane}"
+        )
 
     if optional_audit.get("type") != "process":
         sys.exit(
@@ -210,7 +235,9 @@ def main():
         "selected-tasks-completed→Done (marksStageComplete=false); Finalize "
         "entry selected-stage-completed; task-entry rules cover runs-sequentially/"
         "adhoc/wait-for-connector(vars.region+vars.priorityScore+metadata.tier)/"
-        "selected-tasks-completed; First Step uses timeDuration+repeat=5; "
+        "selected-tasks-completed; First Step + Second Step share lane "
+        f"{first_step_lane} (parallel members of the runs-sequentially group); "
+        "First Step uses timeDuration+repeat=5; "
         "Second Step uses timeCycle R3/PT2H; root variables 'region' (string) "
         "and 'priorityScore' (number); 'Optional Audit' is a process-typed "
         f"skeleton task (no data.name / data.folderPath); debug payload "
