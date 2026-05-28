@@ -89,7 +89,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Look up CLI commands** | [shared/cli-commands.md](../shared/cli-commands.md) |
 | **Add a Script node** | [plugins/script/impl.md](references/plugins/script/impl.md) |
 | **Wire nodes with edges** | [editing-operations.md](references/editing-operations.md) + [shared/file-format.md — Standard ports](../shared/file-format.md) |
-| **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
+| **Find the right node type** | Run `uip maestro flow registry search <keyword> --output json --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"` — see [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction) for the extraction pattern and Data-shape pin |
 | **Work with connector nodes** | [plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform](/uipath:uipath-platform) for Integration Service |
 | **Manage variables and expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) + [Edit/Write: Variable Operations](references/editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) |

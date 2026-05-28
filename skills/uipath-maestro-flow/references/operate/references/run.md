@@ -4,7 +4,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 
 ## Pre-flight
 
-1. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#4-login-state).
+1. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#5-login-state).
 2. **For debug runs: solution resources refreshed.** Always run before `flow debug` so connection and process resource declarations are in sync with project bindings:
 
    ```bash

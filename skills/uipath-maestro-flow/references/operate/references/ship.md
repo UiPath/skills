@@ -9,7 +9,7 @@ Publish journey for a Flow project. Two paths: **Studio Web upload** (default) a
 Before either publish path, ensure:
 
 1. **Authoring is complete.** `uip maestro flow validate` passes and `uip maestro flow format` was run. If not, send the user back to [author/CAPABILITY.md](../../author/CAPABILITY.md).
-2. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#4-login-state).
+2. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#5-login-state).
 3. **Solution resources are refreshed.** Always run this before `solution upload` or `solution publish` so that connection and process resource declarations are in sync with the project bindings:
 
    ```bash
