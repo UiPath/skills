@@ -406,7 +406,7 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 { "rule": "case-entered", "id": "<id>" }
 { "rule": "selected-stage-completed", "id": "<id>", "selectedStageId": "<stageId>" }
 { "rule": "selected-tasks-completed", "id": "<id>", "selectedTasksIds": ["<taskId1>", "<taskId2>"] }
-{ "rule": "adhoc", "id": "<id>", "conditionExpression": "in.Score > 700" }
+{ "rule": "adhoc", "id": "<id>", "conditionExpression": "=js:vars.score > 700" }
 ```
 
 ### Connector-bound `wait-for-connector` rule

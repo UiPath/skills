@@ -66,7 +66,7 @@ The Output Binding Shapes above are operator-driven, not task-specific. The SAME
 
 **Skip guard.** Rules with no `rule.uipath` (connector configuration unresolved — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) — log `SKIPPED` and move on, same pattern as placeholder tasks (`data:{}`). Nothing to bind against until the connector resolves.
 
-**Runtime order.** The ReceiveTask captures the response into the bound case variables BEFORE the gateway evaluates `conditionExpression` — so extract-then-gate (`response.X -> caseVar`, then `=js:vars.caseVar…`) works.
+**Runtime order (KNOWN ISSUE).** The case-backend currently evaluates the gateway BEFORE the rule's output extract populates `vars.caseVar` — gate-first / extract-after, opposite of the intended design contract. Extract-then-gate on a SINGLE rule does NOT work for in-rule event-payload conditioning; the gate sees the pre-extract value of the case var. **Workaround** at the case-design level: place the case-state gate on the DOWNSTREAM stage-entry / task-entry condition that follows the connector rule — by then the extract has populated the case var. Backend disposition pending; treat the in-rule gate against extracted values as undefined behavior until verified.
 
 ## Binding Procedure
 

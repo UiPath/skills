@@ -173,6 +173,8 @@ For every task, trigger, and condition in the sdd.md:
 | On task entry | `plugins/conditions/task-entry-conditions/` |
 | On case exit | `plugins/conditions/case-exit-conditions/` |
 
+> **Connector-bound condition rules.** Any of the 4 condition scopes above can carry a rule whose WHEN is `wait-for-connector` — binding an Integration Service connector event to gate the condition. These rules require the same connector-resolution pipeline as a task-class `wait-for-connector` (TypeCache + `case spec --type trigger` + reference-resolution). Plan-step planners MUST collect connector fields (`type-id`, `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`, optional `outputs`) in the condition's T-entry alongside the standard `display-name` / `rule-type` / `condition-expression` fields. Shared recipe: [`connector-trigger-common.md § Target: connector-bound condition rule`](connector-trigger-common.md#target-connector-bound-condition-rule); per-scope tasks.md format in each condition plugin's `planning.md`.
+
 ### 3.4 Unresolved resources
 
 When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:

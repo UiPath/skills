@@ -41,7 +41,7 @@ How to reason with these:
 
 - **`required-*` vs `selected-*`.** `required-tasks-completed` / `required-stages-completed` = "all items flagged required are done" (the `isRequired` flow). `selected-tasks-completed` / `selected-stage-completed` / `selected-stage-exited` = "these *specific named* items." Pairing rule (Key Rule 4): `Marks Complete: Yes` pairs only with `required-*`; `selected-*` is for `No` (routing / early exit / alternate disposition). A `Yes` + `selected-*` pair is a schema error.
 - **Secondary (exception) stage** uses **stage-entry + stage-exit rules only, never edges.** Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left.
-- **First task in a stage** must carry `current-stage-entered` (emit it explicitly). `wait-for-connector` makes a gate pause for an inbound connector callback; `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule); `runs-sequentially` chains tasks in a lane.
+- **First task in a stage** must carry `current-stage-entered` (emit it explicitly). `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule); `runs-sequentially` chains tasks in a lane.
 - **`user-selected-stage`** (stage entry) starts a stage on demand by a user rather than by flow. The CLI validator requires it to pair with a `wait-for-user` stage exit elsewhere: a `wait-for-user` exit with no `user-selected-stage` entry — or a `user-selected-stage` entry with no `wait-for-user` exit — fails `validate`.
 
 Exact cell formats live in [§ Stage content rules](#stage-content-rules) and [§ Task content rules](#task-content-rules) — this table is the conceptual map of *which rule belongs where*.
@@ -410,7 +410,7 @@ Defines per-task detail blocks. Every task opens with an **Entry Condition** blo
 |---|---|
 | `current-stage-entered` | First task in stage (REQUIRED; emit explicitly, never imply). Connector tasks auto-inject this — render it first even when explicit rows follow. |
 | `selected-tasks-completed("<Task>")` | Sibling-gated task (e.g., after upstream task in same stage). Multiple tasks comma-separated inside the parens. |
-| `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). To gate on payload content, use **extract-then-gate**: bind `response.field -> caseVar` in the rule's Outputs block, then reference `=js:vars.caseVar` in the expression. |
+| `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). **In-rule extract-then-gate (extract + same-rule `=js:vars.caseVar` gate) does NOT work at runtime** — case-backend evaluates the gate before the extract populates the case var. To condition on payload content: extract `response.field -> caseVar` on the connector rule and place the case-state gate on a DOWNSTREAM stage-entry / task-entry condition. |
 | `adhoc` | Manual fire from the case app. Optional gating expression. |
 | `runs-sequentially` | Tasks in a lane that should run top-to-bottom in declaration order. |
 
@@ -420,9 +420,9 @@ Multiple entry conditions render as multiple rows (DNF outer-OR). Connector task
 
 | Cell | Value |
 |---|---|
-| HITL Implementation | `Action App: <deploymentTitle>` (v1) OR `JSON Schema` (v2). Never paraphrase, never `—`. |
-| Action App ID | v1 only — concrete deployment id from `action-apps-index.json` |
-| Deployment Folder | v1 only — `deploymentFolder.fullyQualifiedName` |
+| HITL Implementation | `Action App: <deploymentTitle>`. The deployed app MUST exist in `action-apps-index.json` — inline JSON-Schema authoring is NOT supported by the action plugin (an unresolved app falls back to a Rule-8 placeholder). Never paraphrase, never `—`. |
+| Action App ID | Concrete deployment id from `action-apps-index.json` |
+| Deployment Folder | `deploymentFolder.fullyQualifiedName` |
 | Recipient | Typed prefix (see table below). NEVER a bare string. |
 | Priority | `Low` / `Medium` / `High` / `Critical` |
 | Task Title | One-line user-visible question/instruction (REQUIRED — Action Center displays it) |
@@ -433,12 +433,7 @@ Multiple entry conditions render as multiple rows (DNF outer-OR). Connector task
 | Output Schema | Table: `Field | Type | Binding` (arrow form `-> =vars.<id>`) |
 | Buttons | Table only when `is_decision: Yes`: `Button | Maps To | Behavior` |
 
-**HITL Implementation modes:**
-
-| Version | Pick when | Cells required |
-|---|---|---|
-| v1 | Tenant has a deployed Custom Action App | Action App ID + Deployment Folder |
-| v2 | No deployed Action App; simple structured form | Render Context table for form fields; omit App ID / Folder |
+**HITL Implementation:** the action plugin requires a deployed Action App from `action-apps-index.json` (Action App ID + Deployment Folder). When no matching deployed app exists, the task falls back to a Rule-8 placeholder — the SDD should either use a deployed app, or use a different task type (`process` / `agent` / `api-workflow`) that doesn't require HITL.
 
 **Recipient encoding** (typed prefix is the only allowed format):
 
