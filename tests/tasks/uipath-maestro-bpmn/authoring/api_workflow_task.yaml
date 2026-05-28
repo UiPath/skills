@@ -5,6 +5,7 @@ description: >
 tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:service-task", "feature:api-workflow"]
 
 run_limits:
+  expected_turns: 32
   turn_timeout: 1200
 
 initial_prompt: |

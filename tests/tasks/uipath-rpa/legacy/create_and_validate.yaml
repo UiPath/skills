@@ -14,6 +14,7 @@ description: >
 tags: [uipath-rpa, legacy, smoke, create, validate]
 
 run_limits:
+  expected_turns: 15
   max_turns: 40
 initial_prompt: |
   Create a new legacy UiPath RPA project called "HelloLegacy" with a Main.xaml

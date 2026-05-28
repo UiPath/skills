@@ -6,6 +6,9 @@ description: >
   scanning beyond main.py and constant resolution.
 tags: [uipath-agents, smoke, coded, bindings]
 
+run_limits:
+  expected_turns: 15
+
 initial_prompt: |
   I have a UiPath coded agent project with multiple Python modules.
   Set up the project, then sync the bindings.json to reflect all

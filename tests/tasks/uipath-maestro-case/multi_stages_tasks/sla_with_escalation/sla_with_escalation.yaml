@@ -24,6 +24,7 @@ tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:s
 max_iterations: 1
 
 run_limits:
+  expected_turns: 78
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500

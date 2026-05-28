@@ -14,6 +14,7 @@ description: >
 tags: [uipath-data-fabric, integration, complex-fields]
 
 run_limits:
+  expected_turns: 19
   max_turns: 60
   turn_timeout: 600
 

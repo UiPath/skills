@@ -9,6 +9,7 @@ description: >
 tags: [uipath-data-fabric, integration, entity-scope]
 
 run_limits:
+  expected_turns: 24
   turn_timeout: 600
 
 initial_prompt: |

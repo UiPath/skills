@@ -11,6 +11,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover]
 
 run_limits:
+  expected_turns: 15
   max_turns: 50
 
 initial_prompt: |

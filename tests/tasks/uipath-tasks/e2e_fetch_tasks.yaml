@@ -9,6 +9,7 @@ description: >
 tags: [uipath-tasks, e2e, discovery, fetch]
 
 run_limits:
+  expected_turns: 31
   max_turns: 30
 
 initial_prompt: |

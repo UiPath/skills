@@ -12,6 +12,7 @@ description: >
 tags: [uipath-data-fabric, e2e, expense-tracker, complex-fields]
 
 run_limits:
+  expected_turns: 35
   max_turns: 60
   turn_timeout: 600
 

@@ -9,6 +9,7 @@ description: >
 tags: [uipath-data-fabric, e2e, product-catalogue]
 
 run_limits:
+  expected_turns: 35
   max_turns: 50
   turn_timeout: 600
 

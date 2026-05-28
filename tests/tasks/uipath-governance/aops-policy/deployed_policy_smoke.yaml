@@ -12,6 +12,9 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, deployed-policy]
 
+run_limits:
+  expected_turns: 8
+
 initial_prompt: |
   Determine which AOps governance policy is currently in effect for the
   caller identity with license type `Attended`, product `StudioX`, and

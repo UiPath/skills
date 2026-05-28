@@ -10,6 +10,7 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents, feature:schema-sync]
 
 run_limits:
+  expected_turns: 48
   turn_timeout: 1200
 
 initial_prompt: |

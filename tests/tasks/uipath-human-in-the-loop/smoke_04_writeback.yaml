@@ -5,6 +5,9 @@ description: >
   WITHOUT explicitly asking for HITL. Verifies proactive recommendation.
 tags: [uipath-human-in-the-loop, smoke]
 
+run_limits:
+  expected_turns: 2
+
 initial_prompt: |
   I'm designing a UiPath Flow where an AI agent reads incomplete SAP purchase orders,
   enriches the missing vendor and cost-center fields using company data, and

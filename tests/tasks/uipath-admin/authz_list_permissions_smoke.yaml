@@ -9,6 +9,9 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, list, authz]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   List the catalog of available permission definitions for my UiPath organization.
 

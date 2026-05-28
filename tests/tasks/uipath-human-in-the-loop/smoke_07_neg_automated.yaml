@@ -5,6 +5,9 @@ description: >
   the skill does not produce false positives.
 tags: [uipath-human-in-the-loop, smoke]
 
+run_limits:
+  expected_turns: 2
+
 initial_prompt: |
   Our automated invoice pipeline handles all invoices from a single verified
   supplier (AcmeCorp) with fixed pricing and pre-approved budgets. Every

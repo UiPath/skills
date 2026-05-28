@@ -10,6 +10,7 @@ description: >
 tags: [uipath-rpa, smoke, uia, xaml]
 
 run_limits:
+  expected_turns: 36
   task_timeout: 1800
   max_turns: 80
   turn_timeout: 1200

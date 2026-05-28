@@ -10,6 +10,7 @@ description: >
 tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
 
 run_limits:
+  expected_turns: 23
   turn_timeout: 1200
 
 initial_prompt: |

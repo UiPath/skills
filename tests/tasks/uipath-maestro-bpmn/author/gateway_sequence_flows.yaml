@@ -5,6 +5,7 @@ description: >
 tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:multi-node, node:gateway]
 
 run_limits:
+  expected_turns: 21
   max_turns: 80
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

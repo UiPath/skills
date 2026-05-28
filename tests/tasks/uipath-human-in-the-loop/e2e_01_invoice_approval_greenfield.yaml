@@ -11,6 +11,7 @@ description: >
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
 
 run_limits:
+  expected_turns: 19
   max_turns: 60
   turn_timeout: 1200
 

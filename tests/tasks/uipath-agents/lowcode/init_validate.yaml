@@ -6,6 +6,7 @@ description: >
 tags: [uipath-agents, smoke, low-code]
 
 run_limits:
+  expected_turns: 12
   turn_timeout: 1200
 
 initial_prompt: |

@@ -8,6 +8,9 @@ description: >
   teach the auth-first ordering and the `--output json` flag.
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.
 

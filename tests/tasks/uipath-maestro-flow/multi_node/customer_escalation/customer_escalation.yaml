@@ -10,6 +10,7 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector]
 
 run_limits:
+  expected_turns: 73
   task_timeout: 2400
   max_turns: 120
   turn_timeout: 1200

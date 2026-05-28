@@ -17,6 +17,9 @@ post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
 
+run_limits:
+  expected_turns: 13
+
 initial_prompt: |
   Use the `uipath-platform` skill.
 

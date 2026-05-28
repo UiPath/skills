@@ -13,6 +13,7 @@ description: >
 tags: [uipath-data-fabric, integration, entities, records]
 
 run_limits:
+  expected_turns: 31
   turn_timeout: 600
 
 initial_prompt: |

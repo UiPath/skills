@@ -10,6 +10,7 @@ description: >
 tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, devcon]
 
 run_limits:
+  expected_turns: 29
   max_turns: 120
   turn_timeout: 1200
 

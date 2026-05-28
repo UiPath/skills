@@ -5,6 +5,9 @@ description: >
   (Critical Rule #6) and positional name argument.
 tags: [uipath-admin, smoke, create]
 
+run_limits:
+  expected_turns: 7
+
 initial_prompt: |
   Create a new external app named "Smoke Test App" with application
   scopes for Folders and Jobs access in my UiPath organization.

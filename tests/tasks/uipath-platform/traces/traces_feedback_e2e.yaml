@@ -10,6 +10,9 @@ tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover]
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
+run_limits:
+  expected_turns: 16
+
 initial_prompt: |
   Use the `uipath-platform` skill.
 

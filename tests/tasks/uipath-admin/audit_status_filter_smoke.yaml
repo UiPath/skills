@@ -10,6 +10,9 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, audit, status]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   Show me all FAILED audit events on the active tenant from the last
   7 days.

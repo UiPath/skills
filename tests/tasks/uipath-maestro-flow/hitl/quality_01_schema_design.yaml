@@ -6,6 +6,7 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
+  expected_turns: 29
   max_turns: 75
 initial_prompt: |
   Build a UiPath Flow named "VendorPOReview" for purchase order review:

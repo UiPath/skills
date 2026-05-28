@@ -9,6 +9,9 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, get, oms]
 
+run_limits:
+  expected_turns: 5
+
 initial_prompt: |
   Show me details about my current UiPath organization.
 

@@ -9,6 +9,7 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple]
 
 run_limits:
+  expected_turns: 31
   turn_timeout: 1200
 
 initial_prompt: |

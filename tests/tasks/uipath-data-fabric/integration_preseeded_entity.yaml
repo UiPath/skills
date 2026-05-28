@@ -10,6 +10,7 @@ description: >
 tags: [uipath-data-fabric, integration, pre-seeded, discover]
 
 run_limits:
+  expected_turns: 32
   max_turns: 50
   turn_timeout: 600
 

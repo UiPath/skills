@@ -6,6 +6,9 @@ description: >
   failure is expected in this offline environment.
 tags: [uipath-platform, smoke, licensing, tenants]
 
+run_limits:
+  expected_turns: 5
+
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

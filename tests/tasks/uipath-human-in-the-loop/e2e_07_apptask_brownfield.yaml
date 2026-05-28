@@ -16,6 +16,7 @@ skip: true
 # Unblock when a shared staging app + tenant are available for CI.
 
 run_limits:
+  expected_turns: 119
   max_turns: 50
   turn_timeout: 1800
 

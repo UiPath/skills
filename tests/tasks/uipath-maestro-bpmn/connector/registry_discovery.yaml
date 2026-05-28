@@ -7,6 +7,7 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "lifecycle:inspect", connector, "feature:connections", resource]
 
 run_limits:
+  expected_turns: 28
   max_turns: 60
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

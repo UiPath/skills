@@ -5,6 +5,9 @@ description: >
   with the user before running any CLI. Tests B1, B2, B3, B4.
 tags: [uipath-human-in-the-loop, integration, schema, approval-gate]
 
+run_limits:
+  expected_turns: 2
+
 initial_prompt: |
   I need to add a human approval step to my invoice processing flow.
   A finance manager needs to see: the invoice ID, vendor name, and total

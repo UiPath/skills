@@ -4,6 +4,9 @@ description: >
   Tests correct CLI namespace and flag usage.
 tags: [uipath-admin, smoke, list]
 
+run_limits:
+  expected_turns: 4
+
 initial_prompt: |
   List all robot accounts in my UiPath organization.
 
