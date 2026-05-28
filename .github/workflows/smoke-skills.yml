@@ -253,15 +253,22 @@ jobs:
           echo "::add-mask::$TOKEN"
           TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}"
           TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}"
+          run_uip_with_tenant() {
+            local tenant_name="$1"
+            shift
+            docker run --rm \
+              -e UIPATH_CLI_ENABLE_ENV_AUTH=true \
+              -e UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
+              -e UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
+              -e UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
+              -e UIPATH_CLI_TENANT_NAME="$tenant_name" \
+              -e UIPATH_CLI_TENANT_ID="$TENANT_ID" \
+              --entrypoint /usr/local/bin/uip \
+              skills-image:latest "$@"
+          }
           if [ -n "$TENANT_ID" ]; then
             TENANT_NAME_FOR_LIST="${TENANT_NAME:-$TENANT_ID}"
-            TENANTS_JSON=$(UIPATH_CLI_ENABLE_ENV_AUTH=true \
-              UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
-              UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
-              UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
-              UIPATH_CLI_TENANT_NAME="$TENANT_NAME_FOR_LIST" \
-              UIPATH_CLI_TENANT_ID="$TENANT_ID" \
-              uip login tenant list --output json)
+            TENANTS_JSON=$(run_uip_with_tenant "$TENANT_NAME_FOR_LIST" login tenant list --output json)
             RESOLVED_TENANT_NAME=$(TENANTS_JSON="$TENANTS_JSON" TENANT_ID="$TENANT_ID" python - <<'PY'
           import json
           import os
@@ -293,13 +300,7 @@ jobs:
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
           } >> "$GITHUB_ENV"
           mkdir ~/.uipath
-          UIPATH_CLI_ENABLE_ENV_AUTH=true \
-          UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
-          UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
-          UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
-          UIPATH_CLI_TENANT_NAME="$TENANT_NAME" \
-          UIPATH_CLI_TENANT_ID="$TENANT_ID" \
-            uip login status --output json
+          run_uip_with_tenant "$TENANT_NAME" login status --output json
 
       - name: Run smoke tests
         env:
