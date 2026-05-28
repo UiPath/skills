@@ -10,7 +10,7 @@
 uip maestro flow registry get core.subflow --output json
 ```
 
-Confirm: input port `input`, output ports `output` and `error`.
+Confirm: input port `input`, output ports `output` and `error`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
 
 ## Parent Node JSON
 
@@ -18,7 +18,7 @@ Confirm: input port `input`, output ports `output` and `error`.
 {
   "id": "subflow1",
   "type": "core.subflow",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Add Numbers", "icon": "layers" },
   "inputs": {
     "a": 2,
