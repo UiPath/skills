@@ -410,7 +410,7 @@ Defines per-task detail blocks. Every task opens with an **Entry Condition** blo
 |---|---|
 | `current-stage-entered` | First task in stage (REQUIRED; emit explicitly, never imply). Connector tasks auto-inject this — render it first even when explicit rows follow. |
 | `selected-tasks-completed("<Task>")` | Sibling-gated task (e.g., after upstream task in same stage). Multiple tasks comma-separated inside the parens. |
-| `wait-for-connector` | Async connector callback. Pair with `conditionExpression` for inbound payload shape. |
+| `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). To gate on payload content, use **extract-then-gate**: bind `response.field -> caseVar` in the rule's Outputs block, then reference `=js:vars.caseVar` in the expression. |
 | `adhoc` | Manual fire from the case app. Optional gating expression. |
 | `runs-sequentially` | Tasks in a lane that should run top-to-bottom in declaration order. |
 
@@ -748,7 +748,7 @@ Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these ch
 2. **Render-contract check.** Every required cell in §Case content rules, §Stage content rules, §Task content rules has a concrete value (no banned `—` / `<UNRESOLVED>`).
 3. **Decision-task button check.** Every `action` task with `is_decision: Yes` has ≥ 2 buttons; every button's `Maps To` LHS references a declared §1.5 variable (by `Name`) or `taskOutcome`.
 4. **Recipient encoding check.** Every `action` task recipient uses one of the five typed prefixes (`Email:` / `User:` / `UserGroup:` / `Role:` / `Expression:`) — no bare strings.
-5. **Connector-id check.** Every `wait-for-connector` / `execute-connector-activity` task has concrete `Connection ID` AND `Activity Type ID`, OR a paired `high`-severity review item.
+5. **Connector-id check.** Every `wait-for-connector` / `execute-connector-activity` **task** has concrete `Connection ID` AND `Activity Type ID`. Every `wait-for-connector` **condition rule** (in any scope — stage-entry / stage-exit / case-exit / task-entry) has a `Connector Rule Detail` block resolving to a concrete `Connector Key` AND `Event Operation` (and `Connection ID` when not a tenant-default). Missing identity → paired `high`-severity review item.
 6. **Variable-lineage check.** Every variable closes (producer before consumer; no orphans).
 7. **Override-conflict check.** No compliance trigger phrase paired with a non-`action` task type without explicit user reconciliation in the transcript.
 8. **Alt-disposition coverage.** If ≥ 1 ExceptionStage exists, Section 1.4a is non-empty OR a `high`-severity review item is open.

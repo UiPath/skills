@@ -48,6 +48,26 @@ Cross-cutting rules:
 - Target case variable on both `->` and `=` MUST exist in Case Variables table (validated at planning time).
 - [Uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) applies to `var`/`id` on collision; `source` is never suffixed.
 
+## Output Binding Shapes for Connector Condition Rules
+
+The Output Binding Shapes above are operator-driven, not task-specific. The SAME shapes (`->` reassign with `originalVar`, `=` Scenario E with `custom: true`, bare-name auto-mint) apply when the SDD declares `Outputs:` rows on a `wait-for-connector` **condition rule** (in any of the 4 scopes: stage-entry, stage-exit, case-exit, task-entry). The connector-rule dispatch mirrors the connector-task dispatch with three targeting overrides:
+
+| Aspect | Connector task | Connector condition rule |
+|---|---|---|
+| Target array | `task.data.outputs[]` | `rule.uipath.outputs[]` |
+| Step 0 schema source | `tasks describe` / `case spec --input-details` `caseShape.outputs[]` | `case spec --type trigger --input-details` `caseShape.outputs[]` (already minted on `rule.uipath.outputs[]` by the connector-rule recipe — see [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
+| `elementId` on each entry | `<stageId>-<taskId>` | `<ownerNodeId>-<ruleId>` — `<stageId>-<ruleId>` for stage-entry / stage-exit / task-entry; `root-<ruleId>` for case-exit |
+| Companion in `root.inputOutputs[]` (for `->` extract) | Required — `elementId: "root"`, `custom: true` | Required — same shape (`elementId: "root"`, `custom: true`) |
+| `=` Scenario E (custom output) | Permitted | Permitted — case variable assigned from rule response (`caseVar = response.X`), a literal, or an expression. NO root mirror per `isUpdateExistingOutput` filter. |
+
+**Uniqueness.** The [global pool](../global-vars/impl-json.md#uniqueness-rule) now includes rule outputs across all condition scopes — apply dedup against the union of tasks ∪ triggers ∪ rules ∪ root before minting.
+
+**When invoked.** Each condition plugin's `impl-json.md` invokes this dispatch as the LAST step of its `wait-for-connector` recipe — after writing `rule.uipath` (Step 5 of [connector-trigger-common.md § Procedure](../../../connector-trigger-common.md#procedure-phase-3)) and BEFORE running root bindings (Step 6). Iterate the rule's SDD `Outputs:` rows against the already-minted `rule.uipath.outputs[]` entries; rewrite each matched entry per the operator (`->` / `=` / bare). See the 4 condition `impl-json.md` files for the invocation site.
+
+**Skip guard.** Rules with no `rule.uipath` (connector configuration unresolved — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) — log `SKIPPED` and move on, same pattern as placeholder tasks (`data:{}`). Nothing to bind against until the connector resolves.
+
+**Runtime order.** The ReceiveTask captures the response into the bound case variables BEFORE the gateway evaluates `conditionExpression` — so extract-then-gate (`response.X -> caseVar`, then `=js:vars.caseVar…`) works.
+
 ## Binding Procedure
 
 For each task input in `tasks.md`:
@@ -218,6 +238,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Check | Severity | Action |
 |---|---|---|
 | Placeholder task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
+| Placeholder connector rule (no `rule.uipath`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
 | `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |

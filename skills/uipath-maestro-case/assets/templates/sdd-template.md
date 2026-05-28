@@ -62,6 +62,24 @@ build the case in the Case Designer without guessing.
 6. **Entry/exit conditions use WHEN + IF format:**
    - **WHEN** = the rule type (event that triggers evaluation, e.g., `selected-stage-completed("Intake")`)
    - **IF** = the optional `conditionExpression` (JavaScript expression evaluated against case variables, e.g., `applicationStatus == "Approved"`)
+   - **`wait-for-connector` WHEN** binds an Integration Service connector event. Name it inline in the WHEN cell (e.g. `wait-for-connector (Outlook "Email Received", Inbox)`) AND add a **Connector Rule Detail** block under the condition table. Applies to stage-entry, stage-exit, case-exit, and task-entry conditions. The IF cell is then an optional `=js:` gate on **case state** (`=js:vars.X`); the event payload is NOT directly accessible (no `event` namespace). To gate on payload, use **extract-then-gate**: bind `response.field -> caseVar` in the rule's Outputs block, then reference `=js:vars.caseVar` in the IF cell.
+
+   **Connector Rule Detail block** — reproduce under any condition table whose WHEN is `wait-for-connector`:
+   ```markdown
+   **Connector Rule Detail:**
+   - Connector: {e.g., Microsoft Outlook 365}
+   - Connection: {instance name, or "Tenant default"}
+   - Event: {e.g., Email Received}
+   - Filter: {filter in business terms, or "—"}
+   - Event Parameters: {name=value pairs, e.g., parentFolderId="Inbox"; or "—"}
+
+   **Connector Rule Outputs:** *(optional — omit when the rule is gate-only; target case variable MUST exist in the Case Variables table)*
+
+   | Field | Binding / Value |
+   |-------|------------------|
+   | {schema field name, e.g., response.subject} | -> {case variable that receives this value} |
+   | — | {case variable} = {literal, =js:expression, or =vars.X.Y} |
+   ```
 
 7. **Task types — this skill generates 9 of the CLI's 10 task types. Choose based on WHAT THE TASK DOES, not its surface label.** The 10th CLI type, `external-agent`, has no generation plugin here — model it as `api-workflow` / `execute-connector-activity` instead (see below). Values like `connector-activity` or `wait-for-event` are not CLI task types at all. Emitting anything outside these 9 breaks downstream JSON generation. Consider all 9 for every task:
    - `action` — a human must review, approve, or make a judgment call. The task PAUSES for a person.
@@ -192,6 +210,8 @@ DO NOT include in Configuration:
 |------|-----|------|---------------------|
 | {`required-stages-completed` for Yes; `selected-stage-completed("StageName")` or other rule for No} | {conditionExpression, or "—" if none} | Case exited | {Yes \| No} |
 
+> If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6) — it binds the IS connector event the rule waits for.
+
 ### Case Variables
 
 > Complete inventory of all case-level variables and arguments. Every row's `Category` column is REQUIRED — drives classification at build time. Inference from other columns is no longer supported.
@@ -291,6 +311,8 @@ The runtime engine resolves the binding when the task completes, writing the res
 |------|-----|-------------|
 | {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector`} | {conditionExpression, or "—" if none} | {Yes \| No} |
 
+> If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
+
 #### Stage Exit Conditions
 
 > **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
@@ -299,6 +321,8 @@ The runtime engine resolves the binding when the task completes, writing the res
 | WHEN | IF | Exit Type | Marks Stage Complete |
 |------|-----|-----------|---------------------|
 | {`required-tasks-completed` or `wait-for-connector` for Yes; `selected-tasks-completed("TaskName")` or `wait-for-connector` for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} |
+
+> If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
 #### Stage SLA
 
@@ -332,6 +356,8 @@ The runtime engine resolves the binding when the task completes, writing the res
 | WHEN | IF |
 |------|-----|
 | {one of: `current-stage-entered` \| `selected-tasks-completed("TaskA", "TaskB")` \| `wait-for-connector` \| `adhoc` \| `runs-sequentially`} | {conditionExpression, or "—" if none} |
+
+> If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
 ---
 
