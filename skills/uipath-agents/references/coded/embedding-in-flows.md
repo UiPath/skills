@@ -41,7 +41,9 @@ The `<resourceKey>` is the local UUID minted by `uip solution project add` — s
 
 ## Scaffolding the Sibling-Folder Coded Agent
 
-The solution and flow project already exist (created by [`uipath-maestro-flow`](../../../uipath-maestro-flow/SKILL.md)).
+The full end-to-end workflow (solution init → flow scaffold → agent scaffold → register → wire → validate) is owned by [`quickstart.md` § Scenario 2](quickstart.md#quick-start-scenario-2--in-solution-coded-agent-in-a-flow). This file covers the agent-side detail of step 3 (scaffold) and step 5 (registration) in finer detail; the canonical sequence stays in the quickstart so it remains executable in one pass.
+
+If the solution and flow project don't yet exist, run `uip solution init "<SolutionName>"` and then `uip maestro flow init "<FlowName>"` from inside the solution **before** the steps below — those calls are the start of Scenario 2.
 
 1. From the solution directory, create the agent folder and scaffold inside it:
 
