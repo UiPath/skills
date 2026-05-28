@@ -380,8 +380,6 @@ UIA references live in two locations. Always cite by location so the reader know
 
 - [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements, upgrade-consent rules
 - [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target-capture orchestration, multi-step UI flows, indication-fallback routing
-- [uia-debug-workflow.md](references/uia-debug-workflow.md) — Running and debugging UI automation workflows
-- [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
 
 ### In the UIA activity pack (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`)
 

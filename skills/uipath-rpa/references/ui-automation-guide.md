@@ -220,13 +220,40 @@ See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-tar
 
 ---
 
-## Running & Debugging
+## Running UI Automation Workflows
 
-See [uia-debug-workflow.md](uia-debug-workflow.md).
+**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection.
 
-### Runtime Selector Failures
+**Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
-See [uia-selector-recovery.md](uia-selector-recovery.md).
+1. **Record the window baseline** — list top-level windows via `uip rpa uia snapshot inspect` and note which w-refs and titles are already present. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+2. **Run the workflow:**
+   ```bash
+   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+   ```
+   If the run fails, [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) spawns the `uia-improve-selector` subagent — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
+3. **When done** (success or failure) — **cancel the debug session:**
+   ```bash
+   uip rpa execution cancel --project-dir "<PROJECT_DIR>" --output json
+   ```
+4. **List windows again** via `uip rpa uia snapshot inspect`.
+5. **Diff before vs after.** Any window present now that was NOT in the baseline was opened by the workflow. Close each such window via `uip rpa uia interact window` (see `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md` for the exact close-action flags).
+
+Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a stale window in whatever state it was left in, or -- if the selector doesn't match -- to spawn a duplicate instance.
+
+### Runtime Selector Failure Recovery
+
+"UI element not found", "UI element is invalid", element not on screen -- these surface at runtime, not during static validation. They occur when a selector was captured against one app state but the DOM changed by the time the activity executes.
+
+When a workflow fails at runtime with a selector error:
+
+1. **The app is already in the right state.** The debug session paused at the failing activity, so the app's current DOM reflects the state that activity needs to target.
+2. **Identify the failing element** -- read the error to find which descriptor/element failed.
+3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
+4. **Run the `uia-improve-selector` skill in recover mode.** Read `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`, pick the appropriate invocation form for this context, run the staging CLI command from that form, spawn a subagent with the Agent tool to run the skill in recover mode against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
+5. **Clean up and re-run** -- follow the [Running UI Automation Workflows](#running-ui-automation-workflows) procedure (stop, diff, close leaked windows, re-run).
+
+Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
 
 ---
 
