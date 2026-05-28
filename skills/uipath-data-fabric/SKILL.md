@@ -85,7 +85,7 @@ Respond that the operation is not supported. Do not try to work around it.
 
 15. **Answer with `records query`, not from memory.** Counts, sums, filters, lookups — issue a fresh `records query` (or `records list`) and use the server's response. Do not reuse cached insert responses, IDs you generated earlier, or values from previous tool results. Exception: the `Id` returned by the same `records insert` you just made.
 
-16. **`records query` filters.** Filter body shape, operators, which are valid per field type, and the response shape are all in the [filter contract](references/filter-platform-contract.md). Symbol-form operators only (`==`/`Equals`/`like` → 400); `in`/`not in` use `valueList`. Support is field-type-specific (e.g. comparison only on Number/Date/Unique ID); the API runs unsupported combos rather than rejecting them — never rely on that. On an unsupported operator/type or a missing value, don't run it — ask the user (Rule 17). **Return all fields by default** — omit `selectedFields` unless a subset is requested.
+16. **`records query` filters.** Body shape, operators, per-type support, response, and unsupported-operator handling are in the [filter contract](references/filter-platform-contract.md). Symbol-form operators only (`==`/`Equals`/`like` → 400). On an unsupported operator/type or a missing value, don't run it — ask the user (Rule 17). **Return all fields by default** — omit `selectedFields` unless a subset is requested.
 
 17. **When a request isn't supported, stop and confirm an alternative — never silently substitute.** Triggers (not exhaustive): a filter operator unsupported for the field type / not in the symbol list / missing a value (see [filter contract → Unsupported operator](references/filter-platform-contract.md#unsupported-operator-or-missing-value)); an unknown `fieldName`; a nonexistent or federated entity; a missing CLI verb (`removeFields`, choice-set authoring, … — see *Not Supported*); cross-entity joins or value forms the API can't serve.
     Sequence: (1) state precisely what isn't supported (cite the rule / schema / *Not Supported* table); (2) propose a concrete alternative and name it — e.g. for an unknown `fieldName`, list the entity's real same-type fields from `entities get` and ask which; (3) apply **only** what the user approves, never your own fallback. If nothing works, recommend the right sibling skill (`uipath-maestro-flow` / `uipath-platform` / `uipath-rpa` / `uipath-agents` / `uipath-test`) — don't fabricate or return a degraded result.
@@ -191,26 +191,7 @@ uip df records list <entity-id> --cursor <NextCursor> --output json
 
 ## Query Request Format
 
-Pass via `--body` or `--file`. Use `--limit`, `--cursor`, and `--offset` CLI flags for pagination — not body keys. See [Pagination](#pagination) below.
-
-```json
-{
-  "filterGroup": {
-    "logicalOperator": 0,
-    "queryFilters": [
-      { "fieldName": "Status", "operator": "=", "value": "active" },
-      { "fieldName": "Score", "operator": ">=", "value": "80" }
-    ]
-  },
-  "sortOptions": [{ "fieldName": "Score", "isDescending": true }],
-  "selectedFields": ["Title", "Score", "Status"]
-}
-```
-
-- `logicalOperator`: `0` = AND, `1` = OR
-- Operators: `=`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `not contains`, `startswith`, `endswith`, `in`, `not in`
-- For `in` / `not in` use `"valueList": ["a","b","c"]` — **not** a comma-separated `value` string
-- Response includes `HasNextPage` and `NextCursor` — pass `NextCursor` to `--cursor` for the next page
+Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cursor` / `--offset` CLI flags, never body keys (see [Pagination](#pagination) below). The body shape, operators, per-type support, and response shape live in [`references/filter-platform-contract.md`](references/filter-platform-contract.md); query-only extras (`selectedFields`, `sortOptions`) are documented in [`references/records-query.md`](references/records-query.md).
 
 ## Pagination
 

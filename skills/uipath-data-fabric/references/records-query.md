@@ -45,35 +45,12 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Pagination for query uses the same `--limit` / `--cursor` / `--offset` flags (not body keys).
+Pagination uses the same `--limit` / `--cursor` / `--offset` flags as `records list` — never body keys.
 
-### Query Body Schema
+The `filterGroup` shape, operators, response, and per-type support are in [`filter-platform-contract.md`](filter-platform-contract.md). Beyond the filter, the query body accepts:
 
-```json
-{
-  "selectedFields": ["FieldA", "FieldB"],
-  "filterGroup": {
-    "logicalOperator": 0,
-    "queryFilters": [
-      { "fieldName": "Score", "operator": ">=", "value": "80" }
-    ],
-    "filterGroups": []
-  },
-  "sortOptions": [
-    { "fieldName": "Score", "isDescending": true }
-  ]
-}
-```
-
-> Pagination is CLI-flag only: `--limit`, `--cursor`, `--offset`. Do not put `start`, `limit`, `offset`, or `pageSize` inside `--body` — the CLI translates these flags into the underlying offset-based API call.
-
-> **Return all fields by default.** Omit `selectedFields` — the query then returns every field. Add `selectedFields` *only* when the user explicitly asks for a specific subset. Do not project to a subset on your own (e.g. to shorten output); the default is the full record.
-
-### Operators
-
-`=` `!=` `>` `<` `>=` `<=` `contains` `not contains` `startswith` `endswith` `in` `not in`, plus is-empty / is-not-empty (`=` / `!=` with `value: null`). `in` / `not in` take `valueList` (not `value`); `logicalOperator` is `0`/`1` or case-insensitive `AND`/`OR`.
-
-Operator support varies by field type — see the authoritative [operator support matrix](filter-platform-contract.md#operator-support-by-field-type). When an operator isn't supported for a field's type, or a value is missing, do not silently run it — follow the unsupported-operator flow in **SKILL.md Rule 17**.
+- `"selectedFields": ["F1","F2"]` — projection. Default is all fields (SKILL.md Rule 16).
+- `"sortOptions": [{ "fieldName": "Score", "isDescending": true }]` — server-side sort.
 
 ### Verifying a filter applied
 
@@ -115,13 +92,7 @@ uip df records query <entity-id> --body \
   --output json
 ```
 
-**`CHOICE_SET_MULTIPLE`** is stored as a JSON-encoded integer array (e.g. `[1,3]`) and has special operator semantics:
-
-| Operator | Value form | Meaning |
-|----------|-----------|---------|
-| `contains` / `not contains` | bare NumberId string (`"1"`) | Membership — the usual case |
-| `=` / `!=` | JSON-array string (`"[1,3]"`) | Whole-set equality, order-insensitive |
-| anything else | — | Not supported |
+**`CHOICE_SET_MULTIPLE`** has special `=` vs `contains` semantics — see the [filter contract](filter-platform-contract.md#operator-support-by-field-type) Complex-field values line. Practical examples:
 
 ```bash
 # Membership — records tagged with NumberId 1
