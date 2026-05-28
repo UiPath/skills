@@ -1,21 +1,23 @@
 task_id: skill-ixp-taxonomy-edit-chain-smoke
 description: >
-  Smoke test: agent builds a small project taxonomy from scratch by
-  chaining the new taxonomy-edit verbs in the right order. The
-  chain exercises an ordering invariant the simpler smokes don't
-  catch — a `groups add` call that references a data type via the
-  `type` JSON key fails if that data type doesn't exist yet, so the
-  agent must call `data-types add` first. Also tests that the agent
-  picks the right verb for each step (data-types vs fields vs
-  groups), which is the most common confusion in a multi-step
-  taxonomy build.
+  Smoke test: agent picks the right verbs to build a small taxonomy
+  from scratch — `data-types add` to create a reusable type, then
+  `groups add` with an inline `--fields` JSON that references that
+  type by name. The most common confusion in a multi-step taxonomy
+  build is reaching for `fields add` to seed a brand-new group;
+  `fields add` only edits fields inside an existing group, so the
+  one-shot path is `groups add --fields '[…]'`. This smoke locks
+  in the verb choice (data-types vs groups vs fields) and the
+  anti-pattern (no `fields add` for a non-existent group).
 
-  Platform note: the smoke test runs without an authenticated
-  tenant, so `uip ixp` commands that hit the service will fail with
-  an auth error. That is acceptable — what matters is the command
-  shape and ordering, not the live result. A future integration
-  test should bootstrap a real project and verify the added
-  data-type and group via `projects get-taxonomy`.
+  Platform note: the harness runs without an authenticated tenant,
+  so `uip ixp` commands fail with auth errors before reaching the
+  service. What matters here is the command shape on the agent's
+  side — `command_executed` checks regex-match the bash invocations
+  the agent issued, not their wire effect. A future integration
+  test should bootstrap a real project and verify via
+  `projects get-taxonomy` that the data-type and group actually
+  landed.
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
 agent:
