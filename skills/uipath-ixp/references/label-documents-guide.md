@@ -114,7 +114,7 @@ uip ixp labellings confirm <project-name> <document-id> \
   --output json
 ```
 
-**Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 12. If IXP predicted a wrong value, omit the field entirely (don't list it). `labellings mark-missing` still exists as a niche fallback for fields that IXP didn't predict at all (rare); prefer the unified `confirm --fields` path above.
+**Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 12. If IXP predicted a wrong value, omit the field entirely (don't list it). Reach for `labellings mark-missing` only when the field doesn't appear in IXP's predictions for the document at all (rare — most missing fields are predicted empty, not omitted).
 
 ### 2e. Move to the next document
 
