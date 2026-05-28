@@ -82,7 +82,14 @@ uip maestro flow registry search slack --output json \
 - Format conversion (JSON → CSV, JSON → env-var assignments).
 - Conditional output that depends on a value computed from multiple fields.
 
-Before reaching for an external parser, verify the JSON shape — either by running the command once without filtering and inspecting the raw output, or with `--output-filter "keys(@)"` to list top-level keys at `Data`. Most agent-side retry loops on `uip --output json` parsing come from guessing the shape wrong; verify, then parse.
+Before reaching for an external parser, verify the JSON shape. The CLI roots `--output-filter` expressions at `Data`, so:
+
+- **Check whether `Data` is array or object first** — `--output-filter "type(@)"` returns `"array"` or `"object"`. `keys(@)` throws on arrays (`Filter 'keys(@)' failed to evaluate: Invalid type: keys() expected argument 1 to be type (object) but received type array instead`), so use `type(@)` as the first probe.
+- **If `type(@)` returned `"object"`:** `--output-filter "keys(@)"` lists the top-level field names at `Data`.
+- **If `type(@)` returned `"array"`:** `--output-filter "[0]"` shows the first row, or `--output-filter "[0] | keys(@)"` lists the keys of one row.
+- **Watch for silent `[]`** — when the JMESPath path doesn't match anything, the CLI returns `Data: []` with `Result: "Success"`. That's the exact silent-failure mode the docs are designed to surface. If you got `Data: []` and were expecting a value, double-check field-name casing (manifest fields are PascalCase: `Node.SupportsErrorHandling`, not `node.supportsErrorHandling`).
+
+Most agent-side retry loops on `uip --output json` parsing come from guessing the shape wrong; verify, then parse.
 
 ### Cross-references
 

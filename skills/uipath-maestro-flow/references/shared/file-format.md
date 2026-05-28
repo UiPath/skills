@@ -314,7 +314,7 @@ Without a wired error edge, any of these fails the whole flow with `finalStatus:
 
 ```bash
 # Confirm the node supports error handling
-uip maestro flow registry get <nodeType> --output json --output-filter "Node.supportsErrorHandling"
+uip maestro flow registry get <nodeType> --output json --output-filter "Node.SupportsErrorHandling"
 
 # Add an outgoing edge with sourcePort: "error"
 uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
