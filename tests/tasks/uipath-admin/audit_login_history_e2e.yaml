@@ -36,9 +36,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent passed --user-id (or --search to resolve the user) on the org events call"
+    description: "Agent attempted user resolution (via `uip admin users list --search <email>` for actorId lookup, or passed --user-id/--search on the org events call directly)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+events\b(?=.*(?:--user-id\s+\S+|--search\s+\S+))'
+    command_pattern: '(?:uip\s+admin\s+audit\s+org\s+events\b(?=.*(?:--user-id\s+\S+|--search\s+\S+)))|(?:uip\s+admin\s+users\s+list\b.*--search\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
