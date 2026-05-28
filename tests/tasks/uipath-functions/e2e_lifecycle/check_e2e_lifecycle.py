@@ -35,8 +35,22 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.project_root import find_project_root  # noqa: E402
+
+def find_project_root(default_subdir: str) -> Path:
+    """Resolve the on-disk project root for a Coded Function test.
+
+    Functions are scaffolded with `uip functions new <NAME>`, which produces
+    a `<NAME>/` subdir. Some agents `cd` in and work flat; others stay at the
+    sandbox root. This helper handles both by looking for `pyproject.toml`.
+    """
+    cwd = Path(os.getcwd())
+    if (cwd / "pyproject.toml").is_file():
+        return cwd
+    nested = cwd / default_subdir
+    if (nested / "pyproject.toml").is_file():
+        return nested
+    return nested
+
 
 ROOT = find_project_root("invoice-validator")
 

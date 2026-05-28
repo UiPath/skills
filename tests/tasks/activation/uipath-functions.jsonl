@@ -1,0 +1,25 @@
+{"id": "uipath-functions-001", "prompt": "Create a new UiPath Python Coded Function project", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-002", "prompt": "Scaffold a Python function with uip functions new -l py", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-003", "prompt": "Write a Python function that uploads invoices to an Orchestrator storage bucket", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-004", "prompt": "I need a deterministic UiPath function that validates ERP records and returns is_valid plus a list of validation errors", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-005", "prompt": "How do I declare [tool.uipath] type = \"function\" in pyproject.toml?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-006", "prompt": "uip functions init keeps saying \"No entrypoints found\" — what's missing in my project?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-007", "prompt": "Pack and publish my Python function to my Personal Workspace feed", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-008", "prompt": "How do I write Input and Output schemas for a UiPath function? Should I use Pydantic or @dataclass?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-009", "prompt": "Add @traced to my function entrypoint so I see spans in LLM Ops Traces", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-010", "prompt": "Show me the lazy SDK singleton pattern for instantiating UiPath() inside a Coded Function", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-011", "prompt": "Why does my Python function fail at runtime with \"UiPath() must not be instantiated at module level\"?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-012", "prompt": "Build a UiPath function that downloads a PDF from a bucket, parses fields with IXP, and returns vendor + total", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-013", "prompt": "How do I expose my function as a Maestro Service Task so a BPMN process can call it?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-014", "prompt": "Generate entry-points.json and bindings.json for my Python function project", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-015", "prompt": "Run my function locally with uip functions run and pass a JSON payload via stdin", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-016", "prompt": "Wire up an Integration Service NetSuite connection inside a Python Coded Function and call executeSuiteQL", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-017", "prompt": "What's the difference between a UiPath Python function and a coded agent? When should I use each?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-018", "prompt": "My uipath.json has a functions key but uip functions pack says the entrypoint isn't found — help me debug", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-019", "prompt": "Convert this throws-on-error Python function to the errors-returned-not-raised pattern used by UiPath Functions", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-020", "prompt": "Add a bucket binding to bindings.json so the function reads its target bucket from Orchestrator at runtime", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-021", "prompt": "I need a UiPath job that runs a deterministic data-transform on a CSV — no LLM, just rules. What's the right artifact?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-022", "prompt": "Trigger my published function via Orchestrator API POST /Jobs/StartJobs and pass input arguments as JSON", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-023", "prompt": "Why does uip functions new without -l py give me a TypeScript project?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-024", "prompt": "Use sdk.assets.retrieve_credential from inside a Python function to fetch an ERP API token", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-025", "prompt": "Set up a Python Coded Function that runs as the Service Task implementation in a Maestro Flow", "expected_skill": "uipath-functions"}

@@ -1,0 +1,30 @@
+task_id: skill-functions-python-smoke-trigger
+description: >
+  Smoke test: agent should trigger the uipath-functions skill when the user
+  asks for a deterministic Python data-validation function with typed I/O
+  that runs as a UiPath job. Verifies the skill fires on the Python Functions
+  signal (no LLM reasoning required) and is NOT routed to uipath-agents.
+tags: [uipath-functions, smoke, mode:build, lifecycle:discover]
+
+initial_prompt: |
+  I need a Python function that validates incoming invoice data: takes an
+  invoice number, vendor name, total amount, and currency, then returns
+  whether it's valid plus a list of validation errors. It should be
+  invocable as a UiPath job from a Maestro Service Task. Tell me which
+  skill to use and the file structure I'll need. Do NOT scaffold any
+  files yet — just identify the right skill and outline the project shape.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-functions skill"
+    skill_name: "uipath-functions"
+    expected: "yes"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Agent did NOT mis-route to uipath-agents (this is not an agent)"
+    skill_name: "uipath-agents"
+    expected: "no"
+    weight: 2.0
+    pass_threshold: 1.0
