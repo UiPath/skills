@@ -12,9 +12,9 @@
 
 | Situation | Use Managed HTTP? |
 | --- | --- |
-| Connector exists but lacks the specific curated activity | Yes — connector mode with target connector's connection |
-| No connector exists, but service has a REST API | Yes — manual mode with full URL |
-| Quick prototyping against any REST API | Yes — manual mode |
+| Connector exists but lacks the specific curated activity | Yes — connector mode ([impl-connector.md](impl-connector.md)) |
+| No connector exists, but service has a REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
+| Quick prototyping against any REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
 | Connector exists and covers the use case | No — use [Connector Activity](../connector/planning.md) |
 | Target system has no API (desktop app) | No — use [RPA Workflow](../rpa/planning.md) |
 
@@ -58,7 +58,7 @@ Wire `branch-hasItems` / `branch-empty` as source ports on outgoing edges. `defa
 
 ## Dynamic values
 
-IS activity input fields (`url`, `headers`, `body`, `query` under `bodyParameters`) do **not** resolve `{$vars.x}` brace-templates — the template runner only applies to native flow fields. Use `=js:` expressions for any dynamic value; template literals with `${...}` interpolation or string concatenation both work. See [Step 3b — Dynamic values](impl.md#step-3b--dynamic-values-in-url--headers--body--query) for the full rationale and examples.
+IS activity input fields (`url`, `headers`, `body`, `query` under `bodyParameters`) do **not** resolve `{$vars.x}` brace-templates — the template runner only applies to native flow fields. Use `=js:` expressions for any dynamic value; template literals with `${...}` interpolation or string concatenation both work. See [Dynamic values](impl.md#dynamic-values-in-url--headers--body--query) for the full rationale and examples.
 
 ## Key Inputs (`--detail` for `node configure`)
 
@@ -92,7 +92,7 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 ## Prerequisites
 
 - `uip login` required (for both modes — node type comes from registry)
-- For connector mode: a healthy IS connection must exist for the **target connector**. **If none exists, STOP** — surface in **Open Questions**. See [impl.md Step 2](impl.md#step-2--identify-target-connector-and-connection-connector-mode-only) for connection recovery.
+- For connector mode: a healthy IS connection must exist for the **target connector**. **If none exists, STOP** — surface in **Open Questions**. See [impl-connector.md Step 2 — HTTP-specific recovery](impl-connector.md#step-2--identify-target-connection) for the `AskUserQuestion` fallback (create-now / switch-to-manual / skip).
 - `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
 
 ## Planning Annotation

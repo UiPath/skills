@@ -1,10 +1,25 @@
 # HTTP Request Node — Implementation
 
+This page is the entry point for implementing a managed HTTP node. Pick your auth mode below, then follow the matching walkthrough end-to-end. The "Shared Reference" section is an appendix — the mode walkthroughs already inline what you need to act, and link here only for full rationale and extended examples.
+
 ## Node Type
 
 `core.action.http.v2` (Managed HTTP Request)
 
 > **Always use `core.action.http.v2`** for all HTTP requests. The older `core.action.http` (v1) is deprecated.
+
+## Pick a Mode
+
+| Mode | Use when | Walkthrough |
+| --- | --- | --- |
+| **Connector** | Target service has an IS connector — auth via an existing IS connection (OAuth/API key) | [impl-connector.md](impl-connector.md) |
+| **Manual** | No connector exists, public/no-auth API, or quick prototyping | [impl-manual.md](impl-manual.md) |
+
+The `--detail` payload differs in two places between modes: `authentication` (`"connector"` vs `"manual"`), and the connector-binding fields `targetConnector` / `connectionId` / `folderKey` (connector mode only; `url` is then relative to the connector base, vs. an absolute URL in manual mode). Everything else (node add, dynamic values, branches, edges, debug) is shared.
+
+## Critical: Use `node configure`
+
+> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime. `core.action.http.v2` is CLI-owned per [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) (same envelope rules as connector activities).
 
 ## Registry validation
 
@@ -14,79 +29,55 @@ uip maestro flow registry get core.action.http.v2 --output json
 
 Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the implicit `error` port pattern shared by every action node (see [Action Node Structure](../../../../shared/action-nodes.md)). Model `serviceType` is `Intsvc.UnifiedHttpRequest`.
 
-## Critical: Use `node configure`
+---
 
-> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime. `core.action.http.v2` is CLI-owned per [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) (same envelope rules as connector activities).
+## Shared Reference (appendix)
 
-## Configuration Workflow
+The mode walkthroughs link into the sections below for full rationale and extended examples. You do not need to read this section in order — jump directly from the walkthrough link that brought you here.
 
-### Step 1 — Add the node
+### Add the node
 
 ```bash
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
   --label "<HTTP node label>" --output json
 ```
 
-The CLI copies the manifest into `definitions[]`, adds the node instance to `nodes[]`, registers the `variables.nodes` entries, and inserts a placeholder in `layout.nodes` — all in code, byte-for-byte from the registry (including `typeVersion`, which the CLI pulls from the manifest's `version` field; do not hardcode it). Save the returned node ID for Step 3. Leave `inputs` empty at this stage — Step 3 populates `inputs.detail` via `uip maestro flow node configure`.
+The CLI copies the manifest into `definitions[]`, adds the node instance to `nodes[]`, registers the `variables.nodes` entries, and inserts a placeholder in `layout.nodes` — all in code, byte-for-byte from the registry (including `typeVersion`, which the CLI pulls from the manifest's `version` field; do not hardcode it). Save the returned node ID — both walkthroughs reuse it.
 
-> **Do not hand-author the `core.action.http.v2` definition.** Use `uip maestro flow node add` — it is the only supported path for this node type.
+The CLI initializes `inputs` from the manifest's `inputDefaults`:
 
-### Step 2 — Identify target connector and connection (connector mode only)
-
-Skip this step for manual mode.
-
-Discovery call is **always**:
-
-```bash
-uip is connections list "<target-connector-key>" --all-folders --output json
+```json
+"inputs": {
+  "branches": [],
+  "timeout": "PT15M",
+  "retryCount": 0,
+  "swaggerDefinition": null,
+  "detail": {}
+}
 ```
 
-`--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<target-connector-key>"` is forbidden for discovery.
-
-> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules, empty-result recovery, ping verification.
-
-Record the chosen connection's `Id` and `FolderKey` for Step 3.
-
-> **HTTP-specific recovery — no usable connection.** If platform-skill recovery yields nothing (empty after `--all-folders` + `--refresh`, user declines to create one), the HTTP node has unique fallback options. **STOP** and use `AskUserQuestion`: **Create a new connection now** (`uip is connections create "<target-connector-key>"` starts the OAuth flow — user completes browser auth, then re-run list) / **Switch this node to manual mode** / **Skip this node** / **Something else**. Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node without explicit user selection. See the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md).
-
-### Step 3 — Configure the node
-
-> **Find missing values first.** Before composing `url` / `query` / `body`, resolve any values the agent doesn't have (IDs from names, required body fields, response shape, …). See [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md).
-
-**Connector mode** (IS connection auth):
+`inputs.detail` is populated by the configure step (next). The inputs-level siblings — `branches`, `timeout`, `retryCount` — are set at `node add` time via `--input`:
 
 ```bash
-uip maestro flow node configure <ProjectName>.flow <nodeId> \
-  --detail '{
-    "authentication": "connector",
-    "targetConnector": "<target-connector-key>",
-    "connectionId": "<target-connection-id>",
-    "folderKey": "<folder-key>",
-    "method": "GET",
-    "url": "/api/endpoint",
-    "query": {"param1": "value1"}
+uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+  --label "<HTTP node label>" \
+  --input '{
+    "timeout": "PT30M",
+    "retryCount": 3,
+    "branches": [
+      { "id": "hasItems", "name": "Has Items", "conditionExpression": "$self.output.body.items.length > 0" },
+      { "id": "empty",    "name": "Empty",    "conditionExpression": "$self.output.body.items.length == 0" }
+    ]
   }' --output json
 ```
 
-**Manual mode** (no connector auth):
+- `timeout` — ISO 8601 duration (e.g. `PT15M`, `PT1H`, `P1D`). Default `PT15M`.
+- `retryCount` — integer. Default `0`.
+- `branches` — see [Conditional branches](#conditional-branches) below.
 
-```bash
-uip maestro flow node configure <ProjectName>.flow <nodeId> \
-  --detail '{
-    "authentication": "manual",
-    "method": "GET",
-    "url": "https://api.example.com/endpoint",
-    "query": {"param1": "value1"}
-  }' --output json
-```
+> **Do not hand-author the `core.action.http.v2` definition, and do not `Edit` `inputs.*` after the fact.** Use `uip maestro flow node add` (with `--input` for branches/timeout/retryCount) and `uip maestro flow node configure` (for `inputs.detail`). These are the only supported authoring paths.
 
-**What the CLI handles automatically:**
-
-- Builds the full `inputs.detail` structure (connector, connectionId, bodyParameters, essentialConfiguration)
-- For connector mode: generates `bindings_v2.json` and creates a connection resource file under `resources/solution_folder/connection/`
-- For manual mode: uses `ImplicitConnection` (no bindings needed)
-
-### Step 3b — Dynamic values in URL / headers / body / query
+### Dynamic values in URL / headers / body / query
 
 **IS activity input fields do not resolve `{$vars.x}` brace-templates.** The flow runtime's `{...}` template interpolation only applies to native flow fields (end-node output `source`, variable updates, decision `expression`, script body, etc.) — **not** to fields under `inputs.detail.bodyParameters` on HTTP v2 or on any `uipath.connector.*` activity. Evidence: `"url": "https://.../user/{$vars.article}/..."` ships to the service as literal `{vars.article}` (the `$` is stripped, braces remain), producing a 400 Bad Request.
 
@@ -118,31 +109,34 @@ uip maestro flow node configure <Project>.flow <nodeId> \
   }' --output json
 ```
 
-### Step 4 — (Optional) Configure response branches for content-based routing
+### Conditional branches
 
-Skip this step unless you need to route downstream paths based on the *response content* (e.g., `items.length > 0` vs empty). Do **not** use `branches` just to handle call failures — for that, use the `error` port (Step 5).
+Skip this section unless you need to route downstream paths based on the *response content* (e.g., `items.length > 0` vs empty). Do **not** use `branches` just to handle call failures — for that, use the `error` port (see [Wire edges](#wire-edges)).
 
 Each branch entry creates a `branch-{id}` source port. `$self` refers to the current HTTP node's output inside the condition.
 
+Set `branches` at `node add` time via `--input` (see [Add the node](#add-the-node)) — `branches` lives at `inputs.branches`, not `inputs.detail.branches`, and `node configure --detail` does not accept it.
+
 ```bash
-uip maestro flow node configure <ProjectName>.flow <nodeId> \
-  --detail '{
+uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
+  --label "<HTTP node label>" \
+  --input '{
     "branches": [
-      { "id": "hasItems",  "name": "Has Items",  "conditionExpression": "$self.output.body.items.length > 0" },
-      { "id": "empty",     "name": "Empty",      "conditionExpression": "$self.output.body.items.length == 0" }
+      { "id": "hasItems", "name": "Has Items", "conditionExpression": "$self.output.body.items.length > 0" },
+      { "id": "empty",    "name": "Empty",    "conditionExpression": "$self.output.body.items.length == 0" }
     ]
   }' --output json
 ```
 
 > **Do not prefix `conditionExpression` with `=js:`** — HTTP branch conditions are auto-evaluated as JS (same rule as decision/switch expressions).
 
-### Step 5 — Wire edges
+### Wire edges
 
 The managed HTTP node's target port is `input`. Its source ports are:
 
 - `default` — primary success output (or fallback when configured branches don't match)
 - `error` — fires when the HTTP call fails (network error, timeout, non-2xx not caught by a branch); wire this to an error handler to keep the flow from faulting
-- `branch-{id}` — one per entry in `inputs.branches` (Step 4); use the exact `id` you set
+- `branch-{id}` — one per entry in `inputs.branches` ([Conditional branches](#conditional-branches)); use the exact `id` you set
 
 Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge add` for this structural wiring. Examples:
 
@@ -186,7 +180,7 @@ Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge a
 }
 ```
 
-## Debug
+### Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
