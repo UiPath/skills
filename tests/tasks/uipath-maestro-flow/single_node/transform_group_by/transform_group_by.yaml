@@ -8,7 +8,7 @@ description: >
   (never wrapped in `=js:` or an inline array literal). Pure-OOTB, validate-only:
   no tenant and no `flow debug` — the structural checker reads the `.flow` file
   directly.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:transform-group-by]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:transform, feature:transform]
 
 run_limits:
   turn_timeout: 1200
@@ -35,9 +35,8 @@ initial_prompt: |
       `average`) and a non-empty `alias` for the output field.
     - The node's `outputs.output.source` must be `=result.response` and
       `outputs.error.source` must be `=Error`.
-    - Set the node's `typeVersion` to the `version` field returned by
-      `uip maestro flow registry get core.action.transform.group-by --output json`.
-      Do NOT hardcode a guessed version.
+    - Set the node's `typeVersion` from the node registry for
+      `core.action.transform.group-by` — do NOT hardcode a guessed version.
 
   Validate the flow. Do NOT run flow debug — just validate.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
