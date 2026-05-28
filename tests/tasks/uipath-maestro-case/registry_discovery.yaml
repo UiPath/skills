@@ -6,9 +6,6 @@ description: >
   inspection at ~/.uip/case-resources/, not relying on registry search).
 tags: [uipath-maestro-case, registry]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 65
 

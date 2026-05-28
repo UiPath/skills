@@ -7,9 +7,6 @@ description: >
   with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
 tags: [uipath-data-fabric, integration, records, import]
 
-agent:
-  type: claude-code
-
 run_limits:
   turn_timeout: 600
 

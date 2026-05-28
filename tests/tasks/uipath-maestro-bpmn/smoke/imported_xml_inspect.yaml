@@ -7,18 +7,13 @@ description: >
   smoke "review imported BPMN" matrix.
 tags: [uipath-maestro-bpmn, smoke, "lifecycle:inspect", "mode:inspect"]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
   max_turns: 25
-  turn_timeout: 900
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

@@ -13,12 +13,6 @@ description: >
 tags: [uipath-agents, e2e, coded, mode:diagnose, feature:eval, feature:framework-langgraph]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
-
 initial_prompt: |
   Recreate the LangGraph coded agent project under `ticket-router/`
   exactly as below. The agent routes support tickets between
@@ -142,3 +136,6 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 1200

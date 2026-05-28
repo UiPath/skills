@@ -5,14 +5,8 @@ description: >
   body are fixed so the test can verify the enum value wiring.
 tags: [uipath-maestro-flow, integration, lifecycle-generate, shape-multi-node, connector, uipath-google-gmail, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 3600
-  max_turns: 200
   turn_timeout: 1200
 
 initial_prompt: |

@@ -10,11 +10,6 @@ description: >
   `uip codedagent run agent`.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-langgraph, feature:schema-sync]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   turn_timeout: 1200
 

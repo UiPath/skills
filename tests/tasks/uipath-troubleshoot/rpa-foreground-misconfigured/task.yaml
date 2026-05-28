@@ -1,4 +1,4 @@
-﻿task_id: skill-troubleshoot-rpa-foreground-misconfigured
+task_id: skill-troubleshoot-rpa-foreground-misconfigured
 description: >
   UiPath diagnostic agent must diagnose a faulted MisconfiguredForeground
   job that failed with System.InvalidOperationException ("A foreground
@@ -17,7 +17,6 @@ description: >
 tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, foreground-already-running, misconfigured-foreground, rpa]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
@@ -27,14 +26,14 @@ run_limits:
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../_shared/mock_template
-  - type: template_dir
-    path: process
-  - type: template_dir
-    path: fixtures
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
   mock_path_dirs:
-  - mocks
+    - mocks
 
 reference:
   file: RESOLUTION.md

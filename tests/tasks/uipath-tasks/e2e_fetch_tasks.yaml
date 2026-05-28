@@ -8,9 +8,6 @@ description: >
   complete, or otherwise mutate any task.
 tags: [uipath-tasks, e2e, discovery, fetch]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 30
 

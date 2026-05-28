@@ -7,14 +7,6 @@ description: >
   The agent must validate the action schema and reject the app with the
   error message instead of writing the guardrail.
 tags: [uipath-agents, e2e, low-code, guardrail]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 40
-  turn_timeout: 1200
-
 initial_prompt: |
   Create a UiPath solution "ValidationSol" containing a low-code agent
   "ReviewAgent" that handles compliance review requests.
@@ -85,3 +77,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 1200

@@ -5,19 +5,10 @@ description: >
   tests command selection, not cloud connectivity.
 tags: [uipath-agents, integration, mode:operate, coded, lifecycle:execute, feature:file-sync]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   max_turns: 30
   task_timeout: 600
   turn_timeout: 300
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/push_pull_roundtrip/_fixtures/roundtrip-agent ."

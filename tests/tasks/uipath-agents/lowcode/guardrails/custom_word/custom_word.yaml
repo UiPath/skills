@@ -6,14 +6,6 @@ description: >
   guardrail uses correct discriminator fields ($guardrailType, $ruleType,
   $selectorType, $actionType), PascalCase scope values, and a unique UUID.
 tags: [uipath-agents, e2e, low-code, guardrail]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 30
-  turn_timeout: 1200
-
 initial_prompt: |
   Create a UiPath solution "GuardSol" containing a low-code agent
   "SafeAgent" that answers user questions. Then add a custom guardrail
@@ -89,3 +81,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 30
+  turn_timeout: 1200

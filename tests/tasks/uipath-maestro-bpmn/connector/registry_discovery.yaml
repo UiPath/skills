@@ -6,14 +6,8 @@ description: >
   inventing private resource metadata. Requires the `uip` CLI on PATH.
 tags: [uipath-maestro-bpmn, integration, "lifecycle:inspect", connector, "feature:connections", resource]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
   max_turns: 60
-  turn_timeout: 900
-
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 

@@ -6,14 +6,8 @@ description: >
   extension variants.
 tags: [uipath-maestro-bpmn, integration, lifecycle:generate, contract:xml, node:service-task, node:call-activity, connector]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
   max_turns: 90
-  turn_timeout: 900
-
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 

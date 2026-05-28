@@ -5,10 +5,6 @@ description: >
   Verifies both true and false edges of the Decision node are wired.
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
   max_turns: 80
   turn_timeout: 600

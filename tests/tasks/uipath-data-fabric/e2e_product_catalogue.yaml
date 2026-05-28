@@ -8,9 +8,6 @@ description: >
   loop for a realistic e-commerce use case.
 tags: [uipath-data-fabric, e2e, product-catalogue]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 50
   turn_timeout: 600

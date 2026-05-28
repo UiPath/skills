@@ -9,14 +9,9 @@ description: >
 tags: [uipath-agents, e2e, coded, mode:build, guardrail]
 
 agent:
-  type: claude-code
-  permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
-  turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
@@ -38,3 +33,6 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 1200

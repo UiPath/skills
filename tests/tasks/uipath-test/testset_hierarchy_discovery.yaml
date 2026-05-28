@@ -10,9 +10,6 @@ description: >
   prompt — must teach the chain commands and the `--output json` flag.
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:test-case]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 30
 

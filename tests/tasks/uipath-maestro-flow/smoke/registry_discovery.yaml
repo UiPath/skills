@@ -5,9 +5,6 @@ description: >
   the correct registry workflow (pull, list/search, get).
 tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 28
 

@@ -6,18 +6,13 @@ description: >
   from existing nodes.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:subflow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   turn_timeout: 1200
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../templates/initial_flow
+    - type: template_dir
+      path: ../templates/initial_flow
 
 initial_prompt: |
   Move getWeather and formatSummary into a subflow called "fetchAndFormat". The subflow should output the temperatureF value. The rest of the main flow (decision + end nodes) stays but reads from the subflow output.

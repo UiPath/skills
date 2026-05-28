@@ -12,9 +12,6 @@ description: >
   that a `report.json` self-report says "refused".
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 30
 

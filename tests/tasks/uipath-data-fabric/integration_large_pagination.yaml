@@ -10,9 +10,6 @@ description: >
   offset-based page jumps.
 tags: [uipath-data-fabric, integration, bulk-pagination]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 60
   turn_timeout: 600

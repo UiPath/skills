@@ -5,11 +5,6 @@ description: >
   Validates the agent follows the onboarding workflow from the skill.
 tags: [uipath-admin, e2e, onboarding]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   max_turns: 40
   turn_timeout: 600

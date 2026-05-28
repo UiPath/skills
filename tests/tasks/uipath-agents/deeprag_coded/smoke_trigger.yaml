@@ -6,10 +6,6 @@ description: >
   Python-coded-agent + PDF/TXT signal pair.
 tags: [uipath-agents, smoke, coded, lifecycle:discover, context-grounding]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I have a Python coded-agent project (`pyproject.toml` with uipath +
   uipath-langchain, plus `langgraph.json`). I want it to receive a PDF

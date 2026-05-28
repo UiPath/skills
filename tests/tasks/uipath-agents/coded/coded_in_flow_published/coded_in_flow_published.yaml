@@ -15,12 +15,6 @@ tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, shape:single-n
 max_iterations: 1
 task_timeout: 1800
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1500
-
 initial_prompt: |
   Build a LangGraph UiPath coded agent named `tone-classifier` that
   reads a short message and uses an LLM to label it as `friendly`,
@@ -107,3 +101,6 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 1500

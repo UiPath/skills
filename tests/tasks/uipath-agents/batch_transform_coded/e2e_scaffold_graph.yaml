@@ -11,16 +11,6 @@ description: >
 tags: [uipath-agents, e2e, coded, lifecycle:generate, context-grounding]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   I want a coded agent named `batch-transform-agent` that performs batch BatchTransform
   on a CSV file uploaded as an attachment. at the end return destination_path of the modified file.
@@ -48,3 +38,6 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 1200

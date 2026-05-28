@@ -12,12 +12,6 @@ description: >
 tags: [uipath-agents, integration, mode:build, coded, lifecycle:activate, feature:auth]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
-
 initial_prompt: |
   Connect to UiPath with these details:
 
@@ -78,3 +72,6 @@ success_criteria:
       - "Status"
     weight: 1.5
     pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 1200

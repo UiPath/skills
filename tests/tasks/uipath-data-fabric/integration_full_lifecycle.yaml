@@ -12,9 +12,6 @@ description: >
   constraints, and record CRUD in one multi-step run.
 tags: [uipath-data-fabric, integration, entities, records]
 
-agent:
-  type: claude-code
-
 run_limits:
   turn_timeout: 600
 

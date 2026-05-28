@@ -9,15 +9,6 @@ description: >
   `uip rpa validate` compile gate.
 tags: [uipath-rpa, smoke, uia, xaml]
 
-# Standard XAML + UIA activities. First `uip rpa` call restores packages
-# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `validate`
-# on a XAML workflow with UIA activities can run another ~45s. Budget
-# accordingly.
-agent:
-  type: claude-code
-  # Bumped from 60 → 80: evalboard runs on Linux atm so some turns are
-  # wasted since the UiPath project targets Windows.
-
 run_limits:
   task_timeout: 1800
   max_turns: 80

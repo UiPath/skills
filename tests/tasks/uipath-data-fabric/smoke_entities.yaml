@@ -9,9 +9,6 @@ description: >
   all entity command syntax in a single pass.
 tags: [uipath-data-fabric, smoke, entities]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 30
 

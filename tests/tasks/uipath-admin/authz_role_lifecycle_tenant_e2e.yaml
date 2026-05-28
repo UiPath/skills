@@ -11,11 +11,6 @@ description: >
   Command-construction only — no live tenant available.
 tags: [uipath-admin, e2e, authz, role-lifecycle, scope:tenant]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   max_turns: 40
   turn_timeout: 600

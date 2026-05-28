@@ -7,11 +7,6 @@ description: >
   `uip codedagent run main` to execute deterministically (no LLM,
   no cloud auth needed).
 tags: [uipath-agents, smoke, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   # Default smoke max_turns is 20, but the full scaffold -> init -> run
   # loop (uv venv, uv sync, uip codedagent setup, uip codedagent new,
   # rewrite main.py, init, run, write marker) lands at ~25 turns even

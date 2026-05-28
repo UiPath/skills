@@ -7,13 +7,6 @@ description: >
   and writes valid JSON. Tests action-task field design (priority enum,
   recipient handling, taskTitle requirement).
 tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 90
-  turn_timeout: 900
-
 initial_prompt: |
   Create a UiPath Case Management project named "VendorPOReviewCase" with
   this shape:
@@ -275,3 +268,6 @@ success_criteria:
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
     timeout: 120
+
+run_limits:
+  max_turns: 90

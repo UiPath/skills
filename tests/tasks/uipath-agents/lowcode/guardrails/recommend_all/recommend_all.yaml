@@ -9,19 +9,12 @@ description: >
 tags: [uipath-agents, e2e, low-code, guardrail]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 40
-  turn_timeout: 1200
-
 task_timeout: 1800
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
+    - type: template_dir
+      path: ../../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
   I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
@@ -64,3 +57,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 1200

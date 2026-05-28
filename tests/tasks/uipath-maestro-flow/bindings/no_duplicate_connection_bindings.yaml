@@ -12,11 +12,6 @@ description: >
   https://uipath.atlassian.net/browse/MST-10236
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, bindings, regression]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 3600
   max_turns: 50

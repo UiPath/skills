@@ -12,12 +12,6 @@ description: >
 tags: [uipath-agents, smoke, "mode:build", coded, "lifecycle:edit", "feature:antipattern", "feature:framework-openai-agents"]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
-
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/antipattern_openai_agents_hitl/seed_antipattern_openai_agents_hitl.py"
     timeout: 30
@@ -60,3 +54,6 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 1200

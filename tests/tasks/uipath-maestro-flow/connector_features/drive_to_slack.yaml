@@ -5,11 +5,6 @@ description: >
   binary file flow between two IS connectors in a single Flow.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, e2e, uipath-google-drive, uipath-salesforce-slack, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 1500
   max_turns: 120

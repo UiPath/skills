@@ -5,13 +5,6 @@ description: >
   selection decision table correctly identifies Agents as the primary product
   instead of defaulting to RPA Process.
 tags: [uipath-solution, integration, lifecycle:generate]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
-
 initial_prompt: |
   Analyze the following Process Design Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.
@@ -119,3 +112,6 @@ success_criteria:
       - "Decisions Made"
     weight: 1.0
     pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 1200

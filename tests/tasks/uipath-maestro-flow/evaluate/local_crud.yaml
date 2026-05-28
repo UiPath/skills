@@ -8,9 +8,6 @@ description: >
   command.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 60
 

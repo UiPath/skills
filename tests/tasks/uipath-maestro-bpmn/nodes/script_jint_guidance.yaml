@@ -4,14 +4,8 @@ description: >
   runtime boundary instead of Node.js, browser, filesystem, or network APIs.
 tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:single-node, node:script]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
   max_turns: 60
-  turn_timeout: 900
-
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 

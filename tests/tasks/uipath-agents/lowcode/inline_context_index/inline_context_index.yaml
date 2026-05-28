@@ -10,11 +10,6 @@ description: >
   Indexes always live externally to the solution.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   turn_timeout: 1200
 

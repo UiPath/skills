@@ -18,9 +18,6 @@ description: >
   policy behind, delete it manually before the next run.
 tags: [uipath-governance, e2e, aops-policy, mode:build]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 40
 

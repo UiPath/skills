@@ -6,9 +6,6 @@ description: >
   lifecycle without upload, publish, deploy, debug, or run side effects.
 tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 80
   turn_timeout: 1200

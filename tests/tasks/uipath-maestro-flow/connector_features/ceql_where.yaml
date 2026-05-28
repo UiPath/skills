@@ -9,11 +9,6 @@ description: >
   for routing, and pass `uip maestro flow validate`.
 tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 1500
   max_turns: 120

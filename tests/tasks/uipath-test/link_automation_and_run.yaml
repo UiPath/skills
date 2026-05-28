@@ -12,9 +12,6 @@ description: >
   folder lookup, and the UUID vs ObjKey distinction for the run command.
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:link-automation]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 35
 

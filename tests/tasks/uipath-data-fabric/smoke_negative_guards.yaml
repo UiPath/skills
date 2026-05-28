@@ -8,9 +8,6 @@ description: >
   sections of the skill without requiring a live tenant.
 tags: [uipath-data-fabric, smoke, entities, records]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 30
 

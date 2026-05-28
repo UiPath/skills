@@ -8,9 +8,6 @@ description: >
   and the no-body pagination path end-to-end.
 tags: [uipath-data-fabric, integration, records]
 
-agent:
-  type: claude-code
-
 run_limits:
   turn_timeout: 600
 

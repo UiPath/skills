@@ -7,11 +7,6 @@ description: >
   (type=internal, referenceKey=null, properties.toolType=batch-transform).
 tags: [uipath-agents, e2e, low-code, lifecycle:generate, context-grounding]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   turn_timeout: 1200
 

@@ -13,16 +13,9 @@ description: >
   the relationship workflow.
 tags: [uipath-data-fabric, integration, complex-fields]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 60
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Build a small Customer/Order schema in UiPath Data Fabric. Customer has a

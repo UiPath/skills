@@ -13,16 +13,6 @@ tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:i
 
 task_timeout: 600
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 40
-  turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a new Maestro Flow project called "Smoke" with a manual trigger, an
   extract node, and a script node that just logs "ok". Wire the extracted
@@ -87,3 +77,7 @@ success_criteria:
       - "$vars."
     weight: 1.5
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 600

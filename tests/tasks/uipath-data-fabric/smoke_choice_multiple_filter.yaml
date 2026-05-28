@@ -8,15 +8,11 @@ description: >
   "Filtering on Choice-Set Fields".
 tags: [uipath-data-fabric, smoke, complex-fields]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 25
 
 sandbox:
   driver: docker
-  python: {}
 
 initial_prompt: |
   OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.

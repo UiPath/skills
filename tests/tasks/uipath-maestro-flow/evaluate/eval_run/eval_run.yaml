@@ -11,9 +11,6 @@ description: >
   uipath-maestro-flow skill.
 tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 90
   turn_timeout: 1200

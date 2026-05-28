@@ -8,9 +8,6 @@ description: >
   upload/download/delete workflow including overwrite semantics and byte integrity.
 tags: [uipath-data-fabric, integration, files]
 
-agent:
-  type: claude-code
-
 run_limits:
   turn_timeout: 600
 

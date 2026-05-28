@@ -8,9 +8,6 @@ description: >
   C5 (completed handle), F1 (validate after add). Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 40
   turn_timeout: 1200

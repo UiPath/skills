@@ -11,7 +11,6 @@ description: >
 tags: [uipath-troubleshoot, e2e, faithful-replay, healing-agent, licensing]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
@@ -20,8 +19,6 @@ run_limits:
   turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
       path: ../_shared/mock_template

@@ -6,14 +6,6 @@ description: >
   scopes to ["Llm"] only (not Agent or Tool), uses $parameterType "number"
   for the threshold parameter, and does not add it to PostExecution stage.
 tags: [uipath-agents, e2e, low-code, guardrail]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 30
-  turn_timeout: 1200
-
 initial_prompt: |
   Create a UiPath solution "InjGuardSol" containing a low-code agent
   "InjSafeAgent" that answers user questions. Then add a built-in
@@ -88,3 +80,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 30
+  turn_timeout: 1200

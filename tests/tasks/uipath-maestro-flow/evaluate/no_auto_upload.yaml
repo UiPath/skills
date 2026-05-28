@@ -8,9 +8,6 @@ description: >
   `uip solution upload` and MUST record its decision in `report.json`.
 tags: [uipath-maestro-flow, smoke, mode:operate, lifecycle:execute]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 50
 

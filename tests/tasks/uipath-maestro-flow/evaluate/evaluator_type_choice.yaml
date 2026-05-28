@@ -10,9 +10,6 @@ description: >
   both pick correctly and run the CLI to pass.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 50
 

@@ -4,11 +4,6 @@ description: >
   field action dependencies on the WooCommerce connector.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automaticc-woocommerce, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 1500
   max_turns: 120

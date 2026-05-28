@@ -20,15 +20,6 @@ tags: [uipath-maestro-flow, smoke, activation, ixp, negative]
 # do not need to drive a full registry-search → node-add → validate loop.
 task_timeout: 600
 
-agent:
-  type: claude-code
-  max_turns: 25
-  turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 dataset:
   rows:
 
@@ -67,3 +58,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 25
+  turn_timeout: 600

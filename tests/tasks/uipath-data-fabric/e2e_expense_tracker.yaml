@@ -11,16 +11,9 @@ description: >
   finishes the relationship workflow.
 tags: [uipath-data-fabric, e2e, expense-tracker, complex-fields]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 60
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Finance needs an expense tracker in UiPath Data Fabric where each Expense is

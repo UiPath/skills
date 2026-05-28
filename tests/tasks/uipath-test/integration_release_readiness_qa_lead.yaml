@@ -16,11 +16,6 @@ description: >
   coverage gap, go/no-go signoff). Requires a fixture project in the
   tenant — see references at the bottom of this file.
 tags: [uipath-test, integration, mode:diagnose, lifecycle:generate, feature:test-case, feature:compliance]
-
-agent:
-  type: claude-code
-  max_turns: 60
-
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.
 
@@ -160,3 +155,6 @@ success_criteria:
 #
 # The fixture is created once and persists; no pre_run/post_run cleanup.
 # ---------------------------------------------------------------------------
+
+run_limits:
+  max_turns: 60

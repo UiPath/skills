@@ -17,15 +17,6 @@ tags: [uipath-maestro-flow, smoke, activation, ixp, listing]
 # Listing is a one-shot Q&A — no need for the full activation budget.
 task_timeout: 300
 
-agent:
-  type: claude-code
-  max_turns: 20
-  turn_timeout: 300
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 dataset:
   rows:
     - id: ixp-models
@@ -64,3 +55,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 20
+  turn_timeout: 300

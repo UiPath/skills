@@ -7,7 +7,6 @@ description: >
 tags: [uipath-platform, e2e, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
 initial_prompt: |

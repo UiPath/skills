@@ -7,11 +7,6 @@ description: >
   Context Grounding index.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:rag-coded]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   turn_timeout: 1200
 

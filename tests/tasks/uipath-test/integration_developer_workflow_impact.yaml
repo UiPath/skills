@@ -8,16 +8,6 @@ description: >
   (e) identifies impacted test sets based on workflow name pattern,
   (f) generates impact analysis report.
 tags: [uipath-test, integration, mode:diagnose, lifecycle:discover, feature:test-case]
-
-# Project Reference
-# Use SHIP project (Shipment Routing) for this test.
-# Fixture: 5 test cases covering shipment workflows; 1 test set
-# with 3-4 linked test cases; execution history available.
-
-agent:
-  type: claude-code
-  max_turns: 60
-
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.
 
@@ -99,3 +89,6 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 60

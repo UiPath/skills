@@ -10,9 +10,6 @@ description: >
   queries in a single end-to-end run.
 tags: [uipath-data-fabric, e2e, employee-directory]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 50
   turn_timeout: 600

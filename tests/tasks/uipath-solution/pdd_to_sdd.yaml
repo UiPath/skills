@@ -5,11 +5,6 @@ description: >
   skill teaches correct PDD extraction, product selection, and SDD structure.
 tags: [uipath-solution, integration, lifecycle:generate]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   turn_timeout: 1200
 

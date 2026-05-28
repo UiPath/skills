@@ -5,9 +5,6 @@ description: >
   and C4 (timeout ISO 8601).
 tags: [uipath-human-in-the-loop, integration, options]
 
-agent:
-  type: claude-code
-
 run_limits:
   max_turns: 50
   task_timeout: 500

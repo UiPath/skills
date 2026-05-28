@@ -6,12 +6,7 @@ description: >
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"

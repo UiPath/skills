@@ -9,17 +9,8 @@ description: >
   `UiPathChatOpenAI` setup breaks `uip codedagent init`).
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents, feature:schema-sync]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Build an OpenAI Agents UiPath coded agent named `review-analyzer` that

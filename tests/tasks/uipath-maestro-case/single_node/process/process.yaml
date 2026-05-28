@@ -9,11 +9,6 @@ description: >
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 1500
   max_turns: 120

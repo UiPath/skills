@@ -14,16 +14,6 @@ tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:ixp,
 
 task_timeout: 900
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 80
-  turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow that monitors a SharePoint folder for new vendor PDF
   invoices, extracts the structured data (invoice number, vendor, invoice
@@ -103,3 +93,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 80
+  turn_timeout: 1200
