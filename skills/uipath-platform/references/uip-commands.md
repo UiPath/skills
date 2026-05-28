@@ -11,9 +11,10 @@
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
 - `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
-- `--all-fields` — (Orchestrator tool only) return raw DTO instead of the
-  curated PascalCase projection. Resource tool returns full DTO by default
-  on every list/get and does not expose this flag.
+- `--all-fields` — return raw API DTO instead of the curated PascalCase
+  projection. Applies to all `uip or` list/get commands (including the
+  runtime-resource entities: assets, queues, queue-items, buckets,
+  bucket-files, triggers, libraries, webhooks).
 
 ---
 

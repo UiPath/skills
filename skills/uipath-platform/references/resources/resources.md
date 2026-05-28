@@ -1,6 +1,6 @@
 # Resources (`uip or`)
 
-Manage Orchestrator resources -- assets, queues, queue items, buckets, files, triggers, libraries, and webhooks.
+Manage Orchestrator runtime resources -- assets, queues, queue items, buckets, files, triggers, libraries, and webhooks. These commands live under `uip or`, alongside folders, jobs, processes, packages, users, machines.
 
 > **Important:** These commands live under `uip or` (the former standalone `uip resource` tool was retired and folded into `uip or`). The old `storage-buckets`/`storage-bucket-files` names are now `buckets`/`bucket-files`.
 
@@ -19,6 +19,7 @@ Manage Orchestrator resources -- assets, queues, queue items, buckets, files, tr
 | `--limit <n>` | List commands | Number of items to return (default 50). |
 | `--offset <n>` | List commands | Number of items to skip for pagination. |
 | `--sort-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
+| `--all-fields` | List / get commands | Return the raw API DTO instead of the curated row/detail. |
 
 ---
 
@@ -35,6 +36,8 @@ uip or
   ├── libraries           (6 verbs)
   └── webhooks            (7 verbs)
 ```
+
+(Folders, jobs, processes, packages, machines, users, etc. live under the same `uip or` root -- see [`uipath-orchestrator`](../orchestrator/orchestrator.md).)
 
 ---
 
@@ -94,7 +97,7 @@ uip or libraries delete "UiPath.System.Activities:24.4.0" --output json
 
 ## Output Behavior
 
-Resource tool commands return **full API responses** (all fields) by default. There is no `--all-fields` flag — the convention in `resource-tool` is raw camelCase DTO. (This differs from `orchestrator-tool`, which curates by default and exposes `--all-fields` for the raw view; see [`uipath-orchestrator`](../orchestrator/orchestrator.md).)
+Runtime-resource commands curate output by default (a small set of PascalCase fields per entity). Pass `--all-fields` to get the raw API DTO instead.
 
 List responses include a `Pagination` block:
 
