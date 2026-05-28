@@ -10,7 +10,26 @@ Every action node should validate its registry contract before authoring:
 uip maestro flow registry get <node-type> --output json
 ```
 
-Inspect `Data.Node.handleConfiguration` for the input port name, output port name(s), required inputs, and (where applicable) the model `serviceType`. Plugin `impl.md` records what to confirm for that specific node type.
+`registry get` returns the manifest at `Data.Node`. Do **not** inspect `Data` directly as if it were the node manifest.
+
+```json
+{
+  "Data": {
+    "Node": {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "handleConfiguration": [
+        { "position": "left", "handles": [{ "id": "input", "type": "target" }] },
+        { "position": "right", "handles": [{ "id": "success", "type": "source" }] }
+      ],
+      "inputDefinition": {},
+      "outputDefinition": {}
+    }
+  }
+}
+```
+
+Inspect `Data.Node.handleConfiguration` for the input port name and output port name(s), `Data.Node.inputDefinition` for required inputs, `Data.Node.outputDefinition` for downstream payloads, and `Data.Node.model.serviceType` where applicable. `handleConfiguration` is an array of position groups, not a map with a top-level `handles` field. Plugin `impl.md` records what to confirm for that specific node type.
 
 ## Standard JSON skeleton
 
