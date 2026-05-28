@@ -176,6 +176,8 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 | [task-entry-conditions](references/plugins/conditions/task-entry-conditions/planning.md) | Task starts |
 | [case-exit-conditions](references/plugins/conditions/case-exit-conditions/planning.md) | Case completes/exits |
 
+> **Connector-bound rules:** a `wait-for-connector` rule in any condition scope must carry the connector configuration under `rule.uipath` (built from `case spec --type trigger`, like the connector-trigger task) — bare connector rules are invalid in Studio Web and are NOT caught by CLI `validate`. See [connector-trigger-common.md § Target: connector-bound condition rule](references/connector-trigger-common.md#target-connector-bound-condition-rule).
+
 ## Anti-patterns
 
 - **Do NOT leave stages without an inbound edge.** Orphaned and unreachable. Every stage needs ≥1 inbound edge from Trigger or another stage.

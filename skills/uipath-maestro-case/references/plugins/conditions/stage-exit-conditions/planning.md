@@ -23,7 +23,8 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 | `marks-stage-complete` | sdd.md (default depends on type) | `true` for completion exits, `false` for diverging routes |
 | `rule-type` | From catalog below | |
 | `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
-| `condition-expression` | Required for `wait-for-connector` | |
+| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
+| `condition-expression` | Optional on any rule-type | Extra payload gate (`=js:<expr>`) |
 
 ## Exit Type Catalog
 
@@ -41,13 +42,13 @@ Allowed `ruleType` values depend on `marks-stage-complete`:
 | Rule type | Extra fields |
 |-----------|--------------|
 | `required-tasks-completed` | — |
-| `wait-for-connector` | `conditionExpression` |
+| `wait-for-connector` | connector fields (fills `uipath`); `conditionExpression` optional |
 
 **When `marks-stage-complete: false` (exit-only, routing):**
 | Rule type | Extra fields |
 |-----------|--------------|
 | `selected-tasks-completed` | `selectedTasksIds` (comma-separated) |
-| `wait-for-connector` | `conditionExpression` |
+| `wait-for-connector` | connector fields (fills `uipath`); `conditionExpression` optional |
 
 ## Ordering
 
@@ -67,3 +68,5 @@ Stage exit conditions are created **after** all tasks in the stage have been add
 - order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
+
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning).

@@ -72,17 +72,9 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 `conditionExpression` uses bare `=js:<expr>` (no outer parens) — per FE convention for conditions. Operators (`>`, `<`, `===`, etc.) and function calls go inline. For combined boolean expressions, wrap each sub-clause in parens before joining: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
-### wait-for-connector — external event
+### wait-for-connector — bind a connector event
 
-```json
-"rules": [[
-  {
-    "id": "rxxxxxxxx",
-    "rule": "wait-for-connector",
-    "conditionExpression": "=js:event.type === 'order_received'"
-  }
-]]
-```
+Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Stage-scoped: `elementId = <stageId>-<ruleId>`.** `conditionExpression` optional.
 
 ### runs-sequentially — sequential group with optional parallel siblings
 
@@ -98,7 +90,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 |---|---|
 | `current-stage-entered` | — |
 | `selected-tasks-completed` | `selectedTasksIds` (array) |
-| `wait-for-connector` | — |
+| `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
 | `adhoc` | — |
 | `runs-sequentially` | — |
 
@@ -106,4 +98,4 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`) and `rules` with the expected `rule` value plus any required side field.
+Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`) and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated, inputs/outputs `elementId` is `<stageId>-<ruleId>`, and ConnectionId + FolderKey root bindings exist. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.
