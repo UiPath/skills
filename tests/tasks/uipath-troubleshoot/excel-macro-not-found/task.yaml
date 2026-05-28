@@ -9,7 +9,7 @@ description: >
   and recommend correcting the macro name or moving the macro into
   the workbook.
 
-tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, execute-macro, macro-not-found]
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, execute-macro, macro-not-found]
 
 agent:
   type: claude-code
