@@ -288,26 +288,45 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # Install from public npm; force the `@uipath` scope to public npm
-      # to bypass any internal scope mappings carrying divergent prereleases.
-      # Pin `@uipath/cli@latest` here — the `cli_version` input refers to
-      # GitHub Packages tags (e.g. `alpha`), which only the Linux Docker
-      # build can resolve (it carries GH_PAT). Public npm doesn't publish
-      # those prerelease tags. See smoke-rpa-skills.yml for the full
-      # rationale (rpa-tool pin, install-from-tempdir, ToolManager paths).
-      - name: Install uip CLI + RPA tools (public npm, rpa-tool >=0.9)
+      # Two-feed install: `@uipath/cli` comes from the internal GitHub
+      # Packages feed (so the `cli_version` input — e.g. `alpha`, pinned
+      # prereleases — resolves the same way as the Linux Docker build).
+      # `@uipath/rpa-tool` + `@uipath/rpa-legacy-tool` come from public npm
+      # because the internal feed carries a divergent `1.0.0-alpha.*`
+      # rpa-tool line under the same scope; pulling those from the public
+      # feed (with the `^0.9` pin) keeps Helm on the known-good 0.9.x
+      # line. See smoke-rpa-skills.yml for the full rationale.
+      - name: Install uip CLI + RPA tools (GH Packages cli, public-npm tools)
         shell: bash
+        env:
+          CLI_VERSION:    ${{ inputs.cli_version }}
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           set -e
           install_dir="$(mktemp -d)"
           cd "$install_dir"
           npm config get registry
+
+          # Step 1: install the CLI from GH Packages. Use a scratch
+          # NPM_CONFIG_USERCONFIG so the @uipath→npm.pkg.github.com mapping
+          # and auth token don't leak into other steps. Mirrors the
+          # tests/docker/Dockerfile config (line 14-17).
+          tmp_npmrc="$(mktemp)"
+          cat > "$tmp_npmrc" <<EOF
+          @uipath:registry=https://npm.pkg.github.com/
+          //npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}
+          EOF
+          NPM_CONFIG_USERCONFIG="$tmp_npmrc" npm install -g "@uipath/cli@${CLI_VERSION}"
+          rm -f "$tmp_npmrc"
+          uip --version
+
+          # Step 2: install the RPA tools from public npm. CLI-flag scope
+          # override beats any lingering global config, so this stays on
+          # the public registry regardless of runner image defaults.
           npm install -g \
             --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest \
             "@uipath/rpa-tool@>=0.9" \
             @uipath/rpa-legacy-tool@latest
-          uip --version
           echo "--- Installed @uipath/* packages ---"
           npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
           echo "--- uip tools list ---"
