@@ -64,6 +64,25 @@ Discovery call is **always**:
 uip is connections list "<connector-key>" --all-folders --output json
 ```
 
+`connections list` returns `Data` as a flat array. Do **not** parse `Data.Connections` or `Data.Items`; those wrapper objects are not part of the CLI JSON contract. Read each candidate from `Data[]` and use PascalCase fields:
+
+```json
+{
+  "Data": [
+    {
+      "Id": "<connection-id>",
+      "Name": "<display-name>",
+      "State": "Enabled",
+      "IsDefault": "Yes",
+      "Folder": "<folder-name>",
+      "FolderKey": "<folder-key>"
+    }
+  ]
+}
+```
+
+Use `Data[i].Id` as the `--connection-id` value and `Data[i].FolderKey` as the `folderKey` value in `node configure --detail`.
+
 > **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules (auto-select, personal workspace), BYOA filtering, empty-result recovery, ping verification.
 
 End state: a healthy connection `Id` + `FolderKey` for Step 2 (`registry get --connection-id`) and Step 6 (`node configure --detail`).
