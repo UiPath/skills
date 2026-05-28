@@ -7,7 +7,7 @@ confidence: medium
 ## Context
 
 What this looks like:
-- Activity `Lookup Range` (`UiPath.Excel.Activities.LookUpRange` / `LookUpRangeX`) faults with `Object reference not set to an instance of an object` (`System.NullReferenceException`)
+- Activity `Lookup Range` (`UiPath.Excel.Activities.ExcelLookUpRange` / `LookUpRangeX`) faults with `Object reference not set to an instance of an object` (`System.NullReferenceException`)
 - The fault is synchronous, the moment the activity tries to resolve its target sheet or range
 - No file-in-use message (that routes to [lookup-range-file-locked.md](./lookup-range-file-locked.md)) and no `Excel is not installed` message (that routes to [lookup-range-excel-not-installed.md](./lookup-range-excel-not-installed.md))
 

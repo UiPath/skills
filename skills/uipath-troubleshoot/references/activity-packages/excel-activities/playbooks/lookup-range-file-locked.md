@@ -7,7 +7,7 @@ confidence: medium
 ## Context
 
 What this looks like:
-- Activity `Lookup Range` (`UiPath.Excel.Activities.LookUpRange` / `LookUpRangeX`) — or the surrounding `Excel Application Scope` / `Use Excel File` — faults when it tries to open or read the workbook
+- Activity `Lookup Range` (`UiPath.Excel.Activities.ExcelLookUpRange` / `LookUpRangeX`) — or the surrounding `Excel Application Scope` / `Use Excel File` — faults when it tries to open or read the workbook
 - Error message contains one of: `The process cannot access the file '<path>' because it is being used by another process`, `The file '<name>' is locked for editing by '<user>'`, `IOException`, or a COM `0x800A03EC`/`RPC` error that resolves to a busy/locked workbook
 - The failure is often intermittent — the workflow succeeds when no one has the file open and fails when the file is held
 

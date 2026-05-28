@@ -7,7 +7,7 @@ confidence: medium
 ## Context
 
 What this looks like:
-- Activity `Lookup Range` (`UiPath.Excel.Activities.LookUpRange` / `LookUpRangeX`) completes **without throwing** but returns a null, empty, or unexpected cell address
+- Activity `Lookup Range` (`UiPath.Excel.Activities.ExcelLookUpRange` / `LookUpRangeX`) completes **without throwing** but returns a null, empty, or unexpected cell address
 - The value being searched for visibly exists in the spreadsheet when opened by hand, yet the lookup reports it is not present
 - Downstream activities then fault on the null/empty result (e.g. a later `NullReferenceException`, an empty-string write, or a wrong-row update) — the lookup itself logged no error
 

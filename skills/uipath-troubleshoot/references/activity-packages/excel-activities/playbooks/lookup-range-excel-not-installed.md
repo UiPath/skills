@@ -7,7 +7,7 @@ confidence: high
 ## Context
 
 What this looks like:
-- Activity `Lookup Range` (classic `UiPath.Excel.Activities.LookUpRange`) faults at initialization, before it reads any cell
+- Activity `Lookup Range` (classic `UiPath.Excel.Activities.ExcelLookUpRange`) faults at initialization, before it reads any cell
 - Error message contains one of: `Excel is not installed`, `Could not load file or assembly 'Microsoft.Office.Interop.Excel'`, `Retrieving the COM class factory for component with CLSID {00024500-0000-0000-C000-000000000046} failed`, `80040154 (REGDB_E_CLASSNOTREG)`, or `Cannot create an instance of Microsoft.Office.Interop.Excel.ApplicationClass`
 - The job faults synchronously the moment the activity (or its surrounding `Excel Application Scope`) tries to launch Excel
 
@@ -15,12 +15,12 @@ What can cause it:
 - The classic `Lookup Range` activity drives the **Microsoft Excel Interop API** — it launches a real Excel.exe via COM. If Microsoft Excel is not installed on the execution machine (a Linux robot, a stripped-down VM, a container image, or a freshly-provisioned unattended host), the COM class factory for `Excel.Application` cannot be created and the activity faults at startup. This is the only cause of the `REGDB_E_CLASSNOTREG` / `Excel is not installed` signature — Interop cannot run without a registered Excel installation.
 
 Notes:
-- Classic `Lookup Range` (`UiPath.Excel.Activities.LookUpRange`) and any other classic Excel activity inside an `Excel Application Scope` share this dependency. The modern `Lookup Range` (`LookUpRangeX`) inside a `Use Excel File` / `Excel Process Scope` *also* requires Excel installed for most operations.
+- Classic `Lookup Range` (`UiPath.Excel.Activities.ExcelLookUpRange`) and any other classic Excel activity inside an `Excel Application Scope` share this dependency. The modern `Lookup Range` (`LookUpRangeX`) inside a `Use Excel File` / `Excel Process Scope` *also* requires Excel installed for most operations.
 - The **Workbook** family of activities (`Read Range` under `Workbook`, not under a scope) reads `.xlsx` via OpenXML and does **not** require Excel — that is the migration target below.
 
 ## Investigation
 
-1. Read the faulted activity from the workflow `.xaml` and confirm it is a `Lookup Range` (classic `LookUpRange` or modern `LookUpRangeX`) inside an `Excel Application Scope` / `Use Excel File` container.
+1. Read the faulted activity from the workflow `.xaml` and confirm it is a `Lookup Range` (classic `ExcelLookUpRange` or modern `LookUpRangeX`) inside an `Excel Application Scope` / `Use Excel File` container.
 2. Confirm whether Microsoft Excel is installed on the execution machine. Ask the user (or someone with access to the robot host) to check `Control Panel > Programs and Features` for a Microsoft Office / Microsoft 365 entry, or run `Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\excel.exe` in PowerShell as the robot's Windows user.
 3. Confirm the robot type. Linux robots and many cloud/container unattended hosts have no Excel and cannot run Interop-based activities at all.
 

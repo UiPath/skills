@@ -7,7 +7,7 @@ confidence: medium
 ## Context
 
 What this looks like:
-- Activity `Lookup Range` (`UiPath.Excel.Activities.LookUpRange` / `LookUpRangeX`) faults or returns an unpredictable cell address
+- Activity `Lookup Range` (`UiPath.Excel.Activities.ExcelLookUpRange` / `LookUpRangeX`) faults or returns an unpredictable cell address
 - Symptoms vary by misconfiguration:
   - Range parse error: `The range '<x>' is not valid`, `Reference is not valid`, or a COM `0x800A03EC`
   - Wrong/garbage `Output` cell address when the search value contains wildcard characters (`*`, `?`, `~`)

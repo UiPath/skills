@@ -4,7 +4,7 @@
 
 Before using any fetched data, verify it matches the user's reported problem:
 
-- **Activity** — the faulted activity's namespace and class match the reported failure (e.g., `UiPath.Excel.Activities.Business.InvokeVBAX`, `UiPath.Excel.Activities.LookUpRange`, `UiPath.Excel.Activities.LookUpRangeX`). Classic activities (no `X` suffix, inside an `Excel Application Scope`, Interop/COM) and modern `*X` activities (inside `Use Excel File` / `Excel Process Scope`) share display names but run different code paths — treat them as different. `Invoke VBA` only exists on the modern (COM) surface; `Lookup Range` exists on both.
+- **Activity** — the faulted activity's namespace and class match the reported failure (e.g., `UiPath.Excel.Activities.Business.InvokeVBAX`, `UiPath.Excel.Activities.ExcelLookUpRange`, `UiPath.Excel.Activities.LookUpRangeX`). Classic Interop activities (inside an `Excel Application Scope`) and modern `*X` activities (inside `Use Excel File` / `Excel Process Scope`) share display names but run different code paths — treat them as different. `Invoke VBA` only exists on the modern (COM) surface; `Lookup Range` exists on both (classic `ExcelLookUpRange`, modern `LookUpRangeX`).
 - **Workbook** — the workbook path in evidence matches the file the user is asking about. `Invoke VBA` operates on the workbook open inside the surrounding `Excel Process Scope` — different scope = different workbook = unrelated data.
 - **Code file** — the `CodeFilePath` in evidence resolves to the macro source the user is asking about. A `.txt`/`.vba`/`.bas` file path that no longer exists on the robot machine, or a stale path checked into source control, is a different file than the one the user has open locally.
 - **Entry method** — the `EntryMethodName` in evidence matches the macro the user reports calling. Don't substitute a similarly-named macro.
@@ -24,12 +24,13 @@ If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy.
 
 ### Lookup Range
 
-1. **Workflow source** — read the `LookUpRange` / `LookUpRangeX` node from the `.xaml` to capture the literal `Range`, `Value` expression, `SheetName`, and `Output` variable, plus whether the activity is inside an `Excel Application Scope` / `Use Excel File` container. Distinguish an empty-string `Range = ""` from a genuinely blank `Range` field — they behave differently.
+1. **Workflow source** — read the `ExcelLookUpRange` / `LookUpRangeX` node from the `.xaml` to capture the literal `Range`, `Value` expression, `SheetName`, and `Output` variable, plus whether the activity is inside an `Excel Application Scope` / `Use Excel File` container. Distinguish an empty-string `Range = ""` from a genuinely blank `Range` field — they behave differently.
 2. **Activity output, not just errors** — for the active-filter scenario the activity throws nothing; the symptom is a null/empty/wrong `Output`. Trace the `Output` variable downstream rather than only grepping for a `Lookup Range` error line.
 3. **Workbook sheet/range inventory** — the actual tab names in the target workbook (to compare against `SheetName`) and whether any named range/table the activity references is defined (`Formulas > Name Manager`).
 4. **Filter state** — whether the target worksheet has active AutoFilters / hidden rows that exclude the search value. Requires inspecting the workbook (or asking the user) — not visible in the job log.
 5. **Excel-installed check** — for the Interop init failure, whether Microsoft Excel is installed on the execution host (`Control Panel > Programs and Features`, or the `App Paths\excel.exe` registry key) and whether the robot is a Linux/container host that cannot run Interop at all.
 6. **File-lock state** — whether the workbook is open interactively, held by an orphaned `EXCEL.EXE`, touched by a concurrent job, or locked by a sync/AV client at the failure time.
+7. **Formula-cell state of the target** — whether the cell the search value should match is the *computed* result of an Excel formula (and not a static value). Note any volatile functions, cross-sheet/external references, or add-in dependencies in the formula. Required to distinguish a formula-cell silent miss from the active-filters or type-mismatch causes.
 
 ## Testing Prerequisites
 
@@ -51,7 +52,7 @@ When testing hypotheses for `Invoke VBA` issues, gather and verify these before 
 
 When testing hypotheses for `Lookup Range` issues, gather and verify these before drawing conclusions:
 
-1. **Activity surface** — confirm classic `UiPath.Excel.Activities.LookUpRange` (Interop, inside `Excel Application Scope`) vs modern `UiPath.Excel.Activities.LookUpRangeX` (inside `Use Excel File` / `Excel Process Scope`). The Excel-not-installed failure is most acute on the classic Interop surface.
+1. **Activity surface** — confirm classic `UiPath.Excel.Activities.ExcelLookUpRange` (Interop, inside `Excel Application Scope`) vs modern `UiPath.Excel.Activities.LookUpRangeX` (inside `Use Excel File` / `Excel Process Scope`). The Excel-not-installed failure is most acute on the classic Interop surface.
 2. **Range / Value / SheetName** — the literal `Range` (blank vs `""` vs A1 reference), the search `Value` expression and its .NET type, and the `SheetName`. These drive the invalid-range, null-reference, and active-filter hypotheses.
 3. **Output disposition** — whether the activity threw or returned a null/empty/wrong cell address. A clean return with no match points at active filters or a value type/whitespace mismatch, not an exception path.
 4. **Workbook sheet names and named ranges** — the actual tabs and defined names, compared character-for-character against `SheetName` and any named-range reference.
