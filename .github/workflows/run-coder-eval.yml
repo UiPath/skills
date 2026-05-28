@@ -290,11 +290,13 @@ jobs:
 
       # Install from public npm; force the `@uipath` scope to public npm
       # to bypass any internal scope mappings carrying divergent prereleases.
-      # See smoke-rpa-skills.yml for the full rationale.
+      # Pin `@uipath/cli@latest` here — the `cli_version` input refers to
+      # GitHub Packages tags (e.g. `alpha`), which only the Linux Docker
+      # build can resolve (it carries GH_PAT). Public npm doesn't publish
+      # those prerelease tags. See smoke-rpa-skills.yml for the full
+      # rationale (rpa-tool pin, install-from-tempdir, ToolManager paths).
       - name: Install uip CLI + RPA tools (public npm, rpa-tool >=0.9)
         shell: bash
-        env:
-          CLI_VERSION: ${{ inputs.cli_version }}
         run: |
           set -e
           install_dir="$(mktemp -d)"
@@ -302,7 +304,7 @@ jobs:
           npm config get registry
           npm install -g \
             --@uipath:registry=https://registry.npmjs.org/ \
-            "@uipath/cli@${CLI_VERSION}" \
+            @uipath/cli@latest \
             "@uipath/rpa-tool@>=0.9" \
             @uipath/rpa-legacy-tool@latest
           uip --version
