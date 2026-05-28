@@ -8,7 +8,7 @@ description: >
   rule. Validate-only — no `flow debug`, no tenant: a filter over a static
   in-flow collection has no external dependency, so the test is fully
   deterministic from the flow file alone.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, node:transform-filter]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:transform, feature:transform]
 
 run_limits:
   turn_timeout: 1200
@@ -34,9 +34,8 @@ initial_prompt: |
       templates. Use the exact condition name `greater_equal`.
     - Wire the node `outputs.output.source` to `=result.response` and
       `outputs.error.source` to `=Error`.
-    - Set `typeVersion` from the registry
-      (`uip maestro flow registry get core.action.transform.filter`) — do not
-      hardcode a guessed value.
+    - Set `typeVersion` from the node registry for
+      `core.action.transform.filter` — do not hardcode a guessed value.
 
   Do NOT run flow debug — just validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
