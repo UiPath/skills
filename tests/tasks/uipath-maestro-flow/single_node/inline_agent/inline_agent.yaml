@@ -1,0 +1,48 @@
+task_id: skill-flow-inline-agent
+description: >
+  Create a UiPath Flow with an inline low-code agent (uipath.agent.autonomous)
+  scaffolded via `uip agent init --inline-in-flow`. Exercises the inline-agent
+  form's `inputs.source` hydration — distinct from the published-agent form
+  (uipath.core.agent.*) covered by coded_agent / lowcode_agent.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource, inline-agent]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "InlineAgentSum" that embeds an inline
+  low-code agent (scaffolded inside the flow project, NOT a published tenant
+  agent). The inline agent must compute the sum of 17 and 25 and return the
+  answer (42). Reply with the digit only.
+
+  Validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate InlineAgentSum/InlineAgentSum/InlineAgentSum.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Execution checks ──────────────────────────────────────────────────
+  - type: run_command
+    description: "Flow has an inline-agent node and debug returns the sum"
+    command: "python3 $TASK_DIR/check_inline_agent_flow.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120
