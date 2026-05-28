@@ -4,6 +4,12 @@ name: Run Coder Eval
 # single task ad-hoc, a folder, or (with explicit confirmation) the full
 # suite that the VM cron runs nightly. Long-term replacement for the
 # coder-eval-runner VM.
+#
+# Tasks are split by the `windows` tag (see tests/README.md#tag-taxonomy):
+# windows-tagged tasks run on `windows-latest` (Helm/Studio is Windows-only,
+# tempdir driver), everything else runs on `ubuntu-latest` (Docker driver
+# + experiments/nightly.yaml). Both jobs receive the resolved file list
+# from the `partition` job — never the raw glob.
 
 on:
   workflow_dispatch:
@@ -30,7 +36,66 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run:
+  partition:
+    runs-on: ubuntu-latest
+    name: Partition globs by `windows` tag
+    outputs:
+      linux_globs:   ${{ steps.split.outputs.linux_globs }}
+      windows_globs: ${{ steps.split.outputs.windows_globs }}
+      linux_count:   ${{ steps.split.outputs.linux_count }}
+      windows_count: ${{ steps.split.outputs.windows_count }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve globs, split by tag, enforce large-run gate
+        id: split
+        env:
+          INPUT_GLOBS: ${{ inputs.task_globs }}
+          CONFIRMED:   ${{ inputs.confirm_large_run }}
+        run: |
+          set -euo pipefail
+          if [ -z "$INPUT_GLOBS" ]; then
+            echo "::error::task_globs is required"
+            exit 1
+          fi
+          shopt -s globstar nullglob
+          cd tests
+          LINUX=()
+          WINDOWS=()
+          for pat in $INPUT_GLOBS; do
+            for f in $pat; do
+              [ -f "$f" ] || continue
+              # Tag is the literal token `windows` on the `tags:` line.
+              # Word boundary keeps `feature:windows-foo` (hypothetical)
+              # from matching.
+              if grep -qE '^tags:.*\bwindows\b' "$f"; then
+                WINDOWS+=("$f")
+              else
+                LINUX+=("$f")
+              fi
+            done
+          done
+          LCOUNT=${#LINUX[@]}
+          WCOUNT=${#WINDOWS[@]}
+          TOTAL=$((LCOUNT + WCOUNT))
+          echo "Matched $TOTAL task file(s): $LCOUNT linux + $WCOUNT windows"
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "::error::No task files matched the provided globs"
+            exit 1
+          fi
+          if [ "$TOTAL" -gt 50 ] && [ "$CONFIRMED" != "true" ]; then
+            echo "::error::Glob matches $TOTAL tasks (> 50). Tick confirm_large_run to authorize."
+            exit 1
+          fi
+          # Space-separated; downstream jobs word-split on consumption.
+          echo "linux_globs=${LINUX[*]:-}"     >> "$GITHUB_OUTPUT"
+          echo "windows_globs=${WINDOWS[*]:-}" >> "$GITHUB_OUTPUT"
+          echo "linux_count=$LCOUNT"            >> "$GITHUB_OUTPUT"
+          echo "windows_count=$WCOUNT"          >> "$GITHUB_OUTPUT"
+
+  run-linux:
+    needs: partition
+    if: needs.partition.outputs.linux_count != '0'
     # TODO: switch to `ubuntu-latest-16-cores` (16 vCPU / 64 GB RAM) once
     # the UiPath/skills repo is allowlisted for that runner group. Standard
     # ubuntu-latest is fine for ad-hoc single-task / small-folder runs at
@@ -41,7 +106,7 @@ jobs:
     # covers worst-case stalls (one slow task pinning a slot, network
     # hiccups, etc.) on ubuntu-latest at j=20.
     timeout-minutes: 330
-    name: Run coder-eval
+    name: Run coder-eval (Linux)
     steps:
       - uses: actions/checkout@v4
 
@@ -57,40 +122,6 @@ jobs:
           python-version: '3.13'
 
       - uses: astral-sh/setup-uv@v4
-
-      - name: Resolve task globs + enforce large-run gate
-        id: globs
-        env:
-          INPUT_GLOBS: ${{ inputs.task_globs }}
-          CONFIRMED:   ${{ inputs.confirm_large_run }}
-        run: |
-          set -euo pipefail
-          if [ -z "$INPUT_GLOBS" ]; then
-            echo "::error::task_globs is required"
-            exit 1
-          fi
-          # Expand globs against the skills checkout to count matches.
-          # Run from tests/ so the glob syntax matches what coder-eval consumes.
-          shopt -s globstar nullglob
-          cd tests
-          MATCHES=()
-          for pat in $INPUT_GLOBS; do
-            for f in $pat; do
-              [ -f "$f" ] && MATCHES+=("$f")
-            done
-          done
-          COUNT=${#MATCHES[@]}
-          echo "Matched $COUNT task file(s) for: $INPUT_GLOBS"
-          if [ "$COUNT" -eq 0 ]; then
-            echo "::error::No task files matched the provided globs"
-            exit 1
-          fi
-          if [ "$COUNT" -gt 50 ] && [ "$CONFIRMED" != "true" ]; then
-            echo "::error::Glob matches $COUNT tasks (> 50). Tick confirm_large_run to authorize."
-            exit 1
-          fi
-          echo "globs=$INPUT_GLOBS" >> "$GITHUB_OUTPUT"
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
 
       - name: Install coder-eval
         working-directory: .coder_eval
@@ -134,8 +165,8 @@ jobs:
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: bash .coder_eval/dashboard/scripts/ci/refresh-auth.sh
 
-      # Pass globs / count via env to avoid `${{ }}` shell injection — the
-      # value of task_globs is user-supplied and flows through this step.
+      # TASK_GLOBS here is the partition-resolved list of *file paths* (not
+      # globs). Word-splitting is intentional — do not quote.
       - name: Run coder-eval
         env:
           SKILLS_REPO_PATH:         ${{ github.workspace }}
@@ -145,13 +176,12 @@ jobs:
           BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
-          TASK_GLOBS:               ${{ steps.globs.outputs.globs }}
-          TASK_COUNT:               ${{ steps.globs.outputs.count }}
+          TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
+          TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
         working-directory: tests
         id: eval
         run: |
           echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml -j 20 ($TASK_COUNT task files)"
-          # TASK_GLOBS must word-split into multiple glob args; do not quote.
           coder-eval run $TASK_GLOBS \
             -e experiments/nightly.yaml \
             -j 20 -v \
@@ -172,7 +202,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coder-eval-${{ github.run_id }}
+          name: coder-eval-linux-${{ github.run_id }}
           # ** so the pattern matches the replicate-index segment that
           # coder_eval adds to per-task run dirs (/tmp/runs/<ts>/<variant>/<task>/<NN>/).
           path: |
@@ -205,6 +235,217 @@ jobs:
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
-          print(f"\n{ok}/{len(rows)} PASS")
+          print(f"\n{ok}/{len(rows)} PASS (linux)")
+          sys.exit(0 if rows and ok == len(rows) else 1)
+          PY
+
+  run-windows:
+    needs: partition
+    if: needs.partition.outputs.windows_count != '0'
+    runs-on: windows-latest
+    # Windows RPA tasks spin up Helm on each `uip rpa` call (30–60s each)
+    # and run j=1 (Helm state leaks between concurrent tasks). Budget
+    # mirrors smoke-rpa-skills.yml plus headroom for ad-hoc / e2e runs.
+    timeout-minutes: 240
+    name: Run coder-eval (Windows)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/coder_eval
+          ref: ${{ inputs.coder_eval_ref }}
+          token: ${{ secrets.GH_PAT }}
+          path: .coder_eval
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install coder-eval
+        working-directory: .coder_eval
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system .
+
+      - name: Configure NuGet feed for Helm packages
+        shell: bash
+        run: |
+          dotnet nuget add source \
+            "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Internal/nuget/v3/index.json" \
+            --name UiPath-Internal \
+            --username az \
+            --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
+            --store-password-in-clear-text
+
+      # Install from public npm; force the `@uipath` scope to public npm
+      # to bypass any internal scope mappings carrying divergent prereleases.
+      # See smoke-rpa-skills.yml for the full rationale.
+      - name: Install uip CLI + RPA tools (public npm, rpa-tool >=0.9)
+        shell: bash
+        env:
+          CLI_VERSION: ${{ inputs.cli_version }}
+        run: |
+          set -e
+          install_dir="$(mktemp -d)"
+          cd "$install_dir"
+          npm config get registry
+          npm install -g \
+            --@uipath:registry=https://registry.npmjs.org/ \
+            "@uipath/cli@${CLI_VERSION}" \
+            "@uipath/rpa-tool@>=0.9" \
+            @uipath/rpa-legacy-tool@latest
+          uip --version
+          echo "--- Installed @uipath/* packages ---"
+          npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
+          echo "--- uip tools list ---"
+          uip tools list --output json
+
+      # Pre-auth uip as a real licensed Studio user via Studio's e2e helper.
+      # Required for Helm's HelmLicenseSkuFeatureSourceService gate, which
+      # client_credentials principals don't clear. See smoke-rpa-skills.yml
+      # for the full rationale.
+      - name: Install Puppeteer (auth helper dep)
+        shell: bash
+        run: npm install --no-save puppeteer
+
+      - name: Authenticate uip as licensed Studio user
+        id: auth
+        shell: bash
+        env:
+          AUTHORITY: https://alpha.uipath.com
+          EMAIL:    ${{ secrets.UIPATH_EMAIL }}
+          PASSWORD: ${{ secrets.UIPATH_PASSWORD }}
+          TENANT:   ${{ secrets.UIPATH_TENANT }}
+          ORG:      ${{ secrets.UIPATH_ORG }}
+          AUTH_DEBUG_DIR: ${{ github.workspace }}/auth-debug
+        run: |
+          set -euo pipefail
+          mkdir -p "$AUTH_DEBUG_DIR"
+          for attempt in 1 2 3; do
+            echo "--- Auth attempt $attempt ---"
+            if node .github/scripts/uipath-oauth-login.mjs; then
+              break
+            fi
+            if [ "$attempt" = "3" ]; then
+              echo "::error::Auth failed after 3 attempts"
+              exit 1
+            fi
+            sleep 5
+          done
+          uip login status --output json
+
+      - name: Upload auth-debug artifacts
+        if: always() && steps.auth.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-debug-windows-${{ github.run_id }}
+          path: ${{ github.workspace }}/auth-debug
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Pre-warm Helm (download NuGet package before tests)
+        shell: bash
+        run: |
+          mkdir -p /tmp/helm-warmup && cd /tmp/helm-warmup
+          uip rpa list-instances --output json 2>&1 || true
+          taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
+
+      # Run tasks one at a time on Windows: Helm state leaks between tasks
+      # (stale Studio session, locked NuGet cache), so the loop kills Helm
+      # between tasks. j=1 by construction.
+      #
+      # Uses experiments/smoke-windows.yaml (the only existing Windows
+      # tempdir experiment); per-task `run_limits` in the YAML extend the
+      # smoke budget where needed (e.g. legacy/refactor_with_retry_scope_e2e
+      # sets max_turns: 50).
+      - name: Run coder-eval (Windows)
+        env:
+          SKILLS_REPO_PATH:         ${{ github.workspace }}
+          API_BACKEND:              bedrock
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          AWS_REGION:               ${{ secrets.AWS_REGION }}
+          BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
+          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
+          TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
+        working-directory: tests
+        id: eval
+        shell: bash
+        run: |
+          shopt -s globstar nullglob
+          overall_exit=0
+          for task in $TASK_GLOBS; do
+            echo "--- Killing leftover Helm/Studio processes ---"
+            taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
+            echo "--- Running: $task ---"
+            for attempt in 1 2 3; do
+              echo "--- $task attempt $attempt ---"
+              if coder-eval run "$task" \
+                  -e experiments/smoke-windows.yaml -j 1 -v; then
+                break
+              fi
+              # Only retry on Bedrock content-filter ERRORs. Real task
+              # failures are real signal — don't burn retries on them.
+              latest_json="$(ls -t runs/*/default/*/00/task.json 2>/dev/null | head -n 1 || true)"
+              if [ -n "$latest_json" ] && LATEST_JSON="$latest_json" python -c "import json,os,sys; d=json.load(open(os.environ['LATEST_JSON'])); det=d.get('error_details') or {}; msg=json.dumps(det)+(d.get('error_message') or ''); sys.exit(0 if d.get('final_status')=='ERROR' and 'content filter' in msg.lower() else 2)"; then
+                echo "::warning::$task: content-filter error on attempt $attempt — retrying"
+                if [ "$attempt" = "3" ]; then
+                  overall_exit=1
+                fi
+                continue
+              fi
+              overall_exit=1
+              break
+            done
+          done
+          exit $overall_exit
+
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coder-eval-windows-${{ github.run_id }}
+          path: |
+            tests/runs/*/experiment.html
+            tests/runs/*/experiment.md
+            tests/runs/*/experiment.json
+            tests/runs/*/experiment.log
+            tests/runs/*/*/variant.html
+            tests/runs/*/*/variant.md
+            tests/runs/*/*/variant.json
+            tests/runs/**/task.html
+            tests/runs/**/task.json
+            tests/runs/**/task.log
+            tests/runs/**/artifacts
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Plaintext summary + verdict
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          run_dir=$(ls -td tests/runs/*/ 2>/dev/null | head -n 1 || true)
+          if [ -z "$run_dir" ]; then
+            echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, pathlib, sys
+          rows = [json.loads(p.read_text()) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          for r in rows:
+              print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
+          ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
+          print(f"\n{ok}/{len(rows)} PASS (windows)")
           sys.exit(0 if rows and ok == len(rows) else 1)
           PY
