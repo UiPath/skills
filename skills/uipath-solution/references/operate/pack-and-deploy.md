@@ -124,10 +124,10 @@ The CLI also falls back to the persistent `searchSearchDeployments22` record if 
 
 ```bash
 uip solution deploy list --output json
-uip solution deploy list --folder-path "Shared" --take 20 --order-by "Name" --order-direction "asc" --output json
+uip solution deploy list --folder-path "Shared" --limit 20 --order-by "Name" --order-direction "asc" --output json
 ```
 
-Options: `--folder-path`, `--take` (default 10), `--order-by`, `--order-direction` (`asc`/`desc`).
+Options: `--folder-path`, `--limit` (default 10), `--order-by`, `--order-direction` (`asc`/`desc`).
 
 ---
 
@@ -309,9 +309,9 @@ Some resources reference others through `configuration` fields (an index's `stor
 
 The `--all` flag on `config set` only works with `conflictFixingAction`. It cannot be used to set arbitrary properties across all resources.
 
-### `deploy list --take` and Folder Filtering
+### `deploy list --limit` and Folder Filtering
 
-Folder filtering with `--folder-path` happens **after** fetching `--take` results. If your deployment is missing from the list, increase `--take` to ensure the server returns enough results before filtering.
+Folder filtering with `--folder-path` happens **after** fetching `--limit` results. If your deployment is missing from the list, increase `--limit` to ensure the server returns enough results before filtering.
 
 ### Units Mismatch
 
