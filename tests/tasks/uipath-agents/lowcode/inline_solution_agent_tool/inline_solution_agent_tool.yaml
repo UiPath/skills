@@ -19,10 +19,10 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "OrchestratorFlowSol" containing a flow
-  project "OrchestratorFlow" and a low-code agent "ToolAgent" that
-  echoes back any string it receives. The flow should use an inline
-  low-code agent that delegates to "ToolAgent" as a tool.
+  Build a flow project "OrchestratorFlow" and a low-code agent
+  "ToolAgent" that echoes back any string it receives. The flow should
+  use an inline low-code agent that delegates to "ToolAgent" as a tool.
+  The solution should be named "OrchestratorFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

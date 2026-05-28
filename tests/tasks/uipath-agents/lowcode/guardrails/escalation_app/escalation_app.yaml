@@ -25,11 +25,12 @@ agent:
 task_timeout: 1800
 
 initial_prompt: |
-  Create a UiPath solution "EscalateSol" with an agent "ComplianceAgent" for
-  handling user requests about financial data. Add a guardrail that detects PII
-  — specifically email addresses and phone numbers — and instead of blocking,
-  escalates violations to a human reviewer via the
-  "Tool.Guardrail.Escalation.Action.App" app, notifying reviewer@example.com.
+  Build a low-code agent "ComplianceAgent" for handling user requests
+  about financial data. Add a guardrail that detects PII — specifically
+  email addresses and phone numbers — and instead of blocking, escalates
+  violations to a human reviewer via the
+  "Tool.Guardrail.Escalation.Action.App" app, notifying
+  reviewer@example.com. The solution should be named "EscalateSol".
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.

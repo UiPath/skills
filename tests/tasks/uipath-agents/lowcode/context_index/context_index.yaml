@@ -17,11 +17,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "KnowledgeSol" containing a single low-code
-  agent "ProductSupportAgent". The agent accepts a required `question`
-  (string) and returns a string `answer`. It must ground its answers
-  in the existing semantic index named "UiPathAgentsProductKnowledge"
-  that is already deployed in the tenant.
+  Build a low-code agent "ProductSupportAgent" that accepts a required
+  `question` (string) and returns a string `answer`. It must ground its
+  answers in the existing semantic index named
+  "UiPathAgentsProductKnowledge" that is already deployed in the tenant.
+  The solution should be named "KnowledgeSol".
 
   Use the real folder, index name, and backing storage bucket from
   the tenant — do not hard-code or guess these values. Name the

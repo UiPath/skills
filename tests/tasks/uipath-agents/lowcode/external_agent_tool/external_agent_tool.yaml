@@ -23,12 +23,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "OutreachSol" containing a single low-code
-  agent "OutreachAgent". The agent accepts a required `subject`
-  (string) and returns a string `content`. It must compose the
-  content by delegating to an agent named "EmailDrafter"
-  that is already deployed in the tenant — not by drafting the
-  email itself.
+  Build a low-code agent "OutreachAgent" that accepts a required
+  `subject` (string) and returns a string `content`. It must compose
+  the content by delegating to an agent named "EmailDrafter" that is
+  already deployed in the tenant — not by drafting the email itself.
+  The solution should be named "OutreachSol".
 
   Use the real folder and process name from the tenant — do not
   hard-code or guess these values. Name the wrapper's tool resource

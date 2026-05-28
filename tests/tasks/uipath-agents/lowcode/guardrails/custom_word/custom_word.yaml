@@ -15,11 +15,11 @@ agent:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "GuardSol" containing a low-code agent
-  "SafeAgent" that answers user questions. Then add a custom guardrail
-  that blocks the word "CONFIDENTIAL" from appearing in any agent or
-  LLM output. The guardrail should use a word rule with the "contains"
-  operator and a block action with the reason "Forbidden term detected."
+  Build a low-code agent "SafeAgent" that answers user questions. Add
+  a custom guardrail that blocks the word "CONFIDENTIAL" from appearing
+  in any agent or LLM output. The guardrail should use a word rule with
+  the "contains" operator and a block action with the reason "Forbidden
+  term detected." The solution should be named "GuardSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

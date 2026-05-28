@@ -19,11 +19,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "DocsFlowSol" containing a flow project
-  "DocsFlow". The flow should use an inline low-code agent that helps
-  users understand uploaded documents. Enable the built-in "Analyze
-  Files" tool on the inline agent so it can analyze PDF and image
-  attachments, and wire that tool in the flow.
+  Build a flow project "DocsFlow" that uses an inline low-code agent
+  to help users understand uploaded documents. Enable the built-in
+  "Analyze Files" tool on the inline agent so it can analyze PDF and
+  image attachments, and wire that tool in the flow. The solution
+  should be named "DocsFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

@@ -18,11 +18,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "DevToolsFlowSol" containing a flow project
-  "DevToolsFlow". The flow should use an inline low-code agent that
-  connects to an MCP server named "GitHubMcp" exposing GitHub-related
-  tools. Declare the MCP server as a resource on the inline agent and
-  wire it into the flow.
+  Build a flow project "DevToolsFlow" that uses an inline low-code
+  agent connecting to an MCP server named "GitHubMcp" exposing
+  GitHub-related tools. Declare the MCP server as a resource on the
+  inline agent and wire it into the flow. The solution should be named
+  "DevToolsFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

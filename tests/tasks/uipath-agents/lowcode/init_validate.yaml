@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a low-code agent "GreeterAgent" that accepts a required
+  Build a low-code agent "GreeterAgent" that accepts a required
   `name` (string) and returns a `greeting` (string). Make sure it
   validates successfully. The solution should be named "GreetSol".
 

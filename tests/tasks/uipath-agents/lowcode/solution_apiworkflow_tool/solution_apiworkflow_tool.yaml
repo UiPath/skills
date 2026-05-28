@@ -16,10 +16,10 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "ShippingSol" containing a low-code agent
-  "ShippingAgent". The agent should call an API workflow called
-  "CalculateShippingRate" that lives INSIDE this same solution as a
-  separate project. Expose it to the agent as a tool resource.
+  Build a low-code agent "ShippingAgent" that calls an API workflow
+  called "CalculateShippingRate" living INSIDE this same solution as a
+  separate project. Expose it to the agent as a tool resource. The
+  solution should be named "ShippingSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

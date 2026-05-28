@@ -22,11 +22,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "FibonacciSol" containing a single low-code
-  agent "FibonacciAgent". The agent accepts a required `index`
-  (number) and returns a number `value`. It must compute the value
-  using an process named "FibonacciRPA" that is already deployed in
-  the tenant — not by reasoning about the answer itself.
+  Build a low-code agent "FibonacciAgent" that accepts a required
+  `index` (number) and returns a number `value`. It must compute the
+  value using an process named "FibonacciRPA" that is already deployed
+  in the tenant — not by reasoning about the answer itself. The
+  solution should be named "FibonacciSol".
 
   Use the real folder and process name from the tenant — do not
   hard-code or guess these values. Name the agent's tool resource

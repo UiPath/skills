@@ -16,11 +16,11 @@ agent:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "PiiGuardSol" containing a low-code agent
-  "PiiSafeAgent" that answers user questions about their accounts.
-  Then add a built-in PII detection guardrail that blocks Email and
-  PhoneNumber entities in agent-level output. Use a block action with
-  reason "PII detected in output."
+  Build a low-code agent "PiiSafeAgent" that answers user questions
+  about their accounts. Add a built-in PII detection guardrail that
+  blocks Email and PhoneNumber entities in agent-level output. Use a
+  block action with reason "PII detected in output." The solution
+  should be named "PiiGuardSol".
 
   Include entity thresholds of 0.5 for both Email and PhoneNumber.
 
