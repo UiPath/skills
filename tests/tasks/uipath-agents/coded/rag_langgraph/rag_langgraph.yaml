@@ -20,9 +20,10 @@ initial_prompt: |
   It takes a question as input and returns an answer together with
   the retrieved snippets.
 
-  Take the agent through scaffold → init. Do NOT run, publish,
-  upload, or deploy. Do NOT pause between planning and
-  implementation. Complete end-to-end in a single pass.
+  Take the agent through scaffold → init — make sure bindings are
+  in sync before running init. Do NOT run, publish, upload, or
+  deploy. Do NOT pause between planning and implementation.
+  Complete end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
