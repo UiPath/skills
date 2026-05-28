@@ -71,14 +71,16 @@ uip maestro flow validate <FILE>.flow --output json
 
 `json.dump(..., indent=2)` matches the file's existing 2-space indent — `flow format` normalizes layout but does not re-indent unrelated structure, so preserve the canonical 2-space indent on writes.
 
-### `jq` for extracting CLI JSON
+### `--output-filter` for extracting CLI JSON
 
-Read-only extractions on `--output json` results — no Python needed:
+Read-only extractions on `--output json` results — use the CLI's built-in JMESPath filter, no external parser needed. Expressions start at the `Data` envelope (no `Data.` prefix). See [shared/cli-conventions.md §3](../../shared/cli-conventions.md#3-prefer---output-filter-for-extraction) for the full pattern.
 
 ```bash
-uip solution upload --output json | jq -r '.Data.Url'
-uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
+uip solution upload --output json --output-filter "Url"
+uip maestro flow registry get <NODE_TYPE> --output json --output-filter "Node"
 ```
+
+Reach for `jq` / `python3` only when JMESPath cannot express the operation (multi-step joins, format conversion, conditional output computed from multiple fields).
 
 ### Why scripting is approval-gated
 
