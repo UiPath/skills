@@ -46,7 +46,7 @@ file-locked playbook, not the COM-interop one.
 - Log ordering: "Opening workbook ..." then the IOException - the fault is at scope open, before the `Lookup Range` body runs.
 
 ### Excel Activities (Root Cause)
-- Activity surface: classic `UiPath.Excel.Activities.LookUpRange` inside `UiPath.Excel.Activities.ExcelApplicationScope` (Interop / COM)
+- Activity surface: classic `UiPath.Excel.Activities.ExcelLookUpRange` inside `UiPath.Excel.Activities.ExcelApplicationScope` (Interop / COM)
 - The exception is a file-handle conflict (`IOException` / "being used by another process"), not a COM HRESULT - the workbook cannot be opened because something else holds it.
 - Intermittent success/failure across runs corroborates a stale/contended handle (most likely an orphaned `EXCEL.EXE` on the unattended host) rather than a bad sheet/range or lookup value.
 

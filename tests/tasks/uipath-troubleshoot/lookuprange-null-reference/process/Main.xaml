@@ -23,6 +23,6 @@
       <Variable x:TypeArguments="x:String" Name="orderId" Default="ORD-55218" />
       <Variable x:TypeArguments="x:String" Name="cellAddress" />
     </Sequence.Variables>
-    <ui:LookUpRange DisplayName="Lookup Range" Range="" SheetName="Orders" Value="[orderId]" Result="[cellAddress]" sap2010:WorkflowViewState.IdRef="LookUpRange_1" />
+    <ui:ExcelLookUpRange DisplayName="Lookup Range" Range="" SheetName="Orders" Value="[orderId]" Result="[cellAddress]" sap2010:WorkflowViewState.IdRef="ExcelLookUpRange_1" />
   </Sequence>
 </Activity>

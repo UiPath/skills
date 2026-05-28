@@ -16,7 +16,7 @@ an object`.
 `NullReferenceException` thrown by the `Lookup Range`. The job log shows
 execution start, then the null fault at the lookup, with no "workbook
 opened" line - because nothing ever opened a workbook. The fault stack is
-`LookUpRange "Lookup Range"` -> `Sequence "Main Sequence"` -> `Main`, with
+`ExcelLookUpRange "Lookup Range"` -> `Sequence "Main Sequence"` -> `Main`, with
 no scope between the activity and the Sequence.
 
 **Why:** A classic `Lookup Range` reads its target sheet/range through the
@@ -35,12 +35,12 @@ that does not resolve, but here the activity has no workbook context at all
 - Job: OrderLookup -- Faulted at 2026-05-27T08:18:57.900Z (ran for ~2.3 seconds)
 - Job type: Unattended, triggered manually by user "user1" on machine MOCK-HOST
 - Folder: RPA Production (key `b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e`)
-- Final error: `System.NullReferenceException: Object reference not set to an instance of an object` -> `Main.xaml` -> `LookUpRange "Lookup Range"` -> `Sequence "Main Sequence"` -> `Main`
+- Final error: `System.NullReferenceException: Object reference not set to an instance of an object` -> `Main.xaml` -> `ExcelLookUpRange "Lookup Range"` -> `Sequence "Main Sequence"` -> `Main`
 - The stack has **no Excel scope** between the `Lookup Range` and the `Sequence`, and the log shows no "workbook opened" line.
 
 ### Excel Activities (Root Cause)
-- Activity surface: classic `UiPath.Excel.Activities.LookUpRange`
-- Placement in `Main.xaml`: the `LookUpRange "Lookup Range"` is a direct child of `Sequence "Main Sequence"` - it is **not** inside an `ExcelApplicationScope` (nor a `Use Excel File` card).
+- Activity surface: classic `UiPath.Excel.Activities.ExcelLookUpRange`
+- Placement in `Main.xaml`: the `ExcelLookUpRange "Lookup Range"` is a direct child of `Sequence "Main Sequence"` - it is **not** inside an `ExcelApplicationScope` (nor a `Use Excel File` card).
 - With no scope, the activity has no workbook context object; resolving its sheet/range dereferences null, producing the `NullReferenceException`.
 
 ---
@@ -54,7 +54,7 @@ that does not resolve, but here the activity has no workbook context at all
      `WorkbookApplication`; without it the context is null and the activity
      throws `NullReferenceException` immediately.
    - **Where (in `Main.xaml`):** add an `Excel Application Scope` with the
-     correct `WorkbookPath` around the `LookUpRange "Lookup Range"` (on the
+     correct `WorkbookPath` around the `ExcelLookUpRange "Lookup Range"` (on the
      modern surface, use `Use Excel File` / `Excel Process Scope` with
      `LookUpRangeX`).
    - **Who:** RPA developer
@@ -85,7 +85,7 @@ that does not resolve, but here the activity has no workbook context at all
 
 | # | Hypothesis | Confidence | Status | Root Cause? | Key Evidence | Resolution |
 |---|------------|------------|--------|-------------|--------------|------------|
-| H1 | The Lookup Range is placed outside any Excel Application Scope, so it has no workbook context and faults with NullReferenceException | High | Confirmed | Yes | `NullReferenceException` at `LookUpRange`; fault stack and `Main.xaml` show no enclosing Excel scope; no "workbook opened" log line | Wrap the Lookup Range in an Excel Application Scope (or Use Excel File) bound to the workbook |
+| H1 | The Lookup Range is placed outside any Excel Application Scope, so it has no workbook context and faults with NullReferenceException | High | Confirmed | Yes | `NullReferenceException` at `ExcelLookUpRange`; fault stack and `Main.xaml` show no enclosing Excel scope; no "workbook opened" log line | Wrap the Lookup Range in an Excel Application Scope (or Use Excel File) bound to the workbook |
 
 ---
 

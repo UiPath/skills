@@ -25,7 +25,7 @@
     {
       "Level": "Error",
       "TimeStamp": "2026-05-27T08:02:37.808Z",
-      "Message": "Lookup Range: The range '' is not valid.\r\nin Main.xaml\r\n    at LookUpRange \"Lookup Range\"\r\n    at ExcelApplicationScope \"Excel Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+      "Message": "Lookup Range: The range '' is not valid.\r\nin Main.xaml\r\n    at ExcelLookUpRange \"Lookup Range\"\r\n    at ExcelApplicationScope \"Excel Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
     },
     {
       "Level": "Info",

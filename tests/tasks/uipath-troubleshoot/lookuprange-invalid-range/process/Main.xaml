@@ -29,7 +29,7 @@
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="ui:WorkbookApplication" Name="ExcelWorkbookScope" />
           </ActivityAction.Argument>
-          <ui:LookUpRange DisplayName="Lookup Range" Range="&quot;&quot;" SheetName="Parts" Value="[partNumber]" Result="[cellAddress]" sap2010:WorkflowViewState.IdRef="LookUpRange_1" />
+          <ui:ExcelLookUpRange DisplayName="Lookup Range" Range="&quot;&quot;" SheetName="Parts" Value="[partNumber]" Result="[cellAddress]" sap2010:WorkflowViewState.IdRef="ExcelLookUpRange_1" />
         </ActivityAction>
       </ui:ExcelApplicationScope.Body>
     </ui:ExcelApplicationScope>

@@ -84,7 +84,7 @@ success_criteria:
           - The classic Lookup Range needs a scope to supply its workbook
             context; with none, the context is null and the activity
             dereferences null, throwing NullReferenceException at startup.
-          - The fault stack is LookUpRange -> Sequence "Main Sequence" ->
+          - The fault stack is ExcelLookUpRange -> Sequence "Main Sequence" ->
             Main with no scope in between, and the log shows no "workbook
             opened" line - confirming there is no workbook context.
         The reference fix:
@@ -94,7 +94,7 @@ success_criteria:
 
       DIMENSION C -- Discoverable in the workflow
         The agent has the workflow source; the missing scope is visible in
-        Main.xaml (the LookUpRange is a direct child of the Sequence) and in
+        Main.xaml (the ExcelLookUpRange is a direct child of the Sequence) and in
         the fault stack. Reward finding it there. Do not require reading the
         binary .xlsx.
 

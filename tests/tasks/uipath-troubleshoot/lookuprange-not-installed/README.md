@@ -8,7 +8,7 @@ object and faults at startup with `REGDB_E_CLASSNOTREG` (0x80040154).
 
 ## What this scenario uncovers
 
-**Root Cause:** The classic `Lookup Range` (`UiPath.Excel.Activities.LookUpRange`)
+**Root Cause:** The classic `Lookup Range` (`UiPath.Excel.Activities.ExcelLookUpRange`)
 inside an `Excel Application Scope` needs a registered desktop Excel
 install. The new unattended robot host has no Excel, so the COM class
 factory for `Excel.Application` cannot be created and the scope faults

@@ -40,7 +40,7 @@ startup with `REGDB_E_CLASSNOTREG`.
 - Final error: `Retrieving the COM class factory for component with CLSID {00024500-0000-0000-C000-000000000046} failed ... 0x80040154 (REGDB_E_CLASSNOTREG)` -> `Main.xaml` -> `ExcelApplicationScope "Excel Application Scope"` -> `Sequence "Main Sequence"`
 
 ### Excel Activities (Root Cause)
-- Activity surface: classic `UiPath.Excel.Activities.LookUpRange` inside `UiPath.Excel.Activities.ExcelApplicationScope` (Interop / COM)
+- Activity surface: classic `UiPath.Excel.Activities.ExcelLookUpRange` inside `UiPath.Excel.Activities.ExcelApplicationScope` (Interop / COM)
 - CLSID `{00024500-0000-0000-C000-000000000046}` is `Excel.Application` - the class COM could not register because Excel is not installed on MOCK-HOST.
 - The fault is at scope startup (the `Lookup Range` body never executes), which is the signature of a missing Excel install rather than a sheet/range or lookup-value problem.
 

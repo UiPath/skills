@@ -34,11 +34,11 @@ whole-sheet search is to leave the field blank.
 - Job: CatalogLookup -- Faulted at 2026-05-27T08:02:37.870Z (ran for ~4.5 seconds)
 - Job type: Unattended, triggered manually by user "user1" on machine MOCK-HOST
 - Folder: RPA Production (key `b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e`)
-- Final error: `UiPath.Excel.ExcelException: The range '' is not valid` -> `Main.xaml` -> `LookUpRange "Lookup Range"` -> `ExcelApplicationScope "Excel Application Scope"` -> `Sequence "Main Sequence"`
+- Final error: `UiPath.Excel.ExcelException: The range '' is not valid` -> `Main.xaml` -> `ExcelLookUpRange "Lookup Range"` -> `ExcelApplicationScope "Excel Application Scope"` -> `Sequence "Main Sequence"`
 - Log ordering: "Opening workbook ..." then "Workbook opened" then the range error - the scope opened cleanly; the fault is at the `Lookup Range`.
 
 ### Excel Activities (Root Cause)
-- Activity surface: classic `UiPath.Excel.Activities.LookUpRange` inside `UiPath.Excel.Activities.ExcelApplicationScope`
+- Activity surface: classic `UiPath.Excel.Activities.ExcelLookUpRange` inside `UiPath.Excel.Activities.ExcelApplicationScope`
 - Configuration in `Main.xaml`: `Range="&quot;&quot;"` (the expression `""`), `SheetName="Parts"`, `Value="[partNumber]"`.
 - `""` is an invalid range value; the activity fails to parse it and raises `The range '' is not valid`. A whole-sheet search requires the `Range` field to be left blank, not set to `""`.
 
@@ -51,7 +51,7 @@ whole-sheet search is to leave the field blank.
    searches the whole used range. Do not pass `""`.
    - **Why:** a blank `Range` = whole sheet; the literal `""` is an invalid
      range value that fails to parse.
-   - **Where (in `Main.xaml`):** the `LookUpRange "Lookup Range"` activity -
+   - **Where (in `Main.xaml`):** the `ExcelLookUpRange "Lookup Range"` activity -
      remove the `""` expression from its `Range` property.
    - **Who:** RPA developer
    - **Source:** `excel-activities/playbooks/lookup-range-invalid-range.md`

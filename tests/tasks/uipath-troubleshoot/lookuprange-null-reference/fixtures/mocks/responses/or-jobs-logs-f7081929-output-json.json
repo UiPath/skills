@@ -15,7 +15,7 @@
     {
       "Level": "Error",
       "TimeStamp": "2026-05-27T08:18:57.838Z",
-      "Message": "Lookup Range: Object reference not set to an instance of an object.\r\nin Main.xaml\r\n    at LookUpRange \"Lookup Range\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+      "Message": "Lookup Range: Object reference not set to an instance of an object.\r\nin Main.xaml\r\n    at ExcelLookUpRange \"Lookup Range\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
     },
     {
       "Level": "Info",

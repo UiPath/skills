@@ -22,10 +22,10 @@ This maps to:
 It is **not** a missing Excel install (no `REGDB_E_CLASSNOTREG` -> that
 routes to `lookup-range-excel-not-installed.md`) and **not** a file-in-use
 fault (no IOException -> `lookup-range-file-locked.md`). The fault stack
-goes `LookUpRange` -> `Sequence "Main Sequence"` -> `Main` with **no scope
+goes `ExcelLookUpRange` -> `Sequence "Main Sequence"` -> `Main` with **no scope
 in between**, which is the tell that the activity has no workbook context.
 
-The misconfiguration is discoverable in `Main.xaml`: the `LookUpRange` is
+The misconfiguration is discoverable in `Main.xaml`: the `ExcelLookUpRange` is
 not wrapped in any Excel scope.
 
 ## How this test reproduces it

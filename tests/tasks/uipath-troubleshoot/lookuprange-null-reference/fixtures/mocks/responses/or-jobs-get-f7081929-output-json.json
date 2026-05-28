@@ -11,7 +11,7 @@
     "Source": "Manual",
     "SourceType": "Manual",
     "BatchExecutionKey": "081929a3-4b5c-4d6e-8f70-8192a3b4c5d6",
-    "Info": "Lookup Range: Object reference not set to an instance of an object.\r\n\r\nin Main.xaml\r\n    at LookUpRange \"Lookup Range\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.NullReferenceException: Object reference not set to an instance of an object.",
+    "Info": "Lookup Range: Object reference not set to an instance of an object.\r\n\r\nin Main.xaml\r\n    at ExcelLookUpRange \"Lookup Range\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.NullReferenceException: Object reference not set to an instance of an object.",
     "CreationTime": "2026-05-27T08:18:55.410Z",
     "ReleaseName": "OrderLookup",
     "Type": "Unattended",
