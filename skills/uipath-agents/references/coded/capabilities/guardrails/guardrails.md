@@ -63,16 +63,16 @@ Use `Glob` / `Grep` to find the main Python file (look for `create_agent`, `Stat
 
 `uipath.platform.guardrails` ships the *low-level* `guardrail` decorator, `*Validator` / `*Middleware` classes, `*Action` classes, entity enums, and `GuardrailExecutionStage`. The decorator on its own only wraps the decorated function if a **framework adapter** is registered for the object the factory returns (a LangChain `UiPathChat`, a LlamaIndex agent, etc.). Without an adapter, the decorated factory returns the plain object, and **every guardrail silently no-ops — no error, no log.**
 
-Each framework ships its own re-export module that **registers its adapter as an import side effect**. Importing from that module gives you the *same* symbol names as `uipath.platform.guardrails` *and* installs the adapter:
+Today the only published framework adapter is the **LangChain** one. Importing `uipath_langchain.guardrails` registers it as a side effect; the import path is also a re-export of the same names available in `uipath.platform.guardrails`, so consumers see one set of symbols either way.
 
 | Agent framework | Import guardrail symbols from | Detect by |
 |---|---|---|
 | **LangChain / LangGraph** (UiPathChat, `create_agent`) | `uipath_langchain.guardrails` | `uipath-langchain` in `pyproject.toml`, `from langchain...` / `from langgraph...` in source |
-| **LlamaIndex** | `uipath_llamaindex.guardrails` (or the path the LlamaIndex SDK guardrails page shows) | `llama-index*` deps, `from llama_index...` imports |
-| **OpenAI Agents** | `uipath_openai_agents.guardrails` (or the path the OpenAI Agents SDK guardrails page shows) | `openai-agents` dep, `from agents import ...` |
-| **No framework wrapper** (plain Python, custom orchestration) | `uipath.platform.guardrails` directly | None of the above |
+| **Anything else** (LlamaIndex, OpenAI Agents, plain Python, custom orchestration) | `uipath.platform.guardrails` — the framework-agnostic SDK | No `uipath-langchain` dep / no LangChain imports |
 
-For framework agents, **import the framework's re-export module — not `uipath.platform.guardrails` directly.** Both modules expose the same names, so platform imports type-check, parse, and run with no error, but they bypass the framework adapter and the guardrails never fire. This was the demo2 root cause for a LangGraph agent that imported from `uipath.platform.guardrails`.
+For a LangChain agent, **import from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Both modules expose the same names, so platform imports type-check, parse, and run with no error — but they bypass the LangChain adapter and the decorator/middleware never wraps the LLM/tool/agent, so every guardrail silently no-ops. This was the demo2 root cause for a LangGraph agent that imported from `uipath.platform.guardrails`.
+
+For frameworks that have no UiPath adapter yet (LlamaIndex, OpenAI Agents, etc.), the platform module is the correct source for validators, the `guardrail` decorator, action classes, and enums — these are framework-agnostic. Be aware that without a framework adapter, the decorator/middleware mechanism cannot auto-wrap that framework's LLM/tool objects, so guardrails-via-decorator may silently no-op there too; for those frameworks you may need to invoke validators directly rather than rely on factory decoration. Check the platform SDK page for the framework-agnostic usage pattern.
 
 ### Detect the framework before writing imports
 
@@ -213,22 +213,15 @@ If `create_agent()` is called directly at module level (not in a function), wrap
 uv run python -c "import graph; from uipath.platform.guardrails.decorators._registry import _adapters; assert len(_adapters) >= 1, 'NO ADAPTER REGISTERED — guardrails will silently no-op; import from uipath_<framework>.guardrails (e.g. uipath_langchain.guardrails for LangChain agents)'; print('adapters:', len(_adapters))"
 ```
 
-**2. The decorated object is actually wrapped.** A correctly-wired factory returns a guarded class, not the plain object. The exact wrapper class name is **framework-specific**:
-
-| Framework | LLM factory wrapped type | Tool wrapped type |
-|---|---|---|
-| LangChain / LangGraph | `_GuardedLLM` | `_GuardedTool` |
-| LlamaIndex / OpenAI Agents / other | check `type(<obj>).__name__` after wrapping — the framework adapter sets its own `_Guarded*` prefix | same |
-
-LangChain example:
+**2. The decorated object is actually wrapped.** For a LangChain agent, a correctly-wired LLM factory returns a `_GuardedLLM`, and a `@tool` decoration returns a `_GuardedTool`:
 
 ```bash
 uv run python -c "import graph; n = type(graph.llm).__name__; assert n == '_GuardedLLM', f'LLM is {n}, not _GuardedLLM — guardrail did not wrap it'; print('wrapped:', n)"
 ```
 
-For other frameworks, run the same shape but assert the class name is **different** from the plain class (e.g. for LlamaIndex check `type(graph.llm).__name__ != 'UiPathChat'`). The fundamental check is unchanged: the decorated factory must return an adapter-wrapped object, not the plain one.
+If either check fails, the most likely cause is importing guardrail symbols from `uipath.platform.guardrails` instead of `uipath_langchain.guardrails`, or never importing `uipath_langchain.guardrails` at all. Fix the import source and re-verify — do not report the guardrail as added until both checks pass.
 
-If either check fails, the most likely cause is importing guardrail symbols from `uipath.platform.guardrails` in a framework agent (instead of the framework's `uipath_<framework>.guardrails` re-export), or never importing the framework guardrails module at all. Fix the import source and re-verify — do not report the guardrail as added until both checks pass.
+For non-LangChain frameworks, there is no published adapter yet, so the decorator/middleware mechanism does not produce a `_Guarded*` wrap. Verify by invoking the validator directly on a known-violating input and confirming it raises / logs.
 
 > A smoke run that deliberately triggers a violation (e.g. feed a PII-bearing input and confirm it blocks) is the strongest verification when the environment is authenticated against the tenant.
 
@@ -248,9 +241,9 @@ If either check fails, the most likely cause is importing guardrail symbols from
 4. **LLM-scope decorator**: LLM must be inside a factory function; decorate the factory.
 5. **Agent-scope decorator**: `create_agent()` must be inside a factory function; decorate the factory.
 6. **Respect scope and stage constraints from the docs** — each middleware class has specific allowed scopes and stages; never apply a guardrail at a scope or stage the docs say it doesn't support.
-7. **Only add imports you use** — merge new names into any existing `from uipath_<framework>.guardrails import (...)` block (or `from uipath.platform.guardrails import (...)` for the no-framework case).
-8. **Import guardrail symbols from the framework's `uipath_<framework>.guardrails` re-export, not directly from `uipath.platform.guardrails`** when the agent uses a framework wrapper (LangChain → `uipath_langchain.guardrails`; LlamaIndex / OpenAI Agents → their equivalent). Both modules expose the same names, but only the framework module registers the framework adapter as an import side effect; without that adapter every guardrail silently no-ops with no error or log. `uipath.platform.guardrails` is the correct source only when the agent uses no framework wrapper. See [Imports Pattern](#imports-pattern).
-9. **Verify wiring at runtime after writing** — confirm an adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (e.g. for LangChain `type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools; other frameworks use their own `_Guarded*` class names — assert the wrapped type differs from the plain class). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing).
+7. **Only add imports you use** — merge new names into any existing `from uipath_langchain.guardrails import (...)` block (LangChain) or `from uipath.platform.guardrails import (...)` block (every other framework).
+8. **For LangChain / LangGraph agents, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Both expose the same names, but only `uipath_langchain.guardrails` registers the LangChain adapter as an import side effect; without it the decorator/middleware never wraps the LLM/tool/agent and every guardrail silently no-ops with no error or log. For any other framework (LlamaIndex, OpenAI Agents, plain Python), import from `uipath.platform.guardrails` — no framework adapter is published yet. See [Imports Pattern](#imports-pattern).
+9. **Verify wiring at runtime after writing (LangChain only)** — confirm the LangChain adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (`type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. For frameworks without an adapter, this wrap-check does not apply — invoke the validator directly to confirm it runs. See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing).
 10. **Entity/threshold values must match the docs exactly** — use enum member names, not raw strings; use only allowed threshold values.
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.

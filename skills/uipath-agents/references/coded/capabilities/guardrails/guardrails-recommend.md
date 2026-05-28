@@ -53,22 +53,23 @@ Build a lookup of `{ validatorId: status }` from the `Data` array. You will use 
 
 Coded agents reference guardrails by **Python class name** (e.g. `UiPathPIIDetectionMiddleware`, `PIIDetectionValidator`), not by `validator_id`. The catalog gives you the `validator_id`; the SDK docs give you the corresponding Python classes, import paths, scope/stage enums, and entity-type enums.
 
-Identify the agent's framework first (read `pyproject.toml` and the entrypoint imports), then fetch the two doc pages — one for the framework adapter, one for the core platform layer:
+Identify the agent's framework first (read `pyproject.toml` and the entrypoint imports), then fetch the SDK doc pages. Today only **LangChain** has a published UiPath guardrail adapter; for any other framework, the platform SDK is the only source.
 
-| Framework | Framework-specific page (authoritative for adapter classes + import paths) |
-|---|---|
-| LangChain / LangGraph | `https://uipath.github.io/uipath-python/langchain/guardrails/` |
-| LlamaIndex | `https://uipath.github.io/uipath-python/llamaindex/guardrails/` (use whichever path the SDK index publishes for the framework) |
-| OpenAI Agents | `https://uipath.github.io/uipath-python/openai-agents/guardrails/` (same — verify via the SDK index) |
-| No framework wrapper | skip — use only the core page below |
-
-Plus the **core** page (validators, entity enums, scope/stage enums, action classes — used by every framework):
+Always fetch the **core** page (validators, entity enums, scope/stage enums, action classes — usable on any framework):
 
 `https://uipath.github.io/uipath-python/core/guardrails/`
 
-Call `WebFetch` once per page. From the framework-specific page extract middleware classes, supported scopes/stages, extra parameters, and the correct `uipath_<framework>.guardrails` import paths. From the core page extract Validator classes, entity-type enums, `GuardrailScope` / `GuardrailExecutionStage`, and Action classes.
+If the agent is a **LangChain / LangGraph** agent (detected by `uipath-langchain` in `pyproject.toml` or `from langchain...` / `from langgraph...` imports), additionally fetch:
 
-**Use the fetched content as the sole source of truth.** Never rely on memory for class names, enum members, or import paths — the SDK evolves and the docs are the only reliable mapping. Import paths come from the framework-specific page when the agent uses a framework wrapper; see [guardrails.md § Imports Pattern](guardrails.md#imports-pattern) for why.
+`https://uipath.github.io/uipath-python/langchain/guardrails/`
+
+This is the LangChain adapter page — it documents the middleware classes, their supported scopes/stages, and the correct `uipath_langchain.guardrails` import paths. The framework adapter is needed for the `@guardrail` decorator / middleware to actually wrap the LLM / tool / agent (see [guardrails.md § Imports Pattern](guardrails.md#imports-pattern)).
+
+If the agent uses any other framework (LlamaIndex, OpenAI Agents, plain Python, etc.) there is no published framework adapter yet — only the core page applies. The decorator/middleware mechanism cannot auto-wrap those framework objects without an adapter; you may need to invoke validators directly. Do not invent doc URLs for frameworks that do not have one.
+
+Call `WebFetch` once per page. From the core page extract Validator classes, entity-type enums, `GuardrailScope` / `GuardrailExecutionStage`, and Action classes. From the LangChain page (when applicable) extract middleware classes, supported scopes/stages, extra parameters, and the correct `uipath_langchain.guardrails` import paths.
+
+**Use the fetched content as the sole source of truth.** Never rely on memory for class names, enum members, or import paths — the SDK evolves and the docs are the only reliable mapping.
 
 Build a `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages } }` lookup in working memory by joining catalog entries with SDK class names.
 
@@ -274,10 +275,10 @@ python3 -c "import ast; ast.parse(open('graph.py').read())"
 5. **Never recommend two validators with the same `security_category` at the same scope and stage** (e.g. `prompt_injection` + `user_prompt_attacks` at LLM PRE). De-duplicate per Step 3: drop catalog-deprecated entries, keep the best fit, mention the alternative. Derive the grouping and deprecation from the catalog's own fields — do not hardcode validator names.
 6. **Default the action to the catalog example's `action_type`; never silently downgrade Block → Log.** Security-critical guardrails (`adversarial_input`, `content_safety`) default to `Block`. If you use `LogAction` for a guardrail whose catalog default is `Block`, state it and the reason in the report (Step 6).
 7. **Block as early as possible — pick the outermost scope the validator allows.** For input protection (PII, jailbreak, injection) prefer `GuardrailScope.AGENT` · PRE over Llm over Tool, so the run halts before the LLM call. PII meant to stop the agent handling personal data goes at **Agent**, not Llm. Only narrow when the validator is scope-restricted (e.g. `prompt_injection` / `user_prompt_attacks` are Llm-only) or the user asks for a narrower scope. See Step 5.
-8. **Import guardrail symbols from the framework's `uipath_<framework>.guardrails` re-export, not `uipath.platform.guardrails`** when the agent uses a framework wrapper (LangChain → `uipath_langchain.guardrails`; LlamaIndex / OpenAI Agents → their equivalents). The framework module registers its adapter as an import side effect; the platform module exposes identical names but registers nothing, so guardrails silently no-op. The platform module is the right source only for plain Python agents with no framework wrapper. After writing, verify runtime wiring (adapter registered + the framework's `_Guarded*` wrap), not just `ast.parse`. See [guardrails.md § Imports Pattern](guardrails.md#imports-pattern) and [§ Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing).
+8. **For LangChain / LangGraph agents, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Only `uipath_langchain.guardrails` registers the LangChain adapter as an import side effect; the platform module exposes identical names but registers nothing, so guardrails silently no-op. For any other framework (LlamaIndex, OpenAI Agents, plain Python), no UiPath framework adapter is published yet — use `uipath.platform.guardrails` (the framework-agnostic SDK) directly. After writing for LangChain, verify runtime wiring (adapter registered + `_GuardedLLM`/`_GuardedTool` wrap), not just `ast.parse`. See [guardrails.md § Imports Pattern](guardrails.md#imports-pattern) and [§ Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing).
 9. **For Tool scope**: verify the tool exists as a `@tool` function in the agent code before adding the guardrail. If the agent has no tools, do not add a Tool-scoped guardrail.
 10. **For LLM-scope decorator**: the LLM must be inside a named factory function. If it is assigned directly (`llm = UiPathChat(...)`), refactor into a factory first — never decorate a module-level assignment.
 11. **For Agent-scope decorator**: `create_agent(...)` must be inside a named factory function. If it is called at module level, refactor into a factory first.
 12. **The cache file is `.guardrails-catalog-cache.json`** in the working directory. Add it to `.gitignore` if one exists.
-13. **Class names and enum names come from the SDK docs** — never invent them. The SDK evolves; relying on memory produces stale code. For **import paths**, prefer the framework-specific SDK guardrails page that matches the agent's framework (LangChain → `langchain/guardrails/`, etc.) over the lower-level `core/guardrails/` page (see Rule 8).
+13. **Class names and enum names come from the SDK docs** — never invent them. The SDK evolves; relying on memory produces stale code. For **import paths**, use the `langchain/guardrails/` page when the agent is LangChain (paths live in `uipath_langchain.guardrails`); for every other framework use the `core/guardrails/` page (paths live in `uipath.platform.guardrails`). See Rule 8.
 14. **Read [guardrails.md](guardrails.md) before writing any Python** — the middleware spread (`*`), decorator placement above `@tool` / factory, factory refactor, and import-source rules are specified there and cannot be safely inferred.
