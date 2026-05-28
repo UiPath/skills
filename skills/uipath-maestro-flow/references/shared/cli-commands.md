@@ -6,28 +6,27 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 ## uip maestro flow init
 
-Scaffold a new Flow project directory. **Always create a solution first** (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+Scaffold a new Flow project. The CLI handles solution scaffolding automatically — see the [Author greenfield journey — Step 2](../author/references/greenfield.md) for the full flow.
 
 ```bash
-# 1. Create solution first
-uip solution init "<SolutionName>" --output json
+# Just run this from any directory:
+uip maestro flow init <ProjectName> --output json
 
-# 2. Init the flow project inside the solution folder.
-#    When run from inside a solution directory, `flow init` auto-registers
-#    the project with the parent `.uipx` — no manual `solution project add`
-#    is required. Confirm via `Data.SolutionRegistration.Status` in the
-#    response (`Registered` or `AlreadyRegistered`).
-cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
+# - cwd already inside a solution → the project is created in cwd and
+#   registered with the existing parent .uipx. Confirm via
+#   Data.SolutionRegistration.Status ("Registered" or "AlreadyRegistered").
+# - cwd outside any solution → CLI auto-scaffolds <ProjectName>Solution/ in
+#   cwd and creates the project inside it. The response includes
+#   Data.AutoCreatedSolution with the path to the new .uipx.
 
-# 3. (Fallback only) Wire the project manually if auto-registration was
-#    `Skipped` or `Failed` — typically because init was run outside the
-#    solution dir and produced a single-nested layout.
+# (Fallback only) Wire the project manually if Data.SolutionRegistration.Status
+# came back "Skipped" or "Failed" (e.g. ambiguous parent solutions):
 uip solution project add \
-  <directory>/<SolutionName>/<ProjectName> \
-  <directory>/<SolutionName>/<SolutionName>.uipx
+  <SolutionDir>/<ProjectName> \
+  <SolutionDir>/<SolutionName>.uipx
 ```
 
-Creates `<ProjectName>/` with `project.uiproj`, `<ProjectName>.flow`, `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` inside the solution directory.
+Creates `<ProjectName>/` with `project.uiproj` and `<ProjectName>.flow` inside the (existing or auto-created) solution directory. Additional generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are produced later by `flow node configure`, `flow pack`, etc.
 
 ## uip maestro flow validate
 
