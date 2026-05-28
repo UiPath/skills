@@ -2,14 +2,17 @@ task_id: skill-admin-authz-role-lifecycle-tenant-e2e
 description: >
   End-to-end test: full lifecycle of a Tenant-scope custom role bound
   to one specific tenant — discovers Tenant-shape permissions,
-  resolves the login tenant's UUID, creates with `--scope Tenant`
-  AND `--tenant-id <UUID>`, verifies, deletes.
+  resolves the login tenant's UUID from login status when available,
+  creates with `--scope Tenant` AND `--tenant-id <UUID>`,
+  verifies, deletes.
 
   Validates: `--scope Tenant`, presence of `--tenant-id` (binding to
-  one tenant), tenant resolution before create, cleanup.
+  one tenant), tenant resolution before create, cleanup. Current CLI
+  versions expose `TenantId` in `uip login status`; older CLIs may need
+  a tenant lookup fallback.
 
   Command-construction only — no live tenant available.
-tags: [uipath-admin, e2e, authz, role-lifecycle, scope:tenant]
+tags: [uipath-admin, e2e, authz, role-lifecycle, "scope:tenant"]
 
 run_limits:
   max_turns: 40
@@ -34,7 +37,7 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent resolved the current login tenant's UUID before binding the role"
+    description: "Agent resolved the current login tenant's UUID from login status or a tenant lookup before binding the role"
     tool_name: "Bash"
     command_pattern: 'uip\s+(?:login\s+status|admin\s+tenants\s+(?:list|get))'
     min_count: 1

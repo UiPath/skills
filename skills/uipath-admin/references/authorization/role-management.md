@@ -139,7 +139,7 @@ When Step 1a (or Step 1b's "Service level" pick on a Tenant-shape service) lands
 - **Tenant** = bound to one tenant UUID. Assignable only inside that tenant.
 - **TenantGlobal** = reusable template. Visible/assignable in every tenant.
 
-> Resolving the current tenant UUID: `uip login status --output json` gives the tenant *name*; map it to a UUID with `uip admin tenants list --filter <name> --output json`.
+> Resolving the current tenant UUID: prefer `Data.TenantId` from `uip login status --output json`. If the installed CLI is older or the status has no `TenantId`, fall back to mapping the displayed tenant name (`Data.Tenant`) with `uip admin tenants list --filter <name> --output json`.
 
 #### Step 1d — Multi-service tenant role ("Centralized Access")
 

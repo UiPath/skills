@@ -61,7 +61,7 @@ uip login status --output json 2>&1
 uip tools list 2>&1
 ```
 
-From login status, extract only: `tenantName`, `organizationName`, `baseUrl`. Strip everything else.
+From login status, extract only the display tenant (`Data.Tenant`), display organization (`Data.Organization`), and base URL (`Data.BaseUrl`). Strip everything else, including `Data.OrganizationId`, `Data.TenantId`, access tokens, and the raw status envelope.
 
 From tools list, extract tool `name` and `version` from each row.
 
@@ -73,7 +73,7 @@ From tools list, extract tool `name` and `version` from each row.
 | **RPA** (`.cs` or `.xaml`) | `project.json` dependencies, `uip rpa validate --output json --use-studio`, list of workflow files (`.cs` and/or `.xaml`) | File list: max 20 files; `project.json`: dependencies section only; failing workflow: first 150 lines |
 | **Agents** | `pyproject.toml`, `bindings.json` (redact connection values), directory listing | `bindings.json`: redact all values; directory: max 30 entries |
 | **Apps** | `package.json` (name, version, dependencies only), `.uipath/` listing | `package.json`: name + version + dependencies only |
-| **Platform** | `uip login status --output json` output only | Strip tokens from output |
+| **Platform** | Sanitized `uip login status --output json` summary only | Strip tokens and organization/tenant IDs from output |
 
 #### 2d. Capture the failing command
 
@@ -333,7 +333,7 @@ Apply these rules to ALL content before it is included in the description or att
 3. **Redact GUIDs** in connection/binding fields: replace values with `<REDACTED>`
 4. **Truncate long content.** Files over 150 lines: keep first 100 + `... [truncated N lines] ...` + last 30. Full description: max 4000 characters
 5. **Never include**: `~/.uipath/.auth`, `.env`, `.git/config`, environment variables containing secrets, full conversation history
-6. **Never include customer data.** Strip customer names, email addresses, and organization-specific identifiers from project files unless they are the tenant/org from `uip login status`
+6. **Never include customer data.** Strip customer names, email addresses, and organization-specific identifiers from project files unless they are the tenant/org display names from `uip login status`. Do not include `OrganizationId` or `TenantId`.
 7. **Sanitize sample prompts.** Apply rules 1-3 and 6 to every captured prompt before including it under `## Sample prompts`. Replace customer names, email addresses, project codenames, account IDs, ticket IDs, internal URLs, and file paths revealing usernames with `<REDACTED>`. If a prompt cannot be sanitized without losing its signal (the prompt is mostly customer-specific data), drop that prompt and pick another from Step 2e. Never quote a prompt verbatim if it contains a secret, even if the user typed it.
 
 ## What NOT to Do
