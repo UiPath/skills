@@ -20,6 +20,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 6. **No secrets or personal paths** in committed files
 7. **CLI commands must use `--output json`** when output is parsed programmatically
 
+## Agent-Created Commits and PRs
+
+For commits and pull requests created from agent sessions in this repository:
+
+- Do not prefix PR titles with `[codex]`.
+- Use the repository's conventional scope in PR titles when applicable, e.g. `docs(uipath-maestro-flow): ...`.
+- Footnote every agent-created commit message and PR description with:
+
+```text
+🤖 Generated with Claude Code
+Co-Authored-By: Claude noreply@anthropic.com
+```
+
 ## File Conventions
 
 | File | Convention |
