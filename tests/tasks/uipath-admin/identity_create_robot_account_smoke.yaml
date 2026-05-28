@@ -9,6 +9,9 @@ initial_prompt: |
   Create a new robot account named "smoke-test-bot" with display name
   "Smoke Test Bot" in my UiPath organization.
 
+  If a robot account with this name already exists, delete it first,
+  then create the new one.
+
   Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -35,3 +38,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_smoke_test_bot.py''))"'
+    timeout: 30
