@@ -370,6 +370,8 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 
 **Studio re-expansion injects default expressions that need imports (CLI-clean, Studio-red).** `validate`/`build` accept a minimally-authored `NetHttpRequest`. When the file is later opened in Studio / Studio Web, Studio re-serializes the activity with its full default property set — including default expressions for `FormDataParts` (`New List(Of FormDataPart) From {New FileFormDataPart(), New BinaryFormDataPart(), New TextFormDataPart()}`) and `RetryStatusCodes`. `FormDataParts` names types from `UiPath.Web.Activities.Http.Models`, so Studio reports `BC30002: Type 'FormDataPart' is not defined` though the CLI was clean — even when `RequestBodyType="None"`. **Fix:** add `UiPath.Web.Activities.Http.Models` to `TextExpression.NamespacesForImplementation`. A type referenced by simple name in a VB expression must be **imported** there; an `xmlns:` prefix on the root element only resolves element/attribute type names, not expression compilation.
 
+**Two related Studio Web round-trip behaviors to author for.** On save, Studio Web (a) rewrites child-element argument bindings to attribute form — e.g. `<Throw.Exception><InArgument x:TypeArguments="s:Exception">[…]</InArgument></Throw.Exception>` becomes `Exception="[…]"` — and (b) prunes unused root `xmlns` declarations. Prefer attribute-form bindings where they work; it keeps round-trip diffs minimal and matches the shape Studio Web will produce anyway.
+
 ## Connection Service Pattern (Office 365, GSuite, IS Connectors)
 
 - `ConnectionId` is marked `[Browsable(false)]` — it won't appear in the Properties panel, but it is **required** when `UseConnectionService=True`
