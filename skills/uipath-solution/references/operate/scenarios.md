@@ -19,7 +19,12 @@ Land here from a grep on an error message? Pick the matching row.
 | `[1009] <kind> <name>: Invalid argument 'Value'` at deploy | [virtual-resource](scenarios/virtual-resource.md) |
 | New asset/queue not on cloud — how do I ship it as part of the solution? | [virtual-resource](scenarios/virtual-resource.md) |
 | `Synced 0 resources (1 already in solution)` on re-refresh | [virtual-resource](scenarios/virtual-resource.md) (idempotency section) |
-| I need to change a field on a resource and there's no `solution resource update` | [manual-edits](scenarios/manual-edits.md) |
+| I want to add one virtual queue / asset / bucket without going through bindings | `uip solution resource add --source local --kind <kind> --name <name>` — see [develop-solution.md Step 9](develop-solution.md#step-9-add-a-resource-atomically) |
+| I want to import one existing remote resource into the solution | `uip solution resource add --source remote --kind <kind> --name <name> --folder-path <folder>` — see [develop-solution.md Step 9](develop-solution.md#step-9-add-a-resource-atomically) |
+| I want to delete a single resource by key | `uip solution resource remove <resource-key>` — see [develop-solution.md Step 10](develop-solution.md#step-10-remove-a-resource) |
+| I want to change a field on an existing resource's spec | `uip solution resource edit <resource-key> --patch '{...}'` — see [develop-solution.md Step 11](develop-solution.md#step-11-edit-a-resource) |
+| I edited a spec field but `refresh` didn't pick it up | Expected — `refresh` never overwrites a resource already in the solution. Use `resource edit` to mutate spec. |
+| `resource edit` silently ignored a property I passed | The SDK skips unknown / reference / read-only props by design — see [manual-edits](scenarios/manual-edits.md) for what's editable vs not |
 | My hand-edit got reverted on the next refresh | [manual-edits](scenarios/manual-edits.md) (the SDK re-derives bindings) |
 | Other deploy / refresh failures (folder collision, suffix amplification, missing bindings, version collision) | [failure-modes](scenarios/failure-modes.md) |
 
