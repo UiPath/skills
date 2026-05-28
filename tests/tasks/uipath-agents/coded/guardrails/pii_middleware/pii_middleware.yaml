@@ -5,7 +5,7 @@ description: >
   Use the skill to add a PII detection middleware guardrail at Agent and Tool scope
   that logs Email and PhoneNumber entities. Verifies that the guardrails list was
   the correct middleware class is imported and spread into create_agent().
-tags: [uipath-agents, e2e, coded, mode:build]
+tags: [uipath-agents, e2e, coded, mode:build, guardrail]
 
 agent:
   type: claude-code
@@ -33,7 +33,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "PII middleware guardrail correctly added to graph.py"
-    command: "python3 $TASK_DIR/check_guardrail_coded_pii_middleware.py"
+    command: "python3 $TASK_DIR/check_pii_middleware.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

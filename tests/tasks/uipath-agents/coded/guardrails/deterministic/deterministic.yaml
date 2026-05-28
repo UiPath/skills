@@ -6,7 +6,7 @@ description: >
   the word "secret" in the input. The user may choose middleware or decorator style.
   Verifies that the guardrails list was fetched, a rule checking for "secret" is
   present, and BlockAction is used.
-tags: [uipath-agents, e2e, coded, mode:build]
+tags: [uipath-agents, e2e, coded, mode:build, guardrail]
 
 agent:
   type: claude-code
@@ -33,7 +33,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Deterministic guardrail with 'secret' rule correctly added to graph.py"
-    command: "python3 $TASK_DIR/check_guardrail_coded_deterministic.py"
+    command: "python3 $TASK_DIR/check_deterministic.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

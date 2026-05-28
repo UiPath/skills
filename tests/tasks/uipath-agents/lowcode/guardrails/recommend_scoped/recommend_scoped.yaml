@@ -56,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "Custom guardrail targets Send message to channel with valid rules"
-    command: "python3 $TASK_DIR/check_guardrail_recommend_scoped.py"
+    command: "python3 $TASK_DIR/check_recommend_scoped.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

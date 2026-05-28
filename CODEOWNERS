@@ -50,7 +50,10 @@
 
 # Guardrails capability docs
 /skills/uipath-agents/references/lowcode/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
-/skills/uipath-agents/references/coded/capabilities/guardrails.md @apetraru-uipath @valentinabojan @ctiliescuuipath
+/skills/uipath-agents/references/coded/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+# Guardrails tests (folder-level ownership)
+/tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria

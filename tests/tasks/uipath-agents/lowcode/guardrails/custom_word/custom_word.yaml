@@ -84,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "Custom guardrail shape (discriminators, word rule, block action, scopes)"
-    command: "python3 $TASK_DIR/check_guardrail_custom_word.py"
+    command: "python3 $TASK_DIR/check_custom_word.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
