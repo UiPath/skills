@@ -40,6 +40,7 @@ A Solution is the correct primary when any of the following applies, even if a s
 - The PDD mentions **reusable components** that other automations consume (Library) AND a standalone process that uses them.
 - The PDD calls out a **dedicated test suite / regression pack** alongside the process being tested (Test Automation + the Process it validates).
 - The PDD describes **multiple independent streams** with no single runtime orchestrator (e.g., separate dispatchers feeding separate performers with no Flow tying them together).
+- The deliverable is intended to be **opened or edited in Studio Web**. SW ingests Solutions only — a bare project folder is not visible in either SW workspace tab. Even a single RPA Process targeted at SW must be wrapped in a Solution (`uip solution new` + `uip solution project import` + `uip solution upload`). Signals: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit".
 
 When any of the above applies, set the default primary to **Solution** and pre-compose the product list from the matched signals. Otherwise default to the highest single-product match.
 
