@@ -18,6 +18,7 @@ CHECKERS=(
   "check-orphans.sh"
   "check-plugin-pairs.sh"
   "check-uip-commands.sh"
+  "check-versions.sh"
 )
 
 overall=0

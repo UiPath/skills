@@ -24,7 +24,7 @@ Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `b
 
 Use `Edit` / `Write` to add the `core.action.http.v2` node directly to the `.flow` file. Follow [Edit/Write: Add a node](../../editing-operations-json.md#add-a-node): copy the registry definition into `definitions[]`, add the node instance to `nodes[]`, add `variables.nodes`, and add a placeholder `layout.nodes` entry. Save the node ID for Step 3.
 
-For the node instance shape, follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton) with `type: "core.action.http.v2"` and `typeVersion: "2.0"`. Leave `inputs` empty at this stage — Step 3 populates `inputs.detail` via `uip maestro flow node configure`.
+For the node instance shape, follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton) with `type: "core.action.http.v2"` and `typeVersion` set to the `version` field from the `registry get core.action.http.v2` response above (do not hardcode it — this node has advanced past `2.0`). Leave `inputs` empty at this stage — Step 3 populates `inputs.detail` via `uip maestro flow node configure`.
 
 ### Step 2 — Identify target connector and connection (connector mode only)
 

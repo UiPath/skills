@@ -10,7 +10,7 @@
 uip maestro flow registry get core.trigger.scheduled --output json
 ```
 
-Confirm: no input port, output port `output`, required inputs `timerType` and `timerPreset`.
+Confirm: no input port, output port `output`, required inputs `timerType` and `timerPreset`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it (this node has already advanced past `1.0`).
 
 ## JSON Structure
 
@@ -20,7 +20,7 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
 {
   "id": "scheduledStart",
   "type": "core.trigger.scheduled",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Every Hour" },
   "inputs": {
     "entryPointId": "<uuid>",
@@ -44,7 +44,7 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
 {
   "id": "scheduledStart",
   "type": "core.trigger.scheduled",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Every 45 Minutes" },
   "inputs": {
     "entryPointId": "<uuid>",
