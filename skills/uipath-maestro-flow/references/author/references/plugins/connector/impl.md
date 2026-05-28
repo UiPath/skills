@@ -35,7 +35,7 @@ To classify a node, read `Node.form.sections[0].fields[0].componentProps.connect
 
 ## Critical: Connector Definition Must Include `form`
 
-> Connector definitions in `definitions[]` are CLI-owned (see [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)) — `uip maestro flow node add` copies them verbatim from the registry, and you should never hand-write or hand-edit them. If `node configure` fails with `No instanceParameters found in definition`, the definition in `definitions[]` is missing the `form` field — typically because the local registry cache is stale (the definition was copied in before the CLI started emitting `form`). Recovery: `uip maestro flow registry pull --force`, delete the stale `definitions[]` entry, re-run `uip maestro flow node add <file> <nodeType>` so the CLI re-copies the definition with `form`. Do not paste `form` in by hand — re-running `node add` is the supported path.
+> Connector definitions in `definitions[]` are CLI-owned (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)) — `uip maestro flow node add` copies them verbatim from the registry, and you should never hand-write or hand-edit them. If `node configure` fails with `No instanceParameters found in definition`, the definition in `definitions[]` is missing the `form` field — typically because the local registry cache is stale (the definition was copied in before the CLI started emitting `form`). Recovery: `uip maestro flow registry pull --force`, delete the stale `definitions[]` entry, re-run `uip maestro flow node add <file> <nodeType>` so the CLI re-copies the definition with `form`. Do not paste `form` in by hand — re-running `node add` is the supported path.
 
 ## No-Live-Tenant / Planned Configuration
 
@@ -228,7 +228,7 @@ If the operation has no FilterBuilder parameter, server-side filtering is not su
 
 **Dynamic-entity connectors (e.g. Dataservice V3) — documented CLI-limitation exception.** When filterable fields are resolved at design time via an `actionType: "api"` action keyed off a parent field (V3's `FetchObjectMetadataTenant` keyed off `tenantEntityName`), the CLI's `--detail.filter` validator rejects leaf field IDs not in static metadata. Symptom: `Failed to build filter for activity "...": Filter references field 'X' which is not present in trigger metadata`. The CLI also rejects raw `--detail.queryParameters.<filterParamName>` for FilterBuilder params on these connectors.
 
-> **This is the only sanctioned case where `Edit` touches `inputs.detail` on a CLI-owned node** (see [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)). The CLI cannot accept the input it itself requires for these connectors. Do not generalize this pattern to any other connector — for everything else, `node configure` is the only path. File a CLI issue if you hit a similar dynamic-entity rejection on a new connector before applying this workaround.
+> **This is the only sanctioned case where `Edit` touches `inputs.detail` on a CLI-owned node** (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)). The CLI cannot accept the input it itself requires for these connectors. Do not generalize this pattern to any other connector — for everything else, `node configure` is the only path. File a CLI issue if you hit a similar dynamic-entity rejection on a new connector before applying this workaround.
 
 Workaround (Dataservice V3 / dynamic-entity FilterBuilder only):
 
@@ -300,7 +300,7 @@ Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (
 
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 
-When inspecting the resulting `.flow`, note that the folder field is named `connectionFolderKey` in `inputs.detail`. The CLI `--detail` input accepts `folderKey` for convenience, then serializes the `.flow` field expected by validation. Do not hand-edit this field — `inputs.detail` is CLI-owned (see [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)); re-run `node configure` to change it.
+When inspecting the resulting `.flow`, note that the folder field is named `connectionFolderKey` in `inputs.detail`. The CLI `--detail` input accepts `folderKey` for convenience, then serializes the `.flow` field expected by validation. Do not hand-edit this field — `inputs.detail` is CLI-owned (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)); re-run `node configure` to change it.
 
 > **Do not use `filterExpression`** — that field is the trigger / JMESPath path. See [connector-trigger/impl.md](../connector-trigger/impl.md#filter-trees).
 
@@ -514,7 +514,7 @@ At BPMN emit time, the runtime rewrites each `<bindings.{name}>` placeholder to 
 
 ### Top-level `bindings[]` shape (CLI-emitted; reference only)
 
-`uip maestro flow node configure` populates these entries — you do not author them by hand. The schema below is the shape the CLI emits, for **inspection** when debugging a flow's binding state and as the planned shape for the **No-Live-Tenant** flow's sidecar `<nodeId>.detail.json` (see § No-Live-Tenant / Planned Configuration above). Per [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node), `bindings[]` is part of the CLI-owned envelope for connector / connector-trigger / managed HTTP nodes.
+`uip maestro flow node configure` populates these entries — you do not author them by hand. The schema below is the shape the CLI emits, for **inspection** when debugging a flow's binding state and as the planned shape for the **No-Live-Tenant** flow's sidecar `<nodeId>.detail.json` (see § No-Live-Tenant / Planned Configuration above). Per the [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) rules, `bindings[]` is part of the CLI-owned envelope for connector / connector-trigger / managed HTTP nodes.
 
 For every unique connection used in the flow, `node configure` appends **two entries** to top-level `bindings[]`:
 

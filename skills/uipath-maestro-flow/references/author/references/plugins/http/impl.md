@@ -16,7 +16,7 @@ Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `b
 
 ## Critical: Use `node configure`
 
-> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime. `core.action.http.v2` is CLI-owned per [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) (same envelope rules as connector activities).
+> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime. `core.action.http.v2` is CLI-owned per [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) (same envelope rules as connector activities).
 
 ## Configuration Workflow
 

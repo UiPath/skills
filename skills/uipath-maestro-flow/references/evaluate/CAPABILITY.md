@@ -15,7 +15,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 - Start an eval run on Studio Web, poll its status, fetch detailed results
 - Compare two eval runs to verify a change improved scores without regressions
 
-For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations the same `uip maestro` family exposes `uip maestro bpmn eval` — this capability covers Flow only.
+For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations read the `uipath-maestro-bpmn` skill — this capability covers Flow only.
 
 ## Critical rules
 

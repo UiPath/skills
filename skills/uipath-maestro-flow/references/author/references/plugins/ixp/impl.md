@@ -85,7 +85,7 @@ Rules for the listing path:
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
 - **Do NOT search by `"runtime"`, `"document extractor"`, `"extractor"`, or `"IXP"` (uppercase).** These return empty results or agent-tool variants — not extraction nodes. Use `"uipath.ixp"` (lowercase) only.
 - **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates *deployed flow process instances* (with `--folder-key`), not published models. Listing published IxP models always goes through `registry search "uipath.ixp"`.
-- **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist. The CLI returns `unknown command 'list-...'` and there is no fallback path to pursue.
+- **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist. The CLI returns `unknown command 'list-...'` and there is no fallback path to pursue. <!-- uip-check-skip -->
 
 ## Registry Validation
 

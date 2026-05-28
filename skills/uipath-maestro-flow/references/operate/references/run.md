@@ -37,7 +37,7 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
   --attachment <variableId>=<localPath>
 ```
 
-> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#attachment-preflight).
+> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding).
 
 ### Reporting debug runs to the user
 
@@ -72,7 +72,7 @@ uip maestro flow process run <process-key> <folder-key> --output json \
   --attachment <variableId>=<localPath>
 ```
 
-> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#attachment-preflight). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
+> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
 
 Run `uip maestro flow process --help` for all subcommands and options.
 
