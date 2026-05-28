@@ -45,7 +45,7 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 | Path | Trigger | Capabilities |
 |---|---|---|
 | **Lookup** | Value starts with `=vars.<id>` or `=bindings.<id>` | Strip prefix, look up by id, return value. NO operators, NO dotted access, NO `=metadata.` |
-| **JS eval** | Value starts with `=js:<expr>` | Full JS evaluation. Scope: `vars`, `metadata`, `bindings`, `response`, `event`, `Error`, `datafabric`, `orchestrator`. Operators, function calls, dotted access all work. (`event` available only on `wait-for-connector` rules — bound to the incoming event payload.) |
+| **JS eval** | Value starts with `=js:<expr>` | Full JS evaluation. Predefined namespaces: `vars`, `response`, `bindings`, `iterator`, `metadata`. Operators, function calls, dotted access all work. **A condition / rule `conditionExpression` can reference only case variables (`vars.X`) and `metadata`** — there is no `event` namespace (referencing `event` errors with "event not found"). For event-payload gating, use extract-then-gate (bind `response.X -> caseVar` in the rule's Outputs, then `=js:vars.caseVar`). |
 
 `data.inputs[].value` on non-connector tasks runs **lookup** when the value matches `^=vars\.\w+$` or `^=bindings\.\w+$`; **JS eval** otherwise. Connector body fields, filter expressions, and condition expressions ALL run **JS eval** — they require `=js:` wrap regardless of value shape.
 

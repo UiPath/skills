@@ -75,6 +75,10 @@ Timers are a built-in type — they are never placeholders because they have no 
 
 Case-level event triggers (`type: "case-management:Trigger"` with `serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.label` / `description` / `parentElement` to render at all, so the placeholder keeps those plus `data.uipath: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never placeholders (no registry dependency).
 
+### Connector condition rules
+
+When a `wait-for-connector` rule's connector hasn't resolved at write-time, the rule is emitted without `uipath` — the rule itself is not a placeholder; only its connector configuration is deferred (same pattern as task `data:{}`). Full recipe + skip behavior + upgrade path: [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback).
+
 ## `tasks.md` Planning-Entry Shape
 
 A placeholder-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:
