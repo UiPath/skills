@@ -5,7 +5,7 @@ description: >
   instantiates it inside a node body with `index_name` and
   `folder_path` set, and emits the `index` binding for the targeted
   Context Grounding index.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:rag-coded]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:rag-coded]
 
 run_limits:
   turn_timeout: 1200
