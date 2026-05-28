@@ -7,7 +7,7 @@ description: >
   Validate-only and pure-OOTB — no tenant, no `flow debug` (a delay node
   would block the run for its full wait duration, and the timer fires only
   inside a live BPMN engine the test sandbox cannot provision).
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:delay]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:delay]
 
 run_limits:
   turn_timeout: 1200
@@ -20,9 +20,8 @@ initial_prompt: |
     - `inputs.timerType` must be `"timeDuration"`.
     - `inputs.timerPreset` must be a fixed ISO 8601 duration preset such as
       `"PT15M"` (15 minutes). Do NOT use `"custom"` for this smoke test.
-    - Set `typeVersion` to the `version` field from
-      `uip maestro flow registry get core.logic.delay --output json`.
-      Do NOT hardcode a guessed version.
+    - Set `typeVersion` from the node registry for `core.logic.delay` —
+      do NOT hardcode a guessed version.
 
   Wire the Delay node so that it has an incoming edge from the trigger and an
   outgoing edge to the End node (an `edges[]` entry whose `targetNodeId` is
