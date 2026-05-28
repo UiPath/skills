@@ -39,7 +39,7 @@ When Phase 0 runs from scratch, AskUserQuestion (3 options):
 
 ## Modes
 
-Phase 0 moves through five modes of attention. Listen / Sketch / Ask loop freely as the conversation unfolds and new context lands. Resolve and Approve are gates.
+Phase 0 moves through five modes of attention. Listen opens broad (one prompt + read everything shared); **Ask then runs a progressive walk through every SDD dimension** (§Ask → Progressive coverage walk) so coverage never depends on what Listen happened to catch. Listen / Sketch / Ask loop freely as new context lands. Resolve and Approve are gates.
 
 ### Listen
 
@@ -60,7 +60,7 @@ What the agent does as the user responds:
   > `Got the SLA spec. The Compliance SLA is 8 hours, not the 4-hour default I was about to use.`
 - **Verbal-only is fine.** A user who describes the process with no attachment is treated the same way — listen, narrate inferences.
 
-Listen does not ask shaping questions — those belong in Ask. The single exception is technical: when a referenced doc is unreadable (see `.docx` / `.pptx` / scanned-PDF row above), request a paste so Listen can keep reading. Inferences are private to the sketch.
+Listen does not ask shaping questions — those belong in Ask's progressive walk (§Ask). The opening prompt is the *opener*, not the whole interview: capture what the user volunteers, then let the walk drive every dimension to depth. The single exception is technical: when a referenced doc is unreadable (see `.docx` / `.pptx` / scanned-PDF row above), request a paste so Listen can keep reading. Inferences are private to the sketch.
 
 #### Domain-vocabulary capture (during Listen)
 
@@ -112,7 +112,27 @@ Write `sdd.draft.md` as the sketch firms up. Update in place each time a gap clo
 
 ### Ask
 
-Two cadences. Default is **single-question** for shape-changing gaps. **Batched** is reserved for independent low-impact follow-ups so a 14-task case doesn't burn 14 prompts.
+Ask is a **progressive walk** through the SDD dimensions, not a gap-only afterthought. Listen seeds the sketch; Ask then walks every core dimension in order (§Progressive coverage walk), confirming or extending each so the SDD reaches full depth on task detail, personas, and decisions — not just what Listen happened to surface. Two cadences carry the prompts: **single-question** (default — shape-changing gaps) and **batched** (independent low-impact follow-ups only, so a 14-task case doesn't burn 14 prompts).
+
+#### Progressive coverage walk (interview backbone)
+
+After Listen seeds the sketch, walk these dimensions **in order** — one prompt per dimension, each anchored to what the sketch already holds (`Here's what I have for <X> — confirm, change, or add`). This is the confirm-or-modify pattern, never a cold form. The walk guarantees coverage even when Listen was thin; it is what makes Phase 0 progressive rather than a single open question.
+
+Skip a dimension's prompt only when Listen already captured it verbatim at high confidence AND it is not on the §Always-Ask list. Rows 2, 3, 7, 8 are never skipped — they define the case shape.
+
+| # | Dimension | Prompt (anchored to the sketch) | Feeds |
+|---|---|---|---|
+| 1 | Process & objective | `This case handles <X> to achieve <Y> — right?` | §1.1 |
+| 2 | Stage flow (E2E) | Show inferred stages in order; `Does this match start → finish?` Loop until confirmed — the only looping prompt. | §2 stages |
+| 3 | Tasks per stage + type | Per stage: list inferred tasks + proposed type; `What work happens in <Stage>, and who or what does each step?` Pick each type via [sdd-generation-rules.md § Choosing the task type](sdd-generation-rules.md#choosing-the-task-type). | §2 task summary, task blocks |
+| 4 | Personas / owners | Show inferred roles; `Who works these tasks, and which stages do they own?` | §3 personas, task Owner |
+| 5 | Decisions / gates | `Where does someone approve / decline / escalate?` Each gate → an `action` task with buttons, or a routing exit. | task buttons, exits |
+| 6 | Data per stage | `What information is collected or produced at each step?` | §1.5 variables |
+| 7 | Trigger & exit | `What kicks this off, and what does 'done' look like?` Trigger type is Always-Ask the moment a portal / form / schedule / event is named. | §1.3, §1.4 |
+| 8 | Exceptions / escalations | `What goes wrong, and how is it handled?` Each handler → a secondary (exception) stage — see [sdd-generation-rules.md § Mental model](sdd-generation-rules.md#mental-model-stages-secondary-stages-tasks). | exception stages |
+| 9 | SLA / timing | Only when the user mentioned timing. `How long should <stage / case> take?` | §1.2, stage SLA |
+
+Each row is a single-question prompt by default. Collapse only the safe-to-default rows (4 persona descriptions, 9 SLA when timing was never raised) into the one allowed §Batched prompt. Trigger type (7), task type on ambiguous verbs (3), and case exit (7) stay single-question — they are Always-Ask.
 
 #### Single-question (default for shape-changing gaps)
 

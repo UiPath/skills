@@ -63,7 +63,7 @@ build the case in the Case Designer without guessing.
    - **WHEN** = the rule type (event that triggers evaluation, e.g., `selected-stage-completed("Intake")`)
    - **IF** = the optional `conditionExpression` (JavaScript expression evaluated against case variables, e.g., `applicationStatus == "Approved"`)
 
-7. **Task types — closed enum of 9 values. Choose based on WHAT THE TASK DOES, not its surface label.** Any other value (e.g., `external-agent`, `connector-activity`, `wait-for-event`) is invalid and breaks downstream JSON generation. Consider all 9 for every task:
+7. **Task types — this skill generates 9 of the CLI's 10 task types. Choose based on WHAT THE TASK DOES, not its surface label.** The 10th CLI type, `external-agent`, has no generation plugin here — model it as `api-workflow` / `execute-connector-activity` instead (see below). Values like `connector-activity` or `wait-for-event` are not CLI task types at all. Emitting anything outside these 9 breaks downstream JSON generation. Consider all 9 for every task:
    - `action` — a human must review, approve, or make a judgment call. The task PAUSES for a person.
    - `agent` — AI reasoning: classification, criteria application, document analysis, risk assessment, triage. Use for any semi-structured reasoning.
    - `process` — deterministic multi-step BPMN: routing, orchestration, batch processing, report generation. No judgment (human or AI).
@@ -164,9 +164,11 @@ The generated SDD must start with:
 
 | T# | Trigger Type | Source | Configuration |
 |----|-------------|--------|---------------|
-| T02 | {None \| Intsvc.EventTrigger \| Intsvc.TimerTrigger \| Manual} | {source system, connector, or "Manual"} | {see Configuration rules below} |
+| T02 | {Manual \| Intsvc.EventTrigger \| Intsvc.TimerTrigger} | {source system, connector, or "Manual"} | {see Configuration rules below} |
 
 > Number triggers sequentially starting at T02 (T01 is reserved for the case file). The T-number is referenced by Case Variables rows whose value comes from this trigger's payload.
+>
+> `Manual` is author shorthand — a manual trigger has **no** `serviceType` in the generated JSON (the CLI serviceType enum is `None` / `Intsvc.EventTrigger` / `Intsvc.TimerTrigger`; never write `serviceType: "Manual"`).
 
 **Configuration column — write user-specified intent only:**
 
@@ -291,7 +293,8 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage Exit Conditions
 
-> **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` or `wait-for-connector`; `No` row MAY use `selected-tasks-completed(...)` or `wait-for-connector`. Mixing is invalid.
+> **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
+> Completion (`Yes`) and routing (`No`) rows share this one table. **Stage-to-stage routing is expressed by the destination stages' Entry Conditions** (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`) — one stage can fan out to N stages, each declaring it as their entry trigger. `return-to-origin` returns to the origin stage automatically.
 
 | WHEN | IF | Exit Type | Marks Stage Complete |
 |------|-----|-----------|---------------------|
