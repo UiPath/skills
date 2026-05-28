@@ -48,8 +48,8 @@ initial_prompt: |
     "description": "Legacy invoice reader for refactor smoke test",
     "main": "Main.xaml",
     "dependencies": {
-      "UiPath.System.Activities": "[23.4.4]",
-      "UiPath.Excel.Activities": "[2.21.4]"
+      "UiPath.System.Activities": "[24.10.8]",
+      "UiPath.Excel.Activities": "[2.24.4]"
     },
     "webServices": [],
     "entitiesStores": [],

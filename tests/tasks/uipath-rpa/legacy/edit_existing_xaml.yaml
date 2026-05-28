@@ -35,7 +35,7 @@ initial_prompt: |
     "description": "Legacy project for edit smoke test",
     "main": "Main.xaml",
     "dependencies": {
-      "UiPath.System.Activities": "[23.4.4]"
+      "UiPath.System.Activities": "[24.10.8]"
     },
     "webServices": [],
     "entitiesStores": [],
