@@ -112,9 +112,12 @@ uip solution resource add --source remote --kind Queue --name InvoiceQueue --fol
 # Delete one resource by key
 uip solution resource remove <KEY> --output json
 
-# Patch an existing resource's spec by key
+# Patch an existing resource's spec by key (JSON object is the only input)
 uip solution resource edit <KEY> --patch '{"maxNumberOfRetries":5}' --output json
-uip solution resource edit <KEY> --set acceptAutomaticallyRetry=false --output json
+uip solution resource edit <KEY> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
+
+# Read the patch from stdin
+echo '{"slaInHours":"4"}' | uip solution resource edit <KEY> --patch - --output json
 ```
 
 `add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: "Unchanged"`. `edit` is the only command that mutates an existing resource's spec — `refresh` never overwrites; it skips resources already in the solution. None of these touch `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–11](/uipath:uipath-solution) for the full contract.
