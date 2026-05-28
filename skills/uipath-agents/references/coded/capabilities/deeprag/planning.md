@@ -29,17 +29,17 @@ Standard 5-node graph:
 
 1. `fetch_file` — download / accept input file → local path
 2. `upload_attachment` — `sdk.attachments.upload_async` → attachment uuid
-3. `create_index` — **`@durable_interrupt`** returning `CreateEphemeralIndex` → `ContextGroundingIndex` (already ingested)
-4. `run_deep_rag` — **`@durable_interrupt`** returning `CreateDeepRag(is_ephemeral_index=True, ...)` → `DeepRagContent`
+3. `create_index` — `create_ephemeral_index_async` → check `in_progress_ingestion()` → conditionally `interrupt(WaitEphemeralIndex(...))` → `ContextGroundingIndex`
+4. `run_deep_rag` — `interrupt(CreateDeepRag(is_ephemeral_index=True, ...))` → `DeepRagContent`
 5. `finalize` — shape `GraphOutput`
 
-Steps 3 and 4 use the resume-trigger pattern so the agent suspends and resumes on platform completion events. Polling kills the serverless 15-min job timeout — see [impl-python.md](impl-python.md) for the rule and the implementation.
+Steps 3 and 4 use plain `interrupt()` so the agent suspends and resumes on platform completion events. Polling kills the serverless 15-min job timeout — see [impl-python.md](impl-python.md) for the implementation.
 
 ## Critical Decisions
 
 | Decision | Rule |
 |---|---|
-| Sync vs durable | Always durable for create-index and run-deep-rag. Never poll. |
+| Sync vs interrupt | Always use `interrupt()` for create-index (conditionally) and run-deep-rag. Never poll. |
 | Folder for index | Personal workspace key by default. Only override when the user has confirmed role permissions in another folder. |
 | Citation mode | Default `SKIP` for summarization. Use `INLINE` when the user asks for inline source references. Verify available values via the SDK's `CitationMode` enum. |
 | `is_ephemeral_index` | Always `True` on `CreateDeepRag` when `index_id` came from `CreateEphemeralIndex`. Runtime requires the flag to route as ephemeral; missing it fails server-side. The Pydantic validator only catches the inverse case (`is_ephemeral_index=True` with `index_id=None`). |
