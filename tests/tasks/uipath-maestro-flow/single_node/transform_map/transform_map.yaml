@@ -5,10 +5,10 @@ description: >
   (uppercasing a name field). Exercises Transform Map node discovery, the
   plain-`$vars` `collection` path contract, and the map operation's
   `config.mappings` shape. Validate-only — no tenant, no `flow debug`.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:transform-map]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:transform, feature:transform]
 
 run_limits:
-  max_turns: 80
+  turn_timeout: 1200
 
 initial_prompt: |
   Create a UiPath Flow project named "TransformMapDemo" that contains a single
@@ -26,17 +26,15 @@ initial_prompt: |
       `[{ "name": "alice" }, { "name": "bob" }]`.
     - The node's `inputs.collection` MUST be a plain `$vars.<...>` variable
       path (e.g. `$vars.people.output` or `$vars.people`). Do NOT wrap it in
-      `=js:` and do NOT set it to an inline array literal — the transform
-      runtime treats `collection` as a path string, so `=js:` or a literal
-      array resolves to an empty collection.
+      `=js:` and do NOT set it to an inline array literal.
     - `inputs.operations` must contain one operation with `type: "map"` whose
       `config.mappings` includes a mapping with `field: "name"` and
       `transformation: "uppercase"`.
     - The node `outputs.output.source` must be `=result.response` and
       `outputs.error.source` must be `=Error`.
-    - Set the node's `typeVersion` to the `version` field returned by
-      `uip maestro flow registry get core.action.transform.map` — do NOT
-      hardcode a guessed version.
+    - Set the node's `typeVersion` from the node registry for
+      `core.action.transform.map` — do NOT hardcode a guessed version (the
+      skill's workflow teaches how to read the registry).
 
   Do NOT run flow debug — just validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
