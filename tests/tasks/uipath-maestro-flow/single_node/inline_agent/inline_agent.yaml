@@ -4,7 +4,7 @@ description: >
   scaffolded via `uip agent init --inline-in-flow`. Exercises the inline-agent
   form's `inputs.source` hydration — distinct from the published-agent form
   (uipath.core.agent.*) covered by coded_agent / lowcode_agent.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource, inline-agent]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource]
 
 agent:
   type: claude-code
