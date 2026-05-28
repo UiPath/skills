@@ -30,7 +30,7 @@ Quality checklist for UiPath Orchestrator resources — assets, queues, storage 
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Assets follow consistent naming convention | Warning | `uip resource assets list <FOLDER_ID> --output json` |
+| Assets follow consistent naming convention | Warning | `uip or assets list <FOLDER_ID> --output json` |
 | Recommended pattern: `[Department]_[Process]_[AssetName]` | Info | Review asset names |
 | No duplicate asset names in the same folder | Warning | Check for duplicates |
 | Asset descriptions populated | Info | Check description fields |
@@ -65,7 +65,7 @@ Quality checklist for UiPath Orchestrator resources — assets, queues, storage 
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Queue names follow consistent convention | Warning | `uip resource queues list <FOLDER_ID> --output json` |
+| Queue names follow consistent convention | Warning | `uip or queues list <FOLDER_ID> --output json` |
 | Recommended pattern: `[Department]_[Process]_QueueName` | Info | Review queue names |
 | Max retries configured (1-50, typically 3) | Warning | Check max retry setting |
 | Auto-retry enabled for application exceptions | Warning | Check auto-retry setting |
