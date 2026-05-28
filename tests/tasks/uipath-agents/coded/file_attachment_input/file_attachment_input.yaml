@@ -2,47 +2,47 @@ task_id: skill-agent-coded-file-attachment-input
 description: >
   Coded agent that accepts a file attachment as input. Verifies the agent
   uses `from uipath.platform.attachments import Attachment` on the `Input`
-  model and runs `uip codedagent init` so `entry-points.json` emits the
+  model and runs `uip functions init` so `entry-points.json` emits the
   `x-uipath-resource-kind: JobAttachment` schema that Studio Web and
   Orchestrator use to render a file picker at runtime.
 tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:framework-simple]
 
 initial_prompt: |
   1. Create a 'test.txt' file at cwd with 'This is the file content' as content.
-  2. Build a UiPath coded agent named `attachment-agent` that accepts it as input and outputs its name and content.
+  2. Build a UiPath Coded Function named `attachment-agent` that accepts it as input and outputs its name and content.
 
   Use the coded function shape with Pydantic models. In `main.py`, define
   `class Input(BaseModel)` with an `attachment: Attachment` field imported
   from `uipath.platform.attachments`. Do not use dataclasses for the Input
-  model: `uip codedagent init` must recognize the `Attachment` type and emit
+  model: `uip functions init` must recognize the `Attachment` type and emit
   `x-uipath-resource-kind: JobAttachment` in `entry-points.json`.
 
   For local testing, branch on `UiPathConfig.job_key`; when it is `None`, read
   bytes from the `UIPATH_LOCAL_ATTACHMENT` file path and pass a placeholder
-  attachment object to `uip codedagent run`.
+  attachment object to `uip functions run`.
   Then run it locally.
 
 success_criteria:
   - type: command_executed
-    description: "Agent scaffolded the project with uip codedagent new"
+    description: "Agent scaffolded the project with uip functions new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+new'
+    command_pattern: 'uip\s+functions\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uip codedagent init to generate entry-points.json"
+    description: "Agent ran uip functions init to generate entry-points.json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+init'
+    command_pattern: 'uip\s+functions\s+init'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran the agent locally with uip codedagent run"
+    description: "Agent ran the function locally with uip functions run"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+run'
+    command_pattern: 'uip\s+functions\s+run'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

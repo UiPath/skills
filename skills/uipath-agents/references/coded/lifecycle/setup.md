@@ -10,11 +10,11 @@ which uip > /dev/null 2>&1 || echo "install uip: npm install -g @uipath/cli"
 
 ## Framework Selection
 
-Pick the framework before starting. The package installed in the Workflow determines which scaffold `uip codedagent new` produces.
+Pick the framework before starting. The package installed in the Workflow determines which scaffold `uip codedagent new` produces — except for the **Coded Function** framework, which uses a separate `uip functions <cmd>` CLI surface (see [coded-functions.md](../frameworks/coded-functions.md)) for scaffold, init, run, pack, and publish.
 
 | Agent Type | `<FRAMEWORK_PACKAGE>` | Framework config | Guide |
 |---|---|---|---|
-| Coded Function | `uipath` | `uipath.json` | [coded-function-agents.md](../frameworks/coded-function-agents.md) |
+| Coded Function | `uipath` | `uipath.json` | [coded-functions.md](../frameworks/coded-functions.md) |
 | LangGraph | `"uipath-langchain"` | `langgraph.json` | [langgraph-integration.md](../frameworks/langgraph-integration.md) |
 | LlamaIndex | `uipath-llamaindex` | `llama_index.json` | [llamaindex-integration.md](../frameworks/llamaindex-integration.md) |
 | OpenAI Agents | `uipath-openai-agents` | `openai_agents.json` | [openai-agents-integration.md](../frameworks/openai-agents-integration.md) |

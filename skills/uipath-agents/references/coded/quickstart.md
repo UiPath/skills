@@ -28,8 +28,11 @@ When `project_state == local-workspace`, also read [lifecycle/local-workspace.md
 | `uip login`, `uip login status`, `uip login tenant list`, `uip login tenant set`, `uip logout` | yes |
 | `uip codedagent setup` | yes |
 | `uip codedagent new`, `init`, `run`, `dev`, `eval`, `deploy`, `push`, `pull`, `invoke` | no (forwarded to the Python CLI) |
+| `uip functions new`, `init`, `run`, `pack`, `publish`, `push` | Coded Function framework only — see below |
 
 Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects session credentials (`UIPATH_URL`, `UIPATH_ACCESS_TOKEN`, org/tenant identifiers) from your `uip login` session into the Python subprocess; `uv run uipath` skips that injection.
+
+> **Coded Function framework uses `uip functions`, not `uip codedagent`.** Scaffold with `uip functions new <name> --language py`; lifecycle commands (`init`, `run`, `pack`, `publish`, `push`) live under `uip functions`. See [frameworks/coded-functions.md](frameworks/coded-functions.md). LangGraph, LlamaIndex, and OpenAI Agents stay on `uip codedagent`.
 
 ## Critical Rules
 

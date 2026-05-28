@@ -42,25 +42,25 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent scaffolded the project with uip codedagent new"
+    description: "Agent scaffolded the project with uip functions new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+new'
+    command_pattern: 'uip\s+functions\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uip codedagent init to generate entry-points.json"
+    description: "Agent ran uip functions init to generate entry-points.json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+init'
+    command_pattern: 'uip\s+functions\s+init'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent executed the agent locally with uip codedagent run"
+    description: "Agent executed the function locally with uip functions run"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+run\s+main'
+    command_pattern: 'uip\s+functions\s+run'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
