@@ -1,0 +1,66 @@
+task_id: skill-flow-transform-group-by
+description: >
+  Create a UiPath Flow with a single Group By transform node
+  (`core.action.transform.group-by`) that groups a small static collection by a
+  field and produces at least one aggregation (e.g. a count). Exercises Group By
+  transform node discovery, the `operations`/`groupBy` op shape (`groupByField` +
+  `aggregations`), and the rule that `inputs.collection` is a plain `$vars` path
+  (never wrapped in `=js:` or an inline array literal). Pure-OOTB, validate-only:
+  no tenant and no `flow debug` — the structural checker reads the `.flow` file
+  directly.
+tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:transform-group-by]
+
+run_limits:
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "TransformGroupByDemo" that uses a single
+  Group By transform node (`core.action.transform.group-by`) to group a small
+  static collection of records by a field and compute at least one aggregation.
+
+  Requirements:
+
+    - Hold the static collection (a small array of objects, e.g. employees with
+      `department` and `salary` fields) in a flow variable's `defaultValue` or
+      emit it from an upstream static-data / script node. Do NOT inline the array
+      into the transform node.
+    - The Group By node's `inputs.collection` must be a PLAIN variable path such
+      as `$vars.employees.output.items` (or `$vars.employees`). NEVER wrap it in
+      `=js:` and NEVER set it to an inline array literal — the transform runtime
+      reads the path as-is, so `=js:...` resolves to an empty collection.
+    - `inputs.operations` must be a non-empty array containing one operation with
+      `type: "groupBy"` whose `config.groupByField` is the field to group on (a
+      non-empty string) and whose `config.aggregations` is a non-empty array. Each
+      aggregation must have a non-empty `operation` (e.g. `count`, `sum`,
+      `average`) and a non-empty `alias` for the output field.
+    - The node's `outputs.output.source` must be `=result.response` and
+      `outputs.error.source` must be `=Error`.
+    - Set the node's `typeVersion` to the `version` field returned by
+      `uip maestro flow registry get core.action.transform.group-by --output json`.
+      Do NOT hardcode a guessed version.
+
+  Validate the flow. Do NOT run flow debug — just validate.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its
+  workflow steps exactly — in particular, the transform plugin's Group By JSON
+  shape and the collection-input contract.
+
+success_criteria:
+  # -- Flow file validity --
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate TransformGroupByDemo/TransformGroupByDemo/TransformGroupByDemo.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # -- Structural checks (node type, collection path, groupBy op shape, ports) --
+  - type: run_command
+    description: "Flow has exactly one core.action.transform.group-by node with a plain $vars collection, a non-empty groupBy operation, and the standard output/error ports"
+    command: "python3 $TASK_DIR/check_transform_group_by_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
