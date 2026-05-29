@@ -15,19 +15,29 @@ on:
   workflow_dispatch:
     inputs:
       task_globs:
-        description: 'REQUIRED. Space-separated globs under tests/. Examples: "tasks/uipath-test/foo.yaml" (single), "tasks/uipath-agents/**/*.yaml" (folder), "tasks/**/*.yaml" (full suite — also tick confirm_large_run).'
+        description: 'REQUIRED. Space-separated globs under tests/. E.g. tasks/uipath-agents/**/*.yaml'
         type: string
         required: true
+      # Host-level concurrency for the Linux job's `coder-eval -j`. Default 4:
+      # ubuntu-latest is 4 vCPU, and j=20 oversubscribes ~5:1 — agents miss the
+      # 1200s turn timeout and ERROR (false negatives, including a bindings
+      # test) instead of failing on logic. Repro on a j=20 run:
+      # https://github.com/UiPath/skills/actions/runs/26651052875
+      parallelism:
+        description: 'Parallel tasks for the Linux job (-j). Keep ≤4 on ubuntu-latest (4 vCPU).'
+        type: string
+        required: false
+        default: '4'
       confirm_large_run:
-        description: 'Tick to allow runs that match more than 50 tasks. Guardrail against accidental full-suite ($$$).'
+        description: 'Allow >50 tasks (cost guardrail).'
         type: boolean
         default: false
       coder_eval_ref:
-        description: 'coder_eval branch/SHA to install + use.'
+        description: 'coder_eval branch/SHA.'
         type: string
         default: main
       cli_version:
-        description: '@uipath/cli tag or pinned version published to GH Packages (e.g. alpha, 0.1.22-alpha.20260520.1234).'
+        description: '@uipath/cli version.'
         type: string
         default: alpha
 
@@ -98,13 +108,13 @@ jobs:
     if: needs.partition.outputs.linux_count != '0'
     # TODO: switch to `ubuntu-latest-16-cores` (16 vCPU / 64 GB RAM) once
     # the UiPath/skills repo is allowlisted for that runner group. Standard
-    # ubuntu-latest is fine for ad-hoc single-task / small-folder runs at
-    # j=20; the larger tier is needed for the full nightly sweep to finish
-    # in ~30-45min instead of multi-hour.
+    # ubuntu-latest (4 vCPU) handles ad-hoc single-task / small-folder runs at
+    # the default `parallelism` (4); the larger tier is needed to raise -j for
+    # the full nightly sweep to finish in ~30-45min instead of multi-hour.
     runs-on: ubuntu-latest
     # Full skills suite on the VM (~700 tasks, j=1) runs 3-4h. 330 min
     # covers worst-case stalls (one slow task pinning a slot, network
-    # hiccups, etc.) on ubuntu-latest at j=20.
+    # hiccups, etc.).
     timeout-minutes: 330
     name: Run coder-eval (Linux)
     steps:
@@ -180,13 +190,17 @@ jobs:
           E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
+          TASK_PARALLELISM:         ${{ inputs.parallelism }}
         working-directory: tests
         id: eval
         run: |
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml -j 20 ($TASK_COUNT task files)"
+          # Guard the empty case (e.g. a future non-dispatch trigger): the
+          # `parallelism` input default (4) only applies on workflow_dispatch.
+          j="${TASK_PARALLELISM:-4}"
+          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
             -e experiments/nightly.yaml \
-            -j 20 -v \
+            -j "$j" -v \
             --run-dir /tmp/runs
 
       - name: Fix permissions on /tmp/runs
