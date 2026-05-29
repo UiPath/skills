@@ -26,8 +26,6 @@ import inspect
 import re
 from pathlib import Path
 
-import yaml
-
 TASK_DIR = Path(__file__).resolve().parent
 TASK_YAML = TASK_DIR / "subflow.yaml"
 CHECKER = TASK_DIR / "check_subflow_flow.py"
@@ -35,20 +33,26 @@ SHARED = TASK_DIR.parents[1] / "_shared" / "flow_check.py"
 
 
 def _debug_criterion_timeout() -> int:
-    """The ``timeout`` of the run_command criterion that runs check_subflow_flow.py."""
-    config = yaml.safe_load(TASK_YAML.read_text())
-    matches = [
-        c
-        for c in config.get("success_criteria", [])
-        if c.get("type") == "run_command"
-        and CHECKER.name in str(c.get("command", ""))
-    ]
+    """The ``timeout`` of the run_command criterion that runs check_subflow_flow.py.
+
+    Parsed with a scoped regex rather than a YAML library: CI installs only
+    pytest (no PyYAML), and a module-level ``import yaml`` would error at
+    collection and interrupt the whole maestro-flow suite. We isolate the
+    criterion entry that invokes the checker (from its ``command:`` line to the
+    next list item / top-level section) and read the first ``timeout:`` key in
+    that block.
+    """
+    text = TASK_YAML.read_text()
+    assert CHECKER.name in text, f"{CHECKER.name} not referenced in {TASK_YAML.name}"
+    rest = text[text.index(CHECKER.name):]
+    boundary = re.search(r"\n\s*-\s+type:|\npost_run:|\Z", rest)
+    block = rest[: boundary.start()]
+    matches = re.findall(r"^\s*timeout:\s*(\d+)\b", block, re.MULTILINE)
     assert len(matches) == 1, (
-        f"Expected exactly one criterion invoking {CHECKER.name}, found {len(matches)}"
+        f"Expected exactly one timeout in the {CHECKER.name} criterion block, "
+        f"found {matches}"
     )
-    timeout = matches[0].get("timeout")
-    assert isinstance(timeout, int), f"criterion timeout must be an int, got {timeout!r}"
-    return timeout
+    return int(matches[0])
 
 
 def _run_debug_subprocess_timeout() -> int:
