@@ -7,10 +7,8 @@ description: >
   inlining the JSON on the command line — breaks shell quoting
   on non-trivial payloads.
 
-  Platform note: the smoke test runs without an authenticated tenant, so
-  `uip ixp` commands that hit the service will fail with an auth error.
-  That is acceptable — what matters is that the agent constructs the
-  command in the documented heredoc shape.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, lifecycle:edit]
 
 run_limits:
