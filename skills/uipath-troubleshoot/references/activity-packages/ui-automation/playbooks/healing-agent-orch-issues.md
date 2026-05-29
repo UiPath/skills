@@ -12,7 +12,7 @@ Customer sees a Healing Agent (HA) signal on an Orchestrator-side surface — a 
 
 | # | Surface (where seen) | Tell-tale string | Default verdict |
 |---|----------------------|------------------|-----------------|
-| 1 | Jobs grid → **"Healing Agent" column**, or job detail → **"Healing Agent" tab** | `Issues Detected`; tab banner `Unlicensed version` (preview) | Expected. Detection-only; on preview UIA `24.10.x` detects unlicensed. No unit spend. |
+| 1 | Jobs grid → **"Healing Agent" column**, or job detail → **"Healing Agent" tab** | `Issues Detected`; tab banner `Unlicensed version` (preview) | Expected. Detection-only; on preview UIA (`24.10.x`) detects unlicensed. No unit spend. |
 | 2 | Job detail → **Logs** tab, robot Info log | `Healing agent configuration.` / `Healing Agent settings` | Benign config read. Appears every run. Non-blocking, zero consumption. |
 | 3 | **Email / in-app "Notification Summary"**, Component = Healing Agent | `a problem has been identified… recommendations… available for review` | Real HA event → org is licensed OR on preview `24.10.x` (alerts unlicensed). |
 | 4 | Robot log, informational notice | `'<activity>' activity recovery failed. No available license / Agentic units to perform healing analysis and recovery.` | Benign if customer does NOT want HA (job continues). If they DO → real error. |
@@ -25,7 +25,7 @@ If the surface does not match any row, this playbook does not apply.
 - **Prereqs met but no license/units** → HA logs "No license available", does nothing, **job runs normally, zero consumption**.
 - **Units charged only on a successful heal/recommendation.** Recommendation-only consumes the same as self-heal. HA can heal via **local heuristics with no LLM call** (e.g. org AI Trust Layer policy blocks AI), so detection shown ≠ LLM/unit spend.
 
-HA is **enabled by default on newly deployed processes** (recommendations on, self-healing off). A signal appearing on a process the customer never explicitly enabled is expected for that reason.
+HA is **available by default — recommendations on, self-healing off** (docs: "Healing Agent is available by default, offering only fix recommendations, not self-healing"). A signal appearing on a process the customer never explicitly enabled is expected for that reason. Self-healing must be activated explicitly per process/job.
 
 ---
 
@@ -35,15 +35,15 @@ HA is **enabled by default on newly deployed processes** (recommendations on, se
 
 > ⚠ **Unlicensed version** — A preview version of the Healing Agent is currently in use. To upgrade to the GA version, update to the GA release of the UIAutomation.Activities packages. **Remaining days: 0**
 
-That banner is the tell. GA UIA (`25.10.x`) enforces licensing — without entitlement HA does not run, so the status reflects GA enforcement instead of preview detection. A single tenant can show both: robots pinned to `24.10.x` populate `Issues Detected` unlicensed; `25.10.x` robots do not. Identify the package version **per job**, not per tenant.
+That banner is the tell. GA UIA (`25.10.2`+) enforces licensing — without entitlement HA does not run, so the status reflects GA enforcement instead of preview detection. A single tenant can show both: robots pinned to preview `24.10.x` populate `Issues Detected` unlicensed; `25.10.2`+ robots do not. Identify the package version **per job**, not per tenant.
 
 > The Jobs-grid Healing Agent column **filter is over-inclusive** — it surfaces jobs where HA was flagged but did not actually engage. For true engagement, use **Insights** (Healing Agent templates), not the grid filter.
 
-**Investigation cue.** Identify the UIAutomation.Activities version for that specific job (read `project.json` if local). `24.10.x` → preview, detects unlicensed (primary branch). `25.10.x` → GA, requires entitlement → check `licenses info`.
+**Investigation cue.** Identify the UIAutomation.Activities version for that specific job (read `project.json` if local). `24.10.x` → preview, detects unlicensed (primary branch). `25.10.2`+ → GA, requires entitlement → check `licenses info`.
 
 **Resolution.**
-- Preview `24.10.x` + no entitlement: **expected and informational**. No self-heal, no unit spend. To make HA actionable → upgrade to GA `25.10.x`, acquire the Healing Agent add-on, allocate Heals/units. If they do NOT want HA → preview HA stops working entirely after 1 Nov 2025; upgrading to GA without the add-on means HA will not run and the status stops appearing. No setting fully suppresses preview detection on `24.10.x` short of upgrading.
-- GA `25.10.x` + entitlement present (`Allowed.AgentService > 0`): tenant **is** licensed (check for promo, bundled Heals, or active trial). `Issues Detected` is normal — to act on findings, see [selector-failure-healing-fix.md](./selector-failure-healing-fix.md) or [no-recovery-data.md](./no-recovery-data.md).
+- Preview `24.10.x` + no entitlement: **expected and informational**. No self-heal, no unit spend. To make HA actionable → upgrade to GA `25.10.2`+, acquire the Healing Agent add-on, allocate Heals/units. If they do NOT want HA → preview HA is deprecated: Enterprise tenants must upgrade to GA by **1 Nov 2025**, after which the preview **Healing Agent Orchestrator Jobs panel ceases to function and is disabled**. Upgrading to GA without the add-on means HA will not run and the status stops appearing. No setting fully suppresses preview detection on `24.10.x` short of upgrading.
+- GA `25.10.2`+ + entitlement present (`Allowed.AgentService > 0`): tenant **is** licensed (check for promo, bundled Heals, or active trial). `Issues Detected` is normal — to act on findings, see [selector-failure-healing-fix.md](./selector-failure-healing-fix.md) or [no-recovery-data.md](./no-recovery-data.md).
 
 ### Surface 2 — Robot Info log `"Healing agent configuration."` / `"Healing Agent settings"`
 
@@ -55,13 +55,13 @@ That banner is the tell. GA UIA (`25.10.x`) enforces licensing — without entit
 
 ### Surface 3 — Orchestrator email / in-app "Notification Summary", Component = Healing Agent
 
-**What it means.** A **real HA event** — HA does not send a notification unless it actually did something, and to do something the org must have the correct license. So either the org **has an HA license/active trial**, OR it is on **preview UIA `24.10.x`**, which alerts unlicensed (same preview root cause as Surface 1). There are **no HA license-status notifications** — the only HA notifications are **Heals-usage** notifications. The notification text reads: "a problem has been identified within the job. Recommendations for resolution or self-healing procedures have been quickly generated and are now available for review."
+**What it means.** A **real HA event** — HA does not send a notification unless it actually did something, and to do something the org must have the correct license. So either the org **has an HA license/active trial**, OR it is on **preview UIA `24.10.x`**, which alerts unlicensed (same preview root cause as Surface 1). HA notifications fire on a Heals-usage / recommendation event, not on license status — a notification means HA produced something, not that licensing changed. The notification text reads: "a problem has been identified within the job. Recommendations for resolution or self-healing procedures have been quickly generated and are now available for review."
 
-**Investigation cue.** Identify the UIA version of the process that triggered the alert (`24.10.x` preview vs `25.10.x` GA). Check entitlement with `uip or licenses info --output json`. Recall HA is enabled by default on newly deployed processes — the triggering process may have been auto-enabled without the customer realizing.
+**Investigation cue.** Identify the UIA version of the process that triggered the alert (`24.10.x` preview vs `25.10.2`+ GA). Check entitlement with `uip or licenses info --output json`. Recall HA is available by default (recommendations on) — the triggering process may have been auto-enabled without the customer realizing.
 
 **Resolution.**
-- Preview `24.10.x`: alerts fire unlicensed. Same fix as Surface 1 — upgrade to GA / provision add-on, or accept the alerts until preview sunsets 1 Nov 2025. No way to stop the alerts on `24.10.x` short of upgrading.
-- GA `25.10.x` with entitlement: the org **is** licensed (promo, bundled Heals, or trial) — the alert is a genuine HA recommendation event. Open the job's Healing Agent tab to review.
+- Preview `24.10.x`: alerts fire unlicensed. Same fix as Surface 1 — upgrade to GA / provision add-on, or accept the alerts until the preview Jobs panel is disabled on 1 Nov 2025. No way to stop the alerts on `24.10.x` short of upgrading.
+- GA `25.10.2`+ with entitlement: the org **is** licensed (promo, bundled Heals, or trial) — the alert is a genuine HA recommendation event. Open the job's Healing Agent tab to review.
 - Customer worried about silent unit spend: see the shared consume block — a notification means HA produced a recommendation, which is a charged event only if a license was available; preview detection charges nothing.
 
 ### Surface 4 — `'<activity>' activity recovery failed. No available license / Agentic units…` (informational)
@@ -79,7 +79,7 @@ That banner is the tell. GA UIA (`25.10.x`) enforces licensing — without entit
 ## Investigation
 
 1. **Confirm the surface** against the routing table. Route by where the customer saw it. A status, a log line, a notification, and the no-license notice are four different things — do not conflate.
-2. **Identify the UIAutomation.Activities version per job.** Read `project.json` if local. `24.10.x` = preview (detects/alerts unlicensed). `25.10.x` = GA (enforces license).
+2. **Identify the UIAutomation.Activities version per job.** Read `project.json` if local. `24.10.x` = preview (detects/alerts unlicensed). `25.10.2`+ = GA (enforces license).
 3. **Read the job's HA state.** `uip or jobs get <job-key> --output json` — check `AutopilotForRobots.Enabled` and `AutopilotForRobots.HealingEnabled`. Cross-folder; no `--folder-path` flag.
 4. **Pull logs when the surface is a log line or notification.** `uip or jobs logs <job-key> --output json` (add `--level Error` for Surface 4's notice). Cross-folder.
 5. **Fetch the recovery archive to confirm engagement.** `uip or jobs healing-data <job-key> -o <out>.zip` — a populated archive corroborates HA produced detection/recommendation data; a 22-byte ZIP is empty (HA produced nothing).
@@ -89,7 +89,7 @@ That banner is the tell. GA UIA (`25.10.x`) enforces licensing — without entit
 
 Apply the per-surface Resolution above for the matched row. Cross-cutting rules:
 
-- **Preview `24.10.x` is the common unlicensed cause for Surfaces 1 and 3.** Detection/alerts without entitlement are expected; nothing is consumed; preview HA stops entirely after 1 Nov 2025. Upgrade to GA `25.10.x` + provision the add-on to make HA actionable, or accept the signals until sunset.
+- **Preview `24.10.x` is the common unlicensed cause for Surfaces 1 and 3.** Detection/alerts without entitlement are expected; nothing is consumed. Preview is deprecated: Enterprise tenants must upgrade to GA by 1 Nov 2025, after which the preview Orchestrator Jobs panel is disabled. Upgrade to GA `25.10.2`+ + provision the add-on to make HA actionable, or accept the signals until then.
 - **Surface 2** is always benign — config read, no consumption, no execution wait.
 - **Surface 4** routes on intent: benign if HA unwanted; otherwise → [healing-agent-no-license.md](./healing-agent-no-license.md).
 - Use **Insights** (Healing Agent templates) for the true engagement/consumption picture — the Jobs-grid filter over-reports.
@@ -101,8 +101,8 @@ Apply the per-surface Resolution above for the matched row. Cross-cutting rules:
 
 ## References
 
-- Healing Agent setup (enabled by default on new processes): https://docs.uipath.com/agents/automation-cloud/latest/user-guide-ha/setup
-- Healing Agent prerequisites: https://docs.uipath.com/agents/automation-suite/2.2510/user-guide-ha/healing-agent-prerequisites
+- Healing Agent setup (available by default — recommendations on, self-healing off; GA needs UIA `25.10.2`+): https://docs.uipath.com/agents/automation-cloud/latest/user-guide-ha/setup
+- Healing Agent prerequisites (UIA `25.10.2`+): https://docs.uipath.com/agents/automation-suite/2.2510/user-guide-ha/healing-agent-prerequisites
 - Healing Agent licensing (Flex): https://docs.uipath.com/agents/automation-cloud/latest/user-guide-ha/licensing#flex
-- Healing Agent release notes (GA, September 2025): https://docs.uipath.com/agents/automation-cloud/latest/release-notes-ha/september-2025
+- Healing Agent release notes (preview deprecation — upgrade by 1 Nov 2025; Orchestrator Jobs panel disabled after): https://docs.uipath.com/agents/automation-cloud/latest/release-notes-ha/september-2025
 - Insights — Healing Agent: https://docs.uipath.com/insights/automation-cloud/latest/user-guide/healing-agent
