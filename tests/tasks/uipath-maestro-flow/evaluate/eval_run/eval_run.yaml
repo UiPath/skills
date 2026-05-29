@@ -149,7 +149,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not pass evaluator display name to eval set add"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add\s+.*--evaluators(=|\s+)["'']?greeting-match["'']?'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add\s+.*--evaluators(=|\s+)["'']?(?:[^"''\s,]+,\s*)*greeting-match["'']?(?![-\w])'
     weight: 1.5
     pass_threshold: 1.0
 
