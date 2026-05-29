@@ -8,15 +8,10 @@ description: >
   `uip solution resource list` surfaces it as a Local resource.
 tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, resource, feature:registry]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
-  task_timeout: 1200
+  expected_turns: 43
   turn_timeout: 1200
-  max_turns: 60
+  max_turns: 100
 
 initial_prompt: |
   Create a UiPath solution "ClaimsSol" containing a Flow project
@@ -24,6 +19,8 @@ initial_prompt: |
   (Python, simple stub — no LLM call needed, just Input/Output Pydantic
   models). Register the coded agent in the solution and confirm it is
   registered as a local resource using `uip solution resource list`.
+  When confirming local registration, use structured CLI output:
+  `uip solution resource list ... --output json`.
 
   Use the Coded Function framework (package: `uipath`) — NOT LangGraph,
   LlamaIndex, or OpenAI Agents. This keeps setup minimal: one lightweight
@@ -46,17 +43,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent scaffolded the Coded Function project (uip functions new or uip codedagent new)"
+    description: "Agent scaffolded the Coded Function project (uip functions/codedagent new or uipath new)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(functions|codedagent)\s+new'
+    command_pattern: '(uip\s+(functions|codedagent)\s+new\s+(?!-{1,2}help)\S+|uipath\s+new\s+(?!-{1,2}help)\S+)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent generated entry-points.json (uip functions init or uip codedagent init)"
+    description: "Agent generated entry-points.json (uip functions/codedagent init or uipath init)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(functions|codedagent)\s+init'
+    command_pattern: '(uip\s+(functions|codedagent)\s+init|uipath\s+init)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -78,9 +75,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Agent used structured output when listing solution resources"
     tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
+    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

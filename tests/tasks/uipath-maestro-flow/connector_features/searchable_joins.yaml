@@ -4,12 +4,8 @@ description: >
   a join on a related object on the Salesforce connector.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 56
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200

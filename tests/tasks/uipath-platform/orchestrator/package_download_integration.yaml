@@ -5,12 +5,7 @@ description: >
 tags: [uipath-platform, integration, mode:operate, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"

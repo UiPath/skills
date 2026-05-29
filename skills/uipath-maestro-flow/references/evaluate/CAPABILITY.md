@@ -4,7 +4,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 
 > **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
-> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, never invoke other skills automatically, AskUserQuestion dropdown pattern, **plain-English narration per logical step**, **granular `TodoWrite` list above the trivial threshold**. The rules below are evaluate-scoped and apply on top.
+> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, AskUserQuestion dropdown pattern, **plain-English narration + granular `TodoWrite` (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are evaluate-scoped and apply on top.
 
 ## When to use this capability
 
@@ -15,7 +15,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 - Start an eval run on Studio Web, poll its status, fetch detailed results
 - Compare two eval runs to verify a change improved scores without regressions
 
-For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations the same `uip maestro` family exposes `uip maestro bpmn eval` — this capability covers Flow only.
+For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations read the `uipath-maestro-bpmn` skill — this capability covers Flow only.
 
 ## Critical rules
 

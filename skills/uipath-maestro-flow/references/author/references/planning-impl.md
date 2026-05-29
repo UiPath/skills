@@ -29,7 +29,7 @@ Even built-in nodes can change. For each node type in your plan, read the releva
 
 ```bash
 uip maestro flow registry pull --force
-uip maestro flow registry get <nodeType> --output json
+uip maestro flow registry get <node-type> --output json
 ```
 
 **Plugin impl.md files for registry validation:**
@@ -57,6 +57,7 @@ uip maestro flow registry get <nodeType> --output json
 | `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
 | `uipath.connector.uipath-uipath-dataservice.*` | [connector/data-fabric/impl.md](plugins/connector/data-fabric/impl.md) |
+| `uipath.ixp.*`                  | [ixp/impl.md](plugins/ixp/impl.md)                             |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
 | `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 
@@ -91,7 +92,7 @@ If Phase 1 flagged a resource as not found, check two sources:
 ```bash
 uip maestro flow registry list --local --output json
 ```
-Run from the flow project directory. If the resource exists as a sibling project in the same `.uipx` solution, it appears here — use `registry get "<nodeType>" --local --output json` to get the full manifest.
+Run from the flow project directory. If the resource exists as a sibling project in the same `.uipx` solution, it appears here — use `registry get "<node-type>" --local --output json` to get the full manifest.
 
 **2. Tenant registry (if not in solution):**
 ```bash
@@ -100,6 +101,15 @@ uip maestro flow registry search "<resource-name>" --output json
 ```
 
 If found in neither, keep the `core.logic.mock` placeholder and note the gap.
+
+#### IxP nodes — context-dispatched, no bindings
+
+IxP extraction nodes (`uipath.ixp.*`) skip binding resolution. Design-time configuration (`folderKey`, `modelName`) is emitted into the BPMN `model.context[]` array at build time (the serializer also pins `digitizationMode` to `"fileUpload"` internally), not into a separate `bindings_v2.json` file or a top-level `bindings[]` entry. Consequence for Phase 2:
+
+- No connection ID to bind — the node carries its tenant context inline.
+- `inputs.*` is the source of truth for runtime values; validate against `registry get` `inputDefinition.properties` rather than against a binding schema.
+- The node instance also carries a structured `inputs.model` blob (extraction-model metadata) that the property panel's `ixp-model-taxonomy` component reads. Copy `inputDefaults.model` verbatim — omitting it crashes the panel with `Cannot destructure property 'modelName' of 't' as it is undefined`.
+- See [plugins/ixp/impl.md](plugins/ixp/impl.md) for the full JSON shape.
 
 ### Step 4 — Replace Mock Nodes
 

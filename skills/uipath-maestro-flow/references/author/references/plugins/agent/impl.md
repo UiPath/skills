@@ -24,7 +24,7 @@ Requires `uip login`. Only published agents from your tenant appear.
 
 ```bash
 uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.
@@ -87,7 +87,7 @@ The `model` block (BPMN type, `serviceType`, `bindings`, `context` template) liv
 
 Three values to discover — never invent:
 - **`type` suffix** — Orchestrator-assigned UUID for this agent. Per-ring and per-agent — never copy across environments. Read from `uip maestro flow registry search "uipath.core.agent"` / `registry get` as `nodeType`.
-- **`typeVersion`** — the manifest's `version` field. Read from `uip maestro flow registry get <nodeType> --output json` (`.version`).
+- **`typeVersion`** — the manifest's `version` field. Read from `uip maestro flow registry get <node-type> --output json` (`.version`).
 - **`resourceKey`** — composite `<FolderPath>.<AgentName>` (e.g. `Shared.Apple Genius Agent`). Appears on each top-level `bindings[]` entry tied to this agent. Read from `registry get` (`model.bindings.resourceKey` on the manifest).
 
 Confirm all three from `registry get` before wiring.

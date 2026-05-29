@@ -527,6 +527,30 @@ Use `uip rpa activities get-default-xaml` to get correct xmlns declarations — 
 - **LookupDataTable column resolution**: When multiple column identifiers are set (shouldn't happen due to OverloadGroups), only the first non-null is used: `LookupColumnIndex ?? LookupColumnName ?? LookupDataColumn`
 - **FilterDataTable**: Column must exist AND be type-compatible with the filter operator. Filtering a DateTime column with "Contains" fails at CacheMetadata validation.
 - **BuildDataTable**: Uses a security-related allowed types list. DataTables with certain .NET types may fail to serialize/deserialize.
+- **BuildDataTable — `TableInfo` is designer-only.** The required `TableInfo` property is a serialized string with no documented format; activity docs say "configure through the designer instead". **Cannot be authored in agent-written XAML.** Skip the activity. Build the DataTable inline with `Assign` + `InvokeMethod` instead. Requires the standard `sd` namespace alias (matches the rest of the activity-docs corpus — see `ForEachRow.md` and `AddDataRow.md`) and `xmlns:s`.
+
+  **VB XAML** (`expressionLanguage: VisualBasic` — bracket shorthand `[expr]`, `New T()`, `GetType(T)`):
+  ```xml
+  <!-- Modern (Windows/Portable):
+       xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+       xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" -->
+  <!-- Legacy (.NET Framework 4.6.1):
+       xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+       xmlns:s="clr-namespace:System;assembly=mscorlib" -->
+  <Variable x:TypeArguments="sd:DataTable" Name="dt" Default="[New System.Data.DataTable()]" />
+  ...
+  <InvokeMethod TargetObject="[dt.Columns]" MethodName="Add">
+    <InArgument x:TypeArguments="x:String">Name</InArgument>
+    <InArgument x:TypeArguments="s:Type">[GetType(System.String)]</InArgument>
+  </InvokeMethod>
+  <InvokeMethod TargetObject="[dt.Columns]" MethodName="Add">
+    <InArgument x:TypeArguments="x:String">Amount</InArgument>
+    <InArgument x:TypeArguments="s:Type">[GetType(System.Decimal)]</InArgument>
+  </InvokeMethod>
+  ```
+  **C# XAML** (`expressionLanguage: CSharp`): replace bracket-shorthand expressions with `<CSharpValue x:TypeArguments="T">...</CSharpValue>` / `<CSharpReference x:TypeArguments="T">...</CSharpReference>` wrappers inside the `<InArgument>`/`<Default>` elements. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the full binding form per property.
+
+  Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
 - **GetRowItem**: Must specify at least one of `Column`, `ColumnIndex`, or `ColumnName` — all three empty causes validation error.
 
 ## Testing Activity Gotchas
@@ -680,6 +704,7 @@ The error occurs because the XAML language schema does not register `DateTime`, 
 | `x:Guid` | `s:Guid` | — |
 | `x:Uri` | `s:Uri` | — |
 | `x:Exception` | `s:Exception` | `<Catch x:TypeArguments="s:Exception">`, `Throw` argument types |
+| `x:Type` | `s:Type` | `<InArgument x:TypeArguments="x:Type">` silently resolves to `System.Activities.XamlIntegration.TypeExtension`, NOT `System.Type`. Passing `[GetType(System.String)]` fails with `BC30311: Value of type 'Type' cannot be converted to 'TypeExtension'`. Required by `InvokeMethod` calls into APIs that take `System.Type` (e.g. `DataColumnCollection.Add(name, type)`). |
 
 For types outside of `System`, add the matching CLR namespace alias. Examples:
 ```xml
@@ -717,6 +742,74 @@ Correct — requires `xmlns:s="clr-namespace:System;assembly=System.Private.Core
 ```
 
 The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Variable`, `InArgument`, `OutArgument`, `CSharpValue`, `CSharpReference`, `ActivityAction`, `DelegateInArgument`, etc.
+
+---
+
+## Array Types in `Variable` Declarations
+
+The XAML parser rejects CLR array syntax in `<Variable x:TypeArguments="...">`. `<Variable x:TypeArguments="x:String[]">` fails to load with `Cannot create unknown type ... Variable(String[])`. The error message does not hint at the fix.
+
+**Use `scg:List(<T>)` instead of `<T>[]`** for variable declarations. Required `xmlns:scg` declaration depends on `targetFramework`:
+
+- **Modern (Windows/Portable):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"`
+- **Legacy (.NET Framework 4.6.1):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"`
+
+Wrong:
+```xml
+<Variable x:TypeArguments="x:String[]" Name="paths" />
+```
+
+Correct — **VB XAML** (`expressionLanguage: VisualBasic`, bracket shorthand for the default expression):
+```xml
+<Variable x:TypeArguments="scg:List(x:String)" Name="paths" Default="[New List(Of String)()]" />
+```
+
+Correct — **C# XAML** (`expressionLanguage: CSharp`): drop the `Default` attribute and use `<Variable.Default>` with `<CSharpValue>` instead; see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+
+**`InArgument` with array `x:TypeArguments` — context-dependent.** The canonical XAML for `AddDataRow.ArrayRow` (see [`../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md`](../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md)) uses `<InArgument x:TypeArguments="x:Object[]">[New Object() { ... }]</InArgument>` and Studio accepts it. Some agent-authored variants of the same form have been reported to fail at parse time — root cause unverified. **If `InArgument x:TypeArguments="x:Object[]"` fails in your project, fall back to calling the underlying params overload via `InvokeMethod`** (only safe when the target method has a `ParamArray Object()` / `params object[]` overload — `DataRowCollection.Add` does):
+
+```xml
+<InvokeMethod TargetObject="[dt.Rows]" MethodName="Add">
+  <InArgument x:TypeArguments="x:String">Alice</InArgument>
+  <InArgument x:TypeArguments="x:Int32">42</InArgument>
+</InvokeMethod>
+```
+
+This pattern is NOT a general substitute for fixed-arity array parameters — only for `ParamArray`/`params` overloads where the runtime builds the array from N positional arguments. For non-params arrays (e.g. `Method(int[] arr)`), `InvokeMethod` with N separate `<InArgument>` children does not work; the array must be constructed in a preceding `Assign`.
+
+---
+
+## Array Types in `Variable` Declarations
+
+The XAML parser rejects CLR array syntax in `<Variable x:TypeArguments="...">`. `<Variable x:TypeArguments="x:String[]">` fails to load with `Cannot create unknown type ... Variable(String[])`. The error message does not hint at the fix.
+
+**Use `scg:List(<T>)` instead of `<T>[]`** for variable declarations. Required `xmlns:scg` declaration depends on `targetFramework`:
+
+- **Modern (Windows/Portable):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"`
+- **Legacy (.NET Framework 4.6.1):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"`
+
+Wrong:
+```xml
+<Variable x:TypeArguments="x:String[]" Name="paths" />
+```
+
+Correct — **VB XAML** (`expressionLanguage: VisualBasic`, bracket shorthand for the default expression):
+```xml
+<Variable x:TypeArguments="scg:List(x:String)" Name="paths" Default="[New List(Of String)()]" />
+```
+
+Correct — **C# XAML** (`expressionLanguage: CSharp`): drop the `Default` attribute and use `<Variable.Default>` with `<CSharpValue>` instead; see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+
+**`InArgument` with array `x:TypeArguments` — context-dependent.** The canonical XAML for `AddDataRow.ArrayRow` (see [`../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md`](../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md)) uses `<InArgument x:TypeArguments="x:Object[]">[New Object() { ... }]</InArgument>` and Studio accepts it. Some agent-authored variants of the same form have been reported to fail at parse time — root cause unverified. **If `InArgument x:TypeArguments="x:Object[]"` fails in your project, fall back to calling the underlying params overload via `InvokeMethod`** (only safe when the target method has a `ParamArray Object()` / `params object[]` overload — `DataRowCollection.Add` does):
+
+```xml
+<InvokeMethod TargetObject="[dt.Rows]" MethodName="Add">
+  <InArgument x:TypeArguments="x:String">Alice</InArgument>
+  <InArgument x:TypeArguments="x:Int32">42</InArgument>
+</InvokeMethod>
+```
+
+This pattern is NOT a general substitute for fixed-arity array parameters — only for `ParamArray`/`params` overloads where the runtime builds the array from N positional arguments. For non-params arrays (e.g. `Method(int[] arr)`), `InvokeMethod` with N separate `<InArgument>` children does not work; the array must be constructed in a preceding `Assign`.
 
 ---
 

@@ -10,12 +10,8 @@ description: >
   judge to score the system prompt for dispute-domain coverage.
 tags: [uipath-agents, e2e, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 15
   turn_timeout: 1200
 
 initial_prompt: |

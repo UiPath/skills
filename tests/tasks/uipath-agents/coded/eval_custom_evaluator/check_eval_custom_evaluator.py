@@ -7,8 +7,9 @@ it to produce a JSON spec, wired it into an eval set, and ran it.
 Checks:
   1. `evaluations/evaluators/custom/<file>.py` exists.
   2. `evaluations/evaluators/<file>.json` exists with
-     `evaluatorSchema` containing `file://` and a non-empty `id`.
-  3. `evaluations/evaluators/custom/types/<kebab-class>-types.json` exists.
+     `evaluatorSchema`, `evaluatorTypeId`, and a non-empty `id`.
+  3. The evaluator schema and evaluator type file references resolve
+     relative to the evaluator JSON spec.
   4. `evaluations/eval-sets/<file>.json` has version "1.0",
      `evaluatorRefs` referencing the custom evaluator id, at least
      2 test cases, and each test case's `evaluationCriterias` keys
@@ -40,6 +41,35 @@ def _load_json(path: Path) -> dict:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
 
+def _relative(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _resolve_file_ref(spec_path: Path, value: str, field_name: str) -> Path:
+    if not value.startswith("file://"):
+        sys.exit(f"FAIL: evaluator JSON spec missing `{field_name}` with `file://` reference. Got: {value!r}")
+    ref = value.removeprefix("file://")
+    # Class-qualified refs use file://path/to/file.py:ClassName.
+    ref_path = ref.split(":", 1)[0]
+    if not ref_path:
+        sys.exit(f"FAIL: evaluator JSON spec `{field_name}` has an empty file path. Got: {value!r}")
+    candidates = [
+        (spec_path.parent / ref_path).resolve(),
+        (spec_path.parent / "custom" / ref_path).resolve(),
+    ]
+    path = next((candidate for candidate in candidates if candidate.is_file()), candidates[0])
+    if not path.is_file():
+        sys.exit(
+            f"FAIL: evaluator JSON spec `{field_name}` points at {value!r}, "
+            "but none of these candidate paths exist: "
+            f"{', '.join(str(candidate) for candidate in candidates)}"
+        )
+    return path
+
+
 def check_custom_evaluator_py() -> str:
     custom_dir = ROOT / "evaluations" / "evaluators" / "custom"
     if not custom_dir.is_dir():
@@ -51,35 +81,36 @@ def check_custom_evaluator_py() -> str:
     return py_files[0].stem
 
 
-def check_custom_evaluator_json() -> str:
+def check_custom_evaluator_json() -> tuple[str, Path]:
     # register writes the spec to evaluations/evaluators/, not evaluations/evaluators/custom/
     evaluators_dir = ROOT / "evaluations" / "evaluators"
     json_files = sorted(f for f in evaluators_dir.glob("*.json") if "file://" in f.read_text())
     if not json_files:
         sys.exit(f"FAIL: no JSON spec with evaluatorSchema in {evaluators_dir} — `uip codedagent register evaluator` not run")
-    spec = _load_json(json_files[0])
-    schema = spec.get("evaluatorSchema") or ""
-    if "file://" not in schema:
-        sys.exit(f"FAIL: evaluator JSON spec missing `evaluatorSchema` with `file://` reference. Got: {schema!r}")
+    spec_path = json_files[0]
+    spec = _load_json(spec_path)
+    schema_path = _resolve_file_ref(spec_path, spec.get("evaluatorSchema") or "", "evaluatorSchema")
     eval_id = spec.get("id")
     if not eval_id:
         sys.exit("FAIL: evaluator JSON spec missing required `id` field")
-    type_id = spec.get("evaluatorTypeId") or ""
-    if "file://types/" not in type_id:
-        sys.exit(f"FAIL: evaluator JSON spec missing `evaluatorTypeId` pointing to types/ dir. Got: {type_id!r}")
-    print(f"OK: evaluator JSON spec exists with id={eval_id!r}, evaluatorSchema={schema!r}")
-    return eval_id
+    type_path = _resolve_file_ref(spec_path, spec.get("evaluatorTypeId") or "", "evaluatorTypeId")
+    if type_path.parent.name != "types":
+        sys.exit(
+            "FAIL: evaluator JSON spec `evaluatorTypeId` should point into a "
+            f"`types/` directory. Got: {_relative(type_path)}"
+        )
+    print(
+        "OK: evaluator JSON spec exists with "
+        f"id={eval_id!r}, evaluatorSchema={_relative(schema_path)!r}, "
+        f"evaluatorTypeId={_relative(type_path)!r}"
+    )
+    return eval_id, type_path
 
 
-def check_custom_evaluator_types(evaluator_id: str) -> None:
-    # register writes the types schema to evaluations/evaluators/custom/types/
-    types_dir = ROOT / "evaluations" / "evaluators" / "custom" / "types"
-    if not types_dir.is_dir():
-        sys.exit(f"FAIL: {types_dir} does not exist — `uip codedagent register evaluator` not run")
-    json_files = sorted(types_dir.glob("*.json"))
-    if not json_files:
-        sys.exit(f"FAIL: no types JSON in {types_dir}")
-    print(f"OK: evaluator types file exists: {json_files[0].name}")
+def check_custom_evaluator_types(type_path: Path) -> None:
+    if not type_path.is_file():
+        sys.exit(f"FAIL: evaluator type file {type_path} does not exist")
+    print(f"OK: evaluator types file exists: {_relative(type_path)}")
 
 
 def check_eval_set(evaluator_id: str) -> int:
@@ -142,8 +173,8 @@ def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
     check_custom_evaluator_py()
-    evaluator_id = check_custom_evaluator_json()
-    check_custom_evaluator_types(evaluator_id)
+    evaluator_id, type_path = check_custom_evaluator_json()
+    check_custom_evaluator_types(type_path)
     case_count = check_eval_set(evaluator_id)
     check_results(evaluator_id, case_count)
 

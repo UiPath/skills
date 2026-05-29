@@ -4,14 +4,9 @@ description: >
   documented non-Integration-Service UiPath activity shells.
 tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, resource]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 14
   max_turns: 80
-  turn_timeout: 900
-
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 

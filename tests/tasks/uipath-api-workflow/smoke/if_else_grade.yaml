@@ -7,14 +7,6 @@ description: >
   literals (${'PASS'} for StudioWeb roundtrip), and Response with then:end.
 tags: [uipath-api-workflow, smoke, lifecycle:generate, feature:if-else]
 
-agent:
-  type: claude-code
-  max_turns: 30
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Make a UiPath API Workflow JSON file at Workflow.json that:
   - Takes a numeric `score` input
@@ -107,3 +99,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 9
+  max_turns: 30

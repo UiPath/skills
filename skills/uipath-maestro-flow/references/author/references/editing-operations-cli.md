@@ -13,7 +13,7 @@ The primitive commands below are support commands for carve-out workflows only. 
 ### Add a node
 
 ```bash
-uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
+uip maestro flow node add <ProjectName>.flow <node-type> --output json \
   --input '<INPUT_JSON>' \
   --label "<LABEL>" \
   --position <X>,<Y>

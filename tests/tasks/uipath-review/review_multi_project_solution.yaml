@@ -16,10 +16,8 @@ description: >
   but the review skill's structural analysis is platform-independent.
 tags: [uipath-review, e2e, multi-project]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 31
   max_turns: 60
 
 initial_prompt: |

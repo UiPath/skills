@@ -72,7 +72,7 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks. See [`uipath-
 
 ## Solution (`uip solution`)
 
-`uip solution` (init/new, project add|remove|import, resource list|refresh|get, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
+`uip solution` (init/new, project add|remove|import, resource list|refresh|get|add|remove|edit, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
 
 ---
 
@@ -124,4 +124,4 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 ## Naming gotchas
 
 - Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never singular, never `queueitems`/`bucketfiles`.
-- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist).
+- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist). <!-- uip-check-skip -->

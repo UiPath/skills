@@ -1,0 +1,64 @@
+task_id: skill-flow-transform-filter
+description: >
+  Create a UiPath Flow that uses a dedicated `core.action.transform.filter`
+  node to filter a small static collection by a real condition
+  (amount greater_equal 100). Exercises the single-variant filter node type
+  (NOT the generic `core.action.transform` chain, NOT `.map`/`.group-by`), the
+  plain `$vars` collection path contract, and the literal-only filter `value`
+  rule. Validate-only — no `flow debug`, no tenant: a filter over a static
+  in-flow collection has no external dependency, so the test is fully
+  deterministic from the flow file alone.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:transform, feature:transform]
+
+run_limits:
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "TransformFilterDemo" that filters a small
+  static collection using a dedicated Transform Filter node.
+
+  Requirements:
+
+    - Use a single `core.action.transform.filter` node (the filter-only variant
+      — NOT the generic `core.action.transform` chain, NOT `.map`, NOT
+      `.group-by`).
+    - Provide the data as a small static collection (e.g. a few objects each
+      with an `amount` field) held in a flow variable or emitted from an
+      upstream static-data/script node. Point the filter node's
+      `inputs.collection` at that variable as a PLAIN `$vars` path
+      (e.g. `$vars.items.output` or `$vars.items`). Do NOT wrap `collection`
+      in `=js:` and do NOT set it to an inline array literal.
+    - The filter must apply a real condition: `amount` `greater_equal` `100`.
+      The filter `value` MUST be a literal scalar (`100`) — Transform filter
+      `value` is literal-only: no `$vars`, no `=js:`, no `{...}` brace
+      templates. Use the exact condition name `greater_equal`.
+    - Wire the node `outputs.output.source` to `=result.response` and
+      `outputs.error.source` to `=Error`.
+    - Set `typeVersion` from the node registry for
+      `core.action.transform.filter` — do not hardcode a guessed value.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a single
+  pass. Before starting, load the uipath-maestro-flow skill. Read and follow
+  its workflow steps exactly — in particular the transform plugin's filter
+  node shape (`operations[].type == "filter"` with `config.filters`).
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate TransformFilterDemo/TransformFilterDemo/TransformFilterDemo.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Structural checks (exact node type, collection path, filter config) ─
+  - type: run_command
+    description: "Flow has exactly one core.action.transform.filter node with a plain $vars collection and a literal greater_equal filter"
+    command: "python3 $TASK_DIR/check_transform_filter_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

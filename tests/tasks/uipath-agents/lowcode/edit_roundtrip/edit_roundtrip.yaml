@@ -9,12 +9,8 @@ description: >
   none of which are covered by create-from-scratch tests.
 tags: [uipath-agents, smoke, mode:build]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 19
   max_turns: 60
   turn_timeout: 1200
 

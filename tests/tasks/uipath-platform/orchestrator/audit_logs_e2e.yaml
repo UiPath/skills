@@ -6,12 +6,7 @@ description: >
 tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
@@ -20,6 +15,9 @@ pre_run:
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
+
+run_limits:
+  expected_turns: 11
 
 initial_prompt: |
   Use the `uipath-platform` skill.

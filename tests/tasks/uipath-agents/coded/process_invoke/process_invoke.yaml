@@ -7,12 +7,8 @@ description: >
   binding for the invoked process.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:process-invocation]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 30
   turn_timeout: 1200
 
 initial_prompt: |

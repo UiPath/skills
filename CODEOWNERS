@@ -1,5 +1,5 @@
 # Default owners for the entire repo
-* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2
+* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
 
 # CI workflows and review config
 /.github/ @uipreliga
@@ -50,7 +50,10 @@
 
 # Guardrails capability docs
 /skills/uipath-agents/references/lowcode/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
-/skills/uipath-agents/references/coded/capabilities/guardrails.md @apetraru-uipath @valentinabojan @ctiliescuuipath
+/skills/uipath-agents/references/coded/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+# Guardrails tests (folder-level ownership)
+/tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
@@ -85,6 +88,10 @@
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 /tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
+
+# IXP
+/skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
+/tests/tasks/uipath-maestro-flow/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru

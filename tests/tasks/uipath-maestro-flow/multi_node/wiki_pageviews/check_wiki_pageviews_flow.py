@@ -38,6 +38,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.flow_check import (  # noqa: E402
+    assert_flow_has_exact_node_type,
     assert_flow_has_node_type,
     assert_output_value,
     collect_outputs,
@@ -75,10 +76,12 @@ def main():
     if case not in CASES:
         sys.exit(f"FAIL: Unknown case {case!r}; expected one of {list(CASES)}")
 
-    # Require both node types — HTTP for the API call and a Transform
-    # variant (generic/filter/map/group-by all share the `core.action.transform`
-    # prefix) for the filter step.
-    assert_flow_has_node_type(["core.action.http.v2", "core.action.transform"])
+    # Require the HTTP node (its `.v2` suffix uses substring semantics) for the
+    # API call, plus the GENERIC chained `core.action.transform` node for the
+    # filter step. Exact match on the transform rejects the standalone
+    # `.filter` / `.map` / `.group-by` variants the prompt does not ask for.
+    assert_flow_has_node_type(["core.action.http.v2"])
+    assert_flow_has_exact_node_type(["core.action.transform"])
 
     article, date1, date2 = CASES[case]
     inputs = {"article": article, "date1": date1, "date2": date2}

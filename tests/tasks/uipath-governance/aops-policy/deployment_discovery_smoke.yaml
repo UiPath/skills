@@ -12,6 +12,9 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, deployment, discovery]
 
+run_limits:
+  expected_turns: 7
+
 initial_prompt: |
   A tenant admin wants to audit AOps governance deployment state. List
   every governance user, list every tenant that has assignments, then

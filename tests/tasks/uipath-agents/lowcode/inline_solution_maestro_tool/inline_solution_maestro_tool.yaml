@@ -9,12 +9,8 @@ description: >
   node is wired to the autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 89
   turn_timeout: 1200
 
 initial_prompt: |

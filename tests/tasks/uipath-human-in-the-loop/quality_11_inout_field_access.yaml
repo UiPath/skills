@@ -6,13 +6,9 @@ description: >
   pre-fills the value while still allowing the human to edit it.
 tags: [uipath-human-in-the-loop, integration, schema-design, inout, variable-binding]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 17
   max_turns: 90
-  turn_timeout: 900
-
 initial_prompt: |
   Build a UiPath Flow named "RCAReview" for AI-generated root cause analysis review:
 

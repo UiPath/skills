@@ -1,12 +1,16 @@
 # Manual edits when the CLI doesn't cover the case
 
-There's no `solution resource update` command yet. When you need to change something on a resource that's already in the solution and `solution resource refresh` is import-only (it reconciles binding additions, not field edits on existing entries), you have three options ordered by preference:
+The CLI now covers the full resource CRUD: **create** ([Step 9: `solution resource add`](../develop-solution.md#step-9-add-a-resource-atomically)), **delete** ([Step 10: `solution resource remove`](../develop-solution.md#step-10-remove-a-resource)), and **update** ([Step 11: `solution resource edit`](../develop-solution.md#step-11-edit-a-resource)). `edit` patches an existing resource's `spec` through the SDK — it even renames (with duplicate protection), so the old "rename is Studio-Web-only" rule no longer holds.
 
-1. **Edit in Studio Web** — `solution upload`, edit in the SW UI, re-export. The proper way; SDK does all the validation and back-references.
+**Reach for `solution resource edit` first** for any spec-field change. The SDK validates against kind metadata: it silently skips unknown / reference / read-only properties, and identity fields (`key`, `kind`, `type`, `apiVersion`, `dependencies`, `folders`) live outside `spec` so `edit` can't touch them at all.
+
+This page is now the **last resort** — for the narrow cases `edit` *won't* cover:
+
+1. **Edit in Studio Web** — `solution upload`, edit in the SW UI, re-export. Use when you need to change a reference/relationship field the SDK won't let `edit` write.
 2. **`solution deploy config set` / `link` / `unlink`** — for changes that only need to apply at deploy time (per-environment values, link state). Touches only the deploy config file, not the solution-level resources.
-3. **Hand-edit the JSON directly** — the escape hatch when neither of the above fits and you don't want a full SW round-trip. Works, but **not ideal** — there's no validation, the SDK can silently undo your change on the next refresh if your edit conflicts with what bindings would re-derive, and structural mistakes corrupt the solution. Use only when you understand which fields the SDK leaves alone.
+3. **Hand-edit the JSON directly** — the escape hatch when none of the above fit. Works, but **not ideal** — no validation, the SDK can silently undo your change on the next refresh if it conflicts with what bindings re-derive, and structural mistakes corrupt the solution. Use only when you understand which fields the SDK leaves alone.
 
-This page covers (3) — what's safe to hand-edit and what's not.
+This page covers (3) — what's safe to hand-edit and what's not. For everyday spec changes prefer `solution resource edit`; for creating or deleting a whole resource, `solution resource add` / `remove`.
 
 ## What the SDK actually compares
 

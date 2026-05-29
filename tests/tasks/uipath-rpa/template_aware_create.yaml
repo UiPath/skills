@@ -7,6 +7,9 @@ description: >
   template-detection decision before `init`.
 tags: [uipath-rpa, smoke, lifecycle:generate]
 
+run_limits:
+  expected_turns: 4
+
 initial_prompt: |
   I want to create a new UiPath REFramework project called "InvoiceREF"
   in the current directory.

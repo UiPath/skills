@@ -5,18 +5,14 @@ description: >
   Exercises script-node update without restructuring the flow.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:decision]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 11
   turn_timeout: 1200
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../templates/initial_flow
+    - type: template_dir
+      path: ../templates/initial_flow
 
 initial_prompt: |
   Update the flow to ensure if temperature is greater than 60F returns a summary with a message field 'amazing day',

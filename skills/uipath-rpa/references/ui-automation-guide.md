@@ -4,7 +4,7 @@ Quick reference for UI automation in UiPath workflows — covers both coded work
 
 ## Prerequisites
 
-See [uia-prerequisites.md](uia-prerequisites.md).
+[uia-prerequisites.md](uia-prerequisites.md) MUST be read IN FULL first.
 
 **Required package:** `UiPath.UIAutomation.Activities`
 
@@ -14,7 +14,7 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. **Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Two outcomes:
+Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
@@ -22,14 +22,6 @@ Before configuring any target or writing any UIA workflow, list top-level window
 Do not re-inspect or keep polling after the initial check — subsequent capture and attach are `uia-configure-target`'s job. This single pre-flight exists only to drive the launch decision.
 
 **Never use `Get-Process`, `tasklist`, `ps`, WMI, window-title scraping, or any other OS-level process command** to infer app state. They report processes, not UIA-visible windows; they miss background apps and name-mismatched binaries; and they produce wrong launch decisions.
-
----
-
-## Launching, Inspecting & Interacting with GUI apps (uia-interact)
-
-`uia-interact` is the sub-skill for any one-shot UIA action against a live app: launching, advancing UI state between captures, inspecting top-level windows, screenshots, attribute reads, element interaction. It is **not** for authoring workflow activities — those go through `uia-configure-target`.
-
-**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Mandatory before any `uip rpa uia interact` or `uip rpa uia snapshot inspect` call.
 
 ---
 
@@ -199,6 +191,10 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 
 > This gate applies regardless of how simple the target seems. Even a `<webctrl tag='BODY' />` selector will fail validation without proper attributes. The cost of running target configuration is always lower than debugging hand-written selectors.
 
+### Don't override a step whose purpose is to replace your judgment
+
+When a procedure exists specifically to check something against ground truth, doing it by your own judgment instead — because that seems faster or "low-risk" — defeats the point: your call is verified against nothing. It is also false economy, since a shortcut that silently produces a wrong result costs far more to debug later than the step would have cost up front. Being terse and following the steps are not in tension — cut narration and redundant round-trips, never the correctness step itself.
+
 ---
 
 ## Common UIA Pitfalls
@@ -216,21 +212,48 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 
 ## Configuring Targets (Object Repository)
 
-See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
+[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers the configure-target workflow, rules, indication fallback, and multi-step UI flows.
 
 ### Multi-Step UI Flows (Advancing Application State)
 
-See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows).
+Procedure: [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) — the capture loop and Complete-then-advance rule.
 
 ---
 
-## Running & Debugging
+## Running UI Automation Workflows
 
-See [uia-debug-workflow.md](uia-debug-workflow.md).
+**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection.
 
-### Runtime Selector Failures
+**Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
-See [uia-selector-recovery.md](uia-selector-recovery.md).
+1. **Record the window baseline** — list top-level windows via `uip rpa uia snapshot inspect` and note which w-refs and titles are already present. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+2. **Run the workflow:**
+   ```bash
+   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+   ```
+   If the run fails, [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) spawns the `uia-improve-selector` subagent — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
+3. **When done** (success or failure) — **cancel the debug session:**
+   ```bash
+   uip rpa execution cancel --project-dir "<PROJECT_DIR>" --output json
+   ```
+4. **List windows again** via `uip rpa uia snapshot inspect`.
+5. **Diff before vs after.** Any window present now that was NOT in the baseline was opened by the workflow. Close each such window via `uip rpa uia interact window` (see `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md` for the exact close-action flags).
+
+Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a stale window in whatever state it was left in, or -- if the selector doesn't match -- to spawn a duplicate instance.
+
+### Runtime Selector Failure Recovery
+
+"UI element not found", "UI element is invalid", element not on screen -- these surface at runtime, not during static validation. They occur when a selector was captured against one app state but the DOM changed by the time the activity executes.
+
+When a workflow fails at runtime with a selector error:
+
+1. **The app is already in the right state.** The debug session paused at the failing activity, so the app's current DOM reflects the state that activity needs to target.
+2. **Identify the failing element** -- read the error to find which descriptor/element failed.
+3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
+4. **Run the `uia-improve-selector` skill in recover mode.** Read `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`, pick the appropriate invocation form for this context, run the staging CLI command from that form, spawn a subagent with the Agent tool to run the skill in recover mode against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
+5. **Clean up and re-run** -- follow the [Running UI Automation Workflows](#running-ui-automation-workflows) procedure (stop, diff, close leaked windows, re-run).
+
+Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
 
 ---
 
@@ -314,7 +337,7 @@ using <PackageNamespace>.ObjectRepository;
 
 #### Step 3 — Configure the target
 
-See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the full configure-target workflow.
+[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first.
 
 After the skill completes, re-read `ObjectRepository.cs` and search for the returned reference IDs to find the exact `Descriptors.<App>.<Screen>.<Element>` paths.
 
@@ -337,7 +360,7 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 > "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uip rpa uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
-For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
+For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `validate` after each batch. [uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first (see § Multi-Step UI Flows for the capture loop and the Complete-then-advance rule).
 
 ### Key Concepts
 
@@ -347,7 +370,7 @@ Every UI automation workflow starts with an **Application Card** (`uix:NApplicat
 
 #### Target Configuration
 
-Follow [uia-configure-target-workflows.md](uia-configure-target-workflows.md) to register the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers registering the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 
 Do NOT hand-write `<uix:TargetApp>` or `<uix:TargetAnchorable>` XAML from scratch. Attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` — never fabricate them.
 

@@ -180,6 +180,27 @@ The catalog is regenerated nightly by `.github/workflows/refresh-uip-catalog.yml
 
 Severity: **High** — always. No carve-outs; there is no valid reason to re-install the CLI the runner already provides.
 
+### Run-limit fields under agent:
+
+**Raise a Medium issue if** the task's `agent:` block contains any of: `max_turns`, `turn_timeout`, `task_timeout`.
+
+**Why it's wrong:** These fields were moved out of `agent:` into a top-level `run_limits:` block in the c/2026-05-12 unify-run-limits migration (see `coder_eval/src/coder_eval/orchestration/experiment.py:163`). The loader still hoists them with a `DeprecationWarning`, but the legacy location was scheduled for removal on 2026-05-20. Leaving them under `agent:` emits a warning every run and drifts from every other task in the repo.
+
+**Fix:** Move the field to a top-level `run_limits:` block. If `agent:` now has no remaining fields, drop the block entirely (defaults are inherited from the experiment). The `scripts/prune-task-defaults.py` script does this transformation automatically.
+
+```yaml
+# Before
+agent:
+  type: claude-code
+  max_turns: 40
+
+# After
+run_limits:
+  max_turns: 40
+```
+
+Severity: **Medium** — task still runs (loader hoists for now), but the deprecation window has elapsed and the warning pollutes every run.
+
 ## Phase 4 — Compose Per-Task Report
 
 For each task, print:

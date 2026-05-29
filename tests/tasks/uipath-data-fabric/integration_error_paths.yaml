@@ -12,10 +12,8 @@ description: >
   not retry or call the REST API directly.
 tags: [uipath-data-fabric, integration, error-paths]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 33
   max_turns: 50
   turn_timeout: 600
 

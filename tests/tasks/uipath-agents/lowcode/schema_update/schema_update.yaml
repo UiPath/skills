@@ -8,12 +8,8 @@ description: >
   deep equivalence of the two schema files.
 tags: [uipath-agents, smoke, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 16
   turn_timeout: 1200
 
 initial_prompt: |

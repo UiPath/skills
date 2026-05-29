@@ -9,10 +9,8 @@ description: >
   headlessly, so correctness is enforced via the semantic checker rather than runtime.
 tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, devcon]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 29
   max_turns: 120
   turn_timeout: 1200
 

@@ -5,6 +5,9 @@ description: >
 
 tags: [uipath-admin, smoke, get]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   Show me the current SMTP email settings for my UiPath organization.
 

@@ -33,9 +33,10 @@ uip login --client-id "<ID>" --client-secret "<SECRET>" --base-url "<URL>" --out
 
 ## Critical Rules
 
-- **`uip login status --output json` once per invocation.** Reports `Status`, `Organization`, `Tenant`, `Expiration Date`. After one `Logged in`, trust the wrapper — it auto-refreshes tokens on forwarded cloud calls. No `uip login refresh` subcommand exists. Re-auth only on a real `401`.
+- **`uip login status --output json` once per invocation.** Reports `Status`, `Organization`, `Tenant`, `Expiration Date`. When the user has not asked to connect to a specific org/tenant, trust one `Logged in` result — the wrapper auto-refreshes tokens on forwarded cloud calls. No `uip login refresh` subcommand exists. Re-auth only on a real `401`.
+- **If the user supplied environment + organization + tenant, connect with those exact values.** First run/capture `uip login status --output json` if requested or required, then run the matching one-shot command from the Quick Reference (`uip login --organization "<ORG>" --tenant "<TENANT>" --output json`, plus `--authority` for staging/alpha). Do this even if the status check reports an existing `Logged in` session, because the active session may point at a different org/tenant. Do not ask another auth question when all three values are already present.
 - **NEVER run `uip login` without `--tenant`.** The interactive tenant picker cannot be driven from Claude's Bash tool.
-- **When auth is needed, ask one question, then stop.** If the status check shows the user is not logged in, your entire response must be exactly this question — no headers, no bullets, no next-steps:
+- **When auth is needed and the user did not supply all values, ask one question, then stop.** If the status check shows the user is not logged in and any of environment / organization / tenant is missing, your entire response must be exactly this question — no headers, no bullets, no next-steps:
 
   > What is your UiPath **environment** (cloud / staging / alpha), **organization name**, and **tenant name**?
 

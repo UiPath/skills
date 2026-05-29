@@ -155,7 +155,7 @@ uip maestro flow registry pull                          # refresh local cache (e
 
 ```bash
 uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
-uip maestro flow registry get "<nodeType>" --local --output json  # get full manifest for a local node
+uip maestro flow registry get "<node-type>" --local --output json  # get full manifest for a local node
 ```
 
 Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first.

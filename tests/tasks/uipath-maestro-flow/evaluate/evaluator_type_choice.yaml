@@ -8,17 +8,10 @@ description: >
   similarity → json-similarity, substring presence → contains. The
   `command_executed` regexes pin each `--type` value, so the agent has to
   both pick correctly and run the CLI to pass.
-tags: [uipath-maestro-flow, smoke-blocked, mode:build, lifecycle:discover]
-skip: true
-# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
-# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
-# under `maestro flow`). Re-enable once a release exposes the Flow eval
-# surface to the public registry used by CI. See MST-9675.
-
-agent:
-  type: claude-code
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover]
 
 run_limits:
+  expected_turns: 15
   max_turns: 50
 
 initial_prompt: |

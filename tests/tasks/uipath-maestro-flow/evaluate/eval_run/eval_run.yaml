@@ -10,14 +10,6 @@ description: >
   evaluator). Tests the full Author → Operate → Evaluate handoff in the
   uipath-maestro-flow skill.
 tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute]
-skip: true
-# Blocked: `uip maestro flow eval` is not yet in the public @uipath/cli npm
-# package (1.0.0 at time of writing — the bundle ships no `eval` subcommand
-# under `maestro flow`). Re-enable once a release exposes the Flow eval
-# surface to the public registry used by CI. See MST-9675.
-
-agent:
-  type: claude-code
 
 run_limits:
   max_turns: 90

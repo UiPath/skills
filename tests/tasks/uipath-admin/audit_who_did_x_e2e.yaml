@@ -11,13 +11,6 @@ description: >
 tags: [uipath-admin, e2e, mode:diagnose, audit, investigation]
 max_iterations: 2
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 40
-  turn_timeout: 600
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 initial_prompt: |
   Find out who deleted the `Sales-Reports` folder on the active tenant
   in the last 7 days.
@@ -55,3 +48,8 @@ success_criteria:
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 8
+  max_turns: 40
+  turn_timeout: 600

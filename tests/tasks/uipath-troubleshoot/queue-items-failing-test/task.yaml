@@ -7,17 +7,15 @@ description: >
 tags: [uipath-troubleshoot, e2e, faithful-replay]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 30
   task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
       path: ../_shared/mock_template

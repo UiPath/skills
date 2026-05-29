@@ -6,6 +6,9 @@ description: >
   command shape, not tenant state.
 tags: [uipath-solution, smoke, mode:operate, lifecycle:discover]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   List the active solution deployments in the current UiPath tenant.
 

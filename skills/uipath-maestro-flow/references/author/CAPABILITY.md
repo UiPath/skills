@@ -4,7 +4,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 
 > **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
-> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, AskUserQuestion dropdown pattern, solution layout, **plain-English narration per logical step**, **granular `TodoWrite` list above the trivial threshold**. The rules below are author-scoped and apply on top.
+> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, AskUserQuestion dropdown pattern, solution layout, **plain-English narration + granular `TodoWrite` (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
 
 ## When to use this capability
 
@@ -55,10 +55,12 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 
 1. **Always validate node types against the registry before building.** Use `registry search`/`list` for discovery and `registry get` for detailed metadata and definitions.
 2. **ALWAYS follow the relevant plugin in [plugins/](references/plugins/) for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required before building. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
-3. **Read [/uipath:uipath-platform — connections.md](../../../uipath-platform/references/integration-service/connections.md) before any `uip is connections ...` call.** Applies to every connector activity, connector trigger, and managed HTTP node in connected mode. Single source of truth for command syntax, selection (including the personal-workspace auto-select rule), folder scoping, BYOA filtering, empty-result recovery, and ping verification. **If no healthy connection exists after following its recovery flow, STOP** and surface it in **Open Questions** during planning. Plugin files cover node-specific configuration that follows connection binding: [connector/impl.md](references/plugins/connector/impl.md), [connector-trigger/impl.md](references/plugins/connector-trigger/impl.md), [http/impl.md](references/plugins/http/impl.md).
+3. **Read the relevant Integration Service reference doc before any `uip is ...` call.** Two non-overlapping contracts:
+   - **Read [/uipath:uipath-platform — connections.md](../../../uipath-platform/references/integration-service/connections.md) before any `uip is connections ...` call.** Applies to every connector activity, connector trigger, and managed HTTP node in connected mode. Single source of truth for command syntax, selection (including the personal-workspace auto-select rule), folder scoping, BYOA filtering, empty-result recovery, and ping verification. **If no healthy connection exists after following its recovery flow, STOP** and surface it in **Open Questions** during planning.
+   - **Read [/uipath:uipath-platform — resources.md](../../../uipath-platform/references/integration-service/resources.md) before any `uip is resources run ...` call.** Applies to every reference-field lookup (Slack user IDs, Jira project keys, Outlook folder IDs, etc.). Single source of truth for the `Data.Pagination.HasMore` / `NextPageToken` contract and the `--query "nextPage=<token>"` loop. **Complete the pagination loop before reporting not-found** — do NOT abandon mid-loop to try alternative endpoints, `where=` filters the connector may not support, or AskUserQuestion. Plugin files cover node-specific configuration that follows connection binding: [connector/impl.md](references/plugins/connector/impl.md), [connector-trigger/impl.md](references/plugins/connector-trigger/impl.md), [http/impl.md](references/plugins/http/impl.md).
 4. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [shared/file-format.md](../shared/file-format.md)).
 5. **`targetPort` is required on every edge** — `validate` rejects edges without it.
-6. **Every node type needs a `definitions` entry** — copy from `uip maestro flow registry get <nodeType>` output. Never hand-write definitions. The definition is the sole source for BPMN type (`model.type`), serviceType, event definitions, and binding/context templates — none of that belongs on the instance.
+6. **Every node type needs a `definitions` entry** — copy from `uip maestro flow registry get <node-type>` output. Never hand-write definitions. The definition is the sole source for BPMN type (`model.type`), serviceType, event definitions, and binding/context templates — none of that belongs on the instance.
 7. **Script nodes must `return` an object** — `return { key: value }`, not a bare scalar.
 8. **Validate once at the end** — run `uip maestro flow validate` only after all nodes, edges, and configuration are complete. Do not validate after each individual node add or edit — intermediate states are expected to be invalid.
 9. **Manage variables with `Edit` against the `.flow` file** — there are no CLI commands for variable management. Use `Edit` to add/remove/update entries in the `variables` section of the `.flow` file. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md).
@@ -89,13 +91,15 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Look up CLI commands** | [shared/cli-commands.md](../shared/cli-commands.md) |
 | **Add a Script node** | [plugins/script/impl.md](references/plugins/script/impl.md) |
 | **Wire nodes with edges** | [editing-operations.md](references/editing-operations.md) + [shared/file-format.md — Standard ports](../shared/file-format.md) |
-| **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
+| **Find the right node type** | Run `uip maestro flow registry search <keyword> --output json --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"` — see [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction) for the extraction pattern and Data-shape pin |
 | **Work with connector nodes** | [plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform](/uipath:uipath-platform) for Integration Service |
 | **Manage variables and expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) + [Edit/Write: Variable Operations](references/editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) |
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |
+| **Extract structured fields from documents** | [plugins/ixp/](references/plugins/ixp/) — IxP extraction models for PDFs, scanned forms, receipts, invoices, contracts |
+| **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](references/plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [Edit/Write: Replace a mock](references/editing-operations-json.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 | **Add data transform nodes** | [plugins/transform/impl.md](references/plugins/transform/impl.md) |
 | **Add an LLM batch transform over CSV rows** | [plugins/batch-transform/impl.md](references/plugins/batch-transform/impl.md) — `uipath.pattern.batch-transform`, gated by tenant flag `canvas.nodes.batch-transform` |
@@ -164,6 +168,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [hitl](references/plugins/hitl/) — human input via UiPath Apps
   - [agent](references/plugins/agent/) — published AI agent resources
   - [inline-agent](references/plugins/inline-agent/) — autonomous agent embedded in flow
+  - [ixp](references/plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
 
 ### Cross-capability (shared)

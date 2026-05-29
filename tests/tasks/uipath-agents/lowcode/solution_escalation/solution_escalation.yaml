@@ -10,12 +10,8 @@ description: >
   an ActionCenter app that lives externally in Orchestrator.
 tags: [uipath-agents, e2e, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 19
   turn_timeout: 1200
 
 initial_prompt: |

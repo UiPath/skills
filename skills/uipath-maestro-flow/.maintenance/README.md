@@ -204,9 +204,32 @@ For table rows, place the marker **inside a cell** so it doesn't break table str
 | **< 0.3.4** | `uip flow` | `uip flow init MyProject` <!-- uip-check-skip --> |
 ```
 
+## Verifying no hardcoded versions
+
+Run the version checker to catch docs that pin a `.flow` version as authoritative instead of deferring to the live CLI:
+
+```bash
+bash .maintenance/check-versions.sh
+```
+
+Returns `lines_checked=N violations=M`. Exits non-zero on any violation. The `.flow` top-level `version` and node `typeVersion` are owned by `uip maestro flow init` / `uip maestro flow registry get`; hardcoding them rots silently when the CLI advances (e.g. `core.action.http.v2` `2.0`→`2.1`, `core.trigger.scheduled` `1.0`→`1.1`, top-level `1.1`→`1.2`). Two violation classes:
+
+- **PROSE-PIN** — prose stating a version as current/required: `currently "1.1"`, `the registry currently emits "1.0"`, `must be "2.0"`, or an inline assignment `typeVersion: "2.0"` / `version: "1.1"`. Only fires outside fenced code blocks.
+- **TOPLEVEL** — a hardcoded top-level `.flow` `"version": "x.y"` literal in a JSON example. Identified by sibling `"nodes"`/`"edges"` keys within the same fenced block; `definitions[].version` (has `"nodeType"`), `bindings_v2.json` `version` (has `"resources"`), and eval-file `version` (has `"evaluatorRefs"`/`"evaluations"`) are NOT flagged.
+
+Deliberately NOT flagged: `"typeVersion": "x.y"` literals in node JSON examples — legitimate when paired with an adjacent registry-sourcing note, and too many true-illustrative cases to flag without noise.
+
+Add `<!-- version-check-skip -->` anywhere on a line to suppress it — for intentional references such as an anti-pattern example (`typeVersion: "1.0.0"` shown as the *wrong* value) or a fixed non-`.flow` schema version (eval-set files). Same marker convention as `check-uip-commands.sh`; for table rows, place it inside a cell.
+
+Pass specific files to scan only those:
+
+```bash
+bash .maintenance/check-versions.sh references/shared/file-format.md
+```
+
 ## Running the full suite
 
-Run all eight checkers in one invocation:
+Run all nine checkers in one invocation:
 
 ```bash
 bash .maintenance/check-all.sh
@@ -222,7 +245,7 @@ Continues running all checkers even when one fails — the goal is to surface ev
 - After deleting a doc — run `check-orphans.sh` to confirm nothing else became orphaned
 - Before adding a new capability — run `check-template.sh` against the new `CAPABILITY.md`
 - After adding a new plugin — run `check-plugin-pairs.sh` to confirm both `planning.md` and `impl.md` are present
-- After a `uip` CLI version bump — run `check-uip-commands.sh` to catch any commands that were renamed or removed
+- After a `uip` CLI version bump — run `check-uip-commands.sh` to catch any commands that were renamed or removed, and `check-versions.sh` to catch docs that pinned a now-stale `.flow`/node version
 
 The checkers are not currently wired into CI or pre-commit hooks. They are kept as lightweight tooling in this directory so future maintainers can run them on demand.
 

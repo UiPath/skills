@@ -10,14 +10,6 @@ description: >
   publish permission required** for the host running coder-eval.
 tags: [uipath-agents, e2e, coded, mode:build, feature:deploy]
 max_iterations: 1
-task_timeout: 1500
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 60
-  turn_timeout: 1500
 
 initial_prompt: |
   Build a Simple Function UiPath coded agent named `tenant-echo`
@@ -75,3 +67,9 @@ success_criteria:
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 50
+  max_turns: 60
+  turn_timeout: 1500
+  task_timeout: 1500

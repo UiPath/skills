@@ -3,7 +3,8 @@ description: >
   Build a Case Management definition that exercises task-driven stage
   completion, the under-covered task-entry rule-types, and a non-timer
   task type embedded in a multi-stage flow. Process stage contains two
-  sequential timers (task-entry runs-sequentially) and exits via
+  timers forming a runs-sequentially group whose parallel members share
+  one lane (semantic, not FE layout) and exits via
   required-tasks-completed (marks-stage-complete: true). Finalize
   contains a wait-for-connector-gated task referencing a string Variable
   AND a number Variable inside its conditionExpression, a sibling-gated
@@ -20,11 +21,6 @@ description: >
   task in a multi-stage flow.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:tasks, feature:conditions, feature:task-entry, feature:variables, feature:skeleton-task]
 max_iterations: 1
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
   task_timeout: 1500
@@ -83,13 +79,13 @@ initial_prompt: |
   | Variable | Category | Type | Default | Description | Produced By | Consumed By |
   |---|---|---|---|---|---|---|
   | region | Variable | string | "US" | Case-level region flag referenced inside the Region Check task-entry conditionExpression. | - | finalize.regionCheck |
-  | priorityScore | Variable | number | 0 | Case-level numeric score referenced alongside region inside the same task-entry conditionExpression. | - | finalize.regionCheck |
+  | priorityScore | Variable | integer | 0 | Case-level numeric score referenced alongside region inside the same task-entry conditionExpression. | - | finalize.regionCheck |
 
   ## Section 2: Stages & Tasks
 
   ### Stage 1: Process (`process`)
   **Type:** Stage
-  **Description:** Runs a fixed two-step sequence; exits via required-tasks-completed.
+  **Description:** Two timer tasks form a single `runs-sequentially` group and run in parallel with each other; as parallel members of that group they MUST share one lane (lane 0 — shared lane carries execution semantics, not just FE layout). Exits via required-tasks-completed.
   **Required for Case Completion:** Yes
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
@@ -104,10 +100,12 @@ initial_prompt: |
   |---|---|---|---|---|
   | No stage exit hand-off declared. | - | exit-only | - | No |
   #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
+  | # | Task ID | Task | Type | Lane |
   |---|---|---|---|---|
-  | 1 | `process.firstStep` | First Step | wait-for-timer | (system-driven) |
-  | 2 | `process.secondStep` | Second Step | wait-for-timer | (system-driven) |
+  | 1 | `process.firstStep` | First Step | wait-for-timer | 0 |
+  | 2 | `process.secondStep` | Second Step | wait-for-timer | 0 |
+
+  > Both tasks share lane 0: they are parallel members of the same `runs-sequentially` group, so the shared lane is semantic (parallel siblings inside the sequential group), not the default one-task-per-lane layout.
 
   ##### Task 1.1: First Step (`process.firstStep`)
 
@@ -119,6 +117,8 @@ initial_prompt: |
   | WHEN | IF |
   |---|---|
   | runs-sequentially ("Sequential 1") | - |
+
+  **Lane:** 0 (shared with Second Step — parallel members of the runs-sequentially group).
 
   | Field | Value |
   |---|---|
@@ -137,6 +137,8 @@ initial_prompt: |
   | WHEN | IF |
   |---|---|
   | runs-sequentially ("Sequential 2") | - |
+
+  **Lane:** 0 (shared with First Step — parallel members of the runs-sequentially group).
 
   | Field | Value |
   |---|---|
@@ -256,7 +258,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; tasks carry runs-sequentially/adhoc/wait-for-connector/selected-tasks-completed task-entry rules; First Step timer carries bounded repeat=5 (timeDuration); Second Step timer uses timeCycle (R3/PT2H); root has string variable 'region' AND number variable 'priorityScore' (both referenced alongside metadata.tier in Region Check conditionExpression); 'Optional Audit' is a process-typed skeleton task in Finalize"
+    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; tasks carry runs-sequentially/adhoc/wait-for-connector/selected-tasks-completed task-entry rules; First Step and Second Step are parallel members of the runs-sequentially group and share one lane (same laneIndex in Process data.tasks); First Step timer carries bounded repeat=5 (timeDuration); Second Step timer uses timeCycle (R3/PT2H); root has string variable 'region' AND number variable 'priorityScore' (both referenced alongside metadata.tier in Region Check conditionExpression); 'Optional Audit' is a process-typed skeleton task in Finalize"
     command: "python3 $TASK_DIR/check_task_dependency_chain.py"
     timeout: 720
     expected_exit_code: 0

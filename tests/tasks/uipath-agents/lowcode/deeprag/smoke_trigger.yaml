@@ -6,9 +6,8 @@ description: >
   Verifies the skill fires for the low-code + PDF/TXT signal pair.
 tags: [uipath-agents, smoke, low-code, lifecycle:discover, context-grounding]
 
-sandbox:
-  driver: tempdir
-  python: {}
+run_limits:
+  expected_turns: 5
 
 initial_prompt: |
   I'm building a low-code agent in Studio Web Agent Builder

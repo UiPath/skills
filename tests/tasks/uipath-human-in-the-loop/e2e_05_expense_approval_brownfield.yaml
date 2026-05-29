@@ -9,10 +9,8 @@ description: >
   (validate). Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, brown-field]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 15
   max_turns: 70
   turn_timeout: 1200
 

@@ -5,6 +5,9 @@ description: >
   management, not automation authoring.
 tags: [uipath-human-in-the-loop, smoke]
 
+run_limits:
+  expected_turns: 3
+
 initial_prompt: |
   How do I reassign a pending Action Center task that has been sitting for
   3 days without a response to a different user in our team?

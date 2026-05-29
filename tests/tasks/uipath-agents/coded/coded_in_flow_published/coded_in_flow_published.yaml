@@ -13,13 +13,6 @@ description: >
   real published resource in the tenant's personal workspace.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, shape:single-node, resource, feature:framework-langgraph]
 max_iterations: 1
-task_timeout: 1800
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1500
 
 initial_prompt: |
   Build a LangGraph UiPath coded agent named `tone-classifier` that
@@ -107,3 +100,8 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 63
+  turn_timeout: 1500
+  task_timeout: 1800

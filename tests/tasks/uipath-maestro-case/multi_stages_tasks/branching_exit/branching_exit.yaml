@@ -17,11 +17,6 @@ description: >
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:edges, feature:edge-handles, feature:wait-for-user, feature:wide-fanout]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 1500
   max_turns: 120
@@ -76,7 +71,7 @@ initial_prompt: |
   ### 1.5 Case Variables
   | Variable | Category | Type | Default | Description |
   |---|---|---|---|---|
-  | - | - | - | - | No case-level variables declared. |
+  | decision | Variable | string | approved | Routing decision evaluated by the Triage stage-exit connector expressions; selects which downstream branch (approved/rejected/pending) the case exits to. |
 
   ## Section 2: Stages & Tasks
 

@@ -6,10 +6,8 @@ description: >
   excluded, and records import --file is the correct command (not records insert).
 tags: [uipath-data-fabric, smoke, records, import]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 10
   max_turns: 30
 
 initial_prompt: |

@@ -5,23 +5,19 @@ description: >
   a single Join stage. Join carries two stage-entry conditions, one
   selected-stage-completed per upstream branch, exercising the
   multi-upstream fan-in topology that no other multi_stages_tasks test covers.
-  In addition, the four stages collectively contain FIVE non-timer
-  tasks of FIVE DIFFERENT plugin types (rpa, api-workflow, action,
-  agent, case-management) — Triage carries both rpa and api-workflow
-  skeletons; the other three stages carry one task each. All
-  registry-unresolved, all emitted as skeletons per the skill's
-  unresolved-fallback rule. This closes five task-type plugin paths
-  (rpa, api-workflow, action, agent, case-management) inside a
-  multi-stage flow. Validates and asserts on edge structure (4
-  stage→stage edges into a single target), both entry rules on Join,
-  and the five skeleton task types each in its assigned stage.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:edges, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:action, feature:agent, feature:case-management-task]
+  In addition, the four stages collectively contain FOUR non-timer
+  tasks of FOUR DIFFERENT plugin types (rpa, api-workflow, agent,
+  case-management) — Triage carries both rpa and api-workflow
+  skeletons; Enrich and Join carry one task each; Validate is an
+  empty pass-through branch with no tasks. All registry-unresolved,
+  all emitted as skeletons per the skill's unresolved-fallback rule.
+  This closes four task-type plugin paths (rpa, api-workflow, agent,
+  case-management) inside a multi-stage flow. Validates and asserts on
+  edge structure (4 stage→stage edges into a single target), both
+  entry rules on Join, and the four skeleton task types each in its
+  assigned stage.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:edges, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:agent, feature:case-management-task]
 max_iterations: 1
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
   task_timeout: 1500
@@ -36,9 +32,9 @@ initial_prompt: |
   ```
   # SDD — FanInJoin
 
-  **Case Definition Blueprint** · Generic — Diamond Topology with Five Task-Type Coverage
+  **Case Definition Blueprint** · Generic — Diamond Topology with Four Task-Type Coverage
 
-  A diamond topology where Triage splits into two parallel branches (Validate, Enrich) that both feed into a single Join stage. Join carries two selected-stage-completed entry rules. Five non-timer tasks across the four stages cover five distinct plugin types (rpa, api-workflow, action, agent, case-management) — all registry-unresolved skeletons.
+  A diamond topology where Triage splits into two parallel branches (Validate, Enrich) that both feed into a single Join stage. Join carries two selected-stage-completed entry rules. Four non-timer tasks across three of the four stages cover four distinct plugin types (rpa, api-workflow, agent, case-management) — all registry-unresolved skeletons. The Validate stage is an empty pass-through branch (no tasks).
 
   > **Unresolved-fallback rule.** None of the task references below are registered in the tenant. For every task the agent MUST follow the unresolved-fallback rule: leave the identifier (taskTypeId / connection-id) as `<UNRESOLVED: ...>`, omit inputs/outputs/folder fields, and emit a SKELETON task (correct `type` value, empty `data: {}`). DO NOT fabricate a taskTypeId. Each TaskId is still captured.
 
@@ -50,7 +46,7 @@ initial_prompt: |
   | Property | Value |
   |---|---|
   | Case Name | FanInJoin |
-  | Case Description | Diamond topology Triage → {Validate, Enrich} → Join; five skeleton tasks across four stages cover five distinct plugin types. |
+  | Case Description | Diamond topology Triage → {Validate, Enrich} → Join; four skeleton tasks cover four distinct plugin types; Validate is an empty pass-through branch. |
   | Case Identifier | Prefix: FIJ, Type: constant |
   | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
@@ -143,7 +139,7 @@ initial_prompt: |
 
   ### Stage 2: Validate (`validate`)
   **Type:** Stage
-  **Description:** First parallel branch.
+  **Description:** First parallel branch; empty pass-through (no tasks).
   **Required for Case Completion:** Yes
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
@@ -160,25 +156,7 @@ initial_prompt: |
   #### Stage Task Summary
   | # | Task ID | Task | Type | Owner |
   |---|---|---|---|---|
-  | 1 | `validate.validateSubmission` | Validate Submission | action | (UNRESOLVED) |
-
-  ##### Task 2.1: Validate Submission (`validate.validateSubmission`)
-
-  **Type:** action
-  **Description:** UiPath Action App reference. Registry-unresolved → emit as skeleton (empty `data: {}`).
-
-  **Entry Condition**
-
-  | WHEN | IF |
-  |---|---|
-  | current-stage-entered | - |
-
-  | Field | Value |
-  |---|---|
-  | Component Type | ACTION (UiPath Action App reference) |
-  | Action App Reference (Name) | Validate Submission |
-  | Folder | Shared |
-  | taskTypeId | `<UNRESOLVED: ...>` (do NOT fabricate) |
+  | - | - | - | - | No tasks — empty pass-through branch. |
 
   ### Stage 3: Enrich (`enrich`)
   **Type:** Stage
@@ -278,7 +256,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Diamond topology: Triage→{Validate,Enrich}→Join with two selected-stage-completed entry rules on Join; FIVE skeleton tasks across 4 stages cover 5 distinct plugin types — Triage:{rpa, api-workflow}, Validate:action, Enrich:agent, Join:case-management — all with empty data (skeleton)"
+    description: "Diamond topology: Triage→{Validate,Enrich}→Join with two selected-stage-completed entry rules on Join; FOUR skeleton tasks across 3 stages cover 4 distinct plugin types — Triage:{rpa, api-workflow}, Enrich:agent, Join:case-management — all with empty data (skeleton); Validate is an empty pass-through branch"
     command: "python3 $TASK_DIR/check_fan_in_join.py"
     timeout: 720
     expected_exit_code: 0

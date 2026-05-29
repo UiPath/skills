@@ -6,12 +6,8 @@ description: >
   about using user IDs (not usernames) for membership operations.
 tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 12
   max_turns: 40
   turn_timeout: 600
 

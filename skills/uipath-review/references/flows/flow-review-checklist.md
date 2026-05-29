@@ -21,12 +21,12 @@ Comprehensive quality checklist for UiPath Flow projects (`.flow` files) — orc
 Run the CLI validator first:
 
 ```bash
-uip flow validate <ProjectName>.flow --output json
+uip maestro flow validate <ProjectName>.flow --output json
 ```
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Flow validates without errors | Critical | `uip flow validate` returns 0 errors |
+| Flow validates without errors | Critical | `uip maestro flow validate` returns 0 errors |
 | All node IDs are unique | Critical | Check for duplicate IDs in nodes array |
 | All edge IDs are unique | Critical | Check for duplicate IDs in edges array |
 | Every edge has `targetPort` field | Critical | Check all edges for targetPort |
@@ -275,12 +275,12 @@ If the project uses the simple Flow format (not full Maestro BPMN):
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Flow validates without errors | Critical | `uip flow validate` |
+| Flow validates without errors | Critical | `uip maestro flow validate` |
 | All resource bindings resolved | Critical | Check bindings_v2.json |
 | No mock placeholder nodes remain | Critical | Grep for `core.logic.mock` |
 | Entry points correctly defined | Warning | Check entry-points.json |
 | Environment-specific values externalized | Warning | Check for hardcoded URLs/paths |
-| Debug flow succeeds end-to-end | Warning | `uip flow debug <project-dir>` |
+| Debug flow succeeds end-to-end | Warning | `uip maestro flow debug <project-dir>` |
 
 ## 11. Action Center / Human-in-the-Loop
 

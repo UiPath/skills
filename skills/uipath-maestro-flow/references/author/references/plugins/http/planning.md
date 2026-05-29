@@ -71,8 +71,8 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 | `authentication` | Yes | `"connector"` |
 | `method` | Yes | HTTP method: GET, POST, PUT, PATCH, DELETE |
 | `targetConnector` | Yes | Target connector key (e.g., `"uipath-salesforce-slack"`) |
-| `connectionId` | Yes | Target connector's IS connection ID (from `uip is connections list`) |
-| `folderKey` | Yes | Orchestrator folder key (from `uip is connections list`) |
+| `connectionId` | Yes | Target connector's IS connection ID (from `uip is connections list --all-folders`) |
+| `folderKey` | Yes | Orchestrator folder key (from `uip is connections list --all-folders`) |
 | `url` | No | API endpoint URL/path (e.g., `"/conversations.replies"`). Auto-fills both `bodyParameters.path` and `bodyParameters.url`. |
 | `query` | No | Query parameters as key-value object |
 | `headers` | No | Additional headers as key-value object |

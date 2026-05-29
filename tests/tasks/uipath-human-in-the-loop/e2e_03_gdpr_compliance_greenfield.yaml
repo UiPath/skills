@@ -10,10 +10,8 @@ description: >
   Build -> Verify loop. Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 22
   max_turns: 40
   turn_timeout: 1200
 
