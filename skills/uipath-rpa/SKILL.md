@@ -182,6 +182,15 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
     See [trigger-pattern-guide.md](references/trigger-pattern-guide.md) for worked examples, the `SchedulingMode` reference, the catalog of trigger activities, and the procedure for editing existing `ui:TriggerScope` workflows.
 
+
+### Destination Preflight (Both Modes)
+
+**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution new <NAME>` → `uip solution project import --source <PROJECT_DIR> --solutionFile <SOLUTION>.uipx` → `uip solution upload <SOLUTION_DIR>`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and Orchestrator publish (`uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
+
+### Destination Preflight (Both Modes)
+
+**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution new <NAME>` → `uip solution project import --source <PROJECT_DIR> --solutionFile <SOLUTION>.uipx` → `uip solution upload <SOLUTION_DIR>`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and Orchestrator publish (`uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
+
 ### Execution Discipline (Both Modes)
 
 **Run to completion — do not declare work done while plan tasks remain.** If a plan file exists at `docs/plans/*.md` referenced by this request (or discoverable there for this feature), read its header before acting and during every checkpoint.
