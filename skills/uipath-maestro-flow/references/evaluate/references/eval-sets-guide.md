@@ -20,7 +20,11 @@ uip maestro flow eval set remove "<id_or_name>" --path <flow_project> --output j
 
 ### `--evaluators`
 
-Comma-separated list of evaluator IDs or file base names. When omitted, the new eval set links to **all evaluators** present in the project at creation time. Subsequent evaluators added to the project do NOT auto-attach — link them by re-running `set add` with explicit refs, or carefully repair the eval set's `evaluatorRefs` array using the evaluator file refs the CLI created.
+Comma-separated list of evaluator IDs or generated file base names. When omitted, the new eval set links to **all evaluators** present in the project at creation time and writes the generated evaluator file refs (for example, `greeting-match-62c0793a.json`). Prefer omission when the eval set should use every current evaluator.
+
+Do **not** pass an evaluator display name such as `greeting-match` to `--evaluators`; that writes the display name into `evaluatorRefs`, and Studio Web eval runs will not resolve it. If you need an explicit list, get the generated id/file ref from `uip maestro flow eval evaluator add/list --output json` and pass that value instead.
+
+Subsequent evaluators added to the project do NOT auto-attach — link them by re-running `set add` with explicit generated refs, or carefully repair the eval set's `evaluatorRefs` array using the evaluator file refs the CLI created.
 
 ### `--entry-point`
 

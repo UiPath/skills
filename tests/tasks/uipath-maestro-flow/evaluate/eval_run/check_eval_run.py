@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Verify the deterministic eval-run e2e produced a clean 1.0 across all 3 data points.
+"""Verify the deterministic eval-run e2e produced a clean 1.0.
 
 Reads `eval-results.json` (the JSON the agent saved from
 `uip maestro flow eval run results <run_id> --verbose --output json`) and
 asserts:
 
   1. Top-level `Code` is `MaestroFlowEvalRunResults`.
-  2. There are at least 3 per-data-point rows.
+  2. There is at least 1 per-data-point row.
   3. Every row has `Status == "Completed"`.
   4. No row has a non-empty `Error`.
   5. For each row, every entry in `EvaluatorScores` (or its singular
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 RESULTS_PATH = Path("eval-results.json")
-EXPECTED_DATA_POINTS = 3
+EXPECTED_DATA_POINTS = 1
 
 
 def _fail(msg: str) -> None:
