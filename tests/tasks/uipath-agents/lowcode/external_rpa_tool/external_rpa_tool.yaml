@@ -24,7 +24,7 @@ run_limits:
 initial_prompt: |
   Create a UiPath low-code agent "FibonacciAgent" that accepts a required
   `index` (number) and returns a number `value`. It must compute the
-  value using an process named "FibonacciRPA" that is already deployed
+  value using a process named "FibonacciRPA" that is already deployed
   in the tenant — not by reasoning about the answer itself. The
   solution should be named "FibonacciSol".
 
