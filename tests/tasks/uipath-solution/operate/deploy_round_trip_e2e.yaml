@@ -9,7 +9,7 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
 pre_run:
-  - command: "E2E_TEST_PARENT_FOLDER=$E2E_TEST_PARENT_FOLDER python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
     timeout: 10
 
 post_run:

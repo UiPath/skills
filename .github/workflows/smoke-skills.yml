@@ -315,7 +315,6 @@ jobs:
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
             echo "E2E_PROCESS_KEY=${{ secrets.E2E_PROCESS_KEY }}"
             echo "E2E_LONG_PROCESS_KEY=${{ secrets.E2E_LONG_PROCESS_KEY }}"
-            echo "E2E_TEST_PARENT_FOLDER=${{ secrets.E2E_TEST_PARENT_FOLDER }}"
           } >> "$GITHUB_ENV"
           mkdir ~/.uipath
           run_uip_with_tenant "$TENANT_NAME" login status --output json

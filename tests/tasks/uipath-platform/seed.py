@@ -2,6 +2,13 @@
 """pre_run: generate seed.json with uuid8 and optional process/folder context."""
 import json, os, subprocess, sys, uuid
 
+# Parent folder under which tests place any new folder they create
+# (folders_hierarchy's tree, deploy_round_trip's deploy folder, etc.).
+# Hardcoded so the same path lands locally, on CI, and on the nightly VM
+# without secret/env coordination across launchers. `ensure_parent_folder`
+# creates it on first run so this works on any tenant.
+PARENT_FOLDER_PATH = "Shared/uipath-platform-e2e"
+
 def uip_json(*args):
     r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=60)
     try:
@@ -9,15 +16,29 @@ def uip_json(*args):
     except json.JSONDecodeError:
         return {}
 
+def ensure_parent_folder(path):
+    """Idempotent: returns once the folder exists. Creates it under its
+    last-segment parent if missing. Errors out if the immediate parent
+    itself isn't there (we don't recursively create — `Shared` is the only
+    expected ancestor and it exists on every tenant)."""
+    got = uip_json("or", "folders", "get", path)
+    if got.get("Result") == "Success":
+        return
+    parent, _, name = path.rpartition("/")
+    if not parent or not name:
+        print(f"seed.py: PARENT_FOLDER_PATH {path!r} must be nested under an existing folder (e.g. 'Shared/x').", file=sys.stderr)
+        sys.exit(1)
+    created = uip_json("or", "folders", "create", name, "--parent", parent)
+    if created.get("Result") != "Success":
+        msg = created.get("Message") or created.get("Instructions") or "unknown error"
+        print(f"seed.py: failed to ensure parent folder {path}: {msg}", file=sys.stderr)
+        sys.exit(1)
+
+ensure_parent_folder(PARENT_FOLDER_PATH)
+
 seed = {
     "uuid8": uuid.uuid4().hex[:8],
-    # Parent folder under which tests place any new folder they create
-    # (folders_hierarchy's tree, deploy_round_trip's deploy folder, etc.).
-    # Defaults to Shared for local dev; CI sets it to an isolated subfolder
-    # like `Shared/uipath-platform-e2e` so all test junk stays out of Shared
-    # root. `or` (not get's default): the pre_run `VAR=$VAR python3 …` pattern
-    # sets the var to "" when unset locally, so get(key, default) wouldn't fire.
-    "parent_folder_path": os.environ.get("E2E_TEST_PARENT_FOLDER") or "Shared",
+    "parent_folder_path": PARENT_FOLDER_PATH,
 }
 
 key = os.environ.get("E2E_PROCESS_KEY", "")
