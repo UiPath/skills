@@ -57,8 +57,12 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Publish the model" / "Tag as live" | `uip ixp projects publish <project-name> --output json` |
 | "Show metrics" / "What are the scores?" | `uip ixp projects get-metrics <project-name> --output json` |
 | "List projects" | `uip ixp projects list --output json` |
-| "Configure the model" / "Change preprocessing" | `uip ixp projects configure-model <project-name> [options] --output json` |
+| "Configure the model" | `uip ixp projects configure-model <project-name> [options] --output json` |
 | "Upload a document" / "Add documents to an existing project" | `uip ixp documents upload <project-name> <file> --output json` — see [CLI Reference § Uploading documents](references/cli-reference.md#uploading-documents-to-an-existing-project). One file per call; loop for multiple. For brand-new projects use `projects create` instead. |
+| "Delete a document" / "Remove a document" | `uip ixp documents delete <project-name> <document-id> --output json` — irreversible, triggers retrain. To delete by filename, look up the `DocumentId` via `documents list` (the `Filename` column shows the original upload name). |
+| "Add / delete / rename a field group" | `uip ixp groups {add,delete,rename} <project-name> --name <name> ... --output json` — see [CLI Reference § Groups](references/cli-reference.md#groups). `groups add` requires `--instructions` and `--fields '<json>'` with at least one field. `delete` requires `--confirm-data-loss`. |
+| "Add / edit / rename / delete a data type" | `uip ixp data-types {add,update-instructions,rename,delete} <project-name> --name <name> ... --output json` — see [CLI Reference § Data Types](references/cli-reference.md#data-types). `add` requires `--kind` (text/date/money/number/boolean/choice) and `--instructions`. `--input-value` (exact-match/inferred) is required only for `--kind text` and `--kind choice`; the other kinds don't have this property and the CLI rejects the flag for them. `delete` requires `--confirm-data-loss` because referencing fields break. |
+| "Add / delete / rename / retype a field" | `uip ixp fields {add,delete,rename,change-type} <project-name> --group <name> --field <name> ... --output json` — see [CLI Reference § Fields](references/cli-reference.md#fields). `change-type` deletes annotations and requires `--confirm-data-loss`. |
 
 ## Common Pitfalls
 

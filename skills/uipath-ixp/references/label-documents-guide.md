@@ -104,6 +104,28 @@ uip ixp labellings confirm <project-name> <document-id> --output json
 
 Repeat steps 2a–2d for all documents in the list.
 
+### Removing a document from the project
+
+If a document is unusable (wrong document type, corrupted, duplicate), delete it instead of confirming or skipping:
+
+```bash
+uip ixp documents delete <project-name> <document-id> --output json
+```
+
+`<document-id>` is the `DocumentId` from `documents list` (e.g., `3453547f3538febd.1fc885607f2aac621f8f2d3ef1847f22`). Pass it whole. Do NOT pass the AttachmentRef or the Filename.
+
+**Finding the DocumentId:**
+
+| You have | How to get the DocumentId |
+|----------|---------------------------|
+| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` |
+| A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | Run `uip ixp labellings get-predictions <project-name> --output json`, find the document whose `Labels[].Fields[].FormattedValue` matches, take its `DocumentId` |
+| Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
+
+`documents list` returns `Filename` alongside `DocumentId` (the original upload filename, or `null` if none was sent at upload time). When filenames aren't unique within the project, the JMESPath filter returns multiple IDs — review them with `documents download` before deleting.
+
+Deletion is irreversible and triggers a model retrain. Do NOT use deletion to skip documents you simply don't want to label — leave those unconfirmed instead.
+
 ## Step 3 — Summary
 
 After processing all documents, track progress and errors:

@@ -64,7 +64,6 @@ If many fields have low scores across the board, the model configuration may be 
 uip ixp projects configure-model <project-name> \
   --model gemini_2_5_flash \
   --preprocessing <none|table_mini|table> \
-  --attribution model \
   --output json
 ```
 
