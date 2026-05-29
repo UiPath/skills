@@ -405,5 +405,7 @@ The `uipath-langchain` package provides UiPath-specific LangChain tools:
 | Context search | `uipath_langchain.retrievers import ContextGroundingRetriever` | Search Context Grounding indexes |
 | MCP tools | `uipath_langchain.agent.tools import open_mcp_tools` | Connect to MCP servers |
 
+> **Context Grounding retrieval in LangGraph:** always use `ContextGroundingRetriever` from `uipath_langchain.retrievers` — not `sdk.context_grounding.search()` / `search_async()`. The LangChain retriever integrates natively with the graph pipeline and auto-generates the correct `index` binding. See [../capabilities/context-grounding.md](../capabilities/context-grounding.md) for usage examples.
+
 ---
 
