@@ -93,6 +93,36 @@ def assert_flow_has_node_type(
             )
 
 
+def assert_flow_has_exact_node_type(
+    types: Sequence[str], *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require that the project has, for EACH type in ``types``, at least one
+    ``.flow`` node whose ``type`` equals it EXACTLY (``==``).
+
+    This is the strict counterpart to :func:`assert_flow_has_node_type`, which
+    matches by case-insensitive SUBSTRING. Use the exact helper when a family of
+    node types shares a common prefix and the task requires one specific member:
+    e.g. the generic chained ``core.action.transform`` node must be pinned so the
+    standalone variants ``core.action.transform.filter`` / ``.map`` / ``.group-by``
+    are REJECTED (the substring helper would accept all four).
+
+    On failure, exits listing the node types actually seen.
+    """
+    if not types:
+        return
+    types_seen: set[str] = set()
+    for node in _iter_flow_nodes(project_glob):
+        t = node.get("type")
+        if t:
+            types_seen.add(t)
+    for wanted in types:
+        if wanted not in types_seen:
+            _fail(
+                f"No node has exact type {wanted!r}. "
+                f"Node types seen: {sorted(types_seen)}"
+            )
+
+
 def assert_flow_uses_connector_target(
     connector_key: str, *, project_glob: str = "**/project.uiproj"
 ) -> None:

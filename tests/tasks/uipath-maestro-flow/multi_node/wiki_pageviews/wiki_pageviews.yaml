@@ -17,9 +17,11 @@ initial_prompt: |
   (string) and `date1`, `date2` (strings in `YYYYMMDD` format) as inputs.
   Call the Wikimedia pageviews API
   (`https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/{article}/daily/{date1}/{date2}`)
-  once to fetch the daily view counts in the range, use a Transform node to
-  filter the returned items down to days whose `views` exceed 500, then sum
-  the `views` across those matching days and return the total as an integer.
+  once to fetch the daily view counts in the range, use a generic
+  `core.action.transform` node (the chained Generic Transform shape, NOT the
+  standalone `core.action.transform.filter` variant) to filter the returned
+  items down to days whose `views` exceed 500, then sum the `views` across
+  those matching days and return the total as an integer.
   When the article does not exist and the HTTP call fails, wire the HTTP
   node's `error` output port to an End node that returns the literal string
   `Article not found` instead.
