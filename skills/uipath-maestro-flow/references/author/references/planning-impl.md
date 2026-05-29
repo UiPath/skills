@@ -1,8 +1,8 @@
 # Planning Phase 2: Implementation Resolution
 
-Resolve all implementation details for the approved architectural plan. This phase takes the `.arch.plan.md` and produces an `.impl.plan.md` with concrete, build-ready values. The plugin `impl.md` files, wiring rules, and flow patterns below are also used during the build step.
+Resolve all implementation details for the approved architectural plan. This phase takes the `.uipath.flow.arch.plan.md` and produces an `.uipath.flow.impl.plan.md` with concrete, build-ready values. The plugin `impl.md` files, wiring rules, and flow patterns below are also used during the build step.
 
-> **Prerequisite:** The user must have explicitly approved the architectural plan (`.arch.plan.md`) before starting this phase.
+> **Prerequisite:** The user must have explicitly approved the architectural plan (`.uipath.flow.arch.plan.md`) before starting this phase.
 >
 > **Always validate with the registry,** even for OOTB nodes. This phase ensures that every node type (built-in or connector-based) is confirmed against the current registry state. Port names, input requirements, and output schemas can change — do not assume OOTB nodes match the planning guides without verification.
 
@@ -12,7 +12,7 @@ Resolve all implementation details for the approved architectural plan. This pha
 
 ### Step 1 — Identify Nodes and Validate with Registry
 
-Scan the approved `.arch.plan.md` node table and connector summary. Validate each node type against the registry to confirm ports, inputs, and outputs are current:
+Scan the approved `.uipath.flow.arch.plan.md` node table and connector summary. Validate each node type against the registry to confirm ports, inputs, and outputs are current:
 
 | Category          | How to identify                                                      | Action                                                                                                                                                                                                                                                                     |
 | ----------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -123,7 +123,7 @@ For each `core.logic.mock` node in the architectural plan:
 
 ### Step 5 — Replace Placeholders
 
-Update the node table from the `.arch.plan.md`:
+Update the node table from the `.uipath.flow.arch.plan.md`:
 
 - Replace `<PLACEHOLDER>` values with resolved IDs
 - Replace `connector: <service>` annotations with actual node types
@@ -133,7 +133,7 @@ Update the node table from the `.arch.plan.md`:
 
 ### Step 6 — Write the Implementation Plan
 
-Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (same location as the `.arch.plan.md`).
+Generate a `<SolutionName>.uipath.flow.impl.plan.md` file in the **solution directory** (same location as the `.uipath.flow.arch.plan.md`).
 
 #### Output Format
 
@@ -146,7 +146,7 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 
 ## Flow Diagram (Mermaid)
 
-Copy the mermaid diagram from `.arch.plan.md`, then update node labels if any node types changed due to mock replacement or connector resolution. Use the same diagram from architectural planning — it remains the visual reference for the flow structure.
+Copy the mermaid diagram from `.uipath.flow.arch.plan.md`, then update node labels if any node types changed due to mock replacement or connector resolution. Use the same diagram from architectural planning — it remains the visual reference for the flow structure.
 
 ```mermaid
 graph LR
@@ -167,7 +167,7 @@ graph LR
 
 ## Resolved Edge Table
 
-(Copy from `.arch.plan.md` — update only if node IDs changed due to mock replacement)
+(Copy from `.uipath.flow.arch.plan.md` — update only if node IDs changed due to mock replacement)
 
 ## Bindings
 
@@ -176,11 +176,11 @@ graph LR
 
 ## Global Variables
 
-(Copy from `.arch.plan.md` Inputs and Outputs section)
+(Copy from `.uipath.flow.arch.plan.md` Inputs and Outputs section)
 
 ## Changes from Architectural Plan
 
-- List what changed between `.arch.plan.md` and this plan
+- List what changed between `.uipath.flow.arch.plan.md` and this plan
 - Record any node type changes (connector resolutions, mock replacements)
 - Note any port or input field changes discovered during registry validation
 
@@ -211,7 +211,7 @@ Present a short summary in chat:
 5. Any required fields that need user input
 6. Any connections that need to be created
 
-Tell the user to review `<SolutionName>.impl.plan.md`, including the updated mermaid diagram and registry confirmations. Do NOT proceed to the build step until the user explicitly approves.
+Tell the user to review `<SolutionName>.uipath.flow.impl.plan.md`, including the updated mermaid diagram and registry confirmations. Do NOT proceed to the build step until the user explicitly approves.
 
 ---
 

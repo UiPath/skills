@@ -309,7 +309,7 @@ Scheduled Trigger -> HTTP (fetch batch) -> Loop
 
 ## Output Format
 
-Generate a `<SolutionName>.arch.plan.md` file in the **solution directory** (the folder containing the `.uipx` file, not the project subfolder). The plan covers the entire solution — which may contain multiple projects in the future.
+Generate a `<SolutionName>.uipath.flow.arch.plan.md` file in the **solution directory** (the folder containing the `.uipx` file, not the project subfolder). The plan covers the entire solution — which may contain multiple projects in the future.
 
 ### 1. Summary
 

@@ -336,7 +336,7 @@ Anti-patterns are inventoried in the Anti-Patterns section below but are **not**
 | # | Step | Covered | Test(s) | Notes |
 |---|------|---------|---------|-------|
 | 0 | Resolve uip binary | Indirect | all (implicit) | All tests require it but none assert it |
-| 4 | Plan the flow | No | — | No test checks for .arch.plan.md or .impl.plan.md |
+| 4 | Plan the flow | No | — | No test checks for .uipath.flow.arch.plan.md or .uipath.flow.impl.plan.md |
 
 ### Critical Rules (X/Y covered)
 
