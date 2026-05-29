@@ -63,16 +63,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow references the Slack send-message-to-user node"
+    description: "Flow wires the Slack send-message-to-user node with the resolved Slack id for rocky.madden@uipath.com (U01S2LL26KY)"
     path: "SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow"
     includes:
       - '"send-message-to-user"'
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
-    description: "Flow contains a resolved Slack user id (U.../W...) — proving the paginated lookup landed a real value"
-    path: "SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow"
-    pattern: '"[UW][A-Z0-9]{7,}"'
-    weight: 2.0
+      - '"U01S2LL26KY"'
+    weight: 3.0
     pass_threshold: 1.0
