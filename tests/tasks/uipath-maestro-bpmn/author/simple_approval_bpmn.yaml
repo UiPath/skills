@@ -7,6 +7,7 @@ description: >
 tags: [uipath-maestro-bpmn, integration, lifecycle:generate, shape:multi-node, node:gateway, node:script, node:service-task, resource]
 
 run_limits:
+  expected_turns: 24
   max_turns: 90
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

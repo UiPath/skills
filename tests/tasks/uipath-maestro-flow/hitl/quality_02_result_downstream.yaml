@@ -6,6 +6,7 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
+  expected_turns: 30
   max_turns: 47
 initial_prompt: |
   Build a UiPath Flow named "ExpenseApproval" that:

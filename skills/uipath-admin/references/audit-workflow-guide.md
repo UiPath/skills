@@ -130,6 +130,8 @@ The `Identity` → `Authentication` → `User Login` path matches the Audit Serv
 
 ### Step 3 — Query
 
+> **MANDATORY:** if the question names a specific user (by email, name, or username), the events call **must** include `--user-id <GUID>` from Step 1. Querying by `--type <USER_LOGIN_GUID>` and dates alone returns login events for **every** user in the org — that's a wrong answer, not a degraded one. Do not skip `--user-id` because Step 1 felt redundant or because the date window seemed narrow enough.
+
 For "all logins for jane.doe@example.com this month":
 
 ```bash
@@ -154,7 +156,7 @@ uip admin audit org events \
   --output    json
 ```
 
-If Step 1 fails (Identity Server unreachable, user not in this org), you can still bound the query by `--type <USER_LOGIN_GUID>` + date range and post-filter the result client-side by `actorEmail` — slower than `--user-id` but works without the lookup.
+**Only** if Step 1 cannot be completed (Identity Server returns 4xx/5xx, the user truly isn't in this org, or the sandbox blocks the call) is it acceptable to skip `--user-id`. In that case, query by `--type <USER_LOGIN_GUID>` + dates, then post-filter the result client-side on `actorEmail`/`actorName`. State explicitly in your reply that this fallback was used and why — the answer is approximate.
 
 When to use audit `--search` instead: useful when filtering by something that *does* live in `clientInfo`/`eventDetails` — e.g., a specific IP address (`--search "20.200.233.203"`), country code, authentication provider name, or session ID. Not useful for users.
 

@@ -32,15 +32,23 @@ from typing import Any, Iterable, Sequence
 def run_debug(
     *,
     inputs: dict | None = None,
+    attachments: dict[str, str] | None = None,
     timeout: int = 240,
     project_glob: str = "**/project.uiproj",
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
-    parsed ``Data`` payload. Exits on any step failing."""
+    parsed ``Data`` payload. Exits on any step failing.
+
+    ``attachments`` maps a file-typed input variable ``id`` to a local file path;
+    each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
+    ``id`` must match a ``variables.globals[]`` entry with ``direction:"in"`` and
+    ``type:"file"`` — see :func:`read_flow_file_input_vars`."""
     project_dir = _find_project(project_glob)
     cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
+    for var_id, local_path in (attachments or {}).items():
+        cmd.extend(["--attachment", f"{var_id}={local_path}"])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0:
         _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
@@ -81,6 +89,36 @@ def assert_flow_has_node_type(
         if not any(needle in t.lower() for t in types_seen):
             _fail(
                 f"No node matches type hint {hint!r}. "
+                f"Node types seen: {sorted(types_seen)}"
+            )
+
+
+def assert_flow_has_exact_node_type(
+    types: Sequence[str], *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require that the project has, for EACH type in ``types``, at least one
+    ``.flow`` node whose ``type`` equals it EXACTLY (``==``).
+
+    This is the strict counterpart to :func:`assert_flow_has_node_type`, which
+    matches by case-insensitive SUBSTRING. Use the exact helper when a family of
+    node types shares a common prefix and the task requires one specific member:
+    e.g. the generic chained ``core.action.transform`` node must be pinned so the
+    standalone variants ``core.action.transform.filter`` / ``.map`` / ``.group-by``
+    are REJECTED (the substring helper would accept all four).
+
+    On failure, exits listing the node types actually seen.
+    """
+    if not types:
+        return
+    types_seen: set[str] = set()
+    for node in _iter_flow_nodes(project_glob):
+        t = node.get("type")
+        if t:
+            types_seen.add(t)
+    for wanted in types:
+        if wanted not in types_seen:
+            _fail(
+                f"No node has exact type {wanted!r}. "
                 f"Node types seen: {sorted(types_seen)}"
             )
 
@@ -233,6 +271,23 @@ def read_flow_input_vars(project_dir: str) -> list[str]:
         v["id"]
         for v in (variables.get("globals") or [])
         if v.get("direction") in ("in", "inout")
+    ]
+
+
+def read_flow_file_input_vars(project_dir: str) -> list[str]:
+    """Return the ordered list of file-typed input variable IDs (``direction:"in"``,
+    ``type:"file"``) declared on the first ``.flow`` file in ``project_dir``. These
+    are the ids eligible for ``uip maestro flow debug --attachment <id>=<path>``."""
+    flows = glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+    if not flows:
+        _fail(f"No .flow file found under {project_dir}")
+    with open(flows[0]) as f:
+        flow = json.load(f)
+    variables = flow.get("variables") or flow.get("workflow", {}).get("variables") or {}
+    return [
+        v["id"]
+        for v in (variables.get("globals") or [])
+        if v.get("direction") == "in" and v.get("type") == "file"
     ]
 
 

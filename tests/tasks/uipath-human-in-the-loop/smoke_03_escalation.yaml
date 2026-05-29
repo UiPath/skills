@@ -5,6 +5,9 @@ description: >
   signals without explicit HITL mention.
 tags: [uipath-human-in-the-loop, smoke]
 
+run_limits:
+  expected_turns: 2
+
 initial_prompt: |
   My UiPath Flow has an AI agent that classifies customer complaints.
   Most classifications are confident and route automatically, but a

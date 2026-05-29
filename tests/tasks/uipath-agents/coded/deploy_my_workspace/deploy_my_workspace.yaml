@@ -10,6 +10,7 @@ description: >
 tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy]
 
 run_limits:
+  expected_turns: 43
   task_timeout: 1800
   turn_timeout: 1200
   max_turns: 40

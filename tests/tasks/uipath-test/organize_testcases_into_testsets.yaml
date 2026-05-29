@@ -10,6 +10,7 @@ description: >
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:test-set]
 
 run_limits:
+  expected_turns: 22
   max_turns: 35
 
 initial_prompt: |

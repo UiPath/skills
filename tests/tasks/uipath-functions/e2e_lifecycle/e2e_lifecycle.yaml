@@ -9,6 +9,10 @@ description: >
   function locally with `uip functions run`.
 tags: [uipath-functions, e2e, mode:build, lifecycle:generate]
 
+run_limits:
+  expected_turns: 31
+  turn_timeout: 1200
+
 initial_prompt: |
   I need a UiPath Python Coded Function named `invoice-validator` that checks
   whether invoice data is complete and well-formed.

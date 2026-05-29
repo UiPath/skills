@@ -10,7 +10,7 @@
 
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
-- `--order-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
+- `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
 - `--all-fields` — (Orchestrator tool only) return raw DTO instead of the
   curated PascalCase projection. Resource tool returns full DTO by default
   on every list/get and does not expose this flag.

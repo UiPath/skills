@@ -7,6 +7,9 @@ description: >
   applies.
 tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:conversational, feature:framework-langgraph]
 
+run_limits:
+  expected_turns: 20
+
 initial_prompt: |
   hey, can you set up a tiny LangGraph chat agent here called
   `chat-agent`? it should just take a message and reply with the same

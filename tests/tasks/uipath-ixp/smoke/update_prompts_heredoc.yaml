@@ -13,6 +13,9 @@ description: >
   command in the documented heredoc shape.
 tags: [uipath-ixp, smoke, lifecycle:edit]
 
+run_limits:
+  expected_turns: 8
+
 initial_prompt: |
   The InvoiceNumber field on IXP project `my_invoices-f1afa9ef-ixp` is
   scoring poorly. Validation shows the model is confusing the Purchase

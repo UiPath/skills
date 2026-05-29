@@ -13,6 +13,7 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, bindings, regression]
 
 run_limits:
+  expected_turns: 51
   task_timeout: 3600
   max_turns: 50
   turn_timeout: 1200

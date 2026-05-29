@@ -10,6 +10,7 @@ description: >
 tags: [uipath-data-fabric, smoke, records]
 
 run_limits:
+  expected_turns: 13
   max_turns: 50
 
 initial_prompt: |

@@ -8,6 +8,7 @@ tags: [uipath-solution, e2e, lifecycle:generate]
 max_iterations: 1
 
 run_limits:
+  expected_turns: 16
   turn_timeout: 1200
 
 initial_prompt: |

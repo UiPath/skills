@@ -108,7 +108,7 @@ task_id         — unique test identifier (e.g., "skill-flow-calculator")
 description     — what the test validates
 tags            — array carrying values from the Tag Taxonomy dimensions
                   documented in tests/README.md. Form:
-                  [skill, tier, mode:X, shape:X, node:..., resource, connector, feature:...]
+                  [skill, tier, mode:X, shape:X, node:..., resource, connector, windows, feature:...]
                     skill      — uipath-<name>                                (required, flat)
                     tier       — smoke | integration | e2e                    (required, flat)
                     mode       — mode:{build|operate|troubleshoot}                (required)
@@ -116,6 +116,7 @@ tags            — array carrying values from the Tag Taxonomy dimensions
                     node       — node:{decision|switch|subflow|terminate|loop|transform|hitl} (0..n)
                     resource   — flat boolean marker (present iff task uses a resource node) (0..1)
                     connector  — flat boolean marker (present iff task uses any connector)   (0..1)
+                    windows    — flat boolean marker (present iff task requires a Windows host) (0..1)
                     feature    — feature:{http|trigger|registry|transform|approval-gate|
                                  write-back|escalation|…}                     (0..n)
                   Record every dimension; Phase 4f keys off all of them, not just tier.
@@ -235,7 +236,7 @@ For each skill that has at least one test, compute which values from the Tag Tax
 - **Mode** — tick each of `mode:build`, `mode:operate`, `mode:diagnose` if any test carries that tag. All three are expected eventually for most skills; missing modes surface as gaps.
 - **Shape** — tick each of `shape:single-node`, `shape:multi-node` (applies to flow-building skills only).
 - **Node** — list values present under `node:*` for skills where that axis applies.
-- **Resource / Connector** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`) for skills where they apply.
+- **Resource / Connector / Windows** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`, `windows`) for skills where they apply.
 - **Feature** — list `feature:*` tags present vs a reasonable "expected" set for this skill (derived from SKILL.md — e.g. `uipath-human-in-the-loop` should exercise `feature:approval-gate`, `feature:write-back`, `feature:escalation`; `uipath-maestro-flow` should exercise `feature:registry`, `feature:transform`, `feature:http`, …). If the skill's vocabulary is open, list what's present without the ✗ column.
 
 This is structured data for the per-skill report (see template below). It is NOT folded into the weighted overall score — adding it on top of Components/Steps would double-count (a missing edit-scenario test already shows up as a workflow-step gap).

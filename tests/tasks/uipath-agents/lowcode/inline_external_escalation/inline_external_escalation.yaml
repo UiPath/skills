@@ -10,6 +10,7 @@ description: >
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
 run_limits:
+  expected_turns: 66
   turn_timeout: 1200
 
 initial_prompt: |

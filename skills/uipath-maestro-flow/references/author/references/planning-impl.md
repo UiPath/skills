@@ -29,7 +29,7 @@ Even built-in nodes can change. For each node type in your plan, read the releva
 
 ```bash
 uip maestro flow registry pull --force
-uip maestro flow registry get <nodeType> --output json
+uip maestro flow registry get <node-type> --output json
 ```
 
 **Plugin impl.md files for registry validation:**
@@ -92,7 +92,7 @@ If Phase 1 flagged a resource as not found, check two sources:
 ```bash
 uip maestro flow registry list --local --output json
 ```
-Run from the flow project directory. If the resource exists as a sibling project in the same `.uipx` solution, it appears here — use `registry get "<nodeType>" --local --output json` to get the full manifest.
+Run from the flow project directory. If the resource exists as a sibling project in the same `.uipx` solution, it appears here — use `registry get "<node-type>" --local --output json` to get the full manifest.
 
 **2. Tenant registry (if not in solution):**
 ```bash

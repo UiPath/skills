@@ -6,6 +6,7 @@ description: >
 tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, lifecycle:validate, lifecycle:package]
 
 run_limits:
+  expected_turns: 33
   max_turns: 60
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project named

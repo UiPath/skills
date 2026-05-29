@@ -6,7 +6,10 @@ description: >
   fileInfoCollection entry in project.json (NOT entryPoints). Mirrors
   coded_test_case.yaml for the XAML mode that the skill historically
   under-served. See PILOT-5327.
-tags: [uipath-rpa, integration, mode:build, feature:test-case]
+tags: [uipath-rpa, windows, integration, mode:build, feature:test-case]
+
+run_limits:
+  expected_turns: 36
 
 initial_prompt: |
   I need a UiPath XAML test project called "LoginTests" with a first XAML

@@ -8,6 +8,7 @@ description: >
 tags: [uipath-data-fabric, integration, records, import]
 
 run_limits:
+  expected_turns: 9
   turn_timeout: 600
 
 initial_prompt: |

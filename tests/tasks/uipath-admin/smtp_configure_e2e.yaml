@@ -6,6 +6,7 @@ description: >
 tags: [uipath-admin, e2e, lifecycle:generate]
 
 run_limits:
+  expected_turns: 7
   max_turns: 40
   turn_timeout: 600
 

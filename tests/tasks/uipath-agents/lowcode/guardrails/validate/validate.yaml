@@ -11,7 +11,7 @@ max_iterations: 1
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-agents/fixtures/WebResearchBriefingSolution
+      path: ../_fixtures/WebResearchBriefingSolution
 
 initial_prompt: |
   I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
@@ -84,5 +84,6 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
+  expected_turns: 13
   max_turns: 40
   turn_timeout: 1200

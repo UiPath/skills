@@ -4,7 +4,10 @@ description: >
   given job key against the live tenant. Verifies the agent knows to call
   `uip traces spans get --job-key <guid> --output json`.
   A 404 response (no traces for this job key) is an acceptable outcome.
-tags: [uipath-platform, smoke, lifecycle:discover]
+tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces]
+
+run_limits:
+  expected_turns: 6
 
 initial_prompt: |
   Use the `uipath-platform` skill.

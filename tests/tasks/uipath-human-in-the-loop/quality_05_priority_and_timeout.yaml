@@ -6,6 +6,7 @@ description: >
 tags: [uipath-human-in-the-loop, integration, options]
 
 run_limits:
+  expected_turns: 16
   max_turns: 50
   task_timeout: 500
   turn_timeout: 600

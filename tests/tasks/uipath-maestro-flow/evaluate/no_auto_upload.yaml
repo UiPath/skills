@@ -9,6 +9,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, mode:operate, lifecycle:execute]
 
 run_limits:
+  expected_turns: 26
   max_turns: 50
 
 initial_prompt: |

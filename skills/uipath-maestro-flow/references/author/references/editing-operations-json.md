@@ -71,14 +71,16 @@ uip maestro flow validate <FILE>.flow --output json
 
 `json.dump(..., indent=2)` matches the file's existing 2-space indent — `flow format` normalizes layout but does not re-indent unrelated structure, so preserve the canonical 2-space indent on writes.
 
-### `jq` for extracting CLI JSON
+### `--output-filter` for extracting CLI JSON
 
-Read-only extractions on `--output json` results — no Python needed:
+Read-only extractions on `--output json` results — use the CLI's built-in JMESPath filter, no external parser needed. Expressions start at the `Data` envelope (no `Data.` prefix). See [shared/cli-conventions.md §3](../../shared/cli-conventions.md#3-prefer---output-filter-for-extraction) for the full pattern.
 
 ```bash
-uip solution upload --output json | jq -r '.Data.Url'
-uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
+uip solution upload --output json --output-filter "Url"
+uip maestro flow registry get <node-type> --output json --output-filter "Node"
 ```
+
+Reach for `jq` / `python3` only when JMESPath cannot express the operation (multi-step joins, format conversion, conditional output computed from multiple fields).
 
 ### Why scripting is approval-gated
 
@@ -94,7 +96,7 @@ uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
 
 **Tool:** `Edit` (insert into `nodes[]` + `definitions[]` + `variables.nodes` + `layout.nodes`)
 
-1. Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
+1. Run `uip maestro flow registry get <node-type> --output json` and copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
 2. Use `Edit` to add a node entry to the `nodes` array:
 
 ```json
@@ -488,7 +490,7 @@ When not using `uip maestro flow node configure`, use `Edit` to set up the follo
 
 Source `method`, `endpoint`, and `bodyParameters` / `queryParameters` / `pathParameters` field names from either of these (both read the same upstream IS metadata):
 
-From `uip maestro flow registry get <nodeType> --connection-id <id> --output json`:
+From `uip maestro flow registry get <node-type> --connection-id <id> --output json`:
 - `method` ← `connectorMethodInfo.method`
 - `endpoint` ← `connectorMethodInfo.path`
 - `bodyParameters.<name>` ← `inputDefinition.fields[].name`

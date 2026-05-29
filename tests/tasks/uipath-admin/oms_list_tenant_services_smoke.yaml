@@ -9,6 +9,9 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, list, oms]
 
+run_limits:
+  expected_turns: 7
+
 initial_prompt: |
   List the services currently provisioned on the default tenant in my UiPath organization.
 

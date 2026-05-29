@@ -7,6 +7,7 @@ description: >
 tags: [uipath-human-in-the-loop, integration, schema-design, developer-mistake]
 
 run_limits:
+  expected_turns: 21
   max_turns: 75
 initial_prompt: |
   Build a UiPath Flow named "ExpenseReview" for expense claim approval:

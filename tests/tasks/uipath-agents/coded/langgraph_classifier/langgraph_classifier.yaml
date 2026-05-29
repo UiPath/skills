@@ -11,6 +11,7 @@ description: >
 tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-langgraph, feature:schema-sync]
 
 run_limits:
+  expected_turns: 36
   turn_timeout: 1200
 
 initial_prompt: |

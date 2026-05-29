@@ -6,6 +6,9 @@ description: >
   complete 6-step workflow and correct resource run syntax with --body.
 tags: [uipath-platform, smoke, integration-service, resources, execute]
 
+run_limits:
+  expected_turns: 15
+
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

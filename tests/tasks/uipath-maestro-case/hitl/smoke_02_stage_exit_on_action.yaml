@@ -194,5 +194,6 @@ post_run:
     timeout: 120
 
 run_limits:
+  expected_turns: 57
   max_turns: 105
   turn_timeout: 600

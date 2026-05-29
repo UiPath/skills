@@ -6,6 +6,7 @@ description: >
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
 run_limits:
+  expected_turns: 21
   max_turns: 50
   turn_timeout: 600
 

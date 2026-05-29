@@ -13,6 +13,7 @@ description: >
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
 run_limits:
+  expected_turns: 9
   max_turns: 30
 
 initial_prompt: |

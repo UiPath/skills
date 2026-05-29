@@ -9,6 +9,9 @@ description: >
   the asset actually exists in the tenant.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
+run_limits:
+  expected_turns: 9
+
 initial_prompt: |
   Fetch the metadata for the Orchestrator asset named `ApiBaseUrl` in
   the `Finance` folder of the current UiPath tenant. Use that folder path

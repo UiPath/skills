@@ -23,8 +23,8 @@ uip gov aops-policy list --output json
 | `--search <TERM>` | no | Search by name |
 | `--limit <N>` | no | Page size (default: 20) |
 | `--offset <N>` | no | Page index, 0-based (default: 0) |
-| `--order-by <FIELD>` | no | Sort field (e.g. `priority`, `name`) |
-| `--order-direction <asc\|desc>` | no | Sort direction |
+| `--sort-by <FIELD>` | no | Sort field (e.g. `priority`, `name`) |
+| `--sort-order <asc\|desc>` | no | Sort direction |
 
 **Output:** `Data` is an array of `PolicyDto`. Each entry has `identifier`, `name`, `productName`, `priority`, and `availability`. `productName` is a flat string (the product identifier) — not a nested `product.{name,label}` object. An empty array means no policies matched.
 
