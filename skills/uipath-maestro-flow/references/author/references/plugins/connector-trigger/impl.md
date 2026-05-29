@@ -188,7 +188,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 | `connectionId` | Yes | Connection UUID from Step 1c (the final connection — BYOA if required) |
 | `folderKey` | Yes | Orchestrator folder key for the connection |
 | `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
-| `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
+| `eventParameters`, `queryParameters`, `pathParameters` | No | JSON objects of resolved event configuration. `eventParameters` carries the values from Steps 3-4; `queryParameters`/`pathParameters` scope the subscription when the connector needs them (e.g. GitHub `queryParameters: {"repo":"cli"}`, `pathParameters: {"owner":"uipath"}`). Each must be a JSON object |
 | `filter` | No | Structured filter tree — see [Filter Trees](#filter-trees) below. Omit to trigger on all events |
 
 The CLI computes the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration. **Do not pass `filterExpression` directly — the validator rejects it.**
