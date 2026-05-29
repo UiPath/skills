@@ -13,6 +13,22 @@ Runs ``uip maestro flow debug --output json`` and asserts:
    timestamps, GUIDs, and status strings whose digits/chars can falsely match
    tiny expected values (e.g. ``"3" in json.dumps(data)`` is almost always
    true whenever a debug run completes).
+
+Payload key casing
+------------------
+Two distinct sources with two casings:
+
+- The ``flow debug --output json`` RUNTIME payload uses **PascalCase** keys
+  (``Data``, ``FinalStatus``, ``Variables``, ``Globals``, ``Elements``,
+  ``Outputs``, and the file-attachment object's ``Id``/``FullName``/``MimeType``/
+  ``Metadata``). Every runtime-payload read goes through :func:`_get_ci`, a
+  case-insensitive accessor — so the conceptual camelCase key names used in this
+  docstring resolve regardless of the CLI's serialization casing or any future
+  normalization.
+- The ``.flow`` SOURCE file uses **camelCase** keys (``variables``, ``globals``,
+  ``direction``, ``type``, ``nodes``). Source readers (``read_flow_*_vars``,
+  ``_iter_flow_nodes``, the node-type asserts) keep their literal camelCase keys
+  — do NOT route them through :func:`_get_ci`.
 """
 
 from __future__ import annotations
@@ -55,8 +71,8 @@ def run_debug(
     data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from flow debug\n{r.stdout}")
-    payload = data.get("Data") or {}
-    status = payload.get("finalStatus")
+    payload = _get_ci(data, "Data") or {}
+    status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
     return payload
@@ -184,14 +200,15 @@ def collect_outputs(payload: dict) -> list[Any]:
     Both are walked to be safe.
     """
     out: list[Any] = []
-    variables = payload.get("variables") or {}
-    for val in (variables.get("globals") or {}).values():
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    for val in (_get_ci(variables, "globals", "Globals") or {}).values():
         out.extend(_leaves(val))
-    for v in variables.get("globalVariables") or []:
-        if "value" in v:
-            out.extend(_leaves(v.get("value")))
-    for e in variables.get("elements") or []:
-        out.extend(_leaves(e.get("outputs") or {}))
+    for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+        value = _get_ci(v, "value", "Value")
+        if value is not None:
+            out.extend(_leaves(value))
+    for e in _get_ci(variables, "elements", "Elements") or []:
+        out.extend(_leaves(_get_ci(e, "outputs", "Outputs") or {}))
     return out
 
 
@@ -311,6 +328,30 @@ def _parse_json(stdout: str) -> dict | None:
     return None
 
 
+def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
+    """Case-insensitively read the first present candidate key from ``mapping``.
+
+    The ``uip maestro flow debug --output json`` runtime payload uses PascalCase
+    keys (``FinalStatus``, ``Variables``, ``Globals``, ``Elements``, ``Outputs``)
+    while this module's docstring and the ``.flow`` source files use camelCase.
+    Reading the runtime payload through this accessor tolerates either casing and
+    any future CLI normalization. Use it ONLY for the debug RUNTIME payload — NOT
+    for ``.flow`` SOURCE readers, whose camelCase keys are stable and intentional.
+
+    Candidates are tried in order; the first whose lowercased form matches a key
+    in ``mapping`` (also lowercased) wins. Returns ``default`` if ``mapping`` is
+    not a dict or no candidate matches.
+    """
+    if not isinstance(mapping, dict):
+        return default
+    lowered = {k.lower(): k for k in mapping.keys() if isinstance(k, str)}
+    for candidate in candidate_keys:
+        actual = lowered.get(candidate.lower())
+        if actual is not None:
+            return mapping[actual]
+    return default
+
+
 def _iter_flow_nodes(project_glob: str):
     project_dir = _find_project(project_glob)
     for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
@@ -320,7 +361,9 @@ def _iter_flow_nodes(project_glob: str):
 
 
 def _non_empty_binding_value(value: Any) -> bool:
-    return isinstance(value, str) and bool(value.strip()) and value != "ImplicitConnection"
+    return (
+        isinstance(value, str) and bool(value.strip()) and value != "ImplicitConnection"
+    )
 
 
 def _find_project(pattern: str) -> str:
@@ -343,7 +386,7 @@ def _find_project(pattern: str) -> str:
         joined = "\n  - ".join(candidates)
         _fail(
             f"No Flow project.uiproj found matching {pattern} — "
-            f"candidates exist but none declare ProjectType=\"Flow\":\n  - {joined}"
+            f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
         joined = "\n  - ".join(flow_projects)
