@@ -95,6 +95,9 @@ initial_prompt: |
   about the shape of `{"masked_key": ..., "label": ...}. Those
   should be as similar as possible to what we expect.
 
+  I also want to be able (in the future) to have an llm deciding
+  what mocking values should be substituted at runtime.
+  
   Do NOT publish, upload, or deploy. Complete it in a single pass.
 
 success_criteria:

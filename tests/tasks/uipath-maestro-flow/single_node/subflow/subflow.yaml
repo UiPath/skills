@@ -35,7 +35,10 @@ success_criteria:
   - type: run_command
     description: "Flow has correct subflow structure and debug reverses 'hello' to 'olleh'"
     command: "python3 $TASK_DIR/check_subflow_flow.py"
-    timeout: 120
+    # Must exceed flow_check.run_debug's 240s subprocess timeout so a slow/hung
+    # `flow debug` surfaces the real CLI error (exit 1 + traceback) instead of an
+    # opaque sandbox kill (exit -1, empty output). Guarded by test_check_subflow_flow.py.
+    timeout: 300
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

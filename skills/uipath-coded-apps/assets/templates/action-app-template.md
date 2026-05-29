@@ -68,9 +68,9 @@ Field types: `string` · `number` · `integer` · `boolean` · `array` (add `"it
 Without SDK services:
 
 ```typescript
-import { CodedActionAppsService } from '@uipath/uipath-ts-coded-action-apps';
+import { CodedActionAppService } from '@uipath/coded-action-app';
 
-export const codedActionAppsService = new CodedActionAppsService();
+export const codedActionAppService = new CodedActionAppService();
 ```
 
 With SDK services (add only what the app uses):
@@ -78,10 +78,10 @@ With SDK services (add only what the app uses):
 ```typescript
 import { UiPath } from '@uipath/uipath-typescript/core';
 // import { Entities } from '@uipath/uipath-typescript/entities';
-import { CodedActionAppsService } from '@uipath/uipath-ts-coded-action-apps';
+import { CodedActionAppService } from '@uipath/coded-action-app';
 
 const sdk = new UiPath();
-export const codedActionAppsService = new CodedActionAppsService();
+export const codedActionAppService = new CodedActionAppService();
 // export const entities = new Entities(sdk);
 ```
 
@@ -119,8 +119,8 @@ Replace `{{...}}` placeholders with fields from `action-schema.json`. Remove sec
 
 ```typescript
 import { useState, useEffect, ChangeEvent } from 'react';
-import { Theme } from '@uipath/uipath-ts-coded-action-apps';
-import { codedActionAppsService } from '../uipath';
+import { Theme } from '@uipath/coded-action-app';
+import { codedActionAppService } from '../uipath';
 import './Form.css';
 
 // One property per field across all schema sections (inputs, outputs, inOuts)
@@ -145,7 +145,7 @@ function Form({ onInitTheme }: FormProps) {
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   useEffect(() => {
-    codedActionAppsService.getTask().then((task) => {
+    codedActionAppService.getTask().then((task) => {
       if (task.data) setFormData(task.data as FormData);
       setIsReadOnly(task.isReadOnly);
       onInitTheme(isDarkTheme(task.theme));
@@ -157,7 +157,7 @@ function Form({ onInitTheme }: FormProps) {
     const { name, value } = e.target;
     const updated = { ...formData, [name]: value };
     setFormData(updated);
-    codedActionAppsService.setTaskData(updated);
+    codedActionAppService.setTaskData(updated);
   };
 
   // false when read-only OR when required output/inOut fields are empty
@@ -165,9 +165,9 @@ function Form({ onInitTheme }: FormProps) {
 
   // One async handler per outcome
   const handleApprove = async () =>
-    codedActionAppsService.completeTask('Approve', formData);
+    codedActionAppService.completeTask('Approve', formData);
   const handleReject = async () =>
-    codedActionAppsService.completeTask('Reject', formData);
+    codedActionAppService.completeTask('Reject', formData);
 
   return (
     <form className="action-form">

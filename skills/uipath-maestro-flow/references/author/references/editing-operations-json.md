@@ -77,7 +77,7 @@ Read-only extractions on `--output json` results — use the CLI's built-in JMES
 
 ```bash
 uip solution upload --output json --output-filter "Url"
-uip maestro flow registry get <NODE_TYPE> --output json --output-filter "Node"
+uip maestro flow registry get <node-type> --output json --output-filter "Node"
 ```
 
 Reach for `jq` / `python3` only when JMESPath cannot express the operation (multi-step joins, format conversion, conditional output computed from multiple fields).
@@ -96,7 +96,7 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
 
 **Tool:** `Edit` (insert into `nodes[]` + `definitions[]` + `variables.nodes` + `layout.nodes`)
 
-1. Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
+1. Run `uip maestro flow registry get <node-type> --output json` and copy the returned node definition object (`Data.Node` or the top-level node object, depending on CLI/plugin version)
 2. Use `Edit` to add a node entry to the `nodes` array:
 
 ```json
@@ -490,7 +490,7 @@ When not using `uip maestro flow node configure`, use `Edit` to set up the follo
 
 Source `method`, `endpoint`, and `bodyParameters` / `queryParameters` / `pathParameters` field names from either of these (both read the same upstream IS metadata):
 
-From `uip maestro flow registry get <nodeType> --connection-id <id> --output json`:
+From `uip maestro flow registry get <node-type> --connection-id <id> --output json`:
 - `method` ← `connectorMethodInfo.method`
 - `endpoint` ← `connectorMethodInfo.path`
 - `bodyParameters.<name>` ← `inputDefinition.fields[].name`

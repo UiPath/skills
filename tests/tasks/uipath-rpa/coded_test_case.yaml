@@ -5,7 +5,7 @@ description: >
   hooks plus a coded test case with Given-When-Then structure, testing-service
   assertions, and a project.json fileInfoCollection entry. Covers both the
   hooks pattern and the coded test case workflow in one task.
-tags: [uipath-rpa, smoke, coded, hooks, test-case]
+tags: [uipath-rpa, windows, smoke, coded, hooks, test-case]
 
 run_limits:
   expected_turns: 22

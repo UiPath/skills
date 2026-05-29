@@ -7,7 +7,7 @@ description: >
   full XAML surface the skill teaches: project.json with VisualBasic expression
   language, ApplicationCard / TypeInto / Click activity XML, and the
   `uip rpa validate` compile gate.
-tags: [uipath-rpa, smoke, uia, xaml]
+tags: [uipath-rpa, windows, smoke, uia, xaml]
 
 run_limits:
   expected_turns: 36

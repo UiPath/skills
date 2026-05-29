@@ -11,7 +11,7 @@ description: >
   test verifies the skill guides the agent to invoke the right commands and
   preserve the legacy XAML baseline — it does not require the CLI calls to
   succeed at runtime.
-tags: [uipath-rpa, legacy, smoke, edit, validate]
+tags: [uipath-rpa, windows, legacy, smoke, edit, validate]
 
 run_limits:
   expected_turns: 14
@@ -33,7 +33,7 @@ initial_prompt: |
     "description": "Legacy project for edit smoke test",
     "main": "Main.xaml",
     "dependencies": {
-      "UiPath.System.Activities": "[23.4.4]"
+      "UiPath.System.Activities": "[24.10.8]"
     },
     "webServices": [],
     "entitiesStores": [],

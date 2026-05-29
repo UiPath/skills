@@ -35,14 +35,14 @@ To classify a node, read `Node.form.sections[0].fields[0].componentProps.connect
 
 ## Critical: Connector Definition Must Include `form`
 
-> Connector definitions in `definitions[]` are CLI-owned (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)) — `uip maestro flow node add` copies them verbatim from the registry, and you should never hand-write or hand-edit them. If `node configure` fails with `No instanceParameters found in definition`, the definition in `definitions[]` is missing the `form` field — typically because the local registry cache is stale (the definition was copied in before the CLI started emitting `form`). Recovery: `uip maestro flow registry pull --force`, delete the stale `definitions[]` entry, re-run `uip maestro flow node add <file> <nodeType>` so the CLI re-copies the definition with `form`. Do not paste `form` in by hand — re-running `node add` is the supported path.
+> Connector definitions in `definitions[]` are CLI-owned (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)) — `uip maestro flow node add` copies them verbatim from the registry, and you should never hand-write or hand-edit them. If `node configure` fails with `No instanceParameters found in definition`, the definition in `definitions[]` is missing the `form` field — typically because the local registry cache is stale (the definition was copied in before the CLI started emitting `form`). Recovery: `uip maestro flow registry pull --force`, delete the stale `definitions[]` entry, re-run `uip maestro flow node add <file> <node-type>` so the CLI re-copies the definition with `form`. Do not paste `form` in by hand — re-running `node add` is the supported path.
 
 ## No-Live-Tenant / Planned Configuration
 
 If you cannot run `node configure` (no live connection, sandbox forbids it, the user asked for planning only):
 
-1. Confirm the connector operation exists: `uip maestro flow registry search <keyword>` and `registry get <nodeType>` (see [cli-commands.md — registry](../../../../shared/cli-commands.md#uip-maestro-flow-registry) for the `search` output shape).
-2. Add the connector node with `uip maestro flow node add <file> <nodeType> --output json`. This is still required — it inserts the node and copies the definition into `definitions[]`.
+1. Confirm the connector operation exists: `uip maestro flow registry search <keyword>` and `registry get <node-type>` (see [cli-commands.md — registry](../../../../shared/cli-commands.md#uip-maestro-flow-registry) for the `search` output shape).
+2. Add the connector node with `uip maestro flow node add <file> <node-type> --output json`. This is still required — it inserts the node and copies the definition into `definitions[]`.
 3. Write the planned `--detail` payload to a separate file (e.g. `<nodeId>.detail.json`) with placeholder values for missing connection/folder UUIDs. Do **not** put a partial `inputs.detail` on the node.
 4. **The node will not pass `flow validate` until `node configure` is run.** Surface this explicitly in your completion report under "Missing connections" or "Open questions" — do not let the user discover it via a validation failure later.
 
@@ -92,7 +92,7 @@ End state: a healthy connection `Id` + `FolderKey` for Step 2 (`registry get --c
 Call `registry get` with `--connection-id` to fetch connection-aware metadata including custom fields:
 
 ```bash
-uip maestro flow registry get <nodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <node-type> --connection-id <connection-id> --output json
 ```
 
 This returns enriched `inputDefinition.fields` and `outputDefinition.fields` with accurate type, required, description, enum, and `reference` info. Without `--connection-id`, only standard/base fields are returned.
@@ -472,7 +472,7 @@ uip is connections ping "<connection-id>" --output json      # verify connection
 uip is connections create "<connector-key>"                  # create new connection (interactive)
 
 # Enriched node metadata (pass connection for custom fields)
-uip maestro flow registry get <nodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <node-type> --connection-id <connection-id> --output json
 
 # Resource description and metadata
 uip is resources describe "<connector-key>" "<objectName>" \

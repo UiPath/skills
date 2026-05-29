@@ -90,7 +90,7 @@ Rules for the listing path:
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get "<nodeType>" --output json
+uip maestro flow registry get "<node-type>" --output json
 ```
 
 Confirm:
@@ -119,7 +119,7 @@ The IxP node instance is **derived from the registry response**, not authored fr
 Run this once and source every field below from the response:
 
 ```bash
-uip maestro flow registry get "<nodeType>" --output json > <tmpfile>.json
+uip maestro flow registry get "<node-type>" --output json > <tmpfile>.json
 ```
 
 Then assemble the instance by copying these paths verbatim:
@@ -288,7 +288,7 @@ Response shape:
 Agent call sequence:
 
 1. `uip maestro flow registry search "uipath.ixp" --output json` — list IxP nodes.
-2. `uip maestro flow registry get "<nodeType>" --output json` — read `Data.Node.inputDefaults.{folderKey, modelName}` (already done as part of [Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory)).
+2. `uip maestro flow registry get "<node-type>" --output json` — read `Data.Node.inputDefaults.{folderKey, modelName}` (already done as part of [Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory)).
 3. `uip ixp deployments get-taxonomy --folder-key <folderKey> "<modelName>" --output json` — read `documentTaxonomy.documentTypes[].fields[].fieldName`.
 4. Author downstream consumers with `$vars.<id>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName from step 3>')?.Values?.[0]`.
 
