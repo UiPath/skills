@@ -128,14 +128,28 @@ success_criteria:
 
         1.0  Agent matched the write-range-failures playbook AND
              identified branch 3 (empty source + ExcludeHeaders=False)
-             AND recommended the If-guard fix. The agent must
-             explicitly distinguish branch 3 from branch 1 (the
-             DataTable IS initialized, just 0 rows) AND avoid
-             recommending the ExcludeHeaders=True anti-pattern.
+             AND recommended the If-guard fix as primary AND
+             EXPLICITLY framed ExcludeHeaders=True as the playbook's
+             anti-pattern (using language like "anti-pattern",
+             "do NOT use", "don't silence the error", or otherwise
+             firmly rejecting it). The agent must explicitly
+             distinguish branch 3 from branch 1 (the DataTable IS
+             initialized, just 0 rows).
+        0.9  Agent's primary diagnosis and primary fix are correct
+             (matched playbook, identified branch 3, recommended
+             If-guard as primary) BUT presented ExcludeHeaders=True
+             as a viable alternative (an "Option B" / "if you
+             prefer" / "alternatively you could") with only a soft
+             caution rather than firm anti-pattern framing. The
+             agent didn't fully internalize the "this is the
+             anti-pattern" stance — the playbook's anti-pattern
+             section calls this out specifically because soft
+             framing leads workflow authors to pick the wrong fix.
         0.8  Both dimensions partially correct: matched the playbook
              and identified the 0-row case but recommended the
-             ExcludeHeaders=True silencer; OR identified the empty
-             case but conflated it with branch 1's Nothing case.
+             ExcludeHeaders=True silencer as co-equal-or-better
+             than the If-guard; OR identified the empty case but
+             conflated it with branch 1's Nothing case.
         0.5  Only one dimension correct: matched the playbook but
              classified the cause-branch incorrectly (uninitialized,
              file-lock, hidden-rows, formula-prefix) without
@@ -153,8 +167,14 @@ success_criteria:
       Table removed all 247 rows → dtOverdue has 0 rows (but is
       initialized with cols=8) → Write Range with ExcludeHeaders=
       False rejects 0-row source." An agent that names this chain
-      AND recommends an If-guard scores 1.0. Penalize the
-      ExcludeHeaders=True recommendation specifically — that's the
-      playbook's anti-pattern #3.
+      AND recommends an If-guard AND explicitly labels
+      ExcludeHeaders=True as the playbook's anti-pattern scores 1.0.
+      An agent that gets the primary diagnosis and fix right but
+      mentions ExcludeHeaders=True as a soft alternative without
+      anti-pattern framing scores 0.9 — this is "academically
+      thorough but didn't fully internalize the anti-pattern
+      stance." Penalize the ExcludeHeaders=True recommendation
+      specifically as severity increases: soft mention (0.9),
+      co-equal alternative (0.8), primary fix (0.0).
 
       Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
