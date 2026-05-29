@@ -1,0 +1,70 @@
+task_id: skill-flow-paginated-reference-lookup
+description: >
+  Build a Flow with a Slack `Send Message to User` node targeting
+  `rocky.madden@uipath.com`. The user lives on a later page of the
+  `is-sandboxes` curated_users list, so resolving the Slack user id forces
+  the agent to paginate `uip is resources run list`. Triggered by the
+  `resources.md` read-before-call rule added in #1059 (ENGCE-58198) — old
+  behavior was to abandon pagination after page 1 and bail to AskUserQuestion.
+tags:
+  - uipath-maestro-flow
+  - integration
+  - e2e
+  - mode:build
+  - lifecycle:generate
+  - shape:multi-node
+  - connector
+  - uipath-salesforce-slack
+  - feature:records
+
+run_limits:
+  expected_turns: 30
+  task_timeout: 1200
+  max_turns: 80
+  turn_timeout: 900
+
+initial_prompt: |
+  Create a new Flow project called "SlackPaginationTest" with a manual
+  trigger. It should send a Slack message saying "hello from coder-eval"
+  to the user whose email is `rocky.madden@uipath.com` using Slack's
+  "Send Message to User" activity.
+  Wire the trigger to the Slack node and validate the final flow file.
+  For Slack, use the connection name `is-sandboxes`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip is resources run list ... curated_users` more than once (pagination loop ran)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-salesforce-slack\s+curated_users'
+    min_count: 2
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used `nextPage=<token>` to advance pagination at least once"
+    tool_name: "Bash"
+    command_pattern: 'nextPage='
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip maestro flow validate` on the generated flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file exists at the canonical solution path"
+    path: "SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow references the Slack send-message-to-user node and a Slack user id (U.../W...)"
+    path: "SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow"
+    pattern: 'send-message-to-user[\s\S]*"[UW][A-Z0-9]{7,}"'
+    weight: 2.0
+    pass_threshold: 1.0
