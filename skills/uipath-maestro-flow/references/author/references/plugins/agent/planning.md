@@ -71,7 +71,7 @@ Requires `uip login`. Returns published tenant resources only — for in-solutio
 
 ```bash
 uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.

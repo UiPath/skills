@@ -57,7 +57,7 @@ uip is connections ping "<connection-id>" --output json
 `--connection-id` is **required** for trigger nodes. Without it, the command fails.
 
 ```bash
-uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <trigger-node-type> --connection-id <connection-id> --output json
 ```
 
 The response contains three trigger-specific sections:
@@ -339,11 +339,11 @@ uip maestro flow registry search trigger --output json               # find trig
 uip maestro flow registry pull --force                                # refresh registry (requires login)
 
 # Enriched trigger metadata (--connection-id REQUIRED)
-uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <trigger-node-type> --connection-id <connection-id> --output json
 
 # Node lifecycle
 uip maestro flow node remove <PROJECT>.flow start --output json       # remove manual trigger
-uip maestro flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
+uip maestro flow node add <PROJECT>.flow <trigger-node-type> --label "<LABEL>" --position 200,144 --output json
 uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
 
 # Trigger object metadata (MANDATORY — Step 1b)
