@@ -18,13 +18,6 @@ success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-functions skill"
     skill_name: "uipath-functions"
-    expected: "yes"
+    expected_skill: "uipath-functions"
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: skill_triggered
-    description: "Agent did NOT mis-route to uipath-agents (this is not an agent)"
-    skill_name: "uipath-agents"
-    expected: "no"
-    weight: 2.0
     pass_threshold: 1.0

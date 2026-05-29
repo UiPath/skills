@@ -31,7 +31,7 @@ success_criteria:
   - type: skill_triggered
     description: "Agent recognised the prompt as a Python Coded Function and invoked the uipath-functions skill"
     skill_name: "uipath-functions"
-    expected: "yes"
+    expected_skill: "uipath-functions"
     weight: 3.0
     pass_threshold: 1.0
 
