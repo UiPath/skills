@@ -158,8 +158,10 @@ Filter with `--queue-name` (exact match), `--queue-definition-key` (GUID), or `-
 
 ```bash
 # Update item properties (only provided fields change)
+# Supports --progress, --priority (High/Normal/Low), --due-date / --defer-date (ISO 8601), --specific-content (flat JSON).
 uip or queue-items update <item-unique-key> --folder-path "Finance" \
-  --progress "Processing step 3/5" --priority High --output json
+  --progress "Processing step 3/5" --priority High \
+  --due-date "2026-04-25T17:00:00Z" --output json
 
 # Set progress text (positional argument)
 uip or queue-items set-progress <item-unique-key> "Validating invoice data" \
@@ -195,7 +197,7 @@ uip or queue-items get-reviewers --folder-path "Finance" --output json
 # Assign a reviewer to one or more items
 uip or queue-items set-reviewer <key1> <key2> \
   --folder-path "Finance" \
-  --user-id 42 \
+  --user-key <reviewer-key-guid> \
   --output json
 ```
 
@@ -206,7 +208,7 @@ uip or queue-items set-review-status Retried <key1> <key2> \
   --folder-path "Finance" --output json
 ```
 
-Valid review statuses: `Retried`, `Abandoned`, `Deleted`. The status is the first positional argument, followed by one or more item keys.
+Valid review statuses: `Retried`, `Abandoned`, `Deleted`, `InReview`. The status is the first positional argument, followed by one or more item keys.
 
 ### Remove Reviewer
 
@@ -240,7 +242,7 @@ uip or queue-items get-history <failed-item-key> \
 
 # 5. Assign reviewer and mark as reviewed
 uip or queue-items set-reviewer <failed-item-key> \
-  --folder-path "Finance" --user-id 42 --output json
+  --folder-path "Finance" --user-key <reviewer-key-guid> --output json
 uip or queue-items set-review-status Retried <failed-item-key> \
   --folder-path "Finance" --output json
 ```
@@ -289,7 +291,7 @@ None --> InReview (reviewer assigned) --> Verified | Retried
 - `--specific-content` must be **flat key-value JSON** -- no nested objects or arrays.
 - All `queue-items` commands require `--folder-path` or `--folder-key` (items are folder-scoped).
 - `set-review-status` takes the **status first**, then the item key(s) -- not the other way around.
-- `set-reviewer` requires `--user-id` (numeric ID, not GUID). Use `get-reviewers` to find valid IDs.
+- `set-reviewer` requires `--user-key` (GUID). Use `get-reviewers` to find valid reviewer keys.
 - Queue `get`, `update`, and `delete` are **cross-folder** (no `--folder-path` needed). Queue item commands are **not**.
 - `--auto-retry` is enabled by default. Use `--no-auto-retry` to disable.
 
