@@ -90,29 +90,29 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | Skill | Status |
 |-------|--------|
 | `uipath-admin` | Public Preview |
-| `uipath-agents` | GA |
+| `uipath-agents` | Stable |
 | `uipath-api-workflow` | Public Preview |
 | `uipath-coded-apps` | Public Preview |
 | `uipath-data-fabric` | Public Preview |
-| `uipath-feedback` | GA |
+| `uipath-feedback` | Stable |
 | `uipath-governance` | Public Preview |
 | `uipath-human-in-the-loop` | Public Preview |
 | `uipath-ixp` | Public Preview |
-| `uipath-maestro-bpmn` | GA |
+| `uipath-maestro-bpmn` | Stable |
 | `uipath-maestro-case` | Public Preview |
-| `uipath-maestro-flow` | GA |
-| `uipath-planner` | GA |
-| `uipath-platform` | GA |
+| `uipath-maestro-flow` | Stable |
+| `uipath-planner` | Stable |
+| `uipath-platform` | Stable |
 | `uipath-review` | Public Preview |
-| `uipath-rpa` | GA |
-| `uipath-solution` | GA |
+| `uipath-rpa` | Stable |
+| `uipath-solution` | Stable |
 | `uipath-tasks` | Public Preview |
 | `uipath-test` | Public Preview |
-| `uipath-troubleshoot` | GA |
+| `uipath-troubleshoot` | Stable |
 
 **Status legend:**
-- **GA** — Generally available; stable surface, safe for production.
-- **Public Preview** — Pre-GA but available to all tenants; surface and behavior may change.
+- **Stable** — Stable, production-ready surface; safe for production.
+- **Public Preview** — Not yet stable but available to all tenants; surface and behavior may change.
 - **Private Preview** — Gated or allowlisted; may be inaccessible in a tenant.
 - **In-development** — Skill itself is incomplete or unstable; coverage is partial.
 <!-- END GENERATED SKILL STATUS -->

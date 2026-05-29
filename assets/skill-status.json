@@ -3,13 +3,13 @@
   "source": "manual",
   "schema_version": 1,
   "statuses": {
-    "ga": {
-      "label": "GA",
-      "meaning": "Generally available; stable surface, safe for production."
+    "stable": {
+      "label": "Stable",
+      "meaning": "Stable, production-ready surface; safe for production."
     },
     "public-preview": {
       "label": "Public Preview",
-      "meaning": "Pre-GA but available to all tenants; surface and behavior may change."
+      "meaning": "Not yet stable but available to all tenants; surface and behavior may change."
     },
     "private-preview": {
       "label": "Private Preview",
@@ -27,7 +27,7 @@
       "last_synced": null
     },
     "uipath-agents": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -47,7 +47,7 @@
       "last_synced": null
     },
     "uipath-feedback": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -67,7 +67,7 @@
       "last_synced": null
     },
     "uipath-maestro-bpmn": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -77,17 +77,17 @@
       "last_synced": null
     },
     "uipath-maestro-flow": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-planner": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-platform": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -97,12 +97,12 @@
       "last_synced": null
     },
     "uipath-rpa": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-solution": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -117,7 +117,7 @@
       "last_synced": null
     },
     "uipath-troubleshoot": {
-      "status": "ga",
+      "status": "stable",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     }

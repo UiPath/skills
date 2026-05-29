@@ -39,10 +39,10 @@ SKILLS_DIR = REPO_ROOT / "skills"
 README_PATH = REPO_ROOT / "README.md"
 
 # Canonical display order for the README legend.
-STATUS_ORDER = ["ga", "public-preview", "private-preview", "in-development"]
+STATUS_ORDER = ["stable", "public-preview", "private-preview", "in-development"]
 
 # A status tag wrongly embedded in the frontmatter description.
-FM_TAG_RE = re.compile(r"\[(?:preview|beta|alpha|ga|deprecated|experimental)\]", re.I)
+FM_TAG_RE = re.compile(r"\[(?:preview|beta|alpha|ga|stable|deprecated|experimental)\]", re.I)
 # A stale status callout in the body — anchored on the status keyword so
 # non-status opening blockquotes (e.g. `> **Two entry points.**`) never match.
 STALE_BODY_RE = re.compile(r"^>\s*\*\*(?:Status:|Preview\b|Beta\b|Alpha\b)", re.I)
