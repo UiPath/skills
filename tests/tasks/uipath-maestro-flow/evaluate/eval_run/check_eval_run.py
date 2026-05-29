@@ -13,6 +13,10 @@ asserts:
      equivalent) reports a score of 1.0 — the agent + evaluator were both
      deterministic, so anything else is a regression.
 
+When the Studio Web eval run does not complete, the agent should still save
+`eval-run-status.json`; this checker uses it to fail with the dependent run's
+status/error instead of a generic missing-results message.
+
 The CLI's exact field names may evolve; we tolerate both `EvaluatorScores`
 (list/dict of evaluator entries) and a flat per-row `Score` field. Anything
 that surfaces a numeric score gets checked.
@@ -24,6 +28,7 @@ import sys
 from pathlib import Path
 
 RESULTS_PATH = Path("eval-results.json")
+STATUS_PATH = Path("eval-run-status.json")
 EXPECTED_DATA_POINTS = 1
 
 
@@ -33,11 +38,71 @@ def _fail(msg: str) -> None:
 
 def _load() -> dict:
     if not RESULTS_PATH.is_file():
-        _fail(f"Missing {RESULTS_PATH}")
+        if STATUS_PATH.is_file():
+            _fail(
+                f"Missing {RESULTS_PATH}; latest eval-run status was "
+                f"{_status_summary(_load_json(STATUS_PATH))}"
+            )
+        _fail(f"Missing {RESULTS_PATH} and {STATUS_PATH}")
+    return _load_json(RESULTS_PATH)
+
+
+def _load_json(path: Path) -> dict:
     try:
-        return json.loads(RESULTS_PATH.read_text(encoding="utf-8"))
+        doc = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
-        _fail(f"{RESULTS_PATH} is not valid JSON: {e}")
+        _fail(f"{path} is not valid JSON: {e}")
+    except OSError as e:
+        _fail(f"Could not read {path}: {e}")
+    if not isinstance(doc, dict):
+        _fail(f"{path} should contain a JSON object, got {type(doc).__name__}")
+    return doc
+
+
+def _first_text(container: dict, keys: tuple[str, ...]) -> str | None:
+    for key in keys:
+        value = container.get(key)
+        if value not in (None, ""):
+            return str(value)
+    return None
+
+
+def _status_summary(doc: dict) -> str:
+    data = doc.get("Data") if isinstance(doc.get("Data"), dict) else {}
+    status = _first_text(
+        data,
+        (
+            "Status",
+            "status",
+            "State",
+            "state",
+            "RunStatus",
+            "runStatus",
+            "ExecutionStatus",
+            "executionStatus",
+        ),
+    )
+    error = _first_text(
+        data,
+        (
+            "Error",
+            "error",
+            "FailureReason",
+            "failureReason",
+            "Message",
+            "message",
+            "StatusMessage",
+            "statusMessage",
+        ),
+    )
+    if not error:
+        error = _first_text(doc, ("Error", "error", "Message", "message"))
+    parts = [f"Code={doc.get('Code')!r}"]
+    if status:
+        parts.append(f"Status={status!r}")
+    if error:
+        parts.append(f"Error={error!r}")
+    return ", ".join(parts)
 
 
 def _extract_rows(doc: dict) -> list[dict]:

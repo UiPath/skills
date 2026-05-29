@@ -13,8 +13,6 @@ tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute, feature:eval]
 
 run_limits:
   max_turns: 90
-  task_timeout: 2400
-  turn_timeout: 2400
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
@@ -55,15 +53,19 @@ initial_prompt: |
      `uip solution resource refresh EvalRunDemo --output json`, then
      `uip solution upload EvalRunDemo --output json`. Surface the resulting
      `SolutionId` and `DesignerUrl` to me before proceeding.
-  3. Start the eval run with `--wait --timeout 900 --output json`. The CLI
-     will block until completion or local wait timeout; that is fine for this
-     task. If the local wait times out but returns a run ID, do NOT start a
-     second eval run — poll that same run with `eval run status` until it
-     reaches `Completed` or `Failed`.
-  4. Fetch detailed results with `uip maestro flow eval run results <run_id>
-     --set "Greetings" --path EvalRunDemo/EvalRunDemo --verbose --output
-     json` and write the full JSON output to `eval-results.json` in the
-     working directory.
+  3. Start the eval run with `--wait --timeout 600 --output json`. After the
+     start command returns (Completed, Failed, or local wait timeout), always
+     call `eval run status <run_id> --output json` once and write the full JSON
+     to `eval-run-status.json`. If the run is still non-terminal, do NOT start
+     a second eval run; poll that same run with `eval run status` at most five
+     additional times, with about 30 seconds between polls. Save the latest
+     full status JSON to `eval-run-status.json` after every status call.
+  4. If the run reaches `Completed` or `Failed`, fetch detailed results with
+     `uip maestro flow eval run results <run_id> --set "Greetings" --path
+     EvalRunDemo/EvalRunDemo --verbose --output json` and write the full JSON
+     output to `eval-results.json` in the working directory. If the run is
+     still non-terminal after the bounded polls, stop and report that the
+     dependent Studio Web eval run did not complete; do not keep polling.
 
   Acceptance:
   - Aggregate score on the run is 1.0.
@@ -74,6 +76,9 @@ initial_prompt: |
   Important:
   - The upload above is authorized for this run only. Do not upload other
     artifacts.
+  - Do NOT start a second eval run for any reason, including a terminal
+    `Failed` status. Capture the failure in `eval-run-status.json` and, when
+    available, `eval-results.json`.
   - Do NOT run `uip maestro flow debug` — eval and debug are separate
     flows.
   - Use `--output json` on every `uip` command.
@@ -149,11 +154,26 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent started the eval run with --wait"
+    description: "Agent started exactly one eval run with --wait"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+start.*--wait'
     min_count: 1
+    max_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked eval run status after start/wait"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Latest eval-run-status.json was saved for diagnostics"
+    path: "eval-run-status.json"
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
