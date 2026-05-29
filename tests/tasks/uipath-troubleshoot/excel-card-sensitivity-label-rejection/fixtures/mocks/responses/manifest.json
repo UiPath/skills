@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the sensitivity-label-rejection (branch 5) of the excel-activities/excel-application-card-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException referencing Microsoft Purview sensitivity label 'Confidential - Client Data') → jobs logs (workbook label detection + card config inspection showing SensitivityLabel and SensitivityOperation properties NOT configured + package v2.24.7 supports these properties) → workflow source. The protected workbook with no label-handling on the card is the smoking gun.",
+  "rules": [
+    {"match": "or folders list-current-user --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f00ddddd-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f00ddddd-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f00ddddd-3333-4444-5555-666677778888 --state Faulted --output json", "file": "or-jobs-list-folder-key-f00ddddd-state-faulted-output-json.json"},
+    {"match": "or jobs get \"gg333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-gg3333cc-output-json.json"},
+    {"match": "or jobs get gg333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-gg3333cc-output-json.json"},
+    {"match": "or jobs history \"gg333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-gg3333cc-output-json.json"},
+    {"match": "or jobs history gg333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-gg3333cc-output-json.json"},
+    {"match": "or jobs logs \"gg333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-gg3333cc-output-json.json"},
+    {"match": "or jobs logs gg333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-gg3333cc-output-json.json"}
+  ]
+}

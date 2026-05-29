@@ -1,0 +1,185 @@
+task_id: skill-troubleshoot-excel-card-excel-not-installed
+description: >
+  UiPath troubleshoot agent must diagnose a Classic Excel Application
+  Scope failure (BusinessException 'Error opening workbook. Make sure
+  Excel is installed.', inner COMException 0x80040154 REGDB_E_CLASSNOTREG)
+  on an unattended Robot host that has no Excel installed. Agent must
+  match the activity-packages/excel-activities/playbooks/excel-application-card-failures.md
+  playbook, identify the Excel-not-installed branch from the surface
+  choice (Classic COM-only) + host install state in the job logs, and
+  recommend a fix that recognizes the surface-vs-host fork: either
+  install/repair Excel on the host (if the workflow needs COM features)
+  OR migrate to Workbook activities / Modern OpenXML Use Excel File
+  (if it doesn't).
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-card, excel-not-installed]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: Error opening workbook. Make sure Excel is installed.`
+  Pinned job key: gg111111-cccc-dddd-eeee-ffffaaaabbbb. This is a new
+  deployment to an unattended Robot host — the workflow ran fine on
+  my dev machine. What's going on?
+
+  The project source for the failing process is at ./ExcelInvoiceReport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the excel-application-card-failures playbook AND identified the Excel-not-installed branch (Classic scope is COM-only; unattended host has no Excel install) AND recognized the surface-vs-host fork (install Excel OR migrate to Workbook / Modern OpenXML)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: Error opening workbook. Make
+         sure Excel is installed.` Pinned job key:
+         gg111111-cccc-dddd-eeee-ffffaaaabbbb. This is a new deployment
+         to an unattended Robot host — the workflow ran fine on my dev
+         machine. What's going on?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/excel-application-card-failures.md
+        because the runtime error is the canonical BusinessException
+        for branch 1 (Excel-not-installed / Interop-unavailable).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow uses Classic Excel Application Scope, which
+            is COM-only — it always requires Excel installed on the
+            host.
+          - The unattended Robot host (MOCK-HOST) has NO Excel
+            installed: no entry under HKLM:\Software\Microsoft\Office\
+            *\Excel\InstallRoot, no excel.exe on PATH or under Program
+            Files.
+          - CoCreateInstance for CLSID {00024500-...} (Excel.
+            Application) returned 0x80040154 REGDB_E_CLASSNOTREG.
+          - The activity caught and rewrapped this as the canonical
+            "Error opening workbook. Make sure Excel is installed."
+          - "Ran fine on dev machine" reinforces dev-vs-host mismatch
+            — dev had Excel, the deployment host doesn't.
+
+        The reference fix has TWO branches based on whether the
+        workflow needs Excel COM features:
+          - **Doesn't need COM** (the workflow just reads data):
+            migrate to Workbook activities (Read Range Workbook
+            etc.) OR Modern Use Excel File (OpenXML default).
+          - **Needs COM** (formula recalc, macros, formatting):
+            install or repair Excel on the host (Studio Repair Tool,
+            Office Online Repair, or fresh install).
+          - NOT acceptable: setting Visible: True as a diagnostic
+            (the playbook's anti-pattern — COM-forcing on Modern
+            cards reintroduces the install requirement).
+
+        Evidence sources (in priority order):
+          1. Job logs -- the three decisive Trace lines:
+             (a) "Excel Application Scope: invoice-report.xlsm —
+                 surface: Classic ExcelApplicationScope (COM-only).
+                 Attempting to acquire Excel.Application COM server."
+             (b) "Excel Application Scope: invoice-report.xlsm —
+                 CLSID {00024500-...} (Excel.Application) not
+                 registered on host. ... Excel install state: NOT
+                 INSTALLED (no entry under HKLM:\Software\Microsoft\
+                 Office\*\Excel\InstallRoot, no excel.exe on PATH or
+                 under Program Files)."
+             (c) The BusinessException with inner COMException
+                 0x80040154 REGDB_E_CLASSNOTREG.
+             These three together pin the failure: surface choice +
+             host install state + canonical COM error.
+          2. Workflow source -- Main.xaml uses
+             `<uix:ExcelApplicationScope>` (the Classic, COM-only
+             element), NOT `<uix:UseExcelFile>` (Modern). The body
+             just reads data — no COM-requiring features used.
+          3. The "ran fine on dev machine" framing reinforces that
+             the workflow itself didn't change — what changed is
+             the deployment context (dev had Excel; unattended host
+             doesn't).
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the excel-application-card-failures
+             playbook AND identified the Excel-not-installed branch
+             AND recognized the surface-vs-host fork. The agent
+             must (a) name the Classic surface as COM-only,
+             (b) name the host's missing Excel install as the
+             cause, and (c) recommend a fix that branches on
+             whether the workflow needs COM features (either
+             "install/repair Excel if you need COM" or "migrate
+             to Workbook/Modern if you don't" — ideally both with
+             their applicable conditions).
+        0.9  Primary diagnosis correct + correct primary fix
+             recommended, but the agent didn't fully internalize
+             the fork — mentioned one path (e.g., install Excel)
+             without acknowledging the migrate-to-Workbook
+             alternative for headless deployments.
+        0.8  Matched playbook + identified host missing Excel +
+             recommended ONLY ONE fix (typically "install Excel")
+             without mentioning the alternative at all. The
+             diagnosis is right but the recommendation is incomplete.
+        0.7  Matched playbook + diagnosed correctly but recommended
+             setting Visible: True or another COM-forcing property
+             as a "diagnostic step" — the playbook's anti-pattern.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (path,
+             RPC, sensitivity) without supporting evidence; OR
+             identified the Excel-install issue without matching
+             the specific playbook.
+        0.2  Agent recognized the BusinessException as an Excel
+             issue but never connected it to the host's missing
+             Excel install or the Classic surface's COM dependency.
+        0.0  Reached the wrong conclusion (e.g., blamed the file
+             path, blamed corruption, recommended killing a
+             nonexistent EXCEL.EXE), got blocked, or failed.
+
+      Be substance-focused. The decisive chain is "Classic Excel
+      Application Scope (COM-only) + Robot host with no Excel
+      installed → CoCreateInstance returns REGDB_E_CLASSNOTREG →
+      'Make sure Excel is installed' BusinessException." An agent
+      that names this chain AND recommends a fix matching the
+      workflow's actual COM needs scores 1.0. Penalize agents
+      that recommend ONLY "install Excel" without acknowledging
+      the Workbook/Modern alternative (0.8 — the diagnosis is
+      right, the fix is incomplete).
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

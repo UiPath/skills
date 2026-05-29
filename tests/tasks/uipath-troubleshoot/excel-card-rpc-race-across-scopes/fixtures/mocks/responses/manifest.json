@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the COM/RPC-across-scopes (branch 3) of the excel-activities/excel-application-card-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException RPC_E_DISCONNECTED 0x80010108 on UseExcelFile_2) → jobs logs (UseExcelFile_1 opened+closed EXCEL.EXE cleanly; UseExcelFile_2 attempted to attach to PID that no longer exists; no Excel Process Scope wrapping the sequence) → workflow source (two sequential Use Excel File cards with ReadFormatting=True COM-forcing, no outer Excel Process Scope). The missing Excel Process Scope is the smoking gun.",
+  "rules": [
+    {"match": "or folders list-current-user --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f00ccccc-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f00ccccc-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f00ccccc-3333-4444-5555-666677778888 --state Faulted --output json", "file": "or-jobs-list-folder-key-f00ccccc-state-faulted-output-json.json"},
+    {"match": "or jobs get \"gg222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-gg2222cc-output-json.json"},
+    {"match": "or jobs get gg222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-gg2222cc-output-json.json"},
+    {"match": "or jobs history \"gg222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-gg2222cc-output-json.json"},
+    {"match": "or jobs history gg222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-gg2222cc-output-json.json"},
+    {"match": "or jobs logs \"gg222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-gg2222cc-output-json.json"},
+    {"match": "or jobs logs gg222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-gg2222cc-output-json.json"}
+  ]
+}

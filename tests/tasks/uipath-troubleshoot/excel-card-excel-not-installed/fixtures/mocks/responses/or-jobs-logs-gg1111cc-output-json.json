@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-gg1111cc-001",
+      "JobKey": "gg111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelInvoiceReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-gg1111cc-002",
+      "JobKey": "gg111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T08:00:01.418Z",
+      "Message": "[ExcelInvoiceReport] Opening C:\\Robot\\Data\\invoice-report.xlsm to read this week's invoice data",
+      "ProcessName": "ExcelInvoiceReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-gg1111cc-003",
+      "JobKey": "gg111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T08:00:01.610Z",
+      "Message": "Excel Application Scope: invoice-report.xlsm — surface: Classic ExcelApplicationScope (COM-only). Attempting to acquire Excel.Application COM server.",
+      "ProcessName": "ExcelInvoiceReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-gg1111cc-004",
+      "JobKey": "gg111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T08:00:01.810Z",
+      "Message": "Excel Application Scope: invoice-report.xlsm — CLSID {00024500-0000-0000-C000-000000000046} (Excel.Application) not registered on host. Host: MOCK-HOST. Robot user: UIPATH\\AUTOMATION1. Excel install state: NOT INSTALLED (no entry under HKLM:\\Software\\Microsoft\\Office\\*\\Excel\\InstallRoot, no excel.exe on PATH or under Program Files).",
+      "ProcessName": "ExcelInvoiceReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-gg1111cc-005",
+      "JobKey": "gg111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-30T08:00:02.502Z",
+      "Message": "Excel Application Scope: invoice-report.xlsm — UiPath.Excel.BusinessException: Error opening workbook. Make sure Excel is installed. Inner: COMException 0x80040154 REGDB_E_CLASSNOTREG (Class not registered).",
+      "ProcessName": "ExcelInvoiceReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

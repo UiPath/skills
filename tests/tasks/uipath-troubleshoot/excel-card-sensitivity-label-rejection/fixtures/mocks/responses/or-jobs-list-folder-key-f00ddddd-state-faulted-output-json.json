@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "gg333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-30T10:00:01.300Z",
+      "EndTime": "2026-05-30T10:00:04.612Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelClientReportProcess",
+      "Source": "Schedule",
+      "Reference": "MonthlyClientReportA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f00ddddd-3333-4444-5555-666677778888",
+      "Info": "UiPath.Excel.BusinessException: The workbook is protected by a Microsoft Purview sensitivity label ('Confidential - Client Data') that requires explicit handling. The SensitivityLabel and SensitivityOperation properties on the Use Excel File activity are not configured.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}
