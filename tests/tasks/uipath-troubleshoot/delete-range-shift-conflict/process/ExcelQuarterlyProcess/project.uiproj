@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelQuarterlyProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Classic Excel Application Scope + Delete Range on A3:C5 with ShiftCells=True ShiftOption=ShiftUp colliding with a merged region D5:D7 on the bottom edge of the deletion target. Exercises the shift-conflict branch of the delete-range-failures playbook.",
+  "MainFile": "Main.xaml"
+}
