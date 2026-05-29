@@ -222,6 +222,6 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 - `references/entity-schema.md` — Field definitions, supported types, schema update patterns, choice-set + relationship field shapes
 - `references/choice-sets.md` — Browse choice sets, look up `NumberId`s, add CHOICE_SET fields to entities, write choice values on records
 - `references/records-query.md` — Query filter syntax, pagination, sorting, choice/relationship semantics on read & write
-- `references/filter-platform-contract.md` — Authoritative filter contract sourced from `CommonEntityPlatform`: per-type operator support matrix, encrypted-field rules, GUID ordering, `MULTILINE_MAX` non-filterability, `ChoiceSetMultiple` JSON-array semantics, `$expand` dotted-field resolution, validation order, limits, source file paths
+- `references/filter-platform-contract.md` — Filter body structure, per-type operator support matrix, and what to do when a request needs an unsupported operator
 - `references/file-attachments.md` — File field upload/download/delete file
 - `references/bulk-import.md` — CSV format requirements and the Basic-fields-only limitation (complex types are silently dropped — use `records insert` with a JSON body instead)

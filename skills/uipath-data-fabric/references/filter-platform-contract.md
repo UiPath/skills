@@ -1,17 +1,32 @@
 # Filter Platform Contract
 
-Which operators are valid per field type, so you build a valid `records query` filter. Body usage and the unsupported-operator handling: [`records-query.md`](records-query.md) and SKILL.md Rule 17.
+Which operators each field type accepts, so you can build a valid `records query` filter. For body usage and unsupported-operator handling, see [`records-query.md`](records-query.md) and SKILL.md Rule 17.
 
 ## Filter body
 
+A filter group has three fields:
+
+- `logicalOperator` — `AND`/`OR` or `0`/`1`; case-insensitive.
+- `queryFilters` — array of leaf clauses, each `{ fieldName, operator, value }` (or `valueList` for `in` / `not in`).
+- `filterGroups` — optional array of nested groups. **Each nested group has the same structure as the parent**, so AND/OR may mix per level.
+
+Example:
+
 ```json
 {
-  "logicalOperator": "AND",          // AND/OR or 0/1 — case-insensitive
+  "logicalOperator": "AND",
   "queryFilters": [
     { "fieldName": "Status", "operator": "=",  "value": "Active" },
     { "fieldName": "Status", "operator": "in", "valueList": ["A", "B"] }
   ],
-  "filterGroups": [ /* nested groups, recursive; AND/OR may mix per level */ ]
+  "filterGroups": [
+    {
+      "logicalOperator": "OR",
+      "queryFilters": [
+        { "fieldName": "Priority", "operator": "=", "value": "high" }
+      ]
+    }
+  ]
 }
 ```
 
