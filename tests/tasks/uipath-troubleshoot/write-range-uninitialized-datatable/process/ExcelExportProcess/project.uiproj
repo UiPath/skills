@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelExportProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Write Range receives Nothing because the preceding Read Range was wrapped in an If branch that the run skipped (the source workbook check failed silently). Exercises the uninitialized-DataTable branch of the write-range-failures playbook.",
+  "MainFile": "Main.xaml"
+}

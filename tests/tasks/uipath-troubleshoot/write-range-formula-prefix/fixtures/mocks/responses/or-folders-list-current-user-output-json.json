@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f0077777-3333-4444-5555-666677778888",
+      "DisplayName": "DirectoryOps",
+      "FullyQualifiedName": "DirectoryOps",
+      "Description": "Folder for HR directory-sync automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6070001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

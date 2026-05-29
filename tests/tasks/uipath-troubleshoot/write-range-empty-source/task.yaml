@@ -1,0 +1,160 @@
+task_id: skill-troubleshoot-write-range-empty-source
+description: >
+  UiPath troubleshoot agent must diagnose a Write Range failure
+  (BusinessException 'Ignore empty source is ineffective') where the
+  source DataTable has 0 rows after Filter DataTable removed every
+  row (today's batch had no Status='Overdue' invoices) and the
+  activity's ExcludeHeaders property is False. Agent must match the
+  activity-packages/excel-activities/playbooks/write-range-failures.md
+  playbook, identify the empty-source branch from the 247→0 filter
+  drop + ExcludeHeaders=False in the job logs, and recommend an
+  If guard on Rows.Count > 0 — NOT the misleading ExcludeHeaders=True
+  silencer which is an anti-pattern in the playbook.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, write-range, empty-source]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: The Excel Activity option 'Ignore empty source' is ineffective: the source DataTable has 0 rows and 'Exclude headers' is False.`
+  Pinned job key: ee222222-cccc-dddd-eeee-ffffaaaabbbb. The error
+  mentions "Ignore empty source" but we don't even use that option.
+  What's going on?
+
+  The project source for the failing process is at ./ExcelInvoiceProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the write-range-failures playbook AND identified the empty-source branch (Filter DataTable removed all 247 rows, dtOverdue has 0 rows, ExcludeHeaders=False) AND recommended an If-guard (NOT the ExcludeHeaders=True anti-pattern)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: The Excel Activity option
+         'Ignore empty source' is ineffective: the source DataTable has 0
+         rows and 'Exclude headers' is False.` Pinned job key:
+         ee222222-cccc-dddd-eeee-ffffaaaabbbb. The error mentions
+         'Ignore empty source' but we don't even use that option.
+         What's going on?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/write-range-failures.md
+        because the runtime error is the canonical BusinessException
+        for empty source + ExcludeHeaders=False (branch 3).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The source DataTable dtOverdue has 0 rows because the
+            preceding Filter DataTable activity removed every row
+            (today's batch had no Status='Overdue' rows out of 247).
+          - dtOverdue IS initialized (cols=8, not Nothing) — this is
+            distinct from branch 1's null-DataTable case.
+          - The Write Range activity has ExcludeHeaders=False (the
+            default).
+          - The activity rejects 0-row source with ExcludeHeaders=False
+            as a configuration error.
+          - "Ignore empty source" only handles the Nothing case, NOT
+            the 0-row case — its naming is misleading.
+
+        The reference fix:
+          - Primary: wrap Write Range in
+            `If dtOverdue.Rows.Count > 0 Then ... Else (log "no overdue today")`.
+          - Alternative (only if "empty report" is load-bearing):
+            restructure to write the header separately and set
+            ExcludeHeaders=True on the data write.
+          - NOT acceptable: setting ExcludeHeaders=True without
+            restructuring — that's the playbook's anti-pattern (data
+            row lands in header position, downstream consumers see
+            misaligned data).
+
+        Evidence sources (in priority order):
+          1. Job logs -- the decisive Trace lines:
+             (a) "Filter Data Table: Status = Overdue — input 247
+                 rows, output 0 rows (no matches)"
+             (b) "Write Range: overdue report — resolved config
+                 Sheet='Overdue' StartingCell='A1' ExcludeHeaders=False
+                 DataTable='dtOverdue' (rows=0 cols=8)"
+             The cols=8 proves it's initialized (not branch 1's null);
+             the rows=0 + ExcludeHeaders=False pin it to branch 3.
+          2. The exception message itself explicitly names "0 rows"
+             and "'Exclude headers' is False" — both halves of the
+             branch 3 fingerprint.
+          3. Workflow source -- Main.xaml shows the Read → Filter →
+             Write chain with no Rows.Count guard.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the write-range-failures playbook AND
+             identified branch 3 (empty source + ExcludeHeaders=False)
+             AND recommended the If-guard fix. The agent must
+             explicitly distinguish branch 3 from branch 1 (the
+             DataTable IS initialized, just 0 rows) AND avoid
+             recommending the ExcludeHeaders=True anti-pattern.
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the 0-row case but recommended the
+             ExcludeHeaders=True silencer; OR identified the empty
+             case but conflated it with branch 1's Nothing case.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (uninitialized,
+             file-lock, hidden-rows, formula-prefix) without
+             supporting evidence; OR identified the 0-row Filter
+             chain without matching the specific playbook.
+        0.2  Agent recognized that Write Range failed but never
+             connected the Filter-removed-all-rows root or the
+             ExcludeHeaders=False role.
+        0.0  Recommended the ExcludeHeaders=True silencer as the
+             primary fix (the playbook's explicit anti-pattern);
+             OR reached the wrong conclusion entirely; OR got
+             blocked / timed out.
+
+      Be substance-focused. The decisive chain is "Filter Data
+      Table removed all 247 rows → dtOverdue has 0 rows (but is
+      initialized with cols=8) → Write Range with ExcludeHeaders=
+      False rejects 0-row source." An agent that names this chain
+      AND recommends an If-guard scores 1.0. Penalize the
+      ExcludeHeaders=True recommendation specifically — that's the
+      playbook's anti-pattern #3.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
