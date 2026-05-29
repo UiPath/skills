@@ -1,7 +1,8 @@
 ---
 name: uipath-agents
 description: "Always invoke for low-code agents (Agent Builder / `agent.json`) or Python projects with `uipath-*` deps. UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
-allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion, WebFetch
+when_to_use: "User wants to create, build, scaffold, edit, run, evaluate, or deploy a UiPath agent — coded or low-code. Fires on: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents / Coded Function)'. Also fires when the working directory contains `agent.json` + `project.uiproj` (low-code) or a `pyproject.toml` with a `uipath` dependency + `.py` files (coded)."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
 ---
 
