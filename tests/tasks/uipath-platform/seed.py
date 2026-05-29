@@ -20,7 +20,13 @@ def ensure_parent_folder(path):
     """Idempotent: returns once the folder exists. Creates it under its
     last-segment parent if missing. Errors out if the immediate parent
     itself isn't there (we don't recursively create — `Shared` is the only
-    expected ancestor and it exists on every tenant)."""
+    expected ancestor and it exists on every tenant).
+
+    Race-safe under parallel seeds: on a fresh tenant, two `seed.py` runs
+    can both see the parent missing and both call `folders create`; one
+    wins, the other gets a non-Success. Re-GET after a failed create — if
+    the folder now exists (peer created it), treat the create as a
+    successful no-op."""
     got = uip_json("or", "folders", "get", path)
     if got.get("Result") == "Success":
         return
@@ -29,10 +35,15 @@ def ensure_parent_folder(path):
         print(f"seed.py: PARENT_FOLDER_PATH {path!r} must be nested under an existing folder (e.g. 'Shared/x').", file=sys.stderr)
         sys.exit(1)
     created = uip_json("or", "folders", "create", name, "--parent", parent)
-    if created.get("Result") != "Success":
-        msg = created.get("Message") or created.get("Instructions") or "unknown error"
-        print(f"seed.py: failed to ensure parent folder {path}: {msg}", file=sys.stderr)
-        sys.exit(1)
+    if created.get("Result") == "Success":
+        return
+    # Create lost (likely a concurrent seed beat us). Re-GET to confirm.
+    recheck = uip_json("or", "folders", "get", path)
+    if recheck.get("Result") == "Success":
+        return
+    msg = created.get("Message") or created.get("Instructions") or "unknown error"
+    print(f"seed.py: failed to ensure parent folder {path}: {msg}", file=sys.stderr)
+    sys.exit(1)
 
 ensure_parent_folder(PARENT_FOLDER_PATH)
 

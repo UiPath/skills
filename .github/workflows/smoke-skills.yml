@@ -313,8 +313,6 @@ jobs:
             echo "UIPATH_CLI_TENANT_NAME=$TENANT_NAME"
             echo "UIPATH_CLI_TENANT_ID=$TENANT_ID"
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
-            echo "E2E_PROCESS_KEY=${{ secrets.E2E_PROCESS_KEY }}"
-            echo "E2E_LONG_PROCESS_KEY=${{ secrets.E2E_LONG_PROCESS_KEY }}"
           } >> "$GITHUB_ENV"
           mkdir ~/.uipath
           run_uip_with_tenant "$TENANT_NAME" login status --output json
