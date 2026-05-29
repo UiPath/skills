@@ -100,7 +100,11 @@ def _load_flow_bindings(pattern: str) -> tuple[str, list[dict[str, Any]]]:
 
 
 def _connection_rows(bindings: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [b for b in bindings if isinstance(b, dict) and b.get("resource") == "Connection"]
+    return [
+        b
+        for b in bindings
+        if isinstance(b, dict) and (b.get("resource") or "").lower() == "connection"
+    ]
 
 
 def _connection_id_rows(bindings: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -162,7 +166,9 @@ def cmd_bindings_v2_no_empty_stubs(pattern: str) -> None:
     empty = [
         x
         for x in rows
-        if isinstance(x, dict) and x.get("resource") == "Connection" and not x.get("resourceKey")
+        if isinstance(x, dict)
+        and (x.get("resource") or "").lower() == "connection"
+        and not x.get("resourceKey")
     ]
     if empty:
         _fail(f"{matches[0]}: empty-keyed Connection row(s) in derived bindings_v2.json: {empty}")
@@ -185,7 +191,9 @@ def cmd_same_connection_id(pattern_a: str, pattern_b: str) -> None:
     path_b, bindings_b = _load_flow_bindings(pattern_b)
     a_keys = {b.get("resourceKey") for b in _connection_id_rows(bindings_a)}
     b_keys = {b.get("resourceKey") for b in _connection_id_rows(bindings_b)}
-    if not a_keys or a_keys != b_keys:
+    if not a_keys or not b_keys:
+        _fail(f"no ConnectionId binding rows found: {path_a}={a_keys}, {path_b}={b_keys}")
+    if a_keys != b_keys:
         _fail(f"ConnectionId resourceKey differs across snapshots: {path_a}={a_keys} vs {path_b}={b_keys}")
     print(f"OK: ConnectionId resourceKey stable across snapshots ({a_keys})")
 
