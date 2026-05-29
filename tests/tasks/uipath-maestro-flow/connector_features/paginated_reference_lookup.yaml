@@ -63,8 +63,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow references the Slack send-message-to-user node and a Slack user id (U.../W...)"
+    description: "Flow references the Slack send-message-to-user node"
     path: "SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow"
-    pattern: 'send-message-to-user[\s\S]*"[UW][A-Z0-9]{7,}"'
+    includes:
+      - '"send-message-to-user"'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Flow contains a resolved Slack user id (U.../W...) — proving the paginated lookup landed a real value"
+    path: "SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow"
+    pattern: '"[UW][A-Z0-9]{7,}"'
     weight: 2.0
     pass_threshold: 1.0
