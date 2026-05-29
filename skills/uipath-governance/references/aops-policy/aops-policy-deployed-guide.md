@@ -1,6 +1,6 @@
 # Policy Deployment Query Guide
 
-Query the **single effective deployed policy** for a `(licenseType, product, tenant)` tuple, or the **full list of applicable policies** ordered by priority, for the calling user (or a named user via S2S).
+Query the **single effective deployed policy** for a `(license type, product, tenant)` tuple, or the **full list of applicable policies** ordered by priority, for the calling user (or a named user via S2S).
 
 > **Terminology — read before using.**
 > - `deployed-policy get` returns the **single effective policy** — the one policy that actually applies after the user → group → tenant inheritance chain has been walked and any 'No Policy' pins have been honored. The default mode resolves for the caller's own identity; the S2S `--user-id` mode resolves for a named user; the S2S `--tenant-only` mode skips user/group overrides and returns only the tenant assignment.
@@ -19,7 +19,7 @@ Query the **single effective deployed policy** for a `(licenseType, product, ten
 
 If the user has not provided the positional values, ask **one at a time** in this order — resolve each before moving to the next:
 
-1. `License type?` — if unknown, run `uip gov aops-policy license-type list --output json` and let the user pick by `name` (e.g. `Attended`, `Unattended`), not by `identifier` (GUID) or label. `deployed-policy get/list` take the `name` as the `<licenseType>` positional argument. Store as `$LICENSE_TYPE`.
+1. `License type?` — if unknown, run `uip gov aops-policy license-type list --output json` and let the user pick by `name` (e.g. `Attended`, `Unattended`), not by `identifier` (GUID) or label. `deployed-policy get/list` take the `name` as the `<license-type>` positional argument. Store as `$LICENSE_TYPE`.
 2. `Product name (identifier)?` — run `uip gov aops-policy product list --output json` if unknown.
 3. `Tenant identifier (GUID)?` — if unknown, run `uip gov aops-policy deployment tenant list --output json` and let the user pick from tenants that already have policy assignments. Store as `$TENANT_ID`.
 4. **For specific-user lookup only:** `User identifier (GUID)?` — run `uip gov aops-policy deployment user list --output json` if unknown (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Store the matching `identifier` as `$USER_ID`. Then ensure the S2S bearer token is available — set `UIP_S2S_TOKEN` in the caller's environment so the CLI picks it up automatically (see [aops-policy-commands.md — S2S token](./aops-policy-commands.md#s2s-token)).
@@ -30,7 +30,7 @@ Proceed to the matching query below.
 
 ## Get the effective deployed policy (default — caller's own identity)
 
-Returns the single effective policy for the caller for the given `(licenseType, product, tenant)` — the policy that remains after the user → group → tenant inheritance chain has been walked. Uses the caller's `uip login` token. To look up another user's effective policy, add `--s2s-token --user-id`; to skip user/group overrides and see only the tenant-level assignment, add `--s2s-token --tenant-only`.
+Returns the single effective policy for the caller for the given `(license type, product, tenant)` — the policy that remains after the user → group → tenant inheritance chain has been walked. Uses the caller's `uip login` token. To look up another user's effective policy, add `--s2s-token --user-id`; to skip user/group overrides and see only the tenant-level assignment, add `--s2s-token --tenant-only`.
 
 ```bash
 uip gov aops-policy deployed-policy get \
@@ -50,7 +50,7 @@ Effective policy:
   Data payload:    <DATA — pretty-print or attach as a link to a saved file>
 ```
 
-If `Data` is `{ "Message": "No policy applies." }`, `null`, `{}`, or absent, inform the user that no policy applies for this `(licenseType, product, tenant)`. This happens when no rule matches and no default exists — the service returns HTTP 204.
+If `Data` is `{ "Message": "No policy applies." }`, `null`, `{}`, or absent, inform the user that no policy applies for this `(license type, product, tenant)`. This happens when no rule matches and no default exists — the service returns HTTP 204.
 
 ---
 
@@ -88,7 +88,7 @@ uip gov aops-policy deployed-policy get \
 
 ## List every applicable policy for the calling user
 
-Returns every policy that applies to the caller for the given `(licenseType, product, tenant)`, in priority order. Unlike `get`, which returns only the single effective (top-priority) policy, `list` surfaces every applicable entry so you can see why a particular policy wins. **User token only — does NOT accept `--s2s-token`.** Returns an empty array when nothing applies.
+Returns every policy that applies to the caller for the given `(license type, product, tenant)`, in priority order. Unlike `get`, which returns only the single effective (top-priority) policy, `list` surfaces every applicable entry so you can see why a particular policy wins. **User token only — does NOT accept `--s2s-token`.** Returns an empty array when nothing applies.
 
 ```bash
 uip gov aops-policy deployed-policy list \

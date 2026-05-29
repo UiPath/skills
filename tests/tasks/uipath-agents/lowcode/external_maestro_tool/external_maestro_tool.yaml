@@ -13,12 +13,8 @@ description: >
   binding kind) pinned to the deployed name + folder.
 tags: [uipath-agents, e2e, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 29
   turn_timeout: 1200
 
 initial_prompt: |

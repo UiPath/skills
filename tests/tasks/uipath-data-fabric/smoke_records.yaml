@@ -9,10 +9,8 @@ description: >
   array-body routing rule in a single pass.
 tags: [uipath-data-fabric, smoke, records]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 13
   max_turns: 50
 
 initial_prompt: |

@@ -4,6 +4,9 @@ description: >
   regulatory language. Verifies the skill fires on audit/sign-off signals.
 tags: [uipath-human-in-the-loop, smoke]
 
+run_limits:
+  expected_turns: 2
+
 initial_prompt: |
   Automate GDPR data deletion requests. These are subject to regulatory
   compliance requirements: each request needs documented regulatory

@@ -112,7 +112,7 @@ Project-local types are appropriate for **domain DTOs** that have no platform eq
 ### API Discovery
 - **ALWAYS search for existing .cs files BEFORE generating new code** — Learn from existing patterns
 - Read at least 5 existing workflow files (or all if fewer) to understand project conventions
-- **When writing UI automation code** — follow the **Finding Descriptors** hierarchy (see [ui-automation-guide.md](../ui-automation-guide.md)) in strict order. Do NOT write any UI code until descriptors are resolved:
+- **When writing UI automation code** — [ui-automation-guide.md](../ui-automation-guide.md) MUST be read IN FULL first. Follow the **Finding Descriptors** hierarchy in strict order. Do NOT write any UI code until descriptors are resolved:
   1. Read `ObjectRepository.cs` — use existing descriptors if present
   2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa packages inspect`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
   3. If descriptors are still missing — use the `uia-configure-target` skill flow (found in the UIA activity-docs) to create targets. This handles capturing the application, discovering elements, generating selectors, improving them, and registering them in the OR. Do NOT manually call the internal `uip rpa uia` CLIs outside of the skill flow. Fallback: the indication commands (see UIA docs) when elements appear only after user interaction (e.g., a compose form that opens after clicking a button)

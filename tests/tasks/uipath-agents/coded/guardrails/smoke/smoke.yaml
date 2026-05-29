@@ -1,0 +1,52 @@
+task_id: skill-agent-guardrail-coded-smoke
+description: >
+  Smoke test: skill routes to guardrails.md and the agent adds a
+  guardrail to a coded LangGraph agent. Uses a deterministic (custom rule)
+  guardrail as the simplest scenario — no ML backend required. Verifies
+  key structural elements are present without requiring backend connectivity.
+tags: [uipath-agents, smoke, coded, mode:build, guardrail]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py with a lookup_account_info tool.
+  I want to add a deterministic guardrail that blocks the tool whenever the
+  customer_id input contains the word "secret". Use a block action.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "Deterministic guardrail class present (middleware or decorator style)"
+    command: "grep -qE 'UiPathDeterministicGuardrailMiddleware|CustomValidator' graph.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Rule checks for 'secret' keyword"
+    path: "graph.py"
+    includes:
+      - "secret"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BlockAction used"
+    path: "graph.py"
+    includes:
+      - "BlockAction"
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 300

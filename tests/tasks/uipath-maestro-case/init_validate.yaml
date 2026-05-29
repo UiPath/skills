@@ -8,10 +8,8 @@ description: >
   resulting artifacts and the validate step, not on the scaffolding method.
 tags: [uipath-maestro-case, init, validate]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 70
   max_turns: 80
 
 initial_prompt: |

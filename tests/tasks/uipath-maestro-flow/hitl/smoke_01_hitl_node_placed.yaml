@@ -5,14 +5,9 @@ description: >
   into the .flow file as JSON and the flow validates.
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:hitl]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 21
   max_turns: 80
-  turn_timeout: 900
-
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that:
   1. Starts with a manual trigger

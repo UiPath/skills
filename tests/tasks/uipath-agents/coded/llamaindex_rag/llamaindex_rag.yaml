@@ -10,12 +10,6 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-llamaindex, feature:rag-coded]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
-
 initial_prompt: |
   Build a UiPath coded agent named `hr-helper` that answers
   employee questions about HR policy. The agent reads the
@@ -70,3 +64,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 27
+  turn_timeout: 1200

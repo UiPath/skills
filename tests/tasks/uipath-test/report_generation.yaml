@@ -17,10 +17,8 @@ description: >
   here; the report is expected to render the empty-data sections honestly.
 tags: [uipath-test, integration, mode:operate, lifecycle:generate, feature:test-case]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 20
   max_turns: 50
 
 initial_prompt: |

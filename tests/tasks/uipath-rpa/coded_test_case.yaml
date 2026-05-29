@@ -8,6 +8,7 @@ description: >
 tags: [uipath-rpa, smoke, coded, hooks, test-case]
 
 run_limits:
+  expected_turns: 22
   max_turns: 70
   task_timeout: 400
   turn_timeout: 400

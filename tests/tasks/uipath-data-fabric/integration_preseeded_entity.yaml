@@ -9,10 +9,8 @@ description: >
   Entity is never deleted.
 tags: [uipath-data-fabric, integration, pre-seeded, discover]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 32
   max_turns: 50
   turn_timeout: 600
 

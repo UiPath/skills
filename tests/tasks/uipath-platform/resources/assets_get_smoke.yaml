@@ -3,15 +3,20 @@ description: >
   Smoke test: real user asks for an asset by name. The agent's job is to
   realize `uip resource assets get` takes a GUID, so it must first run
   `assets list` to find the key. Verifies the agent does the resolve step
-  (any form of `assets list`) — no specific filter flag enforced.
+  with `assets list --name` in the provided folder.
   If the named asset doesn't exist, the agent reporting "not found" after
   list is the correct outcome; the `assets get` follow-up only fires when
   the asset actually exists in the tenant.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
+run_limits:
+  expected_turns: 9
+
 initial_prompt: |
   Fetch the metadata for the Orchestrator asset named `ApiBaseUrl` in
-  the current UiPath tenant.
+  the `Finance` folder of the current UiPath tenant. Use that folder path
+  directly when resolving the asset by name; do not spend time discovering
+  or validating the folder first.
 
 success_criteria:
   - type: command_executed
@@ -20,6 +25,14 @@ success_criteria:
     command_pattern: 'uip\s+resource\s+assets\s+list.*(-n|--name)\s+["\047]?ApiBaseUrl'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scoped the asset lookup to the provided folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+assets\s+list.*--folder-(key|path)'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

@@ -1,0 +1,168 @@
+task_id: skill-troubleshoot-uia-alter-if-disabled
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 33
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my last job from folder Shared failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: command_executed
+    description: "Agent interrogated the faulted job via the uip CLI (uip or jobs get on the job key). Enforced here — not in the judge — so it stays robust across iterations and sub-agents."
+    tool_name: "Bash"
+    command_pattern: '(?<![\./\w])uip\s+or\s+jobs\s+get\s+["\x27]?49655b57'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: false
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      The user's request was:
+        "why did my last job from folder Shared failed?"
+
+      The originating fault is UiNodeDisabledElementException on NClick
+      "Click 'Simt că am noroc(1)'" inside NApplicationCard "Edge Google"
+      in ClickCase.xaml (process ERN). The selector RESOLVED — the element
+      was found and the driver aborted on the element's own `disabled`
+      property (not a timeout, not a selector failure, not an overlay —
+      an overlay would have produced a click-intercepted / not-interactable
+      error, not UiNodeDisabledElementException).
+
+      Per the disabled-element.md playbook decision tree:
+        - Branch (A) HardwareEvents — ELIMINATED: InteractionMode=DebuggerApi
+          honors AlterIfDisabled.
+        - Branch (B) HA self-healing detected popup and failed to dismiss —
+          ELIMINATED: Healing Agent was disabled on this job.
+        - Branch (C) HA recommendation-only inferred popup — ELIMINATED:
+          Healing Agent was disabled on this job.
+        - Branch (D) Default — APPLIES: set AlterIfDisabled = True.
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The agent must match the UI-automation disabled-element playbook
+        (disabled-element.md) in state.json's `matched_playbooks`.
+        Acceptable: the agent also Reads neighboring playbooks during
+        exploration.
+        (Orchestrator CLI interrogation is verified separately by a
+        command_executed criterion — do NOT grade it here, and do not
+        penalize based on which tool calls are or aren't visible.)
+
+      DIMENSION B -- Correct fix per playbook branch (D)
+        The reference fix names ALL of:
+          (a) The failing NClick has AlterIfDisabled absent / not set to
+              True — this is the property the playbook prescribes.
+          (b) Branch eliminations: HardwareEvents (A) is eliminated
+              because InteractionMode=DebuggerApi; HA-popup branches
+              (B and C) are eliminated because Healing Agent was
+              disabled on this job. The agent should name at least
+              one of these eliminations (HardwareEvents OR Healing
+              Agent state).
+          (c) Primary fix: set AlterIfDisabled = True on the failing
+              NClick (in ClickCase.xaml, NClick_1). This is required
+              and the agent must name it as the primary fix.
+          (d) The agent does NOT recommend a popup-dismissal /
+              Check-App-State / consent-overlay handler as the
+              PRIMARY fix on the assumption of an overlay that no
+              evidence supports. Healing Agent did not detect a
+              popup (HA was disabled), so a popup-handler fix is
+              not supported by evidence. Mentioning Check App State
+              as a defense-in-depth preventive is acceptable; framing
+              it as the primary fix instead of AlterIfDisabled = True
+              is not.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Matched disabled-element.md AND named all of (a)+(b)+(c)+(d).
+        0.8  Matched playbook and named (a)+(c) plus one of (b)/(d).
+        0.5  Matched playbook but recommended AlterIfDisabled = True
+             only as a secondary fix, or recommended a popup-handler
+             fix as primary without HA evidence.
+        0.2  Matched playbook but recommended the wrong primary fix
+             (e.g., increase activity timeout, switch input mode without
+             HardwareEvents evidence, change selector).
+        0.0  Misdiagnosed (e.g., blamed selector / timeout / healing
+             agent infrastructure / orchestrator / asset) or got
+             blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook match and fix recommendation>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data. You do, however, know where the
+    project source lives on your machine: the workflow files (.xaml files,
+    project.json) are in the current working directory of this session,
+    i.e. `.` (the cwd the agent is running in).
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "If the agent asks for the project source path (workflow folder, XAML location, where the project lives), reply with `.` (the current working directory) — that is where the workflow files are."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report and the project path above."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

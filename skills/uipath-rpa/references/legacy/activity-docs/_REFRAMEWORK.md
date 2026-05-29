@@ -405,14 +405,14 @@ When processing data from Excel/CSV/DataTable without Orchestrator queues, modif
    ' Read Range: in_Config("DataSourcePath"), Sheet: in_Config("DataSourceSheet") → io_dt_TransactionData
    ```
 
-2. In `GetTransactionData.xaml`, use `in_TransactionNumber` as a row counter:
+2. In `GetTransactionData.xaml`, use `in_TransactionNumber` as a row counter (1-indexed — matches the Config.xlsx default `TransactionNumber = 1`, incremented by `SetTransactionStatus.xaml`):
    ```vb
    ' Check if more rows exist:
-   If in_TransactionNumber >= io_dt_TransactionData.Rows.Count Then
+   If in_TransactionNumber > io_dt_TransactionData.Rows.Count Then
        out_TransactionItem = Nothing   ' Signals "no more data" → End Process
    Else
-       ' Return current row as the transaction item:
-       out_TransactionItem = io_dt_TransactionData.Rows(in_TransactionNumber)
+       ' Return current row as the transaction item (1-indexed → 0-based row access):
+       out_TransactionItem = io_dt_TransactionData.Rows(in_TransactionNumber - 1)
    End If
    ```
 

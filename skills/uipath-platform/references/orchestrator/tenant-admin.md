@@ -96,7 +96,7 @@ Audit logs record who did what and when across the tenant. Filter by component, 
 | Command | What it does |
 |---------|--------------|
 | `uip or audit-logs list` | List audit entries with filters (see below). |
-| `uip or audit-logs list --export` | Export logs to CSV instead of terminal output. Use `-o <path>` to set the file path. |
+| `uip or audit-logs list --export --destination <path>` | Export logs to CSV instead of terminal output. Use `--destination` (or `-d`) to set the file path. |
 
 **Filter options for `audit-logs list`:**
 
@@ -115,7 +115,7 @@ uip or audit-logs list --component "Jobs" --output json
 # Export last week's audit logs to CSV
 uip or audit-logs list \
   --created-after "2026-04-14" --created-before "2026-04-22" \
-  --export -o audit-week.csv
+  --export --destination audit-week.csv
 ```
 
 ---
@@ -192,7 +192,7 @@ Export last week's audit logs for user-related actions, then download attachment
 uip or audit-logs list \
   --component "Users" \
   --created-after "2026-04-14" --created-before "2026-04-22" \
-  --export -o user-audit-week.csv
+  --export --destination user-audit-week.csv
 
 # 2. Find the failed job (inspect audit logs or list jobs directly)
 uip or jobs list --state Faulted \

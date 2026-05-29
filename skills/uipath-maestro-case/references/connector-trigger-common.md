@@ -1,12 +1,13 @@
 # Connector Trigger — Shared Pipeline
 
-Shared planning and implementation logic for connector-based triggers. Used by both:
-- [connector-trigger task](plugins/tasks/connector-trigger/planning.md) — in-stage `wait-for-connector`
-- [event trigger](plugins/triggers/event/planning.md) — case-level `Intsvc.EventTrigger`
+Shared planning and implementation logic for connector-based triggers. Used by three:
+- [connector-trigger task](plugins/tasks/connector-trigger/planning.md) — in-stage `wait-for-connector` task
+- [event trigger](plugins/triggers/event/planning.md) — case-level `Intsvc.EventTrigger` (case start)
+- **connector-bound condition rule** — a `wait-for-connector` rule in any condition scope (stage-entry / stage-exit / case-exit / task-entry). Also called "connector rule" or "connector condition rule" in shorthand; "wait-for-connector rule" when the rule-type is the salient property. All four refer to the same construct. See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule) and each condition plugin's `impl-json.md`.
 
-Both use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task vs trigger node), `serviceType`, and a few node-shape details differ — see each plugin's own docs for those specifics.
+All three use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task `data` / trigger node `data.uipath` / rule `uipath`), `serviceType`, and a few shape details differ — see each plugin's own docs.
 
-> Mirrors the [connector-activity](plugins/tasks/connector-activity/planning.md) flow. Same CLI surface (`uip maestro case spec` with `--skip-case-shape` for planning, `--input-details` for Phase 3); `--type trigger` swaps in trigger-shaped inputs/outputs and the trigger-specific `metadata.body.bindings[Property]` registration entry.
+> Mirrors the [connector-activity](plugins/tasks/connector-activity/planning.md) flow. Same CLI surface (`uip maestro case spec` with `--skip-case-shape` for planning, `--input-details` for Phase 3); `--type trigger` swaps in trigger-shaped inputs/outputs and, for event-parameter connectors, a `metadata.body.bindings[Property]` registration entry (Step 4).
 
 ---
 
@@ -310,7 +311,9 @@ The CLI emits placeholders the skill resolves at write-time:
 | `{{FOLDER_BINDING_ID}}` | `caseShape.context[name="folderKey"].value` (string `=bindings.{{FOLDER_BINDING_ID}}`); entry only present when `spec.connection.folderKey !== null` | `<folderBindingId>` |
 | `{{TRIGGER_REGISTRATION_KEY}}` | `caseShape.context[name="metadata"].body.bindings[*].metadata.ParentResourceKey` (string `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`); entry only present when `caseShape.context[name="metadata"].body.bindings` exists (i.e. trigger has event parameters) | `<eventTriggerKey>` |
 
-The `metadata` context entry's `body.activityPropertyConfiguration.configuration` JSON-string contains an `essentialConfiguration` blob already populated by the CLI (with `instanceParameters`, `objectName`, `eventOperation`, `eventMode`, `filter` if any). Do not modify this blob — copy verbatim.
+The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above. **Every other key — current or future, top-level or nested — must be copied byte-for-byte from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
+
+> **Mechanical contract.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into the target shape. The skill is a substituter, not a composer — the only edit between Read and Write is the placeholder substitutions above. **Never retype `context` content from agent reasoning.**
 
 ### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
 
@@ -319,11 +322,11 @@ Per-plugin: each plugin's `impl-json.md` mints these onto `caseShape.inputs[]` /
 Conventions (shared with activity):
 - `var` = `v` + 8 alphanumeric chars (unique across the case — see [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule))
 - `id` = same as `var`
-- `elementId` = the task's elementId (for in-stage `wait-for-connector` task) or the trigger node's id (for case-level event trigger)
+- `elementId` = the task's elementId (in-stage `wait-for-connector` task), the trigger node's id (case-level event trigger), or `<ownerNodeId>-<ruleId>` (connector-bound condition rule — see [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule))
 
-For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks/triggers), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged.
+For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger / **connector-bound condition rule** already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks / triggers / rules), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged. **Rule outputs participate in the same global pool** — the dedup must walk condition `rules[][].uipath.outputs[]` across all 4 condition scopes (stage-entry / stage-exit / case-exit / task-entry, plus root `caseExitConditions` v19 / `metadata.caseExitRules` v20) in **both directions**: when a rule mints outputs, dedupe against tasks + triggers + rules; when a task / trigger mints outputs, dedupe against existing rule outputs. See [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule) for the full enumeration.
 
-> **Trigger inputs:** trigger inputs do **not** get `elementId` (different from in-stage task inputs). See each plugin's `impl-json.md` for the target-specific shape.
+> **Trigger-NODE inputs only:** the case-level event-**trigger node** gets no `elementId` on its inputs (different from in-stage task inputs). This does **NOT** apply to connector-bound **condition rules** — a rule's inputs AND outputs BOTH get `elementId = <ownerNodeId>-<ruleId>` (= `root-<ruleId>` for case-exit). See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule), and each plugin's `impl-json.md` for the target-specific shape.
 
 ---
 
@@ -362,14 +365,92 @@ Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of
 
 After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
 
-> **`bindings_v2.json` regeneration is deferred** — runs once at end of Step 9.7 (after all connector tasks/triggers), not per-task. See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md).
+> **`bindings_v2.json` regeneration is deferred and batched.** Runs at three points, not per-target: end of Phase 2 Step 9 (non-connector tasks), end of Phase 3 Step 9.7 (connector tasks + triggers), and end of Phase 3 **Step 10** (connector condition rules across all 4 scopes). See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run).
+
+---
+
+## Target: connector-bound condition rule
+
+A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) binds the connector under the rule's **`uipath`** — structurally the same block the in-stage task writes under `data`. **The CLI cannot author this** (`buildRule` in `case-tool` emits a bare `{ rule, id, conditionExpression }` with no `uipath`); write `rule.uipath` directly per this recipe. Used by all four condition plugins.
+
+### Differences vs the in-stage task
+
+| Aspect | In-stage task | Connector-bound rule |
+|---|---|---|
+| Container | `task.data` | `rule.uipath` |
+| `serviceType` | `Intsvc.WaitForEvent` | `Intsvc.WaitForEvent` (same) |
+| `elementId` on inputs/outputs | `<stageId>-<taskId>` | `<ownerNodeId>-<ruleId>` |
+| Task-level fields (`type`, `displayName`, `isRequired`, `shouldRunOnlyOnce`) | yes | none — it's a rule, not a node |
+| `conditionExpression` | n/a | optional extra `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace) |
+
+`<ownerNodeId>` = the **stage id** for stage-entry / stage-exit / task-entry rules (all stage-scoped); **`root`** for case-exit rules (v19 `root.caseExitConditions` / v20 `metadata.caseExitRules`).
+
+### Procedure (Phase 3)
+
+1. Resolve the connector in planning exactly as the task does — [§ Planning Pipeline](#planning-pipeline). The condition plugin's `planning.md` records the same fields (`type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`). **Event parameters and filter accept `=vars.X` / `=js:` expressions exactly like the task** — they compile into `rule.uipath.context` / filter via `case spec --type trigger --input-details` (`input-values` + filter). Only the literal request `body` input is value-less (an event sends no body).
+2. Run `case spec --type trigger --input-details` ([§ Phase 3 Implementation](#phase-3-implementation--single-cli-call)) to mint the populated `caseShape`.
+3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` in `caseShape.context` ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext)). If the caseShape carries a `{{TRIGGER_REGISTRATION_KEY}}` entry (event-parameter connectors only), substitute it exactly as the task does ([§ Step 3](#step-3--mint-binding-ids-and-when-applicable-trigger-registration-key)) — there is no rule-specific variant.
+4. Mint `var` / `id` / `elementId` on `caseShape.inputs[]` / `outputs[]` ([§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs)), with `elementId = <ownerNodeId>-<ruleId>`. Apply the output dedup rule.
+5. Write the rule:
+
+```json
+{
+  "id": "<ruleId>",
+  "rule": "wait-for-connector",
+  "uipath": {
+    "serviceType": "Intsvc.WaitForEvent",
+    "context": "<caseShape.context — placeholders substituted>",
+    "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
+    "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
+    "bindings": []
+  },
+  "conditionExpression": "<optional =js: gate on case state, e.g. vars.X — NOT the event payload>"
+}
+```
+
+5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when `uipath` is absent.
+
+6. Append root bindings (ConnectionId + FolderKey) and run the deferred `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
+
+### tasks.md fields (planning)
+
+A connector-bound rule's condition T-entry records these (alongside the scope's normal fields):
+
+```markdown
+- rule-type: wait-for-connector
+- type-id: "<uiPathActivityTypeId>"
+- connection-id: "<connection-id>"
+- connector-key: "<connector-key>"
+- object-name: "<object>"
+- event-operation: "<EVENT_OP>"
+- event-mode: "polling"               # or "webhooks"
+- input-values: { "eventParameters": { ... } }   # resolved IDs; omit when none
+- filter: { ... }                     # optional FilterTree; omit when none
+- condition-expression: "=js:vars.X..."  # optional gate on case state — NOT the event payload
+- outputs:                            # optional — bind rule outputs to case variables
+  - "<schemaField> -> <caseVar>"      # extract — rule's response field to case variable
+  - "<caseVar> = <expression>"        # assign — literal / =js: expression / =vars.X
+```
+
+The `outputs:` block (optional) binds the rule's `response` / `Error` to case variables — same `->` / `=` operator semantics as a connector task. Full shapes + dispatcher: [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules).
+
+Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxxx` and `rxxxxxxxx` both work. Two hard requirements: (a) `elementId = <ownerNodeId>-<ruleId>` built from the exact id written; (b) **`rule.id` must be unique within the case** — the BPMN node id `ConnectorEvent_${rule.id}_${elementId}` derives from it, so a collision corrupts the case graph.
+
+### Caveats
+
+- **Not a case-start trigger.** A connector rule compiles to an in-flight wait (ReceiveTask / event subprocess), so it gets **no entry-points.json entry** and **no rule-specific registration key** — FE `PackagingUtil` trigger registration is gated on `Intsvc.EventTrigger` start events only, which a rule is not. If the `case spec` caseShape carries a `metadata.body.bindings[Property]` registration entry (event-parameter connectors), substitute it exactly as the task does (Step 3 / Step 4); there is nothing rule-specific.
+- **CLI `validate` does NOT check `rule.uipath`.** The case-tool connector validator is task-only (reads `task.data`). A passing Phase-4 validate does **not** confirm a connector rule is valid — Studio Web (or an FE round-trip) is the real check. Emit the `uipath` block correctly; do not rely on validate to catch omissions.
+
+### Placeholder fallback
+
+On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule **without** its `uipath` block — `{ id, rule: "wait-for-connector", conditionExpression? }`. The rule itself is not a placeholder; only the connector configuration (the `uipath` payload) is deferred until the registry resolves, exactly like task connector data deferred via `data:{}`. Absence of `uipath` naturally skips the dependent subsystems: io-binding has no `outputs[]` to wire, root bindings has no Connection/Folder pair to add, IS-cache has no entry to register, global var-id dedup has no outputs to consider, and the Step-10 `bindings_v2` sync has nothing to regenerate for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8 and log per [logging/impl-json.md](plugins/logging/impl-json.md). Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
 
 ---
 
 ## What NOT to Do (shared)
 
 - **Do NOT call legacy `uip maestro case tasks describe --type connector-trigger` or `uip is triggers describe`.** `case spec --type trigger` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` or placeholders.
-- **Do NOT modify `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration`.** It's a CLI-produced `=jsonString:…` blob with `essentialConfiguration.{instanceParameters, objectName, eventOperation, eventMode, filter}` — copy verbatim.
+- **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 4.
 - **Do NOT use `CuratedTrigger` or `Intsvc.Trigger` activityType.** The CLI overrides to `CuratedWaitFor` (in-stage task) or emits the trigger shape directly. Trust the CLI's `essentialConfiguration` value.
 - **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree and pass it under `--input-details.filter`; the CLI compiles all three sinks.
 - **Do NOT use `filterExpression` as a `--input-details` input.** The CLI rejects raw `filterExpression` strings (MST-8802). Pass the structured tree only.

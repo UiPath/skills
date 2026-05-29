@@ -105,15 +105,19 @@ def check_main_py() -> None:
             "without it the agents fall through to the default OpenAI client "
             "instead of UiPath's gateway."
         )
-    # Three named agents: triage, billing, technical
+    # Three named agents: triage, billing, technical. Normalize "BillingAgent" /
+    # "billing_agent" / "billing" all to "billing" so role-equivalent names pass.
     name_pattern = re.compile(r'name\s*=\s*"([^"]+)"')
-    declared_names = set(name_pattern.findall(text))
+    declared_names = {
+        n.lower().removesuffix("_agent").removesuffix("agent")
+        for n in name_pattern.findall(text)
+    }
     expected = {"triage", "billing", "technical"}
     if not expected.issubset(declared_names):
         missing = expected - declared_names
         sys.exit(
             f"FAIL: main.py is missing agent declarations for {sorted(missing)}. "
-            f"Found agent names: {sorted(declared_names)}"
+            f"Found agent names (normalized): {sorted(declared_names)}"
         )
     print("OK: main.py declares triage / billing / technical agents with handoffs")
     violations = find_module_level_llm_clients(main_path)

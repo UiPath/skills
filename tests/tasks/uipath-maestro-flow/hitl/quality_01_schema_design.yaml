@@ -5,14 +5,9 @@ description: >
   and priority. Tests C1 (field design) and C2 (outcome design).
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 29
   max_turns: 75
-  turn_timeout: 900
-
 initial_prompt: |
   Build a UiPath Flow named "VendorPOReview" for purchase order review:
 

@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop / HITL / Human Task node authoring for Flow, Maestro, or Coded Agent. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly. For operating existing approval/validation tasks in Action Center→uipath-tasks."
+description: "UiPath Human-in-the-Loop / HITL / Human Task node authoring for Flow, Maestro, or Low-Code Agents. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly. For operating existing approval/validation tasks in Action Center→uipath-tasks."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -8,7 +8,9 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 
 > **Preview** — skill is under active development; surface and behavior may change.
 
-Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, or Coded Agent.
+Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, or Agent.
+
+> **Coded agents:** for wiring HITL inside a coded agent, use the `uipath-agents` skill — see `skills/uipath-agents/references/coded/capabilities/human-in-the-loop.md`.
 
 ## When to Use This Skill
 
@@ -65,7 +67,7 @@ Run these checks in order:
 # Check for a .flow file (Flow project)
 find . -name "*.flow" -maxdepth 4 | head -5
 
-# Check for agent.json (Coded Agent project)
+# Check for agent.json (Low-Code Agent project)
 find . -name "agent.json" -maxdepth 4 | head -3
 
 # Check for Maestro .bpmn (Maestro process)
@@ -75,7 +77,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 | Found | Surface | How HITL is added |
 |---|---|---|
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
-| `agent.json` | **Coded Agent** | Escalation CLI in-flight — guide manually for now |
+| `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Not yet — guide user manually |
 
 **If the user mentioned a specific file path**, use that directly.
@@ -258,9 +260,9 @@ After writing, validate:
 uip maestro flow validate <file> --output json
 ```
 
-### Surface: Coded Agent
+### Surface: Low-Code Agent
 
-The Coded Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, configure manually:
+The Low-Code Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, configure manually:
 
 **`agent.json` escalation entry:**
 ```json

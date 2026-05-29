@@ -9,79 +9,27 @@ description: >
   and remove the broken `interrupt(...)` invocation (and its
   langgraph import) without breaking the OpenAI Agents shape. Closes
   the explicit gap that no negative test enforces this constraint.
-tags: [uipath-agents, smoke, mode:build, coded, lifecycle:edit, feature:antipattern, feature:framework-openai-agents]
+tags: [uipath-agents, smoke, "mode:build", coded, "lifecycle:edit", "feature:antipattern", "feature:framework-openai-agents"]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/antipattern_openai_agents_hitl/seed_antipattern_openai_agents_hitl.py"
+    timeout: 30
 
 initial_prompt: |
-  Recreate the UiPath coded agent project under `triage-broken/`
-  exactly as below, then review and fix anything that won't
-  actually work — in place. Keep the agent's existing behavior
-  (triaging customer messages between billing and technical
-  handlers); just make it correct.
+  The broken UiPath coded agent project already exists under
+  `triage-broken/`. Fix it in place.
 
-  **triage-broken/pyproject.toml**:
-  ```toml
-  [project]
-  name = "triage-broken"
-  version = "0.0.1"
-  description = "Triage bot (in-flight edit)"
-  authors = [{ name = "Test" }]
-  requires-python = ">=3.11"
-  dependencies = ["uipath", "uipath-openai-agents"]
+  This is an OpenAI Agents project, not a LangGraph project. OpenAI
+  Agents does not support `interrupt(...)` HITL. Do not research or
+  add a replacement HITL API. The correct fix is to remove the
+  `langgraph.types` import, remove the `interrupt(...)` call path, and
+  keep the existing triage behavior: return an OpenAI Agents `Agent`
+  factory that routes customer messages to billing or technical
+  handoffs.
 
-  [dependency-groups]
-  dev = ["uipath-dev"]
-  ```
-
-  **triage-broken/main.py**:
-  ```python
-  from agents import Agent, RunContextWrapper
-  from pydantic import BaseModel
-  from langgraph.types import interrupt
-
-
-  class CustomerCtx(BaseModel):
-      customer_id: str
-
-
-  def _maybe_pause(ctx: RunContextWrapper[CustomerCtx]) -> str:
-      decision = interrupt({"prompt": "Approve handoff?", "customer": ctx.context.customer_id})
-      return decision.get("status", "pending")
-
-
-  billing = Agent[CustomerCtx](
-      name="billing",
-      instructions="Handle billing questions.",
-  )
-
-  technical = Agent[CustomerCtx](
-      name="technical",
-      instructions="Handle technical questions.",
-  )
-
-
-  def main() -> Agent[CustomerCtx]:
-      return Agent[CustomerCtx](
-          name="triage",
-          instructions="Route to billing or technical, but call _maybe_pause first.",
-          handoffs=[billing, technical],
-      )
-  ```
-
-  **triage-broken/openai_agents.json**:
-  ```json
-  {"agents": {"agent": "./main.py:main"}}
-  ```
-
-  The graph must still expose a top-level `main` factory that
-  returns an `Agent`, and `openai_agents.json` must keep pointing
-  at it.
+  The project must still expose a top-level `main` factory that returns
+  an `Agent`, and `openai_agents.json` must keep pointing at it.
 
   Do NOT publish, upload, or deploy. Do NOT pause between planning
   and implementation. Complete end-to-end in a single pass.
@@ -106,3 +54,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 6
+  turn_timeout: 1200

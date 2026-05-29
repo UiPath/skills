@@ -6,6 +6,9 @@ description: >
   `--include-connection-details` flag for resolving connector metadata.
 tags: [uipath-platform, smoke, llmgateway, byo-connections, lifecycle:discover]
 
+run_limits:
+  expected_turns: 13
+
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

@@ -7,16 +7,14 @@ description: >
   requirements without cloud-side effects.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:validate", connector, "feature:connections"]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 10
   max_turns: 20
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

@@ -6,25 +6,20 @@ description: >
   without performing lifecycle mutations.
 tags: [uipath-maestro-bpmn, smoke, "mode:diagnose", "lifecycle:execute"]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 16
   max_turns: 20
-  turn_timeout: 900
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../../../../skills/uipath-maestro-bpmn
-  - type: template_dir
-    path: ../_shared/mock_template
-  - type: template_dir
-    path: fixtures
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
   mock_path_dirs:
-  - mocks
+    - mocks
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

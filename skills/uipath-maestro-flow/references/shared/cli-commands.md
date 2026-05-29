@@ -79,9 +79,9 @@ JSON output (`--output json`) reports counts in `Data`: `NodesTotal`, `EdgesTota
 Pack a Flow project into a `.nupkg` for Orchestrator deployment.
 
 ```bash
-uip maestro flow pack <ProjectDir> <OutputDir>
-uip maestro flow pack <ProjectDir> <OutputDir> --version 2.0.0
-uip maestro flow pack <ProjectDir> <OutputDir> --output json
+uip maestro flow pack <project-path> <OutputDir>
+uip maestro flow pack <project-path> <OutputDir> --version 2.0.0
+uip maestro flow pack <project-path> <OutputDir> --output json
 ```
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
@@ -97,6 +97,30 @@ uip solution resource refresh <SolutionDir> --output json
 ```
 
 The argument is the solution directory (containing the `.uipx` file). Defaults to the current directory if omitted.
+
+## uip solution resource add / remove / edit
+
+Atomic single-resource mutations. Use these when you need to add, delete, or change one resource and don't want to scan every project's bindings the way `refresh` does — for example, when a flow needs a new local queue but no `bindings_v2.json` change is involved yet.
+
+```bash
+# Local virtual stub (offline, no auth)
+uip solution resource add --source local --kind Queue --name InvoiceQueue --output json
+
+# Import an existing Orchestrator resource
+uip solution resource add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
+
+# Delete one resource by key
+uip solution resource remove <KEY> --output json
+
+# Patch an existing resource's spec by key (JSON object is the only input)
+uip solution resource edit <KEY> --patch '{"maxNumberOfRetries":5}' --output json
+uip solution resource edit <KEY> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
+
+# Read the patch from stdin
+echo '{"slaInHours":"4"}' | uip solution resource edit <KEY> --patch - --output json
+```
+
+`add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: "Unchanged"`. `edit` is the only command that mutates an existing resource's spec — `refresh` never overwrites; it skips resources already in the solution. None of these touch `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–11](/uipath:uipath-solution) for the full contract.
 
 ## uip solution upload
 
@@ -308,6 +332,27 @@ uip maestro flow registry list --output json               # list all cached nod
 uip maestro flow registry search <keyword> --output json   # search by name, tag, or category
 uip maestro flow registry get <nodeType> --output json     # get full schema for a node type
 ```
+
+`registry search` returns `Data` as a flat array (not `Data.Nodes`); fields are PascalCase. `NodeType` is the identifier you pass to `registry get <nodeType>` (and later `node add`).
+
+```json
+{ "Data": [
+  {
+    "NodeType": "uipath.connector.uipath-salesforce-sfdc.list-records",
+    "Category": "connector.196536",
+    "DisplayName": "List Records",
+    "Description": "(Salesforce) List records in Salesforce",
+    "Version": "1.0.0",
+    "Tags": "connector, activity",
+    "AvailableOnTenant": true
+  }
+] }
+```
+
+`AvailableOnTenant` is a usability gate, not extra metadata to ignore:
+
+- `true` — the tenant registry can return this node; it is valid to continue with `registry get <NodeType>` or `node add <NodeType>`.
+- `false` — the SDK knows about this node type, but the current tenant registry did not return it. Treat it as not enabled or not available for this tenant. Do **not** try nonexistent flags such as `--include-unavailable`; they are not supported. Choose an enabled alternative, use `--local` for in-solution resources, or report the feature/resource as unavailable.
 
 The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array.
 

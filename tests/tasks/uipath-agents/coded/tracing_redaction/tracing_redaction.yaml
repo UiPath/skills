@@ -6,12 +6,8 @@ description: >
   output are redacted before they reach the trace store.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:trace]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 31
   task_timeout: 1800
   turn_timeout: 1200
   max_turns: 40

@@ -11,6 +11,9 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, audit]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   An admin wants to discover what kinds of audit events are visible at
   each scope (organization-level and tenant-level) before drilling in.

@@ -152,7 +152,9 @@ Replace the two placeholders with the minted ids:
 - `{{CONN_BINDING_ID}}` → `<connBindingId>` (Step 5)
 - `{{FOLDER_BINDING_ID}}` → `<folderBindingId>` (Step 5; entry only present when folderKey was non-null)
 
-The `metadata` context entry's `body.activityPropertyConfiguration.configuration` JSON-string contains an `essentialConfiguration` blob already populated by the CLI (with `instanceParameters`, `objectName`, `operation`, `httpMethod`, `path`, `savedFilterTrees` if any). Do not modify this blob — copy verbatim.
+The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above. **Every other key — current or future, top-level or nested — must be copied byte-for-byte from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
+
+> **Mechanical contract.** At gather time (Step 2), persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into `data.context`. The skill is a substituter, not a composer — the only edit between Read and Write is the placeholder substitutions above. **Never retype `context` content from agent reasoning.**
 
 ### Step 7 — Mint `var` / `id` / `elementId` on inputs and outputs
 
@@ -250,7 +252,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT add `designTimeMetadata` to the metadata body.** The FE does not include it for case management tasks.
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
-- **Do NOT modify `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration`.** It's a CLI-produced `=jsonString:…` blob with `essentialConfiguration.{instanceParameters, objectName, operation, httpMethod, path, savedFilterTrees}` — copy verbatim.
+- **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 6.
 - **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.

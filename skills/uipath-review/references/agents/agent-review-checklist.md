@@ -140,7 +140,7 @@ Before reviewing implementation details, verify the right agent type was chosen:
 | Pydantic `BaseModel` used for Input and Output | Warning | Check for Input/Output class definitions |
 | `@traced()` decorator on main function and key helpers | Warning | Grep for `@traced` |
 | `@mockable()` decorator on functions calling external services | Warning | Grep for `@mockable` |
-| Correct import: `from uipath import UiPath` | Critical | Check import statements |
+| Correct import: `from uipath.platform import UiPath` (NOT `from uipath import UiPath` — that path does not exist and raises `ImportError`) | Critical | Check import statements |
 | HITL imports correct: `CreateTask`/`WaitTask` (not `CreateAction`/`WaitAction`) | Critical | Check HITL-related imports |
 | Structured output via `with_structured_output(MyModel)` | Info | Check LLM output patterns |
 | No hardcoded API keys or secrets | Critical | Grep for `api_key=`, `secret=` in string literals |

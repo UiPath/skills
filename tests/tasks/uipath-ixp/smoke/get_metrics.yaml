@@ -14,6 +14,9 @@ description: >
   command with the correct flags.
 tags: [uipath-ixp, smoke, lifecycle:discover]
 
+run_limits:
+  expected_turns: 4
+
 initial_prompt: |
   A document automation engineer wants to inspect the per-field F1 scores
   of the IXP project named `my_invoices-f1afa9ef-ixp` before iterating on

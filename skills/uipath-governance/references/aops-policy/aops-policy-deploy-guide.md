@@ -44,7 +44,7 @@ When the same product has assignments at multiple scopes, the narrowest wins:
 
 - A **user** assignment (including explicit `null` = No Policy) overrides any group or tenant assignment for that product.
 - A **group** assignment overrides the tenant assignment for that product (for members of that group).
-- A **tenant** assignment is the org-wide default for a `(product, licenseType)` pair.
+- A **tenant** assignment is the org-wide default for a `(product, license type)` pair.
 - A product with no assignment at any scope → inherits the global default (no policy enforced).
 
 **Decision hint:** pick the narrowest scope that matches the user's ask.
@@ -62,7 +62,7 @@ When the same product has assignments at multiple scopes, the narrowest wins:
 
 ## License-type → product compatibility
 
-Tenant deployments are keyed by `(product, licenseType)`. Not every license carries every product — deploying a policy to a `(product, licenseType)` pair whose license does not include that product is a no-op. Common license → product mappings:
+Tenant deployments are keyed by `(product, license type)`. Not every license carries every product — deploying a policy to a `(product, license type)` pair whose license does not include that product is a no-op. Common license → product mappings:
 
 | License type | Products included |
 |--------------|-------------------|
@@ -86,7 +86,7 @@ If the user asks to deploy (for example) an Assistant policy to the `Unattended 
 | "Apply to Alice" / a named individual | user | [3.1](#31-deploy-to-a-user) |
 | "Apply to the Developers group" / named team | group | [3.2](#32-deploy-to-a-group) |
 | "Apply to everyone in the tenant" | tenant | [3.3](#33-deploy-to-a-tenant) |
-| "Apply to a license type org-wide" (requires licenseType) | tenant | [3.3](#33-deploy-to-a-tenant) |
+| "Apply to a license type org-wide" (requires license type) | tenant | [3.3](#33-deploy-to-a-tenant) |
 
 ---
 
@@ -247,9 +247,9 @@ uip gov aops-policy deployment group get "$GROUP_ID" --output json
 
 ### Step 1 — Identify the license type
 
-Tenant deployments are keyed by `(product, licenseType)`. List license types via `uip gov aops-policy license-type list --output json` — see [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list) for the full output shape and sample rendering.
+Tenant deployments are keyed by `(product, license type)`. List license types via `uip gov aops-policy license-type list --output json` — see [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list) for the full output shape and sample rendering.
 
-> **Use the license type's `identifier` (GUID) — not its `name`, not its label — as `licenseTypeIdentifier` in tenant assignment entries.** The `name` is only accepted by `deployed-policy get` / `deployed-policy list` as the positional `<licenseType>` argument.
+> **Use the license type's `identifier` (GUID) — not its `name`, not its label — as `licenseTypeIdentifier` in tenant assignment entries.** The `name` is only accepted by `deployed-policy get` / `deployed-policy list` as the positional `<license-type>` argument.
 
 ### Step 2 — Identify the tenant
 
@@ -263,9 +263,9 @@ Optional flags: `--product-name <PRODUCT_NAME>`, `--limit <N>`, `--offset <N>`.
 
 Parse `Data.result[]` (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Each tenant entry carries `tenantPolicies[]` — the current assignments, each keyed by `(productIdentifier, licenseTypeIdentifier, policyIdentifier)`. Let the user pick, then store the chosen tenant's `identifier` as `$TENANT_ID` and `name` as `$TENANT_NAME`.
 
-### Step 3 — Pick policies per `(product, licenseType)`
+### Step 3 — Pick policies per `(product, license type)`
 
-1. For each `(product, licenseType)` pair the user wants to assign, run `uip gov aops-policy list --product-name "<PRODUCT_NAME>" --output json` and pick a policy (or match the user's intent).
+1. For each `(product, license type)` pair the user wants to assign, run `uip gov aops-policy list --product-name "<PRODUCT_NAME>" --output json` and pick a policy (or match the user's intent).
 2. Fetch current assignments: `uip gov aops-policy deployment tenant get "$TENANT_ID" --output json`.
 
 ### Step 4 — Write the assignment file
@@ -287,7 +287,7 @@ EOF
 Deploying policies to <TENANT_NAME>:
   AI Trust Layer  / NoLicense    →   aitl-default  (<POLICY_ID>)
   Studio          / Development  →   (No Policy)
-Omitted (product, licenseType) pairs keep their current assignment.
+Omitted (product, license type) pairs keep their current assignment.
 
 Apply these changes to <TENANT_NAME>? (yes / no)
 ```
@@ -296,7 +296,7 @@ Do NOT proceed without an explicit `yes`.
 
 ### Step 6 — Save the assignments
 
-> **FULL-REPLACE semantics.** Any `(product, licenseType)` pair not listed in `$SESSION_DIR/tenant-policies.json` is removed from the tenant and reverts to "no pin". To preserve existing assignments, seed the input file from `deployment tenant get "$TENANT_ID"` before editing.
+> **FULL-REPLACE semantics.** Any `(product, license type)` pair not listed in `$SESSION_DIR/tenant-policies.json` is removed from the tenant and reverts to "no pin". To preserve existing assignments, seed the input file from `deployment tenant get "$TENANT_ID"` before editing.
 
 ```bash
 uip gov aops-policy deployment tenant configure "$TENANT_ID" \

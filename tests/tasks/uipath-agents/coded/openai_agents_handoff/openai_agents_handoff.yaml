@@ -10,12 +10,8 @@ description: >
   `uip codedagent init`), and runs the triage agent end-to-end.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 33
   turn_timeout: 1200
 
 initial_prompt: |

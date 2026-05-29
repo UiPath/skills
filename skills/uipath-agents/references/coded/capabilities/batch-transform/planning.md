@@ -31,11 +31,11 @@ Standard ephemeral-attachment flow:
 
 1. `fetch_source` — accept / download the source CSV → local path
 2. `upload_attachment` — `sdk.attachments.upload_async` → attachment uuid
-3. `create_index` — **`@durable_interrupt`** returning `CreateEphemeralIndex(usage=EphemeralIndexUsage.BATCH_RAG, attachments=[...])` → `ContextGroundingIndex` (already ingested)
-4. `run_batch_transform` — **`@durable_interrupt`** returning `CreateBatchTransform(is_ephemeral_index=True, index_id=..., output_columns=[...], destination_path=<local-path>, enable_web_search_grounding=..., ...)` → confirmation string; runtime writes augmented CSV to `destination_path` on disk
+3. `create_index` — `create_ephemeral_index_async` → check `in_progress_ingestion()` → conditionally `interrupt(WaitEphemeralIndex(...))` → `ContextGroundingIndex`
+4. `run_batch_transform` — `interrupt(CreateBatchTransform(is_ephemeral_index=True, index_id=..., output_columns=[...], destination_path=<local-path>, enable_web_search_grounding=..., ...))` → confirmation string; runtime writes augmented CSV to `destination_path` on disk
 5. `finalize` — return the local `destination_path` (or read the CSV for downstream nodes)
 
-If targeting an existing index instead of attachments, skip steps 2 and 3; pass `index_name=...` (without `is_ephemeral_index`) on step 4.
+If targeting an existing index instead of attachments, skip steps 2 and 3; pass `index_name=...` and `index_folder_path=...` (without `is_ephemeral_index`) on step 4.
 
 ## `BatchTransformOutputColumn` Authoring
 
@@ -70,7 +70,7 @@ from uipath.platform.context_grounding import BatchTransformOutputColumn
 
 | Decision | Rule |
 |---|---|
-| Sync vs durable | Always durable for `create_index` and `run_batch_transform`. Never poll — runs are long-lived. |
+| Sync vs interrupt | Always use `interrupt()` for `create_index` (conditionally) and `run_batch_transform`. Never poll — runs are long-lived. |
 | Folder for index | Personal workspace key by default for self-serve. Override only when the user has confirmed role permissions in another folder. |
 | Ephemeral vs existing index | Default ephemeral for one-shot runs from a runtime CSV. Use an existing index only if the same data is reused across runs. |
 | Web search grounding | Default `False`. Enable only when prompts depend on fresh external info (address verification, current company status). |

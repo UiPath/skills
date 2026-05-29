@@ -9,7 +9,7 @@ Publish journey for a Flow project. Two paths: **Studio Web upload** (default) a
 Before either publish path, ensure:
 
 1. **Authoring is complete.** `uip maestro flow validate` passes and `uip maestro flow format` was run. If not, send the user back to [author/CAPABILITY.md](../../author/CAPABILITY.md).
-2. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#4-login-state).
+2. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#5-login-state).
 3. **Solution resources are refreshed.** Always run this before `solution upload` or `solution publish` so that connection and process resource declarations are in sync with the project bindings:
 
    ```bash
@@ -41,7 +41,7 @@ Pack the flow project into a `.nupkg` then publish via the platform skill:
 uip solution resource refresh <SolutionDir> --output json
 
 # 2. Pack
-uip maestro flow pack <ProjectDir> <OutputDir>
+uip maestro flow pack <project-path> <OutputDir>
 ```
 
 For `uip solution publish` and the rest of the deployment workflow, see [/uipath:uipath-solution](/uipath:uipath-solution). See [shared/cli-commands.md — uip maestro flow pack](../../shared/cli-commands.md#uip-maestro-flow-pack) for `pack` flags.

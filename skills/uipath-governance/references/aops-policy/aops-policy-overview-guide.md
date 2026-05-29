@@ -197,7 +197,7 @@ Render next steps as a numbered Markdown list under a `### What would you like t
 
 | Command | Returns | Use when |
 |---------|---------|----------|
-| `deployed-policy get` | Tenant-level deployed policy assignment for a `(licenseType, product, tenant)` | "What policy is deployed to this tenant?" |
+| `deployed-policy get` | Tenant-level deployed policy assignment for a `(license type, product, tenant)` | "What policy is deployed to this tenant?" |
 | `deployed-policy list` | Effective rule values for the calling user after the user → group → tenant chain | "What rules actually apply to me?" |
 
 See [aops-policy-deployed-guide.md](./aops-policy-deployed-guide.md).
@@ -218,7 +218,7 @@ Priority is **NOT** what decides which policy wins across user / group / tenant 
 |-------|-----------------------------------------------------|------------------|
 | User   | No — each `(user, product)` has at most one assignment. | None. Priority has no effect. |
 | Group  | **Yes** — a user can belong to multiple groups, each with its own policy for the same product. | **Tie-breaker.** Lowest priority number wins among the competing group assignments. |
-| Tenant | No — each `(tenant, product, licenseType)` has exactly one assignment. | None. Priority has no effect. |
+| Tenant | No — each `(tenant, product, license type)` has exactly one assignment. | None. Priority has no effect. |
 
 Outside of the group-level tie-breaker, Priority is essentially an admin-facing ordering hint (it controls the order policies appear in the Automation Ops catalog / `aops-policy list`, not which one applies at runtime).
 
@@ -250,7 +250,7 @@ See [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md)
 
 When you finish a mutating operation, report:
 
-1. **Operation & result** — e.g., `Created policy <name> (GUID: <guid>) for product <productName>`.
+1. **Operation & result** — e.g., `Created policy <name> (GUID: <guid>) for product <product-name>`.
 2. **Session directory** — print `$SESSION_DIR` so the user can inspect bootstrapped schemas and the `aops-policy-data.json` that was submitted.
 3. **Non-default fields set** — summary of fields the user configured vs. ones that stayed at defaults. (Omit this line after `delete`.)
 4. **Next step** — render a numbered Markdown list under a `### What would you like to do next?` heading (single post-mutation gate, per Critical Rule #12). Do NOT use `AskUserQuestion`. The user replies with a digit.
@@ -268,7 +268,7 @@ Do not run any of these actions automatically. Wait for the user's selection.
 
 **Per-operation adjustments to the menu:**
 - After `create` or `update`: offer all options above.
-- After `deploy`: replace the three Deploy options with a single **Verify deployment** option that runs `deployed-policy get <licenseType> <productName> <tenantIdentifier>` to confirm the assignment took effect. Keep **Query effective rules** (via `deployed-policy list`) as the follow-up check for chain-resolved values.
+- After `deploy`: replace the three Deploy options with a single **Verify deployment** option that runs `deployed-policy get <license-type> <product-name> <tenantIdentifier>` to confirm the assignment took effect. Keep **Query effective rules** (via `deployed-policy list`) as the follow-up check for chain-resolved values.
 - After `delete`: offer only **List policies to verify** and **Something else**.
 
 ## References

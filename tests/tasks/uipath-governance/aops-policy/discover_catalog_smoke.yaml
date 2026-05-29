@@ -13,6 +13,9 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, catalog]
 
+run_limits:
+  expected_turns: 7
+
 initial_prompt: |
   A tenant admin wants a catalog snapshot of AOps governance before
   creating any new policies. List every available product and every

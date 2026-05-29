@@ -264,7 +264,7 @@ Authoritative reference: `{projectRoot}/.local/docs/packages/UiPath.Testing.Acti
 
 Verifies a UI element's attribute (text, enabled state, visibility, etc.) against an expected value.
 
-> **Requires UI automation targets.** This activity inspects live UI elements at runtime. The agent must configure targets using `uia-configure-target` (see [ui-automation-guide.md](ui-automation-guide.md)) before using this activity. The test case must run against a live application instance.
+> **Requires UI automation targets.** This activity inspects live UI elements at runtime. [ui-automation-guide.md](ui-automation-guide.md) MUST be read IN FULL first. The agent must configure targets using `uia-configure-target` before using this activity. The test case must run against a live application instance.
 
 **Properties:**
 - `Target` — the UI element to inspect (configured via `uia-configure-target`)

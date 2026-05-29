@@ -227,7 +227,7 @@ With no `--tenant`, the command targets the tenant in the current `uip login` co
 | `--type Label\|KeyValue` | Optional | Defaults to `Label` (the type used by `tags.values[]` in `ToolUsePolicy` access policies). Pass `KeyValue` only when the user is asking about key/value tags, which the access-policy schema does **not** consume. |
 | `--starts-with <PREFIX>` | Optional | Server-side prefix filter (case-insensitive on `normalizedName`). Use whenever the user named a tag substring ("anything starting with prod"). |
 | `--limit <N>` | Optional | Page size (default `100`). |
-| `--skip <N>` | Optional | Row offset (default `0`). |
+| `--offset <N>` | Optional | Row offset (default `0`). |
 | `--tenant <NAME>` | Optional | **Targets a different tenant in the same organization.** Do NOT pass this when verifying tags for the policy under construction — see [Tenant alignment](#tenant-alignment) below. |
 
 ### Response shape

@@ -6,13 +6,7 @@ description: >
 tags: [uipath-solution, e2e, mode:build, lifecycle:setup]
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
-  turn_timeout: 600  # publish + deploy + uninstall on tenant exceeds default 300s
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
@@ -45,3 +39,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 9
+  turn_timeout: 600

@@ -6,6 +6,9 @@ description: >
   fallback strategy when no native connector exists.
 tags: [uipath-platform, smoke, integration-service, connectors]
 
+run_limits:
+  expected_turns: 7
+
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

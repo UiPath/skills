@@ -5,10 +5,8 @@ description: >
   $vars.<NodeId>.status. Tests G1 and G2.
 tags: [uipath-human-in-the-loop, integration, runtime-variables]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 23
   max_turns: 50
   turn_timeout: 600
 

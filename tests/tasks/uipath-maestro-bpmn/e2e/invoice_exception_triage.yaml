@@ -7,18 +7,14 @@ description: >
   package-file consistency without cloud-side effects.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "node:hitl", "feature:approval-gate"]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 25
   turn_timeout: 1200
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

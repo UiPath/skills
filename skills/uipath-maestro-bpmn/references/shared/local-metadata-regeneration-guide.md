@@ -35,7 +35,7 @@ Do not derive metadata from stale package files first. Use existing generated fi
    output when parsing command results:
 
    ```bash
-   uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
+   uip maestro bpmn pack <project-path> <OutputDir> --output json
    ```
 
 5. Inspect the package or generated content for:

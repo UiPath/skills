@@ -17,7 +17,7 @@ Use a connector trigger node when the flow should **start automatically in respo
 ### Prerequisites
 
 - `uip login` required — trigger nodes only appear in the registry after authentication
-- A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
+- A healthy IS connection must exist for the connector. Before concluding none exists: derive the connector key from a `registry search` node type (never inferred from the service's brand name — the registry key is frequently prefixed or qualified differently), list with `uip is connections list "<connector-key>" --all-folders --output json`, and retry once with `--refresh`. An empty result from an unverified key or without `--all-folders` is a false negative, not "no connection." Only when absence is confirmed must the user create one before proceeding.
 - `uip maestro flow registry pull` must be run to cache trigger node types locally
 
 ### When NOT to Use

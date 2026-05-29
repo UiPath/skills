@@ -64,7 +64,7 @@ Common `uip tm` commands organized by resource type.
 | `uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | List test entry points available in an Orchestrator folder (optional: `--package-name <PACKAGE_NAME>` to filter). |
 | `uip tm testcases list-testsets --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | List test sets that contain a given test case. |
 | `uip tm testcases list-steps --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** |
-| `uip tm testcases list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test case log result history for a specific test case. Optional `--only-failed`, `--filter`, `--top`, `--skip`. |
+| `uip tm testcases list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test case log result history for a specific test case. Optional `--only-failed`, `--filter`, `--limit`, `--offset`. |
 | `uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | Start a new execution for one or more test cases. **Uses `--test-case-id <UUID>` (space-separated for multiple).** Optional `--async`, `--name`, `--folder-key`, `--robot-user-key`, `--machine-key`. |
 | `uip tm testcases add --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` | Add test cases to a test set (comma-separated keys). |
 | `uip tm testcases remove --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` | Remove test cases from a test set (comma-separated keys). |
@@ -91,12 +91,12 @@ Common `uip tm` commands organized by resource type.
 
 | Command | Purpose |
 |---|---|
-| `uip tm executions list --project-key <PROJECT_KEY>` | List top n executions for a project. Optional `--test-set-id <UUID>` to scope to a test set, `--filter <text>`, `--top`, `--skip`. **Use this for the common case** (one test set or a single project query). |
-| `uip tm executions list-filtered --project-key <PROJECT_KEY>` | Rich-filter variant: `--test-set-id`, `--updated-by`, `--search`, `--labels`, `--test-execution-ids`, `--order-by`, `--top`, `--skip`. **Use only when you need label filtering, multi-execution-id lookup, custom ordering, or `--updated-by` filtering** — features `list` does not expose. |
+| `uip tm executions list --project-key <PROJECT_KEY>` | List top n executions for a project. Optional `--test-set-id <UUID>` to scope to a test set, `--filter <text>`, `--limit`, `--offset`. **Use this for the common case** (one test set or a single project query). |
+| `uip tm executions list-filtered --project-key <PROJECT_KEY>` | Rich-filter variant: `--test-set-id`, `--updated-by`, `--search`, `--labels`, `--test-execution-ids`, `--order-by`, `--limit`, `--offset`. **Use only when you need label filtering, multi-execution-id lookup, custom ordering, or `--updated-by` filtering** — features `list` does not expose. |
 | `uip tm executions get-stats --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY>` | Get aggregated statistics for a single test execution. |
 | `uip tm executions run --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --execution-type <TYPE>` | Re-run an existing test execution. Optional `--test-case-log-ids <UUID...>` to re-run only specific test case logs (space-separated), `--async`. |
 | `uip tm executions retry --execution-id <EXECUTION_ID>` | Retry only the failed test cases of a finished execution. Optional `--project-key`, `--test-set-key`, `--execution-type`. |
-| `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY>` | List test case logs of an execution. Optional `--only-failed`, `--filter`, `--top`, `--skip`. **Note the nested subcommand path — this is not a top-level `executions` verb.** |
+| `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY>` | List test case logs of an execution. Optional `--only-failed`, `--filter`, `--limit`, `--offset`. **Note the nested subcommand path — this is not a top-level `executions` verb.** |
 
 > **`run` lives under three groups, all distinct:**
 > - `uip tm testcases run` — start a new execution for one or more **test cases** (`--test-case-id` UUIDs, space-separated).
@@ -210,7 +210,7 @@ If the probe in Rule #2 shows singular subjects, the CLI predates the closed-ver
   uip tm testsets list-testcases --project-key <PROJECT_KEY> --test-set-key <TEST_SET_KEY> --output json
 
   # List recent executions for a test set
-  uip tm executions list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> --top 100 --output json
+  uip tm executions list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> --limit 100 --output json
 
   # List test case logs for an execution (nested subcommand under `executions`)
   uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json

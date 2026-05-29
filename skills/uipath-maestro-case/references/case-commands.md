@@ -11,6 +11,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | Commands | What | Auth |
 |----------|------|------|
 | `solution init`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution resource add --source local\|remote`, `solution resource remove <key>`, `solution resource edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
@@ -105,14 +106,14 @@ uip solution upload <SolutionDir> --output json
 Pack a Case project directory into a `.nupkg` file. Only used when the user explicitly requests Orchestrator deployment via `uip solution publish` — not the default publish path.
 
 ```bash
-uip maestro case pack <projectPath> <outputPath>
+uip maestro case pack <project-path> <output-path>
 uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 ```
 
 | Flag | Description |
 |------|-------------|
-| `<projectPath>` | **(required)** Path to the Case project directory |
-| `<outputPath>` | **(required)** Output directory for the `.nupkg` |
+| `<project-path>` | **(required)** Path to the Case project directory |
+| `<output-path>` | **(required)** Output directory for the `.nupkg` |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
 
@@ -144,14 +145,14 @@ Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. E
 
 ```bash
 uip solution resource refresh --solution-folder <SolutionDir> --output json
-uip maestro case debug <projectDirectory> --log-level debug --output json
+uip maestro case debug <project-path> --log-level debug --output json
 ```
 
 > **Always run `uip solution resource refresh`** on the solution directory before debug.
 
 | Flag | Description |
 |------|-------------|
-| `<projectDirectory>` | **(required)** Path to the case project directory (must contain `project.uiproj`) |
+| `<project-path>` | **(required)** Path to the case project directory (must contain `project.uiproj`) |
 | `--folder-id <id>` | Orchestrator folder ID (`OrganizationUnitId`). Auto-detected if omitted. |
 | `--poll-interval <ms>` | Polling interval in milliseconds (default: `2000`) |
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` (default: `json`) |

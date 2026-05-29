@@ -56,12 +56,16 @@ Run from inside the flow project directory. If the resource (RPA, agent, flow, A
 
 For each connector found in registry search, verify a healthy connection exists. See [plugins/connector/planning.md](plugins/connector/planning.md) for the full connection check workflow.
 
+**Never type a connector key from memory.** Use the key from the `registry search` node type only. The registry key is frequently prefixed or qualified differently than the service's brand name, so a guessed key silently misses the real connector and makes `connections list` return a false "No connections found."
+
 ```bash
-uip is connections list "<connector-key>" --output json
+uip is connections list "<connector-key>" --all-folders --output json
 ```
 
+> `--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<connector-key>"` is forbidden for discovery.
+
 - If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for Phase 2.
-- **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing. Creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2.
+- **If the result is empty, do not conclude "no connection exists."** An empty `connections list` is suspicious, not authoritative. Three things must hold before you treat it as real: (a) the key came from `registry search`, not memory; (b) the call used `--all-folders`; (c) a `--refresh` retry was still empty. Only then surface it in **Open Questions** so the user can create one while reviewing (creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2). Never ask the user a connection-creation question on an unverified empty result. See [connector/impl.md](plugins/connector/impl.md) for the platform-skill empty-result recovery path shared with implementation.
 
 > This is a lightweight existence check, not full connection binding. Phase 2 will ping the connection, fetch enriched metadata, and resolve reference fields.
 
@@ -72,7 +76,7 @@ uip is connections list "<connector-key>" --output json
 
 Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http.v2` (manual mode) or note it as a gap in Open Questions.
 
-> **Run `registry get` for OOTB action nodes during discovery; defer for connector and resource nodes.** OOTB nodes (HTTP, Script, Transform, queue actions, etc.) have no `--connection-id` dependency — fetch their full schemas now so the planned topology references real ports and fields. Connector field metadata (required fields, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2; resource schemas (RPA, agent, flow, API workflow) require `--local` or published resolution and also belong to Phase 2. `is connections list` is enough to confirm connector connection availability in this phase.
+> **Run `registry get` for OOTB action nodes during discovery; defer for connector and resource nodes.** OOTB nodes (HTTP, Script, Transform, queue actions, etc.) have no `--connection-id` dependency — fetch their full schemas now so the planned topology references real ports and fields. Connector field metadata (required fields, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2; resource schemas (RPA, agent, flow, API workflow) require `--local` or published resolution and also belong to Phase 2. `is connections list --all-folders` is enough to confirm connector connection availability in this phase.
 
 ---
 
@@ -154,6 +158,9 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 | Flow | `uipath.core.flow.{key}` | [flow](plugins/flow/planning.md) |
 | API Workflow | `uipath.core.api-workflow.{key}` | [api-workflow](plugins/api-workflow/planning.md) |
 | Human Task (app-based) | `uipath.core.human-task.{key}` | [hitl](plugins/hitl/planning.md) |
+| Document Extraction | `uipath.ixp.{modelName}.{fullyQualifiedName}` | [ixp](plugins/ixp/planning.md) |
+
+> The IxP entry uses a **two-segment tail** (`{modelName}.{fullyQualifiedName}`), unlike the other resource nodes which use a single-segment `{key}` tail. Both segments are sanitized at registry-emit time. See [plugins/ixp/planning.md](plugins/ixp/planning.md) for the sanitization rule.
 
 ### Placeholders
 
@@ -203,6 +210,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.core.flow.*` | `input` | `output`, `error` |
 | `uipath.core.agentic-process.*` | `input` | `output`, `error` |
 | `uipath.core.api-workflow.*` | `input` | `output`, `error` |
+| `uipath.ixp.*` | `input` | `success`, `error` |
 | `uipath.connector.*` (activities) | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
@@ -514,6 +522,13 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 - Synthesize or answer questions over one attached document, with optional citations -> [summarize](plugins/summarize/planning.md) (`uipath.pattern.deep-rag`)
 - Small ad-hoc reshaping (map/filter/groupBy) without an LLM -> [transform](plugins/transform/planning.md)
 - Multi-step reasoning with tool use -> [inline-agent](plugins/inline-agent/planning.md) or [agent](plugins/agent/planning.md)
+
+### "I need to extract structured fields from documents"
+
+- Source is a PDF, scanned form, photo, or email attachment with **variable layout** across inputs (invoices from many vendors, receipts, contracts, forms) -> [ixp](plugins/ixp/planning.md) (`uipath.ixp.{modelName}.{fullyQualifiedName}`)
+- Source is already structured (CSV, JSON, database row) -> [script](plugins/script/planning.md) or [transform](plugins/transform/planning.md)
+- Need free-form summarization, classification, or open-ended reasoning -> [agent](plugins/agent/planning.md) or [inline-agent](plugins/inline-agent/planning.md)
+- IxP model not yet trained -> use `core.logic.mock` and surface in Open Questions
 
 ### "The flow needs something outside flow capabilities"
 

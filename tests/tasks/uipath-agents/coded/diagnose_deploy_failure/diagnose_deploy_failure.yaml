@@ -10,15 +10,6 @@ description: >
   to the user's personal workspace. **Cloud auth pre-configured.**
 tags: [uipath-agents, e2e, coded, mode:diagnose, feature:deploy]
 max_iterations: 1
-task_timeout: 2100
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 60
-  turn_timeout: 2100
-
 initial_prompt: |
   Recreate the Simple Function UiPath coded agent under
   `daily-digest/` from the snapshot below. Shipping it to the
@@ -99,3 +90,9 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 28
+  max_turns: 60
+  turn_timeout: 2100
+  task_timeout: 2100

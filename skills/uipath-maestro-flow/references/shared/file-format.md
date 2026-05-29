@@ -23,7 +23,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```json
 {
   "id": "<uuid>",
-  "version": "1.1",
+  "version": "<version from `uip maestro flow init`>",
   "name": "MyFlow",
   "nodes": [],
   "edges": [],
@@ -36,7 +36,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-**Top-level `version`** = workflow file-format version, currently `"1.1"` — what `uip maestro flow init` scaffolds and what Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. Not a semver string; schema gates on a literal (`z.literal("1.1")`). Do not use `"1.0.0"`, `"1.0"`, or other values for new flows; older values exist only for legacy parser compatibility.
+**Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `"1.0"`, `"1.0.0"`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
 
 > **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `'Version must be in format "x.y" or "x.y.z"'`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`"1.0"`) and older scaffolded nodes (`"1.0.0"`) both parse. The two layers report distinct errors, but Zod may collapse a node-level mismatch to path `(root)`. If you see a version-related error at `(root)`, audit the top-level `version` first; if it's correct, check each node's `typeVersion` against the matching `definitions[].version`.
 
@@ -86,7 +86,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 **Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that "feel" trivial.
 
-`typeVersion` must match the corresponding `definitions[].version` exactly. The registry often returns versions such as `"1.0"` while older examples or scaffolded files may show `"1.0.0"`. If a node uses `typeVersion: "1.0.0"` but the copied definition is `"version": "1.0"`, validation reports "Node type `<type>:1.0.0` has no matching definition." When direct-authoring a new node from `registry get`, set `typeVersion` to the copied definition's `version`; when preserving an existing node, preserve its existing node/definition pair unless you intentionally update both together.
+`typeVersion` must match the corresponding `definitions[].version` exactly. The registry often returns versions such as `"1.0"` while older examples or scaffolded files may show `"1.0.0"`. If a node uses `typeVersion: "1.0.0"` but the copied definition is `"version": "1.0"`, validation reports "Node type `<type>:1.0.0` has no matching definition." When direct-authoring a new node from `registry get`, set `typeVersion` to the copied definition's `version`; when preserving an existing node, preserve its existing node/definition pair unless you intentionally update both together. <!-- version-check-skip --> (explains the x.y vs x.y.z mismatch mechanic; literals are illustrative, not pinned)
 
 > **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
 >
@@ -314,8 +314,7 @@ Without a wired error edge, any of these fails the whole flow with `finalStatus:
 
 ```bash
 # Confirm the node supports error handling
-uip maestro flow registry get <nodeType> --output json \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['Data']['Node'].get('supportsErrorHandling'))"
+uip maestro flow registry get <nodeType> --output json --output-filter "Node.SupportsErrorHandling"
 
 # Add an outgoing edge with sourcePort: "error"
 uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
@@ -339,12 +338,12 @@ Building a flow is a two-step process: write the nodes/edges structure, then pop
 
 ### Step 1 — Write nodes and edges
 
-Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator). The same UUID must appear in `entry-points.json` as `uniqueId`.
+Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator). The same UUID must appear in `entry-points.json` as `uniqueId`. Set top-level `version` to the value `uip maestro flow init` scaffolds — never hand-pick it (see [Top-level structure](#top-level-structure)).
 
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
-  "version": "1.1",
+  "version": "<version from `uip maestro flow init`>",
   "name": "DiceRoller",
   "nodes": [
     {

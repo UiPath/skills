@@ -67,19 +67,11 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 `selectedTasksIds` is a JSON string array, not a comma-separated string.
 
-### wait-for-connector — external event
+### wait-for-connector — bind a connector event
 
-```json
-"type": "exit-only",
-"marksStageComplete": true,
-"rules": [[
-  {
-    "id": "Rule_xxxxxx",
-    "rule": "wait-for-connector",
-    "conditionExpression": "=js:event.type === 'approved'"
-  }
-]]
-```
+Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Stage-scoped: `elementId = <stageId>-<ruleId>`.** Place it in the exit condition with `type` / `marksStageComplete` like the other exit rules above. `conditionExpression` optional. If `type-id` / `connection-id` / `connector-key` is `<UNRESOLVED>`, omit `uipath` (rule emitted without its connector configuration; see [connector-trigger-common.md § Placeholder fallback](../../../connector-trigger-common.md#placeholder-fallback)).
+
+**Rule output binding.** If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) **as the last step — after rule write, before root bindings**. `elementId` stays `<stageId>-<ruleId>` on every output entry. Skip when `uipath` is absent.
 
 ### wait-for-user — manual decision gate
 
@@ -106,9 +98,9 @@ Routes the case back to the originating stage.
 | `marksStageComplete` | `rule` | Required extra field |
 |---|---|---|
 | `true` | `required-tasks-completed` | — |
-| `true` | `wait-for-connector` | — |
+| `true` | `wait-for-connector` | `uipath` connector configuration |
 | `false` | `selected-tasks-completed` | `selectedTasksIds` (array) |
-| `false` | `wait-for-connector` | — |
+| `false` | `wait-for-connector` | `uipath` connector configuration |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); for combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 

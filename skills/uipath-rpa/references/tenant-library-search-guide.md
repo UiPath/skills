@@ -98,7 +98,7 @@ If `uip` is unauthenticated, ask the legacy question:
 > 1. **Skip — no shared libraries** *(recommended)*
 > 2. **Yes — `CommonLibrary`** (the conventional default)
 > 3. **Yes — other** (you name them)
-> 4. **Authenticate first** — run `uip auth login`, then re-invoke the skill
+> 4. **Authenticate first** — run `uip login`, then re-invoke the skill
 
 ## Anti-patterns
 
