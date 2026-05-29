@@ -192,10 +192,13 @@ jobs:
         working-directory: tests
         id: eval
         run: |
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml -j $TASK_PARALLELISM ($TASK_COUNT task files)"
+          # Guard the empty case (e.g. a future non-dispatch trigger): the
+          # `parallelism` input default (4) only applies on workflow_dispatch.
+          j="${TASK_PARALLELISM:-4}"
+          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
             -e experiments/nightly.yaml \
-            -j "$TASK_PARALLELISM" -v \
+            -j "$j" -v \
             --run-dir /tmp/runs
 
       - name: Fix permissions on /tmp/runs
