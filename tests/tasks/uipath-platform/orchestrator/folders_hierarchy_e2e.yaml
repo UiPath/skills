@@ -1,8 +1,8 @@
 task_id: skill-platform-folders-hierarchy-e2e
 description: >
   E2E: agent uses the skill to leave the tenant with a 3-level folder
-  hierarchy under Shared/, with a specific ParentID chain after a folder
-  move. Check queries tenant directly.
+  hierarchy under parent_folder_path, with a specific ParentID chain after
+  a folder move. Check queries tenant directly.
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup]
 
 agent:
@@ -22,13 +22,14 @@ run_limits:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  I need to set up a small folder structure under Shared/ on our tenant.
-  Use the unique prefix in `seed.json` so the names don't collide with
-  anything else.
+  I need to set up a small folder structure on our tenant. `seed.json`
+  has a unique prefix (use it in all names so things don't collide) and
+  a `parent_folder_path` — that's the folder under which I want the
+  hierarchy created.
 
-  Create a top-level folder called `e2e-fh-<prefix>-top` under Shared/,
-  then put two children inside it: `e2e-fh-<prefix>-A` and
-  `e2e-fh-<prefix>-B`.
+  Create a top-level folder called `e2e-fh-<prefix>-top` under
+  `parent_folder_path`, then put two children inside it:
+  `e2e-fh-<prefix>-A` and `e2e-fh-<prefix>-B`.
 
   Important — I want you to actually exercise the move. First create B
   underneath A (so it's a grandchild of top), then move B up so it sits
