@@ -168,6 +168,8 @@ The CLI does not validate `<variableId>` — a mismatch uploads successfully the
 2. Confirm each `<variableId>` passed to `--attachment` appears in that list.
 3. If none exist, add one to `variables.globals[]`: `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`.
 
+> **Reading the bound file in a Script node.** A `file` variable hydrates at runtime as an object; read the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
+
 Run `uip maestro flow debug --help` for other options.
 
 ### Reporting the run back to the user
