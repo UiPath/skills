@@ -507,7 +507,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
 | `skipCondition` | string? | Expression — skip the task when truthy |
-| `entryConditions` | TaskEntryCondition[]? | See §3. **Connector tasks (`execute-connector-activity`, `wait-for-connector`) receive a default `current-stage-entered` entry condition on creation. Non-connector tasks do NOT.** |
+| `entryConditions` | TaskEntryCondition[]? | See §3. Written by the task-entry-conditions plugin from the SDD's authored Entry Condition rows — applied uniformly across task types (no auto-injection by task type). |
 | `shouldRunOnlyOnce` | boolean? | Run the task at most once per case, even if the stage is re-entered |
 | `shouldRunOnReEntry` | boolean? | *(deprecated — use `shouldRunOnlyOnce`)* Re-run when stage is re-entered |
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |

@@ -254,9 +254,11 @@ Nested `{op, clauses}` groups flatten in the rendered table. Avoid `Literal: No`
 
 ≥ 1 row required. `Marks Case Complete: Yes`.
 
-| WHEN | IF | Marks Case Complete | Exit Type |
-|---|---|---|---|
-| `required-stages-completed` / `wait-for-connector` | optional `conditionExpression` | `Yes` | `exit-only` |
+| WHEN | IF | Marks Case Complete | Exit Type | Display Name |
+|---|---|---|---|---|
+| `required-stages-completed` / `wait-for-connector` | optional `conditionExpression` | `Yes` | `exit-only` | optional |
+
+> **Display Name** (optional, every condition table — entry, exit, task-entry, case-exit): human-readable label. Carry the author's value verbatim; leave blank / `—` to let the skill default it to `Entry rule {N}` (entry / task-entry) or `Exit rule {N}` (stage-exit / case-exit), `N` = 1-based index within the container. Never invent a label when the cell is blank.
 
 **Allowed WHEN:** `required-stages-completed`, `wait-for-connector`.
 **Forbidden WHEN:** `selected-stage-completed`, `selected-stage-exited` (sdd-template Key Rule 4 — `Yes` + `selected-stage-*` is a schema-pairing error → block Approve).
@@ -265,9 +267,9 @@ Nested `{op, clauses}` groups flatten in the rendered table. Avoid `Literal: No`
 
 Optional. `Marks Case Complete: No`. Used for ExceptionStage terminals (Withdrawn / Rejected / Cancelled).
 
-| WHEN | IF | Marks Case Complete | Exit Type |
-|---|---|---|---|
-| `selected-stage-completed("<Stage Name>")` / `selected-stage-exited("<Stage Name>")` / `wait-for-connector` | optional | `No` | `exit-only` / `wait-for-user` |
+| WHEN | IF | Marks Case Complete | Exit Type | Display Name |
+|---|---|---|---|---|
+| `selected-stage-completed("<Stage Name>")` / `selected-stage-exited("<Stage Name>")` / `wait-for-connector` | optional | `No` | `exit-only` / `wait-for-user` | optional |
 
 **When the case has ≥ 1 ExceptionStage AND Section 1.4a is empty** → emit a `high`-severity review item (`Alt-disposition exits missing`). The case cannot exit non-happy paths cleanly.
 
@@ -339,17 +341,17 @@ The trailing `` `{stage_id}` `` (e.g., `` `stage-intake` ``) MUST appear so read
 
 ≥ 1 row required.
 
-| WHEN | IF |
-|---|---|
-| `case-entered` (root only) / `selected-stage-completed("<Stage>")` / `selected-stage-exited("<Stage>")` / `wait-for-connector` / `user-selected-stage` | optional `conditionExpression` |
+| WHEN | IF | Display Name |
+|---|---|---|
+| `case-entered` (root only) / `selected-stage-completed("<Stage>")` / `selected-stage-exited("<Stage>")` / `wait-for-connector` / `user-selected-stage` | optional `conditionExpression` | optional |
 
 ### Stage Completion Conditions table (`Marks Stage Complete: Yes`)
 
-Completion (`Yes`) rows and the §Stage Exit Conditions (`No`) rows below render **together** as the single **Stage Exit Conditions** table in `sdd.md` (per [sdd-template.md](../assets/templates/sdd-template.md)). Shared columns, in order: `WHEN | IF | Exit Type | Marks Stage Complete`. ≥ 1 completion row required. **Stage-to-stage routing is NOT carried here** — each destination stage declares the link via its own Entry Condition (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`), so one stage can fan out to N stages.
+Completion (`Yes`) rows and the §Stage Exit Conditions (`No`) rows below render **together** as the single **Stage Exit Conditions** table in `sdd.md` (per [sdd-template.md](../assets/templates/sdd-template.md)). Shared columns, in order: `WHEN | IF | Exit Type | Marks Stage Complete | Display Name`. ≥ 1 completion row required. **Stage-to-stage routing is NOT carried here** — each destination stage declares the link via its own Entry Condition (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`), so one stage can fan out to N stages.
 
-| WHEN | IF | Exit Type | Marks Stage Complete |
-|---|---|---|---|
-| `required-tasks-completed` / `wait-for-connector` | optional | `exit-only` / `return-to-origin` | `Yes` |
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|---|---|---|---|---|
+| `required-tasks-completed` / `wait-for-connector` | optional | `exit-only` / `return-to-origin` | `Yes` | optional |
 
 **Allowed WHEN:** `required-tasks-completed`, `wait-for-connector`.
 **Forbidden WHEN:** `selected-tasks-completed` (Key Rule 4 — `Yes` + `selected-tasks-completed` is a schema-pairing error → block Approve).
@@ -358,9 +360,9 @@ Completion (`Yes`) rows and the §Stage Exit Conditions (`No`) rows below render
 
 Optional. Used for early hand-offs / routing. Same columns and order as the completion rows above — one rendered table. The destination of a routing exit is set by the destination stage's Entry Condition, not here.
 
-| WHEN | IF | Exit Type | Marks Stage Complete |
-|---|---|---|---|
-| `selected-tasks-completed("<Task>")` / `wait-for-connector` | optional | `exit-only` / `wait-for-user` | `No` |
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|---|---|---|---|---|
+| `selected-tasks-completed("<Task>")` / `wait-for-connector` | optional | `exit-only` / `wait-for-user` | `No` | optional |
 
 ### Stage SLA escalation table
 
@@ -401,20 +403,20 @@ Defines per-task detail blocks. Every task opens with an **Entry Condition** blo
 ```
 **Entry Condition**
 
-| WHEN | IF |
-|---|---|
-| {rule} | {conditionExpression or "—"} |
+| WHEN | IF | Display Name |
+|---|---|---|
+| {rule} | {conditionExpression or "—"} | optional |
 ```
 
 | Rule | When to use |
 |---|---|
-| `current-stage-entered` | First task in stage (REQUIRED; emit explicitly, never imply). Connector tasks auto-inject this — render it first even when explicit rows follow. |
+| `current-stage-entered` | First task in stage, or any ungated task (including connector tasks) that should start when its stage is entered (REQUIRED for the first task; emit explicitly, never imply). When a task has multiple entry rows, render this one first. |
 | `selected-tasks-completed("<Task>")` | Sibling-gated task (e.g., after upstream task in same stage). Multiple tasks comma-separated inside the parens. |
 | `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). **In-rule extract-then-gate (extract + same-rule `=js:vars.caseVar` gate) does NOT work at runtime** — case-backend evaluates the gate before the extract populates the case var. To condition on payload content: extract `response.field -> caseVar` on the connector rule and place the case-state gate on a DOWNSTREAM stage-entry / task-entry condition. |
 | `adhoc` | Manual fire from the case app. Optional gating expression. |
 | `runs-sequentially` | Tasks in a lane that should run top-to-bottom in declaration order. |
 
-Multiple entry conditions render as multiple rows (DNF outer-OR). Connector tasks always render auto-injected `current-stage-entered` first.
+Multiple entry conditions render as multiple rows (DNF outer-OR). When `current-stage-entered` is among them, render it first.
 
 ### `action` task — required cells
 
@@ -473,7 +475,7 @@ No recipient and no role/email known → drop the cell, emit a `high`-severity r
 | Inputs | Table: `Field | Type | Binding` — `Field` MUST match IS activity schema verbatim; `Binding` per §Binding cell |
 | Outputs | Table: `Field | Binding / Value` — see §Outputs cell operators |
 
-**Auto-injected entry condition.** These two task types auto-receive `current-stage-entered` at consumer-side creation. Render explicitly as the first row; explicit additional rules APPEND, never replace.
+**Entry condition.** A connector task that should start when its stage is entered declares `current-stage-entered` as its first entry row, exactly like any other ungated task; additional rules APPEND as further rows. The skill writes these via the task-entry-conditions plugin (Step 10) — there is no task-type auto-injection.
 
 **Unresolved IDs.** Missing `connectionId` or `activityTypeId` → `high`-severity review item — Phase 1 cannot resolve the connector at build time without them.
 

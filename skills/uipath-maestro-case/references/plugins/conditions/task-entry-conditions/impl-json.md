@@ -34,7 +34,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 4. Locate the target task inside `stageNode.data.tasks[lane][index]` (search every lane until the task ID is found)
 5. Initialize `task.entryConditions = []` if absent
 6. Read `rule-type` from tasks.md; pick the recipe below
-7. Append the condition object to `task.entryConditions[]`
+7. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry rule {N}`, where `N` = the 1-based index this condition takes in `task.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+8. Append the condition object to `task.entryConditions[]`
 
 ## Rule Types
 
@@ -100,4 +101,4 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`) and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated, inputs/outputs `elementId` is `<stageId>-<ruleId>`, and ConnectionId + FolderKey root bindings exist. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.
+Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated, inputs/outputs `elementId` is `<stageId>-<ruleId>`, and ConnectionId + FolderKey root bindings exist. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.

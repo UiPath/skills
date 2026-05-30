@@ -15,7 +15,6 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 | Edge handles | Construct handle strings as `${nodeId}____<source\|target>____<direction>` (exactly 4 underscores on each side) |
 | Stage position | Count existing stages first; compute `{ x: 100 + existingStageCount * 500, y: 200 }`; then write |
 | Stage render fields | Emit `style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every new Stage node |
-| Connector task default entry condition | Emit the default `current-stage-entered` entry condition on every connector task |
 | Edge cleanup on stage removal | Find and remove every edge where `source` or `target` equals the removed stage's ID |
 | Root-level bindings cleanup | Prune entries from the bindings array (v19: `root.data.uipath.bindings`; v20: top-level `bindings`) no longer referenced by any task |
 | Lane array expansion | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
@@ -69,12 +68,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 10. **Task `elementId` = `${stageId}-${taskId}`.** Compute and write this composite string on every new task.
 
-11. **Connector task default entry condition.** Every `execute-connector-activity` or `wait-for-connector` task gets an auto-injected entry condition:
-    ```json
-    { "id": "c<8chars>", "displayName": "Entry rule 1",
-      "rules": [[{ "id": "r<8chars>", "rule": "current-stage-entered" }]] }
-    ```
-    Non-connector tasks do NOT get this default.
+11. **Entry conditions are SDD-driven — never auto-injected by task type.** A task's `entryConditions[]` are written solely by the task-entry-conditions plugin (Step 10) from the SDD's authored Entry Condition rows — including a connector task's `current-stage-entered`, which the SDD declares as an explicit first row like any ungated task. Do NOT inject a default entry condition at task-creation time based on task type: it produces a duplicate condition and breaks `displayName` indexing (the index is the 1-based position within `entryConditions[]`). Connector and non-connector tasks are treated identically here.
 
 12. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
@@ -254,10 +248,9 @@ edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 3. Ensure `stageNode.data.tasks` exists; ensure `stageNode.data.tasks[laneIndex]` exists (expand with empty arrays if needed).
 4. Generate a task ID.
 5. Compute `elementId = ${stageId}-${taskId}`.
-6. Build the task object per the plugin's JSON Recipe.
-7. For connector tasks, add the auto-injected default entry condition.
-8. Push onto `stageNode.data.tasks[laneIndex]`.
-9. Edit — narrow slice targeting that stage node's `data.tasks[laneIndex]`. Never whole-file Write.
+6. Build the task object per the plugin's JSON Recipe. Do NOT add `entryConditions` here — the task-entry-conditions plugin (Step 10) writes them from the SDD's authored rows, for every task type alike.
+7. Push onto `stageNode.data.tasks[laneIndex]`.
+8. Edit — narrow slice targeting that stage node's `data.tasks[laneIndex]`. Never whole-file Write.
 
 ### Bind an input
 
@@ -328,7 +321,7 @@ On failure: fix the reported issue (usually a missing field, malformed handle, o
 - **Do NOT hand-edit IDs with human-readable patterns** (e.g., `my_stage_1`). The frontend's `generateNextId` expects CLI's format.
 - **Do NOT forget `style`/`measured`/`width`/`zIndex` on stages.** Validate passes, but Studio Web renders broken.
 - **Do NOT put `entryConditions`/`exitConditions` on regular Stages.** Only ExceptionStage has them.
-- **Do NOT skip the default entry condition on connector tasks.** The frontend expects it.
+- **Do NOT auto-inject a task `entryCondition` at task-creation time based on task type.** Entry conditions come from the SDD via the task-entry-conditions plugin (Step 10), uniformly across task types. Injecting one early duplicates the Step 10 write and corrupts `displayName` indexing.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Edit per the per-section batch contract.
 - **Do NOT run validation after every single Edit.** Validate at section boundaries, not per-T-entry.
 - **Do NOT use whole-file Write mid-section.** Whole-file Write between sibling T-entries inside a section bypasses the section-entry Read snapshot and risks silently dropping fields. Use Edit per T-entry, OR collapse the entire section into one whole-section Write at section boundary when T-entry count ≥10 (per § Per-section batch write contract).

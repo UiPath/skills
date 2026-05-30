@@ -17,7 +17,7 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | Captured from the stages plugin | Target stage |
-| `display-name` | sdd.md (optional) | |
+| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Exit rule {N}`. |
 | `type` | sdd.md exit style | `exit-only` / `wait-for-user` / `return-to-origin` |
 | `exit-to-stage-id` | sdd.md routing target (optional) | Required when routing to a specific stage |
 | `marks-stage-complete` | sdd.md (default depends on type) | `true` for completion exits, `false` for diverging routes |
@@ -60,7 +60,7 @@ Stage exit conditions are created **after** all tasks in the stage have been add
 ```markdown
 ## T<n>: Add stage-exit condition for "<stage>" — <summary>
 - target-stage: "<stage-name>"
-- display-name: "<name>"
+- display-name: "<name>"                        # optional — omit when SDD Display Name cell is blank; impl defaults to "Exit rule {N}"
 - type: exit-only
 - exit-to-stage: "<target-stage-name>"          # optional
 - marks-stage-complete: true

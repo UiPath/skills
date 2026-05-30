@@ -31,7 +31,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.exitConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
 5. Read `type`, `exit-to-stage`, `marks-stage-complete`, and `rule-type` from tasks.md; pick the recipe below
-6. Append the condition object to `stageNode.data.exitConditions[]`
+6. Set `displayName`: use tasks.md `display-name` if present; else default to `Exit rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.exitConditions[]` (i.e. `exitConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+7. Append the condition object to `stageNode.data.exitConditions[]`
 
 ## Exit Types
 
@@ -106,4 +107,4 @@ Routes the case back to the originating stage.
 
 ## Post-Write Verification
 
-Confirm target stage's `data.exitConditions[]` contains the new object with `id`, `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field.
+Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Exit rule {N}` default), `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field.
