@@ -1,6 +1,12 @@
-# GetEntityRecordById
+# Get Entity Record By Id
 
-Retrieves a single record from a Data Fabric entity by its ID. Category: **DataService.Entity Record**.
+`UiPath.DataService.Activities.GetEntityRecordById<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Retrieves a single record from a Data Fabric entity by its ID.
+
+**Category:** Data Service.Entity Record
 
 ## Properties
 

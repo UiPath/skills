@@ -1,6 +1,12 @@
-# UpdateMultipleEntityRecords
+# Update Multiple Entity Records
 
-Updates multiple records in a Data Fabric entity in a single batch operation. Category: **DataService.Batch**.
+`UiPath.DataService.Activities.UpdateMultipleEntityRecords<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Updates multiple records in a Data Fabric entity in a single batch operation.
+
+**Category:** Data Service.Batch
 
 > **Batch vs single — use this for N records.** For exactly one record with design-time field bindings, use [UpdateEntityRecord](UpdateEntityRecord.md) — it accepts `RecordId` directly and exposes Studio's card UI via `RecordState.SelectedFields`. Batch requires each entity in `InputRecords` to have its `Id` property set. Full decision guide: [overview — When to Use Batch vs Single-Record Activities](../overview.md#when-to-use-batch-vs-single-record-activities).
 

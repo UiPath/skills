@@ -1,6 +1,12 @@
-# CreateEntityRecord
+# Create Entity Record
 
-Creates a new record in a Data Fabric entity. Category: **DataService.Entity Record**.
+`UiPath.DataService.Activities.CreateEntityRecord<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Creates a new record in a Data Fabric entity.
+
+**Category:** Data Service.Entity Record
 
 > **Single vs batch — use this only for ONE record.** For N records collected at runtime, use [CreateMultipleEntityRecords](CreateMultipleEntityRecords.md) — one HTTP request and per-record failure reporting via `FailedRecords`. Calling `CreateEntityRecord` inside a `ForEach` is a known performance anti-pattern. Full decision guide: [overview — When to Use Batch vs Single-Record Activities](../overview.md#when-to-use-batch-vs-single-record-activities).
 

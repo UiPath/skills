@@ -1,6 +1,12 @@
-# UploadFileToRecordField
+# Upload File To Record Field
 
-Uploads a file to a file-type field on an entity record. Category: **DataService.File**.
+`UiPath.DataService.Activities.UploadFileToRecordField<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Uploads a file to a file-type field on an entity record.
+
+**Category:** Data Service.File
 
 ## Properties
 

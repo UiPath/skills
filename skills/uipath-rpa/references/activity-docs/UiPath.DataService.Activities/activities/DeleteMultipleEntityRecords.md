@@ -1,6 +1,12 @@
-# DeleteMultipleEntityRecords
+# Delete Multiple Entity Records
 
-Deletes multiple records from a Data Fabric entity by their IDs. Category: **DataService.Batch**.
+`UiPath.DataService.Activities.DeleteMultipleEntityRecords<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Deletes multiple records from a Data Fabric entity by their IDs.
+
+**Category:** Data Service.Batch
 
 > **Batch vs single — use this for N record IDs.** For exactly one record, use [DeleteEntityRecord](DeleteEntityRecord.md) — it takes a single `RecordId` directly. Picking batch for one ID adds collection construction for no gain. Full decision guide: [overview — When to Use Batch vs Single-Record Activities](../overview.md#when-to-use-batch-vs-single-record-activities).
 

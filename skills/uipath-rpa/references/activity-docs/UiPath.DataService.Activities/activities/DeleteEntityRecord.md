@@ -1,6 +1,12 @@
-# DeleteEntityRecord
+# Delete Entity Record
 
-Deletes a record from a Data Fabric entity by record ID. Category: **DataService.Entity Record**.
+`UiPath.DataService.Activities.DeleteEntityRecord<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Deletes a record from a Data Fabric entity by record ID.
+
+**Category:** Data Service.Entity Record
 
 > **Single vs batch — use this only for ONE record.** For N records, use [DeleteMultipleEntityRecords](DeleteMultipleEntityRecords.md) — accepts an `ICollection<Guid>`, makes one HTTP call, and returns failed IDs via `FailedRecords`. Deleting inside a `ForEach` loop is a performance anti-pattern. Full decision guide: [overview — When to Use Batch vs Single-Record Activities](../overview.md#when-to-use-batch-vs-single-record-activities).
 

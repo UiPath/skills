@@ -1,6 +1,12 @@
-# DeleteFileFromRecordField
+# Delete File From Record Field
 
-Deletes a file attachment from a file-type field on an entity record. Category: **DataService.File**.
+`UiPath.DataService.Activities.DeleteFileFromRecordField<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Deletes a file attachment from a file-type field on an entity record.
+
+**Category:** Data Service.File
 
 ## Properties
 

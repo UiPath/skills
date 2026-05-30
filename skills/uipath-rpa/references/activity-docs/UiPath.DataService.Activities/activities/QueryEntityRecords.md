@@ -1,6 +1,12 @@
-# QueryEntityRecords
+# Query Entity Records
 
-Queries records from a Data Fabric entity with optional filtering, sorting, and pagination. Category: **DataService.Entity Record**.
+`UiPath.DataService.Activities.QueryEntityRecords<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Queries records from a Data Fabric entity with optional filtering, sorting, and pagination.
+
+**Category:** Data Service.Entity Record
 
 ## Properties
 

@@ -1,6 +1,12 @@
-# DownloadFileFromRecordField
+# Download File From Record Field
 
-Downloads a file from a file-type field on an entity record. Category: **DataService.File**.
+`UiPath.DataService.Activities.DownloadFileFromRecordField<TEntity>`
+
+**Package:** `UiPath.DataService.Activities`
+
+Downloads a file from a file-type field on an entity record.
+
+**Category:** Data Service.File
 
 ## Properties
 
