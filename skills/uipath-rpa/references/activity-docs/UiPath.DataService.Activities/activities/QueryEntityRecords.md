@@ -103,7 +103,7 @@ Operator strings used in `SimpleFilter.Operator` (XAML internal names):
 
 > `IsNull` / `IsNotNull` are available in the Studio filter builder UI and at runtime.
 
-For the complete filter generation guide — including XAML templates, field-type-to-operator mapping, nested group patterns, and worked examples — see the **data-service-filter-builder-guide** in the uipath-rpa skill references.
+For the complete filter generation guide — including XAML templates, field-type-to-operator mapping, nested group patterns, and worked examples — see [data-service-filter-builder-guide](../guides/data-service-filter-builder-guide.md).
 
 ## Key Rules
 

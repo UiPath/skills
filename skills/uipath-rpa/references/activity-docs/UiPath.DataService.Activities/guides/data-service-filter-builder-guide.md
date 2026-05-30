@@ -49,7 +49,7 @@ xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.Core
 xmlns:local="clr-namespace:<ProjectName>;assembly=DataService.<ProjectName>"
 ```
 
-The `local:` namespace is required for entity type arguments (e.g., `x:TypeArguments="local:NumericEntity"`). It **must** include `assembly=DataService.<ProjectName>` — without the assembly qualifier, the XAML parser cannot locate entity types. See [overview.md § XAML Namespace Declarations](../activity-docs/UiPath.DataService.Activities/25.9/overview.md#xaml-namespace-declarations) for the full set of required declarations.
+The `local:` namespace is required for entity type arguments (e.g., `x:TypeArguments="local:NumericEntity"`). It **must** include `assembly=DataService.<ProjectName>` — without the assembly qualifier, the XAML parser cannot locate entity types. See [overview.md § XAML Namespace Declarations](../overview.md#xaml-namespace-declarations) for the full set of required declarations.
 
 If any `FilterValues` entry uses `DateTimeOffset`, `Guid`, or `String[]`, also declare:
 
@@ -60,7 +60,7 @@ xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
 The `x:` prefix covers: `x:String`, `x:Int32`, `x:Int64`, `x:Double`, `x:Boolean`, `x:Decimal`.
 The `s:` prefix is required for: `s:DateTimeOffset`, `s:Guid`, `s:String[]`, `s:DateTime`.
 
-See [xaml-basics-and-rules.md § x: and s: namespace aliases](xaml-basics-and-rules.md) for the full type mapping.
+See [xaml-basics-and-rules.md § x: and s: namespace aliases](uipath-rpa/references/xaml/xaml-basics-and-rules.md) for the full type mapping.
 
 ## Operator Reference by Field Type
 
@@ -83,7 +83,7 @@ Look up the field's `SqlType.Name` and `FieldDisplayType` in `EntitiesStore.json
 | `ChoiceSetSingle` | `=`, `!=`, `is empty`, `not empty`, `is null`, `is not null`, `in`, `not in` |
 | `ChoiceSetMultiple` | `contains`, `not contains`, `=`, `!=`, `is empty`, `not empty`, `is null`, `is not null` |
 
-> **Choice-set filter values are numeric Ids — never the display label.** `ChoiceSetSingle` filter `InArgument` is `x:Int32` (the choice's numeric Id, e.g. `5`); `in` / `not in` use an `s:String[]` of the numeric Ids as strings. `ChoiceSetMultiple` stores values as a JSON-stringified array of numeric Ids in a single `x:String` field, so `=` / `!=` / `contains` / `not contains` compare against that string form. See [overview § Choice Set Fields](../activity-docs/UiPath.DataService.Activities/25.9/overview.md#choice-set-fields--read--write-shape).
+> **Choice-set filter values are numeric Ids — never the display label.** `ChoiceSetSingle` filter `InArgument` is `x:Int32` (the choice's numeric Id, e.g. `5`); `in` / `not in` use an `s:String[]` of the numeric Ids as strings. `ChoiceSetMultiple` stores values as a JSON-stringified array of numeric Ids in a single `x:String` field, so `=` / `!=` / `contains` / `not contains` compare against that string form. See [overview § Choice Set Fields](../overview.md#choice-set-fields--read--write-shape).
 | `AutoNumber` | `=`, `!=`, `>`, `<`, `>=`, `<=`, `is empty`, `not empty`, `is null`, `is not null`, `in`, `not in` |
 | `Relationship` | `is empty`, `not empty`, `is null`, `is not null` |
 | `File` | `is empty`, `not empty`, `is null`, `is not null` |
@@ -373,7 +373,7 @@ Logical meaning: `(FIELD_1 OP VALUE_1) AND ((FIELD_2 OP VALUE_2) OR (FIELD_3 OP 
    - `Field.Name` — used as `SimpleFilter.FieldName`
    - `Field.SqlType.Name` — determines valid operators and `InArgument` type
    - `Field.FieldDisplayType` — determines operator set for non-Basic fields
-3. **For relationship fields** — use dot notation: `RelationshipFieldName.ChildFieldName` (e.g., `CreatedBy.Name`). Look up the referenced entity's fields via `Field.ReferenceEntity` to find the child field's SqlType. Dot-notation filters only resolve when the query expands deep enough to materialize the nested record: set the activity's **`ExpansionDepth="2"`** for one-dot paths and increase by one per additional segment (max `3`). At insufficient depth the filter silently mis-matches. See [overview § Relationship Fields & ExpansionDepth](../activity-docs/UiPath.DataService.Activities/25.9/overview.md#relationship-fields--expansiondepth).
+3. **For relationship fields** — use dot notation: `RelationshipFieldName.ChildFieldName` (e.g., `CreatedBy.Name`). Look up the referenced entity's fields via `Field.ReferenceEntity` to find the child field's SqlType. Dot-notation filters only resolve when the query expands deep enough to materialize the nested record: set the activity's **`ExpansionDepth="2"`** for one-dot paths and increase by one per additional segment (max `3`). At insufficient depth the filter silently mis-matches. See [overview § Relationship Fields & ExpansionDepth](../overview.md#relationship-fields--expansiondepth).
 4. **Choose operators** — for each condition, pick an operator from the [Operator Reference](#operator-reference-by-field-type) table matching the field's SqlType and FieldDisplayType. Verify the operator is in the valid set.
 5. **Determine grouping logic** — decide AND vs OR. For mixed logic (e.g., `A AND (B OR C)`), use nested `GroupFilter.Groups`.
 6. **Assign ValueIndex** — assign sequential integers starting from 0 across ALL groups. Root group filters use 0, 1, 2...; nested group filters continue the sequence.
