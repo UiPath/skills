@@ -16,7 +16,7 @@ Downloads a file from a file-type field on an entity record.
 | `EntityId` | `InArgument<Guid>` | Yes | — | — | Entity GUID from `EntitiesStore.json` |
 | `RecordId` | `InArgument<Guid>` | Yes | — | Input | GUID of the source record (`[RequiredArgument]`) |
 | `Field` | `InArgument<string>` | Yes | — | Input | Name of the file field (`[RequiredArgument]`, `[Browsable(false)]`) |
-| `FilePath` | `InArgument<string>` | No | — | To | Local path to save the downloaded file |
+| `FilePath` | `InArgument<string>` | No | — | To | Local path to save the downloaded file. If omitted (`{x:Null}`), the file is saved to the **current execution directory** with its stored filename. |
 | `DownloadedFileResource` | `OutArgument<ILocalResource>` | No | — | Output | Resource object pointing to the downloaded file |
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Common | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Common | Timeout in milliseconds |
@@ -95,11 +95,10 @@ When copying a file between records, chain `DownloadedFileResource` directly int
 | File needs to be saved to a specific user-provided location | `FilePath` | Bare string path (e.g., `C:\downloads\output.pdf`) |
 | Both — save to disk AND pass to another activity | Both | Set `FilePath` to the desired path; also capture `DownloadedFileResource` |
 
-**Never fabricate a temp file path.** If you need a temporary location, omit `FilePath` (set `{x:Null}`) and use `DownloadedFileResource` — the runtime handles temp storage. Fabricated paths (e.g., `"C:\temp\file_" & guid & ".pdf"`) lose the original filename and create cleanup obligations.
+**Never fabricate a temp file path.** If you do not need a specific save location, omit `FilePath` (set `{x:Null}`) and use `DownloadedFileResource` — the runtime saves the file to the **current execution directory** with its stored filename, and downstream activities consume it via the resource. Fabricated paths (e.g., `"C:\temp\file_" & guid & ".pdf"`) lose the original filename and create cleanup obligations.
 
 ## Key Rules
 
 - `DownloadedFileResource` returns a `UiPath.Platform.ResourceHandling.ILocalResource` — use `.LocalPath` to get the file path
-- If `FilePath` is specified, the file is saved to that location; otherwise a temporary location is used
 - **For round-trip file copies, omit `FilePath` (set `{x:Null}`) and use `DownloadedFileResource` → `FileResource` chaining** — see pattern above
 - `Field` and `FilePath` accept bare strings for literal values — do not wrap in expression brackets (`[...]`) unless the value comes from a variable

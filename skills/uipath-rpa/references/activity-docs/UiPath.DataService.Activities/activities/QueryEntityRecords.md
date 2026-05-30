@@ -19,8 +19,8 @@ Queries records from a Data Fabric entity with optional filtering, sorting, and 
 | `FilterArguments` | `FilterArgument` | No | — | — | Filter definition (set via Studio designer; `[Browsable(false)]`) |
 | `FilterValues` | `IList<InArgument>` | No | — | — | Filter parameter values (set via Studio designer; `[Browsable(false)]`) |
 | `QueriedEntityId` | `Guid` | No | — | — | Entity GUID for query scope; `00000000-0000-0000-0000-000000000000` for all |
-| `Top` | `InArgument<int>` | No | `100` | Pagination | Maximum records to return (range: 0–1000) |
-| `Skip` | `InArgument<long>` | No | `0` | Pagination | Number of records to skip (pagination offset) |
+| `Top` | `InArgument<int>` | No | `100` | Pagination | Maximum records to return (range: 1–1000; use `Skip` for pagination beyond 1000) |
+| `Skip` | `InArgument<long>` | No | `0` | Pagination | Number of records to skip (pagination offset, `>= 0`). If `Skip` exceeds the total matching records, the result is empty. |
 | `SortByField` | `InArgument<string>` | No | — | Options | Field name to sort by |
 | `SortAscending` | `InArgument<bool>` | No | `true` | Options | Sort direction |
 | `ExpansionDepth` | `InArgument<int>` | No | `2` | Options | Depth of relationship expansion (range: 1–3, max `3`). Controls relationship-field shape on returned records and gates dot-notation filterability — see [overview § Relationship Fields & ExpansionDepth](../overview.md#relationship-fields--expansiondepth) |
@@ -113,5 +113,4 @@ For the complete filter generation guide — including XAML templates, field-typ
 
 ## Key Rules
 
-- `Top` defaults to 100, capped at 1000 — use `Skip` for pagination beyond 1000 records
 - `TotalRecords` returns the total count matching the filter, regardless of `Top`/`Skip` — useful for pagination logic
