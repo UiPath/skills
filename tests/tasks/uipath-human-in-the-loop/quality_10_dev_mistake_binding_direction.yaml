@@ -34,6 +34,7 @@ initial_prompt: |
   Wire: Trigger → Script → HITL →|completed| Decision → both branches → End
 
   Validate the flow after building.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: run_command
