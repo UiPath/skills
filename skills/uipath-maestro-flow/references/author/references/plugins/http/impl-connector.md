@@ -53,6 +53,8 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
   }' --output json
 ```
 
+> **Connector mode supports `application/json` request and response bodies only.**
+
 The CLI:
 
 - Builds the full `inputs.detail` (connector, connectionId, bodyParameters, essentialConfiguration)

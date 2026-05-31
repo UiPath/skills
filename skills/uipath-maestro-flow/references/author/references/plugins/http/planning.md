@@ -1,6 +1,6 @@
 # HTTP Request Node — Planning
 
-> **MUST READ FIRST:** [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md). This file is the flow-specific authoring layer on top.
+> **MUST READ FIRST — confirm Managed HTTP Request fits your use case before authoring:** [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md). This planning doc is the flow-specific layer on top of it.
 
 ## Node Type
 
@@ -76,7 +76,7 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 | `url` | No | API endpoint URL/path (e.g., `"/conversations.replies"`). Auto-fills both `bodyParameters.path` and `bodyParameters.url`. |
 | `query` | No | Query parameters as key-value object |
 | `headers` | No | Additional headers as key-value object |
-| `body` | No | Request body (for POST/PUT/PATCH) |
+| `body` | No | Request body (for POST/PUT/PATCH). Connector mode is **`application/json` only** (request and response) — no other content type. |
 
 **Manual mode** (no connector auth):
 
