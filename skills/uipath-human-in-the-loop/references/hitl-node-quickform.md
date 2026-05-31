@@ -40,6 +40,8 @@ Each entry exposes exactly what `$vars` paths are available:
 
 The `id` field is the `$vars` path — `fetchInvoice.output` → `$vars.fetchInvoice.output`. Nested field access appends `.fieldName` (e.g., `$vars.fetchInvoice.output.invoiceId`).
 
+> **Preserve exact casing.** Copy the field name from the script's `return` statement character-for-character into the binding path. If the script returns `{ supplierName: "Acme" }`, the binding is `vars.fetchSupplier.output.supplierName` — writing `suppliername` or `supplier_name` creates a path to a variable that does not exist. The HITL form field will be blank at runtime; `flow validate` does not catch this.
+
 **outputId by node type:**
 
 | Node type | outputId | Access pattern |
@@ -375,6 +377,8 @@ After the HITL node, downstream nodes can reference:
 | `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields — accessible without node prefix. The `globalId` is derived from `field.variable` (strip `vars.` prefix) |
 
 > **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"vars.approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "vars.approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
+>
+> **Common mistake:** A field with `"id": "approved"` and `"variable": "legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
 
 **In a downstream script node:**
 ```javascript
