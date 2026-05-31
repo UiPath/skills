@@ -33,9 +33,6 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Decision → both branches → End
 
-  Read variables.nodes before writing input field bindings — use the exact
-  $vars path from the node's outputId entry.
-  Output fields must NOT have a binding property.
   Validate the flow after building.
 
 success_criteria:
