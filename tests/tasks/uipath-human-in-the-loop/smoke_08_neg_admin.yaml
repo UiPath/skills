@@ -13,9 +13,29 @@ initial_prompt: |
   3 days without a response to a different user in our team?
 
 success_criteria:
-  - type: skill_triggered
-    description: "Agent did NOT invoke the uipath-human-in-the-loop skill (HITL not appropriate here)"
-    skill_name: "uipath-human-in-the-loop"
-    expected_skill: "none"
-    weight: 3.0
+  - type: run_command
+    description: "No .flow file was created — agent gave admin guidance, not flow authoring guidance"
+    command: "find . -name '*.flow' -maxdepth 6 | grep -q ."
+    expected_exit_code: 1
+    weight: 2.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent response provides task reassignment/administration guidance, not HITL authoring"
+    include_agent_output: true
+    prompt: |
+      The user asked: "How do I reassign a pending Action Center task that has been sitting for
+      3 days without a response to a different user in our team?"
+
+      This is a task administration question — the correct answer explains how to manage or
+      reassign existing Action Center tasks (e.g., using uip tasks CLI commands or the
+      Orchestrator UI). It does NOT describe how to build a new flow, add a HITL node, or
+      create automation.
+
+      Score 1.0 if the agent provides concrete task reassignment or administration guidance
+      without directing the user to build a flow or HITL checkpoint.
+      Score 0.5 if the agent gives some admin guidance but also mixes in unnecessary flow
+      authoring advice.
+      Score 0.0 if the agent primarily describes building a new flow or HITL node.
+    weight: 3.0
+    pass_threshold: 0.8
