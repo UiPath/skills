@@ -91,7 +91,7 @@ success_criteria:
   - type: file_exists
     description: "Coded agent entry-points.json exists"
     path: "ClaimsSol/ClassifierAgent/entry-points.json"
-    weight: 1.0
+    weight: 0.3
     pass_threshold: 1.0
 
   - type: run_command
