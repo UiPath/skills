@@ -4,7 +4,7 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
-## v20 mode (Rule 18 softening)
+## v20 mode (Rule 18)
 
 When `Schema: v20` is set in `tasks.md`, the following phase modifications apply. v19 mode is unchanged.
 
