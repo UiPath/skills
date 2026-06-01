@@ -68,6 +68,7 @@ Exit 0 on success; non-zero with stderr message on failure.
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
 import os
 import sys
@@ -79,23 +80,36 @@ def _fail(message: str) -> NoReturn:
     sys.exit(f"FAIL: {message}")
 
 
-def _dedupe_by_realpath(paths: list[str]) -> list[str]:
-    # Multiple glob matches pointing at the same inode (e.g. a symlink and its
-    # target) are not duplicate files. Keep the lexicographically-first path
-    # per realpath so the multi-match guard only fires on genuinely distinct
-    # files.
-    seen: dict[str, str] = {}
+def _dedupe_aliases(paths: list[str]) -> list[str]:
+    # Glob matches that point at the same underlying flow definition are not
+    # duplicate files. Two collapse passes:
+    #   1. realpath — symlink + target case (e.g. flow_files/X.flow → ../X/X.flow)
+    #   2. content hash — agents that `cp` instead of `ln -s` produce two
+    #      distinct inodes with byte-identical contents
+    # Either way, the multi-match guard should only fire on genuinely
+    # distinct flow files. Keep the lexicographically-first path per group.
+    by_realpath: dict[str, str] = {}
     for p in paths:
         try:
             key = os.path.realpath(p)
         except OSError:
             key = p
-        seen.setdefault(key, p)
-    return sorted(seen.values())
+        by_realpath.setdefault(key, p)
+
+    by_hash: dict[str, str] = {}
+    for p in by_realpath.values():
+        try:
+            with open(p, "rb") as fh:
+                key = hashlib.sha1(fh.read()).hexdigest()
+        except OSError:
+            key = p  # unreadable — don't collapse with anything else
+        by_hash.setdefault(key, p)
+
+    return sorted(by_hash.values())
 
 
 def _load_one(pattern: str) -> tuple[str, dict[str, Any]]:
-    matches = _dedupe_by_realpath(glob.glob(pattern, recursive=True))
+    matches = _dedupe_aliases(glob.glob(pattern, recursive=True))
     if not matches:
         _fail(f"No file found for {pattern!r}")
     if len(matches) > 1:
@@ -169,7 +183,7 @@ def cmd_matched_default(pattern: str) -> None:
 
 
 def cmd_bindings_v2_no_empty_stubs(pattern: str) -> None:
-    matches = _dedupe_by_realpath(glob.glob(pattern, recursive=True))
+    matches = _dedupe_aliases(glob.glob(pattern, recursive=True))
     if not matches:
         print(f"OK: no {pattern!r} emitted on this code path (criterion skipped)")
         return
