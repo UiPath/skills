@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'tests/tasks/uipath-maestro-flow/**'
+      - 'tests/tasks/uipath-maestro-case/**'
+      - 'tests/scripts/**'
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
 
@@ -23,3 +25,38 @@ jobs:
 
       - name: Run pytest
         run: pytest tests/tasks/uipath-maestro-flow/ -v
+
+  pytest-case-check:
+    runs-on: ubuntu-latest
+    name: maestro-case checker unit tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-maestro-case/ -v
+
+  runtime-payload-casing-guard:
+    runs-on: ubuntu-latest
+    name: runtime-payload key-casing contract guard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Fails if any checker reads a runtime-only debug key (finalStatus /
+      # elementExecutions) by a hard-coded lowercase .get() instead of the
+      # case-insensitive _get_ci accessor — the CLI #2266 PascalCase break.
+      - name: Run contract guard
+        run: pytest tests/scripts/test_runtime_payload_key_casing.py -v

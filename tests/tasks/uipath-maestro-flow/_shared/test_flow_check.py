@@ -356,3 +356,57 @@ def test_find_project_dir_uses_central_filter(tmp_path, monkeypatch):
     _make_proj(solution, "Helper", "Process")
     _make_proj(solution, "MainFlow", "Flow")
     assert find_project_dir() == os.path.join("Mixed", "MainFlow")
+
+
+# ── _get_ci / PascalCase tolerance (CLI #2266 contract) ─────────────────────
+#
+# `uip … --output json` PascalCases its Data keys when the CLI carries PR #2266
+# and the command does not opt out via `preserveDataKeys` (flow/case debug DO
+# opt out — see uipath-cli debug.ts — but a checker must not depend on which
+# CLI build the eval image happens to run). These tests pin that every runtime
+# read tolerates BOTH casings, so a future re-introduction of #2266-style
+# normalization cannot silently break the maestro-flow debug checkers again.
+
+from flow_check import _get_ci  # noqa: E402
+
+
+def test_get_ci_reads_camelcase_and_pascalcase():
+    assert _get_ci({"finalStatus": "Completed"}, "finalStatus", "FinalStatus") == "Completed"
+    assert _get_ci({"FinalStatus": "Completed"}, "finalStatus", "FinalStatus") == "Completed"
+
+
+def test_get_ci_first_candidate_wins_and_default():
+    assert _get_ci({"Status": "x"}, "status", "Status") == "x"
+    assert _get_ci({}, "status", "Status", default="<none>") == "<none>"
+    assert _get_ci("not-a-dict", "status", default=None) is None
+
+
+def test_collect_outputs_handles_pascalcase_payload():
+    """The exact #2266 shape: every Data key PascalCased. collect_outputs must
+    still recover the declared output value (it was silently dropped before)."""
+    pascal = {
+        "Variables": {
+            "GlobalVariables": [{"Name": "result", "Value": "warm"}],
+            "Elements": [{"Outputs": {"message": "bring a jacket"}}],
+        }
+    }
+    out = collect_outputs(pascal)
+    assert "warm" in out
+    assert "bring a jacket" in out
+
+
+def test_collect_outputs_pascalcase_matches_camelcase():
+    """Casing must not change the extracted output set."""
+    camel = {
+        "variables": {
+            "globalVariables": [{"name": "result", "value": 42}],
+            "elements": [{"outputs": {"x": "done"}}],
+        }
+    }
+    pascal = {
+        "Variables": {
+            "GlobalVariables": [{"Name": "result", "Value": 42}],
+            "Elements": [{"Outputs": {"x": "done"}}],
+        }
+    }
+    assert sorted(map(str, collect_outputs(camel))) == sorted(map(str, collect_outputs(pascal)))

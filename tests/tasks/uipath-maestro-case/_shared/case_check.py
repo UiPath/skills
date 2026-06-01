@@ -281,6 +281,32 @@ def _fail(msg: str):
     sys.exit(f"FAIL: {msg}")
 
 
+def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
+    """Case-insensitively read the first present candidate key from ``mapping``.
+
+    The ``uip maestro case debug --output json`` RUNTIME payload uses camelCase
+    keys by Studio Web convention (``finalStatus``, ``variables``, ``outputs``,
+    ``value``). A CLI that PascalCases ``--output json`` keys (PR #2266) would
+    turn those into ``FinalStatus``/``Variables``/… and silently break every
+    lowercase read. Routing runtime-payload reads through this accessor tolerates
+    either casing and any future CLI normalization. Use it ONLY for the debug
+    RUNTIME payload — NOT for ``caseplan.json`` SOURCE readers, whose camelCase
+    keys are stable and intentional.
+
+    Candidates are tried in order; the first whose lowercased form matches a key
+    in ``mapping`` (also lowercased) wins. Returns ``default`` if ``mapping`` is
+    not a dict or no candidate matches.
+    """
+    if not isinstance(mapping, dict):
+        return default
+    lowered = {k.lower(): k for k in mapping.keys() if isinstance(k, str)}
+    for candidate in candidate_keys:
+        actual = lowered.get(candidate.lower())
+        if actual is not None:
+            return mapping[actual]
+    return default
+
+
 # ── Debug helpers ───────────────────────────────────────────────────────────
 
 
@@ -348,7 +374,7 @@ def run_debug(
         solution_glob=solution_glob,
         refresh_timeout=refresh_timeout,
     )
-    status = (payload or {}).get("finalStatus")
+    status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
     if status != "Completed" and status != "Successful":
         _fail(f"Case did not complete (finalStatus={status})\nPayload: {json.dumps(payload, default=str)[:2000]}")
     return payload
@@ -437,6 +463,10 @@ _METADATA_KEYS = frozenset({
     "timestamp", "occurredAt",
 })
 
+# Lowercased mirror so metadata keys are excluded regardless of the CLI's
+# key casing (a PascalCasing CLI would emit `FinalStatus`/`InstanceId`/…).
+_METADATA_KEYS_LOWER = frozenset(k.lower() for k in _METADATA_KEYS)
+
 
 def collect_outputs(payload: dict) -> list[Any]:
     """Return the declared output values from a case debug payload.
@@ -447,21 +477,24 @@ def collect_outputs(payload: dict) -> list[Any]:
     """
     out: list[Any] = []
 
-    variables = payload.get("variables") or {}
-    for val in (variables.get("globals") or {}).values():
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    for val in (_get_ci(variables, "globals", "Globals") or {}).values():
         out.extend(_leaves(val))
-    for v in variables.get("globalVariables") or []:
-        if isinstance(v, dict) and "value" in v:
-            out.extend(_leaves(v.get("value")))
-    for section in ("outputs", "inputOutputs"):
-        for v in variables.get(section) or []:
-            if isinstance(v, dict) and "value" in v:
-                out.extend(_leaves(v.get("value")))
+    for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+        value = _get_ci(v, "value", "Value")
+        if value is not None:
+            out.extend(_leaves(value))
+    for section_keys in (("outputs", "Outputs"), ("inputOutputs", "InputOutputs")):
+        for v in _get_ci(variables, *section_keys) or []:
+            value = _get_ci(v, "value", "Value")
+            if value is not None:
+                out.extend(_leaves(value))
 
     for task in _iter_runtime_tasks(payload):
-        for out_var in task.get("outputs") or []:
-            if isinstance(out_var, dict) and "value" in out_var:
-                out.extend(_leaves(out_var.get("value")))
+        for out_var in _get_ci(task, "outputs", "Outputs") or []:
+            value = _get_ci(out_var, "value", "Value")
+            if value is not None:
+                out.extend(_leaves(value))
 
     return out
 
@@ -481,8 +514,9 @@ def _iter_runtime_tasks(payload: dict):
             continue
         seen_ids.add(id(node))
         if isinstance(node, dict):
-            if "outputs" in node and (
-                "displayName" in node or "taskTypeId" in node or "type" in node
+            keys_ci = {k.lower() for k in node.keys() if isinstance(k, str)}
+            if "outputs" in keys_ci and (
+                "displayname" in keys_ci or "tasktypeid" in keys_ci or "type" in keys_ci
             ):
                 yield node
             stack.extend(node.values())
@@ -493,7 +527,7 @@ def _iter_runtime_tasks(payload: dict):
 def _leaves(v: Any):
     if isinstance(v, dict):
         for k, nested in v.items():
-            if k in _METADATA_KEYS:
+            if isinstance(k, str) and k.lower() in _METADATA_KEYS_LOWER:
                 continue
             yield from _leaves(nested)
     elif isinstance(v, (list, tuple)):
