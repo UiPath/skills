@@ -5,7 +5,7 @@ description: >
   create_llm() factory function. Use the skill to add a user prompt attacks detection
   guardrail using the decorator style at LLM scope. Verifies that the @guardrail
   with UserPromptAttacksValidator is placed above the LLM factory.
-tags: [uipath-agents, smoke, coded, mode:build, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
