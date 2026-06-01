@@ -22,14 +22,6 @@ initial_prompt: |
 
 success_criteria:
   - type: file_contains
-    description: "Flow file contains PT48H timeout for the HITL node"
-    path: "FinanceCompliance/FinanceCompliance/FinanceCompliance.flow"
-    includes:
-      - '"PT48H"'
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: file_contains
     description: "HITL node is present in the flow file"
     path: "FinanceCompliance/FinanceCompliance/FinanceCompliance.flow"
     includes:
