@@ -13,7 +13,7 @@ After `uip agent init <name>`:
 ├── project.uiproj          # Project metadata
 ├── flow-layout.json        # UI layout — do not edit
 ├── evals/                  # Evaluation sets and evaluators
-├── features/               # Agent features
+├── features/               # Agent features (memory spaces via uip agent memory)
 └── resources/              # Agent resources
 ```
 
@@ -274,6 +274,22 @@ Do not modify `filePath`, `uniqueId`, or `type`.
 ```
 
 Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fixed.
+
+## Features Convention (v1.1.0)
+
+Features are defined as individual files in the agent project's `features/` directory. Today this is used for memory spaces. Do not hand-author memory feature files for routine changes; use `uip agent memory`.
+
+```
+Agent/
+├── agent.json                              # No manually-authored memory features here
+├── features/
+│   └── {FeatureName}/
+│       └── feature.json                    # Written by uip agent memory
+```
+
+The `memory` command updates `features/{FeatureName}/feature.json` and `.agent-builder/agent.json`. Run `uip agent validate --output json`, then `uip agent migrate --output json` after memory changes so generated bindings stay current.
+
+For the full memory workflow and generated shape, see [capabilities/memory/memory.md](capabilities/memory/memory.md).
 
 ## Resources Convention (v1.1.0)
 

@@ -130,7 +130,7 @@ bucket/orchestratorBucket/...        │
 
 ## Bindings
 
-`uip agent migrate` reads each `resources/{Name}/resource.json` and writes one binding entry per external dependency into `bindings_v2.json`. Every binding carries `name`; **Process, Index, and App bindings also carry `folderPath`** propagated verbatim from the agent-level resource. Connection bindings are exempt (bound by `connection.id`). `uip agent validate` performs the same read-only check without writing — it reports `MigrationPending` if the file is behind.
+`uip agent migrate` reads each `resources/{Name}/resource.json` and `features/{Name}/feature.json`, then writes one binding entry per external dependency into `bindings_v2.json`. Every binding carries `name`; **Process, Index, App, and MemorySpace bindings also carry `folderPath`** propagated verbatim from the agent-level resource or feature. Connection bindings are exempt (bound by `connection.id`). `uip agent validate` performs the same read-only check without writing — it reports `MigrationPending` if the file is behind.
 
 | Binding kind | `name` source | `folderPath` source | Notes |
 |---|---|---|---|
@@ -138,6 +138,7 @@ bucket/orchestratorBucket/...        │
 | `index` | `indexName` | top-level `folderPath` (literal `Folder`) | StorageBucket-backed only |
 | `app` (escalation) | `channel.properties.appName` | `channel.properties.folderName` (literal `Folder`, translated to binding `folderPath`) | One per Action Center channel |
 | `app` (guardrail escalation) | `action.app.name` | `action.app.folderName` (literal `Folder`, translated to binding `folderPath`) | One per `$actionType: "escalate"` guardrail action |
+| `memorySpace` | `memorySpaceName` | `folderPath` from `features/{FeatureName}/feature.json` | One per attached memory space, deduped by memory space name + folder |
 | `connection` | `properties.connection.name` | — (omitted) | Bound by `connection.id` |
 
 ```jsonc
@@ -193,6 +194,19 @@ bucket/orchestratorBucket/...        │
 ```
 
 ```jsonc
+// External memory space — generated from uip agent memory
+{
+  "resource": "memorySpace",
+  "key": "support-memory.Shared",
+  "value": {
+    "name":       { "defaultValue": "support-memory", "isExpression": false, "displayName": "Memory name" },
+    "folderPath": { "defaultValue": "Shared",         "isExpression": false, "displayName": "Folder Path" }
+  },
+  "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+```jsonc
 // Connection binding — exempt from folderPath propagation
 {
   "resource": "connection",
@@ -208,7 +222,7 @@ The `solutionsSupport: "true"` metadata flag signals to the deployment engine th
 
 > **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent migrate` and `uip solution resource refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
 >
-> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json`. Edit the resource.json and re-run `uip agent migrate`; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 19.
+> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json` or memory feature file. Edit the resource.json, or use `uip agent memory` for memory features, then re-run `uip agent migrate`; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 19 and 24.
 
 ## Debug Overwrites
 
@@ -252,11 +266,11 @@ For capability-specific debug_overwrites entries (process / connection / index /
 uip solution resource refresh [solutionPath] --output json
 ```
 
-Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each external binding, refresh uses the **joint key `(name, kind, folderPath)`** read from the binding to look up the matching resource in the appropriate catalog — Resource Catalog Service for `Process` and `App` bindings, ECS for `Index` bindings, the local IS connection cache for `Connection` bindings. The folder dimension disambiguates resources that share a name across folders. If no match is found, refresh creates a virtual placeholder in the solution and warns.
+Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each external binding, refresh uses the **joint key `(name, kind, folderPath)`** read from the binding to look up the matching resource in the appropriate catalog — Resource Catalog Service for `Process`, `App`, and `MemorySpace` bindings, ECS for `Index` bindings, the local IS connection cache for `Connection` bindings. The folder dimension disambiguates resources that share a name across folders. If no match is found, refresh creates a virtual placeholder in the solution and warns.
 
 Solution-internal bindings (`folderPath: "solution_folder"`) skip the RCS lookup — they are resolved at deploy time against the solution folder.
 
-**Run this after `uip agent migrate`** whenever external tools have been added or changed.
+**Run this after `uip agent migrate`** whenever external tools, memory spaces, index contexts, app escalations, or connections have been added or changed.
 
 Handled kinds and what refresh produces:
 
@@ -266,6 +280,7 @@ Handled kinds and what refresh produces:
 | `Process` (RPA / agent / api / processOrchestration) | `process/<type>/<Name>.json` + `package/<Name>.json` | `kind: "process"` — populated with real `folderKey`, `folderFullyQualifiedName`, `folderPath` from the RCS match |
 | `Connection` | `connection/<connectorKey>/<Name>.json` | `kind: "connection"` |
 | `Index` (StorageBucket-backed only) | `index/<Name>.json` + `bucket/orchestratorBucket/<BucketName>.json` | two entries (`kind: "index"` + `kind: "bucket"`) |
+| `MemorySpace` | `memorySpace/<Name>.json` | `kind: "memorySpace"` when imported from RCS |
 | `App` (guardrail escalation via `agent.json`) | `app/workflow Action/<Name>.json` + `appVersion/<Name>.json` + `package/<Name>.json` + `process/webApp/<Name>.json` | two entries (`kind: "app"` + `kind: "process"`) |
 
 **Not yet handled by refresh** (write the solution-level files and `debug_overwrites.json` entries by hand — see [capabilities/process/solution-files.md](capabilities/process/solution-files.md)):
