@@ -17,7 +17,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
-| `display-name` | sdd.md (optional) | e.g., "Pre-check", "Interrupt on Fraud" |
+| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry rule {N}`. e.g., "Pre-check", "Interrupt on Fraud" |
 | `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | ID of the referenced stage |
@@ -48,7 +48,7 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 ```markdown
 ## T<n>: Add stage-entry condition for "<stage>" — <summary>
 - target-stage: "<stage-name>"
-- display-name: "<name>"
+- display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry rule {N}"
 - is-interrupting: false
 - rule-type: selected-stage-completed
 - selected-stage: "<upstream-stage-name>"

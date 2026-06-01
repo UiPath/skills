@@ -37,7 +37,8 @@ Rules use DNF — outer array is OR, inner array is AND.
    - **v19** → locate the `root` object. Initialize `root.caseExitConditions = []` if absent.
    - **v20** → locate top-level `metadata` object (initialize `metadata: {}` if missing — should already exist from T01). Initialize `metadata.caseExitRules = []` if absent.
 4. Read `rule-type` and `marks-case-complete` from tasks.md; pick the recipe below
-5. Append the condition object to the schema-appropriate array:
+5. Set `displayName`: use tasks.md `display-name` if present; else default to `Exit rule {N}`, where `N` = the 1-based index this condition takes in the schema-appropriate array (i.e. `array.length + 1` at append time). Never emit a blank or omitted `displayName`.
+6. Append the condition object to the schema-appropriate array:
    - **v19** → `root.caseExitConditions[]`
    - **v20** → `metadata.caseExitRules[]`
 
@@ -85,7 +86,7 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 ## Post-Write Verification
 
-Confirm the schema-appropriate array contains the new object with `id`, `marksCaseComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field:
+Confirm the schema-appropriate array contains the new object with `id`, non-empty `displayName` (SDD value or `Exit rule {N}` default), `marksCaseComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field:
 - **v19** → `root.caseExitConditions[]`
 - **v20** → `metadata.caseExitRules[]`
 
