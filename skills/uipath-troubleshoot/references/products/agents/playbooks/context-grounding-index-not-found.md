@@ -7,8 +7,8 @@ confidence: high
 ## Context
 
 What this looks like:
-- Agent job faults during a tool call; `uip agent run status <jobId> --output json` shows `Faulted`
-- `uip traces spans get <traceId> --output json` contains a span with `SPANTYPE: contextGroundingTool` or `toolCall` whose `ATTRIBUTES.error` contains:
+- Agent job faults during a tool call; `uip agent run status <job-id> --output json` shows `Faulted`
+- `uip traces spans get <trace-id> --output json` contains a span with `SPANTYPE: contextGroundingTool` or `toolCall` whose `ATTRIBUTES.error` contains:
   ```
   ContextGroundingIndex not found Code: AGENT_RUNTIME.UNEXPECTED_ERROR
   ```
@@ -29,14 +29,14 @@ What to look for:
 1. Get the job trace ID:
 
    ```bash
-   uip agent run status <jobId> --output json \
+   uip agent run status <job-id> --output json \
      --output-filter "traceId"
    ```
 
 2. Find the `contextGroundingTool` span and extract the index reference:
 
    ```bash
-   uip traces spans get <traceId> --output json \
+   uip traces spans get <trace-id> --output json \
      --output-filter "spans[?spanType == 'contextGroundingTool'].{name: name, error: attributes.error, attrs: attributes}"
    ```
 
@@ -53,7 +53,7 @@ What to look for:
 5. Check whether that index exists in the deployment folder:
 
    ```bash
-   uip context-grounding list --folder-path "<folderPath>" --output json
+   uip context-grounding list --folder-path "<folder-path>" --output json
    ```
 
    If the index name is absent from the output, the index was deleted or never created. If present, check its status field — anything other than `Active` indicates it is not ready.
@@ -63,8 +63,8 @@ What to look for:
 **If the index was deleted — re-create it:**
 
   ```bash
-  uip context-grounding create --index-name "<indexName>" --bucket-source "<bucketName>" --folder-path "<folderPath>" --output json
-  uip context-grounding ingest --index-name "<indexName>" --folder-path "<folderPath>" --output json
+  uip context-grounding create --index-name "<index-name>" --bucket-source "<bucket-name>" --folder-path "<folder-path>" --output json
+  uip context-grounding ingest --index-name "<index-name>" --folder-path "<folder-path>" --output json
   ```
 
   No agent republish needed — the runtime resolves by name.
@@ -72,8 +72,8 @@ What to look for:
 **If the index exists but is in a different folder — re-link the agent:**
 
   ```bash
-  uip agent context remove --name "<oldIndexName>" --output json
-  uip agent context add --name "<correctIndexName>" --folder-key "<fk>" --output json
+  uip agent context remove --name "<old-index-name>" --output json
+  uip agent context add --name "<correct-index-name>" --folder-key "<folder-key>" --output json
   uip agent publish --output json
   ```
 
@@ -84,11 +84,11 @@ What to look for:
 **If the index was never created:**
 
   ```bash
-  uip context-grounding create --index-name "<indexName>" --bucket-source "<bucketName>" --folder-path "<folderPath>" --output json
-  uip context-grounding ingest --index-name "<indexName>" --folder-path "<folderPath>" --output json
-  uip agent context add --name "<indexName>" --folder-key "<fk>" --output json
+  uip context-grounding create --index-name "<index-name>" --bucket-source "<bucket-name>" --folder-path "<folder-path>" --output json
+  uip context-grounding ingest --index-name "<index-name>" --folder-path "<folder-path>" --output json
+  uip agent context add --name "<index-name>" --folder-key "<folder-key>" --output json
   uip agent publish --output json
   ```
 
 **If none of the above — the index exists but the runtime cannot resolve it:**
-- Capture `uip traces spans get <traceId> --output json` and escalate to the Agents team with the full span output and the index name
+- Capture `uip traces spans get <trace-id> --output json` and escalate to the Agents team with the full span output and the index name

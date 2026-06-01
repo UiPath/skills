@@ -7,8 +7,8 @@ confidence: high
 ## Context
 
 What this looks like:
-- Agent job faults at startup; `uip agent run status <jobId> --output json` shows `Faulted`
-- `uip traces spans get <traceId> --output json` contains an `agentRun` span whose `ATTRIBUTES.error` matches one of two variants:
+- Agent job faults at startup; `uip agent run status <job-id> --output json` shows `Faulted`
+- `uip traces spans get <trace-id> --output json` contains an `agentRun` span whose `ATTRIBUTES.error` matches one of two variants:
 
   **Variant A — agent configuration schema:**
   ```
@@ -34,14 +34,14 @@ What to look for:
 1. Get the job trace ID:
 
    ```bash
-   uip agent run status <jobId> --output json \
+   uip agent run status <job-id> --output json \
      --output-filter "traceId"
    ```
 
 2. Pull the failing `agentRun` span error:
 
    ```bash
-   uip traces spans get <traceId> --output json \
+   uip traces spans get <trace-id> --output json \
      --output-filter "spans[?spanType == 'agentRun'].attributes.error"
    ```
 
@@ -77,7 +77,7 @@ What to look for:
 - If the schema itself needs updating to match new caller expectations — add or modify the input parameter:
 
   ```bash
-  uip agent input add --name "<paramName>" --type string --output json
+  uip agent input add --name "<param-name>" --type string --output json
   uip agent publish --output json
   ```
 
@@ -85,5 +85,5 @@ What to look for:
 
   ```bash
   uip agent run start --agent-name "<name>" --folder-id <id> \
-    --input '{"<paramName>": "<value>"}' --output json
+    --input '{"<param-name>": "<value>"}' --output json
   ```

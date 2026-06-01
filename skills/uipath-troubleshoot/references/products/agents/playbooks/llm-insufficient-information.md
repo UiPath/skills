@@ -7,8 +7,8 @@ confidence: medium
 ## Context
 
 What this looks like:
-- Agent job faults mid-run; `uip agent run status <jobId> --output json` shows `Faulted`
-- `uip traces spans get <traceId> --output json` contains a span with `SPANTYPE: completion` or `agentRun` whose `ATTRIBUTES.error` is a JSON string starting with `{"detail":"Insufficient information..."}` or `{"detail":"Insufficient information to <action>..."}`
+- Agent job faults mid-run; `uip agent run status <job-id> --output json` shows `Faulted`
+- `uip traces spans get <trace-id> --output json` contains a span with `SPANTYPE: completion` or `agentRun` whose `ATTRIBUTES.error` is a JSON string starting with `{"detail":"Insufficient information..."}` or `{"detail":"Insufficient information to <action>..."}`
 - The error detail names a missing piece of context: recipient, topic, date range, scope, etc.
 
 What can cause it:
@@ -26,21 +26,21 @@ What to look for:
 1. Get the job trace ID:
 
    ```bash
-   uip agent run status <jobId> --output json \
+   uip agent run status <job-id> --output json \
      --output-filter "traceId"
    ```
 
 2. Pull spans and find the failing `completion` or `agentRun` span:
 
    ```bash
-   uip traces spans get <traceId> --output json \
+   uip traces spans get <trace-id> --output json \
      --output-filter "spans[?attributes.error != null].{name: name, spanType: spanType, error: attributes.error}"
    ```
 
 3. Parse the `error` field — it is a JSON string. Extract the `detail` value:
 
    ```bash
-   uip traces spans get <traceId> --output json \
+   uip traces spans get <trace-id> --output json \
      --output-filter "spans[?attributes.error != null].attributes.error" \
      | jq -r '.[] | fromjson | .detail'
    ```
@@ -69,7 +69,7 @@ What to look for:
 - If the parameter does not exist in the schema — add it:
 
   ```bash
-  uip agent input add --name "<paramName>" --type string --required true --output json
+  uip agent input add --name "<param-name>" --type string --required true --output json
   uip agent publish --output json
   ```
 
