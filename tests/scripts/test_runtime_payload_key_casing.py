@@ -28,12 +28,19 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 TASKS = REPO_ROOT / "tests" / "tasks"
 
 # Runtime-only debug-payload keys. They never appear in .flow / caseplan source,
-# so a literal-lowercase read of them is always an unguarded runtime read.
+# so a raw `.get()` / `[...]` of them (in ANY casing) is always an unguarded
+# runtime read that must go through `_get_ci` instead.
 RUNTIME_ONLY_KEYS = ("finalStatus", "elementExecutions")
 
+# IGNORECASE so a raw read in either direction is caught: `.get("finalStatus")`
+# (breaks under a PascalCasing CLI) AND `.get("FinalStatus")` (breaks under a
+# camelCase CLI). Both are unguarded — only `_get_ci` tolerates both. Matching
+# case-insensitively is safe because these key *names* are runtime-only at any
+# casing, so there is no source-reader false positive.
 _RAW_READ = re.compile(
     r"""\.get\(\s*['"](?:%s)['"]\s*[,)]|\[\s*['"](?:%s)['"]\s*\]"""
-    % ("|".join(RUNTIME_ONLY_KEYS), "|".join(RUNTIME_ONLY_KEYS))
+    % ("|".join(RUNTIME_ONLY_KEYS), "|".join(RUNTIME_ONLY_KEYS)),
+    re.IGNORECASE,
 )
 
 
@@ -64,3 +71,16 @@ def test_no_raw_lowercase_runtime_key_reads():
         "PascalCasing CLI (PR #2266) cannot silently break the checker. Offenders:\n  "
         + "\n  ".join(offenders)
     )
+
+
+def test_guard_matches_raw_reads_in_either_casing():
+    """The guard must catch a raw read in BOTH directions (camelCase that
+    breaks under a PascalCasing CLI, and PascalCase that breaks under a
+    camelCase CLI), and must NOT flag the `_get_ci` accessor form."""
+    assert _RAW_READ.search('payload.get("finalStatus")')
+    assert _RAW_READ.search('payload.get("FinalStatus")')
+    assert _RAW_READ.search("payload.get('elementExecutions')")
+    assert _RAW_READ.search('payload["ElementExecutions"]')
+    # The sanctioned form passes the key as a _get_ci positional arg, not via
+    # `.get("…")` / `[...]`, so it must NOT be flagged.
+    assert not _RAW_READ.search('_get_ci(payload, "finalStatus", "FinalStatus")')
