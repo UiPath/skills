@@ -25,7 +25,7 @@ For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN ev
 4. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators) edit JSON on disk. Only `uip maestro flow eval run *` requires `uip login` and an existing Studio Web solution.
 5. **Pin a model on every LLM-judge evaluator.** Empty/missing `model` produces a cryptic 500 from the LLM gateway after retries. Pass `--model <name>` on `evaluator add` or set `model` in the JSON.
 6. **Declare input variables before adding data points with `--inputs`.** `eval add` validates input keys against the Flow's declared input variables and fails fast on unknown keys. Add missing input variables first (for example, `uip maestro flow variable add My.flow name --direction in --type string --output json`) or change the data point input JSON to match the Flow schema.
-7. **Let the CLI manage evaluator references.** Eval sets store `evaluatorRefs` as the evaluator file refs produced by `evaluator add` (for example, `greeting-match-1234abcd.json`). Use `set add --evaluators <id_or_file_base>` or the default "all current evaluators" behavior instead of hand-writing refs.
+7. **Let the CLI manage evaluator references.** Eval sets store `evaluatorRefs` as the evaluator file refs produced by `evaluator add` (for example, `greeting-match-1234abcd.json`). If the set should use every evaluator that already exists, omit `--evaluators` so the CLI writes those generated file refs. If you must pass `--evaluators`, pass the evaluator id or generated file base/ref from `evaluator add/list` — never the display name alone (`greeting-match`), because Studio Web does not resolve display-name refs.
 8. **Pre-empt timeouts on `run start --wait`.** The CLI blocks until the run reaches a terminal state or `--timeout` elapses. `--timeout` only stops local blocking — the run continues server-side; query progress with `eval run status <run_id>`.
 
 ## Quick Start
@@ -39,9 +39,9 @@ uip maestro flow eval evaluator add greeting-quality \
   --model gpt-4.1-2025-04-14 \
   --path ./MySolution/MyFlow --output json
 
-# 2. Create an eval set, pin the entry point and the evaluator(s)
+# 2. Create an eval set, pin the entry point, and let the CLI attach
+#    all current evaluators by generated file ref
 uip maestro flow eval set add "Smoke Tests" \
-  --evaluators greeting-quality \
   --entry-point /Main.bpmn#start \
   --path ./MySolution/MyFlow --output json
 
@@ -100,7 +100,7 @@ uip maestro flow eval run results <eval_set_run_id> \
 ## Anti-patterns
 
 - **Don't auto-run `uip solution upload`.** Even when an eval run errors with "solution not found in Studio Web", stop and ask the user — see [upload-safety.md](references/upload-safety.md). The local project may be ahead of, or diverged from, Studio Web.
-- **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer `uip maestro flow eval set add --evaluators ...` or the default all-evaluators behavior so the CLI writes the correct refs.
+- **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer the default all-evaluators behavior so the CLI writes generated file refs, or pass generated evaluator ids/file refs explicitly. Do not pass evaluator display names to `--evaluators`.
 - **Don't pass `--type` in PascalCase.** Only kebab-case is accepted: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`.
 - **Don't depend on a specific `--wait` polling cadence.** Treat `--wait` as a black-box block; if you need precise progress, omit it and call `eval run status` yourself.
 - **Don't compare runs from different eval sets.** `eval run compare` aligns by data-point name within the set; cross-set deltas are meaningless.

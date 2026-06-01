@@ -17,6 +17,9 @@ initial_prompt: |
   Important:
   - The `uip` CLI is already available in the environment.
   - Start by refreshing the registry cache with `uip maestro flow registry pull --output json`.
+  - After list/search identifies the candidates, inspect the exact schemas with
+    `uip maestro flow registry get core.action.http --output json` and
+    `uip maestro flow registry get core.action.script --output json`.
   - Use `--output json` on all uip commands.
   - Do not build the flow — just explore.
 

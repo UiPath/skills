@@ -8,7 +8,7 @@ description: >
   similarity → json-similarity, substring presence → contains. The
   `command_executed` regexes pin each `--type` value, so the agent has to
   both pick correctly and run the CLI to pass.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, feature:eval]
 
 run_limits:
   expected_turns: 15
