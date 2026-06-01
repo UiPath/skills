@@ -6,10 +6,13 @@ description: >
 tags: [uipath-agents, integration, mode:operate, coded, lifecycle:execute, feature:file-sync]
 
 run_limits:
-  expected_turns: 31
   max_turns: 30
   task_timeout: 600
   turn_timeout: 300
+
+sandbox:
+  mock_path_dirs:
+    - mocks
 
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/push_pull_roundtrip/_fixtures/roundtrip-agent ."
