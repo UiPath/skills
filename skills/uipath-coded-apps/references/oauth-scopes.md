@@ -47,11 +47,14 @@ Use this reference to:
 
 | Method | Required Scope |
 |--------|----------------|
-| `getAll()` | `OR.Administration` or `OR.Administration.Read` |
-| `getById()` | `OR.Administration` or `OR.Administration.Read` |
-| `getFileMetaData()` | `OR.Administration` or `OR.Administration.Read` |
-| `getReadUri()` | `OR.Administration` or `OR.Administration.Read` |
-| `uploadFile()` | `OR.Administration` or `OR.Administration.Read` |
+| `getAll()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getById()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getByName()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getFiles()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getFileMetaData()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getReadUri()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `uploadFile()` | `OR.Buckets` |
+| `deleteFile()` | `OR.Buckets` or `OR.Buckets.Write` |
 
 ---
 
@@ -136,6 +139,8 @@ Use this reference to:
 |--------|----------------|
 | `getAll()` | `PIMS` |
 | `getIncidents()` | `PIMS` |
+| `getInstanceStatusTimeline()` | `Insights.RealTimeData Insights OR.Folders.Read` |
+| `getTopRunCount()` / `getTopFaultedCount()` / `getTopExecutionDuration()` | `Insights.RealTimeData Insights OR.Folders.Read` |
 
 ## Maestro Process Incidents (standalone)
 
@@ -150,6 +155,8 @@ Use this reference to:
 | Method | Required Scope |
 |--------|----------------|
 | `getAll()` | `PIMS` |
+| `getInstanceStatusTimeline()` | `Insights.RealTimeData Insights OR.Folders.Read` |
+| `getTopRunCount()` / `getTopFaultedCount()` / `getTopExecutionDuration()` | `Insights.RealTimeData Insights OR.Folders.Read` |
 
 ## Case Instances
 
@@ -161,6 +168,7 @@ Use this reference to:
 | `close()` / `pause()` / `resume()` / `reopen()` | `PIMS` |
 | `getExecutionHistory()` | `PIMS` |
 | `getActionTasks()` | `OR.Tasks` or `OR.Tasks.Read` |
+| `getSlaSummary()` / `getStagesSlaSummary()` | `Insights.RealTimeData Insights OR.Folders.Read PIMS` |
 
 ---
 
@@ -198,6 +206,13 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 |--------|----------------|
 | `getById()` / `getContentPartById()` | `OR.Execution.Read`, `OR.Jobs.Read` |
 
+### User Settings (`conversationalAgent.user`)
+
+| Method | Required Scope |
+|--------|----------------|
+| `getSettings()` | `OR.Users` or `OR.Users.Read` |
+| `updateSettings()` | `OR.Users` |
+
 ---
 
 ## Agent Feedback
@@ -206,6 +221,12 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 |--------|----------------|
 | `getAll()` | `Traces.Api` |
 | `getById()` | `Traces.Api` |
+| `getCategories()` | `Traces.Api` |
+| `submit()` | `Traces.Api` |
+| `updateById()` | `Traces.Api` |
+| `deleteById()` | `Traces.Api` |
+| `createCategory()` | `Traces.Api` |
+| `deleteCategory()` | `Traces.Api` |
 
 ---
 
@@ -219,4 +240,5 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 | Orchestrator Processes (list + start) | `OR.Execution OR.Jobs` |
 | Orchestrator Jobs (list + read output) | `OR.Jobs.Read OR.Folders.Read` (add `OR.Folders.Read` so `Jobs.getOutput()` can resolve file-type output arguments via Attachments) |
 | Maestro full access | `PIMS OR.Execution.Read` |
-| Conversational Agent | `OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.Api` |
+| Maestro analytics / insights dashboards (top run/fault/duration counts, status timelines, SLA) | add `Insights.RealTimeData Insights OR.Folders.Read` (SLA summaries also need `PIMS`) |
+| Conversational Agent | `OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.Api` (add `OR.Users` for user-settings read/write) |
