@@ -2,7 +2,7 @@
 
 Create work queues, add items for distributed processing, track progress, and manage review cycles.
 
-> For full option details on any command, use `--help` (e.g., `uip resource queues create --help`).
+> For full option details on any command, use `--help` (e.g., `uip or queues create --help`).
 
 ## When to Use
 
@@ -36,7 +36,7 @@ graph LR
 ### Create a Queue
 
 ```bash
-uip resource queues create "InvoiceQueue" \
+uip or queues create "InvoiceQueue" \
   --folder-path "Finance" --max-retries 3 --auto-retry \
   --enforce-unique-reference --output json
 ```
@@ -57,7 +57,7 @@ Key options:
 ### List Queues
 
 ```bash
-uip resource queues list --folder-path "Finance" --output json
+uip or queues list --folder-path "Finance" --output json
 ```
 
 Filter by name with `--name` (contains match). Paginate with `--limit` / `--offset`.
@@ -66,36 +66,36 @@ Filter by name with `--name` (contains match). Paginate with `--limit` / `--offs
 
 ```bash
 # Get queue details (cross-folder, no --folder-path needed)
-uip resource queues get <queue-key> --output json
+uip or queues get <queue-key> --output json
 
 # Update queue properties (cross-folder)
-uip resource queues update <queue-key> --max-retries 5 --no-auto-retry --output json
+uip or queues update <queue-key> --max-retries 5 --no-auto-retry --output json
 
 # Delete queue (cross-folder)
-uip resource queues delete <queue-key> --output json
+uip or queues delete <queue-key> --output json
 ```
 
 ### Share a Queue Across Folders
 
 ```bash
 # Share with another folder
-uip resource queues share <queue-key> --folder-path "Production" --output json
+uip or queues share <queue-key> --folder-path "Production" --output json
 
 # Check which folders have access
-uip resource queues get-folders <queue-key> --output json
+uip or queues get-folders <queue-key> --output json
 
 # Remove from a folder
-uip resource queues unshare <queue-key> --folder-path "Production" --output json
+uip or queues unshare <queue-key> --folder-path "Production" --output json
 ```
 
 ### Queue Processing Stats
 
 ```bash
 # Stats for a specific queue (item counts, exception counts, processing times)
-uip resource queues get-stats --folder-path "Finance" --key <queue-key> --output json
+uip or queues get-stats --folder-path "Finance" --key <queue-key> --output json
 
 # Stats across queues in a folder, narrowed by name and a processing-window
-uip resource queues get-stats --folder-path "Finance" \
+uip or queues get-stats --folder-path "Finance" \
   --name "Invoice" \
   --from "2026-04-01T00:00:00Z" --to "2026-04-30T23:59:59Z" \
   --output json
@@ -110,7 +110,7 @@ uip resource queues get-stats --folder-path "Finance" \
 ### Add a Single Item
 
 ```bash
-uip resource queue-items add "InvoiceQueue" \
+uip or queue-items add "InvoiceQueue" \
   --folder-path "Finance" \
   --specific-content '{"InvoiceId":"INV-001","Amount":1500.00,"Vendor":"Acme"}' \
   --priority High --reference "INV-001" \
@@ -123,7 +123,7 @@ The `add` command takes a **queue name** (not key). Key options: `--specific-con
 ### Bulk Add Items
 
 ```bash
-uip resource queue-items bulk-add "InvoiceQueue" \
+uip or queue-items bulk-add "InvoiceQueue" \
   --folder-path "Finance" \
   --queue-items '[
     {"specificContent":{"InvoiceId":"INV-002","Amount":2000},"priority":"High"},
@@ -145,11 +145,11 @@ The `bulk-add` command also takes a **queue name**. Use `--commit-type` to contr
 
 ```bash
 # List items filtered by queue and status
-uip resource queue-items list --folder-path "Finance" \
+uip or queue-items list --folder-path "Finance" \
   --queue-name "InvoiceQueue" --status Failed --output json
 
 # Get a single item by its unique key
-uip resource queue-items get <item-unique-key> --folder-path "Finance" --output json
+uip or queue-items get <item-unique-key> --folder-path "Finance" --output json
 ```
 
 Filter with `--queue-name` (exact match), `--queue-definition-key` (GUID), or `--status` (New, InProgress, Failed, Successful, Abandoned, Retried, Deleted).
@@ -158,24 +158,26 @@ Filter with `--queue-name` (exact match), `--queue-definition-key` (GUID), or `-
 
 ```bash
 # Update item properties (only provided fields change)
-uip resource queue-items update <item-unique-key> --folder-path "Finance" \
-  --progress "Processing step 3/5" --priority High --output json
+# Supports --progress, --priority (High/Normal/Low), --due-date / --defer-date (ISO 8601), --specific-content (flat JSON).
+uip or queue-items update <item-unique-key> --folder-path "Finance" \
+  --progress "Processing step 3/5" --priority High \
+  --due-date "2026-04-25T17:00:00Z" --output json
 
 # Set progress text (positional argument)
-uip resource queue-items set-progress <item-unique-key> "Validating invoice data" \
+uip or queue-items set-progress <item-unique-key> "Validating invoice data" \
   --folder-path "Finance" --output json
 
 # Delete single / bulk
-uip resource queue-items delete <item-unique-key> --folder-path "Finance" --output json
-uip resource queue-items delete-bulk <key1> <key2> --folder-path "Finance" --output json
+uip or queue-items delete <item-unique-key> --folder-path "Finance" --output json
+uip or queue-items delete-bulk <key1> <key2> --folder-path "Finance" --output json
 ```
 
 ### Get History and Retry Info
 
 ```bash
-uip resource queue-items get-history <item-unique-key> --folder-path "Finance" --output json
-uip resource queue-items get-last-retry <item-key> --folder-path "Finance" --output json
-uip resource queue-items has-video <item-unique-key> --folder-path "Finance" --output json
+uip or queue-items get-history <item-unique-key> --folder-path "Finance" --output json
+uip or queue-items get-last-retry <item-key> --folder-path "Finance" --output json
+uip or queue-items has-video <item-unique-key> --folder-path "Finance" --output json
 ```
 
 Note: `get-last-retry` uses the item `key` field (shared across retries), not `uniqueKey`.
@@ -190,28 +192,28 @@ When queue items fail, a reviewer can inspect them and decide whether to retry, 
 
 ```bash
 # List available reviewers in the folder
-uip resource queue-items get-reviewers --folder-path "Finance" --output json
+uip or queue-items get-reviewers --folder-path "Finance" --output json
 
 # Assign a reviewer to one or more items
-uip resource queue-items set-reviewer <key1> <key2> \
+uip or queue-items set-reviewer <key1> <key2> \
   --folder-path "Finance" \
-  --user-id 42 \
+  --user-key <reviewer-key-guid> \
   --output json
 ```
 
 ### Set Review Status
 
 ```bash
-uip resource queue-items set-review-status Retried <key1> <key2> \
+uip or queue-items set-review-status Retried <key1> <key2> \
   --folder-path "Finance" --output json
 ```
 
-Valid review statuses: `Retried`, `Abandoned`, `Deleted`. The status is the first positional argument, followed by one or more item keys.
+Valid review statuses: `Retried`, `Abandoned`, `Deleted`, `InReview`. The status is the first positional argument, followed by one or more item keys.
 
 ### Remove Reviewer
 
 ```bash
-uip resource queue-items unset-reviewer <key1> <key2> \
+uip or queue-items unset-reviewer <key1> <key2> \
   --folder-path "Finance" --output json
 ```
 
@@ -221,27 +223,27 @@ uip resource queue-items unset-reviewer <key1> <key2> \
 
 ```bash
 # 1. Create the queue
-uip resource queues create "InvoiceQueue" \
+uip or queues create "InvoiceQueue" \
   --folder-path "Finance" --max-retries 3 --auto-retry \
   --enforce-unique-reference --output json
 
 # 2. Add work items (dispatcher)
-uip resource queue-items add "InvoiceQueue" --folder-path "Finance" \
+uip or queue-items add "InvoiceQueue" --folder-path "Finance" \
   --specific-content '{"InvoiceId":"INV-001","Amount":1500}' \
   --reference "INV-001" --priority High --output json
 
 # 3. Check for failed items (after performer runs)
-uip resource queue-items list --folder-path "Finance" \
+uip or queue-items list --folder-path "Finance" \
   --queue-name "InvoiceQueue" --status Failed --output json
 
 # 4. Investigate a failed item
-uip resource queue-items get-history <failed-item-key> \
+uip or queue-items get-history <failed-item-key> \
   --folder-path "Finance" --output json
 
 # 5. Assign reviewer and mark as reviewed
-uip resource queue-items set-reviewer <failed-item-key> \
-  --folder-path "Finance" --user-id 42 --output json
-uip resource queue-items set-review-status Retried <failed-item-key> \
+uip or queue-items set-reviewer <failed-item-key> \
+  --folder-path "Finance" --user-key <reviewer-key-guid> --output json
+uip or queue-items set-review-status Retried <failed-item-key> \
   --folder-path "Finance" --output json
 ```
 
@@ -289,7 +291,7 @@ None --> InReview (reviewer assigned) --> Verified | Retried
 - `--specific-content` must be **flat key-value JSON** -- no nested objects or arrays.
 - All `queue-items` commands require `--folder-path` or `--folder-key` (items are folder-scoped).
 - `set-review-status` takes the **status first**, then the item key(s) -- not the other way around.
-- `set-reviewer` requires `--user-id` (numeric ID, not GUID). Use `get-reviewers` to find valid IDs.
+- `set-reviewer` requires `--user-key` (GUID). Use `get-reviewers` to find valid reviewer keys.
 - Queue `get`, `update`, and `delete` are **cross-folder** (no `--folder-path` needed). Queue item commands are **not**.
 - `--auto-retry` is enabled by default. Use `--no-auto-retry` to disable.
 

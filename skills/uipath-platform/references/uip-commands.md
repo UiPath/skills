@@ -11,9 +11,10 @@
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
 - `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
-- `--all-fields` — (Orchestrator tool only) return raw DTO instead of the
-  curated PascalCase projection. Resource tool returns full DTO by default
-  on every list/get and does not expose this flag.
+- `--all-fields` — return raw API DTO instead of the curated PascalCase
+  projection. Applies to all `uip or` list/get commands (including the
+  runtime-resource entities: assets, queues, queue-items, buckets,
+  bucket-files, triggers, libraries, webhooks).
 
 ---
 
@@ -53,9 +54,9 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 
 ---
 
-## Resource (`uip resource`)
+## Runtime Resources (`uip or`)
 
-Manage assets, queues, triggers, buckets, libraries, and webhooks. See [`uipath-resources`](resources/resources.md).
+Manage assets, queues, triggers, buckets, libraries, and webhooks — all under the `uip or` root alongside folders/jobs/etc. See [`uipath-resources`](resources/resources.md). (Legacy `uip resource <x>` still works as an alias today; prefer `uip or <x>` in new docs and scripts.)
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
