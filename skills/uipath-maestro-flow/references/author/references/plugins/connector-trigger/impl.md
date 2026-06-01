@@ -31,16 +31,33 @@ uip is triggers objects "<connector-key>" "<OPERATION>" \
   --connection-id "<id>" --output json
 ```
 
-Save the response. It carries two flags per event object that drive later steps:
+Save the response. It carries three pieces per event object that drive later steps:
 
-| Flag | Drives | Meaning |
+| Field | Drives | Meaning |
 |------|--------|---------|
 | `byoaConnection` | Step 1c | If `true`, only BYOA connections are valid for this event |
 | `isWebhookUrlVisible` | Step 6b | If `true`, retrieve and present the webhook URL |
+| **`parameters[]`** | Steps 3 & 4 | **Canonical** list of event-parameter input fields. Use exclusively; ignore `eventParameters.fields` from `flow registry get` (Step 2). |
 
 It may also include `design.textBlocks` with connector-specific user-facing instructions (e.g., "Add this URL to your Slack app's Event Subscriptions"). Surface that text verbatim when applicable — do not invent service-specific guidance.
 
-> Both flags are per event object, not per connector. Some connectors require BYOA for some events but not others.
+> `byoaConnection` and `isWebhookUrlVisible` are per event object, not per connector — some connectors require BYOA for some events but not others. `parameters[]` is per event object too: each operation has its own input fields.
+
+#### Reading `parameters[]`
+
+Each entry is one input field the user supplies when configuring the trigger (e.g., GitHub `repo`, Outlook `parentFolderId`, Slack `channelId`). For each:
+
+| Key | Use |
+|---|---|
+| `name` | Key under `eventParameters` in Step 6's `node configure --detail` |
+| `displayName` | Label when prompting the user for a missing value |
+| `dataType` | Value type (`string`, `number`, `boolean`, …) |
+| `required` | Drives Step 4's required-field check |
+| `reference` | Present → resolve to an ID in Step 3 (`uip is resources run list`) before configure |
+| `description` | Field hint — surface verbatim when prompting |
+| `design.position` | `"primary"` indicates a top-level input field; other positions are layout hints — safe to ignore for configure |
+
+> **Source of truth:** `parameters[]` is populated for every connector. `flow registry get`'s `eventParameters.fields` derives from `triggers describe`'s `events.<operation>.required`/`.optional`, which several connectors do not emit. Full field semantics: [/uipath:uipath-platform — triggers.md — `parameters[]`](../../../../../../uipath-platform/references/integration-service/triggers.md#parameters--canonical-event-parameter-input-fields).
 
 ### Step 1c — Select the final connection
 
@@ -62,7 +79,9 @@ uip maestro flow registry get <trigger-node-type> --connection-id <connection-id
 
 The response contains three trigger-specific sections:
 
-**`eventParameters`** — fields that configure *what* the trigger watches (e.g., which email folder, which Jira project). These are the trigger's required setup fields.
+**`eventParameters.fields`** — non-authoritative. Often empty (see Step 1b). Iterate [`parameters[]`](#reading-parameters) from Step 1b in Steps 3 and 4 — do not iterate this block.
+
+Shape only — do not iterate:
 
 ```json
 {
@@ -115,7 +134,7 @@ These live in the **definition**, not on the node instance. The instance carries
 
 ### Step 3 — Resolve reference fields in event parameters
 
-Check `eventParameters.fields` for fields with a `reference` object — these require ID lookup, same as IS activity nodes.
+Iterate `parameters[]` (Step 1b). For each entry with a `reference` key, run an ID lookup — same mechanism as IS activity nodes.
 
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../../SKILL.md).
 
@@ -133,11 +152,11 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 ### Step 4 — Validate required event parameters
 
-Check every field in `eventParameters.fields` where `required: true`. All required event parameters must have values before building the flow.
+Check every entry in `parameters[]` (Step 1b) where `required: true`. All required event parameters must have values before building the flow.
 
-1. Collect all required event parameter fields
+1. Collect all required entries from `parameters[]`
 2. For each, check if the user's prompt provides a value
-3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`. Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
+3. If any required field is missing, **ask the user** — list the missing fields with their `displayName` (and `description` if useful). Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
 4. Only proceed after all required event parameters are resolved
 
 ### Step 4b — Map trigger output fields for downstream nodes
@@ -183,7 +202,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 | `connectionId` | Yes | Connection UUID from Step 1c (the final connection — BYOA if required) |
 | `folderKey` | Yes | Orchestrator folder key for the connection |
 | `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
-| `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
+| `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4. Keys = `parameters[].name` from Step 1b. |
 | `filter` | No | Structured filter tree — see [Filter Trees](#filter-trees) below. Omit to trigger on all events |
 
 The CLI computes the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration. **Do not pass `filterExpression` directly — the validator rejects it.**
@@ -419,7 +438,7 @@ uip maestro flow debug . --output json
 | `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |
 | No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip maestro flow registry pull --force` |
 | Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
-| Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
+| Event parameter missing at runtime | Required event parameter not configured | Re-run `uip is triggers objects` (Step 1b). For each `parameters[]` entry with `required: true`, include under `eventParameters` in `--detail`. |
 | `filterExpression is derived from the filter tree and cannot be provided directly` | Passed `filterExpression` string instead of a `filter` tree | Build a structured `filter` tree — see [Filter Trees](#filter-trees) |
 | `Filter references field '<name>' which is not present in trigger metadata` | Leaf `id` does not match any `filterFields.fields[].name` | Re-run `registry get` and use a valid field name |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources run list` |
