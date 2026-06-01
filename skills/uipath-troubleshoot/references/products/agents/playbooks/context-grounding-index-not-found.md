@@ -53,7 +53,7 @@ What to look for:
 5. Check whether that index exists in the deployment folder:
 
    ```bash
-   uip context-grounding list --folder-path "<folderPath>" --format json
+   uip context-grounding list --folder-path "<folderPath>" --output json
    ```
 
    If the index name is absent from the output, the index was deleted or never created. If present, check its status field — anything other than `Active` indicates it is not ready.
