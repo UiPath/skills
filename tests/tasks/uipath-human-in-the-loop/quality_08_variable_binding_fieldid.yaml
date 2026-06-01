@@ -22,9 +22,8 @@ initial_prompt: |
        - Outcomes: Approve (primary), Reject
   4. Script node — reads the reviewer's decision and logs:
        "Approved: <approved value>, Comments: <comments value>"
-     The script MUST access the fields using the correct runtime variable path
-     based on field IDs ($vars.<nodeId>.output.approved and
-     $vars.<nodeId>.output.reviewcomments), NOT the variable property names.
+     The script MUST access the reviewer's output by field ID, not by the
+     variable property name.
   5. End node
 
   Wire: Trigger → Script → HITL →|completed| Script (log) → End
