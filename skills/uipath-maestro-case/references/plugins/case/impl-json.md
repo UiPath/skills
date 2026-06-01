@@ -365,5 +365,5 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 
 If any check fails, halt and report — do not proceed to downstream plugins.
 
-**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). In v20 mode, even the post-build validate may reject (Rule 18 softening) — Pre-build validate is informational only.
+**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). Pre-build validate is informational only, regardless of schema.
 

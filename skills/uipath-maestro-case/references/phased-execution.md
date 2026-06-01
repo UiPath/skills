@@ -11,7 +11,7 @@ When `Schema: v20` is set in `tasks.md`, the following phase modifications apply
 | Phase | v19 behavior | v20 behavior |
 |---|---|---|
 | 2 — Prototyping | Informational validate, no halt on errors | Identical (already informational) |
-| 4 — Validate | Authoritative validate, 3-retry cap, hard stop on 3rd failure | **Informational only** — capture errors to `build-issues.md`, no retry loop, no hard stop. Reason: CLI may not yet accept v20 top-level shape. |
+| 4 — Validate | Authoritative validate, 3-retry cap, hard stop on 3rd failure | **Identical** — CLI now accepts the v20 top-level shape. Authoritative validate, retry-and-fix, same 3-retry cap and hard stop on 3rd failure. |
 | 5 — Debug | `Run debug session` runs `uip maestro case debug` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip maestro case debug may reject. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` in build-issues.md. |
 | 6 — Publish | `Publish to Studio Web` runs `uip solution upload` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
 
@@ -164,9 +164,9 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-> **v20 mode override.** When `tasks.md` carries `Schema: v20`, Phase 4 runs **informational** — capture errors and warnings to `build-issues.md`, do NOT retry, do NOT hard-stop on counter exhaustion. Proceed to Phase 5 regardless. Reason: CLI may not yet accept v20 top-level shape; failure does not invalidate the caseplan.json that the skill emitted (Rule 18). v19 retry policy below applies only when `Schema: v19`.
+> **v20 mode.** When `tasks.md` carries `Schema: v20`, Phase 4 follows the same retry policy as v19 below — the CLI now accepts the v20 top-level shape, so validate authoritatively, retry-and-fix on failure, and hard-stop on the 3rd failure.
 
-**v19 retry policy.** Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
+**Retry policy (both schemas).** Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.
