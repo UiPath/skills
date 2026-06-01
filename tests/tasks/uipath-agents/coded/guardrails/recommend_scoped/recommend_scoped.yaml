@@ -7,7 +7,7 @@ description: >
   lookup_account_info (decorator above @tool, OR middleware with
   tools=[lookup_account_info] and scopes=[GuardrailScope.TOOL]), and that
   graph.py still parses. Forbids configuring both representations simultaneously.
-tags: [uipath-agents, e2e, coded, mode:build, guardrail]
+tags: [uipath-agents, smoke, coded, mode:build, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
