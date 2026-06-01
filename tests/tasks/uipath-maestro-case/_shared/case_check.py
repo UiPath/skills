@@ -44,15 +44,52 @@ def read_caseplan(path: str | None = None) -> dict:
 
 
 def iter_tasks(plan: dict):
-    """Yield every task dict from every Stage / ExceptionStage node."""
+    """Yield every task dict from every Stage / ExceptionStage node.
+
+    Tolerates a mis-nested FLAT ``data.tasks`` (``Task[]`` instead of the schema's
+    ``Task[][]`` lanes) so callers don't crash on it — use ``assert_tasks_nested``
+    to reject that shape explicitly.
+    """
     for node in plan.get("nodes") or []:
         node_type = node.get("type") or ""
         if not node_type.endswith("Stage") and "Stage" not in node_type:
             continue
         lanes = ((node.get("data") or {}).get("tasks")) or []
         for lane in lanes:
-            for task in lane or []:
-                yield task
+            if isinstance(lane, dict):  # flat (mis-nested) task — yield directly
+                yield lane
+            elif isinstance(lane, list):
+                for task in lane:
+                    if isinstance(task, dict):
+                        yield task
+
+
+def assert_tasks_nested(plan: dict) -> None:
+    """Fail unless every stage's ``data.tasks`` is a 2D ``Task[][]`` (lanes).
+
+    A FLAT ``Task[]`` (a task object where a lane array is expected) silently
+    passes ``uip maestro case validate`` — the CLI reads each task dict as an
+    empty lane, so it reports 0 tasks / 0 warnings — yet it is not a buildable
+    case plan. Reject it explicitly so the test can't false-pass.
+    """
+    bad = []
+    for node in plan.get("nodes") or []:
+        if "Stage" not in (node.get("type") or ""):
+            continue
+        tasks = (node.get("data") or {}).get("tasks") or []
+        for i, lane in enumerate(tasks):
+            if not isinstance(lane, list):
+                label = (node.get("data") or {}).get("label") or node.get("id")
+                bad.append(f"{label} (tasks[{i}] is {type(lane).__name__}, not a lane)")
+                break
+    if bad:
+        sys.exit(
+            "FAIL: data.tasks must be a 2D array Task[][] (outer=lanes, "
+            "inner=tasks); these stages have a FLAT tasks array: "
+            + "; ".join(bad)
+            + ". A flat tasks array silently passes `validate` with 0 tasks "
+            "detected and is not a buildable case plan."
+        )
 
 
 def find_tasks_of_type(plan: dict, task_type: str) -> list[dict]:
