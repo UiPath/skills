@@ -62,7 +62,7 @@ build the case in the Case Designer without guessing.
 6. **Entry/exit conditions use WHEN + IF format:**
    - **WHEN** = the rule type (event that triggers evaluation, e.g., `selected-stage-completed("Intake")`)
    - **IF** = the optional `conditionExpression` (JavaScript expression evaluated against case variables, e.g., `applicationStatus == "Approved"`)
-   - **Display Name** (optional) = human-readable label for the condition row. Leave blank (`—`) to let the skill default it to `Entry rule {N}` (entry/task-entry conditions) or `Exit rule {N}` (stage-exit/case-exit conditions), where `N` is the 1-based index within the stage / task / case container. Set a value only to override the default.
+   - **Display Name** (optional) = human-readable label for the condition row. Leave blank (`—`) to let the skill default it: entry/task-entry conditions → `Entry Rule {N}`; stage-exit/case-exit conditions → `Complete Rule {N}` when Marks Complete is `Yes`, `Exit Rule {N}` when `No`. `N` is the 1-based index within the same label kind in the stage / task / case container. Set a value only to override the default.
    - **`wait-for-connector` WHEN** binds an Integration Service connector event. Name it inline in the WHEN cell (e.g. `wait-for-connector (Outlook "Email Received", Inbox)`) AND add a **Connector Rule Detail** block under the condition table. Applies to stage-entry, stage-exit, case-exit, and task-entry conditions. The IF cell is then an optional `=js:` gate on **case state** (`=js:vars.X`); the event payload is NOT directly accessible (no `event` namespace). **In-rule event-payload gating is NOT supported at runtime** — same-rule extract-then-gate (`response.X -> caseVar` on outputs + `=js:vars.caseVar` in IF) does not work; the case-backend evaluates the gate before the extract runs. To condition on the event payload, extract `response.field -> caseVar` on the connector rule and place the case-state gate on the DOWNSTREAM stage-entry / task-entry condition (where the extract has already populated the case var).
 
    **Connector Rule Detail block** — reproduce under any condition table whose WHEN is `wait-for-connector`:
@@ -209,7 +209,7 @@ DO NOT include in Configuration:
 
 | WHEN | IF | THEN | Marks Case Complete | Display Name |
 |------|-----|------|---------------------|--------------|
-| {`required-stages-completed` for Yes; `selected-stage-completed("StageName")` or other rule for No} | {conditionExpression, or "—" if none} | Case exited | {Yes \| No} | {optional label, or "—" → defaults to `Exit rule {N}`} |
+| {`required-stages-completed` for Yes; `selected-stage-completed("StageName")` or other rule for No} | {conditionExpression, or "—" if none} | Case exited | {Yes \| No} | {optional label, or "—" → defaults to `Complete Rule {N}` (Marks Complete = Yes) / `Exit Rule {N}` (No)} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6) — it binds the IS connector event the rule waits for.
 
@@ -310,7 +310,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry rule {N}`} |
+| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
@@ -321,7 +321,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
-| {`required-tasks-completed` or `wait-for-connector` for Yes; `selected-tasks-completed("TaskName")` or `wait-for-connector` for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} | {optional label, or "—" → defaults to `Exit rule {N}`} |
+| {`required-tasks-completed` or `wait-for-connector` for Yes; `selected-tasks-completed("TaskName")` or `wait-for-connector` for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} | {optional label, or "—" → defaults to `Complete Rule {N}` (Marks Complete = Yes) / `Exit Rule {N}` (No)} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
@@ -356,7 +356,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| {one of: `current-stage-entered` \| `selected-tasks-completed("TaskA", "TaskB")` \| `wait-for-connector` \| `adhoc` \| `runs-sequentially`} | {conditionExpression, or "—" if none} | {optional label, or "—" → defaults to `Entry rule {N}`} |
+| {one of: `current-stage-entered` \| `selected-tasks-completed("TaskA", "TaskB")` \| `wait-for-connector` \| `adhoc` \| `runs-sequentially`} | {conditionExpression, or "—" if none} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
