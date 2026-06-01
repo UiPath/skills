@@ -116,13 +116,14 @@ One entry per configure-time input field (repo, mailbox folder, channel). Canoni
 
 | Field | Description |
 |---|---|
-| `name` | Field name — pass as a key under `eventParameters` in `node configure --detail` |
+| `name` | Field name — pass as a key inside the `--detail` bucket selected by `type` (see below) |
 | `displayName` | Human-readable label — use when prompting the user |
 | `dataType` | Value type (`string`, `number`, `boolean`, …) |
 | `required` | `true` → must be supplied before configure; `false` → optional |
 | `description` | Field hint (often suitable to surface verbatim when asking the user) |
 | `reference` | Present → field is a lookup ID. Resolve via `uip is resources run list "<connector-key>" "<reference.objectName>" --connection-id "<id>"` before configure (IDs are connection-scoped). |
 | `design.position` | `"primary"` → top-level input shown in the trigger card. Other positions are layout hints — ignore for configure. |
+| `type` | Bucket selector for `node configure --detail`: `"query"` → `queryParameters`, `"path"` → `pathParameters`, otherwise → `eventParameters`. Each bucket is a JSON object keyed by `name`. |
 
 ### Trigger Metadata (from `triggers describe`)
 
