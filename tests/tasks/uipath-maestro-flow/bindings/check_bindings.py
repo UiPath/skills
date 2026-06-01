@@ -69,6 +69,7 @@ from __future__ import annotations
 
 import glob
 import json
+import os
 import sys
 from collections import Counter
 from typing import Any, NoReturn
@@ -78,8 +79,23 @@ def _fail(message: str) -> NoReturn:
     sys.exit(f"FAIL: {message}")
 
 
+def _dedupe_by_realpath(paths: list[str]) -> list[str]:
+    # Multiple glob matches pointing at the same inode (e.g. a symlink and its
+    # target) are not duplicate files. Keep the lexicographically-first path
+    # per realpath so the multi-match guard only fires on genuinely distinct
+    # files.
+    seen: dict[str, str] = {}
+    for p in paths:
+        try:
+            key = os.path.realpath(p)
+        except OSError:
+            key = p
+        seen.setdefault(key, p)
+    return sorted(seen.values())
+
+
 def _load_one(pattern: str) -> tuple[str, dict[str, Any]]:
-    matches = sorted(glob.glob(pattern, recursive=True))
+    matches = _dedupe_by_realpath(glob.glob(pattern, recursive=True))
     if not matches:
         _fail(f"No file found for {pattern!r}")
     if len(matches) > 1:
@@ -153,7 +169,7 @@ def cmd_matched_default(pattern: str) -> None:
 
 
 def cmd_bindings_v2_no_empty_stubs(pattern: str) -> None:
-    matches = sorted(glob.glob(pattern, recursive=True))
+    matches = _dedupe_by_realpath(glob.glob(pattern, recursive=True))
     if not matches:
         print(f"OK: no {pattern!r} emitted on this code path (criterion skipped)")
         return
