@@ -258,7 +258,7 @@ Nested `{op, clauses}` groups flatten in the rendered table. Avoid `Literal: No`
 |---|---|---|---|---|
 | `required-stages-completed` / `wait-for-connector` | optional `conditionExpression` | `Yes` | `exit-only` | optional |
 
-> **Display Name** (optional, every condition table — entry, exit, task-entry, case-exit): human-readable label. Carry the author's value verbatim; leave blank / `—` to let the skill default it to `Entry rule {N}` (entry / task-entry) or `Exit rule {N}` (stage-exit / case-exit), `N` = 1-based index within the container. Never invent a label when the cell is blank.
+> **Display Name** (optional, every condition table — entry, exit, task-entry, case-exit): human-readable label. Carry the author's value verbatim; leave blank / `—` to let the skill default it: entry / task-entry → `Entry Rule {N}`; stage-exit / case-exit → `Complete Rule {N}` (Marks Complete `Yes`) / `Exit Rule {N}` (`No`). `N` = 1-based index within the same label kind in the container. Never invent a label when the cell is blank.
 
 **Allowed WHEN:** `required-stages-completed`, `wait-for-connector`.
 **Forbidden WHEN:** `selected-stage-completed`, `selected-stage-exited` (sdd-template Key Rule 4 — `Yes` + `selected-stage-*` is a schema-pairing error → block Approve).
