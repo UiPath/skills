@@ -77,7 +77,7 @@ What to look for:
 - If the schema itself needs updating to match new caller expectations — add or modify the input parameter:
 
   ```bash
-  uip agent input add --name "<paramName>" --type string
+  uip agent input add --name "<paramName>" --type string --output json
   uip agent publish --output json
   ```
 

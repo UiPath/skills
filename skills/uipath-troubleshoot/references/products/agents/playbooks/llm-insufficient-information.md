@@ -59,7 +59,7 @@ What to look for:
 
   ```bash
   uip agent validate --output json
-  uip agent migrate --output json
+  uip agent migrate --output json  # upgrades agent.json to the latest schema version; skip if validate reports no schema version change
   uip agent publish --output json
   ```
 
@@ -69,7 +69,7 @@ What to look for:
 - If the parameter does not exist in the schema — add it:
 
   ```bash
-  uip agent input add --name "<paramName>" --type string --required true
+  uip agent input add --name "<paramName>" --type string --required true --output json
   uip agent publish --output json
   ```
 

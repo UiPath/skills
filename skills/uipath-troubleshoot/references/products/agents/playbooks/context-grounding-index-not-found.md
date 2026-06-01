@@ -63,8 +63,8 @@ What to look for:
 **If the index was deleted — re-create it:**
 
   ```bash
-  uip context-grounding create --index-name "<indexName>" --bucket-source "<bucketName>" --folder-path "<folderPath>"
-  uip context-grounding ingest --index-name "<indexName>" --folder-path "<folderPath>"
+  uip context-grounding create --index-name "<indexName>" --bucket-source "<bucketName>" --folder-path "<folderPath>" --output json
+  uip context-grounding ingest --index-name "<indexName>" --folder-path "<folderPath>" --output json
   ```
 
   No agent republish needed — the runtime resolves by name.
@@ -72,8 +72,8 @@ What to look for:
 **If the index exists but is in a different folder — re-link the agent:**
 
   ```bash
-  uip agent context remove --name "<oldIndexName>"
-  uip agent context add --name "<correctIndexName>" --folder-key "<fk>"
+  uip agent context remove --name "<oldIndexName>" --output json
+  uip agent context add --name "<correctIndexName>" --folder-key "<fk>" --output json
   uip agent publish --output json
   ```
 
@@ -84,9 +84,9 @@ What to look for:
 **If the index was never created:**
 
   ```bash
-  uip context-grounding create --index-name "<indexName>" --bucket-source "<bucketName>" --folder-path "<folderPath>"
-  uip context-grounding ingest --index-name "<indexName>" --folder-path "<folderPath>"
-  uip agent context add --name "<indexName>" --folder-key "<fk>"
+  uip context-grounding create --index-name "<indexName>" --bucket-source "<bucketName>" --folder-path "<folderPath>" --output json
+  uip context-grounding ingest --index-name "<indexName>" --folder-path "<folderPath>" --output json
+  uip agent context add --name "<indexName>" --folder-key "<fk>" --output json
   uip agent publish --output json
   ```
 
