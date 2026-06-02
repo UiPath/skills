@@ -21,9 +21,9 @@ initial_prompt: |
   invoice header extraction:
 
   1. Create a reusable `Monetary Amount` data type for representing
-     currency values throughout the project. Money kind, exact-match,
-     instructions: "A currency value with implicit or explicit
-     currency code, e.g. $1,234.56 or 1234.56 EUR."
+     currency values throughout the project. Money kind, instructions:
+     "A currency value with implicit or explicit currency code, e.g.
+     $1,234.56 or 1234.56 EUR."
 
   2. Create an `Invoice Header` field group with one field — `Total`,
      which should use the `Monetary Amount` data type — and group
@@ -39,22 +39,15 @@ initial_prompt: |
     test.
 
 success_criteria:
-  # Step 1: data-types add must happen, with the right kind and
-  # input-value flags.
+  # Step 1: data-types add must happen with --kind money. Money kind
+  # does NOT take --input-value (text/choice only — CLI rejects it
+  # otherwise), so no input-value criterion here.
   - type: command_executed
     description: "Agent created the Monetary Amount data type via data-types add --kind money"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+data-types\s+add\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--name\s+["'']?Monetary Amount["'']?.*--kind\s+money'
     min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "data-types add call included --input-value exact-match"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+data-types\s+add\s+.*--input-value\s+exact-match'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   # Step 2: groups add must happen, with --instructions AND a --fields
