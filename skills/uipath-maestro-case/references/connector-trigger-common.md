@@ -33,6 +33,22 @@ Returns `Entry`, `Config`, and `Connections`.
 
 Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response.
 
+#### Connection ownership — Studio Web picker is user-scoped (MUST check)
+
+Integration Service connections are per-user. The Studio Web connection dropdown lists only the **authoring user's own** connections, so a binding pointing at another user's connection UUID renders **empty** in the design-time picker (the `=bindings.<id>` value persists in JSON and may still resolve at runtime if the deployed robot has access — but the field shows unset, and the user must re-select/authenticate to fix it).
+
+`get-connection` can return connections owned by other users (esp. when none of the current user's own are healthy). Before finalizing the pick, get the current identity — **`login status` does NOT carry it, use `uip user`:**
+
+```bash
+uip user --output json   # → Data.UserId (UUID), Data.Email
+```
+
+For each candidate compare `Owner` (UUID) to `Data.UserId` (or `ConnectionIdentity` email to `Data.Email`). Then:
+
+- **Surface ownership in the prompt.** In the multi-connection AskUserQuestion, label each option with its `State` **and** `ConnectionIdentity` (owner email) — not just `Name`. A `State: Enabled` connection owned by someone else is still a worse default than the user's own.
+- **Warn on mismatch — even for a single connection.** When the chosen connection's `Owner != Data.UserId`, tell the user plainly: it will appear empty in their Studio Web picker and they must re-select/authenticate their own connection there (the rest of the binding is correct). Never silently bind another user's connection without surfacing it.
+- **Completion report.** List any bound connection whose owner ≠ the authoring user under a "Re-authenticate in Studio Web" note so the empty-picker symptom isn't mistaken for a build defect.
+
 Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.

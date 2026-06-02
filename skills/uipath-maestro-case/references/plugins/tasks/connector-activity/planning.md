@@ -36,6 +36,8 @@ Returns `Entry`, `Config`, and `Connections`.
 - **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
 - **Empty `Connections`** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:`. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
+> **Check connection ownership before finalizing.** IS connection pickers in Studio Web are user-scoped — binding another user's connection renders the field empty at design time. Run the ownership check (compare each candidate's `Owner` to `uip user`'s `Data.UserId`; surface `ConnectionIdentity` + `State` in the prompt; warn on mismatch) per [connector-trigger-common.md § Connection ownership](../../../connector-trigger-common.md#connection-ownership--studio-web-picker-is-user-scoped-must-check).
+
 Record `connection-id`, `connector-key`, `object-name` from the response.
 
 Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
