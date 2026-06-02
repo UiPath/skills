@@ -10,12 +10,15 @@ Use this when the agent has been published to Orchestrator (via `uip solution de
 uip or eval run-offline-evals \
   --package-name <processKey> \
   --package-version <version> \
-  --eval-set-id <eval-set-guid> \
-  [--workload-id <agent-guid>] \
+  [--eval-set-id <guid>] \
+  [--items <json>] \
+  [--evaluators <json>] \
   [--folder-key <folder-guid>]
 ```
 
-The command resolves the folder from your personal workspace automatically. Pass `--folder-key` to target a specific folder instead.
+The folder resolves from your personal workspace automatically. Pass `--folder-key` to target a specific folder instead.
+
+`--eval-set-id` defaults to `00000000-0000-0000-0000-000000000000` when `--items` and `--evaluators` are provided inline.
 
 ## Options
 
@@ -23,75 +26,111 @@ The command resolves the folder from your personal workspace automatically. Pass
 |------|----------|-------------|
 | `--package-name` | Yes | Orchestrator package name (processKey, e.g. `MyPackage.agent.Agent`) |
 | `--package-version` | Yes | Package version (e.g. `1.0.2`) |
-| `--eval-set-id` | Yes | Eval set ID (GUID) to run — must exist in the published package |
-| `--workload-id` | No | Workload GUID; defaults to `00000000-0000-0000-0000-000000000000` |
-| `--folder-key` | No | Folder key GUID; defaults to personal workspace |
-| `--eval-file` | No | JSON file to override items and/or evaluators from the package |
+| `--eval-set-id` | No | Eval set ID to run; defaults to zero GUID when items/evaluators are provided inline |
+| `--items` | No | JSON array of eval items to override those from the package |
+| `--evaluators` | No | JSON array of evaluator configs to override those from the package |
 | `--batch-size` | No | Max concurrent evaluation pipelines (default: `5`) |
-| `--loop` | No | Repeat indefinitely until Ctrl-C |
-| `--interval` | No | Pause between repeated runs when `--loop` is set (e.g. `30s`, `5m`, `1h`; default: `5m`) |
+| `--loop` | No | Repeat until `--count` is reached or Ctrl-C |
+| `--interval` | No | Pause between repeated runs (e.g. `30s`, `2m`, `1h`; default: `5m`) |
+| `--count` | No | Stop after N runs when `--loop` is set; omit to run indefinitely |
+| `--folder-key` | No | Folder key GUID; defaults to personal workspace. Use `uip or folders list` to find available keys. |
 | `--tenant` | No | UiPath tenant name |
 
 ## Examples
 
 ```bash
-# Minimal run — items/evaluators loaded from the published package
+# Minimal — items/evaluators loaded from the published package
 uip or eval run-offline-evals \
-  --package-name "PackageTester.agent.Agent" \
-  --package-version "1.0.2" \
-  --eval-set-id "076f85d8-e907-40cc-aa26-5ff01012b013" \
-  --workload-id "413f5032-63c8-4482-9a84-a03b55f2e8cd"
+  --package-name "MyPackage.agent.Agent" \
+  --package-version "1.0.0" \
+  --eval-set-id "c4f2a817-3e9b-4d1c-8f5a-2b7e6d4c9a01"
 
-# Override items/evaluators from a local file
+# Inline override — items and evaluators passed directly
 uip or eval run-offline-evals \
-  --package-name "PackageTester.agent.Agent" \
-  --package-version "1.0.2" \
-  --eval-set-id "076f85d8-e907-40cc-aa26-5ff01012b013" \
-  --eval-file ./overrides.json
+  --package-name "MyPackage.agent.Agent" \
+  --package-version "1.0.0" \
+  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e" \
+  --evaluators '[{
+    "id": "3d221ae1-5356-4ad4-9459-adb7e3d90277",
+    "evaluatorTypeId": "semantic-similarity",
+    "evaluatorConfig": { "model": "same-as-agent", "targetOutputKey": "*" }
+  }]' \
+  --items '[{
+    "id": "e9897fd5-63b9-493c-bfb5-f8933459f359",
+    "name": "Test Case 1",
+    "inputs": {},
+    "evaluationCriterias": {
+      "3d221ae1-5356-4ad4-9459-adb7e3d90277": {
+        "expectedOutput": { "content": "The current date is 2026-05-31." }
+      }
+    }
+  }]'
 
-# Loop mode — resubmit every 10 minutes
+# Loop 5 times every 2 minutes
 uip or eval run-offline-evals \
-  --package-name "PackageTester.agent.Agent" \
-  --package-version "1.0.2" \
-  --eval-set-id "076f85d8-e907-40cc-aa26-5ff01012b013" \
-  --loop --interval 10m
+  --package-name "MyPackage.agent.Agent" \
+  --package-version "1.0.0" \
+  --eval-set-id "c4f2a817-3e9b-4d1c-8f5a-2b7e6d4c9a01" \
+  --loop --interval 2m --count 5
 
-# Explicit folder key instead of personal workspace
+# Explicit folder key
 uip or eval run-offline-evals \
-  --package-name "PackageTester.agent.Agent" \
-  --package-version "1.0.2" \
-  --eval-set-id "076f85d8-e907-40cc-aa26-5ff01012b013" \
-  --folder-key "740defec-0b7f-4d48-a4c3-dd730001e124"
+  --package-name "MyPackage.agent.Agent" \
+  --package-version "1.0.0" \
+  --eval-set-id "c4f2a817-3e9b-4d1c-8f5a-2b7e6d4c9a01" \
+  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e"
 ```
+
+## Items and Evaluators Format
+
+### Evaluators (`--evaluators`)
+
+Each evaluator must include `id` (used as matching key), `evaluatorTypeId`, and optional `evaluatorConfig`:
+
+```json
+[
+  {
+    "id": "3d221ae1-5356-4ad4-9459-adb7e3d90277",
+    "evaluatorTypeId": "semantic-similarity",
+    "evaluatorConfig": {
+      "model": "same-as-agent",
+      "targetOutputKey": "*"
+    }
+  }
+]
+```
+
+### Items (`--items`)
+
+Each item must include `id`, `name`, `inputs`, and `evaluationCriterias` keyed by evaluator id:
+
+```json
+[
+  {
+    "id": "e9897fd5-63b9-493c-bfb5-f8933459f359",
+    "name": "Test Case 1",
+    "inputs": {},
+    "evaluationCriterias": {
+      "3d221ae1-5356-4ad4-9459-adb7e3d90277": {
+        "expectedOutput": { "content": "Expected agent response here." }
+      }
+    }
+  }
+]
+```
+
+`evaluationCriterias` keys must match the `id` of an evaluator in `--evaluators`. The value is evaluator-specific — for `semantic-similarity` it is `{ "expectedOutput": { ... } }`.
 
 ## Output
 
 On success, the command logs the submitted `EvalSetRunId`:
 
 ```
-Package : PackageTester.agent.Agent v1.0.2
-Folder  : anirudh.agnihotry@uipath.com's workspace
-Eval set: 076f85d8-e907-40cc-aa26-5ff01012b013
-Items / evaluators: loaded from package
+Package : MyPackage.agent.Agent v1.0.0
+Folder  : user@uipath.com's workspace
+Eval set: 00000000-0000-0000-0000-000000000000
+Items / evaluators: loaded from --items, --evaluators
 Submitted. EvalSetRunId: d989a131-478f-8c16-245e-683757027395
 ```
 
-Use the `EvalSetRunId` to track results in the UiPath portal or with `uip or eval` subcommands.
-
-## Eval File Format
-
-When using `--eval-file`, provide a JSON file with optional `items` and/or `evaluators` arrays:
-
-```json
-{
-  "items": [
-    { "input": "What is the capital of France?", "expectedOutput": "Paris" }
-  ],
-  "evaluators": [
-    { "type": "semantic-similarity", "threshold": 0.85 }
-  ],
-  "batchSize": 10
-}
-```
-
-Omit either field to load it from the published package instead.
+Use the `EvalSetRunId` to track results in the UiPath portal.
