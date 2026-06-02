@@ -189,6 +189,15 @@ Items use `expectedAgentBehavior` (renamed to `expectedBehavior` automatically):
 | `personal workspace not found` | Account has no personal workspace | Pass `--folder-key` explicitly |
 | `Folder not found` | `--folder-key` GUID invalid or inaccessible | Run `uip or folders list` to find valid keys |
 
+## Validation rules
+
+The CLI enforces these rules before making any network calls:
+
+1. **Must provide `--eval-set-id` OR both `--items` and `--evaluators`.** Omitting all three is an error.
+2. **`--eval-set-id` and `--items`/`--evaluators` are mutually exclusive.** Providing both is an error.
+3. **`--items` and `--evaluators` must be provided together.** Providing one without the other is an error.
+4. **`--batch-size` must be a positive integer.** Non-numeric values are rejected with an error.
+
 ## Anti-patterns
 
 - **Don't run against an unpublished package version.** The command targets the package already in Orchestrator. Bump `--package-version` after each publish; stale versions return results from old agent logic.
