@@ -16,8 +16,7 @@ post_run:
     timeout: 90
 
 initial_prompt: |
-  Use the `uipath-agents` low-code evaluation guidance to create a tenant-backed
-  low-code agent eval run lifecycle project.
+  Create a tenant-backed low-code UiPath agent eval run lifecycle project.
 
   Project:
   - Solution: `EvalLowCodeRunSol`

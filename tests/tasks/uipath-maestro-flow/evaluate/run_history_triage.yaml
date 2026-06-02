@@ -17,8 +17,7 @@ post_run:
 
 initial_prompt: |
   Build a deterministic UiPath Flow and exercise Studio Web eval run history
-  commands. Use the `uipath-maestro-flow` skill's author and evaluate
-  capabilities.
+  commands.
 
   Project layout: `EvalRunHistory/EvalRunHistory/EvalRunHistory.flow`.
 

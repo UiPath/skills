@@ -11,9 +11,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Use the `uipath-agents` low-code evaluation guidance to create a local
-  low-code agent project named `EvalLowCodeAgent` inside solution
-  `EvalLowCodeSol`.
+  Create a local low-code UiPath agent evaluation project named
+  `EvalLowCodeAgent` inside solution `EvalLowCodeSol`.
 
   Build only local eval artifacts:
   - Initialize the low-code agent and keep the default eval files.

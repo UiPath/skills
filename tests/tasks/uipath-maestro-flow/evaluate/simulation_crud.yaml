@@ -13,8 +13,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Use the `uipath-maestro-flow` skill's evaluate capability to create a
-  local-only Flow project named `EvalSim` and configure eval simulations.
+  Create a local-only UiPath Flow project named `EvalSim` and configure eval
+  simulations.
 
   Build only local eval artifacts:
   - Create solution `EvalSim` and Flow project `EvalSim`.

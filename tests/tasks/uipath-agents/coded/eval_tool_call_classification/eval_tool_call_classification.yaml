@@ -13,9 +13,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Use the `uipath-agents` coded-agent evaluation guidance to create a coded
-  agent project named `eval-matrix` and an evaluation harness for a
-  ticket-routing agent.
+  Create a coded UiPath agent project named `eval-matrix` and an evaluation
+  harness for a ticket-routing agent.
 
   The important output is the evaluation harness:
   - `entry-points.json` should be generated with `uip codedagent init`.

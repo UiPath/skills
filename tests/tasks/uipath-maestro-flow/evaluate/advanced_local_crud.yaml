@@ -13,8 +13,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Use the `uipath-maestro-flow` skill's evaluate capability to create a
-  local-only Flow evaluation project named `EvalAdvanced`.
+  Create a local-only UiPath Flow evaluation project named `EvalAdvanced`.
 
   Build only local eval artifacts:
   - Create solution `EvalAdvanced` and Flow project `EvalAdvanced` at
