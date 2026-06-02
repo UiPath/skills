@@ -15,12 +15,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "ReviewSol" containing a single low-code
-  agent "ModerationAgent". The agent accepts a required `content`
-  (string) and returns a `decision` (string). When the agent is
-  uncertain, it must be able to escalate to a human reviewer via
+  Create a UiPath low-code agent "ModerationAgent" that accepts a required
+  `content` (string) and returns a `decision` (string). When the agent
+  is uncertain, it must be able to escalate to a human reviewer via
   UiPath ActionCenter — model this as an escalation resource called
-  "HumanReview" on the agent.
+  "HumanReview" on the agent. The solution should be named "ReviewSol".
 
   When writing the escalation resource.json, set `isEnabled` to true so
   the escalation is active for the agent.
