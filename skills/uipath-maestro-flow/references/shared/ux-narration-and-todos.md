@@ -66,8 +66,8 @@ Reference table — adapt to context. Add subject (what's being acted on) when s
 | Solution scaffold | "Scaffolding a new solution at `<path>` so the Flow project has a parent." |
 | Flow init | "Initializing the Flow project. This creates the `.flow` file you'll edit." |
 | Verify project layout | "Confirming the solution/project layout is correct before continuing." |
-| Registry discovery | "Looking up `<nodeType>` in the registry so I can wire its inputs correctly…" |
-| Node add (multi-step) | "Adding the `<nodeType>` node and copying its registry definition into the file…" |
+| Registry discovery | "Looking up `<node-type>` in the registry so I can wire its inputs correctly…" |
+| Node add (multi-step) | "Adding the `<node-type>` node and copying its registry definition into the file…" |
 | Edit flow JSON | "Editing the flow JSON to add the `<thing>`." |
 | Edge wiring | "Wiring `<from>` → `<to>` so data flows in the right order." |
 | Variable mapping | "Mapping output variables on the End node — every reachable End needs them." |

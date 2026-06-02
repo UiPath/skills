@@ -9,21 +9,17 @@ description: >
   to the autonomous agent node's `escalation` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 66
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "FraudFlowSol" containing a flow project
-  "FraudFlow". The flow should use an inline low-code agent that
-  triages transactions and escalates uncertain cases to an EXISTING
+  Create a UiPath Flow project "FraudFlow" that uses an inline low-code agent
+  to triage transactions and escalate uncertain cases to an EXISTING
   EXTERNAL ActionCenter app named "FraudEscalationQueue" already
   deployed to the Orchestrator "Shared" folder (not inside this
   solution). Wire the escalation as a resource on the inline agent.
+  The solution should be named "FraudFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

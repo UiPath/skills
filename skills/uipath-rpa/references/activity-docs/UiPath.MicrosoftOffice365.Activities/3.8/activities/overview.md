@@ -6,6 +6,10 @@ Office 365 Outlook mail activity patterns for `UiPath.MicrosoftOffice365.Activit
 
 `UiPath.MicrosoftOffice365.Activities`
 
+## Triggers in this package
+
+This package contains **integration triggers** (the `.Triggers` namespace segment marks them — e.g. `UiPath.MicrosoftOffice365.Activities.Mail.Triggers.NewEmailReceived`) covering Mail, Calendar, Files, and SharePoint. All return `isTrigger: true, triggerType: "integration"` from `uip rpa activities find` and require a `ConnectionId`. **Placement: strict** — first activity of the workflow's root `Sequence`, never inside `ui:TriggerScope`. Orchestrator + Integration Service subscribe externally and dispatch a fresh job per event. The `FilterExpression` property runs server-side — use it for any "fire only if X" logic. See [trigger-pattern-guide.md](../../../../trigger-pattern-guide.md).
+
 ## Key Email Type
 
 `umm:Office365Message` — output of `GetNewestEmail` and `NewEmailReceived`; input to `DownloadEmailAttachments`.

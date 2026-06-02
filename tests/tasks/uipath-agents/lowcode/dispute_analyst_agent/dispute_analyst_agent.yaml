@@ -10,20 +10,14 @@ description: >
   judge to score the system prompt for dispute-domain coverage.
 tags: [uipath-agents, e2e, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 15
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "DisputeSol" containing a single low-code
-  agent "DisputeAnalystAgent".
-
-  The agent analyzes a billing dispute by synthesizing data from four
-  systems and producing a structured analysis.
+  Create a UiPath low-code agent "DisputeAnalystAgent" that analyzes a billing
+  dispute by synthesizing data from four systems and producing a
+  structured analysis. The solution should be named "DisputeSol".
 
   Inputs (all required objects):
     - invoice           — extracted invoice fields

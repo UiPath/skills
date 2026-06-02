@@ -6,13 +6,7 @@ description: >
 tags: [uipath-solution, e2e, mode:build, lifecycle:setup]
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
-  turn_timeout: 600  # publish + deploy + uninstall on tenant exceeds default 300s
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
@@ -26,14 +20,16 @@ initial_prompt: |
   Use the `uipath-solution` skill.
 
   I want to deploy our `e2e-stub` solution onto the tenant end-to-end.
-  Use the unique prefix from `seed.json` so the names don't collide.
+  `seed.json` has a unique prefix (use it in all names so they don't
+  collide) and `parent_folder_path` — that's where I want the deploy's
+  folder to land.
 
   The source .zip lives at
   `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`.
-  Publish it, then deploy it under the name `e2e-deploy-` followed by
-  the prefix. The deployment should provision a folder under Shared/
-  called `e2e-deploy-folder-` followed by the prefix, and that folder
-  should end up with a process from the package inside it.
+  Publish it, then deploy it under the name `e2e-deploy-<prefix>`. The
+  deployment should provision a folder named `e2e-deploy-folder-<prefix>`
+  under `parent_folder_path`, and that folder should end up with a
+  process from the package inside it.
 
   Do NOT ask for approval. Do NOT pause.
 
@@ -45,3 +41,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 9
+  turn_timeout: 600

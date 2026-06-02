@@ -86,6 +86,23 @@ Every `var` / `id` must be globally unique across the case. When a name collides
 
 The `source` and `name` fields keep the original value — only `var` / `id` / `target` get the suffix.
 
+### Pool composition (what to scan)
+
+Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. The pool is global — minting in any one location must consult ALL of the following:
+
+| Source | JSON path | Notes |
+|---|---|---|
+| Root variables | `root.data.uipath.variables.{inputs,outputs,inputOutputs}[]` (v19) / `variables.{inputs,outputs,inputOutputs}[]` (v20) | The canonical case-variable namespace |
+| Task outputs | `nodes[<stage>].data.tasks[<lane>][].data.outputs[]` (for every task) | Self-declared task outputs |
+| Trigger outputs | `nodes[<trigger>].data.uipath.outputs[]` (for every trigger node) | Plain-name auto-emit + Pattern C wires |
+| **Stage entry / exit rule outputs** | `nodes[<stage>].data.entryConditions[].rules[][].uipath.outputs[]` AND `nodes[<stage>].data.exitConditions[].rules[][].uipath.outputs[]` | Connector-bound condition rules — outputs minted under `elementId = <stageId>-<ruleId>` |
+| **Case-exit rule outputs** | `root.caseExitConditions[].rules[][].uipath.outputs[]` (v19) / `metadata.caseExitRules[].rules[][].uipath.outputs[]` (v20) | Connector-bound case-exit rules — outputs minted under `elementId = root-<ruleId>` |
+| **Task-entry rule outputs** | `nodes[<stage>].data.tasks[<lane>][].entryConditions[].rules[][].uipath.outputs[]` (for every task) | Connector-bound task-entry rules — outputs minted under `elementId = <stageId>-<ruleId>` |
+
+**Both directions.** When a connector rule mints outputs, dedupe against the union {tasks ∪ triggers ∪ rules ∪ root}. When a task or trigger mints outputs, dedupe against existing rule outputs too — NOT just tasks + triggers. The shared FE form (`FPSFormServiceTypeFields`) registers rule outputs in the same global pool (`getAllVariables()`), so any duplicate `var` / `id` across the {task, trigger, rule} space collapses in `allInputOutputsByElementMap` and cross-wires ownership at round-trip.
+
+**Skip guard.** Rules with no `uipath.outputs[]` (connector configuration unresolved — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) contribute zero outputs to the pool and must be skipped during enumeration. Same skip pattern as placeholder tasks (`data:{}`).
+
 ## Inputs the plugin reads at Phase 3 Step 6.2
 
 1. **`tasks.md`** variable T-entries — for category, type, default, sourceTrigger(s), sourceField(s)
@@ -404,3 +421,17 @@ This is the **reassign shape** (FE Scenario B/D). The `originalVar` field tells 
 For `=` operator rows (Scenario E), the task plugin emits a separate `custom: true` entry — see Custom Outputs section above.
 
 Per Out-arg companion rule above, the variables plugin ALWAYS writes a `root.inputOutputs[]` companion for Out-args (no longer conditional on Default). For case Variables sourced via `->` from tasks, the companion is also written so the variable is picker-visible at Case Variables panel.
+
+## Connector-Rule Output → variable resolution
+
+Connector condition rules (`rule.uipath.outputs[]`) participate in the case-variable namespace through the same shapes as task outputs — the FE renders the SAME `FPSFormServiceTypeFields` form for both, and `updateRootVariables` is dispatched for rule outputs too (`FPSFormServiceTypeFields.tsx:80`). The variable resolution path is:
+
+- **Extract (`->`)** — rule emits a reassign-shape entry on `rule.uipath.outputs[]` with `originalVar` (load-bearing for `mutateRootVariables` to skip root-mirroring), and Loop B emits the matching `root.inputOutputs[]` companion (`elementId: "root"`, `custom: true`) from the SDD's `Category=Variable` row. The rule's `elementId` on the output entry is `<ownerNodeId>-<ruleId>` (= `<stageId>-<ruleId>` stage-scoped, `root-<ruleId>` case-exit).
+- **Assign (`=`)** — rule emits a `custom: true` Scenario E entry on `rule.uipath.outputs[]` with `value: "<expression>"`. No root mirror per `isUpdateExistingOutput` filter. Loop B emits the `Category=Variable` companion unconditionally (per Loop B line 166); only the `default` field is populated, and only when the SDD declares a Default.
+- **Bare** (no operator) — rule output is gate-local (named like the spec field, e.g. `response` / `Error`); not a case variable. No companion written.
+
+The dispatcher logic lives in [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) (the 3rd dispatch path, parallel to task dispatch). The condition plugins (`plugins/conditions/*/impl-json.md`) invoke it as the last step of their `wait-for-connector` recipe.
+
+Loop B (this file) handles the COMPANION emission — it scans `tasks.md` Case Variables rows agnostically of producer type. A `Category=Variable` row whose producer is a connector rule's `->` extract gets the same companion shape as one whose producer is a task's `->` extract. The producer (task plugin OR condition plugin) is responsible for writing the upstream `outputs[]` entry referencing the companion via `var: <caseVar.id>`.
+
+> **Skip guard.** Rules with no `uipath` (connector configuration unresolved) contribute no outputs to the global pool and no companions to Loop B — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback).

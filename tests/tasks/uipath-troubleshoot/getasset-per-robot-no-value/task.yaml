@@ -1,4 +1,4 @@
-﻿task_id: skill-troubleshoot-getasset-per-robot-no-value
+task_id: skill-troubleshoot-getasset-per-robot-no-value
 description: >
   UiPath diagnostic agent must diagnose a Get Asset failure where the
   target asset exists in the correct folder and has the right type
@@ -12,24 +12,25 @@ description: >
 tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, per-robot-no-value, rpa]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
-  max_turns: 60
-  turn_timeout: 3600   # 60 min per turn — LLMGW-proxied diagnostic runs observe up to ~30 min per turn
 
 run_limits:
-  task_timeout: 1800
+  expected_turns: 43
+  task_timeout: 5400
+
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../_shared/mock_template
-  - type: template_dir
-    path: process
-  - type: template_dir
-    path: fixtures
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
   mock_path_dirs:
-  - mocks
+    - mocks
 
 reference:
   file: RESOLUTION.md

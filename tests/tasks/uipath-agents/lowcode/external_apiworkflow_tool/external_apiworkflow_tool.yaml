@@ -13,21 +13,16 @@ description: >
   the deployed name + folder.
 tags: [uipath-agents, e2e, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 22
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "WeatherSol" containing a single low-code
-  agent "WeatherAgent". The agent accepts a required `location`
-  (string) and returns a number `temperature`. It must compute the
-  temperature using an API workflow named "WeatherAPI" that is
-  already deployed in the tenant — not by reasoning about the answer
-  itself.
+  Create a UiPath low-code agent "WeatherAgent" that accepts a required
+  `location` (string) and returns a number `temperature`. It must
+  compute the temperature using an API workflow named "WeatherAPI"
+  that is already deployed in the tenant — not by reasoning about the
+  answer itself. The solution should be named "WeatherSol".
 
   Use the real folder and process name from the tenant — do not
   hard-code or guess these values. Name the agent's tool resource

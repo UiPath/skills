@@ -27,18 +27,6 @@ description: >
 
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, node:ixp]
 
-task_timeout: 1200
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 60
-  turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 dataset:
   rows:
     - id: aviation
@@ -68,8 +56,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    expected: "yes"
-    skill_name: "uipath:uipath-maestro-flow"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
     description: "Agent invoked the uipath-maestro-flow Skill"
     weight: 2.0
     pass_threshold: 1.0
@@ -152,3 +140,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 60
+  turn_timeout: 1200

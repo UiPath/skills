@@ -34,23 +34,35 @@ jobs:
           BASE_REF="${BASE_REF:-main}"
           CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
 
-          # RPA skill (modern + legacy) runs on the Windows workflow
+          # Windows-tagged tasks run on the Windows workflow
           # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
           # the full lifecycle (`uip rpa` / `uip rpa-legacy` CLI) is
           # what's being exercised — so we skip those tasks here.
-          WINDOWS_SKILLS="uipath-rpa"
+          # Source of truth: the `windows` tag in each task YAML, so adding
+          # a new Windows-only skill is just a tag, not a workflow edit.
+          WINDOWS_TASKS=$(grep -rEl '^tags:.*\bwindows\b' tests/tasks/ 2>/dev/null | sort -u)
+          WINDOWS_SKILLS=$(echo "$WINDOWS_TASKS" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p' | sort -u)
 
           # Opt-in benchmarks live alongside skill tests but are NOT smoke
           # tests — they're large/expensive and run via the dashboard
           # (`dashboard run --suite <name>`). Skip here so smoke stays cheap.
           BENCHMARK_DIRS="activation"
 
-          # Single source of truth for "skill dirs not smoke-eligible".
+          # Single source of truth for "task file not smoke-eligible on Linux".
           # Used by both the test-infra fan-out and the per-skill loop below.
+          # Accepts either a task-file path (matches the windows-task list
+          # exactly) or a `tests/tasks/<skill>/` directory prefix (matches the
+          # derived windows-skills / benchmark dirs).
           is_excluded_path() {
-            local dir="$1"
-            for skill in $WINDOWS_SKILLS $BENCHMARK_DIRS; do
-              [[ "$dir" == "tests/tasks/$skill/"* ]] && return 0
+            local path="$1"
+            for skill in $BENCHMARK_DIRS; do
+              [[ "$path" == "tests/tasks/$skill/"* ]] && return 0
+            done
+            for skill in $WINDOWS_SKILLS; do
+              [[ "$path" == "tests/tasks/$skill/"* ]] && return 0
+            done
+            for t in $WINDOWS_TASKS; do
+              [[ "$path" == "$t" ]] && return 0
             done
             return 1
           }
@@ -94,7 +106,10 @@ jobs:
           fi
 
           # Build task glob pattern for changed skills that have tests.
-          # Skip the Windows-only RPA skills — they run on smoke-rpa-skills.yml.
+          # Skip skills whose tasks are all `windows`-tagged (they run on
+          # smoke-rpa-skills.yml). If a skill ever mixes windows-tagged and
+          # non-windows tasks, switch this to per-task filtering against
+          # $WINDOWS_TASKS instead of skipping the whole skill.
           GLOBS=""
           UNTESTED=""
           for skill in $SKILLS; do
@@ -251,16 +266,56 @@ jobs:
             -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments" \
             | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
           echo "::add-mask::$TOKEN"
+          TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}"
+          TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}"
+          run_uip_with_tenant() {
+            local tenant_name="$1"
+            shift
+            docker run --rm \
+              -e UIPATH_CLI_ENABLE_ENV_AUTH=true \
+              -e UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
+              -e UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
+              -e UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
+              -e UIPATH_CLI_TENANT_NAME="$tenant_name" \
+              -e UIPATH_CLI_TENANT_ID="$TENANT_ID" \
+              --entrypoint /bin/sh \
+              skills-image:latest -lc 'uip "$@"' -- "$@"
+          }
+          if [ -n "$TENANT_ID" ]; then
+            TENANT_NAME_FOR_LIST="${TENANT_NAME:-$TENANT_ID}"
+            TENANTS_JSON=$(run_uip_with_tenant "$TENANT_NAME_FOR_LIST" login tenant list --output json)
+            RESOLVED_TENANT_NAME=$(TENANTS_JSON="$TENANTS_JSON" TENANT_ID="$TENANT_ID" python - <<'PY'
+          import json
+          import os
+
+          data = json.loads(os.environ["TENANTS_JSON"])
+          tenant_id = os.environ["TENANT_ID"]
+          for tenant in data.get("Data", []):
+              if tenant.get("TenantId") == tenant_id:
+                  print(tenant.get("TenantName", ""))
+                  break
+          PY
+          )
+            if [ -n "$RESOLVED_TENANT_NAME" ]; then
+              TENANT_NAME="$RESOLVED_TENANT_NAME"
+            fi
+          fi
+          if [ -z "$TENANT_NAME" ] || [ "$TENANT_NAME" = "UIPATH_TENANT_NAME" ]; then
+            echo "::error::Unable to resolve UIPATH_CLI_TENANT_NAME from UIPATH_TENANT_NAME/UIPATH_TENANT_ID"
+            exit 1
+          fi
+          echo "::add-mask::$TENANT_NAME"
           {
             echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
             echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
             echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
             echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
-            echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
-            echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
+            echo "UIPATH_CLI_TENANT_NAME=$TENANT_NAME"
+            echo "UIPATH_CLI_TENANT_ID=$TENANT_ID"
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
           } >> "$GITHUB_ENV"
           mkdir ~/.uipath
+          run_uip_with_tenant "$TENANT_NAME" login status --output json
 
       - name: Run smoke tests
         env:
@@ -335,6 +390,39 @@ jobs:
           echo ""
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
+
+      - name: Redact secrets from eval report
+        if: always()
+        env:
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+
+          names = (
+              "UIPATH_CLI_AUTH_TOKEN",
+              "AWS_BEARER_TOKEN_BEDROCK",
+              "ANTHROPIC_API_KEY",
+              "TRACES_SMOKE_PROCESS_KEY",
+          )
+          values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
+          if not values:
+              raise SystemExit(0)
+
+          suffixes = {".html", ".json", ".log", ".md"}
+          for path in pathlib.Path("/tmp/runs").rglob("*"):
+              if not path.is_file() or path.suffix not in suffixes:
+                  continue
+              text = path.read_text(encoding="utf-8", errors="ignore")
+              redacted = text
+              for value in values:
+                  redacted = redacted.replace(value, "***")
+              if redacted != text:
+                  path.write_text(redacted, encoding="utf-8")
+          PY
 
       - name: Clean up artifacts (remove .venv and node_modules)
         if: always()

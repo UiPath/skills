@@ -382,8 +382,7 @@ namespace MyProjectName
 
 **Workflow order:** Configure ALL missing targets FIRST, then write the workflow code using real descriptor paths.
 
-**Full configure-target workflow and rules:** [uia-configure-target-workflows.md](../uia-configure-target-workflows.md)
-**Target configuration and selector recovery:** [ui-automation-guide.md](../ui-automation-guide.md)
+[ui-automation-guide.md](../ui-automation-guide.md) MUST be read IN FULL first, and [uia-configure-target-workflows.md](../uia-configure-target-workflows.md) MUST be read IN FULL first — they cover target configuration rules, selector recovery, indication fallback, and multi-step UI flows.
 
 **Key reminders:**
 - Add `using <ProjectNamespace>.ObjectRepository;` to any file referencing `Descriptors.*`

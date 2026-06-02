@@ -17,11 +17,13 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
-| `display-name` | sdd.md (optional) | e.g., "Pre-check", "Interrupt on Fraud" |
+| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. e.g., "Pre-check", "Interrupt on Fraud" |
 | `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | ID of the referenced stage |
-| `condition-expression` | Required for `wait-for-connector` rule-type (and optional for others) | |
+| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — resolved via [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
+| `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning). |
 
 ## Rule-Type Catalog (stage-entry scope)
 
@@ -33,7 +35,7 @@ Allowed `ruleType` values and when to pick each:
 | `selected-stage-completed` | Fires when a specific upstream stage completes | `selectedStageId` |
 | `selected-stage-exited` | Fires when a specific upstream stage exits (even without completing) | `selectedStageId` |
 | `user-selected-stage` | Fires when an upstream stage exits via a `wait-for-user` exit condition and the user selects this stage as the next one. Only stages carrying this rule appear in the picker. | — |
-| `wait-for-connector` | Waits for a connector event | `conditionExpression` |
+| `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields (above); `conditionExpression` optional |
 
 `is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use for exception/interrupt flows.
 
@@ -46,10 +48,13 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 ```markdown
 ## T<n>: Add stage-entry condition for "<stage>" — <summary>
 - target-stage: "<stage-name>"
-- display-name: "<name>"
+- display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
 - is-interrupting: false
 - rule-type: selected-stage-completed
 - selected-stage: "<upstream-stage-name>"
+- condition-expression: "=js:vars.X..."   # optional gate on case state, NOT the event payload
 - order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
+
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning).

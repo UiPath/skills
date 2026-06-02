@@ -64,7 +64,7 @@ The fallback is `core.logic.mock`, full stop. At most run one broader `registry 
 
 ## Listing Published Models
 
-When the user asks what IxP models are available — equivalently, "what runtime projects do I have access to in flow", "what document extractors can I access in flow", "list published extractors" — answer with the same registry search. Each `Data[]` entry corresponds to one published model (a.k.a. runtime project) on the tenant.
+When the user is working with a Maestro flow and asks what IxP models are available — "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "list published extractors", "what extraction nodes are in the registry?" — answer with the same registry search **from the `uipath-maestro-flow` Skill**, not by switching to the `uipath-ixp` Skill (`uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro). Each `Data[]` entry corresponds to one published model (a.k.a. runtime project) visible to the flow registry on this tenant.
 
 ```bash
 uip login status --output json                              # confirm auth — without login, tenant IxP nodes are hidden
@@ -85,12 +85,12 @@ Rules for the listing path:
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
 - **Do NOT search by `"runtime"`, `"document extractor"`, `"extractor"`, or `"IXP"` (uppercase).** These return empty results or agent-tool variants — not extraction nodes. Use `"uipath.ixp"` (lowercase) only.
 - **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates *deployed flow process instances* (with `--folder-key`), not published models. Listing published IxP models always goes through `registry search "uipath.ixp"`.
-- **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist. The CLI returns `unknown command 'list-...'` and there is no fallback path to pursue.
+- **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist. The CLI returns `unknown command 'list-...'` and there is no fallback path to pursue. <!-- uip-check-skip -->
 
 ## Registry Validation
 
 ```bash
-uip maestro flow registry get "<nodeType>" --output json
+uip maestro flow registry get "<node-type>" --output json
 ```
 
 Confirm:
@@ -119,7 +119,7 @@ The IxP node instance is **derived from the registry response**, not authored fr
 Run this once and source every field below from the response:
 
 ```bash
-uip maestro flow registry get "<nodeType>" --output json > <tmpfile>.json
+uip maestro flow registry get "<node-type>" --output json > <tmpfile>.json
 ```
 
 Then assemble the instance by copying these paths verbatim:
@@ -288,7 +288,7 @@ Response shape:
 Agent call sequence:
 
 1. `uip maestro flow registry search "uipath.ixp" --output json` — list IxP nodes.
-2. `uip maestro flow registry get "<nodeType>" --output json` — read `Data.Node.inputDefaults.{folderKey, modelName}` (already done as part of [Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory)).
+2. `uip maestro flow registry get "<node-type>" --output json` — read `Data.Node.inputDefaults.{folderKey, modelName}` (already done as part of [Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory)).
 3. `uip ixp deployments get-taxonomy --folder-key <folderKey> "<modelName>" --output json` — read `documentTaxonomy.documentTypes[].fields[].fieldName`.
 4. Author downstream consumers with `$vars.<id>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName from step 3>')?.Values?.[0]`.
 

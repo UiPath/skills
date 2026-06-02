@@ -75,9 +75,12 @@ def main():
     if case not in CASES:
         sys.exit(f"FAIL: Unknown case {case!r}; expected one of {list(CASES)}")
 
-    # Require both node types — HTTP for the API call and a Transform
-    # variant (generic/filter/map/group-by all share the `core.action.transform`
-    # prefix) for the filter step.
+    # Require an HTTP node for the API call and any `core.action.transform*`
+    # node for the filter step. Substring match accepts both the chained
+    # generic `core.action.transform` and the standalone `.filter` / `.map` /
+    # `.group-by` variants — the prompt is node-agnostic by design (it only
+    # asks for "two distinct steps"), so the checker accepts any transform
+    # variant the agent picks.
     assert_flow_has_node_type(["core.action.http.v2", "core.action.transform"])
 
     article, date1, date2 = CASES[case]

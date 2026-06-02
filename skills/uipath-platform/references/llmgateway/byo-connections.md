@@ -127,6 +127,69 @@ The CLI also runs **client-side preflight** before sending validate, catching th
 
 There is no skip flag. Fix the offending mapping and retry.
 
+## Diagnostics
+
+When a BYO LLM configuration is in place but agent / product calls are failing or behaving unexpectedly, the gateway does not expose per-request logs via CLI. Diagnose by re-probing the configuration and its underlying Integration Service connection.
+
+### "This config was working yesterday, now LLM calls fail"
+
+1. **Re-resolve the underlying IS connection.** `--force-refresh` bypasses cached connection details and re-queries Integration Service. If the connection has been disabled, revoked, or rotated, the resolved `connectionState` / `enabled` field will flip.
+
+   ```bash
+   uip llm-configuration byo-connections get <id> --force-refresh --output json
+   ```
+
+2. **Re-run server-side validation by issuing an idempotent `update`.** `update` always re-runs `POST .../validate`. Re-sending the same mapping forces a fresh probe of the vendor key against the catalog model and surfaces `isAvailable: false` / `isCompatible: false` with a current reason.
+
+   ```bash
+   uip llm-configuration byo-connections update <id> \
+     --llm-name <same> --llm-identifier <same> \
+     --connector-type <same> --api-flavor <same> \
+     --connection-id <same> --output json
+   ```
+
+3. **Check whether the product's allowed-model catalog drifted.** A model may have been removed from the feature's `models[]` since you registered the config, which makes the saved `--llm-name` invalid against current preflight rules.
+
+   ```bash
+   uip llm-configuration byo-connections list-product-configs \
+     --product <product> --feature <feature> --output json
+   ```
+
+   Compare the returned `models[]` and `addYourOwn[<connector-type>]` against the saved configuration's `llmName` and `apiFlavor`.
+
+4. **If the call is being rejected at the gateway with a policy-shaped error (vendor blocked, model not allowed), check tenant-wide AI Trust Layer policy.** BYO records what the customer asked for; AI Trust Layer governance can still override at runtime.
+
+   ```bash
+   uip gov aops-policy deployed-policy resolve \
+     --product AITrustLayer --license-type <type> --tenant <name> --output json
+   ```
+
+   See [uipath-governance](/uipath:uipath-governance) for full AOps policy diagnostics.
+
+### Tenant audit — "which BYO configs are pointing at dead connections?"
+
+`list --include-connection-details` resolves the underlying IS connection for every BYO record in one pass. Filter the output for configs whose `connectionState` is not `Enabled`.
+
+```bash
+uip llm-configuration byo-connections list \
+  --include-connection-details --output json \
+  --output-filter "Data[?connectionState!='Enabled'].{id: id, product: product, feature: operationGroupName, connectionState: connectionState}"
+```
+
+### Cross-checking with trace evidence
+
+When an agent / product run failed and you have a trace ID, fetch the spans and cross-reference the BYO config the call should have routed through:
+
+```bash
+uip traces spans get <trace-id> --output json
+```
+
+Spans expose the model + provider that was actually invoked. A mismatch with the BYO config — wrong vendor, fallback to platform default — is the diagnostic signal: the BYO record was not selected. Common causes: the feature's `modelsConfigurationOption` is `AllModels` but only some models were mapped; the config is `enabled: false`; AI Trust Layer policy overrode the routing.
+
+### What the CLI does NOT expose
+
+There is no `uip llm-configuration logs`, no per-request gateway invocation history, and no historical probe-result query. Diagnose is limited to **current state** (via `get` / `list` / `update` re-probe) and **trace evidence** (which is owned by `uipath-agents` / `uipath-troubleshoot`). For runtime issues that require per-call routing history, raise a support ticket with the trace ID.
+
 ## Typical Flow
 
 1. **Identify the feature shape**: run `list-product-configs --product P --feature F --output json` and read `modelsConfigurationOption`. If it's `AllModels` or `AnyModel`, you must use multi-mapping. If it's `AnyModelWithOwnAdditions`, use single-mapping.
@@ -160,4 +223,4 @@ A non-zero exit code indicates either client-side preflight failure, server-side
 - **`--connection-id` must exist in Integration Service first** — credentials are resolved lazily. If the connection is missing, server-side validation surfaces an unavailability reason and aborts.
 - **Validation is mandatory in `create` / `update`** — no skip flag. The save is aborted if any model fails the probe.
 - **`--product` and `--feature` are case-sensitive.** Use the exact values from `list-product-configs`.
-- **Lists are unpaginated** — there are no `--limit` / `--skip` flags here.
+- **Lists are unpaginated** — there are no `--limit` / `--offset` flags here.

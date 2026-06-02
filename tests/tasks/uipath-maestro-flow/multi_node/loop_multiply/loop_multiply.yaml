@@ -5,12 +5,8 @@ description: >
   wiring, variable updates, and state accumulation.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:loop]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 22
   turn_timeout: 1200
 
 initial_prompt: |

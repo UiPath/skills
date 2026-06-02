@@ -15,15 +15,8 @@ description: >
   and edit shape — the agent must produce the right command sequence,
   preserve baseline assemblies, and emit XAML that matches the legacy
   schema.
-tags: [uipath-rpa, legacy, e2e, mode:edit-validate]
+tags: [uipath-rpa, windows, legacy, e2e, mode:edit-validate]
 max_iterations: 2
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 50
-  turn_timeout: 900
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 initial_prompt: |
   A legacy UiPath RPA project exists at `./InvoiceReader/`. It currently
@@ -48,8 +41,8 @@ initial_prompt: |
     "description": "Legacy invoice reader for refactor smoke test",
     "main": "Main.xaml",
     "dependencies": {
-      "UiPath.System.Activities": "[23.4.4]",
-      "UiPath.Excel.Activities": "[2.21.4]"
+      "UiPath.System.Activities": "[24.10.8]",
+      "UiPath.Excel.Activities": "[2.24.4]"
     },
     "webServices": [],
     "entitiesStores": [],
@@ -190,7 +183,7 @@ success_criteria:
   # Edit shape: Retry Scope correctly wraps the Excel read
   - type: run_command
     description: "Main.xaml has a Retry Scope that nests the Excel read inside its body"
-    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); sys.exit(0 if re.search(r'<RetryScope\\b[^>]*>[\\s\\S]*?(?:ExcelApplicationScope|ExcelReadRange|<ui:ExcelReadRange|<ui:ExcelApplicationScope)[\\s\\S]*?</RetryScope>', s) else 1)\""
+    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); sys.exit(0 if re.search(r'<(?:ui:|uca:|uic:)?RetryScope\\b[^>]*>[\\s\\S]*?<(?:ui:|uea:|ueab:)?(?:ExcelApplicationScope|ExcelReadRange)\\b[\\s\\S]*?</(?:ui:|uca:|uic:)?RetryScope>', s) else 1)\""
     timeout: 5
     expected_exit_code: 0
     weight: 2.5
@@ -200,7 +193,7 @@ success_criteria:
   # value "00:00:05" or numeric 5).
   - type: run_command
     description: "Retry Scope is configured with NumberOfRetries=3 and a 5-second RetryInterval"
-    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); ok = re.search(r'NumberOfRetries=\\\"[\\[\\(]?\\s*3\\s*[\\]\\)]?\\\"', s) and re.search(r'RetryInterval=\\\"[\\[\\(]?\\s*(?:00:00:05|TimeSpan\\.FromSeconds\\(5\\)|New TimeSpan\\(0,\\s*0,\\s*5\\))[\\]\\)]?\\\"', s); sys.exit(0 if ok else 1)\""
+    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); ok = re.search(r'NumberOfRetries=\\W?[\\[\\(]?\\s*3\\s*[\\]\\)]?\\W', s) and re.search(r'RetryInterval=\\W?[\\[\\(]?\\s*(?:00:00:05|TimeSpan\\.FromSeconds\\(5\\)|New TimeSpan\\(0,\\s*0,\\s*5\\))[\\]\\)]?\\W', s); sys.exit(0 if ok else 1)\""
     timeout: 5
     expected_exit_code: 0
     weight: 2.0
@@ -236,3 +229,6 @@ success_criteria:
       - '"Legacy"'
     weight: 1.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 50

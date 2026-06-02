@@ -50,7 +50,7 @@ Then on the Batch Transform node:
 }
 ```
 
-Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment csvFile=./path/to/data.csv` for the `csvFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment csvFile=./path/to/data.csv` for the `csvFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#pre-flight---attachment-binding). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
 
 ## JSON Structure
 
@@ -88,7 +88,7 @@ Populate that variable at runtime with `uip maestro flow debug --attachment <var
 Notes:
 
 - **No instance-level `model` block.** BPMN type and `serviceType: "ECS.BatchTransform"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.batch-transform --output json`. Per [Author capability, rule 15](../../../CAPABILITY.md), node instances normally have no `model` block.
-- **`typeVersion` must match `definitions[<batch-transform>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
+- **`typeVersion` must match `definitions[<batch-transform>].version` exactly** — set it to the `version` field from the `registry get uipath.pattern.batch-transform` response; do not guess. Use the registry's exact form (single-dot `x.y`, e.g. `"1.0"`, not `"1.0.0"`).
 - `inputs.outputColumns` is an **array of objects** with exactly the keys `name` and `description`. Do not flatten to a map (`{ Category: "...", Summary: "..." }`) — the canvas editor and the BPMN serializer expect the array shape.
 - `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows; the engine wraps its result under that key). Do not rewrite to `=batchTransformResult`, `=result.output`, or similar.
 - `outputs.output.type` is **`"file"`**; the result is a file handle (not a row array).

@@ -6,6 +6,9 @@ description: >
 
 tags: [uipath-admin, smoke, create]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   Create a personal access token for CI/CD with read access to Folders
   and Jobs, expiring January 15, 2027.

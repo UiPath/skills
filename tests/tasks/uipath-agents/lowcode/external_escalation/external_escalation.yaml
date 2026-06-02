@@ -9,22 +9,18 @@ description: >
   ActionCenter app.
 tags: [uipath-agents, e2e, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 24
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "FraudSol" containing a low-code agent
-  "FraudTriageAgent". The agent accepts a required `transaction`
-  (object) and returns a `verdict` (string). When the agent is
-  uncertain, it must escalate to a human reviewer via an EXISTING
-  EXTERNAL ActionCenter app named "FraudEscalationQueue" that is
-  already deployed to the Orchestrator "Shared" folder (not inside
+  Create a UiPath low-code agent "FraudTriageAgent" that accepts a required
+  `transaction` (object) and returns a `verdict` (string). When the
+  agent is uncertain, it must escalate to a human reviewer via an
+  EXISTING EXTERNAL ActionCenter app named "FraudEscalationQueue" that
+  is already deployed to the Orchestrator "Shared" folder (not inside
   this solution). Model this as an escalation resource on the agent.
+  The solution should be named "FraudSol".
 
   When writing the escalation resource.json, set `isEnabled` to true so
   the escalation is active for the agent. Set `properties.folderPath`

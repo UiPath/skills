@@ -22,19 +22,10 @@ skip: true
 # (the PR gate is --tags smoke only), so this would fail there until the tenant
 # is provisioned. Flip to `skip: false` once set up per coded/is-e2e-setup.md.
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 1800
   max_turns: 80
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/is_jira_create_issue/seed_jira.py"

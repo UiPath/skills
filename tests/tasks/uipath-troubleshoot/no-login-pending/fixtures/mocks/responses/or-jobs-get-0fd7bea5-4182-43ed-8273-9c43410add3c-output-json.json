@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "0fd7bea5-4182-43ed-8273-9c43410add3c",
+    "State": "Pending",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "BatchExecutionKey": "d4e90cf1-848e-474c-b20b-fe20d97b154a",
+    "CreationTime": "2026-05-27T16:24:24.603Z",
+    "ReleaseName": "ERN",
+    "Type": "Unattended",
+    "EnvironmentVariables": "",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": true,
+    "EntryPointPath": "Ofsb.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+    "Reference": "",
+    "ProcessType": "Process",
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "",
+    "RemoteControlAccess": "None",
+    "AutopilotForRobots": {
+      "Enabled": false,
+      "HealingEnabled": false
+    },
+    "Id": 65330689,
+    "PendingReasons": {
+      "IsValid": false,
+      "Errors": [],
+      "ErrorCodes": [
+        "RobotNoMatchingUsernames"
+      ]
+    }
+  }
+}

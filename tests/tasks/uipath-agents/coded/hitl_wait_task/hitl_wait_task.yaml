@@ -10,12 +10,6 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  turn_timeout: 1200
-
 initial_prompt: |
   Build a UiPath agent named `purchase-gate` that closes the loop
   on purchase requests already opened for human review elsewhere.
@@ -69,3 +63,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 7.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 36
+  turn_timeout: 1200

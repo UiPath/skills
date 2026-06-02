@@ -1,0 +1,63 @@
+task_id: skill-agent-guardrail-recommend-all
+description: >
+  Guardrail recommendation (all scopes): a pre-built Web Research Briefing Agent
+  (web search, web summary, Slack, Jira, CountSources tools) is seeded with no guardrails.
+  Use the skill to recommend and add appropriate guardrails from the catalog. Verifies
+  that catalog and guardrails list are fetched, at least 2 guardrails are added, and the
+  added guardrails include Llm-scoped protection (prompt injection or user prompt attacks)
+  and post-execution content protection (harmful content or intellectual property).
+tags: [uipath-agents, e2e, low-code, guardrail]
+max_iterations: 1
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/WebResearchBriefingSolution
+
+initial_prompt: |
+  I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
+  It searches the web, summarizes findings, and posts results to Slack and Jira. It has
+  no security guardrails yet. Can you check the guardrail catalog and add the ones that
+  make sense for this agent? Make sure it validates when you're done.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the guardrail catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the guardrails list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "At least 2 guardrails added including Llm-scoped and content-safety guardrails"
+    command: "python3 $TASK_DIR/check_recommend_all.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 19
+  max_turns: 40
+  turn_timeout: 1200
+  task_timeout: 1800

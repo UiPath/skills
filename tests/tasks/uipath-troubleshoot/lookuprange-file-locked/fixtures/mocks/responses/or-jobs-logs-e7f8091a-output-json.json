@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T07:45:11.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T07:45:12.690Z",
+      "Message": "[Excel Application Scope] Opening workbook C:\\ProgramData\\Automation\\Invoices.xlsx"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T07:45:14.402Z",
+      "Message": "[Excel Application Scope] The process cannot access the file 'C:\\ProgramData\\Automation\\Invoices.xlsx' because it is being used by another process."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T07:45:14.471Z",
+      "Message": "The process cannot access the file 'C:\\ProgramData\\Automation\\Invoices.xlsx' because it is being used by another process.\r\nin Main.xaml\r\n    at ExcelApplicationScope \"Excel Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T07:45:14.515Z",
+      "Message": "Execution ended in: 00:00:03"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+task_id: skill-test-auth-and-testset-hierarchy-discovery
+description: >
+  Smoke test: agent uses the uipath-test skill to get oriented in Test
+  Manager — verify auth, then walk the discovery chain
+  project → testset → testcases. Asserts auth-first ordering
+  (`uip login status`), project discovery, testset listing scoped by
+  `--project-key`, and testcase listing scoped by `--test-set-key`, all
+  with `--output json`. The skill — not the prompt — teaches the chain
+  and the `--output json` flag.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:test-case]
+
+run_limits:
+  expected_turns: 9
+  max_turns: 30
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  I just got access to UiPath Test Manager and want to see what I have
+  access to. First confirm I'm actually logged in, then show me what
+  projects I can see. Pick one that has test sets, list its test sets,
+  and open the first test set to show the test cases inside.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json` — auth-first, Critical Rule #1 + #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed Test Manager projects (`project list --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+list.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test sets scoped to a project (`testsets list --project-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets?\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets?\s+list\s+.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test cases in a test set (`testsets list-testcases --test-set-key` + `--output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets?\s+list-testcases\s+.*--test-set-key.*--output\s+json|uip\s+tm\s+testsets?\s+list-testcases\s+.*--output\s+json.*--test-set-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project list returns a non-empty Data array (validates the tenant actually has projects, not just that the agent ran the command)"
+    command: |
+      uip tm project list --output json | python3 -c "
+      import json, sys
+      d = json.load(sys.stdin)
+      assert d.get('Result') == 'Success', f'expected Success, got {d.get(\"Result\")}'
+      data = d.get('Data', [])
+      assert isinstance(data, list) and len(data) > 0, f'expected non-empty list, got {data!r}'
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

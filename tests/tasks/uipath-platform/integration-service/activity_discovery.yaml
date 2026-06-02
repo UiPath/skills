@@ -6,6 +6,9 @@ description: >
   and resources.
 tags: [uipath-platform, smoke, integration-service, activities]
 
+run_limits:
+  expected_turns: 9
+
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

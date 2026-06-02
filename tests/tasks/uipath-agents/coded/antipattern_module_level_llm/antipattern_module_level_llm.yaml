@@ -7,12 +7,8 @@ description: >
   inside a node body before `uip codedagent init` is run.
 tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 9
   turn_timeout: 1200
 
 initial_prompt: |

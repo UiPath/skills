@@ -92,7 +92,7 @@ uip or folders delete "Finance/Invoicing" --output json
 uip or folders delete <folder-key-guid> --output json
 ```
 
-The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`). Without `--all`, only folders the current user is assigned to are returned.
+The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, only folders the current user is assigned to are returned.
 
 `folders move` and `folders delete` require admin permissions and accept either a path or a GUID. `delete` errors if the folder still contains processes, queues, assets, or sub-folders — clean those out first or move them with `folders move`.
 
@@ -396,7 +396,7 @@ The role-resolver utility fetches all roles to map GUIDs to numeric IDs. For ten
 
 ### `--all` flag on folders list enables filtering
 
-Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
+Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
 
 ### Personal workspaces are flat
 

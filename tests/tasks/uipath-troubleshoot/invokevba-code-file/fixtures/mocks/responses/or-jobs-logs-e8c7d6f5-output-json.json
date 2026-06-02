@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-13T10:42:18.250Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-13T10:42:18.811Z",
+      "Message": "[Excel Process Scope] Opening workbook reports\\WeeklyKPI.xlsx"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-13T10:42:21.020Z",
+      "Message": "[Use Excel File] Workbook opened successfully"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T10:42:22.041Z",
+      "Message": "[Invoke VBA] Cannot run the macro 'RefreshSheets'. Compile error: Expected: Sub, Function, Property, or Type"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T10:42:22.088Z",
+      "Message": "Cannot run the macro 'RefreshSheets'. Compile error: Expected: Sub, Function, Property, or Type\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-13T10:42:22.105Z",
+      "Message": "Execution ended in: 00:00:04"
+    }
+  ]
+}

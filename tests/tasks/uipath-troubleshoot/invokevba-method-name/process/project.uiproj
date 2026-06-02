@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceImporter",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Invoke VBA failure caused by an EntryMethodName typo (ProcessInvoces vs ProcessInvoices).",
+  "MainFile": "Main.xaml"
+}

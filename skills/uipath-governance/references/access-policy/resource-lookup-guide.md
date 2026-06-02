@@ -18,7 +18,7 @@ All commands assume the user is already logged in (`uip login status --output js
 
 > **Scope.** This flag table applies to the `uip or` commands documented below (§1 Processes, §2 Folders) only. The `uip admin` commands used in §3 (Users, Groups, Robots) and §4 (Resource Catalog tags) follow the `uip admin` flag conventions documented under [/uipath:uipath-admin — identity-commands.md](../../../uipath-admin/references/identity-commands.md) — notably, `uip admin groups list` should not pass `--organization` because it should use current login organization.
 
-`--output json`, `--limit`, `--offset`, `--order-by`, and `--login-validity` are shared with `uip gov access-policy` — see [access-policy-commands.md § Common flags](./access-policy-commands.md#common-flags-shared-across-uip-list-commands) for the canonical descriptions. The `uip or`-only flags below extend that set:
+`--output json`, `--limit`, `--offset`, `--sort-by`, and `--login-validity` are shared with `uip gov access-policy` — see [access-policy-commands.md § Common flags](./access-policy-commands.md#common-flags-shared-across-uip-list-commands) for the canonical descriptions. The `uip or`-only flags below extend that set:
 
 | Flag | Purpose |
 |------|---------|
@@ -227,7 +227,7 @@ With no `--tenant`, the command targets the tenant in the current `uip login` co
 | `--type Label\|KeyValue` | Optional | Defaults to `Label` (the type used by `tags.values[]` in `ToolUsePolicy` access policies). Pass `KeyValue` only when the user is asking about key/value tags, which the access-policy schema does **not** consume. |
 | `--starts-with <PREFIX>` | Optional | Server-side prefix filter (case-insensitive on `normalizedName`). Use whenever the user named a tag substring ("anything starting with prod"). |
 | `--limit <N>` | Optional | Page size (default `100`). |
-| `--skip <N>` | Optional | Row offset (default `0`). |
+| `--offset <N>` | Optional | Row offset (default `0`). |
 | `--tenant <NAME>` | Optional | **Targets a different tenant in the same organization.** Do NOT pass this when verifying tags for the policy under construction — see [Tenant alignment](#tenant-alignment) below. |
 
 ### Response shape

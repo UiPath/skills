@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     assert_count,
     find_edges,
     find_node_by_label,
@@ -83,7 +84,6 @@ def main():
 
     expected_skeleton_types_per_stage = {
         "Triage": {"rpa", "api-workflow"},
-        "Validate": {"action"},
         "Enrich": {"agent"},
         "Join": {"case-management"},
     }
@@ -111,18 +111,25 @@ def main():
                     f"connector tasks); got data keys {sorted(data.keys())}"
                 )
 
+    # Validate is an intentional empty pass-through branch (no tasks). A
+    # skeleton action UserTask cannot survive a live debug run, so this stage
+    # carries no task — see check history / fan_in_join.yaml.
+    validate_lanes = (validate.get("data") or {}).get("tasks") or []
+    if any(t for lane in validate_lanes for t in (lane or [])):
+        sys.exit("FAIL: Validate stage must be an empty pass-through (no tasks)")
+
     payload = start_debug(timeout=540)
     payload_contains(
         payload, "Triage", "Validate", "Enrich", "Join", require_all=False
     )
-    status = payload.get("finalStatus") or payload.get("status")
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: diamond topology Triage→{Validate,Enrich}→Join with two "
         "selected-stage-completed entry rules on Join referencing both upstream "
-        "stages; 5 skeleton tasks across 4 stages cover 5 plugin types "
-        "(Triage:{rpa, api-workflow}, Validate:action, Enrich:agent, "
-        f"Join:case-management) all with empty data; debug payload returned (status={status})"
+        "stages; 4 skeleton tasks across 3 stages cover 4 plugin types "
+        "(Triage:{rpa, api-workflow}, Enrich:agent, Join:case-management), "
+        f"Validate empty; debug payload returned (status={status})"
     )
 
 

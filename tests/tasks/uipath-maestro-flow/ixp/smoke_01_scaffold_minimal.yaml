@@ -10,19 +10,6 @@ description: >
   correctness only.
 
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:ixp]
-
-task_timeout: 600
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 40
-  turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Create a new Maestro Flow project called "Smoke" with a manual trigger, an
   extract node, and a script node that just logs "ok". Wire the extracted
@@ -43,8 +30,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    expected: "yes"
-    skill_name: "uipath:uipath-maestro-flow"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
     description: "Agent invoked the uipath-maestro-flow Skill"
     weight: 2.0
     pass_threshold: 1.0
@@ -87,3 +74,9 @@ success_criteria:
       - "$vars."
     weight: 1.5
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 27
+  max_turns: 40
+  turn_timeout: 600
+  task_timeout: 600

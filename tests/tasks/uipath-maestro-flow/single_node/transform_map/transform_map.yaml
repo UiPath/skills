@@ -1,0 +1,63 @@
+task_id: skill-flow-transform-map
+description: >
+  Smoke test: agent builds a pure-OOTB UiPath Flow with a single
+  `core.action.transform.map` node that maps a small static collection
+  (uppercasing a name field). Exercises Transform Map node discovery, the
+  plain-`$vars` `collection` path contract, and the map operation's
+  `config.mappings` shape. Validate-only — no tenant, no `flow debug`.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, node:transform, feature:transform]
+
+run_limits:
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "TransformMapDemo" that contains a single
+  Transform Map node which uppercases a `name` field over a small static
+  collection of people.
+
+  Requirements:
+
+    - Use a manual trigger -> the Transform Map node -> an End node.
+    - The transform node MUST be the dedicated map variant: its `type` must be
+      exactly `core.action.transform.map` (NOT the generic
+      `core.action.transform`, and NOT `.filter` or `.group-by`).
+    - Hold the static collection in a flow variable (or an upstream
+      static-data / script node). Example rows:
+      `[{ "name": "alice" }, { "name": "bob" }]`.
+    - The node's `inputs.collection` MUST be a plain `$vars.<...>` variable
+      path (e.g. `$vars.people.output` or `$vars.people`). Do NOT wrap it in
+      `=js:` and do NOT set it to an inline array literal.
+    - `inputs.operations` must contain one operation with `type: "map"` whose
+      `config.mappings` includes a mapping with `field: "name"` and
+      `transformation: "uppercase"`.
+    - The node `outputs.output.source` must be `=result.response` and
+      `outputs.error.source` must be `=Error`.
+    - Set the node's `typeVersion` from the node registry for
+      `core.action.transform.map` — do NOT hardcode a guessed version (the
+      skill's workflow teaches how to read the registry).
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its
+  workflow steps exactly — in particular, the transform plugin's Map JSON
+  shape and the `collection` path contract.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate TransformMapDemo/TransformMapDemo/TransformMapDemo.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Structural checks (exact map variant, collection path, mappings) ────
+  - type: run_command
+    description: "Flow has exactly one core.action.transform.map node with a $vars collection and a uppercase name mapping"
+    command: "python3 $TASK_DIR/check_transform_map_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

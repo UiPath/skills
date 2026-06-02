@@ -50,6 +50,7 @@ def main() -> int:
     deleted: list[str] = []
     preserved: list[str] = []
     skipped: list[str] = []
+    not_uploaded: list[str] = []
     failed: list[str] = []
 
     for path in paths:
@@ -85,21 +86,41 @@ def main() -> int:
         if r.returncode == 0:
             logger.info("deleted %s (from %s)", sid, path)
             deleted.append(sid)
+            continue
+
+        # `uip solution delete` writes its envelope to stdout (including
+        # failures); stderr is empty. Parse the envelope to surface the real
+        # reason and to distinguish "never uploaded" from genuine failures.
+        envelope_msg = ""
+        try:
+            envelope = json.loads(r.stdout or "{}")
+            envelope_msg = envelope.get("Message", "") or ""
+        except json.JSONDecodeError:
+            envelope_msg = (r.stdout or "").strip()
+
+        if "404" in envelope_msg or "Not Found" in envelope_msg:
+            # Solution never registered in Studio Web — `.uipx` carries a
+            # locally-generated SolutionId from `solution init`, and tasks
+            # that don't `upload`/`flow debug` leave it unregistered.
+            # Nothing to clean up server-side.
+            logger.info("solution %s not uploaded (from %s); nothing to clean up", sid, path)
+            not_uploaded.append(sid)
         else:
             logger.warning(
                 "failed to delete %s (exit %d): %s",
                 sid,
                 r.returncode,
-                r.stderr.strip()[:300],
+                (envelope_msg or r.stderr.strip())[:300],
             )
             failed.append(sid)
 
     logger.info(
-        "summary policy=%s deleted=%d preserved=%d skipped=%d failed=%d",
+        "summary policy=%s deleted=%d preserved=%d skipped=%d not_uploaded=%d failed=%d",
         policy,
         len(deleted),
         len(preserved),
         len(skipped),
+        len(not_uploaded),
         len(failed),
     )
     return 0

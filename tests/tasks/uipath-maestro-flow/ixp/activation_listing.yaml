@@ -14,18 +14,6 @@ description: >
 
 tags: [uipath-maestro-flow, smoke, activation, ixp, listing]
 
-# Listing is a one-shot Q&A — no need for the full activation budget.
-task_timeout: 300
-
-agent:
-  type: claude-code
-  max_turns: 20
-  turn_timeout: 300
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 dataset:
   rows:
     - id: ixp-models
@@ -41,8 +29,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    expected: "yes"
-    skill_name: "uipath:uipath-maestro-flow"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
     description: "Agent invoked the uipath-maestro-flow Skill"
     weight: 2.0
     pass_threshold: 1.0
@@ -56,12 +44,16 @@ success_criteria:
     pass_threshold: 1.0
 
   # Inverted check: a listing/Q&A task should NOT create a .flow file.
-  # Same `../..` rationale as activation.yaml — dataset-fanout cwd is
-  # <run>/artifacts/<outer_task_id>/<row_id>/. `! find ... | grep -q .` exits
-  # 0 when no .flow file is found (PASS) and 1 when one exists (FAIL).
+  # `! find ... | grep -q .` exits 0 when no .flow file is found (PASS)
+  # and 1 when one exists (FAIL).
   - type: run_command
     description: "No .flow file was created (listing is read-only Q&A, not a build task)"
-    command: '! find ../.. -name "*.flow" -type f | grep -q .'
+    command: '! find . -name "*.flow" -type f | grep -q .'
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 20
+  turn_timeout: 300
+  task_timeout: 300

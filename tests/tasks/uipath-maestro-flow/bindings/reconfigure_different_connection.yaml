@@ -8,11 +8,6 @@ description: >
   See https://github.com/UiPath/cli/pull/2197.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, bindings, regression]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
   task_timeout: 3600
   max_turns: 60
@@ -21,13 +16,30 @@ run_limits:
 initial_prompt: |
   Load the uipath-maestro-flow skill and follow its workflow exactly.
 
+  PRECONDITION CHECK — do this FIRST, before any flow work:
+  Run `uip is connections list --all-folders --output json` once. Group the
+  enabled connections by `ConnectorKey` and find a connector with two or
+  more enabled connections. That connector supplies A and B.
+
+  If no connector has two or more enabled connections, the precondition
+  is not met for this tenant. Stop IMMEDIATELY: write
+  `PRECONDITION_NOT_MET.txt` at the sandbox root containing one line per
+  ConnectorKey with its enabled-connection count, then end your turn.
+
+  Do NOT try to create a second connection via `uip is connections create`
+  or `--no-wait`. OAuth authorization requires an interactive browser and
+  cannot complete in this sandbox; pending connections are not a valid
+  substitute. Do NOT scan for mocks or alternative connectors beyond the
+  single `connections list` call above.
+
+  If the precondition IS met, proceed:
+
   Build a flow named "BindingsReconfigure" — Manual Trigger → IS connector
   node → End — saved as `BindingsReconfigure/flow_files/BindingsReconfigure.flow`
   with `BindingsReconfigure/project.uiproj`.
 
-  Pick two distinct connections (different connectionIds) backed by the same
-  connector — if the tenant only has one connection for a given connector,
-  fall back to any connector that has two live connections.
+  Pick the connector that has two or more enabled connections, and use two
+  distinct connection ids from that connector as A and B.
 
   Record the ids at the sandbox root and snapshot the .flow after each configure:
 

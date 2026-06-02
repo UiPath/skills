@@ -14,23 +14,19 @@ description: >
   `uipath-uipath-airdk` (GenAI Activities) connector available.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 56
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "ResearchFlowSol" containing a flow project
-  "ResearchFlow". The flow should use an inline low-code agent that
-  searches the web using the "WebSearch" activity from the UiPath
-  GenAI Activities Integration Service connector (connector key
+  Create a UiPath Flow project "ResearchFlow" that uses an inline low-code
+  agent to search the web using the "WebSearch" activity from the
+  UiPath GenAI Activities Integration Service connector (connector key
   `uipath-uipath-airdk`). Wire the Integration Service activity as a
   tool on the inline agent via the flow canvas, update the agent
   bindings, and refresh the solution so the connection resource is
-  provisioned. Validate the inline agent.
+  provisioned. Validate the inline agent. The solution should be named
+  "ResearchFlowSol".
 
   Do NOT invoke the connector at runtime.
 

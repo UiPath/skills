@@ -5,16 +5,12 @@ description: >
   the skill teaches the correct solution-first workflow and CLI usage.
 tags: [uipath-agents, smoke, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 12
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a low-code agent "GreeterAgent" that accepts a required
+  Create a UiPath low-code agent "GreeterAgent" that accepts a required
   `name` (string) and returns a `greeting` (string). Make sure it
   validates successfully. The solution should be named "GreetSol".
 

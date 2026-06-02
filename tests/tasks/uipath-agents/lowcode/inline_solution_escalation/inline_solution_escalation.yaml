@@ -9,20 +9,16 @@ description: >
   to the autonomous agent node's `escalation` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 62
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "ReviewFlowSol" containing a flow project
-  "ReviewFlow". The flow should use an inline low-code agent that
-  moderates user content and escalates uncertain cases to a human
+  Create a UiPath Flow project "ReviewFlow" that uses an inline low-code agent
+  to moderate user content and escalate uncertain cases to a human
   reviewer via a UiPath ActionCenter app provisioned INSIDE this same
   solution. Wire the escalation as a resource on the inline agent.
+  The solution should be named "ReviewFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

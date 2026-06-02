@@ -7,13 +7,7 @@ description: >
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
-  turn_timeout: 600  # agent occasionally explores trigger CLI surface — give it room
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
@@ -48,3 +42,6 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 600

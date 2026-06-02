@@ -8,15 +8,12 @@ description: >
   columns in a CSV file.
 tags: [uipath-data-fabric, smoke, complex-fields, bulk-import]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 15
   max_turns: 25
 
 sandbox:
   driver: docker
-  python: {}
 
 initial_prompt: |
   OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.

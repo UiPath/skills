@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     assert_count,
     find_node_by_label,
     find_triggers,
@@ -26,9 +27,13 @@ def main():
         uipath = ((t.get("data") or {}).get("uipath")) or {}
         service_types.append(uipath.get("serviceType"))
 
-    if "None" not in service_types:
+    # Manual trigger accepts either form: no data.uipath key (serviceType None)
+    # OR an explicit serviceType "None". See triggers/manual/impl-json.md.
+    manual_count = sum(1 for s in service_types if s in (None, "None"))
+    if manual_count != 1:
         sys.exit(
-            f"FAIL: no manual trigger (serviceType='None'); got {service_types}"
+            f"FAIL: expected exactly 1 manual trigger (no data.uipath key or "
+            f"serviceType='None'); got {service_types}"
         )
     timer_count = sum(1 for s in service_types if s == "Intsvc.TimerTrigger")
     if timer_count != 2:
@@ -84,7 +89,7 @@ def main():
 
     payload = start_debug(timeout=540)
     payload_contains(payload, "Run", require_all=False)
-    status = payload.get("finalStatus") or payload.get("status")
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: 3 triggers (manual + infinite hourly R/PT1H + bounded daily "

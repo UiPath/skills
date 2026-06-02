@@ -6,13 +6,6 @@ description: >
   case validates. Action-app likely unresolved in test env — skeleton task
   (empty data) is acceptable.
 tags: [uipath-maestro-case, smoke, lifecycle:generate, shape:single-node, node:hitl]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 80
-  turn_timeout: 600
-
 initial_prompt: |
   Create a UiPath Case Management project named "InvoiceApprovalCase" with a
   manual trigger and a single stage "Review" that contains one HITL action
@@ -147,3 +140,8 @@ success_criteria:
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
     timeout: 120
+
+run_limits:
+  expected_turns: 69
+  max_turns: 80
+  turn_timeout: 600

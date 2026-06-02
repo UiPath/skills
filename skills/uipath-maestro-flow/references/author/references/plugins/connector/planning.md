@@ -41,10 +41,20 @@ Examples:
 ## Discovery
 
 ```bash
-uip maestro flow registry search <service> --output json
+uip maestro flow registry search <service> --output json \
+  --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"
 ```
 
-Confirm `category: "connector"` in the results. If the connector key fails, list all connectors:
+`registry search` returns `Data` as a flat array, and each row uses PascalCase fields (`NodeType`, `DisplayName`, `Description`, `AvailableOnTenant`). Do **not** parse `Data.Nodes`, lowercase `type`, or lowercase `category`; those shapes do not exist in the CLI JSON output.
+
+For connector activities, use `NodeType` as the source of truth:
+
+- Activity rows start with `uipath.connector.<connector-key>.`
+- Trigger rows start with `uipath.connector.trigger.` and belong to the connector-trigger guide
+- `NodeType` is the exact value to pass to `registry get` and `node add`
+- `Category` can be tenant/internal metadata such as `connector.<id>` and is not a reliable connector-key source
+
+If the connector key fails, list all connectors:
 
 ```bash
 uip is connectors list --output json
@@ -82,12 +92,16 @@ Lock the chosen connector key in the planning notes — never re-derive per node
 
 For each connector found in registry search, verify a healthy connection exists. Extract the connector key from the node type name (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` -> key is `uipath-microsoft-outlook365`).
 
+**Never type a connector key from memory.** Use the key from the `registry search` node type only. The registry key is frequently prefixed or qualified differently than the service's brand name (e.g. an Outlook connector keys as `uipath-microsoft-outlook365`, not `outlook`), so a guessed key silently misses the real connector and makes `connections list` return a false "No connections found."
+
 ```bash
-uip is connections list "<connector-key>" --output json
+uip is connections list "<connector-key>" --all-folders --output json
 ```
 
+> `--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<connector-key>"` is forbidden for discovery.
+
 - If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for implementation planning.
-- **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing.
+- **If the result is empty, do not conclude "no connection exists."** An empty `connections list` is suspicious, not authoritative. Three things must hold before you treat it as real: (a) the key came from `registry search`, not memory; (b) the call used `--all-folders`; (c) a `--refresh` retry was still empty. Only then surface it in **Open Questions** so the user can create one while reviewing. Never ask the user a connection-creation question on an unverified empty result. See [impl.md](impl.md) for the platform-skill empty-result recovery path shared with implementation.
 
 ## Ports
 

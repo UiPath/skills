@@ -7,9 +7,13 @@ description: >
   tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   List the processes published in the `Finance/Accounting` folder of the
-  current UiPath tenant.
+  current UiPath tenant. Use that folder path directly when calling the CLI;
+  do not spend time discovering or validating the folder first.
 
   Note: the folder may not exist on this tenant. We're checking that the
   CLI invocation has the right shape — an auth/404 response is acceptable.
@@ -40,4 +44,3 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-

@@ -9,17 +9,13 @@ description: >
   none of which are covered by create-from-scratch tests.
 tags: [uipath-agents, smoke, mode:build]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 19
   max_turns: 60
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a low-code agent "GreeterAgent" that accepts a required
+  Create a UiPath low-code agent "GreeterAgent" that accepts a required
   `name` (string) and returns a `greeting` (string). Validate and
   migrate it. The solution should be named "GreetSol".
 

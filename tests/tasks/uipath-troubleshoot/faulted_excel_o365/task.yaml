@@ -14,27 +14,26 @@ tags: [uipath-troubleshoot, e2e, faulted-jobs, faithful-replay, integration-serv
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
 # specific to this scenario. `type` is required by the TaskDefinition schema
 # even though it could be inherited.
+
 agent:
-  type: claude-code
-  # Need Skill/Agent/AskUserQuestion/TodoWrite beyond the default's set;
-  # the troubleshooting skill orchestrates sub-agents.
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 47
   task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../_shared/mock_template
-  - type: template_dir
-    path: process
-  - type: template_dir
-    path: fixtures
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
   mock_path_dirs:
-  - mocks
+    - mocks
 reference:
   file: RESOLUTION.md
 

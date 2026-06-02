@@ -5,18 +5,14 @@ description: >
   fixture" matrix and complements the validate-side fixture smoke.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:package"]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 20
   max_turns: 30
-  turn_timeout: 900
 
 sandbox:
   template_sources:
-  - type: template_dir
-    path: ../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.

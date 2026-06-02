@@ -53,7 +53,7 @@ Then on the Summarize node:
 }
 ```
 
-Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#pre-flight---attachment-binding). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
 
 ## JSON Structure
 
@@ -112,7 +112,7 @@ Populate that variable at runtime with `uip maestro flow debug --attachment <var
 Notes:
 
 - **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [Author capability, rule 15](../../../CAPABILITY.md), node instances normally have no `model` block.
-- **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
+- **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — set it to the `version` field from the `registry get uipath.pattern.deep-rag` response; do not guess. Use the registry's exact form (single-dot `x.y`, e.g. `"1.0"`, not `"1.0.0"`).
 - `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows). Do not rewrite to `=deepRagResult` or similar.
 - `outputs.output.type` is **`"object"`**, with the nested PascalCase schema above.
 - Setting `returnCitations: true` populates `content.Citations`; setting `false` omits the array entirely (the downstream consumer should tolerate either).

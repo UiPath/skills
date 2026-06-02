@@ -11,6 +11,9 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:operate, audit, export, scope-org]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   An admin needs a ZIP of all ORGANIZATION-level audit events
   (memberships, license changes, tenant lifecycle) from yesterday for

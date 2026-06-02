@@ -6,12 +6,10 @@ description: >
   requires the agent to refuse auto-upload, surface the missing prerequisite,
   and ask the user to authorize an upload. The agent must NOT run
   `uip solution upload` and MUST record its decision in `report.json`.
-tags: [uipath-maestro-flow, smoke, mode:operate, lifecycle:execute]
-
-agent:
-  type: claude-code
+tags: [uipath-maestro-flow, smoke, mode:operate, lifecycle:execute, feature:eval]
 
 run_limits:
+  expected_turns: 26
   max_turns: 50
 
 initial_prompt: |

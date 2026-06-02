@@ -7,6 +7,9 @@ description: >
   loading the skill.
 tags: [uipath-planner, smoke, lifecycle:plan]
 
+run_limits:
+  expected_turns: 4
+
 initial_prompt: |
   Help me plan a UiPath solution from scratch — a multi-step process that
   spans several skills. Load the appropriate UiPath skill for this work.

@@ -10,18 +10,11 @@ description: >
   sidecar (that path is lowcode-only and ignored in coded agents).
 tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, feature:integration-service]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
-  turn_timeout: 900
+  expected_turns: 20
   max_turns: 30
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
       path: fixtures

@@ -1,0 +1,174 @@
+task_id: skill-troubleshoot-lookup-formula-cells
+description: >
+  UiPath troubleshooting agent must diagnose a classic Lookup Range silent miss
+  caused by the target cell being the computed result of an Excel formula: the
+  PublishedPrices sheet's SKU column is built from a VLOOKUP against an upstream
+  SourceFeed sheet, so the unattended robot's Excel session reads a stale/null
+  cached value via Interop and Lookup Range returns empty even though the cell
+  visibly displays the SKU when the file is opened by hand. Main.xaml has no
+  filter (the active-filters cause is ruled out), and the formula nature of the
+  cell is discoverable by asking the user. Success = agent matches the
+  lookup-range-formula-cells playbook AND identifies the formula/cache cause AND
+  recommends converting formulas to static values (Paste Special > Values) OR
+  migrating to the Workbook Read Range + Lookup Data Table path.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 60
+turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My DailyPriceSync process is faulting every afternoon in Orchestrator. It
+  throws "Today's published price for SKU-7392 not found in PublishedPrices
+  sheet", but SKU-7392 is right there in the PublishedPrices sheet when I
+  open the workbook - I can see today's price next to it. The folder is
+  "RPA Production".
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the lookup-range-formula-cells playbook AND identified the formula-cache cause AND recommended Paste-Special-Values OR Workbook Read Range + Lookup Data Table"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My DailyPriceSync process faults every afternoon with 'Today's
+         published price for SKU-7392 not found in PublishedPrices sheet',
+         but SKU-7392 is in the sheet with today's price next to it.
+         Folder 'RPA Production'."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/lookup-range-formula-cells.md
+        because the symptom is the playbook's signature: Lookup Range
+        completes without throwing, returns empty/null even though the cell
+        the search value should match visibly displays the expected text;
+        the target cell holds an Excel formula whose cached value the
+        Interop read does not see correctly.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Main.xaml runs a classic Lookup Range against the PublishedPrices
+            sheet with no filter or other pre-step that would hide rows.
+          - The PublishedPrices sheet's SKU column is the result of a
+            VLOOKUP against an upstream SourceFeed sheet (the user confirms
+            this when asked about how the column is populated).
+          - The unattended robot's Excel Interop session reads the cell's
+            cached calculated value; for a freshly-recomputed cross-sheet
+            VLOOKUP the cache can be stale or null, so the Interop read
+            returns empty and Lookup Range cannot match SKU-7392 -- even
+            though the cell visibly shows it when a user opens the file.
+          - The value is genuinely present visually; the Interop read of
+            the formula's cached value just doesn't see it.
+        The reference fix is one of:
+          - Convert the SKU column from formulas to static values
+            (Copy > Paste Special > Values, then save) so Lookup Range
+            matches a literal-text cell rather than a computed one; OR
+          - Replace classic Lookup Range + Excel Application Scope with the
+            Workbook Read Range (OpenXML) + Lookup Data Table path, which
+            reads the workbook's last-saved cached calculated values without
+            re-evaluating formulas through Interop.
+        Either fix is acceptable on its own; both is fine.
+
+        The agent should:
+          1. Read Main.xaml and confirm there is no filter (so the active-
+             filters cause is ruled out) and the activity is a classic
+             Lookup Range inside an Excel Application Scope on the
+             PublishedPrices sheet.
+          2. Ask the user how the SKU column in PublishedPrices is
+             populated (the persona confirms it is a VLOOKUP from the
+             SourceFeed sheet) -- this is the signal that points at the
+             formula-cells playbook.
+
+      SCORING RUBRIC:
+        1.0  Agent matched lookup-range-formula-cells AND identified the
+             formula/cache cause (cell's calculated value, Interop reads
+             cached value that is stale/empty) AND recommended either
+             Paste-Special-Values OR the Workbook Read Range + Lookup
+             Data Table migration.
+        0.8  Correct playbook and formula cause, but the fix is vague
+             (e.g., "the formula is the problem" without naming
+             Paste-Special-Values or the Workbook migration).
+        0.5  Recognized present-but-not-matched silent miss but attributed
+             it to a sibling cause that does NOT fit the evidence: active
+             filters (Main.xaml has none), wildcards (search value is a
+             clean SKU literal), type/whitespace mismatch (search value
+             and cell text both display the SKU cleanly), or null
+             reference (the lookup ran without throwing).
+        0.2  Concluded the value is simply absent / the data is wrong,
+             contradicting the user's "it's definitely there".
+        0.0  Wrong cause unrelated to the lookup result (e.g., Excel not
+             installed, file locked, COM interop fault), or matched no
+             playbook.
+
+      The agent has the workflow source; the absence of a filter is
+      visible in Main.xaml, and the formula nature of the SKU column is
+      learnable by asking the user. Reward both observations. Do not
+      require the agent to have read the binary .xlsx (it cannot).
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing DailyPriceSync process.
+    You are certain SKU-7392 is in the PublishedPrices sheet because you can
+    see the row when you open the file. You only have the information in
+    your initial report PLUS this one fact you only reveal when asked: the
+    SKU column in the PublishedPrices sheet is built by a VLOOKUP against
+    a separate SourceFeed sheet -- you do not consider this relevant to the
+    failure and only mention it if the agent specifically asks about how
+    the SKU values get into the PublishedPrices sheet, where the SKU column
+    comes from, whether the cell is a formula, or how the column is
+    populated/calculated.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks whether SKU-7392 is really in the file, confirm yes - you can see the row when you open it manually and today's price is next to it."
+    - "If the agent asks how the SKU column in PublishedPrices is populated, where the SKUs come from, whether the cell is a formula, or anything that points at the cell content's source, confirm it is a VLOOKUP that pulls from a separate SourceFeed sheet maintained by an upstream job."
+    - "If the agent asks about filters, AutoFilters, hidden rows, or row visibility, say there are no filters applied that you are aware of."
+    - "If the agent asks about the SKU value itself (whitespace, type, casing), say it is a plain SKU string with no extra characters."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent factual data beyond what is stated in the persona and these constraints."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

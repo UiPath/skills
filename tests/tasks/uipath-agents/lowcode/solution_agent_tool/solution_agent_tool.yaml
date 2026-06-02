@@ -9,18 +9,14 @@ description: >
   and distinct projectId UUIDs across agents.
 tags: [uipath-agents, e2e, low-code]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 31
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "OrchestratorSol" with two low-code
-  agents, "ParentAgent" and "ToolAgent". ToolAgent echoes back the
-  string it receives. ParentAgent should use ToolAgent as a tool.
+  Create two UiPath low-code agents, "ParentAgent" and "ToolAgent". ToolAgent
+  echoes back the string it receives. ParentAgent should use ToolAgent
+  as a tool. The solution should be named "OrchestratorSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

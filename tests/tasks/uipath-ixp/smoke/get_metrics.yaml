@@ -1,18 +1,16 @@
 task_id: skill-ixp-get-metrics-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-ixp skill to fetch
-  per-field validation metrics (F1/Precision/Recall) for an existing IXP
-  project before deciding which fields to iterate on. Tests whether the
-  skill teaches the correct CLI command (`uip ixp projects get-metrics`),
-  the positional project-Name argument (NOT Title), and the `--output
-  json` convention. Per the skill's improve-prompts-guide, get-metrics is
-  the canonical first step before any prompt update.
+  Smoke: agent picks `uip ixp projects get-metrics <Name>
+  --output json` to fetch per-field F1/Precision/Recall before
+  iterating on prompts. Locks in the project-`Name` argument
+  (not `Title`) and `--output json`.
 
-  Platform note: the smoke test runs without an authenticated tenant, so
-  `uip ixp` commands that hit the service will fail with an auth error.
-  That is acceptable — what matters is that the agent invokes the correct
-  command with the correct flags.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, lifecycle:discover]
+
+run_limits:
+  expected_turns: 4
 
 initial_prompt: |
   A document automation engineer wants to inspect the per-field F1 scores

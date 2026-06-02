@@ -7,6 +7,9 @@ description: >
   applies.
 tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:conversational, feature:framework-llamaindex]
 
+run_limits:
+  expected_turns: 22
+
 initial_prompt: |
   hey, can you set up a tiny LlamaIndex chat agent here called
   `chat-agent`? it should just take a message and reply with the same

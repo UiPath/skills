@@ -9,10 +9,8 @@ description: >
   validation of the authored .flow file. Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, brown-field, multi-hitl, hr-onboarding]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 21
   max_turns: 50
   turn_timeout: 1200
 
@@ -44,6 +42,7 @@ initial_prompt: |
 
   Wire the completed handles for both HITL nodes to their respective downstream
   steps. Validate the full flow after both nodes are added.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Complete the task end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains

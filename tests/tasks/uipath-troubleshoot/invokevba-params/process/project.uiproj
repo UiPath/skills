@@ -1,0 +1,6 @@
+{
+  "Name": "LedgerPoster",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Invoke VBA failure caused by EntryMethodParameters arity mismatch (1-element array passed to a Sub that requires 2 arguments).",
+  "MainFile": "Main.xaml"
+}

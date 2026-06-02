@@ -1,0 +1,6 @@
+{
+  "Name": "ReportRefresher",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Invoke VBA failure caused by macro.txt containing bare VBA statements at the module top level (no Sub/Function wrapper).",
+  "MainFile": "Main.xaml"
+}

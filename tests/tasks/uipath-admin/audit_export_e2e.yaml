@@ -12,13 +12,6 @@ description: >
 tags: [uipath-admin, e2e, mode:operate, audit, export]
 max_iterations: 2
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 40
-  turn_timeout: 600
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 initial_prompt: |
   A security reviewer needs the full audit history for the last 7 days
   on the active tenant. They want to:
@@ -75,3 +68,8 @@ success_criteria:
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 6
+  max_turns: 40
+  turn_timeout: 600

@@ -10,7 +10,7 @@
 
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
-- `--order-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
+- `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
 - `--all-fields` — (Orchestrator tool only) return raw DTO instead of the
   curated PascalCase projection. Resource tool returns full DTO by default
   on every list/get and does not expose this flag.
@@ -72,7 +72,7 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks. See [`uipath-
 
 ## Solution (`uip solution`)
 
-`uip solution` (init/new, project add|remove|import, resource list|refresh|get, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
+`uip solution` (init/new, project add|remove|import, resource list|refresh|get|add|remove|edit, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
 
 ---
 

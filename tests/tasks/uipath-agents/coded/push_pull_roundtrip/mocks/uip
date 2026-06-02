@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""uip mock for push_pull_roundtrip eval.
+
+Extends the generic dispatcher with a side-effect for `codedagent pull`:
+after returning the canned success response it copies the source project
+into the pull destination directory, simulating a real Studio Web pull.
+"""
+
+import json
+import os
+import shutil
+import sys
+import time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+RESPONSES_DIR = SCRIPT_DIR / "responses"
+MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
+CALL_LOG_PATH = SCRIPT_DIR / ".calls.jsonl"
+
+
+def _log(args: str, rule_match: str | None, exit_code: int, note: str = "") -> None:
+    record = {"ts": time.time(), "args": args, "matched_rule": rule_match, "exit_code": exit_code}
+    if note:
+        record["note"] = note
+    try:
+        with CALL_LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+    except OSError:
+        pass
+
+
+def _respond(rule: dict, args: str) -> int:
+    path = RESPONSES_DIR / rule["file"]
+    text = path.read_text(encoding="utf-8") if path.is_file() else "{}\n"
+    sys.stdout.write(text)
+    code = int(rule.get("exit_code", 0))
+    _log(args, rule.get("match"), code)
+    return code
+
+
+def _pull_side_effect(argv: list[str]) -> None:
+    """Create the pull destination directory with the source project files."""
+    dest_name = "roundtrip-agent-pulled"
+    for i, arg in enumerate(argv):
+        if arg in ("--destination", "-d") and i + 1 < len(argv):
+            dest_name = argv[i + 1]
+            break
+
+    cwd = Path(os.getcwd())
+    dest = cwd / dest_name
+    dest.mkdir(parents=True, exist_ok=True)
+
+    # Find source project — agent may be inside the project dir or at sandbox root
+    src = None
+    for candidate in [cwd / "roundtrip-agent", cwd.parent / "roundtrip-agent", cwd]:
+        if (candidate / "pyproject.toml").is_file():
+            src = candidate
+            break
+
+    if src:
+        for item in src.iterdir():
+            if item.name in (".venv", "__pycache__", ".uipath"):
+                continue
+            target = dest / item.name
+            if item.is_file():
+                shutil.copy2(item, target)
+            elif item.is_dir():
+                shutil.copytree(item, target, dirs_exist_ok=True)
+
+
+def main(argv: list[str]) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+    args = " ".join(argv[1:])
+
+    if not MANIFEST_PATH.is_file():
+        sys.stderr.write(json.dumps({"error": "manifest.json missing"}) + "\n")
+        return 2
+
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+
+    for rule in manifest.get("rules", []):
+        match = rule.get("match", "")
+        if not match or match not in args:
+            continue
+
+        code = _respond(rule, args)
+
+        if "codedagent pull" in args:
+            _pull_side_effect(argv)
+
+        return code
+
+    default = manifest.get("unmocked_default")
+    if isinstance(default, dict):
+        sys.stdout.write(default.get("response", ""))
+        code = int(default.get("exit_code", 0))
+        _log(args, None, code, note="unmocked_default")
+        return code
+
+    sys.stderr.write(json.dumps({"error": "unmocked command", "args": args}) + "\n")
+    _log(args, None, 1, note="unmocked")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

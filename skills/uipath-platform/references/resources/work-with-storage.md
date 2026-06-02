@@ -73,7 +73,7 @@ uip resource buckets list --folder-path "Finance" --output json
 uip resource buckets list --all-folders --name "invoice" --output json
 ```
 
-`buckets list` requires either `--folder-path` / `--folder-key` or `--all-folders`. Paginate with `--limit` / `--offset`. Sort with `--order-by`. With `--all-folders`, use `--exclude-folder-path` / `--exclude-folder-key` to omit a folder.
+`buckets list` requires either `--folder-path` / `--folder-key` or `--all-folders`. Paginate with `--limit` / `--offset`. Sort with `--sort-by`. With `--all-folders`, use `--exclude-folder-path` / `--exclude-folder-key` to omit a folder.
 
 ### Get, Update, Delete
 

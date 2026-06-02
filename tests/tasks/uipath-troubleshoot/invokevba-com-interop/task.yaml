@@ -1,0 +1,144 @@
+task_id: skill-troubleshoot-invokevba-com-interop
+description: >
+  UiPath troubleshooting agent must diagnose an Invoke VBA failure caused
+  by a COM interop HRESULT (0x80010100 RPC_E_SYS_CALL_FAILED) - a Mark-of-
+  the-Web Protected View bar on the workbook blocks the macro injection
+  while the Excel Process Scope ran with Visible=False, hiding the
+  dialog. Success = agent matches the invoke-vba-com-interop-failure
+  playbook AND recommends the host-side checks (Visible=True, modal
+  dialogs, Office install inventory).
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 60
+turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My DailyDigestRunner process is faulting in Orchestrator on every run.
+  The folder is "RPA Production".
+
+  I'm not on the Robot host right now and have no shell access to MOCK-HOST,
+  only Orchestrator. Diagnose what you can from Orchestrator. If the answer
+  needs evidence from the host itself, give me the exact things to check on
+  the host the next time I'm in front of it; I'll do them and come back with
+  the result. Do not stall waiting for host data - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the invoke-vba-com-interop-failure playbook AND recommended host-side checks (Visible=True, modal dialogs, Office install)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My DailyDigestRunner process is faulting in Orchestrator on every
+         run. The folder is 'RPA Production'. I'm not on the Robot host
+         right now, only Orchestrator. Give me the exact things to check
+         on the host the next time I'm there."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/invoke-vba-com-interop-failure.md
+        because the runtime error
+          "The system call failed. (Exception from HRESULT: 0x80010100
+           (RPC_E_SYS_CALL_FAILED))"
+        is the verbatim signature of that playbook.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is COM interop instability, with the
+        most likely specific cause being a hidden modal dialog blocking
+        the COM call: the Excel Process Scope's `ShowExcel` property is
+        `False` in `Main.xaml`, so any prompt that fires (Protected View
+        bar from Mark-of-the-Web, macro warning, license activation,
+        recover-unsaved-files banner) is invisible during the run and
+        blocks the Invoke VBA call.
+        The reference fix hands the user a host-side check list:
+          - Set `ShowExcel = True` on the Excel Process Scope and re-run
+            to see what dialog appears.
+          - Inspect the host for Protected View / Mark-of-the-Web on the
+            workbook (`Right-click > Properties > Unblock`).
+          - Check for orphaned EXCEL.EXE processes from prior runs.
+          - Inventory installed Office versions and bitness.
+
+      DIMENSION C -- No fabricated host actions
+        Because the user said they are not on the host, the agent must
+        either (a) hand the user a check list with specific things to
+        verify, or (b) recommend the toggle/inspection steps plainly.
+        The agent must NOT claim to have killed processes, edited the
+        XAML in production, or run host-side commands itself.
+
+      SCORING RUBRIC:
+        1.0  Agent matched invoke-vba-com-interop-failure AND handed the
+             user a check list that includes at least flipping
+             ShowExcel/Visible to True (or equivalent: making Excel
+             visible to surface the hidden dialog) AND did not
+             fabricate host actions.
+        0.8  Correct playbook AND recommended making Excel visible /
+             checking for modal dialogs, but did not enumerate the
+             other host-side checks (orphaned EXCEL.EXE, Office
+             versions).
+        0.5  Recognized the COM interop class but recommended only one
+             of several possible causes without offering a check list,
+             or matched a sibling cause (claimed Excel was hung
+             without first asking the user to look for a dialog).
+        0.2  Surfaced the HRESULT to the user without diagnosis or
+             escalated to support without trying the playbook.
+        0.0  Wrong cause (e.g., concluded Trust Center, code-file-path
+             missing wrapper, entry-method-name typo, or parameter
+             mismatch), or the agent fabricated a host action it could
+             not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are away from the Robot host and only have Orchestrator access.
+    You trust the agent's expertise and are waiting for either a
+    diagnosis or a list of host-side things to check next time you are
+    in front of the machine.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

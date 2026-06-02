@@ -45,9 +45,22 @@ import type {
   ProcessIncidentGetAllResponse,
 } from '@uipath/uipath-typescript/maestro-processes';
 
+// Analytics / Insights (MaestroProcesses + Cases)
+import type {
+  TimelineOptions,
+  TopQueryOptions,
+  InstanceStatusTimelineResponse,
+  ProcessGetTopRunCountResponse,
+  ProcessGetTopFaultedCountResponse,
+  ProcessGetTopDurationResponse,
+} from '@uipath/uipath-typescript/maestro-processes';
+
 // Cases
 import type {
   CaseGetAllResponse,
+  CaseGetTopRunCountResponse,
+  CaseGetTopFaultedCountResponse,
+  CaseGetTopDurationResponse,
 } from '@uipath/uipath-typescript/cases';
 
 // Case Instances
@@ -63,6 +76,9 @@ import type {
   CaseGetStageResponse,
   CaseInstanceExecutionHistoryResponse,
   StageTask,
+  SlaSummaryResponse,
+  CaseInstanceStageSLAOptions,
+  CaseInstanceStageSLAResponse,
 } from '@uipath/uipath-typescript/cases';
 ```
 
@@ -74,6 +90,8 @@ import {
   ProcessIncidentType,      // System, User, Deployment
   ProcessIncidentSeverity,  // Error, Warning
   DebugMode,                // None, Default, StepByStep, SingleStep
+  TimeInterval,             // Hour = 'HOUR', Day = 'DAY', Week = 'WEEK' (analytics time-axis grouping)
+  InstanceFinalStatus,      // status value in getInstanceStatusTimeline() entries
 } from '@uipath/uipath-typescript/maestro-processes';
 
 import {
@@ -107,6 +125,39 @@ const instances = await processInstances.getAll({ processKey: target.processKey,
 ### getIncidents(processKey: string, folderKey: string)
 
 Returns `Promise<ProcessIncidentGetResponse[]>`. Each incident has: `instanceId`, `elementId`, `folderKey`, `processKey`, `incidentId`, `incidentStatus`, `incidentType`, `errorCode`, `errorMessage`, `errorTime`, `errorDetails`, `debugMode`, `incidentSeverity`, `incidentElementActivityType`, `incidentElementActivityName`.
+
+### Analytics / Insights methods
+
+Tenant-wide, time-ranged aggregates for dashboards. **All require `Insights.RealTimeData Insights OR.Folders.Read` scope** (not `PIMS`) — a separate scope bundle from the rest of Maestro. `startTime`/`endTime` are `Date` objects. Use these instead of fetching raw instances and aggregating client-side (which only sees one page — see [pagination.md](pagination.md)).
+
+#### getInstanceStatusTimeline(startTime: Date, endTime: Date, options?: TimelineOptions)
+
+Returns `Promise<InstanceStatusTimelineResponse[]>` — instance counts bucketed across the time axis. `TimelineOptions` supports `groupBy` and a `TimeInterval` (`Hour` / `Day` / `Week`) controlling bucket size. Use for "instances over time" charts. Each entry: `startTime: string` (bucket start, local tz, e.g. `"5/8/2026 12:00:00 AM"`), `status: InstanceFinalStatus`, `count: number`.
+
+#### getTopRunCount(startTime: Date, endTime: Date, options?: TopQueryOptions)
+
+Returns `Promise<ProcessGetTopRunCountResponse[]>` — processes ranked by run count. `TopQueryOptions` supports optional filters `packageId`, `processKey`, `version`. Each entry: `name: string`, `packageId: string`, `processKey: string`, `runCount: number`.
+
+#### getTopFaultedCount(startTime: Date, endTime: Date, options?: TopQueryOptions)
+
+Returns `Promise<ProcessGetTopFaultedCountResponse[]>` — processes ranked by faulted-instance count. Each entry: `name`, `packageId`, `processKey`, `faultedCount: number`.
+
+#### getTopExecutionDuration(startTime: Date, endTime: Date, options?: TopQueryOptions)
+
+Returns `Promise<ProcessGetTopDurationResponse[]>` — processes ranked by execution duration. Each entry: `name`, `packageId`, `processKey`, `duration: number`.
+
+```typescript
+import { MaestroProcesses, TimeInterval } from '@uipath/uipath-typescript/maestro-processes';
+
+const maestro = new MaestroProcesses(sdk);
+const end = new Date();
+const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000); // last 7 days
+
+const timeline = await maestro.getInstanceStatusTimeline(start, end, { groupBy: TimeInterval.Day });
+const busiest = await maestro.getTopRunCount(start, end);
+const flakiest = await maestro.getTopFaultedCount(start, end);
+const slowest = await maestro.getTopExecutionDuration(start, end);
+```
 
 ## Process-Attached Methods (ProcessMethods)
 
@@ -221,6 +272,15 @@ Returned by `getAll()` and `getById()` on each `ProcessInstanceGetResponse`:
 
 Returns `Promise<CaseGetAllResponse[]>`. Each case has: `processKey`, `packageId`, `name`, `folderKey`, `folderName`, `packageVersions`, `versionCount`, plus instance count fields (same as MaestroProcesses).
 
+### Analytics / Insights methods
+
+Same signatures and scope as the MaestroProcesses analytics methods above (`Insights.RealTimeData Insights OR.Folders.Read`), but scoped to cases:
+
+- `getInstanceStatusTimeline(startTime: Date, endTime: Date, options?: TimelineOptions)` → `Promise<InstanceStatusTimelineResponse[]>`
+- `getTopRunCount(startTime: Date, endTime: Date, options?: TopQueryOptions)` → `Promise<CaseGetTopRunCountResponse[]>`
+- `getTopFaultedCount(startTime: Date, endTime: Date, options?: TopQueryOptions)` → `Promise<CaseGetTopFaultedCountResponse[]>`
+- `getTopExecutionDuration(startTime: Date, endTime: Date, options?: TopQueryOptions)` → `Promise<CaseGetTopDurationResponse[]>`
+
 ## CaseInstanceGetResponse Fields
 
 `instanceId: string`, `packageKey: string`, `packageId: string`, `packageVersion: string`, `latestRunId: string`, `latestRunStatus: string`, `processKey: string`, `folderKey: string`, `userId: number`, `instanceDisplayName: string`, `startedByUser: string`, `source: string`, `creatorUserKey: string`, `startedTime: string`, `completedTime: string`, `instanceRuns: CaseInstanceRun[]`, `caseAppConfig?: CaseAppConfig`, `caseType?: string`, `caseTitle?: string`. Plus all `CaseInstanceMethods`.
@@ -270,6 +330,14 @@ Returns `Promise<CaseInstanceExecutionHistoryResponse>` with `{ elementExecution
 ### getActionTasks(caseInstanceId: string, options?: TaskGetAllOptions)
 
 Returns `NonPaginatedResponse<TaskGetResponse>` or `PaginatedResponse<TaskGetResponse>`. Requires `OR.Tasks` scope.
+
+### getSlaSummary(options?)
+
+Returns `NonPaginatedResponse<SlaSummaryResponse>` or `PaginatedResponse<SlaSummaryResponse>` (pass pagination options to get the paginated shape). Tenant-wide SLA rollup across case instances. **Requires `Insights.RealTimeData Insights OR.Folders.Read PIMS` scope.**
+
+### getStagesSlaSummary(options?: CaseInstanceStageSLAOptions)
+
+Returns `Promise<CaseInstanceStageSLAResponse[]>` — per-stage SLA breakdown. Same scope as `getSlaSummary`. **Note:** Exact response fields are not fully published; check the TypeScript types.
 
 ## CaseInstance-Attached Methods (CaseInstanceMethods)
 

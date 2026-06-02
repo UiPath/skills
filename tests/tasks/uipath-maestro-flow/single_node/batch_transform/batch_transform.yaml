@@ -9,12 +9,8 @@ description: >
   backend, neither of which the test sandbox can provision deterministically.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, node:batch-transform, context-grounding]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 32
   turn_timeout: 1200
 
 initial_prompt: |

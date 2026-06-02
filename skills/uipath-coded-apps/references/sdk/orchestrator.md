@@ -45,12 +45,16 @@ import type {
   BucketGetResponse,
   BucketGetAllOptions,
   BucketGetByIdOptions,
+  BucketGetByNameOptions,
+  BucketGetFilesOptions,
+  BucketFile,
   BucketGetFileMetaDataWithPaginationOptions,
   BucketGetFileMetaDataOptions,
   BucketGetReadUriOptions,
   BucketGetUriResponse,
   BucketUploadFileOptions,
   BucketUploadResponse,
+  BucketDeleteFileOptions,
   BlobItem,
 } from '@uipath/uipath-typescript/buckets';
 
@@ -141,7 +145,7 @@ Returns `Promise<QueueGetResponse>`. The `folderId` is required.
 
 `QueueGetResponse` fields: `key`, `name`, `id`, `description`, `maxNumberOfRetries`, `acceptAutomaticallyRetry`, `retryAbandonedItems`, `enforceUniqueReference`, `encrypted`, `createdTime`, `slaInMinutes`, `riskSlaInMinutes`, `folderId`, `folderName`.
 
-## Buckets Service (Scopes: `OR.Administration` or `OR.Administration.Read`)
+## Buckets Service (Scopes: `OR.Buckets` or `OR.Buckets.Read`; `OR.Buckets.Write` for `deleteFile`)
 
 ### getAll(options?: BucketGetAllOptions)
 
@@ -152,6 +156,16 @@ Returns `NonPaginatedResponse<BucketGetResponse>` or `PaginatedResponse<BucketGe
 Returns `Promise<BucketGetResponse>`.
 
 `BucketGetResponse` fields: `id`, `name`, `description`, `identifier`, `storageProvider`, `storageContainer`, `options`, `foldersCount`.
+
+### getByName(name: string, options?: BucketGetByNameOptions)
+
+Returns `Promise<BucketGetResponse>`. Resolves a bucket by name within a folder. `BucketGetByNameOptions` is `FolderScopedOptions` — supply one of `folderId`, `folderKey`, or `folderPath` (same precedence as Assets/Processes) plus optional `expand` / `select`. Throws `NotFoundError` if no bucket matches.
+
+### getFiles(bucketId: number, options?: BucketGetFilesOptions)
+
+Returns `NonPaginatedResponse<BucketFile>` or `PaginatedResponse<BucketFile>`. Folder-scoped (`folderId` / `folderKey` / `folderPath`); supports regex filtering, query options, and pagination. Each `BucketFile` includes `isDirectory` so callers can distinguish folders from files. **Note:** Additional fields may be available — check the TypeScript types.
+
+> **`getFiles` vs `getFileMetaData`.** `getFiles` returns `BucketFile` items (folder-aware, supports regex filtering) and is folder-scoped via `FolderScopedOptions`. `getFileMetaData` returns flat `BlobItem` items by `prefix` and takes a positional `folderId`. Prefer `getFiles` for directory-style browsing.
 
 ### getFileMetaData(bucketId: number, folderId: number, options?: BucketGetFileMetaDataWithPaginationOptions)
 
@@ -164,6 +178,10 @@ Returns `Promise<BucketUploadResponse>` with `{ success, statusCode }`. Options:
 ### getReadUri(options: BucketGetReadUriOptions)
 
 Returns `Promise<BucketGetUriResponse>` with `{ uri, httpMethod, requiresAuth, headers }`. Options: `{ bucketId, folderId, path, expiryInMinutes? }`.
+
+### deleteFile(bucketId: number, path: string, options?: BucketDeleteFileOptions)
+
+Returns `Promise<void>`. Deletes a single file from the bucket by `path`. `BucketDeleteFileOptions` is folder-scoped (`folderId` / `folderKey` / `folderPath`). Requires `OR.Buckets` or `OR.Buckets.Write`.
 
 ## Processes Service (Scopes: `OR.Execution` / `OR.Execution.Read`, `OR.Jobs` / `OR.Jobs.Write` for start)
 

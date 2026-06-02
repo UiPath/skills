@@ -4,9 +4,8 @@ description: >
   handling and prefer CLI-managed authentication for coded app sync/deploy.
 tags: [uipath-coded-apps, smoke, "lifecycle:validate"]
 
-sandbox:
-  driver: tempdir
-  node: {}
+run_limits:
+  expected_turns: 4
 
 initial_prompt: |
   Before starting, load the uipath-coded-apps skill and follow its workflow.

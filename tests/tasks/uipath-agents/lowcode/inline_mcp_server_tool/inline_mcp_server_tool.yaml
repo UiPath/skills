@@ -9,20 +9,16 @@ description: >
   flow node is wired to the autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 77
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "DevToolsFlowSol" containing a flow project
-  "DevToolsFlow". The flow should use an inline low-code agent that
-  connects to an MCP server named "GitHubMcp" exposing GitHub-related
-  tools. Declare the MCP server as a resource on the inline agent and
-  wire it into the flow.
+  Create a UiPath Flow project "DevToolsFlow" that uses an inline low-code
+  agent connecting to an MCP server named "GitHubMcp" exposing
+  GitHub-related tools. Declare the MCP server as a resource on the
+  inline agent and wire it into the flow. The solution should be named
+  "DevToolsFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

@@ -76,14 +76,17 @@ uip solution
   ├── pack <solution> <output>            Pack into a deployable .zip package
   ├── publish <package>                   Upload packed solution to UiPath
   ├── project
-  │     ├── add <projectPath> [solutionFile]    Register an existing subfolder in .uipx
-  │     ├── remove <projectPath> [solutionFile] Unregister a project from .uipx
+  │     ├── add <project-path> [solutionFile]   Register an existing subfolder in .uipx
+  │     ├── remove <project-path> [solutionFile] Unregister a project from .uipx
   │     ├── import --source <path>              Copy external project into solution and register
   │     └── list                                List projects registered in the local .uipx (no backend call)
   ├── resource
   │     ├── list                          List local, remote, or all resources (--solution-folder, default cwd)
   │     ├── refresh                       Sync resource declarations from project bindings (--solution-folder, default cwd)
-  │     └── get <resource-key>            Get full configuration for a single resource — local or remote (--solution-folder, default cwd)
+  │     ├── get <resource-key>            Get full configuration for a single resource — local or remote (--solution-folder, default cwd)
+  │     ├── add                           Add one resource atomically: --source local|remote --kind <kind> --name <name>
+  │     ├── remove <resource-key>         Delete one resource from the solution by key (offline, no auth)
+  │     └── edit <resource-key>           Patch an existing resource's spec via --patch '<json>' (or '-' for stdin)
   ├── deploy
   │     ├── run -n <name>                 Deploy a published solution package (auto-activates by default; pass --skip-activate to opt out)
   │     ├── status <id>                   Check deployment status
@@ -97,6 +100,7 @@ uip solution
   │           └── unlink <file> <resource> Remove a resource link
   └── packages
         ├── list                          List published solution packages
+        ├── download <name> [version]      Download a published solution package .zip
         └── delete <name> <version>       Delete a specific package version
 ```
 

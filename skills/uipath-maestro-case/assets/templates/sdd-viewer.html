@@ -497,14 +497,15 @@
       "case": {
         "name": string,                       // PascalCase
         "description": string,
-        "prefix": string,                     // 2-4 UPPER
+        "prefix": string,                     // 2-4 UPPER (constant only)
         "identifierType": "constant" | "external",
+        "identifierExpression": string | null, // external only: =vars.<id> or =js:`...`
         "priority": { "values": string[], "default": string } | null,
         "sla": { "count": number, "unit": "h"|"d"|"w"|"m", "type": "Static"|"Variable" } | null,
         "slaEscalation": [{ "status": "At-Risk"|"Breached", "threshold": string, "action": string }],
         "variableSla": [{ "expression": string, "sla": number, "unit": string }],
         "triggers": [{ "type": string, "source": string, "config": string, "mappings": [{"from": string, "to": string}] }],
-        "exitConditions": [{ "when": string, "if": string, "then": string, "marksComplete": "Yes"|"No" }],
+        "exitConditions": [{ "when": string, "if": string, "then": string, "marksComplete": "Yes"|"No", "displayName": string }],
         "variables": [{ "name": string, "type": string, "default": string, "description": string, "producedBy": string, "consumedBy": string[] }]
       },
       "stages": [
@@ -514,8 +515,8 @@
           "description": string,
           "requiredForCompletion": boolean,
           "interrupting": boolean | null,     // ExceptionStage only
-          "entryConditions": [{ "when": string, "if": string, "interrupting": "Yes"|"No" }],
-          "exitConditions":  [{ "when": string, "if": string, "exitType": string, "marksComplete": "Yes"|"No" }],
+          "entryConditions": [{ "when": string, "if": string, "interrupting": "Yes"|"No", "displayName": string }],
+          "exitConditions":  [{ "when": string, "if": string, "exitType": string, "marksComplete": "Yes"|"No", "displayName": string }],
           "sla": { "count": number, "unit": string, "atRiskPct": string, "atRiskAction": string, "breachAction": string } | null,
           "tasks": [
             {
@@ -526,7 +527,7 @@
               "persona": string | null,
               "sla": { "count": number, "unit": string } | null,
               "description": string,
-              "entryCondition": { "when": string, "if": string },
+              "entryCondition": { "when": string, "if": string, "displayName": string },
               "details": { ... }              // shape varies by type — see renderTaskDetail below
             }
           ]
@@ -611,7 +612,11 @@
       const t = $("#case-title");
       t.innerHTML = "";
       t.appendChild(document.createTextNode(c.name || "Untitled Case"));
-      if (c.prefix) {
+      if (c.identifierType === "external" && c.identifierExpression) {
+        const s = document.createElement("small");
+        s.textContent = "id " + c.identifierExpression;
+        t.appendChild(s);
+      } else if (c.prefix) {
         const s = document.createElement("small");
         s.textContent = "prefix " + c.prefix;
         t.appendChild(s);
@@ -675,7 +680,9 @@
       const rows = [
         ["Case Name", c.name],
         ["Description", c.description],
-        ["Identifier", c.prefix ? `${c.prefix} (${c.identifierType || "constant"})` : null],
+        ["Identifier", c.identifierType === "external"
+          ? `${c.identifierExpression || "—"} (external)`
+          : (c.prefix ? `${c.prefix} (${c.identifierType || "constant"})` : null)],
         ["Priority", c.priority ? `${(c.priority.values || []).join(", ")} — default ${c.priority.default || "—"}` : null],
         ["Case-Level SLA", c.sla ? `${c.sla.count} ${c.sla.unit} — ${c.sla.type || "Static"}` : null]
       ];
@@ -728,12 +735,13 @@
         const card = el("div", { class: "card" });
         card.appendChild(el("h3", null, "Case Exit Conditions"));
         const t = el("table");
-        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "THEN"), el("th", null, "Marks Case Complete" + schemaTag("markCaseComplete"))]));
+        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "THEN"), el("th", null, "Marks Case Complete" + schemaTag("markCaseComplete")), el("th", null, "Display Name")]));
         c.exitConditions.forEach(r => t.appendChild(el("tr", null, [
           el("td", { html: '<code>' + escapeHtml(r.when || "—") + '</code>' }),
           el("td", { html: '<code>' + escapeHtml(r.if || "—") + '</code>' }),
           el("td", { html: renderInline(r.then) }),
-          el("td", { html: renderInline(r.marksComplete) })
+          el("td", { html: renderInline(r.marksComplete) }),
+          el("td", { html: renderInline(r.displayName) })
         ])));
         card.appendChild(t);
         mount.appendChild(card);
@@ -1104,11 +1112,12 @@
       if ((stage.entryConditions || []).length) {
         body.appendChild(el("h4", null, "Entry"));
         const t = el("table");
-        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "Interrupting")]));
+        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "Interrupting"), el("th", null, "Display Name")]));
         stage.entryConditions.forEach(c => t.appendChild(el("tr", null, [
           el("td", { html: '<code>' + escapeHtml(c.when || "—") + '</code>' }),
           el("td", { html: '<code>' + escapeHtml(c.if || "—") + '</code>' }),
-          el("td", { html: renderInline(c.interrupting) })
+          el("td", { html: renderInline(c.interrupting) }),
+          el("td", { html: renderInline(c.displayName) })
         ])));
         body.appendChild(t);
       }
@@ -1116,12 +1125,13 @@
       if ((stage.exitConditions || []).length) {
         body.appendChild(el("h4", null, "Exit"));
         const t = el("table");
-        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "Exit Type"), el("th", null, "Marks Stage Complete" + schemaTag("markStageComplete"))]));
+        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "Exit Type"), el("th", null, "Marks Stage Complete" + schemaTag("markStageComplete")), el("th", null, "Display Name")]));
         stage.exitConditions.forEach(c => t.appendChild(el("tr", null, [
           el("td", { html: '<code>' + escapeHtml(c.when || "—") + '</code>' }),
           el("td", { html: '<code>' + escapeHtml(c.if || "—") + '</code>' }),
           el("td", { html: renderInline(c.exitType) }),
-          el("td", { html: renderInline(c.marksComplete) })
+          el("td", { html: renderInline(c.marksComplete) }),
+          el("td", { html: renderInline(c.displayName) })
         ])));
         body.appendChild(t);
       }
@@ -1306,10 +1316,11 @@
       if (task.entryCondition) {
         body.appendChild(el("h4", null, "Entry condition"));
         const t = el("table");
-        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF")]));
+        t.appendChild(el("tr", null, [el("th", null, "WHEN"), el("th", null, "IF"), el("th", null, "Display Name")]));
         t.appendChild(el("tr", null, [
           el("td", { html: '<code>' + escapeHtml(task.entryCondition.when || "—") + '</code>' }),
-          el("td", { html: '<code>' + escapeHtml(task.entryCondition.if || "—") + '</code>' })
+          el("td", { html: '<code>' + escapeHtml(task.entryCondition.if || "—") + '</code>' }),
+          el("td", { html: renderInline(task.entryCondition.displayName) })
         ]));
         body.appendChild(t);
       }

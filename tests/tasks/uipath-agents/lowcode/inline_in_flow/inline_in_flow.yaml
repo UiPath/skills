@@ -10,18 +10,14 @@ description: >
   `uipath.agent.autonomous` node and edges.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 31
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "GreetingSol" containing a flow project
-  "GreetingFlow". The flow uses a single low-code agent embedded
-  inside the flow project to generate a greeting.
+  Create a UiPath Flow project "GreetingFlow" that uses a single low-code agent
+  embedded inside the flow project to generate a greeting. The solution
+  should be named "GreetingSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

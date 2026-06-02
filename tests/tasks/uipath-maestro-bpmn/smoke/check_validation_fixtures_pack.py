@@ -12,17 +12,27 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-EXPECTED = (
+# Fixtures that must (a) parse as XML and (b) pack successfully.
+EXPECTED_PACKABLE = (
     "fixtures/validation/linear-process/linear-process.bpmn",
     "fixtures/validation/imported-brownfield-preservation/imported-brownfield-preservation.bpmn",
     "fixtures/validation/gateway-boundary-error/gateway-boundary-error.bpmn",
     "fixtures/validation/integration-service-enriched/integration-service-enriched.bpmn",
     "fixtures/validation/subprocess-multi-instance/subprocess-multi-instance.bpmn",
-    "fixtures/validation/contract-variants/contract-variants.bpmn",
     "fixtures/validation/registry-coverage-matrix/registry-coverage-matrix.bpmn",
     "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn",
     "fixtures/validation/agent-invocation/agent-invocation.bpmn",
 )
+
+# Fixtures that parse as XML but deliberately contain unsupported uipath
+# extensions (e.g. `<uipath:Activity preservation="unsupported">`) so the
+# validator rejects them at pack time. They must still be present and well-
+# formed, but their absence from the produced nupkg set is correct.
+EXPECTED_VALIDATION_ONLY = (
+    "fixtures/validation/contract-variants/contract-variants.bpmn",
+)
+
+EXPECTED = EXPECTED_PACKABLE + EXPECTED_VALIDATION_ONLY
 
 PACKAGE_OUTPUT = Path("fixture-pack-output")
 
@@ -45,10 +55,10 @@ def main() -> None:
         sys.exit(f"FAIL: fixture BPMN files no longer parse: {bad}")
 
     packages = list(PACKAGE_OUTPUT.rglob("*.nupkg"))
-    if len(packages) < len(EXPECTED):
+    if len(packages) < len(EXPECTED_PACKABLE):
         sys.exit(
             "FAIL: expected at least "
-            f"{len(EXPECTED)} package artifacts under {PACKAGE_OUTPUT}, found {len(packages)}"
+            f"{len(EXPECTED_PACKABLE)} package artifacts under {PACKAGE_OUTPUT}, found {len(packages)}"
         )
     fixture_package_paths = [
         str(path) for path in packages if "fixtures/validation" in path.as_posix()

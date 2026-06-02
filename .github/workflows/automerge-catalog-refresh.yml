@@ -34,6 +34,10 @@ jobs:
           # post-merge job that depends on the new catalog landing on main).
           # Same PAT used elsewhere — see activation-gate.yml.
           GH_TOKEN: ${{ secrets.GH_PAT }}
+          # `gh pr {list,view,merge}` resolve the repo from a local git
+          # remote; this job has no actions/checkout step, so GH_REPO is
+          # required or every gh pr call dies with "not a git repository".
+          GH_REPO: ${{ github.repository }}
           MANUAL_PR: ${{ github.event.inputs.pr_number }}
         run: |
           set -euo pipefail
@@ -53,6 +57,32 @@ jobs:
             exit 0
           fi
 
+          # Gate on the branch's REQUIRED status checks only — the same
+          # contexts GitHub enforces via the ruleset — not the full rollup.
+          # Advisory / non-required checks (CLI Verb Gate, Claude review,
+          # Socket, ...) must NOT block a refresh: a refresh only changes the
+          # catalog snapshot, so any verb-gate drift it surfaces is
+          # pre-existing doc-debt swept separately. Fetched dynamically so a
+          # renamed/added required check needs no edit here.
+          # `| unique` dedupes contexts declared by more than one ruleset —
+          # without it REQ_COUNT inflates while GREEN (also unique'd) can't
+          # catch up, deadlocking the merge.
+          REQUIRED=$(gh api "repos/$GITHUB_REPOSITORY/rules/branches/main" \
+            --jq '[.[] | select(.type=="required_status_checks")
+                        | .parameters.required_status_checks[].context] | unique' \
+            || echo '[]')
+          REQ_COUNT=$(echo "$REQUIRED" | jq 'length')
+          echo "Required status checks ($REQ_COUNT): $(echo "$REQUIRED" | jq -c .)"
+
+          # Fail closed: if we couldn't resolve the required-check list (API
+          # error, or a misconfigured branch with zero required checks), do
+          # NOT auto-merge — an empty required set would otherwise pass every
+          # PR vacuously.
+          if [ "$REQ_COUNT" -eq 0 ]; then
+            echo "No required status checks resolved for main — refusing to auto-merge."
+            exit 1
+          fi
+
           for PR in $CANDIDATES; do
             echo "::group::PR #$PR"
 
@@ -68,17 +98,36 @@ jobs:
                 ;;
             esac
 
-            ROLLUP=$(gh pr view "$PR" --json statusCheckRollup --jq .statusCheckRollup)
-            UNFINISHED=$(echo "$ROLLUP" | jq '[.[] | select(.status != null and .status != "COMPLETED")] | length')
-            FAILED=$(echo "$ROLLUP" | jq '[.[] | select(.conclusion != null and (.conclusion | IN("SUCCESS","SKIPPED","NEUTRAL") | not))] | length')
+            # Restrict the rollup to the required contexts before judging.
+            # `select(.name != null)` keeps CheckRun nodes (Actions checks)
+            # and intentionally drops StatusContext nodes (classic commit
+            # statuses expose .context/.state, not .name). All required
+            # checks here are Actions check runs; a future commit-status
+            # required check would need .context matching added below.
+            ROLLUP=$(gh pr view "$PR" --json statusCheckRollup \
+              --jq '[.statusCheckRollup[] | select(.name != null)]')
+            REQ_ROLLUP=$(echo "$ROLLUP" | jq --argjson req "$REQUIRED" \
+              '[.[] | select(.name as $n | $req | index($n))]')
+
+            UNFINISHED=$(echo "$REQ_ROLLUP" | jq '[.[] | select(.status != null and .status != "COMPLETED")] | length')
+            FAILED=$(echo "$REQ_ROLLUP" | jq '[.[] | select(.conclusion != null and (.conclusion | IN("SUCCESS","SKIPPED","NEUTRAL") | not))] | length')
+            # Every required context must be present AND green — guards
+            # against a required check that never reported (admin bypass
+            # would otherwise let the merge skip past a still-pending gate).
+            GREEN=$(echo "$REQ_ROLLUP" | jq '[.[] | select(.status=="COMPLETED" and (.conclusion | IN("SUCCESS","SKIPPED","NEUTRAL"))) | .name] | unique | length')
 
             if [ "$UNFINISHED" -gt 0 ]; then
-              echo "Skipping: $UNFINISHED checks still running."
+              echo "Skipping: $UNFINISHED required checks still running."
               echo "::endgroup::"
               continue
             fi
             if [ "$FAILED" -gt 0 ]; then
-              echo "Skipping: $FAILED checks failed — leaving open for human review."
+              echo "Skipping: $FAILED required checks failed — leaving open for human review."
+              echo "::endgroup::"
+              continue
+            fi
+            if [ "$GREEN" -lt "$REQ_COUNT" ]; then
+              echo "Skipping: only $GREEN/$REQ_COUNT required checks present and green."
               echo "::endgroup::"
               continue
             fi

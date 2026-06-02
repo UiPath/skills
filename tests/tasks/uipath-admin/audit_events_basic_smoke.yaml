@@ -11,6 +11,9 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, audit]
 
+run_limits:
+  expected_turns: 5
+
 initial_prompt: |
   A reviewer wants the most recent 25 tenant audit events from the
   last 24 hours.

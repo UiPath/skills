@@ -5,6 +5,9 @@ description: >
 
 tags: [uipath-admin, smoke, list]
 
+run_limits:
+  expected_turns: 6
+
 initial_prompt: |
   List all my personal access tokens in UiPath.
 

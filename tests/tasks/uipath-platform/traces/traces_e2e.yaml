@@ -4,11 +4,13 @@ description: >
   traces-smoke-agent job, wait for completion, fetch LLM trace spans, and
   confirm at least one span is returned. Unlike traces_fetch.yaml (smoke),
   this exercises the full round-trip against a real job and real traces.
-tags: [uipath-platform, e2e, lifecycle:discover]
+tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces]
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+run_limits:
+  expected_turns: 21
 
 initial_prompt: |
   Use the `uipath-platform` skill.

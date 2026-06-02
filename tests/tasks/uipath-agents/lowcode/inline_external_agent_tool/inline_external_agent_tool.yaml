@@ -10,21 +10,17 @@ description: >
   to the autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 46
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "OutreachFlowSol" containing a flow project
-  "OutreachFlow" with an inline low-code agent. The agent accepts a
-  required `subject` (string) and returns a string `content`. It must
-  compose the content by delegating to an agent named "EmailDrafter"
-  that is already deployed in the tenant — not by drafting the email
-  itself.
+  Create a UiPath Flow project "OutreachFlow" with an inline low-code agent
+  that accepts a required `subject` (string) and returns a string
+  `content`. It must compose the content by delegating to an agent
+  named "EmailDrafter" that is already deployed in the tenant — not by
+  drafting the email itself. The solution should be named
+  "OutreachFlowSol".
 
   Use the real folder and process name from the tenant — do not
   hard-code or guess these values. Name the agent's tool resource

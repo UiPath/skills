@@ -1,0 +1,6 @@
+{
+  "Name": "DailyPriceSync",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Lookup Range silent miss caused by the target cell being the computed result of a cross-sheet VLOOKUP that the unattended robot's Excel Interop session reads with a stale/empty cached value.",
+  "MainFile": "Main.xaml"
+}

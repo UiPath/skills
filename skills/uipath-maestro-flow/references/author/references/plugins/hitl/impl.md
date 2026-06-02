@@ -25,7 +25,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 {
   "id": "hitlReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "quick",
@@ -72,7 +72,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 - **Output fields**: `variable: "vars.<globalName>"` (with `vars.` prefix). No `binding`.
 - **InOut fields**: both `binding` and `variable`, same formats as above.
 - `schemaId` (not `id`) at the schema level — generate a fresh UUID.
-- `typeVersion: "1.0"` (not `"1.0.0"`).
+- `typeVersion` — set to the published `uipath.human-in-the-loop` node-definition version (no registry pull needed for this OOTB inline form; if unsure, confirm with `uip maestro flow registry get uipath.human-in-the-loop`). Use the exact single-dot `x.y` form (e.g. `"1.0"`, not `"1.0.0"`).
 - No `model` block on node instances — only the definition carries it.
 
 **outputs block**: only `output` (with `properties` for output/inOut fields + `Action` outcome) and `status` (with `enum`/`default` from outcomes). No per-field `custom: true` entries.
@@ -121,7 +121,7 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
 {
   "id": "invoiceReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "custom",
