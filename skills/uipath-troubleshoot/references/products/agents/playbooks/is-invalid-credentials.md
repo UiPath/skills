@@ -21,12 +21,10 @@ What can cause it:
 - The user account whose delegated credentials are stored in the connection was deactivated or de-provisioned
 - An Element token (connector-level auth) was manually revoked
 - IS connection was created with sandbox credentials and deployed to production (or vice versa)
-- Debug-mode-specific: a platform-side bug causes 401 during debug runs only (see Resolution)
 
 What to look for:
 - Whether the connection is in the correct folder — `uip is connections list` and check the folder/scope
 - Whether `details` says `Invalid Organization or User secret` (connection-level credentials) vs. `invalid Element token` (connector-level) — fix path differs
-- Whether the 401 appears only in debug runs vs. all runs — debug-only points to a platform bug, not user credentials
 - Whether other IS connections to the same external system also return 401 (system-wide credential change vs. single-connection issue)
 
 ## Investigation
@@ -125,7 +123,3 @@ What to look for:
   uip is connections create --output json
   uip agent publish --output json
   ```
-
-**If 401 appears only in debug runs — file with IS team:**
-
-  This is a known platform-side bug during debug execution. Reproduce in a production run: if it succeeds there, the debug-only 401 is not user-fixable — file with the IS team providing the trace ID and confirming debug-only reproduction.
