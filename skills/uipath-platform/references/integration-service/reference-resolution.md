@@ -101,7 +101,7 @@ User says: "Send a message to #general"
 
 ## Scope Filtering (CRITICAL)
 
-`uip is resources execute list <connector> <reference-object>` may return BOTH global entries (`scope: null`) and project-scoped entries (`scope.type: "PROJECT"`) — often with the **same display name**. Picking the first match by `.name` silently picks the wrong scope.
+`uip is resources run list <connector> <reference-object>` may return BOTH global entries (`scope: null`) and project-scoped entries (`scope.type: "PROJECT"`) — often with the **same display name**. Picking the first match by `.name` silently picks the wrong scope.
 
 **Concrete failure:** Jira issuetype "Task" exists globally as `id=3` and per-project as `id=10659` scoped to project `10851`. Selecting `id=10659` for a different project fails at runtime.
 
@@ -115,7 +115,7 @@ When picking a reference value for a curated cascade root field (e.g. `fields.is
 ### jq filter
 
 ```bash
-uip is resources execute list "<connector>" "<reference-object>" \
+uip is resources run list "<connector>" "<reference-object>" \
   --connection-id "<id>" --output json \
 | jq '.Data | map(select(.scope == null or .scope.project.id == "<target-project-id>"))'
 ```
@@ -264,7 +264,7 @@ When baking a **static value** for a field that has a `.reference` block (any co
 ### Resolving `displayName`
 
 ```bash
-uip is resources execute list "<connector>" "<reference.objectName>" \
+uip is resources run list "<connector>" "<reference.objectName>" \
   --connection-id "<id>" --output json
 ```
 
@@ -272,14 +272,14 @@ Match the baked value against `lookupValue` (from the field's `reference` block)
 
 ### Cascade-scoped references
 
-When `reference.path` contains `{parent.field}` placeholders (e.g. Jira `fields.issuetype.id` → `/project/{fields.project.key}/issuetypes`), the reference is logically scoped to a parent value but the CLI's `execute list` does not accept a parent-context flag. `reference.objectName` in this case names the path's root (`project`), not the leaf collection you actually want.
+When `reference.path` contains `{parent.field}` placeholders (e.g. Jira `fields.issuetype.id` → `/project/{fields.project.key}/issuetypes`), the reference is logically scoped to a parent value but the CLI's `run list` does not accept a parent-context flag. `reference.objectName` in this case names the path's root (`project`), not the leaf collection you actually want.
 
 Two-step resolution:
 
 1. **Pick the leaf object.** Take the last path segment singular form. For `/project/{fields.project.key}/issuetypes` use `issuetype` (drop trailing `s` if present).
 2. **List the leaf object and filter by scope.** Many connectors return both global (`scope: null`) and parent-scoped rows in the same listing:
    ```bash
-   uip is resources execute list "<connector>" "<leaf-object>" \
+   uip is resources run list "<connector>" "<leaf-object>" \
      --connection-id "<id>" --output json
    ```
    - If your baked value resolves to a global entry, pick the row with `scope: null`.
@@ -287,8 +287,8 @@ Two-step resolution:
    - Match by `reference.lookupValue` as in the flat case. Take `reference.lookupNames[0]` as the label.
 
 Concrete Jira example — baked `fields.project.key="OR"`, `fields.issuetype.id="3"`:
-- Project: `execute list … project` → match `key=OR` → `name="Orchestrator"` → `"Orchestrator - OR"`.
-- Issuetype: `execute list … issuetype` returns ~400+ rows. `id=3` matches `name="Task"` → `"Task - 3"`.
+- Project: `run list … project` → match `key=OR` → `name="Orchestrator"` → `"Orchestrator - OR"`.
+- Issuetype: `run list … issuetype` returns ~400+ rows. `id=3` matches `name="Task"` → `"Task - 3"`.
 
 **Jira issuetype scope caveat.** The CLI surfaces every issuetype row with `scope: null` even when Jira itself project-scopes the type (the connector flattens scope). Filtering by `scope` is therefore unreliable for Jira issuetype disambiguation. When multiple rows share a display name (e.g., several `Epic` entries at different ids), verify the candidate id by re-running the cascade describe with `(project.key, issuetype.id)` — a successful describe means the id is valid for that project. Other connectors that return scope honestly still match by `scope.<parentType>.<id>` as described above.
 

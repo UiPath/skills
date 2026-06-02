@@ -10,8 +10,8 @@
     { "match": "is resources describe uipath-atlassian-jira curated_create_issue --connection-id conn-mock-jira-01 --operation Create -f fields.project.key=MOCKPROJ -f fields.issuetype.id=10", "file": "describe_cascade.json" },
     { "match": "is resources describe uipath-atlassian-jira curated_create_issue --connection-id conn-mock-jira-01 --operation Create", "file": "describe_op.json" },
     { "match": "is resources describe uipath-atlassian-jira curated_create_issue",                         "file": "describe_no_op.json" },
-    { "match": "is resources execute list uipath-atlassian-jira project",                                  "file": "execute_list_project.json" },
-    { "match": "is resources execute list uipath-atlassian-jira issuetype",                                "file": "execute_list_issuetype.json" },
+    { "match": "is resources run list uipath-atlassian-jira project",                                  "file": "run_list_project.json" },
+    { "match": "is resources run list uipath-atlassian-jira issuetype",                                "file": "run_list_issuetype.json" },
     { "match": "agenthub mcp-tools create-is-activity",                                                    "file": "create_is_activity_dryrun.json" }
   ],
   "unmocked_default": {

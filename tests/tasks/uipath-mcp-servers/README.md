@@ -86,7 +86,7 @@ uip is resources describe <connector-key> <objectName> --connection-id <id> --op
   -f <parent-field>=<value> --output json
 
 # Reference label resolution
-uip is resources execute list <connector-key> <reference-object-name> --connection-id <id> --output json
+uip is resources run list <connector-key> <reference-object-name> --connection-id <id> --output json
 
 # Tool authoring (dry-run for inspection)
 uip agenthub mcp-tools create-is-activity --mcp <slug> --name "<name>" --description "<text>" \

@@ -2,7 +2,7 @@
 
 Wrap an Integration Service connector activity as an MCP tool via `uip agenthub mcp-tools create-is-activity`.
 
-The CLI verb is `uip is resources execute` (with `execute list`, `execute create`, etc.). Platform IS references show `uip is resources run list` in some examples — that wording is stale; use `execute`.
+The CLI verb is `uip is resources run` (with `run list`, `run create`, etc.). Older docs may show the pre-rename `uip is resources execute` — use `run`.
 
 ## Platform IS references — required reads tied to actions
 
@@ -15,7 +15,7 @@ These files in `../../uipath-platform/references/integration-service/` carry the
 | Writing a `staticValues.<bucket>.<field>` entry where the describe field has a `.reference` block | `reference-resolution.md` §`Static Reference-Value Labeling` (exact `designTimeLookups` format + cascade-scope edge cases) |
 | Writing an `inputSchema.properties.<field>` entry where the describe field has a `.reference` block with `path` containing `{otherField}` | `reference-resolution.md` §`Field Dependency Chains` (resolve parent first; check whether the field interacts with siblings) |
 | Writing an `inputSchema.properties.<field>` entry where the describe field has a `.reference` block with `filterPattern` containing `{filter}` | `reference-resolution.md` §`Search References` (free-runtime needs the user's input to drive the search) |
-| Resolving a reference value where `execute list` returns rows with `scope: null` AND `scope.type: "PROJECT"` | `reference-resolution.md` §`Scope Filtering` |
+| Resolving a reference value where `run list` returns rows with `scope: null` AND `scope.type: "PROJECT"` | `reference-resolution.md` §`Scope Filtering` |
 | Diagnosing a `describe` server-side failure | `resources.md` §`Describe Failures` |
 | Final gate before `mcp-tools create-is-activity --dry-run` | `reference-resolution.md` §`Validate Required Fields Before Executing` |
 
@@ -40,8 +40,8 @@ If `requestFields` returns a plausible, full body schema after base describe —
 
 ### How to ask — pick the mechanism by candidate-set size
 
-- **Bounded set (2-4 likely candidates from `execute list` or from the user's earlier hint):** `AskUserQuestion`. Tool requires 2-4 options; do NOT add "Other" yourself — it is appended automatically. Single-option asks fail with `InputValidationError: array must have >=2 items`.
-- **Unbounded set (`execute list` returned dozens or hundreds — Jira projects, Salesforce custom objects, large reference tables):** do NOT enumerate in `AskUserQuestion`. Ask in a plain text response. Show the user the top 5–10 most likely candidates by display name (recent / popular / closest match to any hint they gave) AND name the format you need (`"<project key> + <issue type>"`, `"<SObject API name>"`, …) so they can type the answer. Do not invent a filter and hope it narrows the set — `JMESPath` filters with guessed names usually return empty.
+- **Bounded set (2-4 likely candidates from `run list` or from the user's earlier hint):** `AskUserQuestion`. Tool requires 2-4 options; do NOT add "Other" yourself — it is appended automatically. Single-option asks fail with `InputValidationError: array must have >=2 items`.
+- **Unbounded set (`run list` returned dozens or hundreds — Jira projects, Salesforce custom objects, large reference tables):** do NOT enumerate in `AskUserQuestion`. Ask in a plain text response. Show the user the top 5–10 most likely candidates by display name (recent / popular / closest match to any hint they gave) AND name the format you need (`"<project key> + <issue type>"`, `"<SObject API name>"`, …) so they can type the answer. Do not invent a filter and hope it narrows the set — `JMESPath` filters with guessed names usually return empty.
 
 ### What if the user defers
 
@@ -70,7 +70,7 @@ A good runtime `description` includes:
 - Default behavior on omission — if the connector handles omission gracefully, say so (`"Omit to use the user's primary <thing>"`); if it doesn't, name a safe value (`"Use 'UTC' when the caller has no preference"`).
 - Constraints — required co-fields, valid ranges, allowed substring patterns.
 
-If the field has a `.reference` block in the describe response, also run `uip is resources execute list <connector> <reference.objectName> --connection-id <id>` and either populate `enum` from the result (option b) or mention representative values in the `description` (option c).
+If the field has a `.reference` block in the describe response, also run `uip is resources run list <connector> <reference.objectName> --connection-id <id>` and either populate `enum` from the result (option b) or mention representative values in the `description` (option c).
 
 ## IS-Activity-Specific Critical Rules
 
@@ -88,7 +88,7 @@ These extend the generic Critical Rules in SKILL.md.
 
 6. **Ask, do not guess, when discovery is conditional.** If a value drives downstream discovery — cascade `-f` parents, a search-reference `filterPattern`, a dependency-chain parent (Rule 7 in `reference-resolution.md` §`Field Dependency Chains`), or a required reference with no user-supplied hint — STOP and ask. Even in autonomous mode. **No autonomous fallback exists for these values.** If the user defers (clicks "Other" / "Type the values" / does not type / says "you decide"), re-ask in plain text; do NOT fall back to free runtime, a guessed default, or skipping the tool. See "How to ask" + "What if the user defers" above.
 
-7. **Do not filter unbounded `execute list` results with guessed names.** When `execute list` returns more rows than the user can scan (Jira projects, Salesforce custom objects, large reference tables), do NOT compose a `JMESPath --output-filter` against a list of names you invented or pattern-matched. If a real name doesn't match, the filter returns `[]` and you have no signal whether the project / object exists. Either: (a) show the top N rows by a real-data attribute (most-recently-updated, most-issues, alphabetical, etc. — whatever the connector exposes) and ask the user, or (b) ask the user for the exact key/name and skip filtering.
+7. **Do not filter unbounded `run list` results with guessed names.** When `run list` returns more rows than the user can scan (Jira projects, Salesforce custom objects, large reference tables), do NOT compose a `JMESPath --output-filter` against a list of names you invented or pattern-matched. If a real name doesn't match, the filter returns `[]` and you have no signal whether the project / object exists. Either: (a) show the top N rows by a real-data attribute (most-recently-updated, most-issues, alphabetical, etc. — whatever the connector exposes) and ask the user, or (b) ask the user for the exact key/name and skip filtering.
 
 ## Pre-flight
 
@@ -104,7 +104,7 @@ Walk before drafting `--metadata`. Use AskUserQuestion only for bounded ≤4-opt
    - Zero → retry with `--refresh`; if still empty, surface a create-connection hint and STOP.
 2. **Activity disambiguation.** `candidates --category is-activity --connector <key>` returns ≥ 2 entries with overlapping descriptions (`send_message_to_channel` vs `send_message_to_user`, `curated_get_issue` Retrieve vs `search_issues_with_fields` List) → ASK. GET tie-break: `Get …` / `Find …` without ID → `List`; `Get … by …` or path `{id}` / `{key}` → `Retrieve`. When uncertain, describe without `--operation` and present `Data.availableOperations[]` to the user.
 3. **Reference fields — 3-way choice per field. ASK by default.** For every `requestFields[name].reference` OR `parameters[name].reference` (per `reference-resolution.md` §`Reference Fields`):
-   - Run `uip is resources execute list <connector> <reference.objectName> --connection-id <id> --output json` and capture top candidates. Honor `filterPattern` (search reference) and dependency `{parent}` substitution (`reference-resolution.md` §`Search References` + §`Field Dependency Chains`).
+   - Run `uip is resources run list <connector> <reference.objectName> --connection-id <id> --output json` and capture top candidates. Honor `filterPattern` (search reference) and dependency `{parent}` substitution (`reference-resolution.md` §`Search References` + §`Field Dependency Chains`).
    - Present three options:
      - **(a) Bake one value** — `staticValues.<bucket>.<field> = <value>` + `designTimeLookups[<field>] = "<displayName> - <value>"`. Pick when the same value applies to every call.
      - **(b) Constrain at runtime** — `inputSchema.properties.<field> = {type: string, enum: [<discovered values>]}`. LLM picks from a known-valid set. No lookup needed.
@@ -163,7 +163,7 @@ uip is connections list <connector-key> --folder <server-folder-name-or-key> --o
 # Read Data.items[].{id, name, owner, folder, state, isDefault}. Present per connections.md rules; ASK to confirm even if one match.
 
 # Step 3d — resolve labels for every static reference value  [REQUIRED READ: reference-resolution.md §Static Reference-Value Labeling]
-uip is resources execute list <connector> <reference.objectName> --connection-id <id> --output json
+uip is resources run list <connector> <reference.objectName> --connection-id <id> --output json
 # Match baked value against reference.lookupValue → take reference.lookupNames[0] as displayName.
 # For cascade-scoped references (path contains {parent.field}) — drop the trailing 's' from the path's leaf segment, list, filter by scope (§Cascade-scoped references). Jira-issuetype caveat applies.
 # Persist as designTimeMetadata.designTimeLookups[<dotted-field>] = "<displayName> - <baked-value>".
@@ -189,7 +189,7 @@ uip agenthub mcp-tools create-is-activity \
 # Step 5 — verify (do NOT claim done before this passes)
 uip agenthub mcp-tools list --mcp <slug> --folder-path <folder-name> --output json
 # Confirm new tool's id, name, description, mcpName present.
-# High-value tools: smoke-test via `uip is resources execute <verb>` with realistic inputs against a sandbox.
+# High-value tools: smoke-test via `uip is resources run <verb>` with realistic inputs against a sandbox.
 ```
 
 Update an existing tool when metadata or schemas change:
@@ -258,7 +258,7 @@ Multi-tool builds ("server with tools for X and Y"): walk Pre-flight + Steps 1�
 
 `staticValues` shape: emit flat dotted keys (`"fields.project.key": "OR"`). The FE may persist them as nested objects on save (`"fields": {"project": {"key": "OR"}}`); both round-trip through `ParameterMappingService`'s four-bucket iteration.
 
-`staticValues` only holds values the LLM cannot override (`processType`, baked enum choices, baked reference IDs). Values the user provides at runtime belong in `inputSchema.properties` — either as plain types (free runtime) or with an `enum` populated from `execute list` (constrained runtime). `designTimeLookups` are NOT needed for enum-constrained runtime values; labeling only renders for baked values.
+`staticValues` only holds values the LLM cannot override (`processType`, baked enum choices, baked reference IDs). Values the user provides at runtime belong in `inputSchema.properties` — either as plain types (free runtime) or with an `enum` populated from `run list` (constrained runtime). `designTimeLookups` are NOT needed for enum-constrained runtime values; labeling only renders for baked values.
 
 `mapping.path` lists every `{placeholder}` token in `object.path` by property name. Values come from `inputSchema.properties.<name>` at runtime. The CLI validates this client-side before POST.
 
