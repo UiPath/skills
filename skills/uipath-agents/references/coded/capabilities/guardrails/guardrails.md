@@ -24,17 +24,17 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 
 ---
 
-## Optional: Check Tenant Availability
+## Check Tenant Availability (mandatory for built-in AI validators)
 
-For built-in AI validators (PII, harmful content, user prompt attacks, IP), optionally confirm the validator is enabled on this tenant:
+For built-in AI validators (PII, harmful content, user prompt attacks, IP), confirm the validator is enabled on this tenant **before authoring** — run:
 
 ```bash
 uip agent guardrails list --output json
 ```
 
-If the requested validator has `Status != "Available"` → tell the user and stop.
+If the requested validator has `Status != "Available"` → tell the user and stop. This is not optional for AI validators: they depend on a tenant-side service, and adding one that is not entitled produces a guardrail that never fires.
 
-**Skip this step for deterministic guardrails** — they run locally with no backend dependency.
+**Skip this step only for deterministic guardrails** — they run locally with no backend dependency.
 
 ---
 
@@ -247,3 +247,4 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 10. **Entity/threshold values must match the docs exactly** — use enum member names, not raw strings; use only allowed threshold values.
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.
+13. **Do not delegate the import-source decision (or guardrail authoring) to a subagent.** A dispatched subagent does not carry this skill's context and will report the module where the symbols physically live (`uipath.platform.guardrails`) — the no-op path for LangChain agents (Rule 8). It looks authoritative and silently overrides the correct `uipath_langchain.guardrails` choice. Fetch the docs and write the imports inline, where this skill's import rule still applies.
