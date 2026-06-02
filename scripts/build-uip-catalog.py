@@ -123,12 +123,14 @@ def install_all_tools():
     search`. Plugin groups (solution, maestro, tm, df, ...) only contribute
     verbs to the catalog when installed.
 
-    The @uipath/* packages live on public npm. The internal GitHub Packages
-    feed carries divergent 1.0.0-alpha.* prereleases under the same scope, so
-    if npm's @uipath scope is mapped there the catalog will pick up alpha
-    surface. The nightly workflow pins the scope to public npm before this
-    runs (`npm config set @uipath:registry https://registry.npmjs.org/`);
-    set the same locally if you hit auth errors.
+    Tools must be installed from the SAME feed as the CLI. The nightly tracks
+    cli/main, so it installs the CLI and the tools from GitHub Packages under
+    the `@alpha` dist-tag (`npm config set @uipath:registry
+    https://npm.pkg.github.com/` + auth token, done by the workflow). Stable
+    public-npm tools install but fail to register their command tree against
+    an alpha CLI (e.g. the `rpa` group never loads), collapsing coverage.
+    Locally, install the CLI and tools from whichever feed you intend the
+    catalog to reflect — keep both on the same one.
     """
     listed = run_uip(["tools", "list"]) or {}
     # `uip tools list` returns short names like "solution-tool".

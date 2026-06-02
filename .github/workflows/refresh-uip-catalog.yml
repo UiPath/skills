@@ -66,20 +66,17 @@ jobs:
       - name: Rebuild catalog
         if: steps.check.outputs.exists != 'true'
         run: |
-          # Reset the @uipath scope to public npm before building. The alpha
-          # CLI is installed from GitHub Packages (step above), but the tool
-          # plugins (@uipath/*-tool) live only on public npm. Leaving the
-          # scope on GitHub Packages makes `uip tools install` resolve there,
-          # find nothing, install no tools, and collapse the catalog to the
-          # ~31 base verbs (#1203). build-uip-catalog.py's docstring documents
-          # this requirement.
-          npm config set @uipath:registry https://registry.npmjs.org/
+          # Install tools from GitHub Packages @alpha — the scope the install
+          # step already configured. Do NOT reset to public npm: the tool
+          # plugins must version-match the alpha CLI to register their full
+          # command tree. Stable (public-npm) tools install but fail to load
+          # reliably against the alpha CLI (e.g. the `rpa` group never appears;
+          # diagnostics confirmed the alpha `rpa-tool` does). Catalog tracks
+          # cli/main, so its tools must come from the same @alpha feed.
           # Guards: fail the build (no PR opened) if tool installs all fail or
           # the verb count collapses vs the committed snapshot.
-          # --min-verbs 1000 is a deliberate hard tripwire and is the binding
-          # guard at the current ~1115-verb size (the 20% relative floor is
-          # ~892). If the CLI ever legitimately trends below ~1000 verbs, the
-          # nightly will hard-fail until this floor is lowered — intentional:
+          # --min-verbs 1000 is a deliberate hard tripwire — it caught the
+          # orchestrator-tool drop (#1203 follow-up). The build must clear it;
           # a stuck refresh is louder than a silently shrunk catalog.
           python3 scripts/build-uip-catalog.py --install-tools \
             --min-verbs 1000 --max-drop-frac 0.2
