@@ -34,6 +34,10 @@ jobs:
           # post-merge job that depends on the new catalog landing on main).
           # Same PAT used elsewhere — see activation-gate.yml.
           GH_TOKEN: ${{ secrets.GH_PAT }}
+          # `gh pr {list,view,merge}` resolve the repo from a local git
+          # remote; this job has no actions/checkout step, so GH_REPO is
+          # required or every gh pr call dies with "not a git repository".
+          GH_REPO: ${{ github.repository }}
           MANUAL_PR: ${{ github.event.inputs.pr_number }}
         run: |
           set -euo pipefail
