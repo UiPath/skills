@@ -63,7 +63,7 @@ What to look for:
 
 ## Resolution
 
-**If the connection was deleted — recreate it and update the agent:**
+**If the connection was deleted — recreate it and rebind the agent:**
 
   Create a new IS connection:
 
@@ -71,7 +71,19 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
-  Then open the agent in Agent Builder, reselect the IS connection in the tool configuration, and republish. Alternatively, update the connection reference in `agent.json` directly and republish via CLI:
+  Note the new connection ID from the output. List agent tools to identify which tool needs rebinding:
+
+  ```bash
+  uip agent tool list --path <agent-path> --output json
+  ```
+
+  Rebind the tool to the new connection:
+
+  ```bash
+  uip agent tool connect <tool-name> --connection-id <new-connection-id> --path <agent-path>
+  ```
+
+  Validate and republish:
 
   ```bash
   uip agent validate --output json
@@ -86,7 +98,7 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
-  Then open the agent in Agent Builder, reselect the IS connection, and republish.
+  Then rebind and republish using the same `uip agent tool connect` sequence above.
 
 **If the connection appears healthy but the 404 persists — escalate to Integration Service team:**
 
