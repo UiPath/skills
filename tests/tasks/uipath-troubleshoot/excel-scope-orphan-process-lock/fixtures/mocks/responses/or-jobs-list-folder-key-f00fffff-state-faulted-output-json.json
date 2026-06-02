@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "gg555555-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-30T06:00:02.300Z",
+      "EndTime": "2026-05-30T06:00:09.870Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelOrderImport",
+      "Source": "Schedule",
+      "Reference": "InboundOrders0600",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f00fffff-3333-4444-5555-666677778888",
+      "Info": "UiPath.Excel.BusinessException: Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected.",
+      "ErrorCode": "Activity"
+    },
+    {
+      "Key": "gg5550000-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-29T22:03:55.100Z",
+      "EndTime": "2026-05-29T22:04:11.540Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelOrderImport",
+      "Source": "Schedule",
+      "Reference": "InboundOrders2200",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f00fffff-3333-4444-5555-666677778888",
+      "Info": "System.Runtime.InteropServices.COMException: The RPC server is unavailable. (Robot session force-terminated mid-scope.)",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

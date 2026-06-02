@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for branch 1 (COM registration corruption) of the excel-activities/excel-application-scope-failures playbook. KEY CONTRAST vs excel-card-excel-not-installed: here Excel IS installed (Microsoft 365 build path given in the logs) but the Excel.Application type-library registration is stale/broken after an in-place Office upgrade -> inner TYPE_E_LIBNOTREGISTERED (0x8002801D), NOT REGDB_E_CLASSNOTREG-because-absent. Agent must chain: folders -> jobs list faulted -> jobs get (BusinessException 'Make sure Excel is installed.' inner TYPE_E_LIBNOTREGISTERED) -> jobs logs (Trace: install state INSTALLED + recent Office upgrade + stale TypeLib) -> workflow source (single Classic scope). The fix is Office Online Repair / UiPath Repair Tool / TypeLib cleanup, NOT 'install Excel'.",
+  "rules": [
+    {"match": "or folders list-current-user --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f00eeeee-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f00eeeee-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f00eeeee-3333-4444-5555-666677778888 --state Faulted --output json", "file": "or-jobs-list-folder-key-f00eeeee-state-faulted-output-json.json"},
+    {"match": "or jobs get \"gg444444-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-gg4444cc-output-json.json"},
+    {"match": "or jobs get gg444444-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-gg4444cc-output-json.json"},
+    {"match": "or jobs history \"gg444444-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-gg4444cc-output-json.json"},
+    {"match": "or jobs history gg444444-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-gg4444cc-output-json.json"},
+    {"match": "or jobs logs \"gg444444-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-gg4444cc-output-json.json"},
+    {"match": "or jobs logs gg444444-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-gg4444cc-output-json.json"}
+  ]
+}

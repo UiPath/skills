@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f00eeeee-3333-4444-5555-666677778888",
+      "DisplayName": "LedgerReports",
+      "FullyQualifiedName": "LedgerReports",
+      "Description": "Folder for the monthly ledger recalculation automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6110044,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}
