@@ -37,6 +37,7 @@ from typing import Iterable
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from case_check import (  # noqa: E402
+    assert_tasks_nested,
     find_stages,
     get_bindings,
     get_case_exit_conditions,
@@ -302,6 +303,7 @@ def check_variable_mapping(plan: dict) -> list[str]:
 
 def main():
     plan = read_caseplan()
+    assert_tasks_nested(plan)
     rule_issues = check_rule_mapping(plan)
     var_issues = check_variable_mapping(plan)
 
