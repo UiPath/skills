@@ -65,6 +65,23 @@ UNWALKABLE = set()
 PLATFORM_SPECIFIC_PREFIXES = {"rpa"}
 
 
+def _ci(d, key):
+    """Case-insensitive dict lookup for `uip --output json` payloads.
+
+    The CLI PascalCases every key of a `--output json` `Data` payload (cli
+    PR #2266), so a tool's name arrives as `Name`, not `name`. Reading the
+    documented lowercase key yields None — which made install_all_tools skip
+    every tool and collapse the catalog to the 31 base verbs (#1203). Same
+    break class guarded by tests/scripts/test_runtime_payload_key_casing.py.
+    """
+    if not isinstance(d, dict):
+        return None
+    for k, v in d.items():
+        if isinstance(k, str) and k.lower() == key.lower():
+            return v
+    return None
+
+
 def run_uip(args):
     try:
         proc = subprocess.run(
@@ -113,12 +130,14 @@ def install_all_tools():
     def short(name):
         return name.rsplit("/", 1)[-1] if name else ""
 
-    installed = {short(t.get("name", "")) for t in listed.get("Data", []) or []}
+    # Read tool names case-insensitively — the CLI returns `Name`, not `name`
+    # (see _ci). A raw `.get("name")` silently skips every tool (#1203).
+    installed = {short(_ci(t, "name") or "") for t in (_ci(listed, "data") or [])}
 
     search_results = run_uip(["tools", "search"]) or {}
     attempted = succeeded = 0
-    for tool in search_results.get("Data", []) or []:
-        name = tool.get("name") or ""
+    for tool in (_ci(search_results, "data") or []):
+        name = _ci(tool, "name") or ""
         if not name or short(name) in installed:
             continue
         attempted += 1
@@ -178,11 +197,14 @@ def collect_top_level():
     # 1:1 to the prefix (`integrationservice-tool` → `is`, etc.) — so we
     # cannot infer prefixes for uninstalled tools without false positives.
     tools = run_uip(["tools", "list"]) or {}
-    for tool in tools.get("Data", []) or []:
-        prefix = tool.get("commandPrefix")
+    for tool in (_ci(tools, "data") or []):
+        # Case-insensitive: the CLI returns `CommandPrefix`/`Name`, not the
+        # lowercase forms (see _ci). A raw lowercase read yields None and
+        # silently disables broken-tool detection.
+        prefix = _ci(tool, "commandPrefix")
         if prefix and prefix not in groups:
             UNWALKABLE.add(prefix)
-            print(f"tool {tool.get('name')!r}: installed but {prefix!r} is "
+            print(f"tool {_ci(tool, 'name')!r}: installed but {prefix!r} is "
                   f"not exposed as top-level subcommand — marking unwalkable",
                   file=sys.stderr)
     # Platform-specific tools that simply aren't installed on this runner —

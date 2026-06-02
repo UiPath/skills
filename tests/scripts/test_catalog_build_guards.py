@@ -143,3 +143,64 @@ def test_install_all_tools_ok_when_nothing_to_install(monkeypatch):
         raise AssertionError("subprocess.run should not be called")
     monkeypatch.setattr(build.subprocess, "run", boom)
     build.install_all_tools()  # no SystemExit
+
+
+# --- PascalCase tool-name handling (#1203 real root cause) ------------------
+
+def test_ci_reads_pascalcase_and_lowercase():
+    """The CLI PascalCases --output json keys, so `Name` must resolve via the
+    documented `name` lookup."""
+    assert build._ci({"Name": "x"}, "name") == "x"
+    assert build._ci({"name": "y"}, "name") == "y"
+    assert build._ci({"NAME": "z"}, "name") == "z"
+    assert build._ci({"Data": [1, 2]}, "data") == [1, 2]
+    assert build._ci({}, "name") is None
+    assert build._ci(None, "name") is None
+
+
+def test_install_all_tools_handles_pascalcase_names(monkeypatch):
+    """The exact #1203 break: `uip tools search` returns tool names under
+    `Name` (PascalCase). install_all_tools must still attempt to install every
+    discovered tool — reading lowercase `name` skipped them all and collapsed
+    the catalog to 31 base verbs."""
+    def fake_run_uip(argv):
+        if argv == ["tools", "list"]:
+            return {"Data": []}                       # fresh: nothing installed
+        if argv == ["tools", "search"]:
+            return {"Data": [{"Name": "@uipath/solution-tool"},
+                             {"Name": "@uipath/df-tool"}]}
+        return {}
+    monkeypatch.setattr(build, "run_uip", fake_run_uip)
+
+    installs = []
+    def fake_run(argv, *a, **k):
+        installs.append(argv)
+        return types.SimpleNamespace(returncode=0, stdout="{}", stderr="")
+    monkeypatch.setattr(build.subprocess, "run", fake_run)
+
+    build.install_all_tools()
+
+    attempted = [c[3] for c in installs if c[:3] == ["uip", "tools", "install"]]
+    assert attempted == ["@uipath/solution-tool", "@uipath/df-tool"]
+
+
+def test_install_all_tools_skips_already_installed_pascalcase(monkeypatch):
+    """`tools list` is also PascalCase; an already-installed tool (matched on
+    short name) is not reinstalled."""
+    def fake_run_uip(argv):
+        if argv == ["tools", "list"]:
+            return {"Data": [{"Name": "solution-tool"}]}   # already installed
+        if argv == ["tools", "search"]:
+            return {"Data": [{"Name": "@uipath/solution-tool"},
+                             {"Name": "@uipath/df-tool"}]}
+        return {}
+    monkeypatch.setattr(build, "run_uip", fake_run_uip)
+    installs = []
+    monkeypatch.setattr(
+        build.subprocess, "run",
+        lambda argv, *a, **k: installs.append(argv) or types.SimpleNamespace(
+            returncode=0, stdout="{}", stderr=""),
+    )
+    build.install_all_tools()
+    attempted = [c[3] for c in installs if c[:3] == ["uip", "tools", "install"]]
+    assert attempted == ["@uipath/df-tool"]            # solution-tool skipped
