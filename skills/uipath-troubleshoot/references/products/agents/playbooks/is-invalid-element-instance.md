@@ -19,12 +19,12 @@ What can cause it:
 - The IS connection referenced by the agent tool was deleted after the agent was published
 - Agent deployed to a different environment (staging → production) where the source environment's IS connection does not exist — IS does not auto-create connections
 - The connection ID in the agent's tool configuration was manually edited to a non-existent value
-- UiPath backend tenant migration to a new Azure environment silently invalidated element instance IDs — `uip is connections list` shows the connection as healthy but the underlying instance was invalidated; requires a support ticket
+- A backend platform issue invalidated element instance IDs — `uip is connections list` shows the connection as healthy but the underlying instance is no longer valid; requires a support ticket
 
 What to look for:
 - Whether the agent was recently deployed to a new folder or environment
 - Whether an IS administrator deleted the connection for this connector recently
-- Whether the error started after a UiPath platform maintenance window — this points to backend migration rather than user action
+- Whether user action (deletion, redeployment) explains the missing connection — if not, escalation is needed
 - The tool name in the faulting span — identifies which IS connection the agent is trying to use
 
 ## Investigation
@@ -88,11 +88,6 @@ What to look for:
 
   Then open the agent in Agent Builder, reselect the IS connection, and republish.
 
-**If the connection appears healthy but the 404 persists — backend migration:**
+**If the connection appears healthy but the 404 persists — escalate to Integration Service team:**
 
-  Not user-fixable. Open a support ticket with UiPath and provide:
-  - The trace ID from step 1
-  - The connection ID from `uip is connections list`
-  - Confirmation that the error started after a platform maintenance window
-
-  The Integration Service team deploys a server-side fix to restore the element instance binding.
+  Not user-fixable. Open a support ticket with UiPath and provide the trace ID and the connection ID from `uip is connections list`.
