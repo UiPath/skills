@@ -1,0 +1,45 @@
+{
+  "name": "DataServiceEval",
+  "description": "Seed project for UiPath.DataService.Activities coder_eval smoke tests.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.DataService.Activities": "[23.1.4-dev]",
+    "UiPath.System.Activities": "[24.12.1]"
+  },
+  "schemaVersion": "4.0",
+  "studioVersion": "25.0.0.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "netFramework": { "targetFramework": "net6.0-windows" },
+    "isPausable": true,
+    "isAttended": false,
+    "requiresUserInteraction": false,
+    "executionType": "Workflow"
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {
+      "includeOriginalXaml": false,
+      "privateWorkflows": []
+    },
+    "fileInfoCollection": []
+  },
+  "expressionLanguage": "VisualBasic",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "f9c1d0b2-3a4e-4b5d-9f01-2e3c4d5e6f70",
+      "input": [],
+      "output": []
+    }
+  ],
+  "targetFramework": "Windows",
+  "entitiesStores": [
+    {
+      "serviceDocument": ".entities/EntitiesStore.json",
+      "namespace": "DataServiceEval"
+    }
+  ]
+}

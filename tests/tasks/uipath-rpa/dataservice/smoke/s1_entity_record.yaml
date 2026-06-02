@@ -1,0 +1,110 @@
+task_id: skill-rpa-ds-s1-entity-record
+description: >
+  Smoke S1 from eval-scenarios.md — agent uses the uipath-rpa skill's
+  UiPath.DataService.Activities references to add all five entity-record
+  activities (Create, GetById, Update, Delete, Query) into a pre-scaffolded
+  DataService project. Validates activity selection + namespace/TypeArguments
+  shape + project build pass. No property-level assertions.
+
+tags: [uipath-rpa, windows, smoke, dataservice]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 40
+  task_timeout: 900
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates/seed_project
+      mount_point: DataServiceEval
+
+initial_prompt: |
+  Build a workflow in `DataServiceEval/Main.xaml` that performs these five
+  independent tasks on Data Service entity `CodingAgentsEvalEntity`:
+
+    1. Create a new record with `Title` set to `'New Record'`
+    2. Fetch an existing record by its ID
+    3. Update an existing record, setting `Title` to `'Modified'`
+    4. Delete an existing record
+    5. Query all records in the entity
+
+  The project is already scaffolded — do NOT run `uip rpa init` or
+  `uip rpa packages install`. The DataService package is pinned in
+  `DataServiceEval/project.json` and the entity metadata is in
+  `DataServiceEval/.entities/EntitiesStore.json` (both entities already have
+  `Installed: true` — skip `data-fabric-entities install`). Read
+  `EntitiesStore.json` for entity GUIDs and field GUIDs.
+
+  The XAML root in `Main.xaml` already declares the required namespaces
+  (`uda`, `udam`, `udd`, `upr`, `local`) and `TextExpression` imports —
+  do not strip them.
+
+  After editing, validate and build:
+    1. `uip rpa analyzer-rules list --project-dir DataServiceEval --output json`
+       (once, before editing)
+    2. `uip rpa validate --file-path Main.xaml --project-dir DataServiceEval --output json`
+    3. `uip rpa build "DataServiceEval" --log-level Warn --output json`
+
+  Both validate and build must exit clean. Use `--output json` on every uip
+  call.
+
+success_criteria:
+  - type: file_exists
+    description: "Main.xaml still exists in the project"
+    path: DataServiceEval/Main.xaml
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed analyzer rules before editing"
+    tool_name: Bash
+    command_pattern: 'uip\s+rpa\s+analyzer-rules\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran per-file validate with --output json"
+    tool_name: Bash
+    command_pattern: 'uip\s+rpa\s+validate\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran project-level build with --output json"
+    tool_name: Bash
+    command_pattern: 'uip\s+rpa\s+build\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml references all 5 entity-record activities"
+    path: DataServiceEval/Main.xaml
+    includes:
+      - 'uda:CreateEntityRecord'
+      - 'uda:GetEntityRecordById'
+      - 'uda:UpdateEntityRecord'
+      - 'uda:DeleteEntityRecord'
+      - 'uda:QueryEntityRecords'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "All 5 entity-record activities present with x:TypeArguments=local:CodingAgentsEvalEntity"
+    command: 'python3 "$TASK_DIR/check_s1_entity_record.py" DataServiceEval/Main.xaml'
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rpa build exits clean"
+    command: 'uip rpa build "DataServiceEval" --log-level Warn --output json'
+    timeout: 240
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
