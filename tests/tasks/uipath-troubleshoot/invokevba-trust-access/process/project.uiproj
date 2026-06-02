@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceMacroRunner",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Invoke VBA failure caused by the robot machine's Trust Center setting 'Trust access to the VBA project object model' being disabled.",
+  "MainFile": "Main.xaml"
+}

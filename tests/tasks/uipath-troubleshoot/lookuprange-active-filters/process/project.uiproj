@@ -1,0 +1,6 @@
+{
+  "Name": "PriceUpdater",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Lookup Range value-not-found failure caused by an active Status filter applied before the lookup, hiding a Discontinued SKU.",
+  "MainFile": "Main.xaml"
+}

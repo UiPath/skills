@@ -34,7 +34,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.entryConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
 5. Read `rule-type` and `is-interrupting` from tasks.md; pick the recipe below
-6. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+6. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.entryConditions[]`
 
 ## Rule Types
@@ -87,4 +87,4 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 ## Post-Write Verification
 
-Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry rule {N}` default), `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `<stageId>-<ruleId>`, and the ConnectionId + FolderKey root bindings exist. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.
+Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry Rule {N}` default), `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `<stageId>-<ruleId>`, and the ConnectionId + FolderKey root bindings exist. CLI `validate` does NOT check `rule.uipath` — confirm via Studio Web.

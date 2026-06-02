@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T10:42:22.041Z",
+      "Message": "[Invoke VBA] Cannot run the macro 'RefreshSheets'. Compile error: Expected: Sub, Function, Property, or Type"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T10:42:22.088Z",
+      "Message": "Cannot run the macro 'RefreshSheets'. Compile error: Expected: Sub, Function, Property, or Type\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

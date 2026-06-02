@@ -1,0 +1,147 @@
+task_id: skill-troubleshoot-lookup-not-installed
+description: >
+  UiPath troubleshooting agent must diagnose a classic Lookup Range failure
+  caused by Microsoft Excel not being installed on the robot host: the
+  Excel Application Scope cannot create the Excel.Application COM object and
+  faults with REGDB_E_CLASSNOTREG (0x80040154). Success = agent matches the
+  lookup-range-excel-not-installed playbook AND recommends installing Excel
+  OR migrating to the Workbook Read Range + Lookup Data Table path.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 60
+turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My VendorLookup process is faulting in Orchestrator on every run.
+  The folder is "RPA Production". It used to run on my dev machine but
+  started failing after we moved it to the new unattended robot.
+
+  I'm not on the Robot host right now and have no shell access to
+  MOCK-HOST, only Orchestrator. Diagnose what you can from Orchestrator.
+  If the answer needs evidence from the host itself, give me the exact
+  things to check on the host the next time I'm in front of it; I'll do
+  them and come back with the result. Do not stall waiting for host data
+  - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the lookup-range-excel-not-installed playbook AND recommended install-or-migrate"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My VendorLookup process is faulting in Orchestrator on every run.
+         Folder 'RPA Production'. It ran on my dev machine but started
+         failing after we moved it to the new unattended robot. I'm not on
+         the Robot host, only Orchestrator."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/lookup-range-excel-not-installed.md
+        because the runtime error
+          "Retrieving the COM class factory for component with CLSID
+           {00024500-0000-0000-C000-000000000046} failed ... 0x80040154
+           (REGDB_E_CLASSNOTREG)"
+        from a classic Excel Application Scope / Lookup Range is the
+        verbatim signature of Excel not being installed on the host.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The classic Lookup Range activity (inside an Excel Application
+            Scope) drives the Microsoft Excel Interop API and needs a
+            registered desktop Excel install.
+          - The new unattended robot host (MOCK-HOST) has no Excel
+            installed, so the Excel.Application COM class cannot be
+            created and the scope faults at startup with
+            REGDB_E_CLASSNOTREG.
+          - The "worked on dev, broke after move to the new robot" detail
+            corroborates a host-environment cause, not a workflow defect.
+        The reference fix offers EITHER path:
+          - Install Microsoft Excel (desktop) on the robot host, OR
+          - If Excel cannot be installed (Linux/container/locked-down VM),
+            migrate to the Workbook Read Range activity (OpenXML, no Excel)
+            outputting a DataTable, then search it with Lookup Data Table.
+
+      DIMENSION C -- No fabricated host actions
+        Because the user is off-host, the agent must hand over a check
+        (confirm Excel is installed on MOCK-HOST) and/or recommend the
+        fix. It must NOT claim to have installed Excel or run host
+        commands itself.
+
+      SCORING RUBRIC:
+        1.0  Agent matched lookup-range-excel-not-installed AND identified
+             "Excel not installed on the robot host" as the cause AND
+             offered at least one of the two valid fixes (install Excel,
+             or migrate to Workbook Read Range + Lookup Data Table),
+             without fabricating host actions. Offering both fixes is
+             ideal but either one alone earns 1.0.
+        0.8  Correct playbook and cause, but the recommended fix is vague
+             (e.g., "set up Excel" without naming install vs the Workbook
+             migration path).
+        0.5  Recognized a COM / environment problem but did not tie it to
+             a missing Excel install, or matched a sibling Lookup Range
+             playbook (file-locked, null-reference) instead.
+        0.2  Surfaced the HRESULT to the user without diagnosis.
+        0.0  Wrong cause (e.g., concluded the workflow logic, the sheet
+             name, or the range was at fault), or fabricated a host action.
+
+      Reward either valid fix path equally. Penalize confident wrong
+      causes, not the choice between "install Excel" and "migrate to
+      Workbook activities".
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You moved
+    it from your dev machine to a new unattended robot and it started
+    faulting. You are away from the robot host and only have Orchestrator
+    access. You trust the agent and want a diagnosis or a host check list.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked whether Excel is installed on the robot host, say you are not sure and cannot check right now - that is exactly what you need the agent to tell you to verify."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

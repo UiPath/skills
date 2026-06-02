@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceLookup",
+  "ProjectType": "Process",
+  "Description": "Reproduces a classic Lookup Range failure caused by the workbook being held open by another process (orphaned EXCEL.EXE) on the robot host.",
+  "MainFile": "Main.xaml"
+}

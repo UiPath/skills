@@ -28,6 +28,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 from _shared.case_check import (  # noqa: E402
+    assert_tasks_nested,
     find_edges,
     find_stages,
     first_rule_of_condition,
@@ -93,6 +94,7 @@ def _fail(msg: str):
 
 def main():
     plan = read_caseplan()
+    assert_tasks_nested(plan)
     all_stages = find_stages(plan, include_exception=True)
     if not all_stages:
         _fail("no stages found in caseplan")
@@ -197,9 +199,13 @@ def main():
         marks = ce.get("marksCaseComplete")
         if rname == "required-stages-completed" and marks is True:
             happy_found = True
+        # Terminal exceptions (Withdrawn / Rejected) close the case via a
+        # selected-stage-* case-exit with marksCaseComplete=FALSE — the
+        # platform-mandated shape: selected-stage-* may pair ONLY with
+        # marks-case-complete=false (marks=true is reserved for
+        # required-stages-completed). So accept the rule regardless of `marks`.
         if (
             rname in ("selected-stage-completed", "selected-stage-exited")
-            and marks is True
             and rule.get("selectedStageId") in terminal_ids
         ):
             terminal_found = True
@@ -210,8 +216,9 @@ def main():
         )
     if not terminal_found:
         _fail(
-            "no case-exit ties a terminal exception (Withdrawn / Rejected / "
-            "Resolved) to marksCaseComplete=true"
+            "no case-exit references a terminal exception (Withdrawn / Rejected "
+            "/ Resolved) via selected-stage-completed/-exited; a terminal lane "
+            "must drive a case-exit condition (marks-case-complete=false)"
         )
 
     # 7. Conditional gating: somewhere in the plan we expect a rule

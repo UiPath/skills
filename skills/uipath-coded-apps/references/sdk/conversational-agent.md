@@ -18,6 +18,8 @@ Combined scopes needed: `OR.Execution` `OR.Folders` `OR.Jobs` `ConversationalAge
 - startSession: `OR.Execution`, `OR.Jobs`, `ConversationalAgents`
 - Exchanges (read): `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read`
 - Feedback: `OR.Execution`, `OR.Jobs`, `Traces.Api`
+- User Settings (getSettings): `OR.Users` or `OR.Users.Read`
+- User Settings (updateSettings): `OR.Users`
 
 ## Types to Import
 
@@ -60,6 +62,13 @@ import type {
 import type {
   MessageGetResponse,
   ContentPartGetResponse,
+} from '@uipath/uipath-typescript/conversational-agent';
+
+// User settings types
+import type {
+  UserSettingsGetResponse,
+  UserSettingsUpdateOptions,
+  UserSettingsUpdateResponse,
 } from '@uipath/uipath-typescript/conversational-agent';
 
 // Core conversation types
@@ -128,6 +137,27 @@ Registers a handler called whenever the WebSocket connection status changes. Ret
 
 Access to `ConversationService` for conversation CRUD and real-time sessions. See Conversation Service below.
 
+### user (property)
+
+Access to `UserSettingsService` — the signed-in user's agent profile. See User Settings Service below.
+
+## User Settings Service
+
+Accessed via `conversationalAgent.user`. Manages the current user's conversational-agent profile (display name, contact, locale).
+
+### getSettings()
+
+Returns `Promise<UserSettingsGetResponse>`. Includes `name`, `email`, `role`, `department`, `company`, `country`, `timezone`, plus identifiers and timestamps. **Note:** Exact fields are not fully published; check the TypeScript types. Scope: `OR.Users` or `OR.Users.Read`.
+
+### updateSettings(options: UserSettingsUpdateOptions)
+
+Returns `Promise<UserSettingsUpdateResponse>`. Partial update — send only the fields you want to change; pass `null` to clear a field. Scope: `OR.Users`.
+
+```typescript
+const settings = await conversationalAgent.user.getSettings();
+await conversationalAgent.user.updateSettings({ timezone: 'America/New_York', department: null });
+```
+
 ## Agent-Attached Methods (AgentMethods)
 
 Each agent returned by `getAll()` or `getById()` has these attached properties:
@@ -195,6 +225,10 @@ Returns `SessionStream | undefined` — the active session for the conversation,
 ### endSession(conversationId: string)
 
 Ends the active session. No-op if no session exists.
+
+### disconnect()
+
+Tears down the underlying WebSocket connection and ends **all** active sessions for this service. Use on app unmount / agent switch to release the socket; `endSession(conversationId)` ends just one conversation's session.
 
 ### sessions (getter)
 

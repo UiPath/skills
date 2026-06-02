@@ -70,11 +70,10 @@ Apply the configuration:
 uip ixp projects configure-model <project-name> \
   --model gemini_2_5_flash \
   --preprocessing <none|table_mini|table> \
-  --attribution model \
   --output json
 ```
 
-**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini --attribution model` — works well for most invoice/document types.
+**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini` — works well for most invoice/document types.
 
 ## Step 3 — Name the Project
 

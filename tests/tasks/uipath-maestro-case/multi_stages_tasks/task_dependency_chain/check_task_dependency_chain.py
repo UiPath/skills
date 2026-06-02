@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     find_node_by_label,
     find_stages,
     first_rule_of_condition,
@@ -228,7 +229,7 @@ def main():
     payload_contains(
         payload, "Process", "Finalize", "Done", require_all=False
     )
-    status = payload.get("finalStatus") or payload.get("status")
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: Process exit required-tasks-completed; Finalize exit "

@@ -17,14 +17,13 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "ResearchSol" containing a single low-code
-  agent "ResearchAgent". The agent should be able to search the web
-  using the "WebSearch" activity from the UiPath GenAI Activities
-  Integration Service connector (connector key
-  `uipath-uipath-airdk`). Expose the activity to the agent as an
-  Integration Service tool. Update the agent's bindings and refresh
-  the solution so the connection resource is provisioned. Validate
-  the agent project.
+  Create a UiPath low-code agent "ResearchAgent" that can search the web using
+  the "WebSearch" activity from the UiPath GenAI Activities Integration
+  Service connector (connector key `uipath-uipath-airdk`). Expose the
+  activity to the agent as an Integration Service tool. Update the
+  agent's bindings and refresh the solution so the connection resource
+  is provisioned. Validate the agent project. The solution should be
+  named "ResearchSol".
 
   Do NOT invoke the connector at runtime.
 

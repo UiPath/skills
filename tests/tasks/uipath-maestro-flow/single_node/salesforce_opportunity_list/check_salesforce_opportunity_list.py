@@ -26,6 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.flow_check import (  # noqa: E402
+    _get_ci,
     assert_flow_uses_connector_target,
     find_project_dir,
     run_debug,
@@ -108,7 +109,11 @@ def _assert_structure() -> None:
 
 
 def _assert_records_returned(payload: dict) -> None:
-    globals_ = (payload.get("variables") or {}).get("globals") or {}
+    # The flow debug runtime payload is PascalCase under CLI #2266
+    # (Variables/Globals) and camelCase otherwise; read both via _get_ci so
+    # the record-array search doesn't silently see {} and report no records.
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    globals_ = _get_ci(variables, "globals", "Globals") or {}
     # Find any output variable holding a non-empty array of record objects.
     for name, value in globals_.items():
         if (

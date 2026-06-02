@@ -26,6 +26,27 @@ DEFAULT_OUTPUT = REPO_ROOT / "assets" / "uip-catalog-snapshot.json"
 ARG_SIG = re.compile(r"\s*[<\[].*")
 
 
+def verb_count_error(new_count, prev_count, min_verbs, max_drop_frac):
+    """Return an error string if the new catalog looks collapsed, else None.
+
+    Cause-agnostic backstop against a bad build (#1203: 1115 -> 31 verbs):
+    - absolute floor: fewer than `min_verbs` total, and
+    - relative drop: more than `max_drop_frac` smaller than the prior snapshot.
+    `prev_count` is None/0 when there is no existing snapshot to compare.
+    Pure function — no I/O — so it is unit-testable without the CLI.
+    """
+    if min_verbs and new_count < min_verbs:
+        return f"only {new_count} verbs collected (< floor {min_verbs})"
+    if max_drop_frac is not None and prev_count:
+        floor = prev_count * (1 - max_drop_frac)
+        if new_count < floor:
+            return (
+                f"verb count dropped {prev_count} -> {new_count}, exceeding the "
+                f"{max_drop_frac:.0%} max drop (floor {floor:.0f})"
+            )
+    return None
+
+
 _DECODER = json.JSONDecoder()
 
 # Top-level groups whose JSON help could not be enumerated. Populated by
@@ -95,10 +116,12 @@ def install_all_tools():
     installed = {short(t.get("name", "")) for t in listed.get("Data", []) or []}
 
     search_results = run_uip(["tools", "search"]) or {}
+    attempted = succeeded = 0
     for tool in search_results.get("Data", []) or []:
         name = tool.get("name") or ""
         if not name or short(name) in installed:
             continue
+        attempted += 1
         print(f"installing missing tool {name}", file=sys.stderr)
         proc = subprocess.run(
             ["uip", "tools", "install", name, "--output", "json"],
@@ -109,6 +132,20 @@ def install_all_tools():
             # usually empty on failure.
             err = (proc.stderr or proc.stdout or "").strip()[:200]
             print(f"  failed: {err}", file=sys.stderr)
+        else:
+            succeeded += 1
+
+    # Fail loud if we tried to install tools and every one failed. The plugins
+    # contribute the bulk of the catalog; a silent all-fail collapses it to the
+    # ~31 base-CLI verbs (see #1203). Usual cause: the `@uipath` npm scope is
+    # mapped to GitHub Packages (CLI alpha feed) instead of public npm, where
+    # the tool packages live.
+    if attempted and succeeded == 0:
+        sys.exit(
+            f"All {attempted} tool installs failed — refusing to build a "
+            "base-CLI-only catalog. Is the @uipath npm scope pointed at public "
+            "npm (https://registry.npmjs.org/)?"
+        )
 
 
 def collect_top_level():
@@ -223,12 +260,42 @@ def main():
              "Required for full coverage of plugin groups (admin, platform, ...). "
              "Slow; intended for CI.",
     )
+    parser.add_argument(
+        "--min-verbs",
+        type=int,
+        default=0,
+        help="Refuse to write if fewer than N verbs were collected (absolute floor).",
+    )
+    parser.add_argument(
+        "--max-drop-frac",
+        type=float,
+        default=None,
+        help="Refuse to write if the verb count drops more than this fraction "
+             "(0-1) vs the existing --output snapshot. E.g. 0.2 = abort on a >20%% drop.",
+    )
     args = parser.parse_args()
+
+    # Validate before any work: a fraction outside [0, 1] silently breaks the
+    # relative guard (>1 yields a negative floor that never trips — a collapse
+    # would slip through; <0 over-inflates it). Fail fast on misconfiguration.
+    if args.max_drop_frac is not None and not 0 <= args.max_drop_frac <= 1:
+        sys.exit(f"--max-drop-frac must be between 0 and 1 (inclusive), got {args.max_drop_frac}")
 
     if args.install_tools:
         install_all_tools()
     verbs, groups = collect_top_level()
     verbs = expand(verbs, groups)
+
+    # Integrity guards — never overwrite a good snapshot with a collapsed one.
+    prev_count = None
+    if not args.stdout and args.output.exists():
+        try:
+            prev_count = len(json.loads(args.output.read_text()).get("verbs", []))
+        except (json.JSONDecodeError, OSError):
+            prev_count = None
+    err = verb_count_error(len(verbs), prev_count, args.min_verbs, args.max_drop_frac)
+    if err:
+        sys.exit(f"Refusing to write catalog: {err}. Aborting suspected bad build.")
 
     snapshot = {
         "generated_at": dt.datetime.now(dt.timezone.utc)
