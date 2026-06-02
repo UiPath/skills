@@ -2,6 +2,11 @@
 
 How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
 
+> **This plugin covers two node families that share the same configuration mechanism:**
+>
+> - **Connector triggers** (`uipath.connector.trigger.<key>.<trigger>`) — start node; the event starts the flow. The default subject of every step below.
+> - **Wait for events** (`uipath.connector.event.<key>.<event>`) — a mid-flow event node; the flow pauses and waits for the event before continuing. Same connection binding, enriched metadata, event parameter resolution, filter trees, and `node configure` fields. Only the placement and node lifecycle differ. See [Wait for events](#wait-for-events-uipathconnectoreventkeyevent) for the deltas, then apply Steps 1-6 below unchanged.
+
 ## Configuration Workflow
 
 Follow these steps for every IS trigger node.
@@ -57,7 +62,7 @@ uip is connections ping "<connection-id>" --output json
 `--connection-id` is **required** for trigger nodes. Without it, the command fails.
 
 ```bash
-uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <trigger-node-type> --connection-id <connection-id> --output json
 ```
 
 The response contains three trigger-specific sections:
@@ -183,7 +188,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 | `connectionId` | Yes | Connection UUID from Step 1c (the final connection — BYOA if required) |
 | `folderKey` | Yes | Orchestrator folder key for the connection |
 | `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
-| `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
+| `eventParameters`, `queryParameters`, `pathParameters` | No | JSON objects of resolved event configuration. `eventParameters` carries the values from Steps 3-4; `queryParameters`/`pathParameters` scope the subscription when the connector needs them (e.g. GitHub `queryParameters: {"repo":"cli"}`, `pathParameters: {"owner":"uipath"}`). Each must be a JSON object |
 | `filter` | No | Structured filter tree — see [Filter Trees](#filter-trees) below. Omit to trigger on all events |
 
 The CLI computes the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration. **Do not pass `filterExpression` directly — the validator rejects it.**
@@ -202,6 +207,33 @@ Follow [/uipath:uipath-platform — triggers.md — Webhook URL Retrieval](../..
 **Presenting the URL:** If the Step 1b `triggers objects` response included `design.textBlocks`, use that text verbatim (substituting `{webhookUrl}`) — it carries connector-specific registration instructions. Otherwise, use a generic message instructing the user to register the URL in their external service's app settings (e.g., Slack Event Subscriptions, Salesforce Outbound Messages). The trigger will not fire until the URL is registered and verified.
 
 **On failure:** if `ElementInstanceId` is empty, the connection is the wrong type — verify the `byoaConnection` flag from Step 1b and switch to a BYOA connection if required. If `webhooks config` itself fails, ping the connection (`uip is connections ping`) and re-authenticate via `uip is connections edit` if unhealthy.
+
+---
+
+## Wait for events (`uipath.connector.event.<key>.<event>`)
+
+A **Wait for events** node waits for an external event **mid-flow** instead of starting the flow ("wait for the approval reply", "wait until the Jira issue is Done"). Same connector event as a trigger — identical `eventParameters`, `filterFields`, `outputResponseDefinition`, `eventMode`, connection binding, reference resolution, filter trees. Apply Steps 1-6 above unchanged; only the deltas below differ.
+
+| Aspect | Connector **trigger** | **Wait for events** (mid-flow) |
+|---|---|---|
+| Node type | `uipath.connector.trigger.<key>.<trigger>` | `uipath.connector.event.<key>.<event>` |
+| Position | Start node — replaces the manual trigger | Mid-flow — has an `input` port |
+| Add | Step 5: [replace the manual trigger](../../editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) | `node add` like an action node; do **NOT** remove the start node |
+| Ports | in: — · out: `output` | in: `input` · out: `output`, `error` |
+| Start trigger | Is the flow's trigger | Not a trigger — flow still needs its own start trigger |
+| Discovery search | `... search "<svc>" trigger` | `... search "<svc>" event` |
+| Config (Steps 1-4, 6) | Identical | Identical |
+
+Add and wire:
+
+```bash
+uip maestro flow node add <PROJECT>.flow uipath.connector.event.<key>.<event> \
+  --label "<LABEL>" --position 400,144 --output json
+```
+
+Wire an incoming edge into `input` and an outgoing edge from `output` per [editing-operations-json.md — Insert a node between two existing nodes](../../editing-operations-json.md#insert-a-node-between-two-existing-nodes). Downstream reads `$vars.{eventNodeId}.output` (payload) and `$vars.{eventNodeId}.error`; wire `error` to survive an event-wait failure.
+
+> **The flow still needs a separate start trigger.** A mid-flow event node does **not** start the flow. Do not remove `core.trigger.manual`/`scheduled` or the connector trigger that begins the flow.
 
 ---
 
@@ -339,11 +371,11 @@ uip maestro flow registry search trigger --output json               # find trig
 uip maestro flow registry pull --force                                # refresh registry (requires login)
 
 # Enriched trigger metadata (--connection-id REQUIRED)
-uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <trigger-node-type> --connection-id <connection-id> --output json
 
 # Node lifecycle
 uip maestro flow node remove <PROJECT>.flow start --output json       # remove manual trigger
-uip maestro flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
+uip maestro flow node add <PROJECT>.flow <trigger-node-type> --label "<LABEL>" --position 200,144 --output json
 uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
 
 # Trigger object metadata (MANDATORY — Step 1b)

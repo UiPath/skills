@@ -4,7 +4,7 @@ Discover available capabilities, then design the flow topology — select node t
 
 > **Registry rules for this phase:**
 > - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
-> - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get <nodeType> --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+> - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get <node-type> --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
 > - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](planning-impl.md).
 
 ---
@@ -105,6 +105,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.action.script` | [script](plugins/script/planning.md) | Custom logic, data transformation, computation, formatting |
 | `core.action.http.v2` | [http](plugins/http/planning.md) | Call a REST API — connector mode (IS auth) or manual mode (raw URL). Replaces deprecated `core.action.http` |
 | `core.action.transform` | [transform](plugins/transform/planning.md) | Declarative map, filter, or group-by on a collection |
+| Wait for events (mid-flow) | [connector-trigger](plugins/connector-trigger/planning.md) | Flow pauses mid-run and waits for an external event before continuing (e.g., wait for an approval reply, a downstream issue update). Node type: `uipath.connector.event.<key>.<event>`. Same connector event metadata as a trigger, but has an `input` port |
 | `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns (category, summary, extracted entities) to every row of an attached CSV. Gated by tenant flag `canvas.nodes.batch-transform` |
 | `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Comprehensive synthesis / Q&A over one attached document, with optional per-claim citations. Gated by tenant flag `canvas.nodes.summarize` |
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
@@ -189,6 +190,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.trigger.manual` | — | `output` |
 | `core.trigger.scheduled` | — | `output` |
 | `uipath.connector.trigger.*` | — | `output` |
+| `uipath.connector.event.*` (Wait for events) | `input` | `output`, `error` |
 | `core.action.script` | `input` | `success`, `error` |
 | `core.action.http.v2` | `input` | `default`, `error`, `branch-{id}` (dynamic per `inputs.branches` entry) |
 | `core.action.transform` | `input` | `output`, `error` |
@@ -309,7 +311,7 @@ Scheduled Trigger -> HTTP (fetch batch) -> Loop
 
 ## Output Format
 
-Generate a `<SolutionName>.arch.plan.md` file in the **solution directory** (the folder containing the `.uipx` file, not the project subfolder). The plan covers the entire solution — which may contain multiple projects in the future.
+Generate a `<SolutionName>.uipath.flow.arch.plan.md` file in the **solution directory** (the folder containing the `.uipx` file, not the project subfolder). The plan covers the entire solution — which may contain multiple projects in the future.
 
 ### 1. Summary
 

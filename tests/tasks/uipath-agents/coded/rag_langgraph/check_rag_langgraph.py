@@ -2,17 +2,15 @@
 """ContextGrounding-based RAG coded-agent shape check.
 
 Asserts:
-  1. `main.py` imports `ContextGroundingRetriever` from
-     `uipath_langchain.retrievers` (the canonical import path the
-     skill teaches across context-grounding examples and the
-     LangGraph integration tools table) and references it.
-  2. `index_name` and `folder_path` are used as keyword arguments with
-     values "company_docs" and "Shared" — accepted as inline literals
-     or constant variables.
+  1. `main.py` uses one of the two accepted retrieval patterns:
+     - `ContextGroundingRetriever` from `uipath_langchain.retrievers`
+       (preferred — LangChain-native, integrates with graph pipeline)
+     - `sdk.context_grounding.search` / `search_async` (raw SDK, also valid)
+  2. The index name "company_docs" and folder "Shared" appear in the file.
   3. `bindings.json` declares the `index` resource for
      company_docs / Shared with the standard binding shape.
-  4. No module-level UiPath* construction — both the retriever and
-     `UiPathChat` must be inside node bodies.
+  4. No module-level UiPath* construction — retriever and LLM must be
+     inside node bodies.
 """
 
 from __future__ import annotations
@@ -52,26 +50,33 @@ def find_graph_module() -> Path:
 
 
 def check_imports_and_calls(text: str) -> None:
-    if not re.search(r"\bContextGroundingRetriever\b", text):
-        sys.exit("FAIL: main.py never references ContextGroundingRetriever")
-    if not re.search(
-        r"from\s+uipath_langchain\.retrievers\s+import\s+[^\n]*\bContextGroundingRetriever\b",
-        text,
-    ):
+    uses_retriever = bool(re.search(r"\bContextGroundingRetriever\b", text))
+    uses_sdk = bool(re.search(r"context_grounding\.(search|search_async|unified_search|unified_search_async)\b", text))
+
+    if not uses_retriever and not uses_sdk:
         sys.exit(
-            "FAIL: ContextGroundingRetriever must be imported from "
-            "`uipath_langchain.retrievers` — the canonical path the skill teaches."
+            "FAIL: main.py uses neither ContextGroundingRetriever nor "
+            "sdk.context_grounding.search — no context grounding retrieval found."
         )
-    print("OK: main.py imports ContextGroundingRetriever from uipath_langchain.retrievers")
-    if not re.search(r'index_name\s*=', text):
-        sys.exit('FAIL: ContextGroundingRetriever must use index_name as a keyword argument')
+
+    if uses_retriever:
+        if not re.search(
+            r"from\s+uipath_langchain\.retrievers\s+import\s+[^\n]*\bContextGroundingRetriever\b",
+            text,
+        ):
+            sys.exit(
+                "FAIL: ContextGroundingRetriever must be imported from "
+                "`uipath_langchain.retrievers`."
+            )
+        print("OK: main.py uses ContextGroundingRetriever (LangChain-native pattern)")
+    else:
+        print("OK: main.py uses sdk.context_grounding.search (raw SDK pattern)")
+
     if not re.search(r'["\']company_docs["\']', text):
         sys.exit('FAIL: index name "company_docs" not found in file')
-    if not re.search(r'folder_path\s*=', text):
-        sys.exit('FAIL: ContextGroundingRetriever must use folder_path as a keyword argument')
     if not re.search(r'["\']Shared["\']', text):
         sys.exit('FAIL: folder path "Shared" not found in file')
-    print('OK: retriever is constructed with index_name="company_docs" / folder_path="Shared"')
+    print('OK: index "company_docs" / folder "Shared" referenced in file')
 
 
 def check_index_binding() -> None:

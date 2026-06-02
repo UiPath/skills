@@ -92,7 +92,7 @@ Common `uip tm` commands organized by resource type.
 | Command | Purpose |
 |---|---|
 | `uip tm executions list --project-key <PROJECT_KEY>` | List top n executions for a project. Optional `--test-set-id <UUID>` to scope to a test set, `--filter <text>`, `--limit`, `--offset`. **Use this for the common case** (one test set or a single project query). |
-| `uip tm executions list-filtered --project-key <PROJECT_KEY>` | Rich-filter variant: `--test-set-id`, `--updated-by`, `--search`, `--labels`, `--test-execution-ids`, `--order-by`, `--limit`, `--offset`. **Use only when you need label filtering, multi-execution-id lookup, custom ordering, or `--updated-by` filtering** — features `list` does not expose. |
+| `uip tm executions list-filtered --project-key <PROJECT_KEY>` | Rich-filter variant: `--test-set-id`, `--updated-by`, `--search`, `--labels`, `--test-execution-ids`, `--sort-by`, `--limit`, `--offset`. **Use only when you need label filtering, multi-execution-id lookup, custom ordering, or `--updated-by` filtering** — features `list` does not expose. |
 | `uip tm executions get-stats --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY>` | Get aggregated statistics for a single test execution. |
 | `uip tm executions run --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --execution-type <TYPE>` | Re-run an existing test execution. Optional `--test-case-log-ids <UUID...>` to re-run only specific test case logs (space-separated), `--async`. |
 | `uip tm executions retry --execution-id <EXECUTION_ID>` | Retry only the failed test cases of a finished execution. Optional `--project-key`, `--test-set-key`, `--execution-type`. |

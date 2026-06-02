@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flow_check import (  # noqa: E402
+    assert_flow_has_exact_node_type,
     assert_flow_has_node_type,
     assert_flow_uses_connector_target,
     assert_output_int_in_range,
@@ -126,6 +127,38 @@ def test_assert_flow_has_node_type_fails_when_absent(tmp_path, monkeypatch):
 def test_assert_flow_has_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
     assert_flow_has_node_type([])
+
+
+# ── assert_flow_has_exact_node_type (MST-10349) ─────────────────────────────
+
+
+def test_assert_flow_has_exact_node_type_matches_generic_transform(
+    tmp_path, monkeypatch
+):
+    """Generic chained transform node passes the exact helper."""
+    root = _write_flow(tmp_path, ["core.action.transform"])
+    monkeypatch.chdir(root)
+    assert_flow_has_exact_node_type(["core.action.transform"])
+
+
+def test_assert_flow_has_exact_node_type_rejects_filter_variant(
+    tmp_path, monkeypatch
+):
+    """A flow whose only transform node is the standalone `.filter` variant
+    FAILS the exact helper but PASSES the substring helper — this is exactly
+    the difference MST-10349 relies on to reject the variant nodes."""
+    root = _write_flow(tmp_path, ["core.action.transform.filter"])
+    monkeypatch.chdir(root)
+    # Old substring helper still accepts the variant ...
+    assert_flow_has_node_type(["core.action.transform"])
+    # ... but the exact helper rejects it.
+    with pytest.raises(SystemExit, match="exact type 'core.action.transform'"):
+        assert_flow_has_exact_node_type(["core.action.transform"])
+
+
+def test_assert_flow_has_exact_node_type_empty_is_noop(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # no project needed when types are empty
+    assert_flow_has_exact_node_type([])
 
 
 # ── assert_flow_uses_connector_target ──────────────────────────────────────

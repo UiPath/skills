@@ -67,6 +67,17 @@ if (error) {
 return { hasError: false, data: $vars.httpCall.output.body };
 ```
 
+### Reading a file-typed variable
+
+A `file` variable (bound via `uip maestro flow debug --attachment <id>=<path>`) hydrates as an **object**, not a string. Read the uploaded file's name from `.FullName`:
+
+```javascript
+const doc = $vars.start.output.inputDoc; // file variable → object
+return { fileName: doc.FullName };        // .FullName, not .name/.fileName
+```
+
+Property access is **case-sensitive** — these casings resolve: `.FullName`, `.ID` (uppercase, not `.Id`), `.MimeType`, `.Metadata.size` (nested, lowercase `size`). `.name` / `.fileName` do not exist. See [variables-and-expressions.md — Runtime shape of a `file` variable](../../../../shared/variables-and-expressions.md#file-input).
+
 ## Debug
 
 | Error | Cause | Fix |

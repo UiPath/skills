@@ -5,6 +5,9 @@ description: >
   direct HITL language and that the agent identifies the correct pattern.
 tags: [uipath-human-in-the-loop, smoke]
 
+run_limits:
+  expected_turns: 5
+
 initial_prompt: |
   I have a UiPath Flow. Before the final data write step, a manager
   needs to review and approve the data before it is posted.

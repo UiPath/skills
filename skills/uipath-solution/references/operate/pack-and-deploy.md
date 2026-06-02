@@ -46,11 +46,11 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<solutionPath>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
-| `<outputPath>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'outputPath'`) | -- |
+| `<output-path>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'output-path'`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
 
-The output is a `.zip` file named `<name>.<version>.zip` written under `<outputPath>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resource refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
+The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resource refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
 ## Step 2: Publish to the Solution Feed
 
@@ -74,6 +74,8 @@ uip solution upload ./MySolution --output json
 ```
 
 This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`.
+
+`upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution new` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
 
 ## Step 4: Deploy to Orchestrator
 
@@ -124,10 +126,10 @@ The CLI also falls back to the persistent `searchSearchDeployments22` record if 
 
 ```bash
 uip solution deploy list --output json
-uip solution deploy list --folder-path "Shared" --limit 20 --order-by "Name" --order-direction "asc" --output json
+uip solution deploy list --folder-path "Shared" --limit 20 --sort-by "Name" --sort-order "Ascending" --output json
 ```
 
-Options: `--folder-path`, `--limit` (default 10), `--order-by`, `--order-direction` (`asc`/`desc`).
+Options: `--folder-path`, `--limit` (default 50), `--sort-by`, `--sort-order` (`Ascending`/`Descending`).
 
 ---
 

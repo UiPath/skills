@@ -6,6 +6,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:hitl]
 
 run_limits:
+  expected_turns: 21
   max_turns: 80
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that:

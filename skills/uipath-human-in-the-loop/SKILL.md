@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop / HITL / Human Task node authoring for Flow, Maestro, or Low-Code Agents. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly. For operating existing approval/validation tasks in Action Center→uipath-tasks."
+description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, or Coded Agents. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -43,6 +43,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 7. **Check existing node IDs before generating a new one.** Read `workflow.nodes[*].id` from the `.flow` file and pick the next available suffix (e.g. `invoiceReview1`, then `invoiceReview2`).
 8. **Never report a failed validation as done.** If `uip maestro flow validate` returns errors, diagnose from the JSON output and fix before reporting to the user.
 9. **Output fields are accessed by `field.id`, not `field.variable`.** The runtime result object uses field IDs as keys — `$vars.<nodeId>.output.<fieldId>`. The `variable` property creates a separate workflow-global variable (`$vars.{variable}`) but does NOT change the key used in the output object.
+10. **Input field binding paths use the upstream output key, not the HITL field's own `id`.** These are two different things: the HITL field `id` identifies the form field (always lowercase); the binding path key is the name used in the upstream script's `return` statement (preserves camelCase). If a script returns `{ supplierName: "Acme" }`, the correct binding is `vars.fetchSupplier.output.supplierName` — writing `suppliername` (the field `id`) produces a path that does not exist at runtime. The form field will be blank; `flow validate` will not catch it. Always derive the binding key from the upstream script source, not from the HITL schema you are designing.
 
 ---
 

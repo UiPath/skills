@@ -13,6 +13,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 52
   task_timeout: 4500
   max_turns: 60
   turn_timeout: 3600

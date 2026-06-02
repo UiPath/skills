@@ -9,6 +9,7 @@ description: >
 tags: [uipath-data-fabric, smoke, complex-fields]
 
 run_limits:
+  expected_turns: 7
   max_turns: 25
 
 sandbox:

@@ -6,6 +6,7 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, e2e, uipath-google-drive, uipath-salesforce-slack, ipe]
 
 run_limits:
+  expected_turns: 49
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500

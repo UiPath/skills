@@ -11,6 +11,7 @@ description: >
 tags: [uipath-data-fabric, integration, bulk-pagination]
 
 run_limits:
+  expected_turns: 36
   max_turns: 60
   turn_timeout: 600
 

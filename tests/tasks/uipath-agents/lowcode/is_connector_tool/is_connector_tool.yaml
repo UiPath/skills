@@ -13,6 +13,7 @@ description: >
 tags: [uipath-agents, e2e, low-code]
 
 run_limits:
+  expected_turns: 26
   turn_timeout: 1200
 
 initial_prompt: |

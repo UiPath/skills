@@ -5,6 +5,9 @@ description: >
   in the sandbox tempdir — no tenant interaction.
 tags: [uipath-solution, smoke, mode:build, lifecycle:discover]
 
+run_limits:
+  expected_turns: 7
+
 initial_prompt: |
   Create a new UiPath solution called "ProjectListDemo" and then tell me
   what projects are registered in its manifest.

@@ -6,6 +6,7 @@ description: >
 tags: [uipath-human-in-the-loop, integration, runtime-variables]
 
 run_limits:
+  expected_turns: 23
   max_turns: 50
   turn_timeout: 600
 
@@ -19,6 +20,7 @@ initial_prompt: |
   runtime variable ($vars.<nodeId>.output) and ALSO check the completion
   status via the status runtime variable ($vars.<nodeId>.status). Wire the
   completed handle to the script node. Validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains

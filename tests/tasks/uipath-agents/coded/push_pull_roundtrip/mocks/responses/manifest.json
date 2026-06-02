@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "codedagent push",
+      "file": "codedagent-push.json",
+      "description": "Mock uip codedagent push — simulate successful upload to Studio Web"
+    },
+    {
+      "match": "codedagent pull",
+      "file": "codedagent-pull.json",
+      "description": "Mock uip codedagent pull — simulate successful download from Studio Web"
+    },
+    {
+      "match": "login status",
+      "file": "login-status.json",
+      "description": "Mock uip login status — agent is authenticated"
+    },
+    {
+      "match": "codedagent setup",
+      "file": "codedagent-setup.json",
+      "description": "Mock uip codedagent setup"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\": \"Success\"}\n",
+    "exit_code": 0
+  }
+}

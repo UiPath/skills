@@ -388,7 +388,7 @@ Rules = Rule[][]
 
 | `rule` | Additional fields | Description |
 |--------|-------------------|-------------|
-| `wait-for-connector` | `id?`, `conditionExpression?`, `uipath?` | Wait for an external connector event |
+| `wait-for-connector` | `id?`, `uipath?` (connector configuration — required for Studio Web validity; bare form is a valid deferred/placeholder state), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
 | `case-entered` | `id?`, `conditionExpression?` | Fires when the case is first entered |
 | `selected-stage-completed` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has completed |
 | `selected-stage-exited` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has been exited |
@@ -406,8 +406,29 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 { "rule": "case-entered", "id": "<id>" }
 { "rule": "selected-stage-completed", "id": "<id>", "selectedStageId": "<stageId>" }
 { "rule": "selected-tasks-completed", "id": "<id>", "selectedTasksIds": ["<taskId1>", "<taskId2>"] }
-{ "rule": "adhoc", "id": "<id>", "conditionExpression": "in.Score > 700" }
+{ "rule": "adhoc", "id": "<id>", "conditionExpression": "=js:vars.score > 700" }
 ```
+
+### Connector-bound `wait-for-connector` rule
+
+A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** — the same block the in-stage `wait-for-connector` task carries under `data`. A bare rule (no `uipath`) is rejected by Studio Web (the FE validator requires the connector activity to resolve). It is authored from a `case spec --type trigger` scaffold; the CLI does not bind it (`buildRule` emits the bare form). `conditionExpression` is an optional `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace). Inputs/outputs `elementId` = `<stageId>-<ruleId>` (stage-entry / stage-exit / task-entry — all stage-scoped) or `root-<ruleId>` (case-exit). Full recipe: [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule).
+
+```json
+{
+  "rule": "wait-for-connector",
+  "id": "<ruleId>",
+  "uipath": {
+    "serviceType": "Intsvc.WaitForEvent",
+    "context": [ { "name": "connectorKey", "value": "<key>", "type": "string" }, { "name": "connection", "value": "=bindings.<id>", "type": "string" }, { "name": "folderKey", "value": "=bindings.<id>", "type": "string" }, { "name": "resourceKey", "value": "<connection-id>", "type": "string" }, { "name": "objectName", "value": "<object>", "type": "string" }, { "name": "metadata", "type": "json", "body": { } } ],
+    "inputs": [ ],
+    "outputs": [ ],
+    "bindings": []
+  },
+  "conditionExpression": "=js:<optional case-state gate, e.g. vars.X — NOT the event payload>"
+}
+```
+
+> CLI `validate` does NOT check `rule.uipath` — the case-tool connector validator is task-only (reads `task.data`). Confirm connector rules via Studio Web.
 
 ---
 
@@ -486,7 +507,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
 | `skipCondition` | string? | Expression — skip the task when truthy |
-| `entryConditions` | TaskEntryCondition[]? | See §3. **Connector tasks (`execute-connector-activity`, `wait-for-connector`) receive a default `current-stage-entered` entry condition on creation. Non-connector tasks do NOT.** |
+| `entryConditions` | TaskEntryCondition[]? | See §3. Written by the task-entry-conditions plugin from the SDD's authored Entry Condition rows — applied uniformly across task types (no auto-injection by task type). |
 | `shouldRunOnlyOnce` | boolean? | Run the task at most once per case, even if the stage is re-entered |
 | `shouldRunOnReEntry` | boolean? | *(deprecated — use `shouldRunOnlyOnce`)* Re-run when stage is re-entered |
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |

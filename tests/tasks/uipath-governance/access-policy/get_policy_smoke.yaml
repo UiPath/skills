@@ -13,6 +13,9 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, get]
 
+run_limits:
+  expected_turns: 3
+
 initial_prompt: |
   A tenant admin wants to inspect the full PolicyDefinition (selectors,
   rules, enforcement) of the access policy with id

@@ -11,6 +11,7 @@ description: >
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:test-case]
 
 run_limits:
+  expected_turns: 9
   max_turns: 30
 
 initial_prompt: |

@@ -7,6 +7,7 @@ description: >
 tags: [uipath-human-in-the-loop, integration, variable-binding]
 
 run_limits:
+  expected_turns: 28
   max_turns: 75
 initial_prompt: |
   Build a UiPath Flow named "ContractReview" for legal contract approval:
@@ -21,14 +22,14 @@ initial_prompt: |
        - Outcomes: Approve (primary), Reject
   4. Script node — reads the reviewer's decision and logs:
        "Approved: <approved value>, Comments: <comments value>"
-     The script MUST access the fields using the correct runtime variable path
-     based on field IDs ($vars.<nodeId>.output.approved and
-     $vars.<nodeId>.output.reviewcomments), NOT the variable property names.
+     The script MUST access the reviewer's output by field ID, not by the
+     variable property name.
   5. End node
 
   Wire: Trigger → Script → HITL →|completed| Script (log) → End
 
   Validate the flow after building.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: run_command

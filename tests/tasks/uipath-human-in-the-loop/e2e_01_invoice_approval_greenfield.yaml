@@ -11,6 +11,7 @@ description: >
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
 
 run_limits:
+  expected_turns: 19
   max_turns: 60
   turn_timeout: 1200
 
@@ -20,12 +21,11 @@ initial_prompt: |
   needs to review and approve each invoice before it is posted — we cannot
   write to SAP without human sign-off.
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop).
   Show the finance manager the relevant invoice fields, give them Approve and
-  Reject outcomes, and wire the completed handle to the downstream SAP step.
-  Use $vars.<hitl-node-id>.output downstream to access the manager's decision.
+  Reject outcomes, and wire the review step to the downstream SAP posting step.
 
   Validate the flow when you're done.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_exists

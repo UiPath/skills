@@ -53,7 +53,7 @@ Then on the Summarize node:
 }
 ```
 
-Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#pre-flight---attachment-binding). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
 
 ## JSON Structure
 

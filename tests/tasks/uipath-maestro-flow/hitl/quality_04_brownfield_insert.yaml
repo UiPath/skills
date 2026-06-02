@@ -6,6 +6,7 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
+  expected_turns: 34
   max_turns: 150
 initial_prompt: |
   You are working on an existing UiPath Flow named "ContractReview".

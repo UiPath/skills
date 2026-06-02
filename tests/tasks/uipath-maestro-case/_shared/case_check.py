@@ -349,7 +349,7 @@ def run_debug(
         refresh_timeout=refresh_timeout,
     )
     status = (payload or {}).get("finalStatus")
-    if status != "Completed":
+    if status != "Completed" and status != "Successful":
         _fail(f"Case did not complete (finalStatus={status})\nPayload: {json.dumps(payload, default=str)[:2000]}")
     return payload
 

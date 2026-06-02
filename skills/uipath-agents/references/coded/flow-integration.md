@@ -24,10 +24,18 @@ The coded agent is deployed to Orchestrator as a standalone tenant resource. Any
 ```bash
 uip codedagent deploy --my-workspace
 uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
-For the flow node JSON shape, see [agent/impl.md § Published variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--published-variant). In this variant `resourceKey` is Orchestrator-assigned and `model.section` is `"Published"`.
+**Capture the package key from the deploy command's own output** — `uip codedagent deploy` prints JSON containing the package `Key` (an Orchestrator-assigned GUID). That GUID is the `resourceKey` used in the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey`. Always run `uip maestro flow registry pull --force` after deploy to refresh the local flow registry cache, but do NOT depend on `uip maestro flow registry search "uipath.core.agent"` to return the deployed agent — that search only enumerates built-in node types (`uipath.agent.autonomous`, etc.); user-deployed coded agents do not appear there, so an empty result is the *expected* state and is NOT a sign the deploy failed.
+
+Fallback discovery paths if the deploy output is unavailable or unparseable, **tried in order** — stop at the first one that returns the package:
+
+1. `uip or packages list --search "<agent-name>" --output json` (tenant feed listing). Returns 404 on tenants where the caller lacks `Orchestrator.Packages.View` scope — if so, move to (2).
+2. `uip or processes list --folder-path "<FolderName>" --output json` if the agent was deployed via `--folder` rather than `--my-workspace`.
+
+If all paths return empty / 404, the deploy command's stdout JSON is authoritative — re-run the deploy and capture its output rather than chasing post-hoc discovery endpoints.
+
+For the flow node JSON shape, see [agent/impl.md § Published variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--published-variant). `model.section` is `"Published"`.
 
 ---
 

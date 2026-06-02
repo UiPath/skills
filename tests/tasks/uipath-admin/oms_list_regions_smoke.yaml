@@ -9,6 +9,9 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, list, oms]
 
+run_limits:
+  expected_turns: 4
+
 initial_prompt: |
   List the regions where my UiPath organization can provision services.
 

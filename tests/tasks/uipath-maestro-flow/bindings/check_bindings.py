@@ -68,7 +68,9 @@ Exit 0 on success; non-zero with stderr message on failure.
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
+import os
 import sys
 from collections import Counter
 from typing import Any, NoReturn
@@ -78,8 +80,36 @@ def _fail(message: str) -> NoReturn:
     sys.exit(f"FAIL: {message}")
 
 
+def _dedupe_aliases(paths: list[str]) -> list[str]:
+    # Glob matches that point at the same underlying flow definition are not
+    # duplicate files. Two collapse passes:
+    #   1. realpath — symlink + target case (e.g. flow_files/X.flow → ../X/X.flow)
+    #   2. content hash — agents that `cp` instead of `ln -s` produce two
+    #      distinct inodes with byte-identical contents
+    # Either way, the multi-match guard should only fire on genuinely
+    # distinct flow files. Keep the lexicographically-first path per group.
+    by_realpath: dict[str, str] = {}
+    for p in paths:
+        try:
+            key = os.path.realpath(p)
+        except OSError:
+            key = p
+        by_realpath.setdefault(key, p)
+
+    by_hash: dict[str, str] = {}
+    for p in by_realpath.values():
+        try:
+            with open(p, "rb") as fh:
+                key = hashlib.sha1(fh.read()).hexdigest()
+        except OSError:
+            key = p  # unreadable — don't collapse with anything else
+        by_hash.setdefault(key, p)
+
+    return sorted(by_hash.values())
+
+
 def _load_one(pattern: str) -> tuple[str, dict[str, Any]]:
-    matches = sorted(glob.glob(pattern, recursive=True))
+    matches = _dedupe_aliases(glob.glob(pattern, recursive=True))
     if not matches:
         _fail(f"No file found for {pattern!r}")
     if len(matches) > 1:
@@ -100,7 +130,11 @@ def _load_flow_bindings(pattern: str) -> tuple[str, list[dict[str, Any]]]:
 
 
 def _connection_rows(bindings: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [b for b in bindings if isinstance(b, dict) and b.get("resource") == "Connection"]
+    return [
+        b
+        for b in bindings
+        if isinstance(b, dict) and (b.get("resource") or "").lower() == "connection"
+    ]
 
 
 def _connection_id_rows(bindings: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -149,7 +183,7 @@ def cmd_matched_default(pattern: str) -> None:
 
 
 def cmd_bindings_v2_no_empty_stubs(pattern: str) -> None:
-    matches = sorted(glob.glob(pattern, recursive=True))
+    matches = _dedupe_aliases(glob.glob(pattern, recursive=True))
     if not matches:
         print(f"OK: no {pattern!r} emitted on this code path (criterion skipped)")
         return
@@ -162,7 +196,9 @@ def cmd_bindings_v2_no_empty_stubs(pattern: str) -> None:
     empty = [
         x
         for x in rows
-        if isinstance(x, dict) and x.get("resource") == "Connection" and not x.get("resourceKey")
+        if isinstance(x, dict)
+        and (x.get("resource") or "").lower() == "connection"
+        and not x.get("resourceKey")
     ]
     if empty:
         _fail(f"{matches[0]}: empty-keyed Connection row(s) in derived bindings_v2.json: {empty}")
@@ -185,7 +221,9 @@ def cmd_same_connection_id(pattern_a: str, pattern_b: str) -> None:
     path_b, bindings_b = _load_flow_bindings(pattern_b)
     a_keys = {b.get("resourceKey") for b in _connection_id_rows(bindings_a)}
     b_keys = {b.get("resourceKey") for b in _connection_id_rows(bindings_b)}
-    if not a_keys or a_keys != b_keys:
+    if not a_keys or not b_keys:
+        _fail(f"no ConnectionId binding rows found: {path_a}={a_keys}, {path_b}={b_keys}")
+    if a_keys != b_keys:
         _fail(f"ConnectionId resourceKey differs across snapshots: {path_a}={a_keys} vs {path_b}={b_keys}")
     print(f"OK: ConnectionId resourceKey stable across snapshots ({a_keys})")
 

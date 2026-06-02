@@ -6,6 +6,9 @@ description: >
   goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
+run_limits:
+  expected_turns: 5
+
 initial_prompt: |
   List the assets defined in the `Shared` folder of the current UiPath
   tenant.

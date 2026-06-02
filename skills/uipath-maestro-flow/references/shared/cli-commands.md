@@ -168,6 +168,8 @@ The CLI does not validate `<variableId>` — a mismatch uploads successfully the
 2. Confirm each `<variableId>` passed to `--attachment` appears in that list.
 3. If none exist, add one to `variables.globals[]`: `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`.
 
+> **Reading the bound file in a Script node.** A `file` variable hydrates at runtime as an object; read the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
+
 Run `uip maestro flow debug --help` for other options.
 
 ### Reporting the run back to the user
@@ -330,10 +332,10 @@ Manage the local node type cache. No auth required for OOTB nodes; login for ten
 uip maestro flow registry pull                             # refresh local cache (expires after 30 min)
 uip maestro flow registry list --output json               # list all cached node types
 uip maestro flow registry search <keyword> --output json   # search by name, tag, or category
-uip maestro flow registry get <nodeType> --output json     # get full schema for a node type
+uip maestro flow registry get <node-type> --output json     # get full schema for a node type
 ```
 
-`registry search` returns `Data` as a flat array (not `Data.Nodes`); fields are PascalCase. `NodeType` is the identifier you pass to `registry get <nodeType>` (and later `node add`).
+`registry search` returns `Data` as a flat array (not `Data.Nodes`); fields are PascalCase. `NodeType` is the identifier you pass to `registry get <node-type>` (and later `node add`).
 
 ```json
 { "Data": [
@@ -354,7 +356,7 @@ uip maestro flow registry get <nodeType> --output json     # get full schema for
 - `true` — the tenant registry can return this node; it is valid to continue with `registry get <NodeType>` or `node add <NodeType>`.
 - `false` — the SDK knows about this node type, but the current tenant registry did not return it. Treat it as not enabled or not available for this tenant. Do **not** try nonexistent flags such as `--include-unavailable`; they are not supported. Choose an enabled alternative, use `--local` for in-solution resources, or report the feature/resource as unavailable.
 
-The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array.
+The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array. Unlike `registry search` (PascalCase summary), `registry get` returns the definition **verbatim** — its keys keep the manifest's own casing, predominantly **camelCase** (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`), exactly as they must appear in the `.flow`. Filter it with that casing (`--output-filter "Node.inputDefinition"`, not `Node.InputDefinition`).
 
 Run `uip maestro flow registry <subcommand> --help` for additional options (e.g., `--force`, `--filter`, `--connection-id`).
 

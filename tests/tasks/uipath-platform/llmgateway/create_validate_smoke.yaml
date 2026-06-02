@@ -7,6 +7,9 @@ description: >
   discovery before the create. Auth errors are expected in CI.
 tags: [uipath-platform, smoke, llmgateway, byo-connections, lifecycle:create]
 
+run_limits:
+  expected_turns: 14
+
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 

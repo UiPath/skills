@@ -288,7 +288,7 @@ Connector activities, agent nodes, and RPA nodes follow the same pattern as the 
 
 Verify exact ports for any node type:
 ```bash
-uip maestro flow registry get <nodeType> --output json
+uip maestro flow registry get <node-type> --output json
 # Look at Data.Node.handleConfiguration[].handles[].id
 # Also check Data.Node.supportsErrorHandling — see "Implicit error port" below
 ```
@@ -314,8 +314,7 @@ Without a wired error edge, any of these fails the whole flow with `finalStatus:
 
 ```bash
 # Confirm the node supports error handling
-uip maestro flow registry get <nodeType> --output json \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['Data']['Node'].get('supportsErrorHandling'))"
+uip maestro flow registry get <node-type> --output json --output-filter "Node.SupportsErrorHandling"
 
 # Add an outgoing edge with sourcePort: "error"
 uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \

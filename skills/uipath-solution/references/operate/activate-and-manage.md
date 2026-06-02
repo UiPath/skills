@@ -89,7 +89,7 @@ View all solution packages that have been published to the feed:
 uip solution packages list --output json
 
 # Paginate and sort
-uip solution packages list --limit 20 --order-by "Name" --order-direction "asc" --output json
+uip solution packages list --limit 20 --sort-by "Name" --sort-order "Ascending" --output json
 
 # Filter by name (server-side substring match on the package name)
 uip solution packages list --name "Invoice" --output json
@@ -97,9 +97,9 @@ uip solution packages list --name "Invoice" --output json
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--limit <n>` | Number of results to return | 10 |
-| `--order-by <field>` | Sort field | -- |
-| `--order-direction <dir>` | `asc` or `desc` | -- |
+| `--limit <n>` | Number of results to return | 50 |
+| `--sort-by <field>` | Sort field | -- |
+| `--sort-order <dir>` | `Ascending` or `Descending` | -- |
 
 ## Step 5: Download a Package Version
 

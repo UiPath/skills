@@ -8,6 +8,7 @@ description: >
 tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:hitl-coded]
 
 run_limits:
+  expected_turns: 29
   turn_timeout: 1200
 
 initial_prompt: |

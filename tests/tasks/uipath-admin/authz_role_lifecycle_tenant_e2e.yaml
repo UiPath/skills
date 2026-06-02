@@ -12,6 +12,7 @@ description: >
 tags: [uipath-admin, e2e, authz, role-lifecycle, scope:tenant]
 
 run_limits:
+  expected_turns: 14
   max_turns: 40
   turn_timeout: 600
 

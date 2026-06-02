@@ -9,6 +9,7 @@ description: >
 tags: [uipath-data-fabric, integration, files]
 
 run_limits:
+  expected_turns: 29
   turn_timeout: 600
 
 initial_prompt: |

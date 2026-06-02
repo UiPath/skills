@@ -4,7 +4,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 > **Where you came from / where to go next.** Diagnose is downstream of Operate (run faulted → diagnose) and points back to Author for the underlying fix (diagnose → re-author → re-ship). Re-running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md); building/editing the `.flow` file lives in [author/CAPABILITY.md](../author/CAPABILITY.md).
 >
-> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, never invoke other skills automatically, AskUserQuestion dropdown pattern, **plain-English narration + granular `TodoWrite` (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are diagnose-scoped and apply on top.
+> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, AskUserQuestion dropdown pattern, **plain-English narration + granular `TodoWrite` (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are diagnose-scoped and apply on top.
 
 ## When to use this capability
 
@@ -18,7 +18,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 ## Critical rules
 
 1. **Investigate in priority order — incidents → variables → flow correlation → traces.** Each step adds context; stop when you have enough to identify the root cause. Skipping ahead to traces is the most common mistake — they are verbose and last-resort. See [troubleshooting-guide.md](references/troubleshooting-guide.md).
-2. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` and `incident get` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip or folders list --output json` or from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#5---folder-key-requirement).
+2. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` and `incident get` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip or folders list --output json` or from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#6---folder-key-requirement).
 3. **Never call the underlying APIs directly — always use `uip` CLI commands.** The `instance` and `incident` subcommands are the supported diagnostic surface; direct API calls are not.
 4. **When the local `.flow` may differ from the deployed BPMN, fetch the deployed asset.** Use `uip maestro flow instance asset <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json` to see what actually ran. Do not assume your local file matches.
 

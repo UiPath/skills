@@ -9,6 +9,7 @@ description: >
 tags: [uipath-human-in-the-loop, e2e, green-field]
 
 run_limits:
+  expected_turns: 19
   max_turns: 40
   turn_timeout: 1200
 
@@ -21,6 +22,7 @@ initial_prompt: |
   The manager should be able to Approve or Reject.
 
   After adding the HITL node and wiring it, validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed

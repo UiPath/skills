@@ -9,6 +9,7 @@ description: >
 tags: [uipath-maestro-case, init, validate]
 
 run_limits:
+  expected_turns: 70
   max_turns: 80
 
 initial_prompt: |

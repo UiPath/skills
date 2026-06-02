@@ -17,6 +17,7 @@ description: >
 tags: [uipath-review, e2e, multi-project]
 
 run_limits:
+  expected_turns: 31
   max_turns: 60
 
 initial_prompt: |

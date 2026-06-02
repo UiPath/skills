@@ -35,14 +35,7 @@ uip df records list <entity-id> --limit 100 --offset 250 --output json
 
 ## Always Query the Server for Answers
 
-Issue a fresh `records query` (or `records list`) — don't filter cached transcript data. Records mutate between turns, and the CLI call is the audit trail.
-
-Common shapes:
-
-- **By relationship:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"<rel-field>","operator":"=","value":"<target-uuid>"}]}}'`
-- **Resolve unique key before write:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}'`
-- **Set membership over UUIDs:** `--body '{"filterGroup":{"queryFilters":[{"fieldName":"<rel-field>","operator":"in","valueList":["<u1>","<u2>","<u3>"]}]}}'`
-- **Counts / sums / groupings:** `aggregates` + `groupBy` — see [Aggregates (server-side)](#aggregates-server-side).
+Issue a fresh `records query` (or `records list`) — don't filter cached transcript data. Records mutate between turns, and the CLI call is the audit trail. Patterns: [filtered query](#filtered-query), [choice-set](#filtering-on-choice-set-fields), [relationship](#filtering-on-relationship-fields), [aggregates](#aggregates-server-side).
 
 ## Filtered Query
 
@@ -52,59 +45,16 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Pagination for query also uses `--limit`, `--cursor`, and `--offset` flags — not body keys.
+Pagination uses the same `--limit` / `--cursor` / `--offset` flags as `records list` — never body keys.
 
-```bash
-# Query with pagination
-uip df records query <entity-id> \
-  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Score","operator":">=","value":"80"}]}}' \
-  --limit 100 \
-  --cursor <NextCursor> \
-  --output json
-```
+The `filterGroup` shape, operators, response, and per-type support are in [`filter-platform-contract.md`](filter-platform-contract.md). Beyond the filter, the query body accepts:
 
-### Query Body Schema
+- `"selectedFields": ["F1","F2"]` — projection. Default is all fields (SKILL.md Rule 16).
+- `"sortOptions": [{ "fieldName": "Score", "isDescending": true }]` — server-side sort.
 
-```json
-{
-  "selectedFields": ["FieldA", "FieldB"],
-  "filterGroup": {
-    "logicalOperator": 0,
-    "queryFilters": [
-      { "fieldName": "Score", "operator": ">=", "value": "80" }
-    ],
-    "filterGroups": []
-  },
-  "sortOptions": [
-    { "fieldName": "Score", "isDescending": true }
-  ]
-}
-```
+### Verifying a filter applied
 
-> Pagination is CLI-flag only: `--limit`, `--cursor`, `--offset`. Do not put `start`, `limit`, `offset`, or `pageSize` inside `--body` — the CLI translates these flags into the underlying offset-based API call.
-
-### Operators
-
-| Operator | Applies to | Example |
-|----------|-----------|---------|
-| `=` | All types | `"value":"active"` |
-| `!=` | All types | Null check when value is empty |
-| `>`, `<`, `>=`, `<=` | Numbers, dates | `"value":"2024-01-01"` |
-| `contains` | Text | `"value":"part"` |
-| `not contains` | Text | |
-| `startswith` | Text | |
-| `endswith` | Text | |
-| `in` | All | `"valueList":["a","b","c"]` |
-| `not in` | All | `"valueList":["x","y"]` |
-
-> `in` and `not in` use `valueList` (string array), **not** `value`. Using `value` for these operators will be ignored.
-
-> `CHOICE_SET_MULTIPLE` is a special case — `=` means whole-array set equality, `contains` is membership, others are unsupported. See [Filtering on Choice-Set Fields](#filtering-on-choice-set-fields) below.
-
-### logicalOperator
-
-- `0` = AND (all filters must match)
-- `1` = OR (any filter must match)
+Compare the response's `TotalCount` against an unfiltered baseline. If they match, the filter didn't narrow the result set — re-check the body against the contract.
 
 ### Nested Filter Groups
 
@@ -142,13 +92,7 @@ uip df records query <entity-id> --body \
   --output json
 ```
 
-**`CHOICE_SET_MULTIPLE`** is stored as a JSON-encoded integer array (e.g. `[1,3]`) and has special operator semantics:
-
-| Operator | Value form | Meaning |
-|----------|-----------|---------|
-| `contains` / `not contains` | bare NumberId string (`"1"`) | Membership — the usual case |
-| `=` / `!=` | JSON-array string (`"[1,3]"`) | Whole-set equality, order-insensitive |
-| anything else | — | Not supported |
+**`CHOICE_SET_MULTIPLE`** has special `=` vs `contains` semantics — see the [filter contract](filter-platform-contract.md#operator-support-by-field-type) Complex-field values line. Practical examples:
 
 ```bash
 # Membership — records tagged with NumberId 1
@@ -193,19 +137,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response:
-
-```json
-{
-  "Result": "Success",
-  "Code": "RecordQuery",
-  "Data": {
-    "TotalCount": 1,
-    "Records": [{ "total": 250 }],
-    "HasNextPage": false
-  }
-}
-```
+Response: `Data.Records` is a single row — `[{ "total": 250 }]`.
 
 ```bash
 # Count per group (one result row per distinct value)
@@ -214,22 +146,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response shape (one row per group, each row contains the group fields + every aggregate alias):
-
-```json
-{
-  "Result": "Success",
-  "Code": "RecordQuery",
-  "Data": {
-    "TotalCount": 2,
-    "Records": [
-      { "Status": "Open",   "total": 12 },
-      { "Status": "Closed", "total":  5 }
-    ],
-    "HasNextPage": false
-  }
-}
-```
+Response: one row per group, each with the group fields + every aggregate alias — `[{ "Status": "Open", "total": 12 }, { "Status": "Closed", "total": 5 }]`.
 
 ### Functions
 
@@ -262,7 +179,7 @@ Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
 - The same `filterGroup`, `sortOptions`, and pagination flags (`--limit`, `--cursor`) work alongside aggregates. Filters are applied **before** grouping (SQL `WHERE`).
 - Choice-set fields in `groupBy` / filters require the numeric `numberId`, not the display label. Discover via the choice-set lookup if you need to filter / group by a choice value.
 
-> Tooling requirement: server-side aggregates ship in version `1.0.1`+ of `@uipath/data-fabric-tool` only. Older versions silently strip `aggregates` / `groupBy` from the body (the SDK they bundle prefixes unknown keys with OData `$`, which the API ignores) and the query falls back to a plain record list. If aggregates aren't returning the expected one-row-per-group shape, re-run `uip tools install @uipath/data-fabric-tool@latest` to pick up the latest.
+> Needs `@uipath/data-fabric-tool` `1.0.1+`; older versions silently drop `aggregates`/`groupBy` and return a plain record list — `uip tools install @uipath/data-fabric-tool@latest`.
 
 ## Insert Records
 

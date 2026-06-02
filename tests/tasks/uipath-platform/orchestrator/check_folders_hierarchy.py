@@ -36,13 +36,14 @@ uuid8 = seed.get("uuid8")
 if not uuid8:
     sys.exit("FAIL: seed.json has no uuid8")
 
+parent = seed.get("parent_folder_path") or "Shared"
 top_name = f"e2e-fh-{uuid8}-top"
 a_name = f"e2e-fh-{uuid8}-A"
 b_name = f"e2e-fh-{uuid8}-B"
 
-top = fetch_folder(f"Shared/{top_name}")
-a = fetch_folder(f"Shared/{top_name}/{a_name}")
-b = fetch_folder(f"Shared/{top_name}/{b_name}")
+top = fetch_folder(f"{parent}/{top_name}")
+a = fetch_folder(f"{parent}/{top_name}/{a_name}")
+b = fetch_folder(f"{parent}/{top_name}/{b_name}")
 
 top_id = _pick(top, "ID", "Id")
 a_id = _pick(a, "ID", "Id")

@@ -105,14 +105,15 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
-| **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
+| **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
+| **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `eval`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
 
 ### Rules
 
 1. **Required on every task: `skill` + `tier` + `mode:*` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
 2. **One value per singular dimension** (`tier`, `mode`, `shape`). A task doesn't have two tiers.
 3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
-4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
+4. **`connector`, `resource`, and `windows` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
 5. **Use only the vocabularies above.** Propose new values in the PR — do not invent tags inline. New values should apply to at least two tasks in practice.
 6. **Don't repeat the skill name as a feature tag.** Don't tag a flow task with `rpa` (bare) or `uipath-rpa` as a feature.
 
@@ -125,6 +126,7 @@ tags: [uipath-maestro-flow, e2e, mode:build, shape:multi-node, node:decision, co
 ### Useful slices this enables
 
 - `make tags TAGS="smoke"` → every skill's entry-gate checks.
+- `make tags TAGS="smoke windows"` → Windows-only smoke tasks (the slice `smoke-rpa-skills.yml` runs on `windows-latest`).
 - `make tags TAGS="integration connector"` → connector coverage across skills.
 - `make tags TAGS="e2e mode:build"` → end-to-end build tasks across skills.
 - `make tags TAGS="mode:diagnose"` → diagnosis-mode coverage across skills.

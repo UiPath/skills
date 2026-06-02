@@ -11,6 +11,7 @@ description: >
 tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
 
 run_limits:
+  expected_turns: 22
   max_turns: 40
   turn_timeout: 1200
 
@@ -21,12 +22,11 @@ initial_prompt: |
   every decision. If the officer doesn't respond within 7 days, escalate
   automatically.
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop).
-  Give the privacy officer Approve and Reject outcomes. Configure the node
-  with a 7-day ISO 8601 timeout duration (e.g. "P7D") so the request
-  expires automatically if the officer does not respond.
+  Give the privacy officer Approve and Reject outcomes. The review task
+  must expire automatically if the officer does not respond within 7 days.
 
   Validate the flow when you're done.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_exists

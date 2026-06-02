@@ -6,6 +6,7 @@ description: >
 tags: [uipath-agents, integration, mode:build, coded, lifecycle:deploy, feature:deploy]
 
 run_limits:
+  expected_turns: 15
   max_turns: 100
   task_timeout: 600
   turn_timeout: 300

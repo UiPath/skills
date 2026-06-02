@@ -13,6 +13,7 @@ description: >
 tags: [uipath-data-fabric, integration, error-paths]
 
 run_limits:
+  expected_turns: 33
   max_turns: 50
   turn_timeout: 600
 
