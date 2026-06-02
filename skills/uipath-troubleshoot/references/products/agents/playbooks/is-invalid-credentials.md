@@ -58,7 +58,7 @@ What to look for:
 
    ```bash
    uip is connections list --output json \
-     --output-filter "connections[?name == '<connection-name>'].{id: id, name: name, connector: connector}"
+     --output-filter "connections[?name == '<connection-name>'].{id: id, name: name, connector: connector, folders: resource.folders}"
    ```
 
 5. Ping to confirm authentication fails:
@@ -74,7 +74,7 @@ What to look for:
   Move connection to folder where the agent executes, or create a new connection scoped to that folder:
 
   ```bash
-  uip is connections create --output json
+  uip is connections create <connector-key> --output json
   ```
 
   Update the agent's tool to reference the new connection ID, then republish:
@@ -99,7 +99,7 @@ What to look for:
 
   ```bash
   uip is connections delete <connection-id> --output json
-  uip is connections create --output json
+  uip is connections create <connector-key> --output json
   ```
 
   Update the agent's tool to reference the new connection ID, then republish:
@@ -112,7 +112,7 @@ What to look for:
 
   ```bash
   uip is connections delete <connection-id> --output json
-  uip is connections create --output json
+  uip is connections create <connector-key> --output json
   uip agent publish --output json
   ```
 
@@ -120,6 +120,6 @@ What to look for:
 
   ```bash
   uip is connections delete <connection-id> --output json
-  uip is connections create --output json
+  uip is connections create <connector-key> --output json
   uip agent publish --output json
   ```
