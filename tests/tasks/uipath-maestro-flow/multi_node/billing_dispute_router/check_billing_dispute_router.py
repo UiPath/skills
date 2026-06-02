@@ -1,84 +1,48 @@
 #!/usr/bin/env python3
-"""Verify the billing-dispute-router e2e routed each amount to the right branch.
+"""BillingDisputeRouter: the agent builds + validates only; this check runs
+`uip maestro flow debug` itself for three amounts and asserts the switch routes
+each to the correct outcome.
 
-The agent builds a Flow with a switch on `disputedAmount`:
+Routing rule under test (switch on `disputedAmount`):
   > 5000  -> "manager_review"
   <= 500  -> "auto_resolve"
   else    -> "standard_review"
-and runs `uip maestro flow debug` three times, saving each run's `--output json`
-payload. This checker reads those files and asserts, for each:
 
-  1. `Result == "Success"` and `Data.finalStatus == "Completed"`.
-  2. Output `routingDecision` equals the branch the amount should hit.
-
-A switch whose cases never match, are inverted, or are mis-wired validates
-clean but routes wrong — caught here only because the flow actually runs.
+A Switch node is required (anti-hardcode): the three cases already force real
+branching (a single hardcoded output fails two of three), and the node-type
+guard additionally rejects an if/else or script that sidesteps the Switch the
+task targets.
 """
-from __future__ import annotations
-
-import json
+import os
 import sys
-from pathlib import Path
 
-# file -> (amount that was debugged, expected routingDecision)
-CASES = {
-    "debug-high.json": (11000, "manager_review"),
-    "debug-low.json": (300, "auto_resolve"),
-    "debug-mid.json": (2500, "standard_review"),
-}
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.flow_check import (  # noqa: E402
+    assert_flow_has_node_type,
+    assert_output_value,
+    run_debug,
+)
 
-
-def _fail(msg: str) -> None:
-    sys.exit(f"FAIL: {msg}")
-
-
-def _load(path: Path) -> dict:
-    if not path.is_file():
-        _fail(f"missing {path} — the agent did not save this debug run")
-    try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        _fail(f"{path} is not valid JSON: {e}")
-    if not isinstance(doc, dict):
-        _fail(f"{path} should be a JSON object, got {type(doc).__name__}")
-    return doc
+# (disputedAmount, disputeType, expected routingDecision)
+CASES = [
+    (11000, "duplicate_charge", "manager_review"),
+    (300, "incorrect_amount", "auto_resolve"),
+    (2500, "incorrect_rate", "standard_review"),
+]
 
 
-def _routing_decision(data: dict):
-    g = (data.get("variables") or {}).get("globals")
-    if not isinstance(g, dict) or "routingDecision" not in g:
-        return None
-    val = g["routingDecision"]
-    if isinstance(val, dict):
-        for k in ("output", "value", "routingDecision"):
-            if k in val:
-                return val[k]
-    return val
+def main():
+    # The routing must go through a Switch node, not an if/else chain or script.
+    assert_flow_has_node_type(["core.logic.switch"])
 
+    for amount, dispute_type, expected in CASES:
+        inputs = {"disputedAmount": amount, "disputeType": dispute_type}
+        print(f"[amount={amount}] debug inputs: {inputs} (expect {expected!r})")
+        payload = run_debug(inputs=inputs, timeout=180)
+        assert_output_value(payload, expected)
+        print(f"OK: amount={amount} -> {expected!r}")
 
-def main() -> None:
-    failures: list[str] = []
-
-    for fname, (amount, expected) in CASES.items():
-        doc = _load(Path(fname))
-        label = f"amount={amount}"
-        if doc.get("Result") != "Success":
-            failures.append(f"{label}: Result={doc.get('Result')!r} Message={doc.get('Message')!r}")
-            continue
-        data = doc.get("Data") or {}
-        if not isinstance(data, dict) or data.get("finalStatus") != "Completed":
-            fs = data.get("finalStatus") if isinstance(data, dict) else "<no Data>"
-            failures.append(f"{label}: finalStatus={fs!r} (expected Completed)")
-            continue
-        decision = _routing_decision(data)
-        if decision != expected:
-            failures.append(f"{label}: routingDecision={decision!r} (expected {expected!r})")
-        else:
-            print(f"OK: {label} -> {expected!r}")
-
-    if failures:
-        _fail(" | ".join(failures))
-    print(f"OK: all {len(CASES)} amounts routed to the correct branch at runtime")
+    print(f"OK: all {len(CASES)} amounts routed to the correct branch")
 
 
 if __name__ == "__main__":

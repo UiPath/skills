@@ -36,12 +36,7 @@ initial_prompt: |
     `matchedInvoiceNumber` (string, first ERP row), `accountTier` (string, from
     CRM).
 
-  Validate, then debug once with:
-    {"invoiceNumber": "MCS-2026-04872", "accountNumber": "ACCT-98201-NE",
-     "disputedLineNumber": 5, "disputedUnitPrice": 300, "disputedQuantity": 14}
-  saving the run's JSON to debug-output.json.
-
-  Build, validate, and run the debug case end to end without stopping to ask me.
+  Validate the flow. Build it end to end without stopping to ask me.
 
 success_criteria:
   - type: run_command
@@ -53,9 +48,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise at runtime"
+    description: "Check script debugs once; flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise"
     command: "python3 $TASK_DIR/check_billing_discrepancy_detector.py"
-    timeout: 120
+    timeout: 300
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

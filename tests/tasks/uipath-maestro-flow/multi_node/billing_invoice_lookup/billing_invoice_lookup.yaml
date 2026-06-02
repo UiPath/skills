@@ -25,12 +25,7 @@ initial_prompt: |
   - Outputs: `matchedInvoiceNumber` (string, first row's invoiceNumber) and
     `lineItemCount` (number, rows returned).
 
-  Validate, then debug three times, saving each run's JSON:
-    {"invoiceNumber": "2026-04872"}      → debug-prefix.json
-    {"invoiceNumber": "mcs-2026-04872"}  → debug-casing.json
-    {"invoiceNumber": " MCS-2026-04872"} → debug-whitespace.json
-
-  Build, validate, and run the debug cases end to end without stopping to ask me.
+  Validate the flow. Build it end to end without stopping to ask me.
 
 success_criteria:
   - type: run_command
@@ -42,9 +37,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "All three malformed inputs resolved to MCS-2026-04872 with 8 line items at runtime"
+    description: "Check script debugs all three malformed inputs; each resolves to MCS-2026-04872 with 8 line items"
     command: "python3 $TASK_DIR/check_billing_invoice_lookup.py"
-    timeout: 120
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

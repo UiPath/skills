@@ -23,12 +23,7 @@ initial_prompt: |
     <= 500 → "auto_resolve"; otherwise → "standard_review".
   - Output: `routingDecision` (string) carrying the chosen outcome.
 
-  Validate, then debug three times, saving each run's JSON:
-    {"disputedAmount": 11000, "disputeType": "duplicate_charge"} → debug-high.json
-    {"disputedAmount": 300, "disputeType": "incorrect_amount"}   → debug-low.json
-    {"disputedAmount": 2500, "disputeType": "incorrect_rate"}    → debug-mid.json
-
-  Build, validate, and run the debug cases end to end without stopping to ask me.
+  Validate the flow. Build it end to end without stopping to ask me.
 
 success_criteria:
   - type: run_command
@@ -40,9 +35,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Each amount routed to the correct outcome at runtime"
+    description: "Check script debugs all three branches; each amount routes to the correct outcome"
     command: "python3 $TASK_DIR/check_billing_dispute_router.py"
-    timeout: 120
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
