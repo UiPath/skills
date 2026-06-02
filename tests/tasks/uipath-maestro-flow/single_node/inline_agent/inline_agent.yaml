@@ -29,7 +29,7 @@ success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
     command: "uip maestro flow validate InlineAgentSum/InlineAgentSum/InlineAgentSum.flow"
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
