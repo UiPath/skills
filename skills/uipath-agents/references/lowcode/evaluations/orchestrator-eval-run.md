@@ -14,7 +14,8 @@ uip or eval run-offline-evals \
   [--items <json>] \
   [--evaluators <json>] \
   [--is-legacy] \
-  [--folder-key <folder-guid>]
+  [--folder-key <folder-guid>] \
+  --output json
 ```
 
 The folder resolves from your personal workspace automatically. Pass `--folder-key` to target a specific folder instead.
@@ -45,7 +46,8 @@ The folder resolves from your personal workspace automatically. Pass `--folder-k
 uip or eval run-offline-evals \
   --package-name "MyPackage.agent.Agent" \
   --package-version "1.0.0" \
-  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09"
+  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
+  --output json
 
 # Inline override — paste evaluator and item JSON directly from the package/portal.
 # Use --is-legacy to auto-transform: wraps evaluator as { evaluatorTypeId, evaluatorConfig }
@@ -72,21 +74,24 @@ uip or eval run-offline-evals \
     "inputs": {},
     "expectedOutput": { "content": "The current date is 2026-05-31." },
     "expectedAgentBehavior": ""
-  }]'
+  }]' \
+  --output json
 
 # Loop 5 times every 2 minutes
 uip or eval run-offline-evals \
   --package-name "MyPackage.agent.Agent" \
   --package-version "1.0.0" \
   --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --loop --interval 2m --count 5
+  --loop --interval 2m --count 5 \
+  --output json
 
 # Explicit folder key instead of personal workspace
 uip or eval run-offline-evals \
   --package-name "MyPackage.agent.Agent" \
   --package-version "1.0.0" \
   --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e"
+  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e" \
+  --output json
 ```
 
 ## Items and Evaluators Format
@@ -181,3 +186,21 @@ Submitted. EvalSetRunId: d989a131-478f-8c16-245e-683757027395
 ```
 
 Use the `EvalSetRunId` to track results in the UiPath portal.
+
+## Troubleshooting
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `401 Unauthorized` | Auth expired or not configured | Run `uip login --output json` |
+| `Package not found` | Package not published or wrong name/version | Verify with `uip or packages list --output json`; re-publish with `uip solution deploy` |
+| `Eval set not found` | Invalid `--eval-set-id` GUID | Verify the eval set exists in the portal; use `--items` and `--evaluators` inline instead |
+| `'same-as-agent' model option requires agent settings` | Inline evaluator has `"model": "same-as-agent"` — agent.json not available in inline mode | Replace with explicit model ID (e.g. `anthropic.claude-3-5-sonnet-20240620-v1:0`) |
+| `--loop` interrupted / no results | Ctrl-C stopped local polling but run continues server-side | Note the `EvalSetRunId` from initial output and track results in the UiPath portal |
+| `Folder not found` | `--folder-key` GUID invalid or inaccessible | Run `uip or folders list --output json` to find valid keys |
+
+## Anti-patterns
+
+- **Don't run against an unpublished package version.** The command targets the package already in Orchestrator. Bump `--package-version` after each publish; stale versions return results from old agent logic.
+- **Don't use `--eval-file` schema that mismatches the package's eval set.** Field names differ between legacy (`expectedAgentBehavior`) and wire format (`expectedBehavior`). Use `--is-legacy` when pasting directly from the package or portal.
+- **Don't omit `--output json` when parsing `EvalSetRunId`.** Without it, the run ID is embedded in human-readable log output and fragile to parse.
+- **Don't pass `"model": "same-as-agent"` with inline `--evaluators`.** Inline mode has no access to `agent.json`; the CLI cannot resolve `same-as-agent` and will error at runtime.
