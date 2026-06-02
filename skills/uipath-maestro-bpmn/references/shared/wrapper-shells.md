@@ -58,7 +58,6 @@ commands before execution; keep examples placeholder-safe.
       <uipath:context>
         <uipath:input name="ReleaseKey" type="string" value="<PROCESS_KEY_GUID>" />
         <uipath:input name="FolderKey" type="string" value="<FOLDER_KEY_GUID>" />
-        <uipath:input name="folderId" type="string" value="<FOLDER_ID_INTEGER>" />
         <uipath:input name="FolderPath" type="string" value="Shared/Synthetic" />
         <uipath:input name="Name" type="string" value="Synthetic Process" />
       </uipath:context>
