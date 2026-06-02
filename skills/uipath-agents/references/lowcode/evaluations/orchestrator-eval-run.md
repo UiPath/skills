@@ -13,9 +13,10 @@ uip or eval run-offline-evals \
   [--eval-set-id <guid>] \
   [--items <json>] \
   [--evaluators <json>] \
-  [--is-legacy] \
+  [--is-low-code-agent] \
+  [--batch-size <n>] \
   [--folder-key <folder-guid>] \
-  --output json
+  [--tenant <tenant-name>]
 ```
 
 The folder resolves from your personal workspace automatically. Pass `--folder-key` to target a specific folder instead.
@@ -26,16 +27,13 @@ The folder resolves from your personal workspace automatically. Pass `--folder-k
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--package-name` | Yes | Orchestrator package name (processKey, e.g. `MyPackage.agent.Agent`) |
+| `--package-name` | Yes | Orchestrator package name (processKey, e.g. `MyAutomation.Agent.agent`) |
 | `--package-version` | Yes | Package version (e.g. `1.0.2`) |
-| `--eval-set-id` | No | Eval set ID to run; defaults to zero GUID when items/evaluators are provided inline |
+| `--eval-set-id` | No | Eval set ID to run; mutually exclusive with `--items`/`--evaluators` |
 | `--items` | No | JSON array of eval items to override those from the package |
 | `--evaluators` | No | JSON array of evaluator configs to override those from the package |
-| `--is-legacy` | No | Auto-transform items/evaluators from the raw package format (flat JSON with `type`/`category` fields) to the API wire format. Use this when pasting directly from the package or portal. |
+| `--is-low-code-agent` | No | Auto-transform items/evaluators from the raw package format (flat JSON with `type`/`category` fields) to the API wire format. Use this when pasting directly from the package or portal. |
 | `--batch-size` | No | Max concurrent evaluation pipelines (default: `5`) |
-| `--loop` | No | Repeat until `--count` is reached or Ctrl-C |
-| `--interval` | No | Pause between repeated runs (e.g. `30s`, `2m`, `1h`; default: `5m`) |
-| `--count` | No | Stop after N runs when `--loop` is set; omit to run indefinitely |
 | `--folder-key` | No | Folder key GUID; defaults to personal workspace. Use `uip or folders list` to find available keys. |
 | `--tenant` | No | UiPath tenant name |
 
@@ -44,19 +42,18 @@ The folder resolves from your personal workspace automatically. Pass `--folder-k
 ```bash
 # Minimal — items/evaluators loaded from the published package
 uip or eval run-offline-evals \
-  --package-name "MyPackage.agent.Agent" \
-  --package-version "1.0.0" \
-  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --output json
+  --package-name "MyAutomation.Agent.agent" \
+  --package-version "1.0.2" \
+  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09"
 
 # Inline override — paste evaluator and item JSON directly from the package/portal.
-# Use --is-legacy to auto-transform: wraps evaluator as { evaluatorTypeId, evaluatorConfig }
+# Use --is-low-code-agent to auto-transform: wraps evaluator as { evaluatorTypeId, evaluatorConfig }
 # and renames expectedAgentBehavior → expectedBehavior on items.
 # Replace "model" with the actual model ID used by the agent (not "same-as-agent").
 uip or eval run-offline-evals \
-  --package-name "MyPackage.agent.Agent" \
-  --package-version "1.0.0" \
-  --is-legacy \
+  --package-name "MyAutomation.Agent.agent" \
+  --package-version "1.0.2" \
+  --is-low-code-agent \
   --evaluators '[{
     "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
     "name": "Default Evaluator",
@@ -74,29 +71,36 @@ uip or eval run-offline-evals \
     "inputs": {},
     "expectedOutput": { "content": "The current date is 2026-05-31." },
     "expectedAgentBehavior": ""
-  }]' \
-  --output json
-
-# Loop 5 times every 2 minutes
-uip or eval run-offline-evals \
-  --package-name "MyPackage.agent.Agent" \
-  --package-version "1.0.0" \
-  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --loop --interval 2m --count 5 \
-  --output json
+  }]'
 
 # Explicit folder key instead of personal workspace
 uip or eval run-offline-evals \
-  --package-name "MyPackage.agent.Agent" \
-  --package-version "1.0.0" \
+  --package-name "MyAutomation.Agent.agent" \
+  --package-version "1.0.2" \
   --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e" \
-  --output json
+  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e"
 ```
+
+## Output
+
+```json
+{
+  "Result": "Success",
+  "Code": "EvalRunSubmitted",
+  "Data": {
+    "Package": "MyAutomation.Agent.agent v1.0.2",
+    "Folder": "user@uipath.com's workspace",
+    "EvalSetId": "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09",
+    "EvalSetRunId": "f3a7d219-8b4c-4e62-a951-7d3f6e2c8b04"
+  }
+}
+```
+
+Use the `EvalSetRunId` to track results in the UiPath portal.
 
 ## Items and Evaluators Format
 
-### Without `--is-legacy` (API wire format)
+### Without `--is-low-code-agent` (API wire format)
 
 Pass the data already in the format the API expects:
 
@@ -137,7 +141,7 @@ Pass the data already in the format the API expects:
 ]
 ```
 
-### With `--is-legacy` (raw package format)
+### With `--is-low-code-agent` (raw package format)
 
 Paste the evaluator JSON directly from the package file (flat, with `type` and `category` at the top level). The CLI will auto-transform to the wire format.
 
@@ -173,34 +177,21 @@ Items use `expectedAgentBehavior` (renamed to `expectedBehavior` automatically):
 ]
 ```
 
-## Output
-
-On success, the command logs the submitted `EvalSetRunId`:
-
-```
-Package : MyPackage.agent.Agent v1.0.0
-Folder  : user@uipath.com's workspace
-Eval set: 00000000-0000-0000-0000-000000000000
-Items / evaluators: loaded from --items, --evaluators
-Submitted. EvalSetRunId: d989a131-478f-8c16-245e-683757027395
-```
-
-Use the `EvalSetRunId` to track results in the UiPath portal.
-
 ## Troubleshooting
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `401 Unauthorized` | Auth expired or not configured | Run `uip login --output json` |
-| `Package not found` | Package not published or wrong name/version | Verify with `uip or packages list --output json`; re-publish with `uip solution deploy` |
+| `401 Unauthorized` | Auth expired or not configured | Run `uip login` |
+| `Authentication failed` | No active session | Run `uip login` first |
+| `Package not found` | Package not published or wrong name/version | Verify with `uip or packages list`; re-publish with `uip solution deploy` |
 | `Eval set not found` | Invalid `--eval-set-id` GUID | Verify the eval set exists in the portal; use `--items` and `--evaluators` inline instead |
 | `'same-as-agent' model option requires agent settings` | Inline evaluator has `"model": "same-as-agent"` — agent.json not available in inline mode | Replace with explicit model ID (e.g. `anthropic.claude-3-5-sonnet-20240620-v1:0`) |
-| `--loop` interrupted / no results | Ctrl-C stopped local polling but run continues server-side | Note the `EvalSetRunId` from initial output and track results in the UiPath portal |
-| `Folder not found` | `--folder-key` GUID invalid or inaccessible | Run `uip or folders list --output json` to find valid keys |
+| `personal workspace not found` | Account has no personal workspace | Pass `--folder-key` explicitly |
+| `Folder not found` | `--folder-key` GUID invalid or inaccessible | Run `uip or folders list` to find valid keys |
 
 ## Anti-patterns
 
 - **Don't run against an unpublished package version.** The command targets the package already in Orchestrator. Bump `--package-version` after each publish; stale versions return results from old agent logic.
-- **Don't use `--eval-file` schema that mismatches the package's eval set.** Field names differ between legacy (`expectedAgentBehavior`) and wire format (`expectedBehavior`). Use `--is-legacy` when pasting directly from the package or portal.
-- **Don't omit `--output json` when parsing `EvalSetRunId`.** Without it, the run ID is embedded in human-readable log output and fragile to parse.
+- **Don't mix `--eval-set-id` with `--items`/`--evaluators`.** They are mutually exclusive. Use `--eval-set-id` to load from a saved eval set, or `--items`/`--evaluators` to provide inline. Not both.
+- **Don't use `--eval-file` schema that mismatches the package's eval set.** Field names differ between legacy (`expectedAgentBehavior`) and wire format (`expectedBehavior`). Use `--is-low-code-agent` when pasting directly from the package or portal.
 - **Don't pass `"model": "same-as-agent"` with inline `--evaluators`.** Inline mode has no access to `agent.json`; the CLI cannot resolve `same-as-agent` and will error at runtime.
