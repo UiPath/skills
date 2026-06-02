@@ -1,0 +1,92 @@
+task_id: skill-flow-billing-dispute-router
+description: >
+  E2E (greenfield, execution-graded): build a Flow that routes a billing
+  dispute to one of three outcomes based on the disputed amount, using a switch
+  node. Runs `uip maestro flow debug` against three amounts that each land in a
+  different branch and asserts the routing decision. Catches switch
+  case-expression and branch-wiring bugs that validate clean but route wrong at
+  runtime — a miswired or never-matching case only shows up when the flow runs.
+  Pure control flow (no connector), so it isolates routing correctness.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, node:switch]
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 1200
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 90
+
+initial_prompt: |
+  Build a UiPath Flow that decides how a billing dispute should be handled based
+  on the amount in dispute.
+
+  - Project: a Flow project called "BillingDisputeRouter" in a solution of the
+    same name.
+  - Inputs: two trigger input variables — `disputedAmount` (number) and
+    `disputeType` (string).
+  - Routing: use a switch to set the outcome from `disputedAmount`:
+      - greater than 5000            -> "manager_review"
+      - 500 or less                  -> "auto_resolve"
+      - anything in between          -> "standard_review"
+  - Output: expose one output variable `routingDecision` (string) carrying the
+    chosen outcome.
+
+  Validate the flow, then debug it three times — once per branch — and save each
+  run's JSON to the named file in the working directory:
+    - inputs `{"disputedAmount": 11000, "disputeType": "duplicate_charge"}` → debug-high.json
+    - inputs `{"disputedAmount": 300, "disputeType": "incorrect_amount"}`   → debug-low.json
+    - inputs `{"disputedAmount": 2500, "disputeType": "incorrect_rate"}`    → debug-mid.json
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Use `--output json` on every uip command.
+  Before starting, load the uipath-maestro-flow skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    description: "Agent invoked the uipath-maestro-flow skill"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow file exists at the double-nested path"
+    command: "test -f BillingDisputeRouter/BillingDisputeRouter/BillingDisputeRouter.flow"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran flow debug to execute the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "All three branch debug-output files were saved"
+    command: "test -f debug-high.json && test -f debug-low.json && test -f debug-mid.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Each amount routed to the correct outcome at runtime"
+    command: "python3 $TASK_DIR/check_billing_dispute_router.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

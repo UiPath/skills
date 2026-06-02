@@ -1,0 +1,118 @@
+task_id: skill-flow-billing-discrepancy-detector
+description: >
+  E2E (greenfield, execution-graded): build a Flow that looks up a disputed
+  invoice in ERP and the customer in CRM (two Data Fabric entities queried in
+  parallel), merges the branches, and computes the overcharge for a disputed
+  line against the contracted amount. Runs `uip maestro flow debug` once and
+  asserts the computed overcharge, discrepancy count, matched invoice, and
+  account tier. Catches the bugs that survive `flow validate`: a script that
+  reads the wrong `$vars` output path from a connector, a merge that drops a
+  branch, or a comparison that mis-computes — all only visible when the flow
+  runs against seeded tenant data.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector]
+
+run_limits:
+  max_turns: 120
+  turn_timeout: 1200
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 90
+
+initial_prompt: |
+  Build a UiPath Flow that checks a disputed invoice line against what was
+  actually contracted, and pulls the customer's account tier.
+
+  - Project: a Flow project called "BillingDiscrepancyDetector" in a solution of
+    the same name.
+  - Inputs (trigger input variables):
+      - `invoiceNumber` (string)
+      - `accountNumber` (string)
+      - `disputedLineNumber` (number)
+      - `disputedUnitPrice` (number)
+      - `disputedQuantity` (number)
+  - Lookups (run these two against the already-configured Data Service
+    connection, in parallel, then merge):
+      - `BillingDisputeERP` — all rows for `invoiceNumber`. Each row has a
+        `lineNumber` and a contracted `amount`.
+      - `BillingDisputeCRM` — the account row for `accountNumber`. It has an
+        `accountTier`.
+  - Compute (in a script after the merge):
+      - The disputed line's invoiced total = `disputedUnitPrice` x
+        `disputedQuantity`.
+      - The contracted total = the `amount` of the ERP row whose `lineNumber`
+        equals `disputedLineNumber`.
+      - `totalOvercharge` = invoiced total minus contracted total, but only when
+        positive (otherwise 0).
+      - `discrepancyCount` = 1 when there is a positive overcharge, else 0.
+  - Output variables:
+      - `totalOvercharge` (number)
+      - `discrepancyCount` (number)
+      - `matchedInvoiceNumber` (string) — `invoiceNumber` of the first ERP row.
+      - `accountTier` (string) — from the CRM row.
+
+  Validate the flow, then debug it once with inputs:
+    {"invoiceNumber": "MCS-2026-04872", "accountNumber": "ACCT-98201-NE",
+     "disputedLineNumber": 5, "disputedUnitPrice": 300, "disputedQuantity": 14}
+  Save the run's JSON to debug-output.json in the working directory.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Use `--output json` on every uip command.
+  Before starting, load the uipath-maestro-flow skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    description: "Agent invoked the uipath-maestro-flow skill"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched the registry for the Data Service connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*(dataservice|data.?fabric|entity)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow file exists at the double-nested path"
+    command: "test -f BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran flow debug to execute the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "debug-output.json was saved"
+    command: "test -f debug-output.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise at runtime"
+    command: "python3 $TASK_DIR/check_billing_discrepancy_detector.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
