@@ -6,6 +6,7 @@ on:
       - 'tests/tasks/uipath-maestro-flow/**'
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/scripts/**'
+      - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
 
