@@ -275,6 +275,12 @@ def main():
     )
     args = parser.parse_args()
 
+    # Validate before any work: a fraction outside [0, 1] silently breaks the
+    # relative guard (>1 yields a negative floor that never trips — a collapse
+    # would slip through; <0 over-inflates it). Fail fast on misconfiguration.
+    if args.max_drop_frac is not None and not 0 <= args.max_drop_frac <= 1:
+        sys.exit(f"--max-drop-frac must be between 0 and 1 (inclusive), got {args.max_drop_frac}")
+
     if args.install_tools:
         install_all_tools()
     verbs, groups = collect_top_level()
