@@ -25,7 +25,7 @@ Does the skill follow the canonical layout and conventions?
 - Reference files use kebab-case naming with `-guide.md` / `-template.md` suffixes
 - Folder organization is logical (references/, assets/, scripts/)
 - No orphaned files (every file is reachable from SKILL.md)
-- Skill has an entry in `assets/skill-status.json` with a valid status (`stable` / `public-preview` / `private-preview` / `in-development`), and no stale status markers in the frontmatter `description` or body — verify with `scripts/check-skill-status.py`
+- Skill has an entry in `assets/skill-status.json` with a valid status (`stable` / `preview` / `in-development`), and no stale status markers in the frontmatter `description` or body — verify with `scripts/check-skill-status.py`
 
 **Red flags:** missing frontmatter fields, name mismatch, description over 1024 chars, description prefixed with `[PREVIEW]` or other metadata tags (displaces high-value matching tokens), verbose TRIGGER/DO NOT TRIGGER clauses, frontmatter fields nested under `metadata:`, no Critical Rules section, unreachable files, missing or invalid `assets/skill-status.json` entry, stale `> **Preview**` callout or `[PREVIEW]` tag in SKILL.md.
 

@@ -184,13 +184,13 @@ Every skill must declare its maturity in [`assets/skill-status.json`](assets/ski
 
 ```json
 "uipath-<your-skill>": {
-  "status": "public-preview",
+  "status": "preview",
   "confluence": { "page_id": null, "url": null },
   "last_synced": null
 }
 ```
 
-Use one of: `stable`, `public-preview`, `private-preview`, `in-development`. Then regenerate the README status table and validate:
+Use one of: `stable`, `preview`, `in-development`. Then regenerate the README status table and validate:
 
 ```bash
 python3 scripts/check-skill-status.py --write-readme

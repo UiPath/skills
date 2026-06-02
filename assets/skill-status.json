@@ -7,13 +7,9 @@
       "label": "Stable",
       "meaning": "Stable, production-ready surface; safe for production."
     },
-    "public-preview": {
-      "label": "Public Preview",
-      "meaning": "Not yet stable but available to all tenants; surface and behavior may change."
-    },
-    "private-preview": {
-      "label": "Private Preview",
-      "meaning": "Gated or allowlisted; may be inaccessible in a tenant."
+    "preview": {
+      "label": "Preview",
+      "meaning": "Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change."
     },
     "in-development": {
       "label": "In-development",
@@ -22,7 +18,7 @@
   },
   "skills": {
     "uipath-admin": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -32,17 +28,17 @@
       "last_synced": null
     },
     "uipath-api-workflow": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-coded-apps": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-data-fabric": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -52,17 +48,17 @@
       "last_synced": null
     },
     "uipath-governance": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-human-in-the-loop": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-ixp": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -72,7 +68,7 @@
       "last_synced": null
     },
     "uipath-maestro-case": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -92,7 +88,7 @@
       "last_synced": null
     },
     "uipath-review": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -107,12 +103,12 @@
       "last_synced": null
     },
     "uipath-tasks": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-test": {
-      "status": "public-preview",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },

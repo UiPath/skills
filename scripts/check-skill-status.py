@@ -39,7 +39,7 @@ SKILLS_DIR = REPO_ROOT / "skills"
 README_PATH = REPO_ROOT / "README.md"
 
 # Canonical display order for the README legend.
-STATUS_ORDER = ["stable", "public-preview", "private-preview", "in-development"]
+STATUS_ORDER = ["stable", "preview", "in-development"]
 
 # A status tag wrongly embedded in the frontmatter description.
 FM_TAG_RE = re.compile(r"\[(?:preview|beta|alpha|ga|stable|deprecated|experimental)\]", re.I)
