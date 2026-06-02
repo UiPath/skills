@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelOrderImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Classic Excel Application Scope (COM-only) failing to acquire a workbook locked by an orphan EXCEL.EXE that a prior crashed job left running. Scope open fails with 'Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected.' Exercises branch 2 of the excel-application-scope-failures playbook.",
+  "MainFile": "Main.xaml"
+}

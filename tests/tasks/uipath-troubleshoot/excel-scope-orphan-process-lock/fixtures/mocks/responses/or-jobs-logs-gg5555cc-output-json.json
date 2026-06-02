@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-gg5555cc-001",
+      "JobKey": "gg555555-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T06:00:02.320Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelOrderImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-gg5555cc-002",
+      "JobKey": "gg555555-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T06:00:02.480Z",
+      "Message": "[ExcelOrderImport] Opening C:\\Robot\\Data\\orders-inbound.xlsx to import inbound orders",
+      "ProcessName": "ExcelOrderImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-gg5555cc-003",
+      "JobKey": "gg555555-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T06:00:02.700Z",
+      "Message": "Excel Application Scope: orders-inbound.xlsx — surface: Classic ExcelApplicationScope (COM-only). Acquiring workbook via Excel COM.",
+      "ProcessName": "ExcelOrderImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-gg5555cc-004",
+      "JobKey": "gg555555-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T06:00:08.900Z",
+      "Message": "Excel Application Scope: orders-inbound.xlsx — workbook open failed: target file is locked. Host: MOCK-HOST. Lock holder: EXCEL.EXE PID 7312, session 0 (Robot session UIPATH\\AUTOMATION1), NO main window — orphan instance (not a logged-in user's Excel). Orphan originated from job gg5550000-cccc-dddd-eeee-ffffaaaabbbb (ExcelOrderImport, Faulted 2026-05-29T22:04:11 mid-scope; the Robot session was force-terminated and EXCEL.EXE was left running, still holding the workbook handle). The file itself is well-formed (opens read-only from a copy) and is not password protected.",
+      "ProcessName": "ExcelOrderImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-gg5555cc-005",
+      "JobKey": "gg555555-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-30T06:00:09.850Z",
+      "Message": "Excel Application Scope: orders-inbound.xlsx — UiPath.Excel.BusinessException: Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected. Inner: COMException 0x800A03EC (Microsoft Excel cannot access the file; in use by another process).",
+      "ProcessName": "ExcelOrderImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

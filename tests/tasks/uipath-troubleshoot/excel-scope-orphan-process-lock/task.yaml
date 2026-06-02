@@ -1,0 +1,158 @@
+task_id: skill-troubleshoot-excel-scope-orphan-lock
+description: >
+  UiPath troubleshoot agent must diagnose a Classic Excel Application
+  Scope failure (BusinessException 'Failed opening the Excel file.
+  Possible reasons: file is corrupt, already used by another process or
+  password protected.', inner COMException 0x800A03EC) where the
+  workbook is locked by an orphan EXCEL.EXE left running by a prior
+  force-terminated job. Agent must match the
+  activity-packages/excel-activities/playbooks/excel-application-scope-failures.md
+  playbook, identify branch 2 (workbook held by another EXCEL.EXE),
+  rule out the corrupt/password red herrings using the log evidence,
+  recommend clearing the orphan plus fixing what leaves orphans, and
+  scope any Kill Process EXCEL advice to dedicated unattended hosts.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-scope, orphan-process-lock]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected.`
+  Pinned job key: gg555555-cccc-dddd-eeee-ffffaaaabbbb. The file isn't
+  corrupt — it opened fine yesterday and there's no password on it.
+  Why can't the robot open it now?
+
+  The project source for the failing process is at ./ExcelOrderImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the excel-application-scope-failures playbook AND identified branch 2 (orphan EXCEL.EXE lock, ruling out corrupt/password) AND recommended clearing the orphan + fixing what leaves orphans, with Kill Process EXCEL scoped to dedicated unattended hosts"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: Failed opening the Excel file.
+         Possible reasons: file is corrupt, already used by another
+         process or password protected.` Pinned job key:
+         gg555555-cccc-dddd-eeee-ffffaaaabbbb. The file isn't corrupt —
+         it opened fine yesterday and there's no password on it. Why
+         can't the robot open it now?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/excel-application-scope-failures.md
+        branch 2 (workbook held by another EXCEL.EXE).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Classic Excel Application Scope could not open
+            orders-inbound.xlsx because the file is locked by an ORPHAN
+            EXCEL.EXE (PID 7312, session 0, no main window) owned by the
+            Robot's session.
+          - That orphan was left by a PRIOR job (gg5550000-...) that
+            faulted mid-scope on 2026-05-29 when its Robot session was
+            force-terminated; the EXCEL.EXE was never closed and still
+            holds the workbook handle.
+          - The file is NOT corrupt and NOT password protected — the log
+            explicitly rules both out. Of the three reasons in the
+            message, only "already used by another process" applies.
+
+        The reference fix:
+          - Immediate: clear the orphan (Stop-Process -Id 7312 / Task
+            Manager); the lock releases.
+          - Durable: stop creating orphans (don't force-kill mid-scope;
+            Excel Process Scope for multi-scope flows; no macro
+            Application.Quit). A guarded Kill Process EXCEL at workflow
+            start is acceptable ONLY on a dedicated unattended host.
+          - NOT acceptable: concluding corruption/password; an
+            unconditional Kill Process EXCEL on a shared/attended host;
+            a bare Try-Catch that continues; a Delay as the fix.
+
+        Evidence sources (priority order):
+          1. Job logs -- the decisive line naming the orphan EXCEL.EXE
+             PID 7312 (Robot session, no window), its originating
+             crashed job, and the explicit statement that the file is
+             well-formed and not password protected.
+          2. jobs list --state Faulted -- shows the prior force-
+             terminated run gg5550000-... at 2026-05-29T22:04.
+          3. jobs get -- inner COMException 0x800A03EC ("cannot access
+             the file ... used by another program").
+          4. Workflow source -- single Classic scope; nothing wrong in
+             the current workflow.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the playbook branch 2 AND identified the
+             orphan EXCEL.EXE lock (naming the prior crashed job as its
+             origin) AND explicitly ruled out corruption/password using
+             the evidence AND recommended clearing the orphan + fixing
+             the orphan source, with Kill Process EXCEL correctly scoped
+             to dedicated unattended hosts.
+        0.9  Correct diagnosis (orphan lock) + correct recovery (clear
+             the orphan) but didn't connect it to the specific prior
+             crashed job OR didn't caveat the Kill Process EXCEL
+             host-scoping.
+        0.8  Identified "another process is locking the file" and
+             recommended killing the EXCEL process, but didn't
+             distinguish orphan-vs-user instance and gave the Kill
+             Process advice unconditionally (no shared-host caveat).
+        0.7  Correctly ruled out corruption/password and identified a
+             lock, but left the fix vague ("close whatever has it open")
+             without the orphan-process mechanism.
+        0.5  Recognized a file-access/lock problem but entertained
+             corruption or password as a likely cause despite the
+             evidence, or gave no actionable recovery.
+        0.2  Concluded the file is corrupt or password protected (the
+             red herrings), contradicting the user and the logs.
+        0.0  Reached an unrelated conclusion (blamed Excel install,
+             the path, a macro), got blocked, or failed.
+
+      Be substance-focused. The decisive chain is "Classic scope + file
+      locked by an orphan EXCEL.EXE (PID 7312) left by a prior force-
+      terminated job; NOT corrupt, NOT password -> clear the orphan and
+      stop creating orphans; Kill Process EXCEL only on dedicated
+      unattended hosts." Penalize HARD (cap at 0.2) any answer whose
+      primary conclusion is corruption or password protection.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

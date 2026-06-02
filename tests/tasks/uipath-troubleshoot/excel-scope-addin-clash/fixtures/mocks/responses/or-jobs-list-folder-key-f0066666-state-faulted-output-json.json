@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "gg666666-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-30T07:30:01.500Z",
+      "EndTime": "2026-05-30T07:30:02.640Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelReconExport",
+      "Source": "Schedule",
+      "Reference": "DailyRecon0730",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0066666-3333-4444-5555-666677778888",
+      "Info": "System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Excel._Application'.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}
