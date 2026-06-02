@@ -1,0 +1,87 @@
+task_id: skill-ixp-per-occurrence-confirm-smoke
+description: >
+  Smoke: a repeatable field group has 4 line-item extractions; only
+  some are correct. Agent must target the right occurrence(s) with
+  `--field-group + --occurrence` (or `--updates`), NOT plain `--fields`
+  (which would confirm across every occurrence — wrong for partial
+  validation). Locks in Critical Rule 13.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, lifecycle:execute]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Review the IXP model's `Line Items` predictions for document
+  `doc-freight-7` on project `freight_docs-df33115f-ixp` and confirm
+  the correct extractions only.
+
+  The document has FOUR line items. IXP predicted one Line Items
+  extraction per line — 4 extractions total, indexed 0..3. The model's
+  predictions per occurrence:
+
+  - Occurrence 0 — Description: "Widget A", Quantity: 5, Total: $50
+    → matches line 1 of the invoice.
+  - Occurrence 1 — Description: "Widget B", Quantity: 3, Total: $90
+    → matches line 2 of the invoice.
+  - Occurrence 2 — Description: "Widget XYZ", Quantity: 99, Total: $1
+    → does NOT match line 3 (line 3 actually shows "Widget C", Qty 2,
+    Total $40). The model hallucinated this row.
+  - Occurrence 3 — Description: "Widget D", Quantity: 1, Total: $25
+    → matches line 4 of the invoice.
+
+  Field IDs for Line Items fields: Description = `f-li-desc`, Quantity
+  = `f-li-qty`, Total = `f-li-total`.
+
+  Confirm occurrences 0, 1, and 3. Do NOT confirm occurrence 2 (the
+  predictions are wrong and would teach the model a hallucinated row).
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP
+    tenant in this environment. Commands will fail with auth errors —
+    that is expected. Run each command once and move on. Do NOT retry
+    or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Per-occurrence confirm via --occurrence (or batched --updates) is
+  # required for partial validation. Either shape satisfies this check.
+  - type: command_executed
+    description: "Agent used --field-group + --occurrence (or --updates) for per-occurrence selection"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?\s+.*--field-group\s+["'']?Line Items["'']?.*(--occurrence|--updates)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Occurrence 2 (the hallucinated row) must NOT appear in any
+  # --occurrence or --updates payload. exclude_pattern guards against
+  # accidentally confirming the wrong row.
+  - type: command_executed
+    description: "No confirm call targets occurrence 2 (the hallucinated row)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?'
+    exclude_pattern: '(--occurrence\s+2\b|"occurrence"\s*:\s*2\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Anti-pattern guard: plain --fields without --field-group would
+  # confirm the listed field_ids in every occurrence — including
+  # occurrence 2. Forbidden for this task.
+  - type: command_not_executed
+    description: "Agent did NOT use plain `--fields` without --field-group (would confirm across every occurrence, including the hallucinated row)"
+    tool_name: "Bash"
+    command_pattern: '^(?!.*--field-group).*uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?\s+.*--fields'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
