@@ -18,7 +18,7 @@ What this looks like:
 
 What can cause it:
 - IS locked out the connection after consecutive authentication failures (protective lockout)
-- IS poller or ping infrastructure failure cascaded into a lockout — the lockout counter increments on any repeated ping failure, even when OAuth credentials are valid
+- Repeated IS health-check failures cascaded into a lockout independently of credential validity
 - Connected app credentials (OAuth client secret, API key) were rotated on the external system after the connection was created
 - An IS administrator manually disabled the connection
 - Concurrent agent runs sharing the same IS connection triggered enough failures simultaneously to trip the lockout
