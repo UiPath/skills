@@ -46,7 +46,7 @@ These rules are the canonical source for low-code agent authoring. Capability fi
 
 21. **Built-in tools need no solution-level files and no resource refresh.** Unlike external process tools, built-in tools (`type: "internal"`) are self-contained at the agent level. Do not run `uip solution resource refresh` for them; do not author solution-level resource files. Validate the agent and bundle.
 
-22. **Use `uip agent memory` for memory spaces and seed items.** The memory commands own `features/{FeatureName}/feature.json`, `.agent-builder/agent.json`, memory item type validation, and generated `memorySpace` bindings. Attach existing memory spaces by `--memory-space` plus literal `--folder-path`; seed items require `--memory-type episodic|escalation`. Run `uip agent validate --output json`, `uip agent migrate --output json`, and then `uip solution resource refresh --output json` after memory changes in a solution. See [capabilities/memory/memory.md](capabilities/memory/memory.md).
+22. **Use `uip agent memory` for memory spaces and seed items.** The memory commands own `features/{FeatureName}/feature.json`, `.agent-builder/agent.json`, memory item type validation, and generated `memorySpace` bindings. Attach existing memory spaces by `--memory-space` plus literal `--folder-path`; seed items require `--memory-type episodic|escalation`, and episodic seed items require `--feedback-id`. Run `uip agent validate --output json`, `uip agent migrate --output json`, and then `uip solution resource refresh --output json` after memory changes in a solution. See [capabilities/memory/memory.md](capabilities/memory/memory.md).
 
 ## What NOT to Do (24)
 

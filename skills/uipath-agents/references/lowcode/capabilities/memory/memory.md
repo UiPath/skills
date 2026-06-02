@@ -73,6 +73,7 @@ Add items only when the user explicitly wants seed examples or defaults in the a
 ```bash
 uip agent memory item add SupportRecall customer-tier gold \
   --memory-type episodic \
+  --feedback-id "<FEEDBACK_ID>" \
   --metadata '{"source":"seed"}' \
   --path "<AGENT_PROJECT_DIR>" \
   --output json
@@ -85,7 +86,7 @@ Valid memory item types are:
 | `episodic` | `0` | General recall examples |
 | `escalation` | `1` | Escalation-related memory |
 
-`--metadata` must be a JSON object, not an array or scalar. Adding an item with an existing key updates that item.
+Episodic memory items require `--feedback-id`; use the feedback ID for the conversation, trace, or support example the seed item came from. `--metadata` must be a JSON object, not an array or scalar. Adding an item with an existing key updates that item.
 
 ### 4. Verify
 
@@ -163,6 +164,7 @@ Expected shape, for review only:
       "key": "customer-tier",
       "value": "gold",
       "memoryType": 0,
+      "feedbackId": "<feedback-id>",
       "description": null,
       "metadata": {
         "source": "seed"
@@ -177,6 +179,7 @@ Expected shape, for review only:
 | Symptom | Cause | Fix |
 |---|---|---|
 | `required option '--memory-type <type>'` | `item add` always requires a memory type | Add `--memory-type episodic` or `--memory-type escalation` |
+| `required option '--feedback-id <feedbackId>'` | Episodic `item add` requires a source feedback ID | Pass `--feedback-id "<FEEDBACK_ID>"` with `--memory-type episodic` |
 | `Invalid memory-type value` | Unsupported type | Use `episodic`, `escalation`, `0`, or `1` |
 | `Invalid metadata JSON` | Metadata is malformed or not an object | Pass a valid JSON object, e.g. `'{"source":"seed"}'` |
 | `Memory space "<name>" matches by memory space name` | More than one feature references the same memory space name | Pass `--folder-path`, use the feature name, or use the feature ID |

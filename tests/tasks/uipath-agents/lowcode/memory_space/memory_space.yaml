@@ -5,7 +5,7 @@ description: >
   episodic memory item. Verifies the CLI-managed
   features/{FeatureName}/feature.json convention, dynamic few-shot
   settings, seed item metadata, and generated memorySpace binding.
-tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate]
+tags: [uipath-agents, e2e, "mode:build", low-code, "lifecycle:generate"]
 
 run_limits:
   expected_turns: 32
@@ -26,7 +26,8 @@ initial_prompt: |
   Add one seed memory item to `SupportRecall`: key
   `refund-policy-tone`, value `Use empathetic wording and cite the
   remembered support precedent when a refund case resembles a prior
-  escalation.`, memory type `episodic`, and metadata
+  escalation.`, memory type `episodic`, feedback ID
+  `d640fe25-3c05-4f2e-bd8d-42bdb20704c1`, and metadata
   `{"source":"seed","scenario":"support"}`.
 
   Use the low-code memory CLI workflow for memory features. Do not
@@ -71,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Agent seeded the episodic memory item using uip agent memory item add"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+memory\s+item\s+add\s+SupportRecall\s+refund-policy-tone\b(?=.*--memory-type\s+episodic)'
+    command_pattern: 'uip\s+agent\s+memory\s+item\s+add\s+SupportRecall\s+refund-policy-tone\b(?=.*--memory-type\s+episodic)(?=.*--feedback-id\s+d640fe25-3c05-4f2e-bd8d-42bdb20704c1)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -112,6 +113,13 @@ success_criteria:
     description: "Agent must not hand-author memory feature JSON with shell redirection"
     tool_name: "Bash"
     command_pattern: '(cat|tee|python3?|node|jq)\b.*features/.*/feature\.json'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not hand-author memory feature JSON with the Write tool"
+    tool_name: "Write"
+    command_pattern: 'features/.*/feature\.json'
     weight: 1.5
     pass_threshold: 1.0
 

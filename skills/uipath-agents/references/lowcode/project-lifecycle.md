@@ -128,6 +128,7 @@ uip agent memory remove SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
 
 uip agent memory item add SupportRecall customer-tier gold \
   --memory-type episodic \
+  --feedback-id "<FEEDBACK_ID>" \
   --path "<AGENT_PROJECT_DIR>" \
   --output json
 
@@ -390,7 +391,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Validate (read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | Migrate + regenerate builder | `uip agent migrate [path] --output json` | Agent dir or any with path | — |
 | Add memory space feature | `uip agent memory add <FeatureName> --memory-space <Name> --folder-path <Folder> --path <AgentDir> --output json` | Any directory | Writes `features/<FeatureName>/feature.json`; run validate/migrate after |
-| Seed memory item | `uip agent memory item add <FeatureName> <key> <value> --memory-type episodic --path <AgentDir> --output json` | Any directory | Updates existing item with same key |
+| Seed memory item | `uip agent memory item add <FeatureName> <key> <value> --memory-type episodic --feedback-id <FEEDBACK_ID> --path <AgentDir> --output json` | Any directory | Updates existing item with same key |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
 | Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
 | Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |

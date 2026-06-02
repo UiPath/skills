@@ -222,7 +222,7 @@ The `solutionsSupport: "true"` metadata flag signals to the deployment engine th
 
 > **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent migrate` and `uip solution resource refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
 >
-> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json` or memory feature file. Edit the resource.json, or use `uip agent memory` for memory features, then re-run `uip agent migrate`; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 19 and 24.
+> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json` or memory feature file. Edit the resource.json, or use `uip agent memory` for memory features, then re-run `uip agent migrate`; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 20 and 24.
 
 ## Debug Overwrites
 

@@ -6,7 +6,7 @@ description: >
   feature files under the inline agent directory and that
   `uip agent migrate --inline-in-flow --bindings-target` propagates the
   generated memorySpace binding to the parent flow project.
-tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate, inline-flow]
+tags: [uipath-agents, e2e, "mode:build", low-code, "lifecycle:generate", inline-flow]
 
 run_limits:
   expected_turns: 76
@@ -104,6 +104,13 @@ success_criteria:
     description: "Agent must not hand-author memory feature JSON with shell redirection"
     tool_name: "Bash"
     command_pattern: '(cat|tee|python3?|node|jq)\b.*features/.*/feature\.json'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not hand-author memory feature JSON with the Write tool"
+    tool_name: "Write"
+    command_pattern: 'features/.*/feature\.json'
     weight: 1.5
     pass_threshold: 1.0
 

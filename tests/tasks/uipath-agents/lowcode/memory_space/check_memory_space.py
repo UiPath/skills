@@ -28,6 +28,7 @@ EXPECTED_FEATURE_NAME = "SupportRecall"
 EXPECTED_MEMORY_SPACE = "UiPathAgentsSupportMemory"
 EXPECTED_FOLDER_PATH = "Shared/uipath-agents"
 EXPECTED_ITEM_KEY = "refund-policy-tone"
+EXPECTED_FEEDBACK_ID = "d640fe25-3c05-4f2e-bd8d-42bdb20704c1"
 EXPECTED_ITEM_VALUE = (
     "Use empathetic wording and cite the remembered support precedent "
     "when a refund case resembles a prior escalation."
@@ -144,10 +145,12 @@ def assert_seed_item(feature: dict) -> None:
         sys.exit(f"FAIL: seed item value mismatch: {item.get('value')!r}")
     if item.get("memoryType") not in (0, "episodic"):
         sys.exit(f"FAIL: seed item memoryType should be episodic/0, got {item.get('memoryType')!r}")
+    if item.get("feedbackId") != EXPECTED_FEEDBACK_ID:
+        sys.exit(f"FAIL: seed item feedbackId should be {EXPECTED_FEEDBACK_ID!r}, got {item.get('feedbackId')!r}")
     metadata = item.get("metadata")
     if metadata != {"source": "seed", "scenario": "support"}:
         sys.exit(f"FAIL: seed item metadata mismatch: {metadata!r}")
-    print("OK: episodic seed item and metadata are present")
+    print("OK: episodic seed item, feedbackId, and metadata are present")
 
 
 def assert_memory_binding(bindings: dict) -> None:
