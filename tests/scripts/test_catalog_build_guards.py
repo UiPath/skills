@@ -147,6 +147,18 @@ def test_install_all_tools_ok_when_nothing_to_install(monkeypatch):
 
 # --- PascalCase tool-name handling (#1203 real root cause) ------------------
 
+def test_strip_args_drops_alias_suffix():
+    """`uip --help --output json` renders the aliased orchestrator tool as
+    "or|orchestrator". strip_args must yield the canonical "or" so the group
+    walks as `uip or …` instead of being dropped (cli #2331)."""
+    assert build.strip_args("or|orchestrator") == "or"
+    assert build.strip_args("or|orchestrator [options]") == "or"
+    # Non-aliased names (the other ~23 tools) are unaffected.
+    assert build.strip_args("admin") == "admin"
+    assert build.strip_args("admin <subcommand>") == "admin"
+    assert build.strip_args("solution [options]") == "solution"
+
+
 def test_ci_reads_pascalcase_and_lowercase():
     """The CLI PascalCases --output json keys, so `Name` must resolve via the
     documented `name` lookup."""

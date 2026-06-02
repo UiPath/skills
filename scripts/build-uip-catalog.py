@@ -107,7 +107,14 @@ def run_uip(args):
 
 
 def strip_args(name):
-    return ARG_SIG.sub("", name).strip()
+    # Drop the trailing "[options]" / "<arg>" signature, then any alias suffix.
+    # `uip --help --output json` bakes aliases into a subcommand's Name with a
+    # pipe — orchestrator renders as "or|orchestrator" (it's the only aliased
+    # tool). Keep the canonical first token ("or") so the group matches its
+    # CommandPrefix and walks as `uip or …`; otherwise the whole orchestrator
+    # group is dropped (#1203 follow-up). Harmless once cli #2331 emits a bare
+    # Name + separate Aliases — the split is then a no-op.
+    return ARG_SIG.sub("", name).strip().split("|", 1)[0].strip()
 
 
 def install_all_tools():
