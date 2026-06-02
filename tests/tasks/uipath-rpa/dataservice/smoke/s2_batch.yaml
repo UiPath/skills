@@ -1,15 +1,16 @@
 task_id: skill-rpa-ds-s2-batch
 description: >
-  Smoke S2 from eval-scenarios.md — agent uses the uipath-rpa skill's
-  UiPath.DataService.Activities references to add all three batch activities
-  (CreateMultiple, UpdateMultiple, DeleteMultiple) into a pre-scaffolded
-  DataService project. Validates activity selection + namespace/TypeArguments
-  shape + project build pass. No property-level assertions.
+  Smoke S2 from eval-scenarios.md — agent scaffolds a greenfield UiPath RPA
+  project, installs the DataService Activities package from a sandbox-supplied
+  local NuGet feed, installs the eval entities from the live tenant, and adds
+  all three batch activities (CreateMultiple, UpdateMultiple, DeleteMultiple)
+  to Main.xaml. Validates activity selection + namespace/TypeArguments shape
+  + uip rpa validate exits clean. No property-level assertions.
 
 tags: [uipath-rpa, windows, smoke, dataservice]
 
 run_limits:
-  expected_turns: 18
+  expected_turns: 20
   max_turns: 40
   task_timeout: 900
   turn_timeout: 900
@@ -17,64 +18,76 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../templates/seed_project
-      mount_point: DataServiceEval
+      path: ../templates/local-feed
+      mount_point: "."
 
 initial_prompt: |
-  Build a workflow in `DataServiceEval/Main.xaml` that performs these three
-  independent batch operations on Data Service entity `CodingAgentsEvalEntity`:
+  Build a UiPath RPA workflow on Data Service entity `CodingAgentsEvalEntity`
+  that performs these three independent batch operations:
 
     1. Create 3 records in batch with Titles `'A'`, `'B'`, `'C'`
     2. Update 3 existing records in batch, setting `Title` to `'X'`
     3. Delete 3 existing records in batch
 
-  The project is already scaffolded — do NOT run `uip rpa init` or
-  `uip rpa packages install`. The DataService package is pinned in
-  `DataServiceEval/project.json` and entity metadata is in
-  `DataServiceEval/.entities/EntitiesStore.json` (both entities already have
-  `Installed: true` — skip `data-fabric-entities install`).
+  Sandbox setup (already in place — do not modify):
+    - `./NuGet.Config` declares a local NuGet source at `./local-feed/`
+    - `./local-feed/` hosts `UiPath.DataService.Activities` version `23.1.4-dev`,
+      which is the version you must pin in your project dependencies (this
+      package version is not available on any public feed)
 
-  The XAML root in `Main.xaml` already declares the required namespaces and
-  `TextExpression` imports — do not strip them.
+  Place the project inside a `DataServiceEval/` subdirectory so the parent
+  `NuGet.Config` is inherited.
 
-  After editing, validate and build:
-    1. `uip rpa analyzer-rules list --project-dir DataServiceEval --output json`
-       (once, before editing)
-    2. `uip rpa validate --file-path Main.xaml --project-dir DataServiceEval --output json`
-    3. `uip rpa build "DataServiceEval" --log-level Warn --output json`
+  Both `CodingAgentsEvalEntity` and `CodingAgentsEvalFileEntity` exist on the
+  connected Data Service tenant — install both into the project.
 
-  Both validate and build must exit clean. Use `--output json` on every uip
-  call.
+  Not complete until `uip rpa validate` returns no diagnostics. Use
+  `--output json` on uip commands whose output you parse.
 
 success_criteria:
   - type: file_exists
-    description: "Main.xaml still exists in the project"
+    description: "Project was scaffolded via uip rpa init"
+    path: DataServiceEval/project.json
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Main.xaml exists in the scaffolded project"
     path: DataServiceEval/Main.xaml
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed analyzer rules before editing"
+    description: "Agent ran uip rpa init"
     tool_name: Bash
-    command_pattern: 'uip\s+rpa\s+analyzer-rules\s+list'
+    command_pattern: 'uip\s+rpa\s+init\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran per-file validate with --output json"
+    description: "Agent installed entities from the live tenant"
+    tool_name: Bash
+    command_pattern: 'uip\s+rpa\s+data-fabric-entities\s+install\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran validate with --output json"
     tool_name: Bash
     command_pattern: 'uip\s+rpa\s+validate\s+.*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent ran project-level build with --output json"
-    tool_name: Bash
-    command_pattern: 'uip\s+rpa\s+build\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.5
+  - type: file_contains
+    description: "project.json pins the local-feed DataService package version"
+    path: DataServiceEval/project.json
+    includes:
+      - 'UiPath.DataService.Activities'
+      - '23.1.4-dev'
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_contains
@@ -89,16 +102,16 @@ success_criteria:
 
   - type: run_command
     description: "All 3 batch activities present with x:TypeArguments=local:CodingAgentsEvalEntity"
-    command: 'python3 "$TASK_DIR/check_s2_batch.py" DataServiceEval/Main.xaml'
+    command: 'python "$TASK_DIR/check_s2_batch.py" DataServiceEval/Main.xaml'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip rpa build exits clean"
-    command: 'uip rpa build "DataServiceEval" --log-level Warn --output json'
-    timeout: 240
+    description: "uip rpa validate exits clean against the authored Main.xaml"
+    command: 'uip rpa validate --file-path Main.xaml --project-dir DataServiceEval --output json'
+    timeout: 120
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
