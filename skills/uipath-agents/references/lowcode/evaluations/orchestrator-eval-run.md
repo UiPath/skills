@@ -13,6 +13,7 @@ uip or eval run-offline-evals \
   [--eval-set-id <guid>] \
   [--items <json>] \
   [--evaluators <json>] \
+  [--is-legacy] \
   [--folder-key <folder-guid>]
 ```
 
@@ -29,6 +30,7 @@ The folder resolves from your personal workspace automatically. Pass `--folder-k
 | `--eval-set-id` | No | Eval set ID to run; defaults to zero GUID when items/evaluators are provided inline |
 | `--items` | No | JSON array of eval items to override those from the package |
 | `--evaluators` | No | JSON array of evaluator configs to override those from the package |
+| `--is-legacy` | No | Auto-transform items/evaluators from the raw package format (flat JSON with `type`/`category` fields) to the API wire format. Use this when pasting directly from the package or portal. |
 | `--batch-size` | No | Max concurrent evaluation pipelines (default: `5`) |
 | `--loop` | No | Repeat until `--count` is reached or Ctrl-C |
 | `--interval` | No | Pause between repeated runs (e.g. `30s`, `2m`, `1h`; default: `5m`) |
@@ -43,83 +45,128 @@ The folder resolves from your personal workspace automatically. Pass `--folder-k
 uip or eval run-offline-evals \
   --package-name "MyPackage.agent.Agent" \
   --package-version "1.0.0" \
-  --eval-set-id "c4f2a817-3e9b-4d1c-8f5a-2b7e6d4c9a01"
+  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09"
 
-# Inline override — items and evaluators passed directly
+# Inline override — paste evaluator and item JSON directly from the package/portal.
+# Use --is-legacy to auto-transform: wraps evaluator as { evaluatorTypeId, evaluatorConfig }
+# and renames expectedAgentBehavior → expectedBehavior on items.
+# Replace "model" with the actual model ID used by the agent (not "same-as-agent").
 uip or eval run-offline-evals \
   --package-name "MyPackage.agent.Agent" \
   --package-version "1.0.0" \
-  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e" \
+  --is-legacy \
   --evaluators '[{
-    "id": "3d221ae1-5356-4ad4-9459-adb7e3d90277",
-    "evaluatorTypeId": "semantic-similarity",
-    "evaluatorConfig": { "model": "same-as-agent", "targetOutputKey": "*" }
+    "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
+    "name": "Default Evaluator",
+    "type": 5,
+    "category": 1,
+    "prompt": "As an expert evaluator, analyze the semantic similarity...",
+    "model": "claude-3-5-sonnet-20241022",
+    "targetOutputKey": "*",
+    "createdAt": "2026-05-31T19:36:35.382Z",
+    "updatedAt": "2026-05-31T19:36:35.382Z"
   }]' \
   --items '[{
-    "id": "e9897fd5-63b9-493c-bfb5-f8933459f359",
+    "id": "7b2e9f48-c3a1-4d85-b6f2-1e8c5a9d3b70",
     "name": "Test Case 1",
     "inputs": {},
-    "evaluationCriterias": {
-      "3d221ae1-5356-4ad4-9459-adb7e3d90277": {
-        "expectedOutput": { "content": "The current date is 2026-05-31." }
-      }
-    }
+    "expectedOutput": { "content": "The current date is 2026-05-31." },
+    "expectedAgentBehavior": ""
   }]'
 
 # Loop 5 times every 2 minutes
 uip or eval run-offline-evals \
   --package-name "MyPackage.agent.Agent" \
   --package-version "1.0.0" \
-  --eval-set-id "c4f2a817-3e9b-4d1c-8f5a-2b7e6d4c9a01" \
+  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
   --loop --interval 2m --count 5
 
-# Explicit folder key
+# Explicit folder key instead of personal workspace
 uip or eval run-offline-evals \
   --package-name "MyPackage.agent.Agent" \
   --package-version "1.0.0" \
-  --eval-set-id "c4f2a817-3e9b-4d1c-8f5a-2b7e6d4c9a01" \
+  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
   --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e"
 ```
 
 ## Items and Evaluators Format
 
-### Evaluators (`--evaluators`)
+### Without `--is-legacy` (API wire format)
 
-Each evaluator must include `id` (used as matching key), `evaluatorTypeId`, and optional `evaluatorConfig`:
+Pass the data already in the format the API expects:
+
+**Evaluators** — each item must have `id`, `evaluatorTypeId` (string), and `evaluatorConfig`:
 
 ```json
 [
   {
-    "id": "3d221ae1-5356-4ad4-9459-adb7e3d90277",
-    "evaluatorTypeId": "semantic-similarity",
+    "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
+    "version": "",
+    "evaluatorTypeId": "5",
     "evaluatorConfig": {
-      "model": "same-as-agent",
-      "targetOutputKey": "*"
+      "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
+      "name": "Default Evaluator",
+      "type": 5,
+      "category": 1,
+      "prompt": "As an expert evaluator...",
+      "model": "claude-3-5-sonnet-20241022",
+      "targetOutputKey": "*",
+      "createdAt": "2026-05-31T19:36:35.382Z",
+      "updatedAt": "2026-05-31T19:36:35.382Z"
     }
   }
 ]
 ```
 
-### Items (`--items`)
-
-Each item must include `id`, `name`, `inputs`, and `evaluationCriterias` keyed by evaluator id:
+**Items** — each item must include `id`, `name`, `inputs`, and `expectedOutput`:
 
 ```json
 [
   {
-    "id": "e9897fd5-63b9-493c-bfb5-f8933459f359",
+    "id": "7b2e9f48-c3a1-4d85-b6f2-1e8c5a9d3b70",
     "name": "Test Case 1",
     "inputs": {},
-    "evaluationCriterias": {
-      "3d221ae1-5356-4ad4-9459-adb7e3d90277": {
-        "expectedOutput": { "content": "Expected agent response here." }
-      }
-    }
+    "expectedOutput": { "content": "Expected agent response here." },
+    "expectedBehavior": ""
   }
 ]
 ```
 
-`evaluationCriterias` keys must match the `id` of an evaluator in `--evaluators`. The value is evaluator-specific — for `semantic-similarity` it is `{ "expectedOutput": { ... } }`.
+### With `--is-legacy` (raw package format)
+
+Paste the evaluator JSON directly from the package file (flat, with `type` and `category` at the top level). The CLI will auto-transform to the wire format.
+
+> **Note:** Replace `"model": "same-as-agent"` with the actual model ID (e.g. `"claude-3-5-sonnet-20241022"`). The `same-as-agent` value requires loading `agent.json` from the package, which is not available in inline mode.
+
+```json
+[
+  {
+    "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
+    "name": "Default Evaluator",
+    "type": 5,
+    "category": 1,
+    "prompt": "As an expert evaluator...",
+    "model": "claude-3-5-sonnet-20241022",
+    "targetOutputKey": "*",
+    "createdAt": "2026-05-31T19:36:35.382Z",
+    "updatedAt": "2026-05-31T19:36:35.382Z"
+  }
+]
+```
+
+Items use `expectedAgentBehavior` (renamed to `expectedBehavior` automatically):
+
+```json
+[
+  {
+    "id": "7b2e9f48-c3a1-4d85-b6f2-1e8c5a9d3b70",
+    "name": "Test Case 1",
+    "inputs": {},
+    "expectedOutput": { "content": "Expected agent response here." },
+    "expectedAgentBehavior": ""
+  }
+]
+```
 
 ## Output
 
