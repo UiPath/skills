@@ -202,5 +202,5 @@ The CLI enforces these rules before making any network calls:
 
 - **Don't run against an unpublished package version.** The command targets the package already in Orchestrator. Bump `--package-version` after each publish; stale versions return results from old agent logic.
 - **Don't mix `--eval-set-id` with `--items`/`--evaluators`.** They are mutually exclusive. Use `--eval-set-id` to load from a saved eval set, or `--items`/`--evaluators` to provide inline. Not both.
-- **Don't use `--eval-file` schema that mismatches the package's eval set.** Field names differ between legacy (`expectedAgentBehavior`) and wire format (`expectedBehavior`). Use `--is-low-code-agent` when pasting directly from the package or portal.
+- **Don't pass `--items`/`--evaluators` in the wrong schema for your mode.** Field names differ: legacy format (from package/portal) uses `expectedAgentBehavior`; wire format uses `expectedBehavior`. Add `--is-low-code-agent` when pasting directly from the package or portal; omit it when you've already transformed to wire format.
 - **Don't pass `"model": "same-as-agent"` with inline `--evaluators`.** Inline mode has no access to `agent.json`; the CLI cannot resolve `same-as-agent` and will error at runtime.
