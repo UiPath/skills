@@ -53,7 +53,7 @@ What to look for:
    ```
 
    - If no connection matches the connector type → the connection was deleted or never existed in this environment; proceed to Resolution.
-   - If a matching connection exists and shows as healthy → suspect backend migration; capture the trace ID and escalate to the IS team.
+   - If a matching connection exists and shows as healthy → suspect backend migration; capture the trace ID and escalate to the Integration Service team.
 
 4. Ping the candidate connection to confirm it is active:
 
@@ -95,4 +95,4 @@ What to look for:
   - The connection ID from `uip is connections list`
   - Confirmation that the error started after a platform maintenance window
 
-  The IS team deploys a server-side fix to restore the element instance binding.
+  The Integration Service team deploys a server-side fix to restore the element instance binding.

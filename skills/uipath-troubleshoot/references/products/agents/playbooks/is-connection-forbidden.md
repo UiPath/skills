@@ -88,4 +88,4 @@ What to look for:
 
 **If lockout recurs within hours after re-authentication — escalate:**
 
-  Recurring lockouts indicate an underlying connector-level issue (misconfigured OAuth scopes, provider-side rate restriction, or external system instability) that re-auth temporarily masks. Capture the connection ID and the recurrence pattern, then escalate to the IS team — `uip is connections edit` alone will not resolve this.
+  Recurring lockouts indicate an underlying connector-level issue (misconfigured OAuth scopes, provider-side rate restriction, or external system instability) that re-auth temporarily masks. Capture the connection ID and the recurrence pattern, then escalate to the Integration Service team — `uip is connections edit` alone will not resolve this.
