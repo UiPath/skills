@@ -8,7 +8,7 @@ description: >
   (per Critical Rules 20-21). Test passes when the agent produces a
   validatable conversational project containing a properly-shaped
   built-in tool resource.
-tags: [uipath-agents, integration, mode:build, low-code, conversational, tool, built-in]
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, tool, built-in]
 max_iterations: 1
 
 agent:

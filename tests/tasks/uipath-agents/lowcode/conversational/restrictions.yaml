@@ -7,7 +7,7 @@ description: >
   skill correctly restrains the agent: inputSchema stays empty,
   outputSchema stays empty, and messages[1].content is a static
   placeholder — per Critical Rules 23 and 24.
-tags: [uipath-agents, smoke, mode:build, low-code, conversational]
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, feature:conversational]
 max_iterations: 1
 
 agent:

@@ -1,15 +1,16 @@
-task_id: skill-agent-conversational-memory-unavailable
+task_id: skill-agent-conversational-guardrail-agent-scope-rejected
 description: >
-  Negative smoke test for the "memory Not Yet Available for conversational"
-  rule (agent-definition.md § Not Yet Available). The prompt explicitly
-  asks for cross-session memory — wording that tempts the autonomous
-  memory pattern (`agentMemory: true`, `uipath.agent.resource.memory.*`
-  resources, `isAgentMemoryEnabled: true`). Passes if the skill restrains
-  the agent from enabling any memory artifact on the conversational agent
-  — either by refusing the request, telling the user memory is not yet
-  available, or scaffolding the agent without memory configuration.
-  Fails if any of the autonomous memory patterns appear enabled.
-tags: [uipath-agents, smoke, mode:build, low-code, conversational, memory]
+  Negative integration test for Critical Rule 26 (conversational agents
+  support only Tool-scoped guardrails). The prompt asks for a PII
+  detection guardrail at the agent level — which is the autonomous
+  pattern but forbidden for conversational because the runtime silently
+  ignores `Agent` and `Llm` scopes. Passes if the skill restrains the
+  agent from writing `selector.scopes` containing `"Agent"` or `"Llm"`
+  in either the `agent.json` root `guardrails[]` array or any per-tool
+  `resources/<Tool>/resource.json` → `guardrail.policies[]` — either by
+  refusing, auto-correcting to `["Tool"]`, or scoping per-tool. Fails
+  if a forbidden scope is written to either location.
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, guardrail]
 max_iterations: 1
 
 agent:
@@ -25,13 +26,9 @@ sandbox:
 
 initial_prompt: |
   Build a low-code conversational (multi-turn chat) agent named
-  "MemoryAgent" inside a UiPath solution named "MemorySol". The agent
-  helps users plan trips and should remember the user's preferences
-  (preferred airlines, dietary restrictions, past destinations) across
-  sessions so it can give personalized recommendations on return visits.
-
-  Add a memory space so the agent can recall prior conversations and
-  user preferences across sessions.
+  "ChatGuardAgent" inside a UiPath solution named "PiiGuardSol". The
+  agent answers user questions about customer accounts and must include
+  a PII detection guardrail configured to block Email and PhoneNumber.
 
   This is a conversational (multi-turn chat) agent — not an autonomous
   single-turn agent.
@@ -40,7 +37,9 @@ initial_prompt: |
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire build end-to-end in a single pass.
+  implementation. Complete the entire build (solution + agent +
+  guardrail + validation) end-to-end in a single pass without stopping
+  for a summary until all four are done.
 
 success_criteria:
   - type: command_executed
@@ -68,14 +67,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "MemoryAgent/agent.json was created"
-    path: "MemorySol/MemoryAgent/agent.json"
+    description: "ChatGuardAgent/agent.json was created"
+    path: "PiiGuardSol/ChatGuardAgent/agent.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: json_check
     description: "agent.json has conversational shape — isConversational true + engine conversational-v1"
-    path: "MemorySol/MemoryAgent/agent.json"
+    path: "PiiGuardSol/ChatGuardAgent/agent.json"
     assertions:
       - expression: "metadata.isConversational"
         operator: "equals"
@@ -87,8 +86,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No autonomous memory patterns enabled anywhere in the agent project (Not Yet Available for conversational)"
-    command: "python3 $TASK_DIR/check_no_memory_artifacts.py"
+    description: "No guardrail uses Agent or Llm scope in agent.json root or per-tool resource.json (Rule 26)"
+    command: "python3 $TASK_DIR/check_conversational_guardrail_scope.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

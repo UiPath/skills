@@ -9,7 +9,7 @@ description: >
   context resource shape is identical to autonomous; only the agent.json
   shell (empty schemas, conversational engine, static user message)
   differs.
-tags: [uipath-agents, integration, mode:build, low-code, conversational, context-grounding]
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, context-grounding]
 
 agent:
   type: claude-code
