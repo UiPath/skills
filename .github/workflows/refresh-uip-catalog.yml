@@ -65,7 +65,19 @@ jobs:
 
       - name: Rebuild catalog
         if: steps.check.outputs.exists != 'true'
-        run: python3 scripts/build-uip-catalog.py --install-tools
+        run: |
+          # Reset the @uipath scope to public npm before building. The alpha
+          # CLI is installed from GitHub Packages (step above), but the tool
+          # plugins (@uipath/*-tool) live only on public npm. Leaving the
+          # scope on GitHub Packages makes `uip tools install` resolve there,
+          # find nothing, install no tools, and collapse the catalog to the
+          # ~31 base verbs (#1203). build-uip-catalog.py's docstring documents
+          # this requirement.
+          npm config set @uipath:registry https://registry.npmjs.org/
+          # Guards: fail the build (no PR opened) if tool installs all fail or
+          # the verb count collapses vs the committed snapshot.
+          python3 scripts/build-uip-catalog.py --install-tools \
+            --min-verbs 1000 --max-drop-frac 0.2
 
       - name: Check for catalog diff
         if: steps.check.outputs.exists != 'true'
