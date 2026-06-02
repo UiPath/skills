@@ -32,7 +32,7 @@ For built-in AI validators (PII, harmful content, user prompt attacks, IP), conf
 uip agent guardrails list --output json
 ```
 
-If the requested validator has `Status != "Available"` → tell the user and stop. This is not optional for AI validators: they depend on a tenant-side service, and adding one that is not entitled produces a guardrail that never fires.
+If the requested validator has `Status != "Available"` → tell the user and stop. Actually adding one that is not entitled produces a guardrail that always fails.
 
 **Skip this step only for deterministic guardrails** — they run locally with no backend dependency.
 
