@@ -61,7 +61,7 @@ uip or eval run-offline-evals \
     "type": 5,
     "category": 1,
     "prompt": "As an expert evaluator, analyze the semantic similarity...",
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
     "targetOutputKey": "*",
     "createdAt": "2026-05-31T19:36:35.382Z",
     "updatedAt": "2026-05-31T19:36:35.382Z"
@@ -109,7 +109,7 @@ Pass the data already in the format the API expects:
       "type": 5,
       "category": 1,
       "prompt": "As an expert evaluator...",
-      "model": "claude-3-5-sonnet-20241022",
+      "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
       "targetOutputKey": "*",
       "createdAt": "2026-05-31T19:36:35.382Z",
       "updatedAt": "2026-05-31T19:36:35.382Z"
@@ -136,7 +136,7 @@ Pass the data already in the format the API expects:
 
 Paste the evaluator JSON directly from the package file (flat, with `type` and `category` at the top level). The CLI will auto-transform to the wire format.
 
-> **Note:** Replace `"model": "same-as-agent"` with the actual model ID (e.g. `"claude-3-5-sonnet-20241022"`). The `same-as-agent` value requires loading `agent.json` from the package, which is not available in inline mode.
+> **Note:** Replace `"model": "same-as-agent"` with the actual model ID (e.g. `"anthropic.claude-3-5-sonnet-20240620-v1:0"`). The `same-as-agent` value requires loading `agent.json` from the package, which is not available in inline mode.
 
 ```json
 [
@@ -146,7 +146,7 @@ Paste the evaluator JSON directly from the package file (flat, with `type` and `
     "type": 5,
     "category": 1,
     "prompt": "As an expert evaluator...",
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
     "targetOutputKey": "*",
     "createdAt": "2026-05-31T19:36:35.382Z",
     "updatedAt": "2026-05-31T19:36:35.382Z"
