@@ -71,15 +71,18 @@ What to look for:
 
 **If the connection is in the wrong folder or personal workspace:**
 
-  Move connection to folder where the agent executes, or create a new connection scoped to that folder:
+  Create a new connection scoped to the correct folder:
 
   ```bash
   uip is connections create <connector-key> --output json
   ```
 
-  Update the agent's tool to reference the new connection ID, then republish:
+  Note the new connection ID. Rebind the agent tool and republish:
 
   ```bash
+  uip agent tool list --output json
+  uip agent tool connect <tool-name> --connection-id <new-connection-id> --output json
+  uip agent validate --output json
   uip agent publish --output json
   ```
 
@@ -102,24 +105,22 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
-  Update the agent's tool to reference the new connection ID, then republish:
+  Note the new connection ID. Rebind the agent tool and republish:
 
   ```bash
+  uip agent tool list --output json
+  uip agent tool connect <tool-name> --connection-id <new-connection-id> --output json
+  uip agent validate --output json
   uip agent publish --output json
   ```
 
-**If the user account was deactivated — replace with a service account:**
+**If the user account was deactivated or connection targets the wrong environment:**
 
   ```bash
   uip is connections delete <connection-id> --output json
   uip is connections create <connector-key> --output json
-  uip agent publish --output json
-  ```
-
-**If sandbox vs. production mismatch — recreate the connection in the correct environment:**
-
-  ```bash
-  uip is connections delete <connection-id> --output json
-  uip is connections create <connector-key> --output json
+  uip agent tool list --output json
+  uip agent tool connect <tool-name> --connection-id <new-connection-id> --output json
+  uip agent validate --output json
   uip agent publish --output json
   ```
