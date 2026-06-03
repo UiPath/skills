@@ -182,6 +182,56 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 }
 ```
 
+## Passing a Flow Input Into the Subflow
+
+When the **parent flow** itself takes an input the caller supplies at trigger time (e.g. a
+`text` to reverse) and forwards it into the subflow, the parent's `in` variable needs the
+**same `triggerNodeId` treatment as a subflow `in` variable** (rule #3) — set it to the
+parent's trigger node ID. Omitting it is a silent trap: `uip maestro flow validate` still
+reports **Valid**, but at `flow debug` the trigger output is empty, the value arrives as
+`null`, and the subflow script faults (e.g. `Cannot read property 'split' of null`).
+
+**Parent flow `variables.globals`** — note `triggerNodeId` on the `in` variable:
+```json
+{
+  "variables": {
+    "globals": [
+      { "id": "text", "direction": "in", "type": "string", "defaultValue": "", "triggerNodeId": "start" },
+      { "id": "reversedText", "direction": "out", "type": "string", "defaultValue": "" }
+    ]
+  }
+}
+```
+
+**Parent trigger + subflow node** — the subflow node reads the trigger output and maps it to
+the subflow's `in` variable:
+```json
+{
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "inputs": { "entryPointId": "<uuid>", "isDefaultEntryPoint": true },
+      "outputs": { "output": { "type": "object", "source": "=result.response", "var": "output" } }
+    },
+    {
+      "id": "reverseSubflow",
+      "type": "core.subflow",
+      "typeVersion": "<DEFINITION_VERSION>",
+      "inputs": { "text": "=js:$vars.start.output.text" }
+    }
+  ]
+}
+```
+
+Value flow: caller input `text` → (bound to `start` via the parent global's `triggerNodeId`)
+→ `$vars.start.output.text` → subflow node input `text` → the subflow's own `in` variable
+(with its **own** `triggerNodeId: "<subflowStart>"`) → `$vars.<subflowStart>.output.text`
+inside the subflow. The parent `in` var and the subflow `in` var are **independent variables
+in separate scopes**, joined only by the subflow node's `inputs` mapping; each needs its own
+`triggerNodeId` pointing at its respective Start node.
+
 ## Subflow Rules
 
 1. Every subflow **must** have its own Start node (`core.trigger.manual`) and End node (`core.control.end`)
@@ -193,6 +243,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 7. Subflows can be nested (subflow inside subflow), up to 3 levels
 8. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections
 9. Subflow node positions go in the subflow's own `layout.nodes` — NOT in the top-level `layout.nodes`. Each subflow scope is independent.
+10. When the **parent flow** takes an external input and forwards it to a subflow, the parent's `in` variable **must** also have `triggerNodeId` set to the parent's trigger node ID — the same rule as #3, one scope up. `uip maestro flow validate` does **not** catch its absence; the forwarded value silently arrives as `null` at runtime. See [Passing a Flow Input Into the Subflow](#passing-a-flow-input-into-the-subflow).
 
 ## Creating a Subflow
 
@@ -203,6 +254,7 @@ For the step-by-step procedure, see [Edit/Write: Create a subflow](../../editing
 | Error | Cause | Fix |
 | --- | --- | --- |
 | `$vars.inputData` undefined inside subflow script | Missing `triggerNodeId` on subflow `in` variable, or using `$vars.{varId}` directly | Add `triggerNodeId: "{startNodeId}"` to each `in` variable and access via `$vars.{startNodeId}.output.{varId}` |
+| Subflow script sees `null` for a value forwarded from the parent (e.g. `Cannot read property 'split' of null`) | Parent flow's `in` variable is missing `triggerNodeId`, so the parent trigger output is empty and `null` is forwarded into the subflow | Add `triggerNodeId: "{parentStartNodeId}"` to the parent flow's `in` variable (same fix as the row above, but for the root flow) |
 | `$vars.parentNode` undefined inside subflow | Parent scope not accessible | Pass values via subflow `in` variables |
 | Subflow output is null | Missing output mapping on subflow's End node | Map all `out` variables in the End node's `outputs` |
 | Script output is null | Missing inline `outputs` on script node | Add `outputs.output` and `outputs.error` inline on the script node |
