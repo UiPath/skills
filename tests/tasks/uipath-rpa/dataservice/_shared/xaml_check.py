@@ -176,6 +176,25 @@ def assert_attr(el: ET.Element, name: str, expected: str) -> None:
         sys.exit(1)
 
 
+def assert_attr_or_default(el: ET.Element, name: str, default: str) -> None:
+    """Attribute must be absent (implicit default) or equal `default` (explicit default).
+
+    Use for baseline properties whose default value matches the expected
+    config — e.g. `ScopeValue="Tenant"` on activities where Tenant is the
+    XAML default. The agent legitimately omits the attribute and the runtime
+    still gets the desired value.
+    """
+    actual = _local_attr(el, name)
+    if actual is None:
+        return
+    if actual != default:
+        print(
+            f"FAIL: {_local(el)}.{name} expected absent or {default!r}, got {actual!r}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
 def assert_attr_absent(el: ET.Element, name: str) -> None:
     """Attribute (by local name) must not be present on the element."""
     actual = _local_attr(el, name)

@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
 from xaml_check import (  # noqa: E402
-    assert_attr,
+    assert_attr_or_default,
     assert_child_absent,
     get_activity,
     load,
@@ -19,7 +19,9 @@ if __name__ == "__main__":
         root, "DeleteEntityRecord", type_arg="local:CodingAgentsEvalEntity"
     )
 
-    assert_attr(activity, "ScopeValue", "Tenant")
+    # ScopeValue defaults to "Tenant" when omitted from XAML — accept either
+    # absent (default) or explicit "Tenant"; reject explicit non-Tenant values.
+    assert_attr_or_default(activity, "ScopeValue", "Tenant")
 
     # DeleteEntityRecord must not carry any read-mode or write-mode props
     for forbidden in (
