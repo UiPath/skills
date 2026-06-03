@@ -84,7 +84,7 @@ What to look for:
   uip agent tool list --path <agent-path> --output json
   uip agent tool connect <tool-name> --connection-id <new-connection-id> --path <agent-path> --output json
   uip agent validate --output json
-  uip agent publish --output json
+  uip solution publish --output json
   ```
 
   > Use this same rebind sequence for all resolution paths that create a new connection.

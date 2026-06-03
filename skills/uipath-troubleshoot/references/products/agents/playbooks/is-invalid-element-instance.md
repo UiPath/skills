@@ -87,7 +87,7 @@ What to look for:
 
   ```bash
   uip agent validate --output json
-  uip agent publish --output json
+  uip solution publish --output json
   ```
 
 **If the connection doesn't exist in the target environment — create it first:**
