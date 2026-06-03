@@ -5,16 +5,14 @@ description: >
   agent (LangGraph). Verifies the skill fires for the
   Python-coded-agent + CSV signal pair.
 tags: [uipath-agents, smoke, coded, lifecycle:discover, context-grounding]
-
 run_limits:
-  expected_turns: 5
+  max_turns: 50
 
 initial_prompt: |
-  I have a coded agent project with `pyproject.toml` (deps: uipath,
-  uipath-langchain) and `langgraph.json`. I want it to read a CSV of
-  ~1000 vendor rows and add two LLM-filled columns: a 4-digit MCC code
-  and a confidence label. Tell me which skill applies and the high-level
-  pipeline shape. Do NOT scaffold any files.
+  I want it to read a CSV of ~1000 vendor rows and add two LLM-filled columns: a 4-digit MCC code
+  and a confidence label.
+
+  How can I do this with a coded agent. Do not scaffold, tell me the plan first.
 
 success_criteria:
   - type: skill_triggered
