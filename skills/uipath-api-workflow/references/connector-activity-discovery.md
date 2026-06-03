@@ -45,7 +45,7 @@ What the `stub` command does internally (you don't need to call any of these by 
 uip api-workflow registry resolve "<keyword>" --output json
 ```
 
-Substring-matches `keyword` against `displayName`, `connectorKey`, `objectName`, and `fullName` of every activity in the Api-compatible TypeCache (`projectType=Api`). Returns up to 20 candidates by default; raise with `--limit <n>`.
+Tokenizes `keyword` on whitespace and matches every token against `displayName`, `connectorKey`, `objectName`, and `fullName` of every activity in the Api-compatible TypeCache (`projectType=Api`) — so combined queries like `"github list all records"` narrow the search. Returns up to 20 candidates by default; raise with `--limit <n>`.
 
 ```json
 {
@@ -391,6 +391,10 @@ Connector activities come in two flavors, visible as `ActivityType` in `resolve`
 To stub a Generic activity, pass the object via `--object-name`:
 
 ```bash
+# 0. If you only know the vendor name, get the connector key first —
+#    'uip is connections list github' 404s; the key is 'uipath-microsoft-github'.
+#    It's in resolve output (ConnectorKey) or 'uip is connectors list --filter github'.
+
 # 1. Discover the connector's objects
 uip is resources list uipath-microsoft-github --connection-id <uuid> --output json
 
@@ -401,6 +405,8 @@ uip api-workflow registry stub <list-all-records-guid> \
   --output json
 ```
 
+To find the Generic activity itself, combined keywords narrow the search (`resolve` matches every whitespace-separated token across displayName/connectorKey/objectName): `uip api-workflow registry resolve "github list all records"`. Filter the matches for `ActivityType: "Generic"` and the `Operation` you want.
+
 `stub` resolves the HTTP verb and endpoint by matching the activity's operation against the object's IS Elements metadata (e.g. operation `List` on `user_repos` → `GET /user_repos`; operation `Retrieve` on `repos` → `GET /repos/{repo}`). The emitted JSON is ordinary IntSvc kind — same `call: "UiPath.IntSvc"`, same `with` shape, same `.content` response wrapping; the runtime makes no distinction between Generic and Curated.
 
 Generic-specific behavior to know:
@@ -408,7 +414,7 @@ Generic-specific behavior to know:
 - **`--object-name` is required** unless the activity definition pins its own object (rare, proxy-style generics like `httpRequest`). Without either, `stub` fails with `"Generic activity '<name>' needs a target object"`.
 - **IS metadata is mandatory** — Curated stubs degrade to a fallback `/<objectName>` path when IS is unreachable; Generic stubs hard-fail instead (`"Could not resolve operation …"`), because without metadata there is neither verb nor path to emit. The same error fires when the object doesn't support the operation — check with `uip is resources describe <connector-key> <object-name> --connection-id <uuid> --operation <Op>`.
 - **Operation casing is normalized** — `resolve` shows the TypeCache's capitalized `Operation` (`"List"`), but the stub persists it lowercased (`"list"`) in `metadata.configuration`, matching what StudioWeb writes.
-- **Slot/export keys include the operation prefix**: `ListUserRepos_1` / `list_user_repos_1` — NOT the objectName-based `UserRepos_1` / `user_repos_1` shape used by Curated examples elsewhere in this doc. Copy `Data.ExportBucketKey` verbatim into your `export.as` and downstream `$context.outputs.<X>` reads; do not "normalize" the key to match the older examples — the mismatch fails at run time with `Cannot read properties of undefined`.
+- **Slot key carries the operation; export bucket does not**: slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). The bucket intentionally matches the platform's own derivation — solution reconcile (`resource refresh`) regenerates `Workflow.json` and recomputes export buckets from the object name, so a divergent bucket would be renamed on regeneration. As always, copy `Data.ExportBucketKey` verbatim; and after ANY external rewrite of `Workflow.json` (reconcile, designer save), re-check that downstream `$context.outputs.<X>` reads still match the on-disk `export.as` keys — `validate` cannot catch dangling output references; they surface only at run time as `undefined`.
 - **Path-parameter value formats are connector-specific.** `Retrieve`/`Update`/`Delete` endpoints take an id path param (e.g. `/repos/{repo}`) and the expected value format (name vs full name vs numeric id) varies and is sometimes wrong in the connector's own metadata — `uip is resources describe` shows the parameter's description and lookup hints. If the run 404s, cross-check by executing the same operation via `uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>`; if that also 404s, the connector's auto-generated metadata is broken upstream — pick a Curated activity or the Http kind instead.
 - **Quality varies by connector.** Generic operations are auto-generated from vendor API specs and are not hand-verified the way Curated ones are. Prefer a Curated activity when one exists for the job.
 
