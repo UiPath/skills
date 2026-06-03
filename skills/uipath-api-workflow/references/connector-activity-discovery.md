@@ -45,7 +45,7 @@ What the `stub` command does internally (you don't need to call any of these by 
 uip api-workflow registry resolve "<keyword>" --output json
 ```
 
-Tokenizes `keyword` on whitespace and matches every token against `displayName`, `connectorKey`, `objectName`, and `fullName` of every activity in the Api-compatible TypeCache (`projectType=Api`) — so combined queries like `"github list all records"` narrow the search. Returns up to 20 candidates by default; raise with `--limit <n>`.
+Sends `keyword` to the TypeCache server search (`projectType=Api`), then tokenizes it on whitespace and requires every token to match against `displayName`, `description`, `connectorKey`, `objectName`, or `fullName` — so combined queries like `"github list all records"` narrow the search. Returns up to 50 candidates by default; raise with `--limit <n>`.
 
 ```json
 {

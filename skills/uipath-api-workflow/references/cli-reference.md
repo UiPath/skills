@@ -77,7 +77,7 @@ uip api-workflow registry resolve <keyword> [--limit <n>] --output json
 | Argument / Flag | Required | Description |
 |--|--|--|
 | `<keyword>` | yes | Whitespace-tokenized; every token must substring-match somewhere in `displayName`, `connectorKey`, `objectName`, `fullName`. Case-insensitive. Combined queries narrow: `"github list all records"` matches GitHub's "List All Records". |
-| `-l, --limit <n>` | no | Max results (default: 20). |
+| `-l, --limit <n>` | no | Max results (default: 50). |
 
 Success output (keys are PascalCased by the output formatter):
 ```json
