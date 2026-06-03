@@ -56,85 +56,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the lookup-range-file-locked playbook AND recommended forcing a clean handle release / serializing access"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My InvoiceLookup process faults intermittently in Orchestrator -
-         some runs succeed, others fault. Worse since we moved it to the new
-         unattended robot. Folder 'RPA Production'. I'm not on the Robot
-         host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/excel-activities/playbooks/lookup-range-file-locked.md
-        because the runtime error
-          "System.IO.IOException: The process cannot access the file
-           'C:\ProgramData\Automation\Invoices.xlsx' because it is being
-           used by another process"
-        at the Excel Application Scope open is the file-handle-contention
-        signature of a locked/in-use workbook. The error names the FILE as
-        in use, which routes here and NOT to the modern COM dispatcher
-        playbook (0x80010100 RPC_E_SYS_CALL_FAILED, a blocked/hung call).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The classic Excel Application Scope must open Invoices.xlsx
-            before the Lookup Range can run; on MOCK-HOST the file is held
-            by another process, so the scope cannot get the handle and
-            faults at open.
-          - The most likely unattended holder is an orphaned EXCEL.EXE left
-            by a prior run that did not dispose its Excel instance (file
-            looks closed to a human, handle still held by a windowless
-            process). A user holding the file, a concurrent job, or a
-            sync/backup/AV client are alternative holders.
-          - The intermittent success/failure corroborates handle
-            contention, not a workflow defect.
-        The reference fix offers:
-          - Force a clean release: Kill Process (EXCEL) at workflow start +
-            ensure the scope disposes cleanly (no Try/Catch swallowing the
-            exit); on the modern surface, Excel Process Scope's
-            KillExcelProcessesEachIteration; OR
-          - Serialize/relocate access: schedule when the file is free,
-            stagger conflicting jobs, move the file out of a synced/scanned
-            folder, open read-only, or copy to a private path and look up
-            against the copy.
-
-      DIMENSION C -- No fabricated host actions
-        Because the user is off-host, the agent must hand over a host check
-        (look for orphaned EXCEL.EXE / who holds the file) and/or recommend
-        the fix. It must NOT claim to have killed processes or run host
-        commands itself.
-
-      SCORING RUBRIC:
-        1.0  Agent matched lookup-range-file-locked AND identified the
-             workbook being held by another process (orphaned EXCEL.EXE the
-             most likely unattended cause) AND recommended at least one valid
-             fix (kill stray EXCEL.EXE + clean dispose, or serialize/relocate
-             access), without fabricating host actions.
-        0.8  Correct playbook and "file in use / locked" cause, but the fix
-             is vague (e.g. "make sure nothing has the file open" without
-             naming the kill-stray-Excel/clean-dispose or serialize path).
-        0.5  Recognized a file-access/open problem but did not tie it to the
-             file being held by another process, OR matched a sibling Lookup
-             Range playbook (excel-not-installed, null-reference,
-             invalid-range), OR misrouted to the COM dispatcher
-             (0x80010100) playbook.
-        0.2  Surfaced the IOException to the user without diagnosis.
-        0.0  Wrong cause (e.g. concluded the sheet name, the range, the
-             lookup value, or a missing Excel install was at fault), or
-             fabricated a host action.
-
-      Reward any valid fix path equally. Penalize confident wrong causes and
-      misrouting to the COM-interop playbook.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

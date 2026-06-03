@@ -52,74 +52,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the invoke-vba-com-interop-failure playbook AND recommended host-side checks (Visible=True, modal dialogs, Office install)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My DailyDigestRunner process is faulting in Orchestrator on every
-         run. The folder is 'RPA Production'. I'm not on the Robot host
-         right now, only Orchestrator. Give me the exact things to check
-         on the host the next time I'm there."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/excel-activities/playbooks/invoke-vba-com-interop-failure.md
-        because the runtime error
-          "The system call failed. (Exception from HRESULT: 0x80010100
-           (RPC_E_SYS_CALL_FAILED))"
-        is the verbatim signature of that playbook.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is COM interop instability, with the
-        most likely specific cause being a hidden modal dialog blocking
-        the COM call: the Excel Process Scope's `ShowExcel` property is
-        `False` in `Main.xaml`, so any prompt that fires (Protected View
-        bar from Mark-of-the-Web, macro warning, license activation,
-        recover-unsaved-files banner) is invisible during the run and
-        blocks the Invoke VBA call.
-        The reference fix hands the user a host-side check list:
-          - Set `ShowExcel = True` on the Excel Process Scope and re-run
-            to see what dialog appears.
-          - Inspect the host for Protected View / Mark-of-the-Web on the
-            workbook (`Right-click > Properties > Unblock`).
-          - Check for orphaned EXCEL.EXE processes from prior runs.
-          - Inventory installed Office versions and bitness.
-
-      DIMENSION C -- No fabricated host actions
-        Because the user said they are not on the host, the agent must
-        either (a) hand the user a check list with specific things to
-        verify, or (b) recommend the toggle/inspection steps plainly.
-        The agent must NOT claim to have killed processes, edited the
-        XAML in production, or run host-side commands itself.
-
-      SCORING RUBRIC:
-        1.0  Agent matched invoke-vba-com-interop-failure AND handed the
-             user a check list that includes at least flipping
-             ShowExcel/Visible to True (or equivalent: making Excel
-             visible to surface the hidden dialog) AND did not
-             fabricate host actions.
-        0.8  Correct playbook AND recommended making Excel visible /
-             checking for modal dialogs, but did not enumerate the
-             other host-side checks (orphaned EXCEL.EXE, Office
-             versions).
-        0.5  Recognized the COM interop class but recommended only one
-             of several possible causes without offering a check list,
-             or matched a sibling cause (claimed Excel was hung
-             without first asking the user to look for a dialog).
-        0.2  Surfaced the HRESULT to the user without diagnosis or
-             escalated to support without trying the playbook.
-        0.0  Wrong cause (e.g., concluded Trust Center, code-file-path
-             missing wrapper, entry-method-name typo, or parameter
-             mismatch), or the agent fabricated a host action it could
-             not perform.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

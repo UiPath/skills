@@ -50,91 +50,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the get-asset-not-found playbook AND identified the AssetName typo"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt
-      is the RESOLUTION.md for this scenario. Treat it as the
-      authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My GetAssetFailure process is faulting in Orchestrator on
-         every run. The folder is 'Remote Debugging'."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/system-activities/playbooks/get-asset-not-found.md
-        because the runtime error
-          "Could not find the asset 'myHiddenAset'. Error code: 1002"
-        is the verbatim signature of that playbook (HTTP 404 / code 1002).
-
-        Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` -- the get-asset-not-found
-             playbook should appear (absolute or relative path).
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/system-activities/playbooks/.
-          3. state.json's `scope.domain` -- should include the
-             system-activities or activity-packages domain.
-
-        Acceptable / non-penalized: the agent may also Read neighboring
-        get-asset-* playbooks while ruling out folder-scope-mismatch,
-        permission-denied, or wrong-activity-type. Exploration is normal.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Get Credential activity (GetRobotCredential) in
-            Main.xaml references AssetName="myHiddenAset" (typo —
-            missing an "s").
-          - The Orchestrator folder "Remote Debugging" contains an
-            asset named "myHiddenAsset" (correctly spelled, Credential
-            type) but no asset literally named "myHiddenAset".
-          - Orchestrator returns 404 / error code 1002 because asset
-            names are matched exactly.
-        The reference fix:
-          - Change AssetName to "myHiddenAsset" in Main.xaml and
-            republish, OR rename the Orchestrator asset to match the
-            workflow exactly.
-
-        Evidence sources (in priority order):
-          1. state.json -- `requirements.asset_name`,
-             `requirements.error_message`, `triage_summary`,
-             scope/domain.
-          2. hypotheses.json -- the hypothesis flagged
-             `is_root_cause: true` should describe the AssetName typo
-             (naming "myHiddenAset" vs "myHiddenAsset" explicitly).
-          3. The agent's last text response.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched get-asset-not-found AND identified the
-             AssetName typo explicitly (named "myHiddenAset" vs
-             "myHiddenAsset").
-        0.8  Both partial: e.g., correct playbook but conclusion says
-             "asset is missing" without naming the typo near-miss; or
-             conclusion names the typo but matched the
-             system-activities investigation_guide rather than the
-             specific not-found playbook.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (asset failure) but neither matched
-             the playbook nor identified the typo.
-        0.0  Reached the wrong conclusion (e.g., concluded permission-denied,
-             folder-scope-mismatch, wrong-activity-type) or got blocked.
-
-      Be substance-focused, not schema-focused. Intermediate file shapes
-      may vary between runs — look at the meaning of what the agent
-      recorded.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 # Override experiments/default.yaml's 600s limit -- the multi-agent
 # troubleshooting skill (triage -> hypothesis-generator -> tester -> presenter)

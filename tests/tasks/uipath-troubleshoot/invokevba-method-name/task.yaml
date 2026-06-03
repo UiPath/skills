@@ -44,62 +44,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the invoke-vba-entry-method-name playbook AND identified the EntryMethodName typo"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My InvoiceImporter process is faulting in Orchestrator on every
-         run. The folder is 'RPA Production'."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/excel-activities/playbooks/invoke-vba-entry-method-name.md
-        because the runtime error
-          "Cannot run the macro 'ProcessInvoces'. The macro may not be
-           available in this workbook"
-        is the verbatim signature of an entry-method-name mismatch.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - `Main.xaml`'s Invoke VBA activity sets
-            `EntryMethodName="ProcessInvoces"` (typo - missing an "i").
-          - `macro.txt` declares `Sub ProcessInvoices()` (correctly
-            spelled). Application.Run cannot resolve the typo'd name, so
-            the activity faults.
-        The reference fix:
-          - Fix `EntryMethodName` in `Main.xaml` to `"ProcessInvoices"`
-            (or alternatively rename the Sub in `macro.txt` to match the
-            workflow if that is the intentional convention).
-
-      SCORING RUBRIC:
-        1.0  Agent matched invoke-vba-entry-method-name AND identified
-             the typo explicitly (named "ProcessInvoces" vs
-             "ProcessInvoices").
-        0.8  Correct playbook but conclusion says "macro name does not
-             match" without naming the typo specifically.
-        0.5  Correct playbook but recommended a sibling cause (e.g.,
-             "Sub is Private" or "method is nested") instead of the
-             actual typo.
-        0.2  Surfaced the error message without diagnosing the typo.
-        0.0  Wrong cause (e.g., concluded Trust Center, code-file-path
-             missing wrapper, parameter mismatch, or COM interop), or
-             never compared the XAML EntryMethodName to the macro.txt
-             Sub declaration.
-
-      Reward either path: agent (a) reads both `Main.xaml` and
-      `macro.txt` directly to compare names, or (b) escalates to the
-      user after reading one of them.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

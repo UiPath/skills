@@ -39,93 +39,25 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  - type: file_exists
-    description: "Agent wrote investigation state under .local/investigations/"
-    path: .local/investigations/state.json
-    weight: 0.5
-
   - type: llm_judge
-    description: "Agent matched the queue-items-failing playbook AND identified BOTH failure modes (Country='ZZ' and empty Amount) as upstream-dispatcher input data defects"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My ItemsQueue has 4 failed items today, please investigate."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/products/orchestrator/playbooks/queue-items-failing.md
-        because the symptom (multiple queue items in Failed status with
-        BusinessException reasons) is the verbatim signature of that
-        playbook.
-
-        Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` -- the
-             queue-items-failing playbook should appear (absolute or
-             relative path).
-          2. The agent's tool-call summary -- a Read on
-             references/products/orchestrator/playbooks/queue-items-failing.md.
-          3. state.json's `scope.domain` -- should include the
-             orchestrator domain.
-
-        Acceptable / non-penalized: the agent may also Read neighboring
-        orchestrator playbooks (faulted-jobs, stuck-jobs, etc.) while
-        ruling them out. Exploration is normal.
-
-      DIMENSION B -- Both failure modes identified as upstream input data defects
-        The reference root cause is **upstream dispatcher / source
-        system enqueued items with invalid SpecificContent**, producing
-        TWO distinct BusinessException patterns:
-          (a) 2 items with `Country='ZZ'` → "Unsupported country: ZZ"
-          (b) 2 items with empty `Amount` → "Transaction amount is null"
-
-        Both modes must be identified. The performer process is correctly
-        raising BusinessExceptions for invalid input — this is NOT a
-        performer regression, NOT a robot/machine issue, and NOT an
-        asset/configuration drift.
-
-        Evidence sources (in priority order):
-          1. state.json's `triage_summary` and `requirements.failure_categories`
-             -- should name BOTH "Unsupported country: ZZ" AND "Transaction
-             amount is null".
-          2. hypotheses.json -- the hypothesis flagged
-             `is_root_cause: true` (or co-equal roots) should attribute
-             the failure to upstream input data, covering both bad-field
-             patterns.
-          3. The agent's last text response -- recommends fixing the
-             dispatcher / source data, not patching the performer.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched queue-items-failing.md AND identified BOTH
-             failure modes (Country='ZZ' and empty Amount) AND attributed
-             both to upstream-dispatcher input data defects, recommending
-             a fix at the dispatcher / source.
-        0.8  Correct playbook AND correct upstream-data attribution, but
-             named only ONE of the two failure modes (e.g., focused on
-             Country and missed Amount, or vice versa).
-        0.5  Only one dimension correct -- e.g., right playbook but
-             attributed the failure to a performer regression / robot /
-             asset (any of H2/H3/H4 in the original investigation), OR
-             correct upstream-data attribution but matched the wrong
-             playbook.
-        0.2  Recognized the surface (queue items failed) but neither
-             matched the playbook nor reached the upstream-data conclusion.
-        0.0  Misdiagnosed entirely (e.g., concluded performer regression,
-             machine misconfiguration, or asset drift) or got blocked.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and both failure modes>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 # Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
 # end-to-end without a human. The simulator always picks the recommended /

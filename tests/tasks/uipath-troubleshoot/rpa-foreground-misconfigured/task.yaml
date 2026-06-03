@@ -51,144 +51,25 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  - type: file_exists
-    description: "Agent wrote investigation state under .local/investigations/"
-    path: .local/investigations/state.json
-    weight: 0.5
-
   - type: llm_judge
-    description: "Agent matched the orchestrator/foreground-already-running playbook AND recommended the 'convert to background' fix because the workflow does no UI work"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt
-      is the RESOLUTION.md for this scenario. Treat it as the
-      authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My MisconfiguredForeground process just faulted in Orchestrator
-         a few seconds after it started — can you investigate?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A — Correct playbook
-        The matching playbook is
-          references/products/orchestrator/playbooks/foreground-already-running.md
-        because the runtime error
-          "System.InvalidOperationException: A foreground process is
-           already running. Only one foreground process can run at a
-           time."
-        is the verbatim signature of that playbook.
-
-        Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` — the
-             orchestrator/foreground-already-running playbook should
-             appear (absolute or relative path).
-          2. The agent's tool-call summary — a Read on
-             references/products/orchestrator/playbooks/foreground-already-running.md.
-          3. state.json's `scope.domain` — should include the
-             orchestrator domain.
-
-        Acceptable: the agent may also Read the sibling playbook
-        `maestro/playbooks/foreground-unattended-robot.md` while ruling
-        it out (different signature: HTTP 409 / #1230).
-
-        PENALIZED: matching ONLY the maestro/foreground-unattended-robot
-        playbook (different error class — HTTP 409 about a missing
-        unattended robot, not concurrent foreground guard).
-
-      DIMENSION B — Correct cause-branch AND correct fix
-        The reference root cause is:
-          - MisconfiguredForeground's Main.xaml performs NO UI
-            interaction — it only uses LogMessage and Delay activities
-            (verifiable by reading Main.xaml in the process/ snapshot).
-          - Yet project.json sets
-            `runtimeOptions.requiresUserInteraction = true`, so the
-            Robot treats it as a foreground process.
-          - When another foreground job (`ForegroundHolder`,
-            `e1f2a3b4-...`) was already running on the same Robot
-            session, MisconfiguredForeground (`d1e2f3a4-...`) was
-            rejected by the Robot's single-foreground-job-per-session
-            guard with `System.InvalidOperationException`.
-          - The misconfiguration is the actionable defect — the
-            workflow has no business holding the foreground slot at
-            all.
-
-        The reference PRIMARY fix:
-          - Set `runtimeOptions.requiresUserInteraction = false` in
-            `project.json` (or, equivalently, in Studio: Project
-            Settings → "Starts in Background" = Yes), then republish.
-            This makes MisconfiguredForeground run in background; it
-            no longer competes for the foreground slot regardless of
-            what else is running.
-
-        Alternative / acceptable secondary mentions (the agent MAY
-        mention these as defense-in-depth but should NOT present them
-        as the primary fix):
-          - Enable "Run only one job at a time" on the Robot.
-          - Sequence the triggers to avoid overlap.
-          - Set Orchestrator-level "Background Process" = true on the
-            deployed process (acceptable as a quick deployment-side
-            override; the source fix is still preferred).
-
-        NOT acceptable as the PRIMARY/only fix:
-          - "Stagger the triggers" alone — masks the misconfig.
-          - "Enable Run only one job at a time" alone — same masking.
-          - "Convert ForegroundHolder to background" — wrong target.
-            ForegroundHolder is legitimately foreground (it actually
-            uses UI activities in real use); the misconfigured one is
-            MisconfiguredForeground.
-
-        Evidence sources (in priority order):
-          1. The agent's tool-call summary — a Read on
-             `process/Main.xaml` AND a Read on `process/project.json`
-             (the agent must inspect the source to know there are no
-             UI activities and that the foreground flag is set).
-          2. hypotheses.json — the hypothesis flagged
-             `is_root_cause: true` should describe the
-             requiresUserInteraction misconfiguration on a workflow
-             that does no UI work.
-          3. The agent's last text response — names the project.json
-             flip / "Starts in Background: Yes" as the primary fix
-             targeted specifically at MisconfiguredForeground.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched orchestrator/foreground-already-running AND
-             named the misconfiguration (project.json
-             `requiresUserInteraction: true` on a non-UI workflow) AND
-             recommended the project.json / Studio "Starts in
-             Background: Yes" fix as the primary action targeted at
-             MisconfiguredForeground.
-        0.8  Both partial: correct playbook but conclusion names
-             "concurrent jobs" as the cause without flagging the
-             misconfig; OR identified the misconfig but presented
-             "stagger triggers" as co-primary instead of the source
-             fix.
-        0.5  Only one dimension correct (e.g., recognized this is the
-             foreground-already-running playbook but missed the
-             misconfig; OR identified the misconfig but didn't match
-             the playbook).
-        0.2  Recognized the surface (a foreground concurrency issue)
-             but did not inspect the workflow source and did not
-             recommend the targeted source fix.
-        0.0  Misdiagnosed (e.g., concluded the job lacks an unattended
-             robot per the #1230 playbook, or recommended converting
-             the OTHER process to background, or recommended only
-             credential/session fixes).
-
-      Be substance-focused, not schema-focused. Intermediate file shapes
-      may vary between runs — look at the meaning of what the agent
-      recorded.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and fix-branch>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

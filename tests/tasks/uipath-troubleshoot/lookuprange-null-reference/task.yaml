@@ -48,74 +48,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the lookup-range-null-reference playbook AND identified the Lookup Range being outside any Excel scope"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My OrderLookup process faults on every run with 'Object reference
-         not set to an instance of an object'. Folder 'RPA Production'. It
-         is supposed to look up order IDs in an orders spreadsheet."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/excel-activities/playbooks/lookup-range-null-reference.md
-        because the runtime error
-          "System.NullReferenceException: Object reference not set to an
-           instance of an object"
-        originating inside a classic Lookup Range is the playbook's
-        signature. This scenario stages the playbook's "no surrounding
-        scope" cause.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - In Main.xaml the Lookup Range sits directly in the Main Sequence
-            with NO surrounding Excel Application Scope (or Use Excel File).
-          - The classic Lookup Range needs a scope to supply its workbook
-            context; with none, the context is null and the activity
-            dereferences null, throwing NullReferenceException at startup.
-          - The fault stack is ExcelLookUpRange -> Sequence "Main Sequence" ->
-            Main with no scope in between, and the log shows no "workbook
-            opened" line - confirming there is no workbook context.
-        The reference fix:
-          - Wrap the Lookup Range in an Excel Application Scope (classic)
-            bound to the workbook (or Use Excel File / Excel Process Scope +
-            LookUpRangeX on the modern surface).
-
-      DIMENSION C -- Discoverable in the workflow
-        The agent has the workflow source; the missing scope is visible in
-        Main.xaml (the ExcelLookUpRange is a direct child of the Sequence) and in
-        the fault stack. Reward finding it there. Do not require reading the
-        binary .xlsx.
-
-      SCORING RUBRIC:
-        1.0  Agent matched lookup-range-null-reference AND identified that
-             the Lookup Range is outside any Excel scope (no workbook
-             context) as the cause of the NRE, AND recommended wrapping it in
-             an Excel Application Scope / Use Excel File.
-        0.8  Correct playbook and "missing scope / no workbook context"
-             cause, but the fix is vague (e.g. "add a scope" without naming
-             Excel Application Scope / Use Excel File).
-        0.5  Matched the null-reference playbook but attributed the NRE to a
-             sibling cause (missing/renamed sheet, undefined named range)
-             without identifying the missing scope, OR identified the
-             missing scope but did not connect it to the null workbook
-             context.
-        0.2  Surfaced the NullReferenceException to the user without
-             diagnosis.
-        0.0  Wrong cause (e.g. concluded Excel is not installed, the file is
-             locked, the range is invalid, or the order ID is genuinely
-             absent), or matched no playbook.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

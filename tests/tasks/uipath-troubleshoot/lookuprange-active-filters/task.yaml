@@ -48,70 +48,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the lookup-range-active-filters playbook AND identified the active filter hiding the target row"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My PriceUpdater process faults with 'SKU-8842 not found in price
-         list', but SKU-8842 is definitely in the spreadsheet - I can see
-         the row when I open the file. Folder 'RPA Production'."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/excel-activities/playbooks/lookup-range-active-filters.md
-        because the symptom is the playbook's signature: Lookup Range
-        reports a value as not present even though it physically exists in
-        the sheet, because the activity searches only *visible* cells and an
-        active filter hides the target row.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - Main.xaml applies a Filter activity ("Filter Status = Active")
-            to the Prices sheet BEFORE the Lookup Range runs.
-          - SKU-8842 has Status "Discontinued", so the active filter hides
-            its row. Lookup Range searches only visible cells, returns
-            empty, and the workflow's guard throws "SKU-8842 not found in
-            price list".
-          - The value is genuinely present; it is filtered out, not absent.
-        The reference fix:
-          - Clear/remove the filter before the Lookup Range (e.g. a Clear
-            Filter / Filter-reset, or reorder so the lookup runs against
-            unfiltered data), so the lookup sees all rows.
-        The agent should read Main.xaml and notice the Filter activity
-        precedes the Lookup Range on the same sheet.
-
-      SCORING RUBRIC:
-        1.0  Agent matched lookup-range-active-filters AND identified the
-             active filter (applied before the lookup) as why the present
-             value is not matched, AND recommended clearing/resetting the
-             filter before the lookup.
-        0.8  Correct playbook and filter cause, but the fix is vague
-             (e.g., "remove filters" without tying it to the Filter
-             activity that runs before the lookup).
-        0.5  Recognized that the value is present-but-not-matched but
-             attributed it to a sibling cause (type/whitespace mismatch,
-             wrong sheet) without identifying the filter, OR identified
-             the filter but did not connect it to the lookup's
-             visible-cells-only behavior.
-        0.2  Concluded the value is simply absent / the data is wrong,
-             contradicting the user's "it's definitely there".
-        0.0  Wrong cause unrelated to the lookup result (e.g., Excel not
-             installed, file locked, COM interop), or matched no playbook.
-
-      The agent has the workflow source; the Filter-before-Lookup ordering
-      is discoverable in Main.xaml. Reward finding it there. Do not require
-      the agent to have read the binary .xlsx (it cannot).
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

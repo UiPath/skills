@@ -50,105 +50,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the get-asset-per-robot-no-value playbook AND identified the missing per-robot value entry"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt
-      is the RESOLUTION.md for this scenario. Treat it as the
-      authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My AssetPerRobotNoValue process is faulting in Orchestrator
-         on every run."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/system-activities/playbooks/get-asset-per-robot-no-value.md
-        because the runtime error
-          "The asset 'MyPerRobotConfig' does not have a value associated with this robot."
-        is the verbatim signature of that playbook ("does not have a
-        value associated with this robot" language).
-
-        Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` -- the
-             get-asset-per-robot-no-value playbook should appear
-             (absolute or relative path).
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/system-activities/playbooks/.
-          3. state.json's `scope.domain` -- should include the
-             system-activities or activity-packages domain.
-
-        Acceptable / non-penalized: the agent may also Read neighboring
-        get-asset-* playbooks (not-found, folder-scope-mismatch,
-        permission-denied, wrong-activity-type) while ruling them out.
-        Exploration is normal.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Get Asset activity (`GetRobotAsset`) in Main.xaml
-            targets `AssetName="MyPerRobotConfig"` in folder
-            "Remote Debugging".
-          - The asset exists with `ValueType: "Text"` (correct type
-            for Get Asset) AND `ValueScope: "PerRobot"` — values are
-            stored per-robot, not globally.
-          - The robot account running the job (`RobotUser1`) has no
-            value entry in the asset's per-robot value table.
-          - Orchestrator therefore returns "The asset 'MyPerRobotConfig'
-            does not have a value associated with this robot."
-        The reference fix:
-          - Either: add a value entry for `RobotUser1` in the asset's
-            per-robot value table (Orchestrator UI -> Folder -> Assets
-            -> MyPerRobotConfig -> Manage Values -> Add).
-          - Or: if the same value should be used for every robot,
-            change the asset's value scope from `PerRobot` to `Global`
-            and set a single value.
-
-        Evidence sources (in priority order):
-          1. state.json -- `requirements.asset_name`,
-             `requirements.value_scope`, `triage_summary`,
-             scope/domain.
-          2. hypotheses.json -- the hypothesis flagged
-             `is_root_cause: true` should describe the per-robot
-             value gap (NOT a missing asset, NOT a missing folder,
-             NOT a permission issue, NOT an activity-type mismatch).
-             Should name both the asset and the executing robot.
-          3. The agent's last text response.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched get-asset-per-robot-no-value AND
-             identified the per-robot value gap explicitly.
-             Conclusion must name the asset
-             (`MyPerRobotConfig`), recognize its scope is per-robot,
-             and recommend either adding a per-robot value or
-             switching to Global scope.
-        0.8  Both partial: e.g., correct playbook but conclusion
-             says "value problem" without naming the per-robot
-             scope; or conclusion names the per-robot scope but
-             matched the system-activities investigation_guide
-             rather than the specific per-robot-no-value playbook.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (asset failure) but neither
-             matched the playbook nor identified the per-robot scope.
-        0.0  Misdiagnosed (e.g., concluded asset-not-found,
-             folder-scope-mismatch, permission-denied, or wrong-
-             activity-type) or got blocked.
-
-      Be substance-focused, not schema-focused. Intermediate file shapes
-      may vary between runs — look at the meaning of what the agent
-      recorded.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

@@ -50,115 +50,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the get-asset-external-vault-failure playbook AND identified the external credential store as the failing layer"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt
-      is the RESOLUTION.md for this scenario. Treat it as the
-      authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My AssetVaultFailure process is faulting in Orchestrator on
-         every run."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/system-activities/playbooks/get-asset-external-vault-failure.md
-        because the runtime error
-          "Failed to read from Credential Store type 'CyberArk'. Error code: 2304"
-        is the verbatim signature of that playbook (error codes 2303
-        and 2304 are unique to external-vault failures).
-
-        Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` -- the
-             get-asset-external-vault-failure playbook should appear
-             (absolute or relative path).
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/system-activities/playbooks/.
-          3. state.json's `scope.domain` -- should include the
-             system-activities or activity-packages domain. The agent
-             may also scope into credential-stores / orchestrator
-             configuration.
-
-        Acceptable / non-penalized: the agent may also Read neighboring
-        get-asset-* playbooks (not-found, folder-scope-mismatch,
-        permission-denied, wrong-activity-type, per-robot-no-value,
-        robot-not-authenticated) while ruling them out. Exploration is
-        normal.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Get Credential activity (GetRobotCredential) in
-            Main.xaml targets `AssetName="MyCyberArkSecret"` in
-            folder "Remote Debugging".
-          - The asset is correctly configured: present in the folder,
-            ValueType=Credential, ValueScope=Global, robot has the
-            necessary roles, robot is licensed.
-          - The asset is backed by an EXTERNAL credential store
-            (CyberArk) — its `CredentialStoreId` references a
-            non-default credential store named "Production CyberArk
-            Store" of type `CyberArk`.
-          - The CyberArk vault endpoint is unreachable / misconfigured
-            from Orchestrator. Orchestrator therefore returns error
-            code 2304 / "Failed to read from Credential Store type
-            'CyberArk'."
-        The reference fix:
-          - Verify network connectivity between Orchestrator server
-            and the CyberArk vault endpoint (firewall, DNS, proxy).
-          - Verify the CyberArk Credential Store configuration in
-            Orchestrator (Tenant -> Credential Stores) — correct
-            endpoint URL, correct web service name, no FIPS / SDK
-            mismatch on the Orchestrator host.
-          - If the issue is intermittent, contact the CyberArk vault
-            administrator to check vault availability.
-
-        Evidence sources (in priority order):
-          1. state.json -- `requirements.error_code` (2304),
-             `requirements.error_message`,
-             `requirements.credential_store_type` (CyberArk),
-             `triage_summary`, scope/domain.
-          2. hypotheses.json -- the hypothesis flagged
-             `is_root_cause: true` should describe the external
-             credential-store failure (NOT a missing asset, NOT a
-             folder issue, NOT a permission gap, NOT a license issue,
-             NOT a type mismatch).
-          3. The agent's last text response.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched get-asset-external-vault-failure AND
-             identified the external credential store as the failing
-             layer. Conclusion must (a) name the vault type
-             (CyberArk), (b) recognize the asset is backed by an
-             external store, and (c) recommend checking vault
-             connectivity / configuration (not modifying the asset).
-        0.8  Both partial: e.g., correct playbook but conclusion
-             names the failure as "credential store issue" without
-             naming the vault type; or conclusion names the vault
-             but matched the system-activities investigation_guide
-             rather than the specific external-vault-failure playbook.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (asset / auth failure) but
-             neither matched the playbook nor identified the external
-             vault layer.
-        0.0  Misdiagnosed (e.g., concluded asset-not-found,
-             folder-scope-mismatch, permission-denied,
-             wrong-activity-type, per-robot-no-value, or
-             robot-not-authenticated) or got blocked.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

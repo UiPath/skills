@@ -50,69 +50,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the invoke-vba-trust-access playbook AND recommended enabling the Trust Center toggle"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My InvoiceMacroRunner process is faulting in Orchestrator on every
-         run. The folder is 'RPA Production'. I'm not on the Robot host
-         right now, only Orchestrator. Give me the exact things to check
-         on the host the next time I'm there."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/excel-activities/playbooks/invoke-vba-trust-access.md
-        because the runtime error
-          "Programmatic access to Visual Basic Project is not trusted"
-        is the verbatim signature of that playbook.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The robot machine's Excel Trust Center has "Trust access to the
-            VBA project object model" disabled under the Windows user the
-            robot runs as.
-          - The Invoke VBA activity in Main.xaml tries to inject a VBA
-            module into the workbook, which Excel blocks at the
-            VBProject.VBComponents.Add API.
-        The reference fix:
-          - Enable the Trust Center toggle on the robot machine, under the
-            robot's Windows user, at File > Options > Trust Center > Trust
-            Center Settings > Macro Settings > "Trust access to the VBA
-            project object model".
-
-      DIMENSION C -- No fabricated host actions
-        Because the user said they are not on the host, the agent must
-        either (a) hand the user a short check list with the Trust Center
-        path, or (b) recommend the toggle plainly. The agent must NOT
-        claim to have flipped the toggle, edited the registry, or run any
-        host-side command itself.
-
-      SCORING RUBRIC:
-        1.0  Agent matched invoke-vba-trust-access AND recommended
-             enabling the Trust Center toggle (or equivalent path through
-             the Macro Settings dialog) AND did not fabricate host
-             actions.
-        0.8  Correct playbook AND correct toggle, but conclusion is
-             vague (e.g., "fix Excel security settings" without naming
-             the toggle).
-        0.5  Recognized the error class (VBA project trust / programmatic
-             access) but missed the specific toggle or matched a sibling
-             playbook (e.g., recommended the wrong remediation branch).
-        0.2  Surfaced the error message back to the user without
-             diagnosis or escalated to support without trying the
-             playbook.
-        0.0  Wrong cause (e.g., concluded code-file-path failure,
-             entry-method-name typo, parameter mismatch, or COM
-             interop), or the agent fabricated a host action it could
-             not perform.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

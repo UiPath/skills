@@ -53,76 +53,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the lookup-range-excel-not-installed playbook AND recommended install-or-migrate"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My VendorLookup process is faulting in Orchestrator on every run.
-         Folder 'RPA Production'. It ran on my dev machine but started
-         failing after we moved it to the new unattended robot. I'm not on
-         the Robot host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/excel-activities/playbooks/lookup-range-excel-not-installed.md
-        because the runtime error
-          "Retrieving the COM class factory for component with CLSID
-           {00024500-0000-0000-C000-000000000046} failed ... 0x80040154
-           (REGDB_E_CLASSNOTREG)"
-        from a classic Excel Application Scope / Lookup Range is the
-        verbatim signature of Excel not being installed on the host.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The classic Lookup Range activity (inside an Excel Application
-            Scope) drives the Microsoft Excel Interop API and needs a
-            registered desktop Excel install.
-          - The new unattended robot host (MOCK-HOST) has no Excel
-            installed, so the Excel.Application COM class cannot be
-            created and the scope faults at startup with
-            REGDB_E_CLASSNOTREG.
-          - The "worked on dev, broke after move to the new robot" detail
-            corroborates a host-environment cause, not a workflow defect.
-        The reference fix offers EITHER path:
-          - Install Microsoft Excel (desktop) on the robot host, OR
-          - If Excel cannot be installed (Linux/container/locked-down VM),
-            migrate to the Workbook Read Range activity (OpenXML, no Excel)
-            outputting a DataTable, then search it with Lookup Data Table.
-
-      DIMENSION C -- No fabricated host actions
-        Because the user is off-host, the agent must hand over a check
-        (confirm Excel is installed on MOCK-HOST) and/or recommend the
-        fix. It must NOT claim to have installed Excel or run host
-        commands itself.
-
-      SCORING RUBRIC:
-        1.0  Agent matched lookup-range-excel-not-installed AND identified
-             "Excel not installed on the robot host" as the cause AND
-             offered at least one of the two valid fixes (install Excel,
-             or migrate to Workbook Read Range + Lookup Data Table),
-             without fabricating host actions. Offering both fixes is
-             ideal but either one alone earns 1.0.
-        0.8  Correct playbook and cause, but the recommended fix is vague
-             (e.g., "set up Excel" without naming install vs the Workbook
-             migration path).
-        0.5  Recognized a COM / environment problem but did not tie it to
-             a missing Excel install, or matched a sibling Lookup Range
-             playbook (file-locked, null-reference) instead.
-        0.2  Surfaced the HRESULT to the user without diagnosis.
-        0.0  Wrong cause (e.g., concluded the workflow logic, the sheet
-             name, or the range was at fault), or fabricated a host action.
-
-      Reward either valid fix path equally. Penalize confident wrong
-      causes, not the choice between "install Excel" and "migrate to
-      Workbook activities".
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

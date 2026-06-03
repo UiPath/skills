@@ -47,74 +47,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the lookup-range-invalid-range playbook AND identified the empty-string Range as the cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My CatalogLookup process started faulting on every run after a
-         recent edit to the workflow. Folder 'RPA Production'. It looks up
-         part numbers in a catalog spreadsheet and used to work fine."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/excel-activities/playbooks/lookup-range-invalid-range.md
-        because the runtime error
-          "The range '' is not valid"
-        from a classic Lookup Range, raised after the workbook opened, is
-        the signature of an invalid Range value (here, a literal empty
-        string).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - In Main.xaml the Lookup Range has Range set to the literal
-            expression "" (Range="&quot;&quot;"), i.e. an empty string.
-          - For Lookup Range, a whole-sheet search requires the Range field
-            to be left COMPLETELY BLANK. A literal "" is an invalid range
-            value, so the activity fails to parse it and raises "The range
-            '' is not valid" - after the Excel Application Scope opened the
-            workbook successfully.
-          - The fault is the Range configuration, not the file open, the
-            sheet, or the data.
-        The reference fix:
-          - Clear the Range field entirely (leave it blank) for a whole-sheet
-            search; do not pass "". Alternatively set a valid A1 reference
-            (e.g. A1:D5000) if the lookup should be bounded.
-
-      DIMENSION C -- Discoverable in the workflow
-        The agent has the workflow source; the Range="&quot;&quot;"
-        misconfiguration is visible in Main.xaml and the job log shows the
-        scope opening before the range error. Reward finding it there. Do
-        not require reading the binary .xlsx.
-
-      SCORING RUBRIC:
-        1.0  Agent matched lookup-range-invalid-range AND identified the
-             Range set to a literal empty string "" (instead of left blank)
-             as the cause, AND recommended clearing the Range field (blank =
-             whole sheet) or setting a valid A1 reference.
-        0.8  Correct playbook and "invalid Range value" cause, but the fix
-             is vague (e.g. "fix the range" without the blank-vs-"" point or
-             a valid A1 alternative).
-        0.5  Recognized an invalid/parse range error but attributed it to a
-             sibling cause (unescaped wildcards in the Value, a type
-             mismatch, a malformed A1 reference) without identifying the
-             empty-string Range, OR matched a sibling Lookup Range playbook
-             (active-filters, null-reference).
-        0.2  Surfaced "The range '' is not valid" to the user without
-             diagnosis.
-        0.0  Wrong cause (e.g. concluded Excel is not installed, the file is
-             locked, the sheet is missing, or the part number is genuinely
-             absent), or matched no playbook.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

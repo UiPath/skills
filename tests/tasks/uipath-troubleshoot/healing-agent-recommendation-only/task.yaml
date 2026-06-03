@@ -40,38 +40,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook should appear in state.json's
-        `matched_playbooks`. Acceptable: the agent also Reads
-        neighboring playbooks during exploration.
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The agent's final answer should converge on the same root cause
-        and fix described in RESOLUTION.md. Evidence sources: state.json
-        (`requirements`, `triage_summary`, scope/domain), hypotheses.json
-        (the hypothesis flagged `is_root_cause: true`), and the agent's
-        last text response.
-
-      SCORING RUBRIC (single score):
-        1.0  Both dimensions correct: right playbook AND same root cause.
-        0.8  Both partially correct.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface but neither matched the playbook nor
-             reached the conclusion.
-        0.0  Misdiagnosed or got blocked.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

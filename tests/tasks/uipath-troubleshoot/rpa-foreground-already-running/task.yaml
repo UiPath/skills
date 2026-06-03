@@ -46,129 +46,25 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  - type: file_exists
-    description: "Agent wrote investigation state under .local/investigations/"
-    path: .local/investigations/state.json
-    weight: 0.5
-
   - type: llm_judge
-    description: "Agent matched the orchestrator/foreground-already-running playbook AND identified concurrent foreground jobs as the cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt
-      is the RESOLUTION.md for this scenario. Treat it as the
-      authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My ForegroundHolder process just faulted in Orchestrator a few
-         seconds after it started — can you investigate?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/products/orchestrator/playbooks/foreground-already-running.md
-        because the runtime error
-          "System.InvalidOperationException: A foreground process is
-           already running. Only one foreground process can run at a
-           time."
-        is the verbatim signature of that playbook.
-
-        Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` — the
-             orchestrator/foreground-already-running playbook should
-             appear (absolute or relative path).
-          2. The agent's tool-call summary — a Read on
-             references/products/orchestrator/playbooks/foreground-already-running.md.
-          3. state.json's `scope.domain` — should include the
-             orchestrator domain.
-
-        Acceptable / non-penalized: the agent may also Read the
-        sibling playbook `maestro/playbooks/foreground-unattended-robot.md`
-        while ruling it out (it covers a different signature: HTTP 409
-        / error #1230). Exploration is normal.
-
-        PENALIZED: matching ONLY the maestro/foreground-unattended-robot
-        playbook (different error class — HTTP 409 about a missing
-        unattended robot, not concurrent foreground guard).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - Two foreground (UI-interactive) jobs were scheduled to the
-            same Robot session with overlapping start times.
-          - The earlier job (`b0a1b2c3-...`) started at 10:14:50Z and
-            was still running when the failing job (`c0a1b2c3-...`)
-            started at 10:15:00Z — within the earlier job's ~60s
-            runtime window.
-          - The Robot rejected the second start with
-            `System.InvalidOperationException: A foreground process is
-            already running. Only one foreground process can run at a
-            time.` (visible in the failing job's logs and Info field).
-          - `RequiresUserInteraction: true` on both jobs confirms both
-            are foreground.
-        The reference fix (any of the following is acceptable):
-          - Sequence the triggers so they cannot overlap (stagger cron
-            expressions / chain via a parent process).
-          - Enable "Run only one job at a time" on the Robot in
-            Orchestrator so subsequent jobs queue instead of failing.
-          - Convert ForegroundHolder to background
-            (`runtimeOptions.requiresUserInteraction: false` in
-            project.json / Studio Project Settings "Starts in
-            Background: Yes") IF the workflow does not actually need
-            UI interaction. (In this scenario the workflow uses Delay
-            only — no UI activities — so the background conversion is
-            a legitimate fix.)
-
-        NOT acceptable as the sole conclusion:
-          - "The job failed because of a missing unattended robot
-            configuration" (that's the sibling 409 / #1230 issue).
-          - "Increase the Delay or timeout" (does not address slot
-            contention).
-          - "Restart the Robot" (a recovery action, not a fix for the
-            underlying overlap).
-
-        Evidence sources (in priority order):
-          1. state.json — `requirements.error_code`,
-             `requirements.error_message`, `triage_summary`,
-             scope/domain.
-          2. hypotheses.json — the hypothesis flagged
-             `is_root_cause: true` should describe the concurrent
-             foreground job conflict.
-          3. The agent's last text response.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched orchestrator/foreground-already-running AND
-             named "two concurrent foreground jobs" (or equivalent —
-             overlapping triggers, the prior job still occupying the
-             slot, etc.) as the root cause, with at least one
-             actionable fix from the acceptable list.
-        0.8  Both partial: correct playbook but conclusion says
-             "concurrent jobs" without naming the foreground
-             constraint; OR conclusion names the foreground constraint
-             but matched the broader orchestrator investigation_guide
-             rather than the specific playbook.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (job faulted with an exception)
-             but neither matched the playbook nor identified the
-             concurrent-foreground issue.
-        0.0  Misdiagnosed (e.g., concluded the job lacks an unattended
-             robot per the #1230 playbook, or concluded a
-             credential / session-creation issue).
-
-      Be substance-focused, not schema-focused. Intermediate file shapes
-      may vary between runs — look at the meaning of what the agent
-      recorded.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true
