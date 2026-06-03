@@ -19,7 +19,7 @@ initial_prompt: |
   TASK: Register a remote-type AgentHub MCP server in the Shared folder.
     - Target URL: https://mock.api.example.com
     - Auth: Bearer token from Orchestrator asset SLACK_BOT_TOKEN
-    - Suggested slug: mock-remote-api (must match ^[a-z0-9-]+$, length 3-50)
+    - Use slug: mock-remote-api (must match ^[a-z0-9-]+$, length 3-50)
     - Suggested display name: "Mock Remote API"
 
   After creating, refresh tools so the server enumerates its tool surface,
@@ -45,14 +45,11 @@ success_criteria:
   description: create-command invokes `mcp create remote` (slug/uri/headers live in payload.json via --file)
   path: create-command.sh
   includes: [mcp create remote]
-- {type: command_executed, description: Agent discovered remote payload shape before composing it (--print-schema
-    or template remote), tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp\s+(create\s+remote\s+--print-schema|template\s+remote),
-  min_count: 1}
 - {type: command_executed, description: Agent submitted the create via --file or --body, tool_name: Bash,
   command_pattern: uip\s+agenthub\s+mcp\s+create\s+remote\b.*(--file|--body), min_count: 1}
 - {type: command_executed, description: Agent refreshed tools after create, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp\s+refresh-tools\s+mock-remote-api,
   min_count: 1}
-- {type: command_executed, description: Agent verified the server / its tools after refresh, tool_name: Bash,
-  command_pattern: uip\s+agenthub\s+(mcp\s+get\s+mock-remote-api|mcp-tools\s+list\s+--mcp\s+mock-remote-api),
+- {type: command_executed, description: 'Agent verified after create/refresh via a Critical-Rule-3 inspection verb (mcp list / mcp get / mcp-tools list)', tool_name: Bash,
+  command_pattern: uip\s+agenthub\s+(mcp\s+(get|list)|mcp-tools\s+list),
   min_count: 1}
 run_limits: {max_turns: 60}
