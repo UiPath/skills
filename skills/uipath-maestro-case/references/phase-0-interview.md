@@ -139,10 +139,11 @@ Each row is a single-question prompt by default. Collapse only the safe-to-defau
 Five things decide whether the SDD builds in one pass. Capture each *during* the walk above — they are where SDDs silently become unbuildable:
 
 1. **Exception trigger source** (row 8) — per lane, ask *how it fires*: a gate decision → `selected-stage-completed`/`selected-stage-exited` (+ `IF` on the decision var); a person launches it → `user-selected-stage`; an external event → `wait-for-connector`. `Interrupting: Yes` for mid-stage lanes; terminal lanes end (`exit-only` + §1.4a case-exit), return lanes use `return-to-origin`. Keep each lane's entry **distinct** — identical entries fail `validate`. See [sdd-generation-rules.md § Logical integrity](sdd-generation-rules.md#logical-integrity--stage-graph).
-2. **Decision outcome → route** (row 5) — per button, capture its outcome variable AND destination (advance / which exception / loop). No outcome may dead-end: a status string with nowhere to go is a broken branch.
+2. **Decision outcome → route** (row 5) — per button, capture its outcome variable AND destination (advance / which exception / loop). No outcome may dead-end: a status string with nowhere to go is a broken branch. When the destination is an exception lane, that lane's entry MUST key off this variable's value (§Logical integrity step 5) — a button that "routes to the X lane" while X is entered only by an external event is a dead branch, blocked at Finalization step 15.
 3. **Task output capture** (row 6) — per configure/decide/capture task, name the §1.5 variable that stores its result. A form that collects values (rate, terms) but binds no output silently loses them.
 4. **Required-input back-solve** (row 6) — per send/connector/agent, map every required input to a variable: an email needs a recipient *address* var (not a name); an agent needs its source data.
 5. **Conditional gates** (rows 4–5) — ask if any role or step is conditional on a value (loan size, risk, region). Model a guarded rule + persona, never a prose footnote (e.g. `>$5M → Credit Analyst review`).
+6. **Connector failure cover** (rows 3, 8) — when an `execute-connector-activity` / `wait-for-connector` sits in a primary (non-exception) stage on the critical path, ask whether a failure needs handling. Model the handler as an exception lane entered on the failure / error event; with ≥ 2 such connector tasks and no cover, Finalization raises a `high` review item (`rev_no_failure_path`). Record provenance if the user declines.
 
 #### Single-question (default for shape-changing gaps)
 
@@ -262,7 +263,7 @@ Run `uip maestro case registry pull` first if cache absent. See [registry-discov
 | `execute-connector-activity` | connector `typeId` + operation (`typecache-activities-index.json`) | a registered IS **connection** (`connectionId`) for that connector |
 | `wait-for-connector` | connector-trigger `typeId` (`typecache-triggers-index.json`) | an IS connection for the inbound event |
 | `agent` | `agentId` (`agent-index.json`) | the agent is **deployed** |
-| `action` (human task / HITL) | `actionAppId` (`action-apps-index.json`) when a deployed Action App matches | else fall back to a v2 JSON-schema form — no app needed |
+| `action` (human task / HITL) | `actionAppId` (`action-apps-index.json`) when a deployed Action App matches | else `<UNRESOLVED>` + Rule-8 placeholder — inline JSON-schema authoring is NOT supported by the action plugin |
 | `process` / `rpa` | `processOrchestrationId` (`process-index.json` / `processOrchestration-index.json`) | the process is **published** |
 | `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** |
 | `case-management` | child case (`caseManagement-index.json`) | the child case is **published** |
@@ -322,7 +323,11 @@ For each task with required inputs the sketch has not mapped, one AskUserQuestio
 
 > `Send Slack message needs a channel and a message body — what feeds each?`
 
-Map each answer to a variable, a literal, or an upstream task's output (§Ask → Buildability musts). For an event trigger, surface required event params the same way (e.g., which mailbox folder) and fill each payload-extraction Variable's `sourceFields` path from the discovered output shape. A filter clause the connector can't support → narrate and Ask for a substitute.
+Map each answer to a variable, a literal, or an upstream task's output (§Ask → Buildability musts). For an event trigger, surface required event params the same way (e.g., which mailbox folder) and fill each payload-extraction Variable's `sourceFields` path from the discovered output shape. A filter clause the connector can't support → narrate and Ask for a substitute. A required input the user skips → `<UNRESOLVED>` + a `high` review item (optional input skipped → `medium`).
+
+**Connection selection (connector tasks).** For each `execute-connector-activity`, `wait-for-connector`, and connector event trigger, resolve the IS **connection**, not just the activity `typeId`. When the cache holds **0 or > 1** connections for the connector, AskUserQuestion which connection — in business terms (the account / environment name, never the `connectionId`). Never auto-pick among multiple, never leave `connectionId` silently `<UNRESOLVED>`; a missing connection is a `high` review item per §Resource reality.
+
+**Action-app field fidelity.** For each `action` task resolved to a deployed app, author the Input / Output Schema **only** from the app's `tasks describe` fields. If the user described context the app does not expose, AskUserQuestion: `Deploy a task-specific app` / `Limit inputs to the app's fields` / `Placeholder — resolve later`. Never author a field the app lacks — it cannot bind ([sdd-generation-rules.md § Finalization step 16](sdd-generation-rules.md#finalization)). If ONE app is the best match for ≥ 2 tasks that each need different fields, that is the generic-substitute smell — surface it (`rev_substitute_app`) rather than authoring divergent schemas onto the same app.
 
 **Cost.** One CLI call per resolved task, run in parallel and resolved-only. The trade is a longer Resolve for far fewer Phase 3 / 4 binding failures — wrong `Field` names and unmapped required inputs that otherwise surface only after Rule 2 locks the file.
 
@@ -332,7 +337,7 @@ After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule
 
 ### Approve
 
-Before renaming, run the **Finalization checks** in [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization) — the full 14-step list including stage-graph connectivity (step 12), domain-fidelity scan (step 13), and architect's-lens advisory pass (step 14). Any blocking failure (steps 1–10, 12, 13) routes back to `Re-edit` / `Restart` / `Abort`. Advisory passes (step 14) emit `medium` review items but do not block.
+Before renaming, run the **Finalization checks** in [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization) — the full 16-step list including stage-graph connectivity (step 12), domain-fidelity scan (step 13), architect's-lens advisory pass (step 14), decision-routing closure (step 15), and action-app schema fidelity (step 16). Any blocking failure (steps 1–10, 12, 13, 15) routes back to `Re-edit` / `Restart` / `Abort`. Advisory pass (step 14) emits `medium` review items but does not block; `high` review items (step 16, `rev_no_failure_path` at threshold, `rev_substitute_app`) gate via the `Approve despite N high-severity items` opt-in.
 
 On pass:
 
