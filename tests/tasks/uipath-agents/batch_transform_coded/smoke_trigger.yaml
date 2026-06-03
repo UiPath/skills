@@ -11,10 +11,11 @@ run_limits:
 
 initial_prompt: |
   I have a Python coded-agent project (`pyproject.toml` with uipath +
-  uipath-langchain, plus `langgraph.json`). I want it to read a CSV of
-  ~1000 vendor rows and add two LLM-filled columns: a 4-digit MCC code
-  and a confidence label. Tell me which skill applies and the high-level
-  pipeline shape. Do NOT scaffold any files.
+  uipath-langchain, plus `langgraph.json`). The agent should batch-
+  process a CSV of ~1000 rows and use an LLM to enrich each row with
+  two new columns. Which UiPath skill covers building this kind of
+  LLM-powered batch-transform agent, and what is the high-level
+  pipeline shape? Do NOT scaffold any files.
 
 success_criteria:
   - type: skill_triggered
