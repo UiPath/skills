@@ -341,7 +341,15 @@ Additional UIA procedures and guides:
 - [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
 - [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow, multi-step UI flows, and indication fallback
 
-## Completion Output
+## Consuming this RPA from a Maestro Flow
+
+An RPA project added as a sibling inside a `.uipx` solution becomes a node type that any Maestro Flow in the same solution can invoke — no publish required.
+
+1. The solution layout must be `<Solution>/<RpaProject>/project.json` and `<Solution>/<FlowProject>/<FlowProject>.flow`. Use `uip solution project add <RpaProject>` to register the RPA project.
+2. From the flow project directory, the flow side runs `uip maestro flow registry list --local --output json` to discover the sibling — node type is `uipath.core.rpa-workflow.<projectId>`.
+3. The flow's `bindings[]` will reference the project's GUID (the `Id` field in the solution `.uipx`), not a `<FolderPath>.<Name>` string.
+
+For the flow-side wiring (definitions, bindings, edges), hand off to `uipath-maestro-flow`. This skill's responsibility ends at "the RPA project builds clean and is registered in the solution."
 
 **Before reporting "done", verify the plan is complete.** If a plan file at `docs/plans/*.md` drove this work:
 1. Re-read the plan and scan its task checkboxes.

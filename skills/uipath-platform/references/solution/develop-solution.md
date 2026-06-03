@@ -39,6 +39,37 @@ Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live insid
 
 > If the target folder already exists and is empty, `solution new` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
 
+### Multi-product layout (Flow + RPA + Agent)
+
+A single solution can hold any mix of Flow, RPA (.cs / .xaml), Python agent, and coded-app projects. Canonical layout:
+
+```
+<Solution>/
+├── <Solution>.uipx
+├── <FlowProject>/<FlowProject>.flow         # Maestro Flow — uipath-maestro-flow
+├── <RpaProject>/project.json                # XAML or coded RPA — uipath-rpa
+├── <AgentProject>/agent.json or pyproject   # Python agent — uipath-agents
+└── resources/solution_folder/...
+```
+
+Per-product creation commands (run from inside the solution directory):
+
+```bash
+uip maestro flow init <FlowProject> --output json                        # auto-registers
+uip agent init <AgentProject> --output json                              # auto-registers
+uip rpa create-project --name <RpaProject> --location . \
+  --target-framework Portable --expression-language CSharp --output json  # does NOT auto-register
+```
+
+**Registration:**
+
+- `uip maestro flow init` and `uip agent init`, run from inside the solution directory, **auto-register** with the parent `.uipx`. Confirm via `Data.SolutionRegistration.Status` in the response — `Registered` or `AlreadyRegistered` means done. Run `uip solution project add <ProjectName>` only as a fallback when `Status` is `Skipped` or `Failed`.
+- `uip rpa create-project` does **not** auto-register. Run `uip solution project add <RpaProject>` explicitly afterwards.
+
+Once registered as siblings, a Flow can discover the RPA / Agent projects via `uip maestro flow registry list --local --output json` — no publish required.
+
+For the per-product authoring details, hand off to the corresponding skill (`uipath-maestro-flow`, `uipath-rpa`, `uipath-agents`).
+
 ## Step 2: Add Existing Projects
 
 Register a project that already lives inside the solution directory.

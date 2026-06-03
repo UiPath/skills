@@ -45,7 +45,7 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `<solutionPath>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
+| `<solutionPath>` | Directory containing a `.uipx` or a `.uis` file (required). **Do not pass the `.uipx` file directly** — `pack` rejects it with `Solution path must be a directory or a .uis file` even though `.uipx` is the canonical solution file from `uip solution new`. | -- |
 | `<outputPath>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'outputPath'`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
