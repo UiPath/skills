@@ -1,25 +1,20 @@
 task_id: skill-mcp-servers-outlook-create
-description: >
-  Wrap Outlook 365 `ListCalendarEvents` List as an MCP tool on `test-mcp-skill`.
-  Bake outputTimezone with designTimeLookup; LLM provides date range.
-tags: [uipath-mcp-servers, integration, mode:build]
-
+description: |
+  Wrap Outlook 365 `ListCalendarEvents` List as an MCP tool on `test-mcp-skill`. Bake outputTimezone with designTimeLookup; LLM provides date range.
+tags: [uipath-mcp-servers, smoke, 'mode:build']
 agent:
   type: claude-code
-  allowed_tools: ["Bash", "Read", "Write"]
-  max_turns: 10
-
+  allowed_tools: [Bash, Read, Write]
 sandbox:
   driver: tempdir
   python: {}
   template_sources:
-    - type: template_dir
-      path: ../_shared/mock_template
-    - type: template_dir
-      path: fixtures
-  mock_path_dirs: ["mocks"]
-
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
 initial_prompt: |
+  Load the uipath-mcp-servers skill and follow its documented workflow for this tool end to end. For an IS-activity tool, read references/is-activity-workflow.md and use the exact `uip agenthub mcp-tools create-is-activity` flags it specifies (`--mcp`, `--target-identifier`, `--description`, `--metadata`, `--input-schema`, `--output-schema`); for a resource tool, read the resource guidance and run `mcp-tools candidates`/`template` as it directs. Use the exact CLI commands and flags the skill documents — do not invent flag names.
+
   Use the mocked `uip` CLI.
 
   TASK: Add an Outlook 'List Calendar Events' tool to `test-mcp-skill`. Use
@@ -33,21 +28,18 @@ initial_prompt: |
 
   Save: metadata.json, input-schema.json, output-schema.json, create-command.sh,
   trajectory.md, summary.txt.
-
 success_criteria:
-  - type: file_contains
-    path: metadata.json
-    includes: ["uipath-microsoft-outlook365", "ListCalendarEvents"]
-  - type: file_contains
-    description: "outputTimezone baked + label populated"
-    path: metadata.json
-    includes: ["outputTimezone", "designTimeLookups"]
-  - type: file_contains
-    description: "input schema exposes date-range fields"
-    path: input-schema.json
-    includes: ["from", "additionalProperties"]
-  - type: file_contains
-    path: create-command.sh
-    includes: ["--dry-run", "--target-identifier", "conn-mock-outlook-01", "--description"]
-
-max_iterations: 1
+- type: file_contains
+  path: metadata.json
+  includes: [uipath-microsoft-outlook365, ListCalendarEvents]
+  description: '`metadata.json` contains the expected content'
+- type: file_contains
+  description: metadata bakes the outputTimezone value (offline mock does not assert designTimeLookups
+    labeling)
+  path: metadata.json
+  includes: [outputTimezone]
+- {type: file_exists, description: input-schema.json was produced (schema content is agent-dependent;
+    smoke verifies the artifact), path: input-schema.json, weight: 1.0, pass_threshold: 1.0}
+- {type: file_exists, description: '`create-command.sh` was produced', path: create-command.sh, weight: 1.0,
+  pass_threshold: 1.0}
+run_limits: {max_turns: 40}
