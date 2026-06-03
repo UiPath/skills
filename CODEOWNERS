@@ -132,5 +132,5 @@
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 # MCP skill (UiPath AgentHub MCP server registration + tool authoring)
-/skills/uipath-mcp-servers/ @cosminpaunel
-/tests/tasks/uipath-mcp-servers/ @cosminpaunel
+/skills/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
+/tests/tasks/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
