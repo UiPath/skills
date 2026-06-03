@@ -110,7 +110,7 @@ The skill that builds the workflows owns the final, detailed decision — this i
 
 ### Anti-pattern: picking Coded C# for UI-heavy automation
 
-**Trigger:** the process body is **>70% UI automation** against a browser, desktop app, or SaaS UI, with **minimal HTTP / parsing / DTO / data-shaping work**. The PDD describes "log in, navigate to a list, click each row, read fields, compute a derived value, write it back, close" — i.e. UI driving is the bulk of the work.
+**Trigger:** the process body is **>49% UI automation** against a browser, desktop app, or SaaS UI, with **minimal HTTP / parsing / DTO / data-shaping work**. The PDD describes "log in, navigate to a list, click each row, read fields, compute a derived value, write it back, close" — i.e. UI driving is the bulk of the work.
 
 **Decision:** **XAML** (or **Hybrid** if a discrete piece of non-trivial data logic exists). Do **NOT** pick Coded C# on a "cleaner control flow" argument.
 
@@ -146,7 +146,7 @@ Before §13 Implementation Mode commits to Coded C#, confirm at least **two** of
 - [ ] Process has algorithmically non-trivial logic (LINQ aggregation, sorting, dedup, custom comparison).
 - [ ] Process has unit-testable pure functions (exercised by Coded Test Cases on inputs the live system cannot easily reproduce).
 
-If **fewer than two** are true and the body is >70% UI, recommend XAML. The "cleaner control flow" line of reasoning is explicitly insufficient — strike it from the §13 justification.
+If **fewer than two** are true and the body is >49% UI, **default to XAML silently — do not call `AskUserQuestion`.** Only ask when ≥2 are true (recommend Coded C#, or Hybrid if a strong UI body signal is also present) or when signals are ambiguous. When asking, option labels are exactly `Coded C#`, `XAML`, `Hybrid` — never invent brand names like "Studio Classic"; `targetFramework` (Windows / Portable / Legacy) is a separate axis. The "cleaner control flow" line of reasoning is explicitly insufficient — strike it from the §13 justification.
 
 ## Level 2.5 Part A — RPA Decomposition Signals
 

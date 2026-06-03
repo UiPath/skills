@@ -459,7 +459,7 @@ Sub-type reference:
 
 > **For Master Project:** specify the mode per sub-project if they differ. A Dispatcher may be XAML while a Performer with heavy data logic is Hybrid.
 >
-> **Before recommending Coded C#:** verify at least two checklist items from the [RPA Product Guide § Selection checklist before recommending Coded C#](../../references/design/rpa-product-guide.md#selection-checklist-before-recommending-coded-c) are true. "Cleaner control flow over a UI loop" is **not** a sufficient justification — XAML already has Try/Catch + Retry Scope + For Each over UIA activities. If the process body is >70% UI automation with minimal data shaping, recommend **XAML** or **Hybrid**.
+> **Before recommending Coded C#:** verify at least two checklist items from the [RPA Product Guide § Selection checklist before recommending Coded C#](../../references/design/rpa-product-guide.md#selection-checklist-before-recommending-coded-c) are true. "Cleaner control flow over a UI loop" is **not** a sufficient justification — XAML already has Try/Catch + Retry Scope + For Each over UIA activities. If the process body is >49% UI automation with minimal data shaping, recommend **XAML** or **Hybrid**.
 
 **Recommendation:** <XAML / Coded C# / Hybrid>
 
