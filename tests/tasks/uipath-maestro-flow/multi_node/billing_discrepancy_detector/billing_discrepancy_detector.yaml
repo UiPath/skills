@@ -14,7 +14,9 @@ post_run:
     timeout: 90
 
 initial_prompt: |
-  Build a UiPath Flow "BillingDiscrepancyDetector" (in a solution of the same
+  Load the uipath-maestro-flow skill and follow its workflow exactly.
+
+  Build a Maestro Flow "BillingDiscrepancyDetector" (in a solution of the same
   name) that checks a disputed invoice line against the contracted amount and
   pulls the customer's account tier.
 
@@ -35,6 +37,12 @@ initial_prompt: |
   - Outputs: `totalOvercharge` (number), `discrepancyCount` (number),
     `matchedInvoiceNumber` (string, first ERP row), `accountTier` (string, from
     CRM).
+
+  The ERP and CRM lookups are Integration Service connector nodes — they are
+  CLI-owned, so author each with `uip maestro flow node add` then `uip maestro
+  flow node configure` (discover the connection with `uip is connections list
+  --all-folders`); do not hand-edit the connector nodes in the `.flow`. Bind a
+  real Data Service connection so the flow is runnable under debug.
 
   Validate the flow. Build it end to end without stopping to ask me.
 

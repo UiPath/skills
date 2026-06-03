@@ -14,7 +14,9 @@ post_run:
     timeout: 90
 
 initial_prompt: |
-  Build a UiPath Flow "BillingInvoiceLookup" (in a solution of the same name)
+  Load the uipath-maestro-flow skill and follow its workflow exactly.
+
+  Build a Maestro Flow "BillingInvoiceLookup" (in a solution of the same name)
   that looks up a disputed invoice's line items in ERP, tolerating messy input.
 
   - Input: trigger variable `invoiceNumber` (string). Callers may omit the
@@ -24,6 +26,12 @@ initial_prompt: |
     invoiceNumber.
   - Outputs: `matchedInvoiceNumber` (string, first row's invoiceNumber) and
     `lineItemCount` (number, rows returned).
+
+  The ERP lookup is an Integration Service connector node — it is CLI-owned, so
+  author it with `uip maestro flow node add` then `uip maestro flow node
+  configure` (discover the connection with `uip is connections list
+  --all-folders`); do not hand-edit the connector node in the `.flow`. Bind a
+  real Data Service connection so the flow is runnable under debug.
 
   Validate the flow. Build it end to end without stopping to ask me.
 
