@@ -29,9 +29,6 @@ initial_prompt: |
       which is the version you must pin in your project dependencies (this
       package version is not available on any public feed)
 
-  Place the project inside a `DataServiceEval/` subdirectory so the parent
-  `NuGet.Config` is inherited.
-
   Both `CodingAgentsEvalEntity` and `CodingAgentsEvalFileEntity` exist on the
   connected Data Service tenant — install both into the project.
 
@@ -49,14 +46,14 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: "Project was scaffolded via uip rpa init"
-    path: DataServiceEval/project.json
+    description: "Project was scaffolded via uip rpa init at sandbox root"
+    path: project.json
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "Main.xaml exists in the scaffolded project"
-    path: DataServiceEval/Main.xaml
+    description: "Main.xaml exists at sandbox root"
+    path: Main.xaml
     weight: 1.0
     pass_threshold: 1.0
 
@@ -86,7 +83,7 @@ success_criteria:
 
   - type: file_contains
     description: "project.json pins the local-feed DataService package version"
-    path: DataServiceEval/project.json
+    path: project.json
     includes:
       - 'UiPath.DataService.Activities'
       - '23.1.4-dev'
@@ -95,7 +92,7 @@ success_criteria:
 
   - type: file_contains
     description: "Main.xaml references DeleteEntityRecord on CodingAgentsEvalEntity"
-    path: DataServiceEval/Main.xaml
+    path: Main.xaml
     includes:
       - 'uda:DeleteEntityRecord'
       - 'local:CodingAgentsEvalEntity'
@@ -104,16 +101,18 @@ success_criteria:
 
   - type: run_command
     description: "DeleteEntityRecord has no read-mode or write-mode property bleed"
-    command: 'python "%TASK_DIR%/check_i_dr1.py" DataServiceEval/Main.xaml'
+    command: 'python "%TASK_DIR%/check_i_dr1.py" Main.xaml'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip rpa validate exits clean against the authored Main.xaml"
-    command: 'cd DataServiceEval && uip rpa validate --output json'
+    description: "uip rpa validate finds zero errors against the authored Main.xaml"
+    command: 'uip rpa validate --output json'
     timeout: 120
     expected_exit_code: 0
+    expected_stdout: '\A(?!.*\[error\])'
+    stdout_match: regex
     weight: 5.0
     pass_threshold: 1.0
