@@ -36,10 +36,14 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/ParallelSync*.flow", recursive=True)
+    flows = sorted(glob.glob("**/ParallelSync*.flow", recursive=True))
     if not flows:
         _fail("no ParallelSync*.flow found under cwd")
-    with open(flows[0]) as f:
+    # Prefer the canonical project path; fall back to the first match so the
+    # read is deterministic even if stray *.flow files exist.
+    canonical = "ParallelSync/ParallelSync/ParallelSync.flow"
+    path = canonical if canonical in flows else flows[0]
+    with open(path) as f:
         return json.load(f)
 
 
@@ -51,6 +55,8 @@ def _find_merge(flow: dict) -> dict:
     if len(matches) > 1:
         _fail(f"expected exactly one {NODE_TYPE} node (the join), found {len(matches)}")
     node = matches[0]
+    if not node.get("id"):
+        _fail(f"the {NODE_TYPE} node is missing its 'id' field")
     tv = node.get("typeVersion")
     if not isinstance(tv, str) or not tv.strip():
         _fail(

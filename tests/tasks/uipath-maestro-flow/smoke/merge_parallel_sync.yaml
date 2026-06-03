@@ -29,18 +29,23 @@ initial_prompt: |
       trigger ──> branchA ──┐
               └─> branchB ──┴─> merge ──> end
 
-    - The trigger FORKS to two branches: add two outgoing edges from the
-      trigger, one to `branchA` and one to `branchB`.
     - `branchA` and `branchB` are two OOTB Script nodes (`core.action.script`),
       each with a trivial `inputs.script` that returns an object
-      (e.g. `return { ok: true };`). The Script node's output port is
-      `success`.
-    - Add ONE Merge node (`core.logic.merge`) — the join. Wire BOTH branches
-      into it: an `edges[]` entry from `branchA` to the merge and another from
-      `branchB` to the merge (both with `targetNodeId` = the merge node id).
-      The merge node has empty `inputs` (`{}`).
-    - Add a `core.control.end` node and wire the merge's output to it (an
-      `edges[]` entry whose `sourceNodeId` is the merge node id).
+      (e.g. `return { ok: true };`).
+    - Add ONE Merge node (`core.logic.merge`) — the join — with empty `inputs`
+      (`{}`). Add a `core.control.end` node.
+    - Every node (trigger, both scripts, merge, end) MUST have a
+      `display` object with a `label` — validate rejects a node without it.
+    - Wire these FIVE edges. Every edge needs both `sourcePort` and
+      `targetPort` (validate rejects an edge missing either). Use the correct
+      port ids per the registry/skill:
+        - trigger `output` → branchA `input`
+        - trigger `output` → branchB `input`   (this fork = trigger has 2 outgoing edges)
+        - branchA `success` → merge `input`
+        - branchB `success` → merge `input`     (both branches converge on the merge `input`)
+        - merge `output` → end `input`
+      The two edges into the merge must have `targetNodeId` = the merge node id;
+      the edge out of the merge must have `sourceNodeId` = the merge node id.
     - Set every node's `typeVersion` from the registry — do NOT hardcode guessed
       versions (`uip maestro flow registry get core.logic.merge --output json`,
       etc.). Append each node type's definition to `definitions[]` (the merge
@@ -51,9 +56,10 @@ initial_prompt: |
 
   Important:
     - The `uip` CLI is already available; use `--output json` on uip commands.
-    - Validate locally with `uip maestro flow validate` — do NOT run
-      `uip maestro flow debug` (the parallel join only synchronizes in a live
-      engine).
+    - After wiring, you may run `uip maestro flow format <file>` to normalize
+      layout/variables, then validate with `uip maestro flow validate` — do NOT
+      run `uip maestro flow debug` (the parallel join only synchronizes in a
+      live engine).
     - Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
       planning and implementation. Build the complete flow end-to-end in a
       single pass.
