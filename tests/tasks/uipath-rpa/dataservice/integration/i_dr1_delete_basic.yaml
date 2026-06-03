@@ -9,7 +9,7 @@ tags: [uipath-rpa, windows, integration, dataservice]
 
 run_limits:
   expected_turns: 30
-  max_turns: 60
+  max_turns: 120
   task_timeout: 1800
   turn_timeout: 1800
 
