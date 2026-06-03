@@ -13,7 +13,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
-| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
+| [Single-nested layout](#single-nested-layout) | Studio Web upload fails | Legacy CLI: `flow init` was run outside a solution. Current CLI auto-scaffolds the parent solution, so this is rare. |
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
@@ -179,42 +179,36 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ## Single-nested layout
 
+> **Recent CLI versions (≥ the auto-scaffold release) make this nearly impossible to hit via `uip maestro flow init`.** When `init` is run outside a solution it auto-creates `<ProjectName>Solution/<ProjectName>/`; when it's run inside one it registers with the existing `.uipx`. This section applies only to projects scaffolded by older CLI versions, by hand, or by ad-hoc `mkdir` / `cp` outside the CLI.
+
 ### Symptom
 
-`uip solution upload` rejects the project. `flow init` returned without a `Data.SolutionRegistration` block (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none and skips silently). Studio Web upload fails with structural errors. Packaging fails.
+`uip solution upload` rejects the project. `flow init` (legacy behavior) returned without a `Data.SolutionRegistration` block. Studio Web upload fails with structural errors. Packaging fails.
 
 The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested).
 
 ### Cause
 
-`uip maestro flow init` was run from outside a solution directory — from a bare cwd, from the user's home directory, or from the parent of the solution.
+An older `uip maestro flow init` was run from outside a solution directory, or a project directory was created manually without a parent `.uipx`.
 
 ### Fix
 
-Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution project add` step is no longer needed.
+Re-run `uip maestro flow init` against a fresh directory with the current CLI — it will auto-scaffold the parent solution. Or, if you want to keep the existing project files, move them under a freshly-created solution directory and run `uip solution project add`:
 
 ```bash
-uip solution init "<SolutionName>" --output json
-cd <SolutionName>
+# Option A — re-init with the current CLI (preferred if no manual edits yet):
 uip maestro flow init <ProjectName> --output json
-# Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
-# Only if Status is "Skipped" / "Failed" do you need:
-#   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
+# Inspect Data.AutoCreatedSolution / Data.SolutionRegistration in the response.
+
+# Option B — keep existing project files, wrap them in a solution:
+uip solution init <ProjectName>Solution --output json
+mv <ProjectName> <ProjectName>Solution/
+uip solution project add <ProjectName>Solution/<ProjectName> <ProjectName>Solution/<ProjectName>Solution.uipx
 ```
-
-After running, verify the file exists at the double-nested path. The `cd <SolutionName>` above persists across Bash calls, so anchor the check with `$(pwd)` instead of repeating `<SolutionName>/`:
-
-```bash
-ls "$(pwd)/<ProjectName>/<ProjectName>.flow"
-```
-
-A relative `ls "<SolutionName>/<ProjectName>/<ProjectName>.flow"` here resolves to `<SolutionName>/<SolutionName>/<ProjectName>/<ProjectName>.flow` (triple-nested) and reports "no such file" even on a correctly-scaffolded solution — a false negative that turns a healthy layout into a fake bug.
-
-If the absolute path doesn't exist, the `init` step was wrong — do not try to patch the layout by hand.
 
 ### Reference
 
-[Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
+[Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence (now a single `flow init` call).
 
 ---
 
