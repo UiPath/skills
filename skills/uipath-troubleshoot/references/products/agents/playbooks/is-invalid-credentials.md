@@ -48,7 +48,8 @@ What to look for:
    ```bash
    uip traces spans get <trace-id> --output json \
      --output-filter "spans[?attributes.error != null].attributes.error" \
-     | jq -r '.[] | fromjson | .details'
+     | jq -r '.[] | fromjson | .details' 2>/dev/null \
+     || grep -o '"details":"[^"]*"'
    ```
 
    - `Invalid Organization or User secret` → connection-level credentials invalid (OAuth client ID/secret or API key)
@@ -80,8 +81,8 @@ What to look for:
   Note the new connection ID. Rebind the agent tool and republish:
 
   ```bash
-  uip agent tool list --output json
-  uip agent tool connect <tool-name> --connection-id <new-connection-id> --output json
+  uip agent tool list --path <agent-path> --output json
+  uip agent tool connect <tool-name> --connection-id <new-connection-id> --path <agent-path> --output json
   uip agent validate --output json
   uip agent publish --output json
   ```
