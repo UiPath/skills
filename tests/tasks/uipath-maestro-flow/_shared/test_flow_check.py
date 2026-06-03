@@ -358,6 +358,90 @@ def test_find_project_dir_uses_central_filter(tmp_path, monkeypatch):
     assert find_project_dir() == os.path.join("Mixed", "MainFlow")
 
 
+# ── raw-debug-payload capture on output-assertion failure ───────────────────
+#
+# When an output assertion fails, the helpers dump the raw `flow debug` response
+# (stashed by run_debug) to stderr so a failing eval's task.json preserves the
+# full runtime payload. This is the diagnostic for the chronic "Completed but
+# Variables/Globals empty" flake (skill-flow-calculator 0.375), whose debug
+# session is otherwise ephemeral and unrecoverable after the run.
+
+import json as _json  # noqa: E402
+
+import flow_check  # noqa: E402
+
+# A debug response shaped like the flake: the run Completed and every node
+# executed, yet the runtime returned an empty global-variable space.
+_FLAKE_RAW = _json.dumps(
+    {
+        "Result": "Success",
+        "Code": "FlowDebug",
+        "Data": {
+            "FinalStatus": "Completed",
+            "Variables": {"Globals": {}, "GlobalVariables": [], "Elements": []},
+            "elementExecutions": [
+                {"elementId": "start", "elementType": "StartEvent", "status": "Completed"},
+                {"elementId": "multiply", "elementType": "ScriptTask", "status": "Completed"},
+                {"elementId": "end", "elementType": "EndEvent", "status": "Completed"},
+            ],
+            "incidents": [],
+        },
+    }
+)
+
+
+@pytest.fixture
+def _reset_debug_raw():
+    saved = flow_check._LAST_DEBUG_RAW
+    yield
+    flow_check._LAST_DEBUG_RAW = saved
+
+
+def test_output_assert_failure_dumps_raw_capture(capsys, _reset_debug_raw):
+    flow_check._LAST_DEBUG_RAW = _FLAKE_RAW
+    # Empty Globals → no output equals 391 → fail, and the capture must fire.
+    payload = {"variables": {"globals": {}}}
+    with pytest.raises(SystemExit, match="expected 391"):
+        assert_output_value(payload, 391)
+    err = capsys.readouterr().err
+    assert "FLOW_DEBUG_RAW_CAPTURE BEGIN" in err
+    assert "FLOW_DEBUG_RAW_CAPTURE END" in err
+    # The summary localizes the defect: Completed run, nodes ran, globals empty.
+    assert '"finalStatus": "Completed"' in err
+    assert '"globals": {}' in err
+    assert "ScriptTask" in err  # elementExecutions surfaced
+    assert _FLAKE_RAW in err  # full raw payload preserved verbatim
+
+
+def test_output_assert_success_emits_no_capture(capsys, _reset_debug_raw):
+    flow_check._LAST_DEBUG_RAW = _FLAKE_RAW  # stale buffer must not leak on success
+    payload = _payload(elements=[{"outputs": {"product": 391}}])
+    assert_output_value(payload, 391)  # passes
+    assert "FLOW_DEBUG_RAW_CAPTURE" not in capsys.readouterr().err
+
+
+def test_capture_noop_when_no_debug_raw(capsys, _reset_debug_raw):
+    flow_check._LAST_DEBUG_RAW = None  # e.g. a static check that never ran debug
+    with pytest.raises(SystemExit, match="expected 391"):
+        assert_output_value(_payload(globals_=[{"value": 42}]), 391)
+    assert "FLOW_DEBUG_RAW_CAPTURE" not in capsys.readouterr().err
+
+
+def test_capture_summary_survives_cli_preamble(capsys, _reset_debug_raw):
+    """The capture must parse via the tolerant _parse_json, like run_debug — so a
+    CLI banner before the JSON still yields the structured SUMMARY, not
+    `<unparsable>`. Guards the same preamble case run_debug already handles."""
+    flow_check._LAST_DEBUG_RAW = (
+        "Tool factory already registered for project type 'Flow', skipping.\n"
+        "[ManifestClient] fetchDynamicNodes ok: total=59\n" + _FLAKE_RAW
+    )
+    with pytest.raises(SystemExit, match="expected 391"):
+        assert_output_value({"variables": {"globals": {}}}, 391)
+    err = capsys.readouterr().err
+    assert '"finalStatus": "Completed"' in err  # structured summary recovered
+    assert "<unparsable>" not in err
+
+
 # ── _get_ci / PascalCase tolerance (CLI #2266 contract) ─────────────────────
 #
 # `uip … --output json` PascalCases its Data keys when the CLI carries PR #2266
