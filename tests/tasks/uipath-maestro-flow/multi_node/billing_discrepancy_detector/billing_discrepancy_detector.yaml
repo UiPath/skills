@@ -1,9 +1,9 @@
 task_id: skill-flow-devcon-billing-discrepancy-detector
 description: >
   E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow that
-  queries the BillingDisputeERP and BillingDisputeCRM entities and computes an
-  invoice overcharge; graded by validate plus one flow debug run against seeded
-  tenant data.
+  queries the BillingDisputeERP and BillingDisputeCRM entities as parallel
+  branches joined by a merge, then computes an invoice overcharge; graded by
+  validate plus one flow debug run against seeded tenant data.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector]
 
 run_limits:
@@ -27,6 +27,9 @@ initial_prompt: |
         and contracted `amount`.
       - `BillingDisputeCRM` — the account row for `accountNumber`; it has an
         `accountTier`.
+  - The two lookups are independent. Run them as parallel branches that fan out
+    from the trigger and rejoin at a merge before the End node computes the
+    result — do not chain them one after the other.
   - Compute: invoiced = `disputedUnitPrice` x `disputedQuantity`; contracted =
     the `amount` of the ERP row whose `lineNumber` equals `disputedLineNumber`;
     `totalOvercharge` = invoiced minus contracted when positive, else 0;
@@ -53,7 +56,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Check script debugs once; flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise"
+    description: "Check requires a merge node (parallel branches) and debugs once; flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise"
     command: "python3 $TASK_DIR/check_billing_discrepancy_detector.py"
     timeout: 300
     expected_exit_code: 0

@@ -34,7 +34,9 @@ INPUTS = {
 
 def main():
     # Must query Data Service (ERP + CRM) — blocks hardcoding 1610 / Enterprise.
-    assert_flow_has_node_type(["uipath-dataservice.query"])
+    # The two lookups are independent, so the flow must fan them out as parallel
+    # branches joined by a merge (not chained serially) — require the merge node.
+    assert_flow_has_node_type(["uipath-dataservice.query", "core.logic.merge"])
 
     print(f"debug inputs: {INPUTS}")
     payload = run_debug(inputs=INPUTS, timeout=240)

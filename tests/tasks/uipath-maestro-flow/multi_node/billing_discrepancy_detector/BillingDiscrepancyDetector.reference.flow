@@ -194,6 +194,15 @@
       }
     },
     {
+      "id": "joinQueries",
+      "type": "core.logic.merge",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Join Queries"
+      },
+      "inputs": {}
+    },
+    {
       "id": "doneSuccess",
       "type": "core.control.end",
       "typeVersion": "1.0",
@@ -227,14 +236,28 @@
     },
     {
       "id": "e2",
-      "sourceNodeId": "erpQuery",
+      "sourceNodeId": "start",
       "sourcePort": "output",
       "targetNodeId": "crmQuery",
       "targetPort": "input"
     },
     {
       "id": "e3",
+      "sourceNodeId": "erpQuery",
+      "sourcePort": "output",
+      "targetNodeId": "joinQueries",
+      "targetPort": "input"
+    },
+    {
+      "id": "e4",
       "sourceNodeId": "crmQuery",
+      "sourcePort": "output",
+      "targetNodeId": "joinQueries",
+      "targetPort": "input"
+    },
+    {
+      "id": "e5",
+      "sourceNodeId": "joinQueries",
       "sourcePort": "output",
       "targetNodeId": "doneSuccess",
       "targetPort": "input"
@@ -552,6 +575,53 @@
           "api-function"
         ]
       }
+    },
+    {
+      "nodeType": "core.logic.merge",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Join parallel branches into one path",
+      "tags": [
+        "control-flow",
+        "merge"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Merge",
+        "icon": "merge"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:ParallelGateway"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
     }
   ],
   "layout": {
@@ -564,19 +634,25 @@
       },
       "erpQuery": {
         "position": {
-          "x": 350,
-          "y": 150
+          "x": 360,
+          "y": 60
         }
       },
       "crmQuery": {
         "position": {
-          "x": 600,
+          "x": 360,
+          "y": 240
+        }
+      },
+      "joinQueries": {
+        "position": {
+          "x": 620,
           "y": 150
         }
       },
       "doneSuccess": {
         "position": {
-          "x": 850,
+          "x": 880,
           "y": 150
         }
       }
