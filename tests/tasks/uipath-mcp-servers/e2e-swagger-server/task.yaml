@@ -1,0 +1,81 @@
+task_id: skill-mcp-servers-e2e-swagger-server
+description: >
+  E2E (live DefaultTenant): register a `swagger`-type AgentHub MCP server from the public Swagger
+  Petstore OpenAPI spec, refresh its tools (sync), verify the server resolved, then the harness
+  deletes it.
+tags: [uipath-mcp-servers, e2e, mode:build]
+
+# Inherits experiments/nightly.yaml (docker + live tenant auth).
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Work autonomously — take this end to end and don't stop to ask me anything.
+
+  I want to expose the public Swagger Petstore API as tools in AgentHub. Register a swagger-type
+  MCP server in the Shared folder, name it "E2E Swagger", from this spec:
+  https://petstore3.swagger.io/api/v3/openapi.json — then refresh its tools so the spec's
+  operations actually show up. Give it a unique slug so reruns don't collide (append the Unix
+  epoch, e.g. swagger-e2e-<EPOCH>).
+
+  When it's done, leave a report.json in the working dir with the slug and folder so we can clean
+  it up afterward: {"slug": "<slug>", "folder_path": "Shared"}
+
+success_criteria:
+  - type: skill_triggered
+    description: "uipath-mcp-servers skill auto-loaded (inferred from the task, not named in the prompt)"
+    skill_name: "uipath-mcp-servers"
+    expected_skill: "uipath-mcp-servers"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created a swagger-type MCP server"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agenthub\s+mcp\s+create\s+swagger'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Passed the OpenAPI spec URL"
+    tool_name: "Bash"
+    command_pattern: '(?s)mcp\s+create\s+swagger.*--spec-url'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Ran refresh-tools with --folder-key (the refresh-tools endpoint requires the folder key, not --folder-path)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json written for cleanup"
+    path: report.json
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json so CLI output is machine-parseable (repo convention)"
+    tool_name: "Bash"
+    command_pattern: '--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live tenant: the swagger server is retrievable"
+    command: 'uip agenthub mcp get "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e ".Data"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-mcp-servers/_shared/cleanup_mcp_server.py"
+    timeout: 120
