@@ -79,7 +79,7 @@ uip api-workflow registry resolve <keyword> [--limit <n>] --output json
 | `<keyword>` | yes | Substring matched against `displayName`, `connectorKey`, `objectName`, `fullName`. Case-insensitive. |
 | `-l, --limit <n>` | no | Max results (default: 20). |
 
-Success output:
+Success output (keys are PascalCased by the output formatter):
 ```json
 {
   "Result": "Success",
@@ -89,18 +89,21 @@ Success output:
     "ResultCount": 1,
     "Matches": [
       {
-        "uiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
-        "displayName": "Get Newest Email",
-        "description": "...",
-        "connectorKey": "uipath-microsoft-outlook365",
-        "objectName": "getNewestEmail",
-        "httpMethod": "GET",
-        "activityType": "Curated"
+        "UiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
+        "DisplayName": "Get Newest Email",
+        "Description": "...",
+        "ConnectorKey": "uipath-microsoft-outlook365",
+        "ObjectName": "getNewestEmail",
+        "HttpMethod": "GET",
+        "ActivityType": "Curated",
+        "Operation": null
       }
     ]
   }
 }
 ```
+
+`Operation` is set for Generic activities (`"List"`, `"Retrieve"`, `"Create"`, …; capitalized in TypeCache) and `null` for Curated. Generic matches carry no `ObjectName`/`HttpMethod` — those resolve at stub time from `--object-name` + IS metadata.
 
 Failure modes:
 - `"Not logged in. Run 'uip login' first."`
@@ -114,6 +117,7 @@ Emit a ready-to-paste activity object for a known `uiPathActivityTypeId`. Combin
 ```bash
 uip api-workflow registry stub <activity-type-id> \
   [--connection-id <uuid>] \
+  [--object-name <name>] \
   [--instance <n>] \
   [--slot-key <PascalCase>] \
   [--inputs <json>] \
@@ -124,8 +128,9 @@ uip api-workflow registry stub <activity-type-id> \
 |--|--|--|
 | `<activity-type-id>` | yes | The `uiPathActivityTypeId` GUID from `resolve`. |
 | `--connection-id <uuid>` | IntSvc kind only | Pinged vendor connection UUID. IntSvc kind leaves `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` placeholders if omitted. Ignored for Http kind (HTTP). |
+| `--object-name <name>` | Generic activities only | Target connector object for a Generic activity ("List All Records" of *what*). Discover names with `uip is resources list <connector-key> --connection-id <uuid>`. Defaults to the object pinned in the activity definition, when present. Ignored (with a warning) for Curated activities — their object is fixed by the activity definition. |
 | `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
-| `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. Export bucket key always derives from `objectName + "_<n>"`. |
+| `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. Export bucket key always derives from `objectName + "_<n>"` (Curated) or `<operation>_<objectName>_<n>` (Generic). |
 | `-i, --inputs <json>` | no | JSON object mapping field names to values. Field names match the IS schema (flat dotted keys — `"message.subject"`, not `{message:{subject:…}}`). Pass bare strings for literals; `${...}` for expression references. |
 
 Success output:
@@ -153,7 +158,9 @@ Success output:
 
 Failure modes:
 - `"Activity '<guid>' not found in the Api-compatible TypeCache"` — re-run `resolve` to find a valid GUID.
-- `"Activity type '<X>' is not supported in v1"` — only `Curated` activities are stubbed today; Generic / Trigger flavors require additional `InstanceParameters` fields not yet handled.
+- `"Activity type '<X>' is not supported"` — trigger flavors (`CuratedTrigger`, `GenericTrigger`, `GenericPersistence`, …) are event subscriptions, not callable tasks; they cannot be stubbed. Curated and Generic activities are both supported.
+- `"Generic activity '<name>' needs a target object"` — Generic activities require `--object-name`. Discover candidates with `uip is resources list <connector-key> --connection-id <uuid>`.
+- `"Could not resolve operation '<op>' on object '<name>' …"` — the object doesn't exist or doesn't support this operation (Generic stubs hard-require IS metadata; there is no fallback path/verb). Check the object with `uip is resources describe <connector-key> <object-name> --connection-id <uuid>`.
 - `"Invalid --inputs JSON"` — `--inputs` must be a JSON object (`'{"key":"value"}'`).
 
 ### Typical sequence

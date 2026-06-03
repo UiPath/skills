@@ -56,18 +56,21 @@ Substring-matches `keyword` against `displayName`, `connectorKey`, `objectName`,
     "ResultCount": 1,
     "Matches": [
       {
-        "uiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
-        "displayName": "Get Newest Email",
-        "description": "Retrieves the newest email from a folder.",
-        "connectorKey": "uipath-microsoft-outlook365",
-        "objectName": "getNewestEmail",
-        "httpMethod": "GET",
-        "activityType": "Curated"
+        "UiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
+        "DisplayName": "Get Newest Email",
+        "Description": "Retrieves the newest email from a folder.",
+        "ConnectorKey": "uipath-microsoft-outlook365",
+        "ObjectName": "getNewestEmail",
+        "HttpMethod": "GET",
+        "ActivityType": "Curated",
+        "Operation": null
       }
     ]
   }
 }
 ```
+
+`ActivityType` tells you which stub flow applies: `Curated` works as-is; `Generic` additionally needs `--object-name` (see [Generic activities](#generic-activities----object-name-required-list-all-records-of-what)) and reports its `Operation` (`"List"`, `"Retrieve"`, …) instead of an object.
 
 If multiple connectors offer the same operation (e.g. Gmail "Send Email" vs Outlook "Send Mail"), narrow by connector name instead of operation name: `resolve "outlook send"` vs `resolve "gmail send"`.
 
@@ -377,6 +380,37 @@ The IntSvc kind speaks directly to the vendor connector's curated operation:
 | `multipartParameters` | Declared automatically when IS schema's `parameters` shows `"type": "multipart"` |
 
 The IS proxy URL for a IntSvc kind call to Outlook GetNewestEmail becomes `/elements_/v3/element/instances/{outlookConnId}/getNewestEmail?parentFolderId=Inbox` — a real curated endpoint on the Outlook connector. The connector itself adds the Microsoft Graph OAuth at the proxy layer. **You don't supply a Graph URL; the connector knows where the Outlook API lives.**
+
+### Generic activities — `--object-name` required ("List All Records" of *what?*)
+
+Connector activities come in two flavors, visible as `ActivityType` in `resolve` output:
+
+- **Curated** — hand-designed by the connector author ("Create Issue", "Get Newest Email"). The TypeCache entry already pins the object and HTTP method; `stub` works as described above.
+- **Generic** — auto-generated record operations ("List All Records", "Get Record", "Insert Record", …). The TypeCache entry carries only an `Operation` (`List`, `Retrieve`, `Create`, `Update`, `Replace`, `Delete`) and **no object** — the user chooses the target object at authoring time.
+
+To stub a Generic activity, pass the object via `--object-name`:
+
+```bash
+# 1. Discover the connector's objects
+uip is resources list uipath-microsoft-github --connection-id <uuid> --output json
+
+# 2. Stub: operation comes from the activity, object from you
+uip api-workflow registry stub <list-all-records-guid> \
+  --object-name user_repos \
+  --connection-id <uuid> \
+  --output json
+```
+
+`stub` resolves the HTTP verb and endpoint by matching the activity's operation against the object's IS Elements metadata (e.g. operation `List` on `user_repos` → `GET /user_repos`; operation `Retrieve` on `repos` → `GET /repos/{repo}`). The emitted JSON is ordinary IntSvc kind — same `call: "UiPath.IntSvc"`, same `with` shape, same `.content` response wrapping; the runtime makes no distinction between Generic and Curated.
+
+Generic-specific behavior to know:
+
+- **`--object-name` is required** unless the activity definition pins its own object (rare, proxy-style generics like `httpRequest`). Without either, `stub` fails with `"Generic activity '<name>' needs a target object"`.
+- **IS metadata is mandatory** — Curated stubs degrade to a fallback `/<objectName>` path when IS is unreachable; Generic stubs hard-fail instead (`"Could not resolve operation …"`), because without metadata there is neither verb nor path to emit. The same error fires when the object doesn't support the operation — check with `uip is resources describe <connector-key> <object-name> --connection-id <uuid> --operation <Op>`.
+- **Operation casing is normalized** — `resolve` shows the TypeCache's capitalized `Operation` (`"List"`), but the stub persists it lowercased (`"list"`) in `metadata.configuration`, matching what StudioWeb writes.
+- **Slot/export keys include the operation**: `ListUserRepos_1` / `list_user_repos_1`, not `UserRepos_1`.
+- **Path-parameter value formats are connector-specific.** `Retrieve`/`Update`/`Delete` endpoints take an id path param (e.g. `/repos/{repo}`) and the expected value format (name vs full name vs numeric id) varies and is sometimes wrong in the connector's own metadata — `uip is resources describe` shows the parameter's description and lookup hints. If the run 404s, cross-check by executing the same operation via `uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>`; if that also 404s, the connector's auto-generated metadata is broken upstream — pick a Curated activity or the Http kind instead.
+- **Quality varies by connector.** Generic operations are auto-generated from vendor API specs and are not hand-verified the way Curated ones are. Prefer a Curated activity when one exists for the job.
 
 ## Vendor curated activity response shape — `content.X`, not `X`
 
@@ -723,7 +757,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 ## Limits of this approach
 
-1. **`activityType` values other than `"Curated"`** (e.g. `"Generic"`, `"GenericTrigger"`, `"CuratedTrigger"`) need different `metadata.configuration` shapes — Generic activities require an explicit `operation` (`"list"`, `"create"`, etc.), Triggers require event-related fields. The current `stub` rejects non-Curated activities with `Activity type 'X' is not supported in v1`. For those, escalate to manual authoring or wait for a `stub` extension.
+1. **Trigger activity types cannot be stubbed** (`"CuratedTrigger"`, `"GenericTrigger"`, `"GenericPersistence"`, …) — they are event subscriptions, not callable tasks, and `stub` rejects them with `Activity type 'X' is not supported`. `Curated` and `Generic` activities are both supported; Generic additionally requires `--object-name` (see [Generic activities](#generic-activities----object-name-required-list-all-records-of-what)). For triggers, escalate to manual authoring.
 
 2. **Stub doesn't validate `--inputs` against the IS schema.** Field names not in `requestFields` / `parameters` are silently dropped on the way through `pickFields`. Check `Data.ResponseFields` and the IS schema if a value goes missing.
 
