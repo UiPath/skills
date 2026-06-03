@@ -24,7 +24,7 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 → Multiple services, branching logic, connector discovery needed. Plan first.
 
 **Don't plan:** "Create a flow that calls an API and sends the result to Slack."
-→ Linear pipeline, user knows what they want. Build directly, ask questions inline if needed.
+→ Linear pipeline, user knows what they want. Build directly, ask questions inline if needed. **"Build directly" skips the plan doc, not the registry search** — you still `registry search` each named service and pick a node type via the Step 3 ladder.
 
 **Judgment call:** "Build me a flow that processes invoices."
 → Ambiguous requirements. Ask clarifying questions; plan if answers reveal complexity.
@@ -143,13 +143,30 @@ If the file does not exist at the absolute double-nested path, Step 2 is wrong. 
 
 See [shared/file-format.md](../../shared/file-format.md) for the full project structure.
 
-## Step 3 — Refresh the registry
+## Step 3 — Refresh the registry and select external-service node types
 
 ```bash
 uip maestro flow registry pull                          # refresh local cache (expires after 30 min)
 ```
 
 > **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. **In-solution sibling projects** are always available via `--local` without login — see below.
+
+### Select the node type for each external service (runs even when full planning is skipped)
+
+Calling a named external service (Slack, open-meteo, Stripe, any REST API)? **Search first — never guess the node type from the brand name:**
+
+```bash
+uip maestro flow registry search "<service>" --output json --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"
+```
+
+Then pick the first match down this ladder:
+
+1. **Curated connector activity** (`uipath.connector.<key>.<op>` in the results) → use it.
+2. **Connector exists but no activity for what you need** → `core.action.http.v2` (connector mode).
+3. **No connector at all** → `core.action.http.v2` (manual mode).
+4. **No API** (desktop app) → [rpa](references/plugins/rpa/planning.md).
+
+Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal).
 
 **In-solution discovery (no login required):**
 
