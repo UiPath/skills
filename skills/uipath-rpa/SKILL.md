@@ -187,10 +187,6 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 **Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution new <NAME>` → `uip solution project import --source <PROJECT_DIR> --solutionFile <SOLUTION>.uipx` → `uip solution upload <SOLUTION_DIR>`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and Orchestrator publish (`uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
 
-### Destination Preflight (Both Modes)
-
-**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution new <NAME>` → `uip solution project import --source <PROJECT_DIR> --solutionFile <SOLUTION>.uipx` → `uip solution upload <SOLUTION_DIR>`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and Orchestrator publish (`uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
-
 ### Execution Discipline (Both Modes)
 
 **Run to completion — do not declare work done while plan tasks remain.** If a plan file exists at `docs/plans/*.md` referenced by this request (or discoverable there for this feature), read its header before acting and during every checkpoint.
@@ -200,6 +196,25 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 - Before declaring the task done, re-read the plan and enumerate any unchecked boxes. If unchecked tasks remain and no Stop condition was hit, keep going — do not summarize partial work as "Done".
 - "Feels expensive", "many tool calls used", "natural pause point", "partial result looks usable", and "too complex to continue in one session" are **NOT** Stop conditions. Only the concrete hard blockers in the plan's `Stop conditions` section count.
 - Plan decisions already made are authoritative. Do not `AskUserQuestion` about structure, file count, selector strategy, or capture approach when the plan specifies them — those questions belonged to the planner.
+
+### Call Batching (Both Modes)
+
+**Batch independent tool calls into one assistant message — minimize model round-trips.** Two points in a new-project build serialize needlessly by default; collapse each into a single message.
+
+1. **Post-`init` prerequisite batch.** After `uip rpa init` returns, these depend only on the project existing — NOT on each other. Emit them in ONE message:
+   - `Read` `project.json` + the scaffolded `Main.xaml`
+   - `uip rpa analyzer-rules list` (Rule 3 authoring-phase prerequisite)
+   - `uip rpa packages install` for packages already known from the request
+   - `uip rpa activities find` for activities you'll author
+
+   These share the warmed Studio host (§ Session Pre-warm) — pay the cold-start once, then fire the batch.
+2. **Activity-discovery fan-out.** Rule 21 runs a triple per non-card activity (`activities find` → read `<Activity>.md` → `get-default-xaml`). For K activities, emit all K `find`s as parallel `Bash`, then all K doc `Read`s in parallel, then all K `get-default-xaml`s in parallel — never one activity at a time. See [xaml/workflow-guide.md § Phase 1](references/xaml/workflow-guide.md#phase-1-discovery).
+
+**Chaining:** chain dependent `uip` calls with `&&` in one `Bash`; emit independent `Bash` / `Read` calls as parallel tool uses. Split a turn only where a call needs an earlier call's stdout or a file mutation.
+
+**Do NOT batch — sequential by design:**
+- `templates search` → `init`. The search result (and possibly an `AskUserQuestion`) picks `--template-package-id` (Rule 2). Decision gate, not a chain.
+- The **per-file `validate` / per-activity authoring loop** (Rule 4, XAML Rule 18). Build one activity at a time, validate after each; project-level `build` runs once at the end. Batching validation hides which activity broke and burns the 5-attempt cap (Rule 3).
 
 ### Coded-Specific Rules
 

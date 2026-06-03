@@ -171,6 +171,8 @@ Pass `--target-framework` and `--expression-language` here too (Rule 2a) — a t
 2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
 3. Proceed with the skill workflow using the new project root
 
+> **Batch the post-`init` prerequisites.** Step 2 here, the analyzer-rules list (SKILL.md Rule 3), `packages install` for known-needed packages, and the first `activities find` all depend only on the project existing — emit them as parallel tool calls in one message, not one per turn. They share the warmed Studio host. See SKILL.md § Call Batching.
+
 ## Edge case: requiring Studio Desktop
 
 Two `uip rpa` commands need a running Studio Desktop instance — they have UI side effects that Helm cannot render:
