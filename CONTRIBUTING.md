@@ -177,6 +177,7 @@ Links to reference documents in the `references/` folder for detailed topics.
 - **Specify `--output json`** for any CLI commands whose output needs to be parsed programmatically.
 - **Include anti-patterns.** A "What NOT to Do" section saves more time than a "What to Do" section.
 - **Link to references for depth.** Keep SKILL.md focused on workflow and rules. Move detailed API docs, schemas, and examples into `references/`.
+- **Ground prompt weight in evals.** Add or reuse an eval before expanding or simplifying guidance. Prefer generic, reusable contracts over task-specific workaround text, avoid documenting one-off failures as permanent instructions, and keep all examples public-safe with no tenant, customer, internal, or personal details.
 
 ### 4. Add Reference Documents (Optional)
 
@@ -199,8 +200,9 @@ Static files like code templates go in `assets/`:
 1. **Read before editing.** Understand the existing SKILL.md and references before making changes.
 2. **Preserve the Critical Rules section.** These exist for a reason. If you need to change a rule, explain why in your PR description.
 3. **Don't break frontmatter.** The `name` and `description` fields are parsed by the plugin system. Validate your YAML.
-4. **Test your changes.** After editing, verify the skill still activates correctly for its intended scenarios.
-5. **Coordinate with CODEOWNERS.** Check who owns the skill and tag them in your PR.
+4. **Use A/B/C evidence for behavioral edits.** For changes that alter guidance weight, specificity, workflows, or examples, run baseline/current/candidate evals on representative tasks. If simplification regresses output quality, restore the smallest generic contract that fixes the behavior.
+5. **Keep fixes generic and public-facing.** Do not add narrow instructions for a single observed error, tenant, customer, internal environment, or temporary workaround. Distill the durable rule, boundary, or contract instead.
+6. **Coordinate with CODEOWNERS.** Check who owns the skill and tag them in your PR.
 
 ## Hooks
 

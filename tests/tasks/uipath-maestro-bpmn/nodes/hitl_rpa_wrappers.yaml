@@ -18,8 +18,9 @@ initial_prompt: |
     `uipath:activity` shell.
   - Model the RPA invocation as a `bpmn:serviceTask` using a documented
     `Orchestrator.StartJob` `uipath:activity` shell.
-  - Use synthetic placeholder resource names only. Do not include tenant URLs,
-    folder keys, connection IDs, or real user names.
+  - Use public-safe synthetic placeholder resource names and process/folder
+    identity values. Do not include tenant URLs, connection IDs, or real user
+    names.
   - Include BPMN DI for every visible node and sequence flow.
   - Do not upload, publish, deploy, debug, or run the process.
 

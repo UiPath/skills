@@ -102,54 +102,53 @@ bindings, schemas, and authorized debug/run have been verified.
 </bpmn:serviceTask>
 ```
 
-For `uip solution resource refresh`, `bindings_v2.json` must use a versioned
-package resource wrapper. A process dependency usually has separate resource
-entries for the process name and folder path; do not use an unwrapped resource
-array or unversioned placeholder as the source of dependency resources:
+For solution resource refresh, process dependencies need concrete
+`bindings_v2.json` resources, not just an empty package placeholder. Use the
+top-level `{ "version": "2.0", "resources": [...] }` shape and include
+parseable process entries for dependency name/folder-path bindings when they
+are expected; see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#binding-rules).
+
+Generic process dependency resource pair:
 
 ```json
 {
   "version": "2.0",
   "resources": [
     {
-      "id": "Binding_AgentName",
+      "id": "Binding_ProcessName",
       "kind": "process",
       "resource": "process",
-      "resourceSubType": "Agent",
+      "resourceSubType": "<PROCESS_TYPE>",
       "propertyAttribute": "name",
-      "name": "Synthetic Agent",
-      "resourceKey": "synthetic-agent",
+      "name": "Synthetic Process",
+      "resourceKey": "synthetic-process",
       "metadata": {
         "BindingsVersion": "v1",
-        "DisplayLabel": "Synthetic Agent",
+        "DisplayLabel": "Synthetic Process",
         "SolutionsSupport": "Required",
-        "SubType": "Agent",
+        "SubType": "<PROCESS_TYPE>",
         "PropertyAttribute": "name"
       }
     },
     {
-      "id": "Binding_AgentFolderPath",
+      "id": "Binding_ProcessFolderPath",
       "kind": "process",
       "resource": "process",
-      "resourceSubType": "Agent",
+      "resourceSubType": "<PROCESS_TYPE>",
       "propertyAttribute": "folderPath",
-      "name": "Synthetic Agent",
-      "resourceKey": "synthetic-agent",
+      "name": "Synthetic Process",
+      "resourceKey": "synthetic-process",
       "metadata": {
         "BindingsVersion": "v1",
-        "DisplayLabel": "Synthetic Agent",
+        "DisplayLabel": "Synthetic Process",
         "SolutionsSupport": "Required",
-        "SubType": "Agent",
+        "SubType": "<PROCESS_TYPE>",
         "PropertyAttribute": "folderPath"
       }
     }
   ]
 }
 ```
-
-An empty `resources` array is valid for package-shape verification when the
-BPMN has no generated resource dependencies. It does not represent imported
-dependencies for a process, queue, connector, or agent.
 
 `Var_RequestId` must already exist as a `uipath:inputOutput` variable readable at the task — see [variables-bindings-expressions.md](variables-bindings-expressions.md#entry-point-inputs-used-downstream) for the start-scoped input pattern.
 

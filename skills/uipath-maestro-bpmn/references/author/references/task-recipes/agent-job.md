@@ -1,11 +1,9 @@
 # Agent Job Recipe
 
-Agent wrappers are authored as `bpmn:serviceTask`, but the executable runtime
-contract depends on the process type reported by
-`uip or processes list --all-fields`, not the source project label. Some coded
-Python "agents" are published as `processType: "Function"` and are not the same
-runtime contract as low-code Agent Builder processes published as
-`processType: "Agent"`.
+Agent wrappers are `bpmn:serviceTask`. Choose the runtime contract from
+discovery (`uip or processes list --all-fields`), not from the source project
+label: coded Python dependencies may publish as `processType: "Function"`,
+while low-code Agent Builder dependencies publish as `processType: "Agent"`.
 
 | Agent deployment style | Wrapper shell | Notes |
 | --- | --- | --- |
@@ -14,12 +12,10 @@ runtime contract as low-code Agent Builder processes published as
 | External A2A agent addressed by URL / skillId / authToken | `A2A.AgentExecution` | Studio Web renders this as an external A2A node and disables the Action dropdown. Do not use for folder-deployed agents — the canvas will treat the task as misconfigured. |
 | Integration Service external agent | `Intsvc.SyncAgentExecution`, `Intsvc.AsyncAgentExecution`, or legacy `Intsvc.AsyncExecution` | CLI must enrich connector resource key, connection binding, dynamic schemas, and operation metadata. |
 
-Common authoring mistake: assuming local validation or packaging proves the
-agent wrapper is executable. Validation checks structure and package shape; an
-authorized target-environment run is needed before claiming runtime behavior.
-Put the `JobArguments` input payload and `Process response` output payload as
-direct children of `uipath:activity`; do not put them in a sibling
-`uipath:mapping`.
+Local validation and packaging prove structure, not executable agent behavior;
+claim runtime success only after an authorized target-environment run. Put
+`JobArguments` and `Process response` directly under `uipath:activity`, not in a
+sibling `uipath:mapping`.
 
 The model may draft:
 

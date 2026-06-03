@@ -98,9 +98,9 @@ do not invent `contentFiles` as a substitute for `content`.
 }
 ```
 
-This empty resource file is a package-shape placeholder only for projects with
-no generated resource dependencies. It is not evidence that dependency refresh
-imported an external process, queue, connector, or agent.
+This empty resource file is only a package-shape placeholder for projects with
+no generated resource dependencies. It does not prove that process, queue,
+connector, or agent dependencies were imported.
 
 `package-descriptor.json`:
 
@@ -133,22 +133,17 @@ Generated `bindings_v2.json` must be a top-level object with
 single resource object, or an unversioned `{ "resources": [] }` object; those
 shapes are not the package contract consumed by solution resource refresh.
 
-The resource array has two consumers with different tolerance:
+The `resources` array serves both local binding references and solution
+resource refresh. Entries referenced as `=bindings.<id>` must be id-addressable.
+Entries expected to import remote resources must be parseable concrete
+resources.
 
-- Local/package binding expressions may need id-addressable entries that mirror
-  root `uipath:binding` IDs.
-- `uip solution resource refresh` reads the same `resources` array and imports
-  concrete dependencies only when it contains parseable resource entries.
-  Process resources should come from CLI generation or fixture-backed binding
-  entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,
-  `resourceSubType`, and, for name/folder-path binding pairs,
-  `propertyAttribute`.
-
-When an executable BPMN depends on remote Orchestrator processes, include
-generated process binding resources before refresh so it can import the
-process/package resources and write debug overwrites. If resource dependencies
-are expected, verify that refresh produced matching generated resource files or
-explicitly report that no dependency resources were imported.
+For remote Orchestrator process dependencies, prefer CLI-generated entries. If
+using fixture-backed public-safe entries, preserve `id`, `kind`, `name`,
+`resourceKey`, `metadata`, `resource`, `resourceSubType`, and any
+`propertyAttribute` used for name/folder-path pairs. If dependency resources are
+expected, verify that refresh produced matching generated resources or report
+that no dependency resources were imported.
 
 Generated id-addressable entries should preserve:
 

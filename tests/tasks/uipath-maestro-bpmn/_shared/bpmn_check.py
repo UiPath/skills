@@ -110,7 +110,10 @@ def require_sequence_integrity(root: ET.Element) -> None:
             fail(f"sequence flow {attr(flow, 'id')} has unresolved refs {source!r}->{target!r}")
 
 
-def require_no_private_connector_values(root: ET.Element) -> None:
+def require_no_private_connector_values(
+    root: ET.Element, allowed_tokens: set[str] | None = None
+) -> None:
+    allowed_tokens = allowed_tokens or set()
     private_tokens = [
         "connectionId",
         "connectionKey",
@@ -120,6 +123,8 @@ def require_no_private_connector_values(root: ET.Element) -> None:
         "https://",
     ]
     xml = ET.tostring(root, encoding="unicode")
-    present = [token for token in private_tokens if token in xml]
+    present = [
+        token for token in private_tokens if token not in allowed_tokens and token in xml
+    ]
     if present:
         fail(f"connector boundary leaked private or CLI-owned fields: {present}")

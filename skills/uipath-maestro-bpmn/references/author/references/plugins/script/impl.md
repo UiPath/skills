@@ -24,31 +24,9 @@ The model may edit:
   expressions such as `=vars.Var_CaseId`, not bare names such as `=caseId`.
 - Return or map explicit outputs instead of mutating undeclared globals.
 - Script output mappings must target variables through the `var` attribute.
-  Do not put the target variable id in `name`. Use `name` for the output
-  field/display name and `var` for the declared BPMN variable id:
-
-  ```xml
-  <bpmn:process id="Process_RiskScore" isExecutable="true">
-    <bpmn:extensionElements>
-      <uipath:variables version="v1">
-        <uipath:input id="Var_Amount" name="amount" type="number" elementId="Start_Manual" />
-        <uipath:input id="Var_DaysOverdue" name="daysOverdue" type="number" elementId="Start_Manual" />
-        <uipath:output id="Var_RiskScore" name="riskScore" type="number" />
-      </uipath:variables>
-    </bpmn:extensionElements>
-    ...
-  </bpmn:process>
-  ```
-
-  ```xml
-  <uipath:mapping version="v1">
-    <uipath:type value="BPMN.ScriptTask" version="v1" />
-    <uipath:input name="args"><![CDATA[
-      {"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}
-    ]]></uipath:input>
-    <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
-  </uipath:mapping>
-  ```
+  `name` is the output field/display name; `var` is the declared BPMN variable
+  id. Map scalar returns from `=result.response` and object fields from
+  `=result.response.<field>`.
 - Prefer `uipath:scriptVersion value="v3"` unless preserving an imported version.
 - Available helpers are limited to `uipath.aggregate`, `uipath._aggregate`, `uipath._pipe`, and no-op `console` methods.
 - Do not use npm packages, filesystem, network, browser globals, or long-running async behavior.
@@ -97,13 +75,13 @@ Required pieces:
 | `bpmn:script` CDATA | top-level identifiers (`amount`, `daysOverdue`); not `args.amount` | Jint sees the merged JSON as top-level vars |
 | `uipath:output` | `source="=result.response"` for scalar returns, or `source="=result.response.<field>"` for object fields; `var` points at a declared variable id | Maps the script return back to a declared variable |
 
-Anti-patterns the checker rejects:
+Common mistakes:
 
 - `uipath:input` with `name` other than `args`.
 - Bare `=amount` style expressions instead of `=vars.Var_Amount`.
 - `args.amount` style reads inside the script body.
 - Missing `uipath:scriptVersion` when the canvas requires it.
-- Returning a bare value instead of `{ response: ... }` for `v2+` mappings.
+- Returning a bare value when the mapping expects `result.response`.
 - Mapping object returns with `source="=result.summary"` after returning
   `{ summary: "..." }`; use `source="=result.response.summary"` instead.
 
