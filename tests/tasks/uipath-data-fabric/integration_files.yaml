@@ -20,7 +20,7 @@ initial_prompt: |
   1. Check login: run `uip login status --output json`. Do NOT re-login — use
      whatever tenant is currently active.
 
-  2. List native-only entities. Use an entity named "IntegrationAssets" if it
+  2. List native-only entities. Use an entity named "CE_IntegrationAssets" if it
      already exists. If not, create it with fields:
        - AssetName (STRING)
        - Document (FILE)
@@ -65,9 +65,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted a record"
+    description: "Agent resolved the seed record (records query or records list)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+insert'
+    command_pattern: 'uip\s+df\s+records\s+(query|list)\s+'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -136,6 +136,19 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CE_IntegrationAssets
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_assets.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_assets.records.json
+    timeout: 180
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
-    timeout: 60
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_IntegrationAssets
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_assets.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_assets.records.json
+    timeout: 180

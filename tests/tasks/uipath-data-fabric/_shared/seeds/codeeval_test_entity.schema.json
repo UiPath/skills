@@ -1,0 +1,52 @@
+{
+  "displayName": "CodeEval Test Entity",
+  "description": "Persistent fixture for integration_preseeded_entity brownfield test — exercises the Discover workflow (filterGroup queries, sort, pagination, update+verify+restore). Schema covers all the common scalar types and FILE.",
+  "fields": [
+    {
+      "fieldName": "Title",
+      "displayName": "Title",
+      "type": "STRING",
+      "isRequired": true,
+      "lengthLimit": 200
+    },
+    {
+      "fieldName": "Score",
+      "displayName": "Score",
+      "type": "DECIMAL",
+      "minValue": 0,
+      "maxValue": 10,
+      "decimalPrecision": 1
+    },
+    {
+      "fieldName": "Active",
+      "displayName": "Active",
+      "type": "BOOLEAN",
+      "isRequired": true,
+      "defaultValue": true
+    },
+    {
+      "fieldName": "ReleaseDate",
+      "displayName": "Release Date",
+      "type": "DATE"
+    },
+    {
+      "fieldName": "Email",
+      "displayName": "Contact Email",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": true,
+      "lengthLimit": 100
+    },
+    {
+      "fieldName": "Notes",
+      "displayName": "Notes",
+      "type": "MULTILINE_TEXT",
+      "lengthLimit": 1000
+    },
+    {
+      "fieldName": "Poster",
+      "displayName": "Poster Image",
+      "type": "FILE"
+    }
+  ]
+}

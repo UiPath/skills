@@ -1,15 +1,18 @@
 task_id: skill-datafabric-integration-full-lifecycle
 description: >
-  Integration test: agent performs a complete Data Fabric lifecycle against a
-  live tenant — verifies login, discovers or creates an entity with advanced
+  Integration test: agent performs a Data Fabric lifecycle against a live
+  tenant — verifies login, discovers or creates an entity with advanced
   per-type field constraints (lengthLimit on STRING, minValue / maxValue on
   INTEGER), retrieves the schema to collect field IDs and confirms the
-  constraints come back under Fields[].fieldDataType, adds and updates fields
-  (including tightening a constraint via updateFields), inserts records,
+  constraints come back under Fields[].fieldDataType, adds and updates
+  fields (including tightening a constraint via updateFields), edits the
+  entity-level metadata (displayName + description), inserts records,
   queries with a filter, updates one record, verifies the update with
-  records get, and deletes only the test records. Tests the full Discover →
-  Act → Verify workflow combining schema management, advanced field
-  constraints, and record CRUD in one multi-step run.
+  records get, and deletes only the test records. Tests schema management,
+  field-level and entity-level updates, advanced field constraints, and
+  record CRUD in one multi-step run. Entity delete is intentionally NOT
+  exercised by the agent — coming in a follow-up PR with proper confirm
+  semantics in the skill.
 tags: [uipath-data-fabric, integration, entities, records]
 
 run_limits:
@@ -24,13 +27,14 @@ initial_prompt: |
   1. Check login: run `uip login status --output json`. Do NOT re-login — use
      whatever tenant is currently active.
 
-  2. List native-only entities. If an entity named "LifecycleTest" already exists,
-     use its ID. If not, create it with fields and advanced constraints:
+  2. List native-only entities. If an entity named "CE_LifecycleTest" already
+     exists, use its ID. If not, create it with fields and advanced
+     constraints:
        - Label  (STRING,  lengthLimit 200)
        - Score  (INTEGER, minValue 0, maxValue 1000)
        - Active (BOOLEAN)
 
-  3. Retrieve the full schema for LifecycleTest using entities get.
+  3. Retrieve the full schema for CE_LifecycleTest using entities get.
      From the Fields array, note the ID (Fields[].ID) for the Score field.
      Confirm the response echoes the constraints back under
      Fields[].fieldDataType.{lengthLimit,minValue,maxValue} — print them so
@@ -42,28 +46,35 @@ initial_prompt: |
      yet exist on the reused entity, so the `addFields` call always
      applies a fresh field.
      # Operational note: each successful run leaves one Notes_<EPOCH> field
-     # on the shared LifecycleTest entity. Periodic cleanup via
-     # `entities update --body '{"removeFields":[...]}'` is required once
-     # the destructive-ops CLI support lands (separate PR).
+     # on the shared CE_LifecycleTest entity. Periodic cleanup will land once
+     # entity-delete + removeFields support is properly modeled in the
+     # skill (follow-up PR).
 
   5. Update the Score field: set displayName to "Test Score", isRequired to
      true, and tighten maxValue from 1000 to 500. Use the field ID from
      step 3 in the updateFields body — the payload key is "id" (lowercase),
      not "ID".
 
-  6. Insert two records:
+  6. Edit the entity-level metadata: run `entities update <entity-id>` with
+     a body that sets `displayName` and `description` at the top level (NOT
+     under addFields/updateFields):
+       {"displayName":"Lifecycle Test Entity","description":"Lifecycle test fixture (created and destroyed each run)."}
+     Re-fetch with `entities get` and confirm the new displayName/description
+     are echoed in the response.
+
+  7. Insert two records:
        - { "Label": "alpha", "Score": 10, "Active": true }
        - { "Label": "beta",  "Score": 5,  "Active": false }
      Save both record IDs from the insert responses.
 
-  7. Query records where Active = true. Confirm at least one result is returned.
+  8. Query records where Active = true. Confirm at least one result is returned.
 
-  8. Update the "alpha" record: set Score to 99.
+  9. Update the "alpha" record: set Score to 99.
      Use the record ID from step 6 in the update body as "Id".
 
-  9. Verify the update: fetch the record with `records get` and confirm Score = 99.
+  10. Verify the update: fetch the record with `records get` and confirm Score = 99.
 
-  10. Delete only the two records inserted in step 6.
+  11. Delete only the two records inserted in step 7 via `records delete`.
       Do NOT delete the entity.
 
   Do NOT use removeFields. Do NOT delete the entity.
@@ -205,6 +216,32 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
-    timeout: 60
+  - type: command_executed
+    description: "Agent edited entity-level metadata (top-level displayName + description, not addFields/updateFields)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update(?!.*addFields)(?!.*updateFields)(?:.*displayName.*description|.*description.*displayName)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT use removeFields (not supported)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete the CE_LifecycleTest entity (entity delete coming in a follow-up PR with proper confirm semantics)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+# No post_run: CE_LifecycleTest is a shared persistent fixture.
+# Field accumulation (Notes_<EPOCH>) is a known issue that will be addressed
+# when entity-delete / removeFields skill support lands.

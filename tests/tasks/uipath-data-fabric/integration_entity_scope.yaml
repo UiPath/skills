@@ -23,29 +23,40 @@ initial_prompt: |
      folder, record that limitation in the report and skip folder-isolation
      checks (mark them null).
 
-  2. List native-only entities. Use "TenantScopeTest" if it already exists.
-     If not, create it with field Name (STRING) — do NOT pass any folder flag
-     (tenant level is the default). Save the entity ID.
+  The harness has pre-seeded a tenant-level entity `CE_TenantScopeTest`
+  (Name STRING isRequired lengthLimit 100). The harness wipes its records
+  in post_run. Do NOT call `entities create` for this entity.
+
+  The folder-scoped entity `CE_FolderScopeTest` is created by the agent
+  each run and deleted by the harness in post_run via
+  `cleanup_entities_by_name.py --name-prefix CE_FolderScopeTest`.
+
+  2. Resolve the entity ID: list native-only entities and capture the ID of
+     `CE_TenantScopeTest`.
 
   3. Run entities list (--native-only) without a folder flag. Confirm
-     "TenantScopeTest" appears in the response.
+     "CE_TenantScopeTest" appears in the response.
 
   4. If folder_a_id is available, run entities list with --folder <folder_a_id>.
-     Confirm "TenantScopeTest" still appears (tenant entities are visible
+     Confirm "CE_TenantScopeTest" still appears (tenant entities are visible
      from all folder contexts).
 
-  5. If folder_a_id is available, create a folder-scoped entity "FolderScopeTest"
-     with field Name (STRING) scoped to folder_a_id. Save the entity ID.
+  5. If folder_a_id is available, create a folder-scoped entity
+     `CE_FolderScopeTest` with field Name (STRING) scoped to folder_a_id.
+     Save the entity ID.
 
   6. If both folder_a_id and folder_b_id are available, run:
        uip df entities list --native-only --folder <folder_b_id> --output json
-     Confirm "FolderScopeTest" does NOT appear (it is scoped to folder_a only).
+     Confirm `CE_FolderScopeTest` does NOT appear (it is scoped to folder_a only).
 
-  7. Attempt to create an entity with a non-existent folder ID:
-       uip df entities create ... --folder 00000000-0000-0000-0000-000000000000
-     Record the error response.
+  7. Attempt to create an entity named `CE_FolderScopeTest_Invalid` with a
+     non-existent folder ID:
+       uip df entities create CE_FolderScopeTest_Invalid --folder 00000000-0000-0000-0000-000000000000 --body '{"fields":[{"fieldName":"Name","type":"STRING"}]}' --output json
+     Record the error response. The harness's post_run cleanup matches
+     `CE_FolderScopeTest_*` so even if this somehow succeeded against a
+     fallback folder, it would still be cleaned up.
 
-  Do NOT delete entities — the test harness handles cleanup.
+  Do NOT delete entities yourself — the test harness handles cleanup.
 
 success_criteria:
   - type: command_executed
@@ -57,11 +68,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created at least one entity"
+    description: "Agent created the folder-scoped entity (CE_FolderScopeTest)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+create'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create\s+CE_FolderScopeTest'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT recreate CE_TenantScopeTest (harness pre-seeds it)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create\s+CE_TenantScopeTest'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -96,6 +116,27 @@ success_criteria:
     weight: 1.5
     pass_threshold: 0.0
 
+pre_run:
+  # Schema-only seed for the tenant-level entity (brownfield, persistent).
+  # No records are seeded — the test exercises scope visibility, not record CRUD.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CE_TenantScopeTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/tenant_scope.schema.json
+    timeout: 180
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  # 1. Revert the tenant entity to zero records (no-op in practice since the
+  #    test doesn't insert records, but defensive).
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_TenantScopeTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/tenant_scope.schema.json
+    timeout: 120
+
+  # 2. Delete the per-run folder-scoped entity (greenfield) AND any
+  #    CE_FolderScopeTest_* leftovers (e.g. CE_FolderScopeTest_Invalid from
+  #    step 7 if it landed somewhere).
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderScopeTest"
     timeout: 60

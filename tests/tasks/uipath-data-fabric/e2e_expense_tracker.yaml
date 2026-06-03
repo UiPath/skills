@@ -53,21 +53,16 @@ initial_prompt: |
      rather reuse the category one, you may reuse `category_choice_set_id`
      for tags — the same choice set can back multiple fields.
 
-  4. Create the PARENT entity "E2EEmployee<RUN_SUFFIX>" where <RUN_SUFFIX> is
-     a unique 6-character suffix using ONLY `[a-zA-Z0-9_]` (entity names
-     must start with a letter and contain only letters / digits / underscores;
-     3–100 chars total). Generate via Python `secrets.token_hex(3)` or similar.
-     Fields:
+  4. Create the PARENT entity `CE_E2EEmployee` with fields:
        - Name       (STRING, isRequired: true)
        - Email      (STRING, isUnique: true)
        - Department (STRING, isRequired: true)
      Save entity ID as `parent_entity_id` in report.json.
 
-  5. Create the CHILD entity "E2EExpense<SAME_SUFFIX>" with fields:
+  5. Create the CHILD entity `CE_E2EExpense` with fields:
        - amount      (DECIMAL, decimalPrecision 2, minValue 0, isRequired: true)
-       - submitter   (RELATIONSHIP — referenceEntityName equals parent's
-                      technical Name from step 4, referenceFieldName "Id",
-                      isRequired: true)
+       - submitter   (RELATIONSHIP — referenceEntityName "CE_E2EEmployee",
+                      referenceFieldName "Id", isRequired: true)
        - description (MULTILINE_TEXT, lengthLimit 1000)
        - if category_choice_set_id is not null:
            category  (CHOICE_SET_SINGLE, choiceSetId = category_choice_set_id,
@@ -157,7 +152,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the parent Employee entity"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*E2EEmployee'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_E2EEmployee'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -165,7 +160,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the child Expense entity with a RELATIONSHIP field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*E2EExpense)(?=.*RELATIONSHIP)(?=.*referenceEntityName)(?=.*referenceFieldName)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_E2EExpense)(?=.*RELATIONSHIP)(?=.*referenceEntityName)(?=.*referenceFieldName)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -294,5 +289,11 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  # Cleanup order matters: child (CE_E2EExpense) must be deleted BEFORE
+  # parent (CE_E2EEmployee) because Expense has a RELATIONSHIP FK pointing
+  # at Employee. CLI delete on Employee would otherwise fail with an FK
+  # constraint.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee"
     timeout: 60

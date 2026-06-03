@@ -15,53 +15,71 @@ run_limits:
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login — use
-     whatever tenant is currently active.
+  The harness has pre-seeded an `CE_IntegrationOrders` entity in the tenant
+  with exactly 4 records (the canonical seed; see
+  `_shared/seeds/integration_orders.records.json`):
+    { "Code": "ORD-001", "Value": 100.00, "Status": "Pending" }
+    { "Code": "ORD-002", "Value": 500.00, "Status": "Active"  }
+    { "Code": "ORD-003", "Value": 250.00, "Status": "Active"  }
+    { "Code": "ORD-004", "Value": 750.00, "Status": "Closed"  }
 
-  2. List native-only entities. Use an entity named "IntegrationOrders" if it
-     exists. If not, create it with fields:
-       - Code (STRING)
-       - Value (DECIMAL)
-       - Status (STRING)
+  Schema: Code (STRING), Value (DECIMAL), Status (STRING).
+  Do NOT insert or delete records — the harness reverts the entity to seed
+  state in post_run. Read-only queries only.
 
-  3. Batch-insert exactly these 4 records (use a single insert call with an array body):
-       { "Code": "ORD-001", "Value": 100.00, "Status": "Pending" }
-       { "Code": "ORD-002", "Value": 500.00, "Status": "Active"  }
-       { "Code": "ORD-003", "Value": 250.00, "Status": "Active"  }
-       { "Code": "ORD-004", "Value": 750.00, "Status": "Closed"  }
-     Save the 4 record IDs from the response.
+  1. Check login: run `uip login status --output json`. Do NOT re-login —
+     use whatever tenant is currently active.
 
-  4. AND query: records query with filterGroup logicalOperator 0 (AND):
+  2. Resolve the entity ID: list native-only entities and capture the ID of
+     `CE_IntegrationOrders`.
+
+  3. AND query: records query with filterGroup logicalOperator 0 (AND):
        Status = "Active" AND Value > "300"
      Expected: exactly 1 result (ORD-002; ORD-003 is Active but Value 250 fails).
      Save count as and_query_count.
 
-  5. OR query: records query with filterGroup logicalOperator 1 (OR):
+  4. OR query: records query with filterGroup logicalOperator 1 (OR):
        Status = "Pending" OR Status = "Closed"
      Expected: exactly 2 results (ORD-001, ORD-004).
      Save count as or_query_count.
 
-  6. Nested filterGroups query — outer logicalOperator 1 (OR) over two inner AND groups:
+  5. Nested filterGroups query — outer logicalOperator 1 (OR) over two inner AND groups:
        Group 1: Status = "Active" AND Value > "200"
        Group 2: Status = "Pending"
      Expected: exactly 3 results (ORD-001, ORD-002, ORD-003; ORD-004 fails both).
      Save count as nested_query_count.
 
-  7. Sort query: records query with sortOptions Value isDescending true, no filter.
+  6. Sort query: records query with sortOptions Value isDescending true, no filter.
      Save the Value field of Records[0] as sort_first_value (expected: 750.0).
 
-  8. Projection query: records query with selectedFields ["Code"], no filter.
+  7. Projection query: records query with selectedFields ["Code"], no filter.
      Verify that the Value and Status fields are absent from every record returned.
      Save projection_value_absent and projection_status_absent as true/false.
 
-  9. Paginate all records using records query with --limit 2 and no --body:
+  8. Paginate all records using records query with --limit 2 and no --body:
        uip df records query <entity-id> --limit 2 --output json
      If HasNextPage is true, repeat with --cursor <NextCursor> until exhausted.
      Collect all record IDs across pages.
      Use Python to verify: total unique IDs == 4 and no duplicates.
      Save pagination_total_ids and pagination_no_duplicates.
 
-  10. Delete the 4 records you inserted in step 3.
+  9. `in`-operator query with `valueList` — records query with filterGroup:
+       Status in ["Pending","Active"]
+     Build the queryFilter with `"operator": "in"` and a `"valueList"` array
+     (NOT a comma-separated `value` string — the `in` operator requires
+     `valueList`). Expected: exactly 3 results (ORD-001, ORD-002, ORD-003).
+     Save count as in_query_count.
+
+  10. Aggregate query — count of records grouped by Status. Build the body
+      with `selectedFields`, `groupBy`, and `aggregates`:
+        {
+          "selectedFields": ["Status"],
+          "groupBy":        ["Status"],
+          "aggregates":     [{"function":"COUNT","field":"Id","alias":"total"}]
+        }
+      Expected: 3 result rows, one per Status:
+        Pending → total 1, Active → total 2, Closed → total 1.
+      Save the result as agg_by_status (object keyed by Status).
 
   Use --output json on every uip df command.
   Pagination must use --limit and --cursor CLI flags — never body keys.
@@ -73,14 +91,6 @@ success_criteria:
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent inserted test records"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -99,12 +109,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent deleted the test records"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+delete'
-    min_count: 1
-    weight: 1.5
+  - type: run_command
+    description: "End state: CE_IntegrationOrders has exactly 4 records (agent did not mutate the seed)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationOrders --expected 4"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -113,6 +123,56 @@ success_criteria:
     command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
     min_count: 3
     weight: 2.5
+    pass_threshold: 1.0
+
+  # ---------------------------------------------------------------------
+  # Filter body shape — enforces the supported keys and operator strings
+  # documented in SKILL.md Critical Rule 16 and
+  # references/records-query.md#filter-body-reference.
+  # ---------------------------------------------------------------------
+
+  - type: command_executed
+    description: "Filter body uses the supported keys `queryFilters` and `fieldName`"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*"queryFilters")(?=.*"fieldName")'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filter body uses `queryFilters` (not `filters`) as the array key on filterGroup"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"filters"\s*:'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filter body uses `fieldName` (not `field`) as the per-filter field key"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"field"\s*:\s*"[^"]*"\s*,\s*"operator"'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Operator uses the `=` symbol (not the JS/SQL alias `==`)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"=="'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Operator uses the `=` symbol (not the named aliases `Equals` / `equals` / `eq`)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"([Ee]quals?|eq)"'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -139,6 +199,43 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - type: command_executed
+    description: "Agent used `in` operator with valueList (step 9)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"in".*valueList'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran an aggregate query with groupBy + aggregates (step 10)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:aggregates.*groupBy|groupBy.*aggregates)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used COUNT aggregate function with an alias"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"function"\s*:\s*"COUNT".*"alias"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CE_IntegrationOrders
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_orders.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_orders.records.json
     timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_IntegrationOrders
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_orders.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_orders.records.json
+    timeout: 120
