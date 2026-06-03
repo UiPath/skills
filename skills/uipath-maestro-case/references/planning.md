@@ -37,7 +37,7 @@ $UIP --version
 
 Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
 
-If `npm install -g` fails with a permission error, prompt the user to re-run it with the appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
+If `npm install -g` fails with a permission error, prompt the user to switch to a user-local installation method (for example, a Node version manager or a user-scoped npm prefix) rather than retrying with `sudo` — do not retry automatically.
 
 ## Step 1 — Check login and pull registry
 
