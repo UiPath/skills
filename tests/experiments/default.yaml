@@ -28,7 +28,7 @@ defaults:
   # wire cleanup_solutions.py into their own post_run — that must run before
   # this step (still needs npm-installed CLIs).
   post_run:
-    - command: "rm -rf node_modules .npm-prefix"
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
       timeout: 30
 
 variants:
