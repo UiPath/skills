@@ -59,4 +59,23 @@ Passing a display label (`"category":"Travel"`) is rejected — resolve to `Numb
 
 - Finite, reused list of named options → choice set. Single value → `_SINGLE`; multiple → `_MULTIPLE`.
 - Link to a *row* in another entity → `RELATIONSHIP` (see [`entity-schema.md` → Relationship Fields](entity-schema.md#relationship-fields)).
-- Need a choice set → run `choice-sets list`, show the user the candidates that match by name/purpose, and ask: **reuse one, or create new?** Only create with `choice-sets create` + `choice-set-values create` once the user confirms. Never fall back to `STRING`.
+
+## Pick-or-create flow
+
+When the user's request needs a choice set but they didn't name one (or the name they gave doesn't exist):
+
+1. Run `choice-sets list --output json`.
+2. Surface every existing choice set to the user with its `Name` and `DisplayName` — don't pre-filter. The user is the judge of relevance.
+3. For each plausibly-matching set, run `choice-sets list-values <id>` and show its values so the user can confirm fit.
+4. Ask explicitly: *"Use one of these, or create a new choice set named `<X>`?"*
+5. Only `choice-sets create` + `choice-set-values create` after explicit approval, using the user's chosen name and values.
+
+Never fall back to `STRING`. Never auto-create without confirming the values.
+
+## Deleting a choice set
+
+```bash
+uip df choice-sets delete <choice-set-id> --confirm --reason "<why>" --output json
+```
+
+Irreversible. Before invoking, run `entities list --output json` and find every entity whose `Fields[].ChoiceSetId == <choice-set-id>`. Surface those entities to the user and ask: *"This choice set is used by `<entity>.<field>` — delete it anyway (those fields will break), pick a replacement choice set, or stop?"* Apply only what the user confirms.

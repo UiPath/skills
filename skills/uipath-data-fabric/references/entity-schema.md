@@ -46,6 +46,40 @@ Pass the exact `EntityFieldDataType` string in the `"type"` field — the CLI is
 | `AUTO_NUMBER` | DECIMAL | Auto-incrementing number |
 | `RELATIONSHIP` | UNIQUEIDENTIFIER | FK link to another entity — requires `referenceEntityId` (target entity UUID) + `referenceFieldId` (target field UUID) |
 
+### Normalizing user-facing type names
+
+User prompts use natural-language casing and synonyms; the CLI accepts only the exact UPPERCASE enum value above. Two patterns:
+
+**1. Case-fold — trivial 1:1.** When the user's word matches an enum value modulo case, just uppercase it before invoking. Do this silently:
+
+| User says | Send to CLI |
+|---|---|
+| `boolean` / `Boolean` | `BOOLEAN` |
+| `string` / `String` | `STRING` |
+| `integer` / `Integer` | `INTEGER` |
+| `decimal` / `Decimal` | `DECIMAL` |
+| `date` / `Date` | `DATE` |
+| `datetime` / `DateTime` | `DATETIME` |
+| `uuid` / `Uuid` / `Guid` | `UUID` |
+| `file` / `File` | `FILE` |
+| `relationship` / `Relationship` | `RELATIONSHIP` |
+
+**2. Disambiguate — synonyms that map to multiple enum values.** When the user's phrasing covers more than one type, **ask before picking**. Never default silently:
+
+| User phrasing | Candidates | What to ask |
+|---|---|---|
+| `text`, `short text`, `long text`, `paragraph` | `STRING` or `MULTILINE_TEXT` | "Expected length? `STRING` is capped at 4000 chars; `MULTILINE_TEXT` allows up to 10000." |
+| `number`, `numeric` | `INTEGER`, `BIG_INTEGER`, `DECIMAL`, `FLOAT`, `DOUBLE` | "Whole or fractional? If fractional, how many decimal places? If whole, are values ever > 2³¹?" |
+| `money`, `price`, `amount` | `DECIMAL` (almost always) | Default to `DECIMAL` with `decimalPrecision: 2` and confirm. |
+| `timestamp`, `datetime` | `DATETIME` or `DATETIME_WITH_TZ` | "Does timezone matter? `DATETIME` is wall-clock; `DATETIME_WITH_TZ` carries offset." |
+| `choice`, `enum`, `picklist`, `dropdown` | `CHOICE_SET_SINGLE` or `CHOICE_SET_MULTIPLE` | "One value per record, or multiple?" |
+| `tags`, `labels`, `multi-pick` | `CHOICE_SET_MULTIPLE` | Default; confirm. |
+| `link to <entity>`, `belongs to`, `foreign key` | `RELATIONSHIP` | Use pick-or-create flow for the target entity (see [Relationship Fields](#relationship-fields)). |
+| `attachment`, `upload`, `document` | `FILE` | Default; confirm. |
+| `auto number`, `counter`, `serial` | `AUTO_NUMBER` | Default; confirm. |
+
+If the CLI rejects a `--body` with *"Cannot read properties of undefined (reading 'sqlTypeName')"*, the `type` value didn't match a known enum — almost always a casing issue. Re-emit with the exact UPPERCASE value from the table above.
+
 ## Field Definition Object
 
 ### Name Validation
@@ -54,6 +88,7 @@ Both entity names and field names must:
 - Start with a letter (`[a-zA-Z]`)
 - Contain only letters, digits, and underscores (`[a-zA-Z0-9_]`)
 - Be 3–100 characters long
+- **Not** be a SQL, C#, or VB reserved keyword — names like `Case`, `Class`, `If`, `Then`, `Else`, `New`, `Object`, `Public`, `Return`, `Select`, `From`, `Where`, `Table`, `Order`, `Group`, `Index`, `Key`, `User`, `Role`, `Type`, `Status` are rejected. The API surfaces the rejection as *"cannot be a reserved word in C# or VB"* (or `RESERVED_LANGUAGE_KEYWORDS`). Pick a domain-specific name: `Case` → `WorkItem`; `Status` → `OrderStatus`; `Order` → `PurchaseOrder`; `Key` → `ItemKey`.
 
 **Reserved field names** (will error if used): `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`
 
@@ -139,6 +174,8 @@ uip df entities update <entity-id> \
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
 - Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
 - Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required.
+- **When the user describes a link to another row, the field type must be `RELATIONSHIP` — never substitute `STRING` or `UUID`.** Cue phrases: *"each order has a Customer"*, *"each report has a Supplier"*, *"each issue belongs to a Project"*.
+- **Pick-or-create flow for the target entity.** If the user didn't name a target entity OR the named one doesn't exist, do NOT auto-create. Run `entities list --native-only`, surface matching candidates by `Name` / `DisplayName`, and ask: *"Use one of these as the target, or create a new entity?"* If create-new: confirm the new entity's name and fields with the user first, then `entities create` it, then come back to wire the relationship field. Never silently choose a target.
 
 ```bash
 # 1. Discover target entity + field UUIDs
@@ -176,13 +213,45 @@ uip df entities create "Expense" --body '{
 }' --output json
 ```
 
+## Deleting an Entity
+
+```bash
+uip df entities delete <entity-id> --confirm --reason "<why>" --output json
+```
+
+Irreversible — deletes the entity and every record in it. **Before invoking, discover and surface every dependent to the user:**
+
+1. **Inbound relationship references** — run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <entity-id>`. Those entities have FK columns pointing here; after delete, their relationship values become orphaned UUIDs. Ask the user explicitly for each one: *"Entity X has a `<field>` field pointing at this one — delete X, leave it (with dangling FKs), or stop?"*
+2. **Choice sets used by this entity's fields** — from `entities get <entity-id>`, pull every `Fields[].ChoiceSetId`. Choice sets are shared resources; they're NOT deleted automatically. Ask the user explicitly for each one: *"Choice set Y is used by this entity's `<field>`. Delete it too (it may be in use by other entities), leave it, or stop?"*
+
+Apply only the choices the user confirms — never cascade silently. If the user is uncertain about any dependent, default to "leave it" rather than deleting.
+
+## Deleting a Field
+
+```bash
+uip df entities update <entity-id> \
+  --body '{"removeFields":[{"fieldName":"<exact-field-name>"}]}' \
+  --confirm --reason "<why>" \
+  --output json
+```
+
+Irreversible — drops the column and every record's value in it. Note the body shape: `removeFields` takes `{"fieldName": "..."}`, **NOT** `{"id": "..."}` (that's `updateFields`). Mixing those forms returns *"Each field in removeFields must include a non-empty 'fieldName' string"*.
+
+Before invoking, surface the impact to the user:
+
+- **RELATIONSHIP / FILE fields** — confirm no flow / coded app reads the value. The FK column disappears entirely.
+- **CHOICE_SET_* fields** — the choice set itself is shared and isn't affected; only this entity's link to it is removed.
+- **System fields** (`Id`, `CreatedBy`, …) can't be removed regardless.
+
+Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reason } }`.
+
 ## Not Supported
 
 | Operation | Action |
 |-----------|--------|
-| Delete an entity | No command exists — tell the user it is not supported |
-| Remove / delete a field | CLI explicitly rejects `removeFields` with an error — do not attempt |
 | Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
+| Field name matching a SQL / language keyword | API returns `RESERVED_LANGUAGE_KEYWORDS` — rename before retrying (see Name Validation above) |
+| Upload a file to a `FILE` field via `uip df files upload` | CLI insists on `referenceEntityId`/`referenceFieldId` at field create, then uploads fail with *"Relationship violation"* against arbitrary targets. No public attachment-storage entity is documented. Treat FILE upload as unusable via CLI until the target-entity contract is clarified — surface the gap to the user; don't attempt. |
 
 ---
 
