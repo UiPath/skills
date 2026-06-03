@@ -1,8 +1,9 @@
-task_id: skill-flow-billing-discrepancy-detector
+task_id: skill-flow-devcon-billing-discrepancy-detector
 description: >
-  E2E greenfield: build a ~6-node Flow that queries ERP and CRM entities in
-  parallel, merges, and computes an invoice overcharge; graded by validate plus
-  one flow debug run against seeded tenant data.
+  E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow that
+  queries the BillingDisputeERP and BillingDisputeCRM entities and computes an
+  invoice overcharge; graded by validate plus one flow debug run against seeded
+  tenant data.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector]
 
 run_limits:
@@ -14,8 +15,6 @@ post_run:
     timeout: 90
 
 initial_prompt: |
-  Load the uipath-maestro-flow skill and follow its workflow exactly.
-
   Build a Maestro Flow "BillingDiscrepancyDetector" (in a solution of the same
   name) that checks a disputed invoice line against the contracted amount and
   pulls the customer's account tier.
@@ -23,28 +22,26 @@ initial_prompt: |
   - Inputs: trigger variables `invoiceNumber` (string), `accountNumber`
     (string), `disputedLineNumber` (number), `disputedUnitPrice` (number),
     `disputedQuantity` (number).
-  - Lookups (run in parallel against the existing Data Service connection, then
-    merge):
-      - `BillingDisputeERP` — all rows for `invoiceNumber`; each has a
-        `lineNumber` and contracted `amount`.
+  - Look up two existing Data Service entities:
+      - `BillingDisputeERP` — rows for `invoiceNumber`; each has a `lineNumber`
+        and contracted `amount`.
       - `BillingDisputeCRM` — the account row for `accountNumber`; it has an
         `accountTier`.
-  - Compute (script after the merge): invoiced = `disputedUnitPrice` x
-    `disputedQuantity`; contracted = the `amount` of the ERP row whose
-    `lineNumber` equals `disputedLineNumber`; `totalOvercharge` = invoiced minus
-    contracted when positive, else 0; `discrepancyCount` = 1 when overcharge is
-    positive, else 0.
+  - Compute: invoiced = `disputedUnitPrice` x `disputedQuantity`; contracted =
+    the `amount` of the ERP row whose `lineNumber` equals `disputedLineNumber`;
+    `totalOvercharge` = invoiced minus contracted when positive, else 0;
+    `discrepancyCount` = 1 when overcharge is positive, else 0.
   - Outputs: `totalOvercharge` (number), `discrepancyCount` (number),
     `matchedInvoiceNumber` (string, first ERP row), `accountTier` (string, from
     CRM).
 
-  The ERP and CRM lookups are Integration Service connector nodes — they are
-  CLI-owned, so author each with `uip maestro flow node add` then `uip maestro
-  flow node configure` (discover the connection with `uip is connections list
-  --all-folders`); do not hand-edit the connector nodes in the `.flow`. Bind a
-  real Data Service connection so the flow is runnable under debug.
+  Validate the final flow file — the task is not complete until `uip maestro
+  flow validate` passes. Grading then runs the flow under debug against live
+  tenant data, so build it to actually run, not merely validate. Do not run
+  debug yourself.
 
-  Validate the flow. Build it end to end without stopping to ask me.
+  Use the `uipath-maestro-flow` skill workflow, and build the complete flow
+  without stopping to ask me.
 
 success_criteria:
   - type: run_command

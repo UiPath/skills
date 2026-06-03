@@ -13,7 +13,12 @@ line items, so the count is a deterministic oracle.
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# Walk up to the skill's tests root (the dir holding the _shared package) so
+# this resolves regardless of how deeply the task is nested under tests/tasks/.
+_d = os.path.dirname(os.path.abspath(__file__))
+while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
+    _d = os.path.dirname(_d)
+sys.path.insert(0, _d)
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
     assert_output_value,
