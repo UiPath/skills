@@ -55,6 +55,17 @@ Goal: get the error message and match playbooks as fast as possible.
 
    Do NOT use this rule for investigations that the matched playbook can resolve from platform-side data alone — asking for source unnecessarily is friction. Trigger only on the source-requiring conditions in (a).
 
+### Match-count cap (circuit breaker)
+
+If `matched_playbooks.length > 3` after step 6, the error signature is too broad to act on — every additional match dilutes the hypothesis fan-out and explodes test cost downstream. Override the Confidence Gate below and **force Pass 2** to gather more data, regardless of whether a high-confidence playbook matched. After Pass 2's re-match (step 9), if the count is still > 3, write `needs_input.json` (see shared.md) and STOP. The agent chooses the question shape — there is no single mandated format. Apply these constraints:
+
+- Draw discriminating signals from the matched product's `investigation_guide.md` testing-prerequisites and from the matched playbooks' "What this looks like" / "What can cause it" sections. One signal is rarely enough — pick whichever combination of axes (configuration, recent changes, symptoms, environmental state) collectively narrows the candidate set.
+- Ask **as many questions as needed** to narrow the matches, in any mix of formats — yes/no, multiple-choice with however many options the discriminator naturally has, free-text where a value is needed (e.g. a URL, a version, a configuration name). Do NOT pad answers artificially or force a 2-4 cap; let the discriminator's natural arity drive the shape. When listing options, include an "I don't know" / "not sure" / "skip" escape so the user can opt out of an answer they can't reliably give.
+- Phrase every user-visible question in **user-domain terms** — symptoms, settings the user can check, recent changes they know about. Do NOT name playbooks, internal IDs, or skill taxonomy in any user-visible question. The user does not need to know how many playbooks are in play or what they are called.
+- In the `context` field of `needs_input.json`, record the internal reason (count + matched playbook paths + which discriminator axes the questions target) for the orchestrator's audit trail — that's separate from the user-visible questions.
+
+The orchestrator re-spawns triage with the answers; on re-spawn, fold them into evidence and re-run step 6. If even after the user's answers the count is still > 3, the matching/signature design itself is the problem — return to the orchestrator with an evidence note flagging the broad-signature scenario rather than asking the user a second time.
+
 ### Confidence Gate
 
 **If ANY high-confidence playbook matched** → STOP. Write `state.json` and evidence. Return to orchestrator. The error was enough to match — deep data gathering is not needed for playbook matching.
@@ -66,7 +77,7 @@ Goal: get the error message and match playbooks as fast as possible.
 Goal: collect richer data for medium/low confidence matching and hypothesis generation.
 
 8. **Deep data gathering** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section for additional commands beyond the initial fetch (e.g., logs, traces, Healing Agent data, connection pings, element executions). Write each to raw/, write evidence summaries.
-9. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`. If Pass 2 surfaces a new `high`-confidence playbook, append it to `matched_playbooks` but do NOT return to Pass 1 — continue to the next step.
+9. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`. If Pass 2 surfaces a new `high`-confidence playbook, append it to `matched_playbooks` but do NOT return to Pass 1 — continue to the next step. Then apply the match-count cap from the Confidence Gate section: if the count is still > 3 after Pass 2 enrichment, write `needs_input.json` with the user-facing discriminating question and STOP.
 10. **Re-check source-code availability for any newly-matched playbooks** — if Pass 2 surfaced a new playbook from step 7's source-requiring categories and `source_code_path` is still unset, apply step 7c (write `needs_input.json` and STOP). Otherwise continue.
 11. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
 
