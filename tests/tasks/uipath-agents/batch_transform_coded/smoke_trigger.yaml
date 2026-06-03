@@ -4,7 +4,7 @@ description: >
   user asks to add LLM-filled columns to a CSV from a Python coded
   agent (LangGraph). Verifies the skill fires for the
   Python-coded-agent + CSV signal pair.
-tags: [uipath-agents, smoke, mode:build, lifecycle:discover, feature:transform]
+tags: [uipath-agents, smoke, coded, lifecycle:discover, context-grounding]
 
 run_limits:
   expected_turns: 5
