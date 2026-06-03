@@ -64,7 +64,7 @@ uip api-workflow run ./greet.json \
 
 ## `uip api-workflow registry`
 
-Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the old `uip case registry` flow for api-workflow authoring. Both subcommands require `uip login`.
+Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the old `uip case registry` flow for api-workflow authoring. Both subcommands require `uip login`. <!-- uip-check-skip -->
 
 ### `uip api-workflow registry resolve`
 
@@ -414,10 +414,10 @@ uip solution publish ./build/MyApiSolution.zip \
 
 The agent should not invent these — they are NOT part of the api-workflow-tool surface:
 
-- `uip api-workflow build`
-- `uip api-workflow validate`
-- `uip api-workflow publish`
-- `uip api-workflow init`
-- `uip apw <anything>` (no alias)
+- `uip api-workflow build` <!-- uip-check-skip -->
+- `uip api-workflow validate` <!-- uip-check-skip -->
+- `uip api-workflow publish` <!-- uip-check-skip -->
+- `uip api-workflow init` <!-- uip-check-skip -->
+- `uip apw <anything>` (no alias) <!-- uip-check-skip -->
 
 Build / publish go through `uip solution pack` / `uip solution publish`. Validation is done by running with `--no-auth`.
