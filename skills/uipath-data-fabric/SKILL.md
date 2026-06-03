@@ -165,7 +165,7 @@ For Complex types  field shapes and value formats, see [`references/entity-schem
 
 ## Field Types
 
-Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`, `FILE`. Complex types that require extra config: `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` (need `choiceSetId`), `RELATIONSHIP` and `FILE` (need `referenceEntityId` + `referenceFieldId`), `AUTO_NUMBER`. Full table with SQL backing types, required extras, and value semantics in [`references/entity-schema.md`](references/entity-schema.md).
+Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`, `FILE`, plus `AUTO_NUMBER` and the complex types (`CHOICE_SET_*` / `RELATIONSHIP` / `FILE`) whose required extras are covered in Rule 12. Full table with SQL backing types and value semantics in [`references/entity-schema.md`](references/entity-schema.md).
 
 **Normalize user input to UPPERCASE before invoking.** Users typically say `boolean`, `string`, `decimal`, `datetime` in their prompts. The CLI rejects lowercase / mixed-case variants with `Cannot read properties of undefined (reading 'sqlTypeName')`. Case-fold to the enum value: `boolean` → `BOOLEAN`, `String` → `STRING`, `Decimal` → `DECIMAL`, etc. Synonyms that don't map 1:1 (e.g. `number` → `INTEGER` or `DECIMAL`; `text` → `STRING` or `MULTILINE_TEXT`) need disambiguation — see [`references/entity-schema.md` → Normalizing user-facing type names](references/entity-schema.md#normalizing-user-facing-type-names).
 
@@ -204,7 +204,7 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 
 ## Troubleshooting
 
-> **For any CLI / API / SDK error — listed here or not — follow Rule 17.** Surface the full error message verbatim to the user (never swallow it), then propose concrete options keyed to the error: e.g. unknown field → list real fields; constraint range → show allowed range and ask for a value; missing dependency → run `entities list` / `choice-sets list` and offer pick-or-create (Rule 13); reserved-keyword name → suggest domain-specific renames. Apply only what the user confirms — never auto-retry or silently substitute.
+> **Any error not in this table → Rule 17.** (Surface verbatim, propose options keyed to the error, apply only what the user confirms.)
 
 | Error | Cause | Fix |
 |-------|-------|-----|

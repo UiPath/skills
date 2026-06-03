@@ -88,7 +88,7 @@ Both entity names and field names must:
 - Start with a letter (`[a-zA-Z]`)
 - Contain only letters, digits, and underscores (`[a-zA-Z0-9_]`)
 - Be 3–100 characters long
-- **Not** be a SQL, C#, or VB reserved keyword — names like `Case`, `Class`, `If`, `Then`, `Else`, `New`, `Object`, `Public`, `Return`, `Select`, `From`, `Where`, `Table`, `Order`, `Group`, `Index`, `Key`, `User`, `Role`, `Type`, `Status` are rejected. The API surfaces the rejection as *"cannot be a reserved word in C# or VB"* (or `RESERVED_LANGUAGE_KEYWORDS`). Pick a domain-specific name: `Case` → `WorkItem`; `Status` → `OrderStatus`; `Order` → `PurchaseOrder`; `Key` → `ItemKey`.
+- **Not** be a SQL, C#, or VB reserved keyword — full list, error string (`"cannot be a reserved word in C# or VB"` / `RESERVED_LANGUAGE_KEYWORDS`), and rename examples are in **SKILL.md Rule 4**.
 
 **Reserved field names** (will error if used): `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`
 
@@ -174,8 +174,8 @@ uip df entities update <entity-id> \
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
 - Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
 - Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required.
-- **When the user describes a link to another row, the field type must be `RELATIONSHIP` — never substitute `STRING` or `UUID`.** Cue phrases: *"each order has a Customer"*, *"each report has a Supplier"*, *"each issue belongs to a Project"*.
-- **Pick-or-create flow for the target entity.** If the user didn't name a target entity OR the named one doesn't exist, do NOT auto-create. Run `entities list --native-only`, surface matching candidates by `Name` / `DisplayName`, and ask: *"Use one of these as the target, or create a new entity?"* If create-new: confirm the new entity's name and fields with the user first, then `entities create` it, then come back to wire the relationship field. Never silently choose a target.
+- Cue phrases that signal a `RELATIONSHIP` (never substitute `STRING`/`UUID` — **SKILL.md Rule 12**): *"each order has a Customer"*, *"each report has a Supplier"*, *"each issue belongs to a Project"*.
+- If the user didn't name a target entity OR the named one doesn't exist, follow the **pick-or-create flow in SKILL.md Rule 13** — list candidates via `entities list --native-only`, ask, create only with approval.
 
 ```bash
 # 1. Discover target entity + field UUIDs
