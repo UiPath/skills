@@ -104,7 +104,7 @@ success_criteria:
 
   - type: run_command
     description: "DeleteEntityRecord has no read-mode or write-mode property bleed"
-    command: 'python "$TASK_DIR/check_i_dr1.py" DataServiceEval/Main.xaml'
+    command: 'python "%TASK_DIR%/check_i_dr1.py" DataServiceEval/Main.xaml'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
@@ -112,7 +112,7 @@ success_criteria:
 
   - type: run_command
     description: "uip rpa validate exits clean against the authored Main.xaml"
-    command: 'uip rpa validate --file-path Main.xaml --project-dir DataServiceEval --output json'
+    command: 'cd DataServiceEval && uip rpa validate --output json'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
