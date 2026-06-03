@@ -30,21 +30,25 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Flow uses completed as the HITL output handle"
-    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
-    includes:
-      - '"completed"'
+  - type: run_command
+    description: "HITL completed output port is wired on an edge (v1.0 'completed' or v1.1 'outcome-completed')"
+    command: "grep -qE '\"sourcePort\"[[:space:]]*:[[:space:]]*\"(outcome-)?completed\"' PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  # Note: a prior "does not reference cancelled/timeout handles" excludes-only
-  # check was removed. The HITL node's `definitions` entry is copied verbatim
-  # from the registry (Critical Rule #7) and declares *all* handles (completed,
-  # cancelled, timeout) — so a substring search against the flow JSON cannot
-  # distinguish "handle declared in the manifest" from "handle wired on an
-  # edge". The positive "completed" check above is the meaningful signal;
-  # the validate step below catches genuinely malformed edges.
+  # Why grep the wired sourcePort and not file_contains '"completed"': the HITL
+  # completed output port serializes differently by node version — v1.0 wires it
+  # as `"sourcePort": "completed"`, v1.1 as `"sourcePort": "outcome-completed"`.
+  # Version selection is non-deterministic (hardcoded versions were removed in
+  # #1088; the agent pulls the version from the registry), so a literal
+  # '"completed"' substring passes on a v1.0 build and fails on a v1.1 build —
+  # the historical source of this task's flakiness. Anchoring on the sourcePort
+  # handle with an optional `outcome-` prefix matches either version and, unlike
+  # a bare substring, won't match a handle merely declared in the node manifest
+  # or a "completed" status label. The validate step below catches malformed
+  # edges. A prior excludes-only check for cancelled/timeout handles was removed
+  # because manifest declarations can't be distinguished from wiring by substring.
 
   - type: run_command
     description: "uip maestro flow validate passes"

@@ -18,7 +18,7 @@ dataset:
   rows:
     - id: ixp-models
       prompt: >-
-        What IxP models can I access in maestro?
+        What IxP / document-extraction models are available in UiPath Maestro Flow?
 
 initial_prompt: |
   ${row.prompt}
