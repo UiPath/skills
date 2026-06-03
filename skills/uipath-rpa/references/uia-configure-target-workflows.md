@@ -6,13 +6,13 @@
 
 ## Execution Model
 
-**Execute `uia-configure-target` steps inline in the main conversation.** Do NOT delegate the entire skill to a subagent. The skill's internal steps already spawn their own subagents.
+**Execute the top-level `uia-configure-target` workflow inline in the current session.** Do not hand the entire target-configuration workflow to a separate worker session.
 
 Why this matters:
 - **OR references** must be visible in the main conversation so they can be attached to workflow activities as the workflow is created. See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 - **Context continuity** — as the main conversation proceeds, it already knows which screens and elements are registered: the references were returned in earlier turns, and the OR itself is queryable via the OR CLI. This is what "knowing what's registered" means here — the in-conversation state plus live OR queries — so duplicate captures are avoided and the workflow build stays coherent.
 
-Read the SKILL.md, then execute each step of the internal procedure yourself. Only spawn `Agent` where the skill explicitly says to.
+Read the installed `uia-configure-target/SKILL.md`, then execute each step of its procedure yourself. If that installed procedure offers an optional delegated-worker step for a bounded subtask, use it only when the current coding environment supports delegation; otherwise perform the same subtask inline and preserve the stage/write-back contract described by the installed docs.
 
 ## Invocation
 
