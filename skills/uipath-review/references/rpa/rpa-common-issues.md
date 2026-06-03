@@ -250,6 +250,28 @@ grep -ri "apikey\|api_key\|secret\|token" --include="*.xaml" --include="*.cs" --
 
 **Fix:** Extract nested logic into separate workflows. Use Switch/Flowchart instead of deeply nested If-Else. Use early returns (Flowchart decision nodes) to reduce nesting.
 
+### Oversized InvokeCode Bodies
+
+**Symptom:** `<ui:InvokeCode>` activities embedding more than ~10 lines of inline VB.NET or C# code (counted by `&#xA;` line breaks in the `Code` attribute, or by line count when the body uses `<ui:InvokeCode.Code>` element form).
+
+**Impact:** Inline XML-escaped code has no IDE support, no breakpoints, no unit tests, and is unreadable in diffs. Maintenance and debugging cost scales sharply past ~10 lines. The same logic copy-pasted into multiple workflows compounds the cost.
+
+**Applies to:** Non-Legacy projects only (`targetFramework: "Windows"` or `"Portable"`). **Skip Legacy projects** (`targetFramework: "Legacy"` or field absent) — Coded Workflows are not supported there, so the extraction target does not exist. For Legacy, do NOT flag this finding.
+
+**Detection:**
+```bash
+# Non-Legacy projects only — confirm targetFramework first
+grep -oE 'targetFramework"[[:space:]]*:[[:space:]]*"[^"]+"' project.json
+
+# Count &#xA; (newline escape) occurrences inside Code attributes — >10 ≈ >10 logical lines
+grep -rn 'ui:InvokeCode' --include="*.xaml" -A 1 | grep -oE 'Code="[^"]*"' | awk -F'&#xA;' '{ if (NF-1 > 10) print NF-1 " line-breaks: " $0 }'
+
+# Or, for InvokeCode.Code element form, locate the body and count lines
+grep -rln 'ui:InvokeCode.Code' --include="*.xaml"
+```
+
+**Fix:** Extract the body into a Coded Source File (utility code) or a Coded Workflow (if it needs `CodedWorkflow` services), then invoke it from the XAML via `Invoke Workflow File`. **The extraction target is C#** — Coded Source Files and Coded Workflows do not support VB.NET, so a VB.NET `InvokeCode` body must be translated to C# during extraction. The caller XAML's `expressionLanguage` is unchanged (a VB XAML workflow can call a C# Coded Workflow). Recommend the extraction even when the user did not explicitly ask, unless the project is Legacy or the original author had a documented reason to keep it inline.
+
 ## Error Handling Issues
 
 ### Throw Used Instead of Rethrow (Stack Trace Lost)

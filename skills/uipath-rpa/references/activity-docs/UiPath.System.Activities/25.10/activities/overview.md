@@ -57,7 +57,7 @@ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 
 | Factor | InvokeCode | Coded Workflow |
 |--------|-----------|----------------|
-| **Lines of code** | ~1-15 lines | 15+ lines |
+| **Lines of code** | ~1-10 lines | 10+ lines |
 | **Class dependencies** | None — only inline .NET BCL calls | NuGet packages, custom classes, services |
 | **Testability needed** | No | Yes — unit tests, mocking |
 | **Reusability** | One-off, single workflow | Shared across multiple workflows |
