@@ -80,7 +80,7 @@ What to look for:
   Rebind the tool to the new connection:
 
   ```bash
-  uip agent tool connect <tool-name> --connection-id <new-connection-id> --path <agent-path>
+  uip agent tool connect <tool-name> --connection-id <new-connection-id> --path <agent-path> --output json
   ```
 
   Validate and republish:

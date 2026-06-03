@@ -86,6 +86,8 @@ What to look for:
   uip agent publish --output json
   ```
 
+  > Use this same rebind sequence for all resolution paths that create a new connection.
+
 **If `Org/User secret` invalid — re-authenticate with updated credentials:**
 
   On the external system, regenerate the client secret. Then:
@@ -105,22 +107,15 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
-  Note the new connection ID. Rebind the agent tool and republish:
-
-  ```bash
-  uip agent tool list --output json
-  uip agent tool connect <tool-name> --connection-id <new-connection-id> --output json
-  uip agent validate --output json
-  uip agent publish --output json
-  ```
+  Note the new connection ID. Then use the rebind sequence above.
 
 **If the user account was deactivated or connection targets the wrong environment:**
+
+  Delete the stale connection and create a new one in the correct context:
 
   ```bash
   uip is connections delete <connection-id> --output json
   uip is connections create <connector-key> --output json
-  uip agent tool list --output json
-  uip agent tool connect <tool-name> --connection-id <new-connection-id> --output json
-  uip agent validate --output json
-  uip agent publish --output json
   ```
+
+  Note the new connection ID. Then use the rebind sequence above.
