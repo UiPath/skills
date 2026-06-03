@@ -1,0 +1,97 @@
+{
+  "root": {
+    "id": "root",
+    "name": "case_demo5",
+    "type": "case-management:root",
+    "caseIdentifier": "case_demo5",
+    "caseAppEnabled": false,
+    "caseIdentifierType": "constant",
+    "version": "v12",
+    "data": {}
+  },
+  "nodes": [
+    {
+      "id": "Stage_JHcvjn",
+      "type": "case-management:Stage",
+      "position": { "x": 1100, "y": 200 },
+      "style": { "width": 304, "opacity": 0.8 },
+      "measured": { "width": 304, "height": 128 },
+      "width": 304,
+      "zIndex": 1001,
+      "data": {
+        "label": "stage_3",
+        "parentElement": { "id": "root", "type": "case-management:root" },
+        "isInvalidDropTarget": false,
+        "isPendingParent": false,
+        "tasks": []
+      }
+    },
+    {
+      "id": "Stage_2pj61p",
+      "type": "case-management:Stage",
+      "position": { "x": 600, "y": 200 },
+      "style": { "width": 304, "opacity": 0.8 },
+      "measured": { "width": 304, "height": 128 },
+      "width": 304,
+      "zIndex": 1001,
+      "data": {
+        "label": "stage_2",
+        "parentElement": { "id": "root", "type": "case-management:root" },
+        "isInvalidDropTarget": false,
+        "isPendingParent": false,
+        "tasks": []
+      }
+    },
+    {
+      "id": "Stage_VuU5xx",
+      "type": "case-management:Stage",
+      "position": { "x": 100, "y": 200 },
+      "style": { "width": 304, "opacity": 0.8 },
+      "measured": { "width": 304, "height": 128 },
+      "width": 304,
+      "zIndex": 1001,
+      "data": {
+        "label": "stage_1",
+        "parentElement": { "id": "root", "type": "case-management:root" },
+        "isInvalidDropTarget": false,
+        "isPendingParent": false,
+        "tasks": []
+      }
+    },
+    {
+      "id": "trigger_1",
+      "type": "case-management:Trigger",
+      "position": { "x": 0, "y": 0 },
+      "data": { "label": "Trigger 1" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_BnfFmw",
+      "type": "case-management:TriggerEdge",
+      "source": "trigger_1",
+      "target": "Stage_VuU5xx",
+      "sourceHandle": "trigger_1____source____right",
+      "targetHandle": "Stage_VuU5xx____target____left",
+      "data": { "label": null }
+    },
+    {
+      "id": "edge_fDWnrF",
+      "type": "case-management:Edge",
+      "source": "Stage_VuU5xx",
+      "target": "Stage_2pj61p",
+      "sourceHandle": "Stage_VuU5xx____source____right",
+      "targetHandle": "Stage_2pj61p____target____left",
+      "data": { "label": null }
+    },
+    {
+      "id": "edge_Grcszq",
+      "type": "case-management:Edge",
+      "source": "Stage_2pj61p",
+      "target": "Stage_JHcvjn",
+      "sourceHandle": "Stage_2pj61p____source____right",
+      "targetHandle": "Stage_JHcvjn____target____left",
+      "data": { "label": null }
+    }
+  ]
+}

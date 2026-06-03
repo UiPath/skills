@@ -1,0 +1,1144 @@
+{
+  "stage_1-tA1b2C3d4": {
+    "id": "tA1b2C3d4",
+    "elementId": "stage_1-tA1b2C3d4",
+    "displayName": "Book appraisal",
+    "type": "rpa",
+    "data": {
+      "name": "=bindings.bRk3mNp1Q",
+      "folderPath": "=bindings.bTw7xYz2A",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vN1aB2cD3",
+          "id": "vN1aB2cD3",
+          "elementId": "stage_1-tA1b2C3d4"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_1-tA1b2C3d4"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_1-tA1b2C3d4",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cE4fG5hI6",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rJ7kL8mN9", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_1-tE5f6G7h8": {
+    "id": "tE5f6G7h8",
+    "elementId": "stage_1-tE5f6G7h8",
+    "displayName": "Run AgentDate",
+    "type": "agent",
+    "data": {
+      "name": "=bindings.bJh4kLm3B",
+      "folderPath": "=bindings.bPq8rSt4C",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vO2pQ3rS4",
+          "id": "vO2pQ3rS4",
+          "elementId": "stage_1-tE5f6G7h8"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_1-tE5f6G7h8"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_1-tE5f6G7h8",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cT5uV6wX7",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rY8zA9bC0", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_1-tI9j0K1l2": {
+    "id": "tI9j0K1l2",
+    "elementId": "stage_1-tI9j0K1l2",
+    "displayName": "Call Expense API",
+    "type": "api-workflow",
+    "data": {
+      "name": "=bindings.bUv5wXy6D",
+      "folderPath": "=bindings.bZa9bCd7E",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vD1eF2gH3",
+          "id": "vD1eF2gH3",
+          "elementId": "stage_1-tI9j0K1l2"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_1-tI9j0K1l2"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_1-tI9j0K1l2",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cI4jK5lM6",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rN7oP8qR9", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_1-tM3n4O5p6": {
+    "id": "tM3n4O5p6",
+    "displayName": "Wait 5 minutes",
+    "type": "wait-for-timer",
+    "data": {
+      "timer": "timeDuration",
+      "timeDuration": "PT5M"
+    }
+  },
+  "stage_1-tQ7r8S9t0": {
+    "id": "tQ7r8S9t0",
+    "elementId": "stage_1-tQ7r8S9t0",
+    "displayName": "Book appraisal (Joshi)",
+    "type": "rpa",
+    "data": {
+      "name": "=bindings.bEf1gHi8F",
+      "folderPath": "=bindings.bKl2mNo9G",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vS1tU2vW3",
+          "id": "vS1tU2vW3",
+          "elementId": "stage_1-tQ7r8S9t0"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_1-tQ7r8S9t0"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_1-tQ7r8S9t0",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cX4yZ5a1B",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rC2dE3fG4", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_1-tU1v2W3x4": {
+    "id": "tU1v2W3x4",
+    "elementId": "stage_1-tU1v2W3x4",
+    "displayName": "Run Expense Agent",
+    "type": "agent",
+    "data": {
+      "name": "=bindings.bQr3sTu0H",
+      "folderPath": "=bindings.bWx4yZa1I",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vH5iJ6kL7",
+          "id": "vH5iJ6kL7",
+          "elementId": "stage_1-tU1v2W3x4"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_1-tU1v2W3x4"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_1-tU1v2W3x4",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cM8nO9pQ0",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rR1sT2uV3", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_1-tY5z6A7b8": {
+    "id": "tY5z6A7b8",
+    "displayName": "Wait 1 hour",
+    "type": "wait-for-timer",
+    "data": {
+      "timer": "timeDuration",
+      "timeDuration": "PT1H"
+    }
+  },
+  "stage_2-tC9d0E1f2": {
+    "id": "tC9d0E1f2",
+    "elementId": "stage_2-tC9d0E1f2",
+    "displayName": "Book appraisal (again)",
+    "type": "rpa",
+    "data": {
+      "name": "=bindings.bRk3mNp1Q",
+      "folderPath": "=bindings.bTw7xYz2A",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vW4xY5zA6",
+          "id": "vW4xY5zA6",
+          "elementId": "stage_2-tC9d0E1f2"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_2-tC9d0E1f2"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_2-tC9d0E1f2",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cB7cD8eF9",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rG0hI1jK2", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_2-tG3h4I5j6": {
+    "id": "tG3h4I5j6",
+    "elementId": "stage_2-tG3h4I5j6",
+    "displayName": "Call Solution 219 API",
+    "type": "api-workflow",
+    "data": {
+      "name": "=bindings.bCd5eFg2J",
+      "folderPath": "=bindings.bHi6jKl3K",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vL3mN4oP5",
+          "id": "vL3mN4oP5",
+          "elementId": "stage_2-tG3h4I5j6"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_2-tG3h4I5j6"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_2-tG3h4I5j6",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cQ6rS7tU8",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rV9wX0yZ1", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_2-tK7l8M9n0": {
+    "id": "tK7l8M9n0",
+    "elementId": "stage_2-tK7l8M9n0",
+    "displayName": "Get Jira Issue",
+    "type": "execute-connector-activity",
+    "data": {
+      "serviceType": "Intsvc.ExecuteConnectorActivity",
+      "context": [
+        { "name": "connectorKey", "value": "uipath-atlassian-jira", "type": "string" },
+        { "name": "connection", "value": "=bindings.bMn7oPq4L", "type": "string" },
+        { "name": "resourceKey", "value": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e", "type": "string" },
+        { "name": "folderKey", "value": "=bindings.bSt8uVw5M", "type": "string" },
+        { "name": "operation", "value": "list", "type": "string" },
+        { "name": "objectName", "value": "curated_get_issue", "type": "string" },
+        { "name": "method", "value": "GET", "type": "string" },
+        { "name": "path", "value": "/rest/api/3/issue/{issueIdOrKey}", "type": "string" },
+        { "name": "_label", "value": "Get Jira Issue", "type": "string" },
+        {
+          "name": "metadata",
+          "type": "json",
+          "body": {
+            "activityMetadata": { "activity": {} },
+            "designTimeMetadata": {
+              "connectorLogoUrl": "icons/uipath-atlassian-jira",
+              "activityConfig": { "isCurated": true, "operation": "list" }
+            },
+            "telemetryData": { "connectorKey": "uipath-atlassian-jira", "connectorName": "uipath-atlassian-jira" },
+            "inputMetadata": {},
+            "errorState": { "hasError": false },
+            "activityPropertyConfiguration": {
+              "configuration": "=jsonString:{}",
+              "uiPathActivityTypeId": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e",
+              "errorState": { "issues": [] }
+            }
+          }
+        }
+      ],
+      "inputs": [
+        {
+          "name": "body",
+          "type": "json",
+          "target": "body",
+          "body": {},
+          "var": "vA2bC3dE4",
+          "id": "vA2bC3dE4",
+          "elementId": "stage_2-tK7l8M9n0"
+        },
+        {
+          "name": "pathParameters",
+          "type": "json",
+          "target": "pathParameters",
+          "body": { "issueIdOrKey": "" },
+          "var": "vF5gH6iJ7",
+          "id": "vF5gH6iJ7",
+          "elementId": "stage_2-tK7l8M9n0"
+        },
+        {
+          "name": "queryParameters",
+          "type": "json",
+          "target": "queryParameters",
+          "body": { "expand": "" },
+          "var": "vK8lM9nO0",
+          "id": "vK8lM9nO0",
+          "elementId": "stage_2-tK7l8M9n0"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "response",
+          "displayName": "Get Jira Issue",
+          "type": "jsonSchema",
+          "source": "=response",
+          "var": "response",
+          "id": "response",
+          "value": "response",
+          "target": "=response",
+          "elementId": "stage_2-tK7l8M9n0",
+          "body": { "$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "properties": {} }
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_2-tK7l8M9n0",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ],
+      "bindings": []
+    },
+    "entryConditions": [
+      {
+        "id": "cP1qR2sT3",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rU4vW5xY6", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_2-tO1p2Q3r4": {
+    "id": "tO1p2Q3r4",
+    "displayName": "Wait 30 seconds",
+    "type": "wait-for-timer",
+    "data": {
+      "timer": "timeDuration",
+      "timeDuration": "PT30S"
+    }
+  },
+  "stage_2-tS5t6U7v8": {
+    "id": "tS5t6U7v8",
+    "elementId": "stage_2-tS5t6U7v8",
+    "displayName": "Run AgentDate (2)",
+    "type": "agent",
+    "data": {
+      "name": "=bindings.bJh4kLm3B",
+      "folderPath": "=bindings.bPq8rSt4C",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vZ7aB8cD9",
+          "id": "vZ7aB8cD9",
+          "elementId": "stage_2-tS5t6U7v8"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_2-tS5t6U7v8"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_2-tS5t6U7v8",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cE0fG1hI2",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rJ3kL4mN5", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_2-tW9x0Y1z2": {
+    "id": "tW9x0Y1z2",
+    "elementId": "stage_2-tW9x0Y1z2",
+    "displayName": "Book appraisal Joshi (2)",
+    "type": "rpa",
+    "data": {
+      "name": "=bindings.bEf1gHi8F",
+      "folderPath": "=bindings.bKl2mNo9G",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vO6pQ7rS8",
+          "id": "vO6pQ7rS8",
+          "elementId": "stage_2-tW9x0Y1z2"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_2-tW9x0Y1z2"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_2-tW9x0Y1z2",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cT9uV0wX1",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rY2zA3bC4", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_2-tA3b4C5d6": {
+    "id": "tA3b4C5d6",
+    "elementId": "stage_2-tA3b4C5d6",
+    "displayName": "Call Expense API (2)",
+    "type": "api-workflow",
+    "data": {
+      "name": "=bindings.bUv5wXy6D",
+      "folderPath": "=bindings.bZa9bCd7E",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vD5eF6gH7",
+          "id": "vD5eF6gH7",
+          "elementId": "stage_2-tA3b4C5d6"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_2-tA3b4C5d6"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_2-tA3b4C5d6",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cI8jK9lM0",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rN1oP2qR3", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_3-tE7f8G9h0": {
+    "id": "tE7f8G9h0",
+    "elementId": "stage_3-tE7f8G9h0",
+    "displayName": "Book appraisal (final)",
+    "type": "rpa",
+    "data": {
+      "name": "=bindings.bRk3mNp1Q",
+      "folderPath": "=bindings.bTw7xYz2A",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vS4tU5vW6",
+          "id": "vS4tU5vW6",
+          "elementId": "stage_3-tE7f8G9h0"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_3-tE7f8G9h0"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_3-tE7f8G9h0",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cX7yZ8a9B",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rC0dE1fG2", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_3-tI1j2K3l4": {
+    "id": "tI1j2K3l4",
+    "elementId": "stage_3-tI1j2K3l4",
+    "displayName": "Get Jira Issue (2)",
+    "type": "execute-connector-activity",
+    "data": {
+      "serviceType": "Intsvc.ExecuteConnectorActivity",
+      "context": [
+        { "name": "connectorKey", "value": "uipath-atlassian-jira", "type": "string" },
+        { "name": "connection", "value": "=bindings.bMn7oPq4L", "type": "string" },
+        { "name": "resourceKey", "value": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e", "type": "string" },
+        { "name": "folderKey", "value": "=bindings.bSt8uVw5M", "type": "string" },
+        { "name": "operation", "value": "list", "type": "string" },
+        { "name": "objectName", "value": "curated_get_issue", "type": "string" },
+        { "name": "method", "value": "GET", "type": "string" },
+        { "name": "path", "value": "/rest/api/3/issue/{issueIdOrKey}", "type": "string" },
+        { "name": "_label", "value": "Get Jira Issue (2)", "type": "string" },
+        {
+          "name": "metadata",
+          "type": "json",
+          "body": {
+            "activityMetadata": { "activity": {} },
+            "designTimeMetadata": {
+              "connectorLogoUrl": "icons/uipath-atlassian-jira",
+              "activityConfig": { "isCurated": true, "operation": "list" }
+            },
+            "telemetryData": { "connectorKey": "uipath-atlassian-jira", "connectorName": "uipath-atlassian-jira" },
+            "inputMetadata": {},
+            "errorState": { "hasError": false },
+            "activityPropertyConfiguration": {
+              "configuration": "=jsonString:{}",
+              "uiPathActivityTypeId": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e",
+              "errorState": { "issues": [] }
+            }
+          }
+        }
+      ],
+      "inputs": [
+        {
+          "name": "body",
+          "type": "json",
+          "target": "body",
+          "body": {},
+          "var": "vX3yZ4a5B",
+          "id": "vX3yZ4a5B",
+          "elementId": "stage_3-tI1j2K3l4"
+        },
+        {
+          "name": "pathParameters",
+          "type": "json",
+          "target": "pathParameters",
+          "body": { "issueIdOrKey": "" },
+          "var": "vC6dE7fG8",
+          "id": "vC6dE7fG8",
+          "elementId": "stage_3-tI1j2K3l4"
+        },
+        {
+          "name": "queryParameters",
+          "type": "json",
+          "target": "queryParameters",
+          "body": { "expand": "" },
+          "var": "vH9iJ0kL1",
+          "id": "vH9iJ0kL1",
+          "elementId": "stage_3-tI1j2K3l4"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "response",
+          "displayName": "Get Jira Issue (2)",
+          "type": "jsonSchema",
+          "source": "=response",
+          "var": "response",
+          "id": "response",
+          "value": "response",
+          "target": "=response",
+          "elementId": "stage_3-tI1j2K3l4",
+          "body": { "$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "properties": {} }
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_3-tI1j2K3l4",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ],
+      "bindings": []
+    },
+    "entryConditions": [
+      {
+        "id": "cM2nO3pQ4",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rR5sT6uV7", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_3-tM5n6O7p8": {
+    "id": "tM5n6O7p8",
+    "displayName": "Wait 2 hours",
+    "type": "wait-for-timer",
+    "data": {
+      "timer": "timeDuration",
+      "timeDuration": "PT2H"
+    }
+  },
+  "stage_3-tQ9r0S1t2": {
+    "id": "tQ9r0S1t2",
+    "elementId": "stage_3-tQ9r0S1t2",
+    "displayName": "Run Expense Agent (2)",
+    "type": "agent",
+    "data": {
+      "name": "=bindings.bQr3sTu0H",
+      "folderPath": "=bindings.bWx4yZa1I",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vM2nO3pQ4",
+          "id": "vM2nO3pQ4",
+          "elementId": "stage_3-tQ9r0S1t2"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_3-tQ9r0S1t2"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_3-tQ9r0S1t2",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cW8xY9zA0",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rB1cD2eF3", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_3-tU3v4W5x6": {
+    "id": "tU3v4W5x6",
+    "elementId": "stage_3-tU3v4W5x6",
+    "displayName": "Book appraisal Joshi (3)",
+    "type": "rpa",
+    "data": {
+      "name": "=bindings.bEf1gHi8F",
+      "folderPath": "=bindings.bKl2mNo9G",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vG4hI5jK6",
+          "id": "vG4hI5jK6",
+          "elementId": "stage_3-tU3v4W5x6"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_3-tU3v4W5x6"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_3-tU3v4W5x6",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cL7mN8oP9",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rQ0rS1tU2", "rule": "current-stage-entered" }]]
+      }
+    ]
+  },
+  "stage_3-tY7z8A9b0": {
+    "id": "tY7z8A9b0",
+    "elementId": "stage_3-tY7z8A9b0",
+    "displayName": "Call Solution 219 API (2)",
+    "type": "api-workflow",
+    "data": {
+      "name": "=bindings.bCd5eFg2J",
+      "folderPath": "=bindings.bHi6jKl3K",
+      "inputs": [
+        {
+          "name": "Input1",
+          "displayName": "Input1",
+          "value": "",
+          "type": "string",
+          "var": "vV3wX4yZ5",
+          "id": "vV3wX4yZ5",
+          "elementId": "stage_3-tY7z8A9b0"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Output1",
+          "displayName": "Output1",
+          "type": "string",
+          "source": "=Output1",
+          "var": "output1",
+          "id": "output1",
+          "value": "output1",
+          "target": "=output1",
+          "elementId": "stage_3-tY7z8A9b0"
+        },
+        {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "var": "error",
+          "id": "error",
+          "value": "error",
+          "target": "=error",
+          "elementId": "stage_3-tY7z8A9b0",
+          "body": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "number" },
+              "element": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "entryConditions": [
+      {
+        "id": "cA6bC7dE8",
+        "displayName": "Entry condition 1",
+        "rules": [[{ "id": "rF9gH0iJ1", "rule": "current-stage-entered" }]]
+      }
+    ]
+  }
+}
