@@ -1,0 +1,80 @@
+task_id: skill-flow-merge-parallel-sync
+description: >
+  Build a UiPath Flow with two parallel branches that fork from the trigger and
+  converge on a single `core.logic.merge` (parallel-sync) node before reaching
+  the End node. Exercises the merge node in isolation — previously it was only
+  hit incidentally inside larger flows. Asserts merge presence, that both
+  upstream branches wire into it from two distinct nodes, and that a fork
+  exists. Validate-only and pure-OOTB — no tenant, no `flow debug` (a
+  ParallelGateway join only synchronizes inside a live BPMN engine the test
+  sandbox cannot provision).
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, node:merge]
+
+run_limits:
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "ParallelSync" that runs two branches in
+  parallel and synchronizes them with a Merge node before finishing.
+
+  A Flow project MUST live inside a solution:
+    1. Create the solution first (`uip solution init`).
+    2. Create the Flow project inside it (`uip maestro flow init`). The correct
+       flow-file path is:
+         ParallelSync/ParallelSync/ParallelSync.flow
+
+  Build this exact fork/join topology (the default manual trigger is fine — keep
+  it as the start node and use it as the fork):
+
+      trigger ──> branchA ──┐
+              └─> branchB ──┴─> merge ──> end
+
+    - The trigger FORKS to two branches: add two outgoing edges from the
+      trigger, one to `branchA` and one to `branchB`.
+    - `branchA` and `branchB` are two OOTB Script nodes (`core.action.script`),
+      each with a trivial `inputs.script` that returns an object
+      (e.g. `return { ok: true };`). The Script node's output port is
+      `success`.
+    - Add ONE Merge node (`core.logic.merge`) — the join. Wire BOTH branches
+      into it: an `edges[]` entry from `branchA` to the merge and another from
+      `branchB` to the merge (both with `targetNodeId` = the merge node id).
+      The merge node has empty `inputs` (`{}`).
+    - Add a `core.control.end` node and wire the merge's output to it (an
+      `edges[]` entry whose `sourceNodeId` is the merge node id).
+    - Set every node's `typeVersion` from the registry — do NOT hardcode guessed
+      versions (`uip maestro flow registry get core.logic.merge --output json`,
+      etc.). Append each node type's definition to `definitions[]` (the merge
+      definition carries `model.type: "bpmn:ParallelGateway"`).
+
+  The task is NOT complete until `uip maestro flow validate` passes for that
+  exact flow-file path.
+
+  Important:
+    - The `uip` CLI is already available; use `--output json` on uip commands.
+    - Validate locally with `uip maestro flow validate` — do NOT run
+      `uip maestro flow debug` (the parallel join only synchronizes in a live
+      engine).
+    - Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+      planning and implementation. Build the complete flow end-to-end in a
+      single pass.
+    - Before starting, load the uipath-maestro-flow skill and follow its merge
+      plugin docs and edge-wiring (editing-operations) procedures exactly.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate ParallelSync/ParallelSync/ParallelSync.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Structural checks (merge present; two distinct branches converge) ────
+  - type: run_command
+    description: "Exactly one core.logic.merge with >=2 distinct branches converging, a fork upstream, and a downstream continuation"
+    command: "python3 $TASK_DIR/check_merge_parallel_sync_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
