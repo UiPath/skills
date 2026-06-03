@@ -24,12 +24,14 @@ initial_prompt: |
   search, threshold 0.25, result count 5, and field weighting
   `userQuestion=1`.
 
-  Use the low-code memory CLI workflow for memory features. Memory
-  spaces must live under the inline agent's `features/` directory, not
-  under `resources/`. After the flow graph edits are complete, run
-  inline validation and inline migration with a bindings target so the
-  memorySpace binding is propagated into the parent flow project's
-  `bindings_v2.json`.
+  Use the full low-code memory CLI workflow for memory features:
+  discover the memory space before attaching it and refresh solution
+  resources after migration, even though the memory name and folder
+  are provided. Memory spaces must live under the inline agent's
+  `features/` directory, not under `resources/`. After the flow graph
+  edits are complete, run inline validation and inline migration with
+  a bindings target so the memorySpace binding is propagated into the
+  parent flow project's `bindings_v2.json`.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -103,7 +105,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent must not hand-author memory feature JSON with shell redirection"
     tool_name: "Bash"
-    command_pattern: '(cat|tee|python3?|node|jq)\b.*features/.*/feature\.json'
+    command_pattern: '(?:\btee\b\s+[^;&|]*features/[^;&|]*/feature\.json|(?:>|>>)\s*["'']?[^"''\s;&|]*features/[^"''\s;&|]*/feature\.json|\bpython3?\b[\s\S]*(?:open\([^)]*features/[^)]*/feature\.json[^)]*["'']w["'']|write_text\([^)]*features/[^)]*/feature\.json)|\bnode\b[\s\S]*(?:writeFileSync|writeFile)\([^)]*features/[^)]*/feature\.json)'
     weight: 1.5
     pass_threshold: 1.0
 

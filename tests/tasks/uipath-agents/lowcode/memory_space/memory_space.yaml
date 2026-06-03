@@ -30,11 +30,13 @@ initial_prompt: |
   `d640fe25-3c05-4f2e-bd8d-42bdb20704c1`, and metadata
   `{"source":"seed","scenario":"support"}`.
 
-  Use the low-code memory CLI workflow for memory features. Do not
-  hand-create memory feature JSON. Do NOT publish, upload, or deploy.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause
-  between planning and implementation. Complete the entire task
-  end-to-end in a single pass.
+  Use the full low-code memory CLI workflow for memory features:
+  discover the memory space before attaching it and refresh solution
+  resources after migration, even though the memory name and folder
+  are provided. Do not hand-create memory feature JSON. Do NOT
+  publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation.
+  Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
@@ -112,7 +114,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent must not hand-author memory feature JSON with shell redirection"
     tool_name: "Bash"
-    command_pattern: '(cat|tee|python3?|node|jq)\b.*features/.*/feature\.json'
+    command_pattern: '(?:\btee\b\s+[^;&|]*features/[^;&|]*/feature\.json|(?:>|>>)\s*["'']?[^"''\s;&|]*features/[^"''\s;&|]*/feature\.json|\bpython3?\b[\s\S]*(?:open\([^)]*features/[^)]*/feature\.json[^)]*["'']w["'']|write_text\([^)]*features/[^)]*/feature\.json)|\bnode\b[\s\S]*(?:writeFileSync|writeFile)\([^)]*features/[^)]*/feature\.json)'
     weight: 1.5
     pass_threshold: 1.0
 

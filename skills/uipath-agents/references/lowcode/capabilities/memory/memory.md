@@ -5,22 +5,22 @@ Use this when a low-code agent needs an attached UiPath memory space for dynamic
 ## Critical Rules
 
 1. **Use `uip agent memory` for memory features.** Do not hand-author `features/{Name}/feature.json` unless recovering from a broken project. The CLI updates both the feature file and `.agent-builder/agent.json`.
-2. **`uip agent memory add` attaches an existing memory space; it does not create the platform memory space.** Discover or import the memory space with solution resource commands first when needed.
+2. **`uip agent memory add` attaches an existing memory space; it does not create the platform memory space.** Always attempt `uip solution resource list --kind MemorySpace` discovery before attaching, even when the user supplied an exact memory space name and folder. Treat provided values as search inputs and fallback values only if discovery is blocked by auth or connectivity.
 3. **Use folder paths, not folder keys.** `--folder-path` must be the literal folder path where the memory space exists, such as `Shared` or `Shared/Sales`.
-4. **Validate and migrate after memory changes.** Memory bindings are generated during `uip agent migrate`; do not edit `bindings_v2.json` directly.
+4. **Validate, migrate, and refresh after memory changes.** Memory bindings are generated during `uip agent migrate`; do not edit `bindings_v2.json` directly. In a solution, always attempt `uip solution resource refresh --output json` from the solution root after migration so the generated `memorySpace` binding is imported into solution resources.
 5. **Seed only non-sensitive examples.** Memory items become agent project configuration. Do not store secrets, credentials, or raw PII as seed items.
 
 ## Workflow
 
 ### 1. Discover the memory space
 
-If the memory space is already available in the tenant, discover it:
+Always attempt discovery first, even when the user already provided the memory space name and folder. Use the provided name as the search term:
 
 ```bash
 uip solution resource list --source remote --kind MemorySpace --search "<MEMORY_SPACE_NAME>" --output json
 ```
 
-Use the row's `Name` as `--memory-space` and `Folder` as `--folder-path`.
+Use the row's `Name` as `--memory-space` and `Folder` as `--folder-path`. If discovery fails because the local session is not authenticated or the network is unavailable, continue only when the user already provided both the memory space name and folder path; use those provided values and report that discovery was attempted.
 
 If the space is external to the solution and should be tracked as a solution resource:
 
@@ -98,7 +98,7 @@ uip agent migrate "<AGENT_PROJECT_DIR>" --output json
 uip solution resource refresh --output json
 ```
 
-After migration, inspect `<AGENT_PROJECT_DIR>/bindings_v2.json` only to verify that a `memorySpace` binding exists. Do not edit it. Run `uip solution resource refresh` from the solution root so the solution resource catalogue sees the memory binding.
+After migration, inspect `<AGENT_PROJECT_DIR>/bindings_v2.json` only to verify that a `memorySpace` binding exists. Do not edit it. Run `uip solution resource refresh` from the solution root so the solution resource catalogue sees the memory binding. Do not skip refresh because the memory space name/folder were provided, because `bindings_v2.json` looks correct, or because publish/deploy is out of scope. If refresh fails due authentication, leave the generated files intact and report the failed refresh command.
 
 ## Remove
 
