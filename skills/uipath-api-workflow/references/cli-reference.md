@@ -414,8 +414,6 @@ uip solution publish ./build/MyApiSolution.zip \
 
 The agent should not invent these — they are NOT part of the api-workflow-tool surface:
 
-- `uip api-workflow build` <!-- uip-check-skip -->
-- `uip api-workflow validate` <!-- uip-check-skip -->
 - `uip api-workflow publish` <!-- uip-check-skip -->
 - `uip api-workflow init` <!-- uip-check-skip -->
 - `uip apw <anything>` (no alias) <!-- uip-check-skip -->
