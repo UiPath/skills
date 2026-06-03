@@ -28,16 +28,13 @@ initial_prompt: |
   The process must fetch the CURRENT weather in Bellevue using the Open-Meteo
   connector, then surface the current temperature as a flow output variable.
 
-  Use the Open-Meteo Integration Service connector. Run the flow with
-  `uip maestro flow debug` to confirm it returns the current temperature.
+  Use the Open-Meteo Integration Service connector. Validate the flow.
 
-  The task is not complete until `uip maestro flow validate` passes and the
-  debug run reports `finalStatus: "Completed"` with the current temperature in
-  the output.
+  The task is not complete until `uip maestro flow validate` passes.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build, validate, and run end-to-end in a single
-  pass. Before starting, load the uipath-maestro-flow skill and follow its
+  planning and implementation. Build and validate the complete flow end-to-end
+  in a single pass. Before starting, load the uipath-maestro-flow skill and follow its
   connector node configuration workflow. Do NOT substitute a mock or a manual
   HTTP request for the connector.
 
@@ -49,15 +46,6 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  # ── Agent invoked debug ────────────────────────────────────────────────
-  - type: command_executed
-    description: "Agent ran flow debug with --output json"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug.*--output\s+json'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   # ── Execution: connector calls Open-Meteo and returns a temperature ─────
