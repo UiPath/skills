@@ -12,11 +12,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "BatchSol" containing a low-code agent
-  "BatchAgent" that takes a CSV upload and adds two LLM-filled columns:
-  a 4-digit MCC code and a confidence label. Enable the built-in
-  "batch-transform" tool so the agent can produce one augmented row per
-  input row.
+  Create a UiPath low-code agent "BatchAgent" that takes a CSV upload and adds
+  two LLM-filled columns: a 4-digit MCC code and a confidence label.
+  Enable the built-in "batch-transform" tool so the agent can produce
+  one augmented row per input row. The solution should be named
+  "BatchSol".
 
   Use the `uip` CLI to scaffold the solution and agent — do NOT
   hand-author the solution `.uipx`, `agent.json`, `project.uiproj`,

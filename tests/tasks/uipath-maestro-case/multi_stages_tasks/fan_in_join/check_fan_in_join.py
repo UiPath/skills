@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     assert_count,
     find_edges,
     find_node_by_label,
@@ -121,7 +122,7 @@ def main():
     payload_contains(
         payload, "Triage", "Validate", "Enrich", "Join", require_all=False
     )
-    status = payload.get("finalStatus") or payload.get("status")
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: diamond topology Triage→{Validate,Enrich}→Join with two "

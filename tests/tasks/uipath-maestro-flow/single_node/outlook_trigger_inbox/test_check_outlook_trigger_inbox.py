@@ -116,6 +116,22 @@ def test_does_not_fall_back_on_unrelated_failure(monkeypatch) -> None:
     assert calls[0][3] == "run"
 
 
+def test_handles_pascalcase_item_id(monkeypatch) -> None:
+    """A CLI that PascalCases --output json keys (PR #2266) emits item key `Id`.
+    The checker must read it (else the live set collapses to {None} and falsely
+    fails with the PR #348 signature). Locks the `f.get("id") or f.get("Id")` fix.
+    """
+    checker = _load_checker()
+    _patch_static(monkeypatch, checker, folder_id="mail-folder-1")
+
+    def fake_run(_args, **_kwargs):
+        # PascalCase item key, as #2266 emits it
+        return _fake_proc(0, stdout=json.dumps({"Data": [{"Id": "mail-folder-1"}]}))
+
+    monkeypatch.setattr(checker.subprocess, "run", fake_run)
+    checker.check_folder_id_fresh()  # must NOT raise (id resolves on the connection)
+
+
 def test_folder_id_mismatch_fails_with_pr348_signature(monkeypatch) -> None:
     """If the flow's parentFolderId is not in the live ID set, the checker
     fails with the PR #348 regression marker (independent of the verb)."""

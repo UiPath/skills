@@ -15,12 +15,12 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "KnowledgeFlowSol" containing a flow project
-  "KnowledgeFlow" with an inline low-code agent. The agent accepts a
-  required `question` (string) and returns a string `answer`. It must
-  ground its answers in the existing semantic index named
-  "UiPathAgentsProductKnowledge" that is already deployed in the
-  tenant (indexes always live outside the solution).
+  Create a UiPath Flow project "KnowledgeFlow" with an inline low-code agent
+  that accepts a required `question` (string) and returns a string
+  `answer`. It must ground its answers in the existing semantic index
+  named "UiPathAgentsProductKnowledge" that is already deployed in the
+  tenant (indexes always live outside the solution). The solution
+  should be named "KnowledgeFlowSol".
 
   Use the real folder and index name from the tenant — do not
   hard-code or guess these values. Name the agent's context resource

@@ -297,7 +297,7 @@ uip maestro flow registry get <node-type> --output json
 
 Any node with `supportsErrorHandling: true` in the registry exposes an implicit `error` source port for catching node-level failures. This applies to HTTP, Script, Transform (all variants), connector activities, agent nodes, and RPA nodes — essentially every action node.
 
-The port is **not** listed in the registry's `handleConfiguration`. It's only visible at serialization time: when the flow contains an outgoing edge with `sourcePort: "error"` from the node, the serializer emits a BPMN boundary error event attached to the node.
+The port is **not** listed in the registry's `handleConfiguration`. Studio Web only exposes it when the source node has `inputs.errorHandlingEnabled: true`; when the flow contains an outgoing edge with `sourcePort: "error"` from that node, the serializer emits a BPMN boundary error event attached to the node. Because of this gate, `uip maestro flow validate` reports an error when a node has an outgoing `sourcePort: "error"` edge but `inputs.errorHandlingEnabled` is not `true` — so the inconsistency is caught before publish rather than surfacing as a hidden edge in Studio Web.
 
 ### When the error port fires
 
@@ -319,6 +319,17 @@ uip maestro flow registry get <node-type> --output json --output-filter "Node.Su
 # Add an outgoing edge with sourcePort: "error"
 uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
   --source-port error --target-port input --output json
+```
+
+`uip maestro flow edge add --source-port error` and `uip maestro flow format` set `inputs.errorHandlingEnabled: true` on the source node automatically. When editing `.flow` JSON directly, set the flag yourself:
+
+```json
+{
+  "id": "<actionNodeId>",
+  "inputs": {
+    "errorHandlingEnabled": true
+  }
+}
 ```
 
 Inside the error handler, `$vars.{actionNodeId}.error` resolves to the error object. For HTTP it's `{ code, message, detail, category, status }`; other nodes have similar shapes — check the node's `outputDefinition.error.schema` in the registry.

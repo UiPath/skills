@@ -1,0 +1,7 @@
+{
+  "Result": "Success",
+  "Code": "IsConnectionsList",
+  "Data": [
+    { "id": "conn-mock-jira-01", "name": "mock.user@example.com-jira", "folder": { "key": "folder-mock-workspace", "displayName": "mock.user@example.com's workspace" }, "enabled": true }
+  ]
+}

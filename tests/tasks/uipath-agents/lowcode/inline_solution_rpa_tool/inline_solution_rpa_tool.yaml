@@ -15,11 +15,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "PayrollFlowSol" containing a flow project
-  "PayrollFlow". The flow should use an inline low-code agent that
-  calls an RPA process called "CalculatePay" living inside this same
-  solution as a separate project. Wire the RPA process as a tool on
-  the inline agent.
+  Create a UiPath Flow project "PayrollFlow" that uses an inline low-code
+  agent to call an RPA process called "CalculatePay" living inside
+  this same solution as a separate project. Wire the RPA process as a
+  tool on the inline agent. The solution should be named
+  "PayrollFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

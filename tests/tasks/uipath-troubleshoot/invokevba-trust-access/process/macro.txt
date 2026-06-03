@@ -1,0 +1,9 @@
+Sub RefreshPivotTables()
+    Dim ws As Worksheet
+    Dim pt As PivotTable
+    For Each ws In ActiveWorkbook.Worksheets
+        For Each pt In ws.PivotTables
+            pt.RefreshTable
+        Next pt
+    Next ws
+End Sub

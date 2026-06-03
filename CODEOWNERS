@@ -13,6 +13,9 @@
 # Plugin-namespaced slash commands (e.g., /uipath:install-permissions)
 /commands/ @DragosUnguru @tmatup
 
+# CLI versions config (per-environment CLI versions)
+/assets/cli-versions.json @vlad-uipath
+
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
@@ -102,6 +105,7 @@
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+/skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
 
 # Governance skill
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
@@ -127,3 +131,6 @@
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+# MCP skill (UiPath AgentHub MCP server registration + tool authoring)
+/skills/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
+/tests/tasks/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents

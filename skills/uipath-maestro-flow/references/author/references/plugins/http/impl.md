@@ -171,6 +171,8 @@ Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge a
 }
 ```
 
+When an HTTP node has an outgoing `error` edge, the HTTP node instance must also include `inputs.errorHandlingEnabled: true`. `uip maestro flow edge add --source-port error` and `uip maestro flow format` set this automatically; direct JSON edits must set it explicitly.
+
 ```json
 {
   "id": "e-<nodeId>-<hasItemsDownstream>",

@@ -65,7 +65,21 @@ jobs:
 
       - name: Rebuild catalog
         if: steps.check.outputs.exists != 'true'
-        run: python3 scripts/build-uip-catalog.py --install-tools
+        run: |
+          # Install tools from GitHub Packages @alpha — the scope the install
+          # step already configured. Do NOT reset to public npm: the tool
+          # plugins must version-match the alpha CLI to register their full
+          # command tree. Stable (public-npm) tools install but fail to load
+          # reliably against the alpha CLI (e.g. the `rpa` group never appears;
+          # diagnostics confirmed the alpha `rpa-tool` does). Catalog tracks
+          # cli/main, so its tools must come from the same @alpha feed.
+          # Guards: fail the build (no PR opened) if tool installs all fail or
+          # the verb count collapses vs the committed snapshot.
+          # --min-verbs 1000 is a deliberate hard tripwire — it caught the
+          # orchestrator-tool drop (#1203 follow-up). The build must clear it;
+          # a stuck refresh is louder than a silently shrunk catalog.
+          python3 scripts/build-uip-catalog.py --install-tools \
+            --min-verbs 1000 --max-drop-frac 0.2
 
       - name: Check for catalog diff
         if: steps.check.outputs.exists != 'true'

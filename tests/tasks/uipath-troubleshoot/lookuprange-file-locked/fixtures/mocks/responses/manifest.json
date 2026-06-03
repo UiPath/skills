@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the lookup-range-file-locked playbook signature.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-b2c9d4e7-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-b2c9d4e7-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"e7f8091a-2b3c-4d5e-9f60-7a8b9c0d1e2f\" --output json",
+      "file": "or-jobs-get-e7f8091a-output-json.json"
+    },
+    {
+      "match": "or jobs get e7f8091a-2b3c-4d5e-9f60-7a8b9c0d1e2f --output json",
+      "file": "or-jobs-get-e7f8091a-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"e7f8091a-2b3c-4d5e-9f60-7a8b9c0d1e2f\" --level Error --output json",
+      "file": "or-jobs-logs-e7f8091a-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs e7f8091a-2b3c-4d5e-9f60-7a8b9c0d1e2f --level Error --output json",
+      "file": "or-jobs-logs-e7f8091a-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"e7f8091a-2b3c-4d5e-9f60-7a8b9c0d1e2f\" --output json",
+      "file": "or-jobs-logs-e7f8091a-output-json.json"
+    },
+    {
+      "match": "or jobs logs e7f8091a-2b3c-4d5e-9f60-7a8b9c0d1e2f --output json",
+      "file": "or-jobs-logs-e7f8091a-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

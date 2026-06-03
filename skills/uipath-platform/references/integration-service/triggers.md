@@ -10,6 +10,7 @@ Triggers are event-based activities that fire when something happens in an exter
 - [Trigger Discovery Flow](#trigger-discovery-flow)
 - [List Trigger Activities](#list-trigger-activities)
 - [Trigger Objects](#trigger-objects)
+  - [`parameters[]` — canonical event-parameter input fields](#parameters--canonical-event-parameter-input-fields)
 - [Trigger Metadata (Describe)](#trigger-metadata-describe)
 - [CRUD vs Non-CRUD Triggers](#crud-vs-non-crud-triggers)
 - [Response Fields](#response-fields)
@@ -107,6 +108,22 @@ Array of objects — each has a **name** to use in the describe command. Also in
 | `byoaConnection` | `true` if this event requires a BYOA connection |
 | `isWebhookUrlVisible` | `true` if the webhook URL should be shown to the user |
 | `eventMode` | `"webhooks"` or `"polling"` — how the trigger receives events |
+| **`parameters[]`** | **Canonical** event-parameter input fields for this trigger — see below |
+
+#### `parameters[]` — canonical event-parameter input fields
+
+One entry per configure-time input field (repo, mailbox folder, channel). Canonical across all connectors. `triggers describe` exposes the same set under `events.<operation>.required`/`.optional`, but that block is empty for several connectors — always read `parameters[]` here.
+
+| Field | Description |
+|---|---|
+| `name` | Field name — pass as a key inside the `--detail` bucket selected by `type` (see below) |
+| `displayName` | Human-readable label — use when prompting the user |
+| `dataType` | Value type (`string`, `number`, `boolean`, …) |
+| `required` | `true` → must be supplied before configure; `false` → optional |
+| `description` | Field hint (often suitable to surface verbatim when asking the user) |
+| `reference` | Present → field is a lookup ID. Resolve via `uip is resources run list "<connector-key>" "<reference.objectName>" --connection-id "<id>"` before configure (IDs are connection-scoped). |
+| `design.position` | `"primary"` → top-level input shown in the trigger card. Other positions are layout hints — ignore for configure. |
+| `type` | Bucket selector for `node configure --detail`: `"query"` → `queryParameters`, `"path"` → `pathParameters`, otherwise → `eventParameters`. Each bucket is a JSON object keyed by `name`. |
 
 ### Trigger Metadata (from `triggers describe`)
 
@@ -119,6 +136,8 @@ Additional fields:
 | `eventMode` | `"webhooks"` or `"polling"` |
 | `byoaConnection` | `true` if this trigger requires a BYOA connection |
 | `isWebhookUrlVisible` | `true` if the webhook URL should be shown |
+
+> **`events.<operation>.required` from `triggers describe` is connector-dependent and often empty.** Downstream commands that derive `eventParameters.fields` from it inherit the gap. Read input fields from [`parameters[]`](#parameters--canonical-event-parameter-input-fields) instead. `triggers describe` remains the source for **output** field metadata.
 
 ---
 

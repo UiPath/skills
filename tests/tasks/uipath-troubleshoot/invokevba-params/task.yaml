@@ -1,0 +1,124 @@
+task_id: skill-troubleshoot-invokevba-params
+description: >
+  UiPath troubleshooting agent must diagnose an Invoke VBA failure caused by
+  EntryMethodParameters being shaped wrong: the macro signature accepts two
+  arguments (Sub PostRow(amount As Double, vendor As String)) but the
+  workflow passes a one-element array. Success = agent matches the
+  invoke-vba-parameter-formatting playbook AND identifies the arity
+  mismatch between the XAML and the Sub signature in macro.txt.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 60
+turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My LedgerPoster process is faulting in Orchestrator on every run.
+  The folder is "RPA Production". Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the invoke-vba-parameter-formatting playbook AND identified the arity mismatch between EntryMethodParameters and the Sub signature"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My LedgerPoster process is faulting in Orchestrator on every
+         run. The folder is 'RPA Production'."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/invoke-vba-parameter-formatting.md
+        because the runtime error
+          "Wrong number of arguments or invalid property assignment"
+        is the verbatim signature of an Invoke VBA parameter shape
+        mismatch in that playbook.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - `macro.txt` declares
+            `Sub PostRow(amount As Double, vendor As String)` (2 required
+            parameters).
+          - `Main.xaml`'s Invoke VBA activity passes a 1-element array
+            (`new Object[] { 125.50 }`) - the vendor argument is missing.
+          - VBA's Application.Run rejects the arity mismatch.
+        The reference fix:
+          - Pass a 2-element array matching the signature, e.g.
+            `new Object[] { 125.50, "ACME Corp" }`, via an Assign
+            activity before Invoke VBA.
+
+      SCORING RUBRIC:
+        1.0  Agent matched invoke-vba-parameter-formatting AND identified
+             the arity mismatch (2 required parameters vs 1-element
+             array) AND recommended passing a 2-element array.
+        0.8  Correct playbook but conclusion is vague (e.g.,
+             "parameters don't match" without naming the arity count).
+        0.5  Correct playbook but matched a sibling cause (e.g., wrong
+             element type, EntryMethodParameters null) instead of the
+             arity mismatch.
+        0.2  Surfaced the error message without comparing the XAML
+             parameter expression to the Sub signature.
+        0.0  Wrong cause (e.g., concluded Trust Center, code-file-path
+             missing wrapper, entry-method-name typo, or COM interop).
+
+      Reward either path: agent reads both `Main.xaml` and `macro.txt`
+      directly to compare arity, or escalates to the user after
+      reading one of them.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its
+    investigation. You only have the information you wrote in your
+    initial report.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

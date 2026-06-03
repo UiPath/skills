@@ -8,10 +8,10 @@ description: >
   error message instead of writing the guardrail.
 tags: [uipath-agents, e2e, low-code, guardrail]
 initial_prompt: |
-  Create a UiPath solution "ValidationSol" containing a low-code agent
-  "ReviewAgent" that handles compliance review requests.
-  Then add a built-in PII detection guardrail that escalates violations
-  to a human reviewer instead of blocking.
+  Create a UiPath low-code agent "ReviewAgent" that handles compliance review
+  requests. Add a built-in PII detection guardrail that escalates
+  violations to a human reviewer instead of blocking. The solution
+  should be named "ValidationSol".
 
   Guardrail requirements:
   - validatorType: pii_detection

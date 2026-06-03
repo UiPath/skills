@@ -238,7 +238,7 @@ Apply these when defining edges in the topology:
 9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
 10. Do not create cycles except through Loop's `loopBack` mechanism
 11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
-12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
+12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. The source node must also have `inputs.errorHandlingEnabled: true`; CLI edge-add/format commands set it automatically, but direct JSON edits must include it. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ---
 

@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T09:12:46.262Z",
+      "Message": "[Throw SKU Not Found] SKU-8842 not found in price list"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T09:12:46.305Z",
+      "Message": "SKU-8842 not found in price list\r\nin Main.xaml\r\n    at Throw \"Throw SKU Not Found\"\r\n    at If \"Guard empty result\"\r\n    at Sequence \"Process Price List\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

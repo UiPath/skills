@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     assert_count,
     find_node_by_label,
     find_stages,
@@ -129,7 +130,7 @@ def main():
 
     payload = start_debug(timeout=540)
     payload_contains(payload, "Intake", "Audit", "Archive", require_all=False)
-    status = payload.get("finalStatus") or payload.get("status")
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: 3 stages with mixed isRequired (Intake/Archive true, Audit false); "

@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-14T08:05:11.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-14T08:05:11.722Z",
+      "Message": "[Excel Process Scope] Opening workbook data\\Invoices.xlsx"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-14T08:05:15.014Z",
+      "Message": "[Use Excel File] Workbook opened successfully"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-14T08:05:16.341Z",
+      "Message": "[Invoke VBA] Cannot run the macro 'ProcessInvoces'. The macro may not be available in this workbook or all macros may be disabled."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-14T08:05:16.398Z",
+      "Message": "Cannot run the macro 'ProcessInvoces'. The macro may not be available in this workbook or all macros may be disabled.\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-14T08:05:16.415Z",
+      "Message": "Execution ended in: 00:00:05"
+    }
+  ]
+}

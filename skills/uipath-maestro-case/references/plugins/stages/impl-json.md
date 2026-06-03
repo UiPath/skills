@@ -160,5 +160,5 @@ After writing, confirm:
 - For ExceptionStage: `data.entryConditions: []` and `data.exitConditions: []` are present (initialized as empty arrays at creation time)
 - For regular Stage at creation time: `data.entryConditions` / `data.exitConditions` are absent — the conditions plugins will create and populate them later if the sdd.md calls for it
 
-Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added. In v20 mode, validate may reject due to CLI lag (Rule 18) — informational only.
+Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
 

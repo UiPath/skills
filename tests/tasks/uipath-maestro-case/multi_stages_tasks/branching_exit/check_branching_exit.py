@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     assert_count,
     edge_labels_from,
     find_edges,
@@ -138,7 +139,7 @@ def main():
         payload, "Triage", "Approved Path", "Rejected Path", "Pending Path",
         require_all=False,
     )
-    status = payload.get("finalStatus") or payload.get("status")
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: Triage WIDE fan-outs to Approved/Rejected/Pending (3 branches); exits "
