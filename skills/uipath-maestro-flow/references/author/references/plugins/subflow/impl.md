@@ -87,33 +87,6 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
               "type": "object",
               "description": "Error information if the script fails",
               "source": "=result.Error",
-              "var": "error",
-              "schema": {
-                "$schema": "http://json-schema.org/draft-07/schema#",
-                "type": "object",
-                "required": ["code", "message", "detail", "category", "status"],
-                "properties": {
-                  "code": { "type": "string" },
-                  "message": { "type": "string" },
-                  "detail": { "type": "string" },
-                  "category": { "type": "string" },
-                  "status": { "type": "integer" }
-                },
-                "additionalProperties": false
-              }
-            }
-          },
-          "outputs": {
-            "output": {
-              "type": "object",
-              "description": "The return value of the script",
-              "source": "=result.response",
-              "var": "output"
-            },
-            "error": {
-              "type": "object",
-              "description": "Error information if the script fails",
-              "source": "=result.Error",
               "var": "error"
             }
           }
@@ -184,12 +157,11 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 
 ## Passing a Flow Input Into the Subflow
 
-When the **parent flow** itself takes an input the caller supplies at trigger time (e.g. a
-`text` to reverse) and forwards it into the subflow, the parent's `in` variable needs the
-**same `triggerNodeId` treatment as a subflow `in` variable** (rule #3) — set it to the
-parent's trigger node ID. Omitting it is a silent trap: `uip maestro flow validate` still
-reports **Valid**, but at `flow debug` the trigger output is empty, the value arrives as
-`null`, and the subflow script faults (e.g. `Cannot read property 'split' of null`).
+A **parent flow** forwarding its own trigger input into a subflow must give the parent's `in`
+variable a `triggerNodeId` — same as a subflow `in` variable (rule #3), pointing at the
+parent's trigger node. Omit it and it's a silent trap: `uip maestro flow validate` still
+reports **Valid**, but at `flow debug` the trigger output is empty, the value arrives `null`,
+and the subflow script faults (e.g. `Cannot read property 'split' of null`).
 
 **Parent flow `variables.globals`** — note `triggerNodeId` on the `in` variable:
 ```json
@@ -243,7 +215,7 @@ in separate scopes**, joined only by the subflow node's `inputs` mapping; each n
 7. Subflows can be nested (subflow inside subflow), up to 3 levels
 8. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections
 9. Subflow node positions go in the subflow's own `layout.nodes` — NOT in the top-level `layout.nodes`. Each subflow scope is independent.
-10. When the **parent flow** takes an external input and forwards it to a subflow, the parent's `in` variable **must** also have `triggerNodeId` set to the parent's trigger node ID — the same rule as #3, one scope up. `uip maestro flow validate` does **not** catch its absence; the forwarded value silently arrives as `null` at runtime. See [Passing a Flow Input Into the Subflow](#passing-a-flow-input-into-the-subflow).
+10. Parent flow forwarding an external input to a subflow: the parent's `in` variable **must** also set `triggerNodeId` to the parent's trigger node ID — same as #3, one scope up. `uip maestro flow validate` still reports **Valid** (it does not fail on the omission); the value silently arrives `null` at runtime. See [Passing a Flow Input Into the Subflow](#passing-a-flow-input-into-the-subflow).
 
 ## Creating a Subflow
 
