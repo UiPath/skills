@@ -60,7 +60,3 @@ Passing a display label (`"category":"Travel"`) is rejected — resolve to `Numb
 - Finite, reused list of named options → choice set. Single value → `_SINGLE`; multiple → `_MULTIPLE`.
 - Link to a *row* in another entity → `RELATIONSHIP` (see [`entity-schema.md` → Relationship Fields](entity-schema.md#relationship-fields)).
 - Need a choice set → run `choice-sets list`, show the user the candidates that match by name/purpose, and ask: **reuse one, or create new?** Only create with `choice-sets create` + `choice-set-values create` once the user confirms. Never fall back to `STRING`.
-
-## Required CLI version
-
-`@uipath/data-fabric-tool@1.2.0-alpha.20260602.7377+` exposes the full surface. Earlier alphas (e.g. `7277`) shipped a read-only build with only `list` + `get` — if `uip df choice-sets create` errors with *"unknown command 'create'"*, the installed copy is stale. Refresh with `uip tools install @uipath/data-fabric-tool@<latest-version>` (use `npm view @uipath/data-fabric-tool dist-tags` to find the latest version) — the `@alpha` tag alias isn't accepted by `uip tools install`.

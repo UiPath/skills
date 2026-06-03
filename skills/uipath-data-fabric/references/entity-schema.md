@@ -138,9 +138,7 @@ uip df entities update <entity-id> \
 - `referenceFieldId` — UUID of the join field on the target entity. Get it from `entities get <target-entity-id>` (`Fields[].Id`). Configures join-on-read; the stored value is still the target record's `Id`.
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
 - Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
-- Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required by the CLI; passing only one errors with *"Field '<name>' of type FILE requires both referenceEntityId and referenceFieldId"*.
-
-> **Why UUIDs, not names.** Earlier versions of these docs claimed `referenceEntityName` / `referenceFieldName`. The CLI accepts those keys without complaint but silently drops the binding — the column stores UUIDs but the FK never wires, and Studio Web hides the field. Always use the `Id` form.
+- Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required.
 
 ```bash
 # 1. Discover target entity + field UUIDs

@@ -76,7 +76,7 @@ Respond that the operation is not supported. Do not try to work around it.
 
 11. **Never attempt field delete.** Do not pass `removeFields` in `entities update`. Respond: *"Removing fields is not supported via the CLI."*
 
-12. **Complex field types need extra config and lookups, just like `DECIMAL` needs `decimalPrecision`.** `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` require `choiceSetId` (UUID, from `choice-sets list`); `RELATIONSHIP` and `FILE` require `referenceEntityId` (target entity UUID — from `entities list`) + `referenceFieldId` (target field UUID — from `entities get <target-id>`). Names are silently dropped, the FK never wires — always use UUIDs. The target entity must exist first. Full shape in [`references/entity-schema.md`](references/entity-schema.md).
+12. **Complex field types need extra config and lookups, just like `DECIMAL` needs `decimalPrecision`.** `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` require `choiceSetId` (UUID, from `choice-sets list`); `RELATIONSHIP` and `FILE` require `referenceEntityId` (target entity UUID — from `entities list`) + `referenceFieldId` (target field UUID — from `entities get <target-id>`). The target entity must exist first. Full shape in [`references/entity-schema.md`](references/entity-schema.md).
 
 13. **Choice-set authoring is in the CLI.** `choice-sets create` / `update` / `delete` + `choice-set-values create` / `update` / `delete`, alongside `list` and `list-values`. If a needed choice set is missing, ask the user — then create it (don't fall back to `STRING`). Full surface: [`references/choice-sets.md`](references/choice-sets.md).
 
