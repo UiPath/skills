@@ -25,6 +25,18 @@ Updated by: Hypothesis Tester (status, evidence), Orchestrator (root cause flag)
         "to_confirm": ["what evidence would prove this"],
         "to_eliminate": ["what evidence would disprove this"]
       },
+      "signals_supporting": ["names of signals from triage-initial.json that support this hypothesis"],
+      "signals_contradicting": ["names of signals that would contradict — populated by tester if any fire"],
+      "test_plan": [
+        {
+          "n": 1,
+          "action": "uip <subcommand> --output json | tee raw/H1-<file>.json",
+          "purpose": "fetches a to_confirm or to_eliminate item",
+          "feeds": "evidence/H1-<source>.json",
+          "revise_if": "observed-field condition (empty if unconditional)",
+          "status": "pending"
+        }
+      ],
       "evidence_refs": ["evidence/H1-cli-data.json"],
       "evidence_summary": "What was actually discovered during testing",
       "resolution": null
@@ -44,8 +56,8 @@ Updated by: Hypothesis Tester (status, evidence), Orchestrator (root cause flag)
 
 ## Rules
 
-- Hypothesis Generator creates/appends hypotheses
-- Hypothesis Tester updates: `status`, `evidence_refs`, `evidence_summary`
+- Hypothesis Generator creates/appends hypotheses, populates `signals_supporting` from the triage `signals` inventory (each hypothesis cites the signals that drove it), leaves `test_plan: []` and `signals_contradicting: []` — the tester writes those.
+- Hypothesis Tester reads triage's `signals` array BEFORE writing `test_plan`. Any `to_confirm` / `to_eliminate` item already resolved by an existing signal becomes a `status: skipped` plan step with the signal name in `purpose`. After execution, the tester updates: `status`, `evidence_refs`, `evidence_summary`, and appends any new contradicting signals to `signals_contradicting`. See `schemas/state.schema.md` § Plan for plan-step structure.
 - Orchestrator updates: `is_root_cause` (true/false) after tester confirms
 - Orchestrator updates: `resolution` field for confirmed root causes
 - Never remove eliminated hypotheses — they prevent retesting

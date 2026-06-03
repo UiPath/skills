@@ -66,7 +66,7 @@ Map the branch identified in Investigation to the fix:
 
 - **Branch 1 — Session configuration mismatch:**
   - Option A: Set "Login to Console" to true on the robot user (Orchestrator → Tenant → Users → user → Access Rules → Advanced Robot Options), so the Robot creates its own console session when no one is logged in.
-  - Option B: Ensure a user is logged into the machine before jobs run.
+  - Option B: Ensure a robot is logged into the machine before jobs run.
   - Prevention: For processes with `requiresUserInteraction: true`, default Login to Console to true.
 - **Branch 2 — Account locked:**
   - Have a domain admin unlock the account in Active Directory (AD Users & Computers → user → Account → "Unlock account", or `Unlock-ADAccount -Identity <user>`).
