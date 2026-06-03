@@ -80,6 +80,8 @@ If `ResultCount` is 0, try a different keyword. Connector activity names can dif
 
 Skip this step if `connectorKey === "uipath-uipath-http"` — the HTTP connector uses `connectionId: "ImplicitConnection"` and needs no real connection.
 
+`<connector-key>` is the full vendor identifier — **NEVER guess it from the vendor name**. `github` is not a key (`uip is connections list github` → 404 `InvalidConnectorKey`); the key is `uipath-microsoft-github`. Take it verbatim from Step 1's `ConnectorKey` field — which also means Step 2 cannot be parallelized with Step 1.
+
 ```bash
 uip is connections list <connector-key> --output json
 ```
@@ -771,6 +773,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 ## Anti-patterns
 
+- **Do NOT guess connector keys.** Keys are full vendor identifiers (`uipath-microsoft-github`, `uipath-salesforce-slack` — note the vendor segment is not always what you'd expect). Guessing `github` 404s. Read `ConnectorKey` from `resolve` output, or look it up with `uip is connectors list --filter <vendor>` — and don't fire the connections lookup in parallel with `resolve`, since the key comes from `resolve`.
 - **Do NOT invent a `uiPathActivityTypeId`.** It must come from `registry resolve`. Hand-authoring or reusing a fallback default produces a generic/wrong card.
 - **Do NOT hand-write the `metadata.configuration` blob.** `registry stub` builds it from the TypeCache `Config` + IS Elements path. Any other shape risks the "block icon" rendering.
 - **Do NOT skip `uip is connections ping` for IntSvc kind.** A connection in the listing can still be in a broken state. Always ping after listing.
