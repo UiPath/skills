@@ -16,7 +16,8 @@ uip or eval run-offline-evals \
   [--is-low-code-agent] \
   [--batch-size <n>] \
   [--folder-key <folder-guid>] \
-  [--tenant <tenant-name>]
+  [--tenant <tenant-name>] \
+  --output json
 ```
 
 The folder resolves from your personal workspace automatically. Pass `--folder-key` to target a specific folder instead.
@@ -44,7 +45,8 @@ The folder resolves from your personal workspace automatically. Pass `--folder-k
 uip or eval run-offline-evals \
   --package-name "MyAutomation.Agent.agent" \
   --package-version "1.0.2" \
-  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09"
+  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
+  --output json
 
 # Inline override — paste evaluator and item JSON directly from the package/portal.
 # Use --is-low-code-agent to auto-transform: wraps evaluator as { evaluatorTypeId, evaluatorConfig }
@@ -54,6 +56,7 @@ uip or eval run-offline-evals \
   --package-name "MyAutomation.Agent.agent" \
   --package-version "1.0.2" \
   --is-low-code-agent \
+  --output json \
   --evaluators '[{
     "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
     "name": "Default Evaluator",
@@ -78,7 +81,8 @@ uip or eval run-offline-evals \
   --package-name "MyAutomation.Agent.agent" \
   --package-version "1.0.2" \
   --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e"
+  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e" \
+  --output json
 ```
 
 ## Output
@@ -189,7 +193,7 @@ Items use `expectedAgentBehavior` (renamed to `expectedBehavior` automatically):
 | `personal workspace not found` | Account has no personal workspace | Pass `--folder-key` explicitly |
 | `Folder not found` | `--folder-key` GUID invalid or inaccessible | Run `uip or folders list` to find valid keys |
 
-## Validation rules
+## Validation Rules
 
 The CLI enforces these rules before making any network calls:
 
