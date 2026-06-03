@@ -1,0 +1,45 @@
+task_id: skill-platform-library-lifecycle-e2e
+description: >
+  E2E library lifecycle: upload e2e-stub-lib.1.0.0.nupkg, list versions,
+  download, verify sha256 round-trip, delete.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, libraries]
+skip: true
+# Blocked: needs tests/fixtures/libraries/e2e-stub-lib.1.0.0.nupkg.
+# See tests/fixtures/libraries/README.md.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 10
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill. The fixture lives at
+  `$SKILLS_REPO_PATH/tests/fixtures/libraries/e2e-stub-lib.1.0.0.nupkg`.
+
+  Steps (use `--output json`):
+  1. `libraries upload --file <fixture>` → `upload.json`. Capture the library key.
+  2. `libraries get <key>` → `get.json`.
+  3. `libraries versions <library-package-id>` → `versions.json`.
+  4. `libraries download <key> --destination ./downloaded.nupkg` → `download.json`.
+  5. Compare sha256 of source and downloaded.
+  6. `libraries delete <key>` → `delete.json`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent uploaded the library fixture"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+libraries\s+upload'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
