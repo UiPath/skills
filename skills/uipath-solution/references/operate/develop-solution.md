@@ -44,6 +44,8 @@ Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live insid
 
 ## Step 2: Add Existing Projects
 
+> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution project add`, run `uip functions init` (Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. Registration without it creates an incomplete solution entry.
+
 Register a project that already lives inside the solution directory.
 
 ```bash

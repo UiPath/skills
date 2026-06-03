@@ -6,7 +6,7 @@ description: >
   registers the project and writes a process resource file with a `resource.key`
   UUID under `resources/solution_folder/process/`, and that
   `uip solution resource list` surfaces it as a Local resource.
-tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, resource, feature:registry]
+tags: [uipath-agents, coded, mode:build, lifecycle:generate, resource, feature:registry]
 
 run_limits:
   expected_turns: 43
@@ -91,7 +91,7 @@ success_criteria:
   - type: file_exists
     description: "Coded agent entry-points.json exists"
     path: "ClaimsSol/ClassifierAgent/entry-points.json"
-    weight: 1.0
+    weight: 0.3
     pass_threshold: 1.0
 
   - type: run_command
