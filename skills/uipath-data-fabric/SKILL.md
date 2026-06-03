@@ -49,7 +49,6 @@ Respond that the operation is not supported. Do not try to work around it.
 | Change a field's data type | Not supported; type is fixed at creation |
 | Create a federated entity | Not supported via CLI or UiPath portal |
 | Write records to a federated entity | Federated entities are read-only |
-| Create / update / delete a choice set | Choice sets are authored in the Data Fabric web UI; the CLI exposes only `choice-sets list` / `choice-sets get` for browsing |
 
 ---
 
@@ -77,17 +76,17 @@ Respond that the operation is not supported. Do not try to work around it.
 
 11. **Never attempt field delete.** Do not pass `removeFields` in `entities update`. Respond: *"Removing fields is not supported via the CLI."*
 
-12. **Complex field types need extra config and lookups, just like `DECIMAL` needs `decimalPrecision`.** `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` require `choiceSetId` (from `choice-sets list`); `RELATIONSHIP` requires `referenceEntityName` (target's technical `Name`) + `referenceFieldName` (usually `Id`), and the target entity must exist first. Full shape in [`references/entity-schema.md`](references/entity-schema.md).
+12. **Complex field types need extra config and lookups, just like `DECIMAL` needs `decimalPrecision`.** `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` require `choiceSetId` (UUID, from `choice-sets list`); `RELATIONSHIP` and `FILE` require `referenceEntityId` (target entity UUID — from `entities list`) + `referenceFieldId` (target field UUID — from `entities get <target-id>`). Names are silently dropped, the FK never wires — always use UUIDs. The target entity must exist first. Full shape in [`references/entity-schema.md`](references/entity-schema.md).
 
-13. **`choice-sets` is read-only.** CLI has only `list` / `get` — author choice sets in the Data Fabric web UI. If a needed choice set is missing, stop and ask; do not fall back to `STRING`.
+13. **Choice-set authoring is in the CLI.** `choice-sets create` / `update` / `delete` + `choice-set-values create` / `update` / `delete`, alongside `list` and `list-values`. If a needed choice set is missing, ask the user — then create it (don't fall back to `STRING`). Full surface: [`references/choice-sets.md`](references/choice-sets.md).
 
-14. **Choice / relationship record values use lookup tokens, not labels.** Choice value → integer `NumberId` (single) or array of `NumberId`s (multi), from `choice-sets get`. Relationship value → target record's UUID `Id` regardless of `referenceFieldName`. Filter / `groupBy` use the same tokens; `CHOICE_SET_MULTIPLE` filtering has special operator semantics — see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
+14. **Choice / relationship record values use lookup tokens, not labels.** Choice value → integer `NumberId` (single) or array of `NumberId`s (multi), from `choice-sets list-values`. Relationship value → target record's UUID `Id` regardless of which field was bound as `referenceFieldId`. Filter / `groupBy` use the same tokens; `CHOICE_SET_MULTIPLE` filtering has special operator semantics — see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
 
 15. **Answer with `records query`, not from memory.** Counts, sums, filters, lookups — issue a fresh `records query` (or `records list`) and use the server's response. Do not reuse cached insert responses, IDs you generated earlier, or values from previous tool results. Exception: the `Id` returned by the same `records insert` you just made.
 
 16. **`records query` filters.** Body shape, operators, per-type support, response, and unsupported-operator handling are in the [filter contract](references/filter-platform-contract.md). Symbol-form operators only (`==`/`Equals`/`like` → 400). On an unsupported operator/type or a missing value, don't run it — ask the user (Rule 17). **Return all fields by default** — omit `selectedFields` unless a subset is requested.
 
-17. **When a request isn't supported, stop and confirm an alternative — never silently substitute.** Triggers (not exhaustive): a filter operator unsupported for the field type / not in the symbol list / missing a value (see [filter contract → Unsupported operator](references/filter-platform-contract.md#unsupported-operator-or-missing-value)); an unknown `fieldName`; a nonexistent or federated entity; a missing CLI verb (`removeFields`, choice-set authoring, … — see *Not Supported*); cross-entity joins or value forms the API can't serve.
+17. **When a request isn't supported, stop and confirm an alternative — never silently substitute.** Triggers (not exhaustive): a filter operator unsupported for the field type / not in the symbol list / missing a value (see [filter contract → Unsupported operator](references/filter-platform-contract.md#unsupported-operator-or-missing-value)); an unknown `fieldName`; a nonexistent or federated entity; a missing CLI verb (`removeFields`, entity delete, … — see *Not Supported*); cross-entity joins or value forms the API can't serve.
     Sequence: (1) state precisely what isn't supported (cite the rule / schema / *Not Supported* table); (2) propose a concrete alternative and name it — e.g. for an unknown `fieldName`, list the entity's real same-type fields from `entities get` and ask which; (3) apply **only** what the user approves, never your own fallback. If nothing works, recommend the right sibling skill (`uipath-maestro-flow` / `uipath-platform` / `uipath-rpa` / `uipath-agents` / `uipath-test`) — don't fabricate or return a degraded result.
 
 ---
@@ -139,7 +138,7 @@ For Complex types  field shapes and value formats, see [`references/entity-schem
 |------|----------------|
 | Explore what entities exist | `entities list` → `entities get <id>` |
 | Explore only native entities | `entities list --native-only` |
-| Browse / inspect choice sets (read-only) | `choice-sets list`, `choice-sets get <choice-set-id>` |
+| Manage choice sets | `choice-sets list` / `list-values <id>` / `create` / `update` / `delete`; values via `choice-set-values create` / `update` / `delete` — full surface in [`references/choice-sets.md`](references/choice-sets.md) |
 | Create a new entity | `entities create <name> --body '{"fields":[{"fieldName":"Title","type":"STRING"}]}'` — for complex field types (`CHOICE_SET_*`, `RELATIONSHIP`) and their required extras, see [`references/entity-schema.md`](references/entity-schema.md#supported-field-types) |
 | Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"NewField","type":"STRING"}]}'` |
 | Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — `id` is the field UUID from `entities get Fields[].ID` |
@@ -164,7 +163,7 @@ For Complex types  field shapes and value formats, see [`references/entity-schem
 
 ## Field Types
 
-Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`, `FILE`. Complex types that require extra config: `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` (need `choiceSetId`), `RELATIONSHIP` (needs `referenceEntityName` + `referenceFieldName`), `AUTO_NUMBER`. Full table with SQL backing types, required extras, and value semantics in [`references/entity-schema.md`](references/entity-schema.md).
+Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`, `FILE`. Complex types that require extra config: `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` (need `choiceSetId`), `RELATIONSHIP` and `FILE` (need `referenceEntityId` + `referenceFieldId`), `AUTO_NUMBER`. Full table with SQL backing types, required extras, and value semantics in [`references/entity-schema.md`](references/entity-schema.md).
 
 ### Advanced Field Constraints
 
@@ -220,7 +219,7 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 ## References
 
 - `references/entity-schema.md` — Field definitions, supported types, schema update patterns, choice-set + relationship field shapes
-- `references/choice-sets.md` — Browse choice sets, look up `NumberId`s, add CHOICE_SET fields to entities, write choice values on records
+- `references/choice-sets.md` — Full choice-set CRUD (`list`/`list-values`/`create`/`update`/`delete` plus `choice-set-values create`/`update`/`delete`), look up `NumberId`s, add CHOICE_SET fields to entities, write choice values on records
 - `references/records-query.md` — Query filter syntax, pagination, sorting, choice/relationship semantics on read & write
 - `references/filter-platform-contract.md` — Filter body structure, per-type operator support matrix, and what to do when a request needs an unsupported operator
 - `references/file-attachments.md` — File field upload/download/delete file

@@ -44,7 +44,7 @@ Pass the exact `EntityFieldDataType` string in the `"type"` field — the CLI is
 | `CHOICE_SET_SINGLE` | INT | Single-select from a choice set — also requires `choiceSetId` |
 | `CHOICE_SET_MULTIPLE` | NVARCHAR | Multi-select from a choice set — also requires `choiceSetId` |
 | `AUTO_NUMBER` | DECIMAL | Auto-incrementing number |
-| `RELATIONSHIP` | UNIQUEIDENTIFIER | FK link to another entity — requires `referenceEntityName` + `referenceFieldName` |
+| `RELATIONSHIP` | UNIQUEIDENTIFIER | FK link to another entity — requires `referenceEntityId` (target entity UUID) + `referenceFieldId` (target field UUID) |
 
 ## Field Definition Object
 
@@ -126,21 +126,28 @@ uip df entities update <entity-id> \
 { "fieldName": "Tags",   "type": "CHOICE_SET_MULTIPLE", "choiceSetId": "<choice-set-id>" }
 ```
 
-`choiceSetId` is the UUID from `uip df choice-sets list`. Choice sets are read-only via the CLI — if a needed one doesn't exist, stop and ask the user to author it in the web UI (do not fall back to `STRING`). Record value is the integer `NumberId` (single) or integer array (multi), from `choice-sets get`. Filter semantics — including the `CHOICE_SET_MULTIPLE` `=` vs `contains` distinction — are in [records-query.md](records-query.md#filtering-on-choice-set-fields). Full workflow in [`choice-sets.md`](choice-sets.md).
+`choiceSetId` is the UUID from `uip df choice-sets list`. If a needed choice set doesn't exist, ask the user — then author it with `choice-sets create` + `choice-set-values create` (do not fall back to `STRING`). Record value is the integer `NumberId` (single) or integer array (multi), from `choice-sets list-values`. Filter semantics — including the `CHOICE_SET_MULTIPLE` `=` vs `contains` distinction — are in [records-query.md](records-query.md#filtering-on-choice-set-fields). Full workflow in [`choice-sets.md`](choice-sets.md).
 
 ### Relationship Fields
 
 ```json
-{ "fieldName": "customerId", "type": "RELATIONSHIP", "referenceEntityName": "Customer", "referenceFieldName": "Id" }
+{ "fieldName": "customerId", "type": "RELATIONSHIP", "referenceEntityId": "<target-entity-uuid>", "referenceFieldId": "<target-field-uuid>" }
 ```
 
-- `referenceEntityName` — target entity's technical `Name` (not `DisplayName` / `ID`). Target must exist and be native (no federated targets). Verify with `entities list --native-only`.
-- `referenceFieldName` — join field on read; usually `Id`, but any unique field works.
+- `referenceEntityId` — UUID of the target entity. Get it from `entities list --native-only` (the `Id` column). Target must exist and be native (no federated targets).
+- `referenceFieldId` — UUID of the join field on the target entity. Get it from `entities get <target-entity-id>` (`Fields[].Id`). Configures join-on-read; the stored value is still the target record's `Id`.
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
-- Record value is **always the target record's UUID `Id`**, regardless of `referenceFieldName` (which configures join-on-read, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
+- Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
+- Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required by the CLI; passing only one errors with *"Field '<name>' of type FILE requires both referenceEntityId and referenceFieldId"*.
+
+> **Why UUIDs, not names.** Earlier versions of these docs claimed `referenceEntityName` / `referenceFieldName`. The CLI accepts those keys without complaint but silently drops the binding — the column stores UUIDs but the FK never wires, and Studio Web hides the field. Always use the `Id` form.
 
 ```bash
-# Resolve email → Id, then insert
+# 1. Discover target entity + field UUIDs
+uip df entities list --native-only --output json   # → find Customer entity's Id
+uip df entities get <customer-entity-id> --output json   # → find Id field's Id under Fields[]
+
+# 2. Resolve email → record Id, then insert
 uip df records query <customer-entity-id> \
   --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}' \
   --output json
@@ -149,7 +156,7 @@ uip df records insert <child-entity-id> --body '{"customerId":"<resolved-uuid>",
 
 ### Combined Example — mixing scalar, choice-set, and relationship fields
 
-Complex types accept the same standard field options as scalars — `isRequired`, `isUnique`, `displayName`, `description`, `defaultValue`, `isRbacEnabled`, `isEncrypted`, and the type-specific constraints (`lengthLimit`, `maxValue`/`minValue`, `decimalPrecision`). The only extras unique to complex types are `choiceSetId` (for `CHOICE_SET_*`) and `referenceEntityName` + `referenceFieldName` (for `RELATIONSHIP`).
+Complex types accept the same standard field options as scalars — `isRequired`, `isUnique`, `displayName`, `description`, `defaultValue`, `isRbacEnabled`, `isEncrypted`, and the type-specific constraints (`lengthLimit`, `maxValue`/`minValue`, `decimalPrecision`). The only extras unique to complex types are `choiceSetId` (for `CHOICE_SET_*`) and `referenceEntityId` + `referenceFieldId` (for `RELATIONSHIP` and `FILE`).
 
 ```bash
 # Prereqs: target entity exists; choice set exists (look up ID)
@@ -165,7 +172,7 @@ uip df entities create "Expense" --body '{
     {"fieldName":"category",      "type":"CHOICE_SET_SINGLE",   "choiceSetId":"<choice-set-id>",
      "isRequired": true, "displayName":"Category"},
     {"fieldName":"tags",          "type":"CHOICE_SET_MULTIPLE", "choiceSetId":"<choice-set-id>"},
-    {"fieldName":"customerId",    "type":"RELATIONSHIP", "referenceEntityName":"Customer", "referenceFieldName":"Id",
+    {"fieldName":"customerId",    "type":"RELATIONSHIP", "referenceEntityId":"<customer-entity-uuid>", "referenceFieldId":"<customer-id-field-uuid>",
      "isRequired": true, "displayName":"Customer"}
   ]
 }' --output json
@@ -268,9 +275,9 @@ uip df entities get <entity-id> --output json
 | `Fields[].ID` | Field UUID — required for `updateFields` in `entities update` |
 | `Fields[].IsRequired` | Whether the field must have a value on insert |
 
-**`entities get` does NOT echo back `choiceSetId` / `referenceEntityName` / `referenceFieldName`** — only the basic field metadata. To recover: for `CHOICE_SET_*`, match by `Name` via `choice-sets list`; for `RELATIONSHIP`, ask the user or fetch one record and identify which parent entity the UUID lives in.
+`entities get` echoes the complex-field bindings under each field: `Fields[].ChoiceSetId` for `CHOICE_SET_*`, and `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id` for `RELATIONSHIP` / `FILE`. `Fields[].IsForeignKey` is `true` on relationship/file fields. Use these to recover the binding without asking the user.
 
-Before writing records, identify complex fields by `Type` and resolve lookups: `CHOICE_SET_*` → `choice-sets get <choice-set-id>` for `NumberId`s; `RELATIONSHIP` → `records query` on the referenced entity for target UUIDs.
+Before writing records, identify complex fields by `Type` and resolve lookups: `CHOICE_SET_*` → `choice-sets list-values <choice-set-id>` for `NumberId`s; `RELATIONSHIP` → `records query` on `ReferenceEntity.Id` for target record UUIDs.
 
 **Example — discover an entity before writing records:**
 ```bash

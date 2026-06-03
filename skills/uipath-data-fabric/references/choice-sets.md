@@ -1,34 +1,34 @@
 # Choice Sets Reference
 
-Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entity fields. **CLI is read-only — `list` and `get` only**; author / edit / delete in the Data Fabric web UI. If a needed choice set doesn't exist, stop and ask — do not fall back to `STRING`.
+Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entity fields. Full CRUD via CLI — sets and their values.
 
 ## Commands
 
 | Command | Use |
 |---------|-----|
-| `uip df choice-sets list --output json` | Find a choice set's `ID` (pass as `choiceSetId` on the field) |
-| `uip df choice-sets get <choice-set-id> --output json` | Get each value's `NumberId` (pass as record value); `--limit` / `--cursor` / `--offset` for pagination |
+| `uip df choice-sets list --output json` | Find an existing choice set's `Id` |
+| `uip df choice-sets list-values <choice-set-id> --output json` | Page through values; pagination `{ Items, TotalCount, HasNextPage, … }` (use `--limit` / `--cursor` / `--offset`) |
+| `uip df choice-sets create <name> [--display-name <…>] [--description <…>] --output json` | Create a choice set; response `Code: ChoiceSetCreated`, `Data.Id` |
+| `uip df choice-sets update <choice-set-id> [--display-name <…>] [--description <…>] --output json` | Rename / re-describe the set |
+| `uip df choice-sets delete <choice-set-id> --confirm --reason "<why>" --output json` | Irreversible — `--confirm` and `--reason` are required |
+| `uip df choice-set-values create <choice-set-id> <name> [--display-name <…>] --output json` | Add a value; server assigns `NumberId` (0-based, monotonic by creation order) |
+| `uip df choice-set-values update <choice-set-id> <value-id> "<new display name>" --output json` | Display-name only — `Name` and `NumberId` are immutable |
+| `uip df choice-set-values delete <choice-set-id> --ids <value-id>[,<value-id>…] --confirm --reason "<why>" --output json` | Irreversible — same gating as `choice-sets delete` |
 
-## Response shapes
+## Use the IDs
 
-```json
-// list
-{ "Data": [{ "ID": "<choice-set-id>", "Name": "ExpenseTypes", "DisplayName": "Expense Types", ... }] }
-
-// get
-{ "Data": { "Values": [{ "Id": "<value-uuid>", "Name": "travel", "DisplayName": "Travel", "NumberId": 1 }, ...] } }
-```
-
-- `ID` from `list` → `choiceSetId` on the field definition
-- `NumberId` from `get` → record value (integer for `_SINGLE`, integer array for `_MULTIPLE`)
-- `Name` / `DisplayName` → human display only; never write these on a record
+- `Id` from `list` → `choiceSetId` on the field definition.
+- `NumberId` from `list-values` → the record value (integer for `_SINGLE`, integer array for `_MULTIPLE`). **0-based, set by creation order.**
+- `Name` / `DisplayName` are human display — never write these on a record.
 
 ## Add a choice-set field to an entity
 
 ```bash
-# 1. Discover ID (and confirm values)
+# 1. Get or create the choice set, then add values
 uip df choice-sets list --output json
-uip df choice-sets get <choice-set-id> --output json
+# (or)  uip df choice-sets create "ExpenseTypes" --display-name "Expense Types" --output json
+uip df choice-set-values create <choice-set-id> travel --display-name "Travel" --output json
+uip df choice-set-values create <choice-set-id> meals  --display-name "Meals"  --output json
 
 # 2a. New entity
 uip df entities create "Expense" --body '{
@@ -47,16 +47,20 @@ uip df entities update <entity-id> --body '{
 
 ## Write / read / filter record values
 
-Record value is the integer `NumberId` (single) or integer array (multi). Records read back in the same shape — resolve to display labels client-side via `choice-sets get` if needed.
+Record value = integer `NumberId` (single) or integer array (multi); reads echo the same shape. Filter operator semantics — especially `CHOICE_SET_MULTIPLE` (`contains` vs `=`) — are in [`filter-platform-contract.md`](filter-platform-contract.md#operator-support-by-field-type).
 
 ```bash
 uip df records insert <entity-id> --body '{"amount":250,"category":1,"tags":[1,2]}' --output json
 ```
 
-Passing a display label (`"category":"Travel"`) is rejected. Filter operator semantics — especially `CHOICE_SET_MULTIPLE` (`contains` vs `=`) — are in [`records-query.md`](records-query.md#filtering-on-choice-set-fields).
+Passing a display label (`"category":"Travel"`) is rejected — resolve to `NumberId` first.
 
 ## Decision: is this field a choice set?
 
 - Finite, reused list of named options → choice set. Single value → `_SINGLE`; multiple → `_MULTIPLE`.
-- Link to a *row* in another entity → `RELATIONSHIP` (see [`entity-schema.md`](entity-schema.md#relationship-fields)), not a choice set.
-- No matching choice set exists → stop and ask the user to author it in the web UI; do not fall back to `STRING`.
+- Link to a *row* in another entity → `RELATIONSHIP` (see [`entity-schema.md` → Relationship Fields](entity-schema.md#relationship-fields)).
+- Need a choice set → run `choice-sets list`, show the user the candidates that match by name/purpose, and ask: **reuse one, or create new?** Only create with `choice-sets create` + `choice-set-values create` once the user confirms. Never fall back to `STRING`.
+
+## Required CLI version
+
+`@uipath/data-fabric-tool@1.2.0-alpha.20260602.7377+` exposes the full surface. Earlier alphas (e.g. `7277`) shipped a read-only build with only `list` + `get` — if `uip df choice-sets create` errors with *"unknown command 'create'"*, the installed copy is stale. Refresh with `uip tools install @uipath/data-fabric-tool@<latest-version>` (use `npm view @uipath/data-fabric-tool dist-tags` to find the latest version) — the `@alpha` tag alias isn't accepted by `uip tools install`.
