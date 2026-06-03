@@ -92,7 +92,7 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 ## Prerequisites
 
 - `uip login` required (for both modes — node type comes from registry)
-- For connector mode: a healthy IS connection must exist for the **target connector**. **If none exists, STOP** — surface in **Open Questions**. See [impl-connector.md Step 2 — HTTP-specific recovery](impl-connector.md#step-2--identify-target-connection) for the `AskUserQuestion` fallback (create-now / switch-to-manual / skip).
+- For connector mode: a healthy IS connection must exist for the **target connector**. If none exists, auto-fall-through to manual mode is the recommended fallback — but confirm the mode switch with the user before finalizing. See [impl-connector.md Step 2 — HTTP-specific recovery](impl-connector.md#step-2--identify-target-connection) for the `AskUserQuestion` flow (switch-to-manual / create-now / skip).
 - `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
 
 ## Planning Annotation

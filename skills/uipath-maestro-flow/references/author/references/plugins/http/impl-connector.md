@@ -1,8 +1,8 @@
 # HTTP Request Node — Connector Mode
 
-Use this walkthrough when the target service has an IS connector and you want managed auth (OAuth / API key) handled by an existing IS connection. For no-auth or public APIs, use [impl-manual.md](impl-manual.md) instead.
+Use this walkthrough when the target service has an IS connector and you want managed auth (OAuth / API key) handled by an existing IS connection.
 
-**Prerequisite:** a healthy IS connection for the target connector. Step 2 verifies this and halts with `AskUserQuestion` if none exists. **Do not silently fall back to manual mode.**
+**Prerequisite:** a healthy IS connection for the target connector. Step 2 verifies this. If none exists, propose manual mode as the fallback and confirm the switch with the user via `AskUserQuestion` before finalizing — do not switch modes without that confirmation.
 
 Before starting, read [impl.md](impl.md) for the node type, registry validation, and the "always use `node configure`" rule. Follow Steps 1–5 in order.
 
@@ -17,26 +17,24 @@ The CLI copies the manifest into `definitions[]`, adds the node instance, regist
 
 ## Step 2 — Identify target connection
 
-Discovery call is **always**:
-
 ```bash
 uip is connections list "<target-connector-key>" --all-folders --output json
 ```
 
-`--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<target-connector-key>"` is forbidden for discovery.
+`--all-folders` is mandatory for discovery. Selection rules, empty-result recovery, and ping verification live in the platform skill — do not duplicate them here.
 
-> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules, empty-result recovery, ping verification.
+> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md).
 
 Record the chosen connection's `Id` and `FolderKey` — Step 3 needs both.
 
-> **HTTP-specific recovery — no usable connection.** If platform-skill recovery yields nothing (empty after `--all-folders` + `--refresh`, user declines to create one), the HTTP node has unique fallback options. **STOP** and use `AskUserQuestion`:
+> **HTTP-specific recovery — no usable connection.** If platform-skill recovery yields nothing (empty after `--all-folders` + `--refresh`, user declines to create one), the HTTP node has unique fallback options. Use `AskUserQuestion` to confirm the path — **manual mode is the recommended auto-fallback**, pre-selected, since it unblocks the node without a connection:
 >
+> - **Switch this node to manual mode** *(recommended)* — abandon this walkthrough and follow [impl-manual.md](impl-manual.md). Manual changes the auth model (you supply auth yourself), so this needs explicit confirmation.
 > - **Create a new connection now** — `uip is connections create "<target-connector-key>"` starts the OAuth flow. User completes browser auth themselves, then re-run `uip is connections list` to pick up the new connection.
-> - **Switch this node to manual mode** — abandon this walkthrough and follow [impl-manual.md](impl-manual.md).
 > - **Skip this node**.
 > - **Something else**.
 >
-> Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node without explicit user selection. See the `AskUserQuestion` dropdown rule in [SKILL.md](../../../../../SKILL.md).
+> Auto-try the fallback, but do not finalize a mode switch without the user's confirmation; do not invent a placeholder ID; do not skip the node without explicit selection. See the `AskUserQuestion` dropdown rule in [SKILL.md](../../../../../SKILL.md).
 
 ## Step 3 — Configure the node
 
