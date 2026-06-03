@@ -673,14 +673,12 @@ uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
 # → Kind: "IntSvc", SlotKey: "GetNewestEmail_1", ExportBucketKey: "getNewestEmail_1",
 #   Activity: { GetNewestEmail_1: { ... } }, ResponseFields: [...]
 
-# 3b. Cross-check required request fields — stub silently drops them
-uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
-  --operation List \
-  --connection-id a8e592a5-76bb-4062-b712-3c364e4a1128 \
-  --output json
-# → Data.queryParameters[] has parentFolderId with required: true.
-# If --inputs was omitted in Step 3a, re-run with --inputs '{"parentFolderId":"inbox"}'
-# (or edit the activity by hand) before continuing.
+# 3b. Check required fields in the stub output itself: Data.Parameters /
+# Data.RequestFields carry the IS schema's required flags, and a missing
+# required field raises a Data.Warnings entry ("Required field(s) not
+# provided via --inputs: parentFolderId"). If warned, re-stub with
+# --inputs '{"parentFolderId":"inbox"}' (or edit the activity by hand).
+# Use 'uip is resources describe' only for value semantics / lookup hints.
 
 # 5. Write the Solution connection-resource file (required for Solutions-mode projects):
 #    Solution/resources/solution_folder/connection/uipath-microsoft-outlook365/<connection-name>.json

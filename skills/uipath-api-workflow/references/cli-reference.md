@@ -143,6 +143,8 @@ Success output:
     "SlotKey": "GetNewestEmail_1",
     "ExportBucketKey": "getNewestEmail_1",
     "Activity": { "GetNewestEmail_1": { "call": "UiPath.IntSvc", ... } },
+    "Parameters": [ { "name": "parentFolderId", "type": "query", "required": true } ],
+    "RequestFields": [],
     "ResponseFields": [ { "name": "subject", ... } ],
     "IsEnrichmentAvailable": true,
     "Warnings": [...]
@@ -150,10 +152,11 @@ Success output:
 }
 ```
 
-`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
+`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.Parameters` (query/path/multipart) and `Data.RequestFields` (body) list the operation's inputs with `required` flags; `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
 
 `Data.Warnings` (when present):
 - `"IS Elements metadata could not be fetched…"` → IS schema lookup failed; stub uses fallback path `/<objectName>` and ships no `requestFields`. Endpoint may be wrong (no hub prefix, no multipart declaration).
+- `"Required field(s) not provided via --inputs: …"` → the IS schema marks these `required: true` and they're absent; the run will likely 4xx. Re-stub with `--inputs` or add the values to the pasted activity.
 - `"No --connection-id provided…"` → IntSvc kind stub has placeholder UUIDs; replace before running.
 
 Failure modes:
@@ -179,7 +182,9 @@ uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
   --inputs '{"parentFolderId":"Inbox"}' \
   --output json
 
-# 3b. Cross-check required request fields — stub silently drops required: true fields
+# 3b. Check the stub's Data.Parameters / Data.RequestFields (required flags included);
+#     a missing required field also raises a Data.Warnings entry. Use describe only
+#     when you need value semantics / lookup hints for a field:
 uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
   --operation List \
   --connection-id <uuid> \
@@ -265,7 +270,7 @@ Lives in `solution-tool`, not `api-workflow-tool`. Full details in the [solution
 
 ## `uip is resources describe`
 
-Read the IS Elements schema for one operation on one connector. Used as the **required cross-check** after `uip api-workflow registry stub` (which silently drops `required: true` request fields).
+Read the IS Elements schema for one operation on one connector. `registry stub` already surfaces the operation's `Parameters` / `RequestFields` (with `required` flags) and warns when a required field is missing from `--inputs` — use `describe` when you need a field's value semantics, lookup hints, or parent-field actions.
 
 ```bash
 uip is resources describe <connector-key> <object-name> \
