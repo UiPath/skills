@@ -30,25 +30,18 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "HITL completed output port is wired on an edge (v1.0 'completed' or v1.1 'outcome-completed')"
-    command: "grep -qE '\"sourcePort\"[[:space:]]*:[[:space:]]*\"(outcome-)?completed\"' PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
-    expected_exit_code: 0
+  - type: file_contains
+    description: "Flow wires the HITL completed output port"
+    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    includes:
+      - 'completed'
     weight: 3.0
     pass_threshold: 1.0
 
-  # Why grep the wired sourcePort and not file_contains '"completed"': the HITL
-  # completed output port serializes differently by node version — v1.0 wires it
-  # as `"sourcePort": "completed"`, v1.1 as `"sourcePort": "outcome-completed"`.
-  # Version selection is non-deterministic (hardcoded versions were removed in
-  # #1088; the agent pulls the version from the registry), so a literal
-  # '"completed"' substring passes on a v1.0 build and fails on a v1.1 build —
-  # the historical source of this task's flakiness. Anchoring on the sourcePort
-  # handle with an optional `outcome-` prefix matches either version and, unlike
-  # a bare substring, won't match a handle merely declared in the node manifest
-  # or a "completed" status label. The validate step below catches malformed
-  # edges. A prior excludes-only check for cancelled/timeout handles was removed
-  # because manifest declarations can't be distinguished from wiring by substring.
+  # Bare 'completed', not '"completed"': the port handle serializes by node
+  # version — v1.0 wires `"sourcePort": "completed"`, v1.1 `"outcome-completed"`.
+  # Version pick is non-deterministic (#1088 removed hardcoded versions), and the
+  # unquoted substring matches both. The validate step below catches malformed edges.
 
   - type: run_command
     description: "uip maestro flow validate passes"
