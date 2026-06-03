@@ -4,6 +4,8 @@ Wrap an Integration Service connector activity as an MCP tool via `uip agenthub 
 
 The CLI verb is `uip is resources run` (with `run list`, `run create`, etc.). Older docs may show the pre-rename `uip is resources execute` — use `run`.
 
+> **STOP — curated / cascade activities require the deep references BEFORE you draft `--metadata`.** For any activity whose base `describe` returns a short `requestFields` (Jira `curated_create_issue`, Salesforce `query_records`, Dataservice, and the like), you MUST open and read `../../uipath-platform/references/integration-service/resources.md` §`Parent-Field-Driven Custom Fields` AND `reference-resolution.md` §`Static Reference-Value Labeling` before authoring. **This file routes you to them — it is not a substitute for them.** The `-f` cascade shape and the `designTimeLookups` format live in those sections; authoring from this file or from memory alone yields a shallow tool that passes `--dry-run` and fails at runtime.
+
 ## Platform IS references — required reads tied to actions
 
 These files in `../../uipath-platform/references/integration-service/` carry the load-bearing IS concepts. Each is small. Do NOT read all four upfront. Instead, before performing each of the actions below, read the named section first — even if you feel you know the format. The blind spots in IS metadata authoring are unknown-unknowns, so the trigger is the action you are about to take, not your sense of certainty.

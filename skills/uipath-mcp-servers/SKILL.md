@@ -57,7 +57,7 @@ These are the things the CLI does not advertise in `--help`.
 | `coded`    | `--process-key <key>` (+ `--folder-key` for the process) | Wrap an existing coded-agent process (published to Orchestrator) as an MCP server. | Discovered via `refresh-tools` (async 202). |
 | `command`  | `--command <cmd>` + `--arg <arg>` (repeatable) + `--env <k=v>` (repeatable) | Spawn a local subprocess as an MCP server. | Discovered via `refresh-tools` (async 202). |
 | `remote`   | `--uri <url>` + `--header <k=v>` (repeatable) + `--use-relay` | Point at an existing HTTP MCP server. Bearer/header values can be Orchestrator asset references; `AssetReferenceSubstitutor` resolves them at runtime via the caller's token + folder context. Do NOT invent a credential-store syntax. | Discovered via `refresh-tools` (sync 200). |
-| `platform` | `--service <name>` + `--tool <name>` (repeatable; selects exposed platform tools) | Bind to a first-party UiPath service. | Discovered via `refresh-tools` (sync 200). |
+| `platform` | `--service <name>` (lowercase service id, e.g. `orchestrator` — the CLI `--help` example's capitalized `Orchestrator` is rejected with HTTP 400) + `--tool <name>` (repeatable; selects exposed platform tools) | Bind to a first-party UiPath service. | Discovered via `refresh-tools` (sync 200). |
 | `swagger`  | `--spec-url <url>` (+ `--use-relay`)   | Register an OpenAPI/Swagger spec as MCP tools. Same asset substitution as `remote`. | Discovered from the spec via `refresh-tools` (sync 200). |
 
 Headers/auth on `remote` and `swagger` are payload fields, not scalar flags. Read the shape from `--print-schema` (or `template <type>`), submit via `--file <payload.json>` or `--body '<json>'`.
@@ -68,7 +68,7 @@ Headers/auth on `remote` and `swagger` are payload fields, not scalar flags. Rea
 
 ## Tool Kinds (`uipath`-type servers only)
 
-`uip agenthub mcp-tools create-{is-activity | resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS — only for non-`activity` categories), `--target-folder-key <guid>` (target connection/resource's folder; for IS-activity the CLI derives this from the connection), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
+`uip agenthub mcp-tools create-{is-activity | resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS — only for non-`activity` categories), `--folder-key <guid>` / `--folder-path <name>` (folder context; the CLI derives the target's folder from `--target-identifier`, so there is **no** `--target-folder-key` flag — do not invent one), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
 
 | Kind | Discovery | Validation | When to use |
 |------|-----------|------------|-------------|
@@ -76,7 +76,7 @@ Headers/auth on `remote` and `swagger` are payload fields, not scalar flags. Rea
 | `resource`    | `mcp-tools candidates --category <kind>` (kind ∈ `automation` / `agent` / `agentic-process` / `api-workflow`) | Resource schema | Bind an Orchestrator resource. Pass `--target-identifier <resource-id>`. Read metadata shape from `mcp-tools template resource --output json`. |
 | `raw`         | None | None | Free-form JSON tool — caller owns correctness end-to-end. No discovery, no schema validation, no reference-value labeling. Read the skeleton from `mcp-tools template raw --output json`. |
 
-Stringify `--metadata` / `--input-schema` / `--output-schema` as scalars (not `--file`). Pass `--output-schema "{}"` when the underlying target has no response fields — empty string is rejected with `Unexpected end of JSON input`.
+Stringify `--metadata` / `--input-schema` / `--output-schema` as scalars (not `--file`). Build each JSON in a file and pass it as `--metadata "$(jq -c . metadata.json)"` (likewise input/output schema) — do **not** assemble multi-KB JSON inline in the command. Pass `--output-schema "{}"` when the underlying target has no response fields — empty string is rejected with `Unexpected end of JSON input`.
 
 Other `mcp-tools` verbs (`list --mcp <slug>`, `get`, `enable`, `disable`, `delete`, `update`) are self-documenting via `--help`. Use them for the Critical Rule 3 verify step.
 
