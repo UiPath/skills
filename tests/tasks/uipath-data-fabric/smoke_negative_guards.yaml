@@ -83,9 +83,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Reasons reference skill constraints (not supported / federated / read-only)"
+    description: "Reasons reference skill constraints (cites the Not Supported table or federated / read-only)"
     path: "report.json"
     includes:
-      - "not supported"
+      - "Not Supported"
     weight: 1.5
     pass_threshold: 1.0

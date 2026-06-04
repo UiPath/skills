@@ -24,10 +24,10 @@ initial_prompt: |
 
   This scenario exercises three field types — `CHOICE_SET_SINGLE`,
   `CHOICE_SET_MULTIPLE`, and `RELATIONSHIP`. On the schema side each one needs
-  an extra config key (`choiceSetId` for the choice fields; `referenceEntityName`
-  + `referenceFieldName` for relationship). On records, choice values use the
-  `NumberId` integer (or array for multi-select) and relationship values use
-  the target record's UUID `Id`.
+  an extra config key (`choiceSetId` for the choice fields; `referenceEntityId`
+  + `referenceFieldId` for relationship — both are UUIDs, never names). On
+  records, choice values use the `NumberId` integer (or array for multi-select)
+  and relationship values use the target record's UUID `Id`.
 
   Pre-seeded placeholders (treat as real values for command construction):
   - Choice set "ExpenseCategories"   ID: "cs-cat-001"
@@ -36,7 +36,9 @@ initial_prompt: |
       values: urgent (NumberId 1), reimbursable (NumberId 2), client (NumberId 3)
   - Existing entity "Employee"       ID: "emp-ent-100"  (technical Name: "Employee")
       one employee record ID: "emp-rec-500"
+      Id-field UUID:               "emp-idfield-700"
   - Existing entity "Project"        ID: "proj-ent-200" (technical Name: "Project")
+      Id-field UUID:               "proj-idfield-800"
 
   Do the following in order. Use --output json on every uip df command.
 
@@ -52,10 +54,10 @@ initial_prompt: |
        - amount      (DECIMAL, decimalPrecision 2, required)
        - category    (CHOICE_SET_SINGLE   pointing at choice set "cs-cat-001", required)
        - tags        (CHOICE_SET_MULTIPLE pointing at choice set "cs-tag-002")
-       - submitter   (RELATIONSHIP to Employee — referenceEntityName "Employee",
-                      referenceFieldName "Id", required)
-       - project     (RELATIONSHIP to Project  — referenceEntityName "Project",
-                      referenceFieldName "Id")
+       - submitter   (RELATIONSHIP to Employee — referenceEntityId "emp-ent-100",
+                      referenceFieldId "emp-idfield-700", required)
+       - project     (RELATIONSHIP to Project  — referenceEntityId "proj-ent-200",
+                      referenceFieldId "proj-idfield-800")
 
   5. Add a CHOICE_SET_SINGLE field "status" to the existing Employee entity
      using entities update with addFields. Point it at choice set "cs-tag-002".
@@ -131,9 +133,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent declared a RELATIONSHIP field with referenceEntityName + referenceFieldName"
+    description: "Agent declared a RELATIONSHIP field with referenceEntityId + referenceFieldId (UUIDs per SKILL.md Rule 12)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*RELATIONSHIP)(?=.*referenceEntityName)(?=.*referenceFieldName)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

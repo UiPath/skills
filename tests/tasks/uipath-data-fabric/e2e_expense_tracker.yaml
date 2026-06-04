@@ -65,9 +65,11 @@ initial_prompt: |
 
   5. Create the CHILD entity "E2EExpense<SAME_SUFFIX>" with fields:
        - amount      (DECIMAL, decimalPrecision 2, minValue 0, isRequired: true)
-       - submitter   (RELATIONSHIP — referenceEntityName equals parent's
-                      technical Name from step 4, referenceFieldName "Id",
-                      isRequired: true)
+       - submitter   (RELATIONSHIP — `referenceEntityId` equals the parent's
+                      entity UUID (`parent_entity_id` from step 4); `referenceFieldId`
+                      equals the parent's `Id` field UUID — discover with
+                      `uip df entities get <parent_entity_id>` and read the
+                      `Fields[]` entry whose `Name == "Id"`; isRequired: true)
        - description (MULTILINE_TEXT, lengthLimit 1000)
        - if category_choice_set_id is not null:
            category  (CHOICE_SET_SINGLE, choiceSetId = category_choice_set_id,
@@ -140,8 +142,8 @@ initial_prompt: |
   - NEVER write a choice value as a display label, e.g. "category":"travel".
     Use the integer NumberId. Multi-select tags use a JSON array of integers.
   - NEVER write a relationship value as anything but the target record's
-    UUID Id — even though we could declare referenceFieldName: "Id", that
-    only configures join behavior on read, not the stored value shape.
+    UUID Id — `referenceFieldId` only configures join behavior on read, not
+    the stored value shape.
   - NEVER attempt to create / update / delete a choice set via the CLI.
   - Do NOT delete any entity or record yourself — cleanup runs post-test.
 
@@ -165,7 +167,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the child Expense entity with a RELATIONSHIP field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*E2EExpense)(?=.*RELATIONSHIP)(?=.*referenceEntityName)(?=.*referenceFieldName)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*E2EExpense)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
