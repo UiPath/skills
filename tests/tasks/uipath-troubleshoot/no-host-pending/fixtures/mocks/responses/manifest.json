@@ -11,16 +11,6 @@
       "file": "or-jobs-list-folder-key-defb8e05-e36b-4c36-bf11-0b4d08ce6cd1.json"
     },
     {
-      "match": "or jobs get cb00355c-3835-4c18-b37e-af5c7609c599 --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --output json",
-      "file": "or-jobs-get-cb00355c-3835-4c18-b37e-af5c7609c599-folder-key-.json",
-      "exit_code": 1
-    },
-    {
-      "match": "or jobs history cb00355c-3835-4c18-b37e-af5c7609c599 --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --output json",
-      "file": "or-jobs-history-cb00355c-3835-4c18-b37e-af5c7609c599-folder-.json",
-      "exit_code": 1
-    },
-    {
       "match": "or jobs get cb00355c-3835-4c18-b37e-af5c7609c599 --output json",
       "file": "or-jobs-get-cb00355c-3835-4c18-b37e-af5c7609c599-output-json.json"
     },
