@@ -17,6 +17,8 @@ The CLI copies the manifest into `definitions[]`, adds the node instance, regist
 
 ## Step 2 — Identify target connection
 
+**Connector mode only works if the connector supports the HTTP request activity** — verify by running `uip is connectors get "<target-connector-key>"` and checking the `HasHttpRequest` flag.
+
 ```bash
 uip is connections list "<target-connector-key>" --all-folders --output json
 ```

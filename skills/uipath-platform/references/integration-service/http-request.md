@@ -17,6 +17,7 @@ A built-in way to make an HTTP call from a UiPath automation. Runs in two modes 
 
 ## Connector-Mode Rules
 
+- **Connector mode only works if the connector supports HTTP request activity** — verify by running `uip is connectors get "<connector-key>"` and checking the `HasHttpRequest` flag.
 - `url` must be **relative**. Wrong: `"url": "https://example.atlassian.net/rest/api/2/issue"`. Right: `"url": "/issue"`.
 - The connection's base URL is prepended automatically.
 - The auth header is applied automatically - do not set `Authorization`.

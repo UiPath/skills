@@ -12,7 +12,7 @@
 
 | Situation | Use Managed HTTP? |
 | --- | --- |
-| Connector exists but lacks the specific curated activity | Yes — connector mode ([impl-connector.md](impl-connector.md)) |
+| Connector exists but lacks the specific curated activity | Yes — connector mode ([impl-connector.md](impl-connector.md)), **if the connector supports HTTP request activity** (verify `HasHttpRequest` — see [Prerequisites](#prerequisites)) |
 | No connector exists, but service has a REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
 | Quick prototyping against any REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
 | Connector exists and covers the use case | No — use [Connector Activity](../connector/planning.md) |
@@ -92,6 +92,7 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 ## Prerequisites
 
 - `uip login` required (for both modes — node type comes from registry)
+- For connector mode: connector must support the HTTP request activity — verify the `HasHttpRequest` flag via `uip is connectors get "<connector-key>"`. See [impl-connector.md Step 2](impl-connector.md#step-2--identify-target-connection).
 - For connector mode: a healthy IS connection must exist for the **target connector**. If none exists, auto-fall-through to manual mode is the recommended fallback — but confirm the mode switch with the user before finalizing. See [impl-connector.md Step 2 — HTTP-specific recovery](impl-connector.md#step-2--identify-target-connection) for the `AskUserQuestion` flow (switch-to-manual / create-now / skip).
 - `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
 
