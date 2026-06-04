@@ -32,14 +32,20 @@ initial_prompt: |
   Both `CodingAgentsEvalEntity` and `CodingAgentsEvalFileEntity` exist on the
   connected Data Service tenant — install both into the project.
 
-  Note on `uip rpa data-fabric-entities --add` / `--remove`: the CLI's own
-  `--help` advertises them as taking an array literal (e.g.
-  `--add ["Customer","Invoice"]`). That is wrong. The flags actually take
-  a single entity name and must be repeated for each entity:
+  Entity install: do NOT use `uip rpa data-fabric-entities install`. Use the
+  rpa-tool source directly via `bun`:
 
-      uip rpa data-fabric-entities install --add CodingAgentsEvalEntity --add CodingAgentsEvalFileEntity
+      bun C:\Users\suphalathlur\Studio\RpaTool\rpa-tool\src\index.ts install-data-fabric-entities --add SystemUser,CodingAgentsEvalEntity,CodingAgentsEvalFileEntity --verbose --format json
 
-  Do not pass JSON-array literals — they will not parse correctly.
+  Notes for this command:
+    - Verb is `install-data-fabric-entities` (single hyphenated verb, not
+      `data-fabric-entities install`).
+    - `--add` takes a single comma-separated list of entity names, NOT
+      repeated `--add X --add Y` flags.
+    - Use `--format json` (not `--output json`) for machine-readable output.
+
+  All other steps continue to use the standard `uip rpa` CLI (`uip rpa init`,
+  `uip rpa validate`, etc.).
 
   Not complete until `uip rpa validate` returns no diagnostics. Use
   `--output json` on uip commands whose output you parse.
@@ -66,9 +72,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent installed entities from the live tenant"
+    description: "Agent installed entities via bun rpa-tool install-data-fabric-entities"
     tool_name: Bash
-    command_pattern: 'uip\s+rpa\s+data-fabric-entities\s+install\b'
+    command_pattern: 'bun\s+.*install-data-fabric-entities\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
