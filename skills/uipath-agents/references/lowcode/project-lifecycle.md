@@ -108,9 +108,35 @@ uip agent migrate [path] --output json
 2. Writes migrated `agent.json` (and related files) to disk if migration is needed.
 3. Regenerates `.agent-builder/` files (agent.json with inlined resources, entry-points.json, bindings.json) from each `resources/{ResourceName}/resource.json`.
 
-**With `--inline-in-flow`:** Skips `entry-points.json`/`project.uiproj` checks. `.agent-builder/agent.json` and `bindings.json` are still generated, and agent tool bindings are merged into the parent flow project's `bindings_v2.json`.
+**With `--inline-in-flow`:** Skips `entry-points.json`/`project.uiproj` checks. `.agent-builder/agent.json` and `bindings.json` are still generated, and agent capability bindings are merged into the parent flow project's `bindings_v2.json`.
 
 **Workflow:** run `uip agent validate` to check, then `uip agent migrate` to apply writes and regenerate `.agent-builder/`. For routine edits with no schema migration pending, `migrate` is still needed to keep `.agent-builder/` in sync.
+
+### `uip agent memory`
+
+Manage low-code agent memory space features and seed items. These commands write `features/{FeatureName}/feature.json` and update `.agent-builder/agent.json`; run validate and migrate afterwards to regenerate bindings.
+
+```bash
+uip agent memory add SupportRecall \
+  --memory-space "<MEMORY_SPACE_NAME>" \
+  --folder-path "<FOLDER_PATH>" \
+  --path "<AGENT_PROJECT_DIR>" \
+  --output json
+
+uip agent memory list --path "<AGENT_PROJECT_DIR>" --output json
+uip agent memory remove SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
+
+uip agent memory item add SupportRecall customer-tier gold \
+  --memory-type episodic \
+  --feedback-id "<FEEDBACK_ID>" \
+  --path "<AGENT_PROJECT_DIR>" \
+  --output json
+
+uip agent memory item list SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
+uip agent memory item remove SupportRecall customer-tier --path "<AGENT_PROJECT_DIR>" --output json
+```
+
+For discovery, retrieval settings, memory item types, and troubleshooting, see [capabilities/memory/memory.md](capabilities/memory/memory.md).
 
 ## Solution Commands
 
@@ -364,6 +390,8 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Register project (fallback) | `uip solution project add "<PATH>" --output json` — only when `agent init` returned `Skipped` / `Failed` | Solution directory | — |
 | Validate (read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | Migrate + regenerate builder | `uip agent migrate [path] --output json` | Agent dir or any with path | — |
+| Add memory space feature | `uip agent memory add <FeatureName> --memory-space <Name> --folder-path <Folder> --path <AgentDir> --output json` | Any directory | Writes `features/<FeatureName>/feature.json`; run validate/migrate after |
+| Seed memory item | `uip agent memory item add <FeatureName> <key> <value> --memory-type episodic --feedback-id <FEEDBACK_ID> --path <AgentDir> --output json` | Any directory | Updates existing item with same key |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
 | Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
 | Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |

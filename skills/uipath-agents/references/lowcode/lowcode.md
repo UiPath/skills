@@ -7,6 +7,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 - Create a new low-code agent project (standalone or inline in a flow)
 - Edit `agent.json` — prompts, model, schemas, settings
 - Add tools, contexts, or escalations as files in `resources/{Name}/resource.json`
+- Add memory spaces or seed memory items with `uip agent memory`
 - Wire agent-to-agent calls within a solution or to an external deployed agent
 - Design input/output schemas and sync with `entry-points.json`
 - Validate agent project structure
@@ -16,7 +17,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 [critical-rules.md](critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session. The rules below are the operational must-knows; the rest live in the canonical file.
 
-1. **Edit JSON files directly.** The CLI provides `init` (scaffold), `validate` (read-only check), and `migrate` (apply writes + regenerate `.agent-builder/`). All configuration is a file edit. Resources live in `resources/{Name}/resource.json` — never inline in `agent.json`.
+1. **Edit JSON files directly, except CLI-managed memory features.** The CLI provides `init` (scaffold), `validate` (read-only check), `migrate` (apply writes + regenerate `.agent-builder/`), and `memory` (writes memory feature files). Resources live in `resources/{Name}/resource.json`; memory features live in `features/{Name}/feature.json`.
 2. **Use `--output json`** on every `uip` command.
 3. **Validate and migrate after every bulk of related edits**, not after each line. Run `uip agent validate --output json` to check, then `uip agent migrate --output json` to apply pending migrations and regenerate `.agent-builder/`.
 4. **Keep `agent.json` ↔ `entry-points.json` schemas in sync.** `inputSchema`/`outputSchema` must mirror `input`/`output` field-for-field.
@@ -30,10 +31,10 @@ Standard workflow for any low-code agent task:
 
 1. **Scaffold** — `uip solution init` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
 2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md).
-3. **Add capabilities** — pick from the Capability Registry below. Each adds its own `resources/{Name}/resource.json`.
+3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.
 4. **Validate** — `uip agent validate --output json`. Confirm `MigrationPending`, `Validated`. Read-only — never writes.
 5. **Migrate** — `uip agent migrate --output json`. Applies pending writes and regenerates `.agent-builder/`. Confirm `MigrationApplied`, `StorageVersion`.
-6. **Refresh solution resources** — `uip solution resource refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, escalations).
+6. **Refresh solution resources** — `uip solution resource refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, memory spaces, escalations).
 7. **Bundle and upload** — `uip solution bundle` then `uip solution upload --output json` (with user consent per Rule 6).
 
 Capabilities are **orthogonal**: there is no ordering requirement among them. Adding a tool and an escalation in parallel is safe — they do not interact at the file level. Validate and refresh once after all capability edits are complete, not after each one.
@@ -46,7 +47,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 |---|---|
 | Scaffolding, validating, or running solution lifecycle commands | [project-lifecycle.md](project-lifecycle.md) |
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
-| External tools / IS tools / index contexts / escalations behave unexpectedly after `uip solution resource refresh` | [solution-resources.md](solution-resources.md) |
+| External tools / IS tools / index contexts / memory spaces / escalations behave unexpectedly after `uip solution resource refresh` | [solution-resources.md](solution-resources.md) |
 | Running evaluations, adding test cases, managing evaluators | [evaluations/evaluate.md](evaluations/evaluate.md) |
 
 ### Capability Registry
@@ -69,6 +70,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add an index-backed context (RAG) | [capabilities/context/index.md](capabilities/context/index.md) | |
 | Add attachments context | [capabilities/context/attachments.md](capabilities/context/attachments.md) | |
 | Add DataFabric entity-set context | [capabilities/context/datafabric.md](capabilities/context/datafabric.md) | |
+| Add a memory space or seed memory items | [capabilities/memory/memory.md](capabilities/memory/memory.md) | |
 | Add an Action Center escalation (HITL) | [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md) | |
 | Add guardrails (PII, harmful content, custom rules) | [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) | |
 | Embed an agent inline in a flow | [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) | |
@@ -81,6 +83,7 @@ See [critical-rules.md](critical-rules.md) § What NOT to Do for the canonical l
 
 - Editing `content` without updating `contentTokens` (causes silent rendering failures)
 - Skipping `uip solution resource refresh` after adding external tools (`bindings_v2.json` never reaches the solution)
+- Hand-editing memory feature JSON instead of using `uip agent memory`
 - camelCasing `contextType` / `retrievalMode` enum values (validate accepts it, Studio Web silently drops the resource)
 - Copy-pasting UUIDs across resources (every resource needs its own)
 
