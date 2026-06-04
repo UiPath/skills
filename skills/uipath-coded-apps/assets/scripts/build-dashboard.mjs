@@ -492,11 +492,11 @@ async function runDashboardBuild(intent, intentPath) {
           SDK_IMPORT: spec.sdkImport,
           SDK_SERVICE: spec.sdkService,
           SDK_CALL: `getAll({})`,
-          SDK_RESULT_TYPE: '{ items?: Array<Record<string, unknown>> }',
+          SDK_RESULT_TYPE: 'any',
           COLUMNS: spec.columns,
           DELTA_DIR: spec.deltaDir ?? 'neutral',
           DELTA_TEXT: spec.deltaText ?? '',
-          DATA_HOOK: '', DATA_SELECTOR: '', X_KEY: '', Y_KEY: '',
+          DATA_HOOK: '', DATA_SELECTOR: spec.dataSelector.replace(/\bdata\b/g, 'result'), X_KEY: '', Y_KEY: '',
           VALUE_EXPRESSION: '', SERIES: '', PIVOT_EXPRESSION: '',
         })
       }
@@ -654,9 +654,9 @@ async function runIncrementalEdit(editIntent, intentPath) {
         COMPONENT_NAME: componentName, TITLE: spec.title, DESCRIPTION: spec.description,
         DETAIL_ROUTE: spec.detailRoute, ICON: spec.icon, SDK_IMPORT: spec.sdkImport,
         SDK_SERVICE: spec.sdkService, SDK_CALL: 'getAll({})',
-        SDK_RESULT_TYPE: '{ items?: Array<Record<string, unknown>> }',
+        SDK_RESULT_TYPE: 'any',
         COLUMNS: spec.columns, DELTA_DIR: spec.deltaDir ?? 'neutral', DELTA_TEXT: spec.deltaText ?? '',
-        DATA_HOOK: '', DATA_SELECTOR: '', X_KEY: '', Y_KEY: '', VALUE_EXPRESSION: '', SERIES: '', PIVOT_EXPRESSION: '',
+        DATA_HOOK: '', DATA_SELECTOR: spec.dataSelector.replace(/\bdata\b/g, 'result'), X_KEY: '', Y_KEY: '', VALUE_EXPRESSION: '', SERIES: '', PIVOT_EXPRESSION: '',
       })
     }
 
