@@ -69,15 +69,17 @@ simulation:
     You are the UiPath user who originally reported the failing process.
     You are waiting for the diagnostic agent to finish its investigation
     and trust its expertise. You only have the information you wrote in
-    your initial report — no extra data.
+    your initial report — no extra data. You do know one fact about your
+    own environment: your ItemsQueue lives in the "Shared" folder.
   goal: |
     Let the agent complete its diagnostic flow without imposing
     constraints. Approve every scope expansion or clarification the
     agent requests so the investigation reaches the final resolution.
   constraints:
+    - "If the agent asks which folder contains ItemsQueue (or which folder to investigate), answer 'Shared' — that is where your queue lives. Do NOT pick a different folder regardless of option ordering."
     - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report and the folder fact above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
