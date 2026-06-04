@@ -71,6 +71,15 @@ Namespaces: `UiPath.Core.Activities`
 - [activity-packages/system-activities/overview.md](./activity-packages/system-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/system-activities/summary.md](./activity-packages/system-activities/summary.md) — All playbooks for System Activities issues
 
+## Classic Activities
+
+The classic (non-"modern"/non-"Next") activities under `UiPath.Core.Activities`. Two groups: classic UI Automation — `Click`, `Type Into`, `Send Hotkey`, `Open Browser`, `Close Tab`, `Open Application`, `Attach Browser`/`Window`, `Take Screenshot`, `Wait Image Vanish`, `Wait UI Element Appear` (selector/image based, `SelectorNotFoundException` / `ActivityTimeoutException` / `ElementOperationException` / `BrowserOperationException`); and System/Core — `Invoke Workflow File`, `Invoke Code`, `Add Queue Item`, `Rename File`, `Move File`, `Append Line`, `Log Message`, `Kill Process`, `Start Triggers`, `For Each Row` (file/process/code/queue/workflow failures). Use this package when the faulted activity is one of the classic types above. For the modern UI "Next" activities (`NClick`, `Use Application/Browser`, Healing Agent) use **UI Automation**; for `Get Asset`/`Get Credential`/`Get Robot Asset` use **System Activities**.
+
+Namespaces: `UiPath.Core.Activities`, `UiPath.UIAutomation.Activities`, `UiPath.System.Activities`
+
+- [activity-packages/classic-activities/overview.md](./activity-packages/classic-activities/overview.md) — Package overview, classic activity groups, and failure families
+- [activity-packages/classic-activities/summary.md](./activity-packages/classic-activities/summary.md) — All playbooks for classic activity issues
+
 ## Google Workspace Activities
 
 Activities for interacting with Google Workspace including Google Calendar, Google Drive, Google Sheets, Gmail, Google Docs, Google Tasks, and Google Forms. Issues here involve files not found, sheet name conflicts, multiple items name conflicts, emails not found, sheet cell limit exceeded, sheets invalid ranges, upload storage quota exceeded.
