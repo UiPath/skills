@@ -352,9 +352,10 @@ For each resource type's full schema, see the relevant capability file:
 
 ### Change Model Settings
 
-1. Edit `agent.json` → `settings.model`, `.temperature`, `.maxTokens`, or `.maxIterations`
-2. Current models: `anthropic.claude-sonnet-4-6`, `gpt-4.1-2025-04-14`, `gpt-5.2-2025-12-11`
-3. Validate, then migrate
+1. Discover available models — see [model-selection-guide.md](model-selection-guide.md). Only choose from the available models
+2. Edit `agent.json` → `settings.model` to the chosen model's `name` value
+3. Optionally adjust `.temperature`, `.maxTokens`, `.maxIterations`
+4. Validate, then migrate
 
 ### Capability-Adding Edits
 

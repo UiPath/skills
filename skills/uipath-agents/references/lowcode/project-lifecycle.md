@@ -61,6 +61,16 @@ Returns an array of validator definitions. Each entry contains:
 
 **Mandatory first step** before adding any built-in validator guardrail. Only use validators with `Status: "Available"`. If a validator is missing from the list, it does not exist on this tenant. If `Status: "Unauthorised"`, user is not entitled to use guardrails — do not add the guardrail, inform user accordingly.
 
+### `uip agent model list`
+
+List LLM models available on the tenant with capacity and priority metadata.
+
+```bash
+uip agent model list --all-fields --output json
+```
+
+See [model-selection-guide.md](model-selection-guide.md) for field definitions and selection rules.
+
 ### `uip agent validate`
 
 **Read-only** check of agent project structure and schema. Does not write any files. Run after every bulk of agent edits to catch errors early.
@@ -365,6 +375,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Validate (read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | Migrate + regenerate builder | `uip agent migrate [path] --output json` | Agent dir or any with path | — |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
+| List available models | `uip agent model list --all-fields --output json` | Any directory | — |
 | Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
 | Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |
 | Add one resource (local stub or remote import) | `uip solution resource add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
