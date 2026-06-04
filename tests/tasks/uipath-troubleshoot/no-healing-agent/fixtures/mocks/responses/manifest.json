@@ -15,8 +15,12 @@
       "file": "or-jobs-get-91d543d2-1b71-4233-a94a-a1389014c998-output-json.json"
     },
     {
-      "match": "or jobs history 91d543d2-1b71-4233-a94a-a1389014c998 --output json > .local/investigations/raw/triage-job-history.json 2>&1 && uip or jobs logs 91d543d2-1b71-4233-a94a-a1389014c998 --level Error --output json",
+      "match": "or jobs history 91d543d2-1b71-4233-a94a-a1389014c998 --output json",
       "file": "or-jobs-history-91d543d2-1b71-4233-a94a-a1389014c998-output-.json"
+    },
+    {
+      "match": "or jobs logs 91d543d2-1b71-4233-a94a-a1389014c998 --level Error --output json",
+      "file": "or-jobs-logs-91d543d2-1b71-4233-a94a-a1389014c998-level-erro.json"
     },
     {
       "match": "docsai ask",
