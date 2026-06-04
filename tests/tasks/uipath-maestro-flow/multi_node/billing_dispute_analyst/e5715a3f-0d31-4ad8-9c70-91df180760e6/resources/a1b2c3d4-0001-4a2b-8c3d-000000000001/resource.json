@@ -1,0 +1,10 @@
+{
+  "$resourceType": "context",
+  "contextType": "index",
+  "name": "Billing Dispute SOP Index",
+  "indexName": "Billing Dispute SOP Index",
+  "folderPath": "Shared/uipath-maestro-flow/BillingDispute",
+  "settings": {
+    "retrievalMode": "semantic"
+  }
+}

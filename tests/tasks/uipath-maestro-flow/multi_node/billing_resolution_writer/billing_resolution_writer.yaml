@@ -1,0 +1,61 @@
+task_id: skill-flow-devcon-billing-resolution-writer
+description: >
+  E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow whose
+  single work node is an inline low-code agent (uipath.agent.autonomous,
+  scaffolded with `uip agent init --inline-in-flow`) that drafts a
+  customer-facing resolution email; graded by validate plus one flow debug run.
+  NOTE: the debug criterion is intentionally RED until the inline-agent runtime
+  (MST-9381) lands on the tenant. The CLI provisioning fix (cli#1914) is shipped
+  and verified in the binary, but Orchestrator still faults greenfield inline
+  agents with 404 ("the job's associated process could not be found"). The flow
+  validates and is correctly shaped today and executes unchanged once the
+  runtime ships — same validate-passes/debug-faults split as the billing
+  connector tasks.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, resource]
+
+run_limits:
+  max_turns: 120
+  turn_timeout: 1200
+  task_timeout: 2400
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 90
+
+initial_prompt: |
+  Build a Maestro Flow "BillingResolutionWriter" (in a solution of the same
+  name) whose single work node is an inline low-code agent embedded in the flow
+  project that drafts a customer-facing billing-dispute resolution email.
+
+  - Trigger inputs: `customerName` (string), `invoiceNumber` (string),
+    `creditAmount` (number).
+  - The inline agent reads those inputs and returns two strings: the email
+    `subject` and the email `body`. The body must state the invoice number and
+    the approved credit amount. Map them to flow outputs `emailSubject` and
+    `emailBody`.
+  - The agent must be embedded in the flow project (inline), not a separate
+    published agent.
+
+  Validate the final flow file — the task is not complete until `uip maestro
+  flow validate` passes. Grading then runs the flow under debug, so build it to
+  actually run, not merely validate. Do not run debug yourself.
+
+  Use the `uipath-maestro-flow` skill workflow, and build the complete flow
+  without stopping to ask me.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BillingResolutionWriter/BillingResolutionWriter/BillingResolutionWriter.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Check debugs the flow: inline autonomous agent node present; flow completes; drafted email cites invoice MCS-2026-04872 (RED until inline-agent runtime MST-9381 lands)"
+    command: "python3 $TASK_DIR/check_billing_resolution_writer.py"
+    timeout: 360
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

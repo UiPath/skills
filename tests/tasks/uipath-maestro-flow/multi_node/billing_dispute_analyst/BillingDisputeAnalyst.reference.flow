@@ -1,0 +1,1566 @@
+{
+  "id": "1f2e3d4c-0002-4a2b-8c3d-000000000002",
+  "version": "1.6",
+  "name": "DisputeAnalyst",
+  "runtime": "maestro",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "cd3aa493-b55d-4226-b548-156213beb7c3",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "disputeAnalyst",
+      "type": "uipath.agent.autonomous",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Dispute Analyst Agent",
+        "subLabel": "Analyzes the dispute grounded on the SOP index.",
+        "shape": "rectangle",
+        "icon": "autonomous-agent"
+      },
+      "inputs": {
+        "systemPrompt": "Analyze the billing dispute using the SOP guidance.",
+        "userPrompt": "Analyze the dispute from the provided facts and SOP context.",
+        "source": "e5715a3f-0d31-4ad8-9c70-91df180760e6",
+        "agentInputVariables": [],
+        "agentOutputVariables": [
+          {
+            "id": "determination",
+            "type": "string",
+            "description": "SOP-based determination for the dispute"
+          },
+          {
+            "id": "rationale",
+            "type": "string",
+            "description": "Why this determination, citing the SOP"
+          }
+        ]
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": {
+            "type": "literal",
+            "expression": "=Error",
+            "fieldType": "string"
+          },
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "id": "sopIndex",
+      "type": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Billing Dispute SOP Index",
+        "shape": "circle",
+        "icon": "file-text"
+      },
+      "inputs": {
+        "source": "a1b2c3d4-0001-4a2b-8c3d-000000000001"
+      }
+    },
+    {
+      "id": "doneSuccess",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "determination": {
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.disputeAnalyst.output.determination",
+            "fieldType": "string"
+          }
+        },
+        "rationale": {
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.disputeAnalyst.output.rationale",
+            "fieldType": "string"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "disputeAnalyst",
+      "targetPort": "input"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "disputeAnalyst",
+      "sourcePort": "success",
+      "targetNodeId": "doneSuccess",
+      "targetPort": "input"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "disputeAnalyst",
+      "sourcePort": "context",
+      "targetNodeId": "sopIndex",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "description": "Start workflow manually",
+      "category": "trigger",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "replace",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      }
+    },
+    {
+      "nodeType": "uipath.agent.autonomous",
+      "version": "1.0",
+      "description": "AI agent that completes tasks autonomously",
+      "category": "agent",
+      "tags": [
+        "agentic",
+        "ai",
+        "autonomous",
+        "agent"
+      ],
+      "sortOrder": 5,
+      "display": {
+        "label": "Autonomous Agent",
+        "icon": "autonomous-agent",
+        "shape": "rectangle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "escalation",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Escalations",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.escalation"
+                  }
+                ],
+                "validationMessage": "Only Agent Escalation nodes can connect here"
+              }
+            }
+          ]
+        },
+        {
+          "position": "bottom",
+          "handles": [
+            {
+              "id": "context",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Context",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.context.*"
+                  }
+                ],
+                "validationMessage": "Only Context resource nodes can connect here"
+              }
+            },
+            {
+              "id": "tool",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Tools",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.tool.*"
+                  }
+                ],
+                "validationMessage": "Only Tool resource nodes can connect here"
+              }
+            }
+          ]
+        },
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output",
+              "isDefaultForType": true
+            }
+          ]
+        }
+      ],
+      "inputDefaults": {
+        "systemPrompt": "You are an agentic assistant.",
+        "userPrompt": "What is the current date?",
+        "agentInputVariables": [],
+        "agentOutputVariables": [
+          {
+            "id": "content",
+            "type": "string"
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "systemPrompt": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": {
+              "minLength": "System prompt is required"
+            }
+          },
+          "userPrompt": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": {
+              "minLength": "User prompt is required"
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "maxTokenPerResponse": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 16384
+          },
+          "maxIterations": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "guardrails": {
+            "type": "array"
+          },
+          "agentInputVariables": {
+            "type": "array"
+          },
+          "agentOutputVariables": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "systemPrompt",
+          "userPrompt"
+        ]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Agent response",
+          "var": "output",
+          "properties": {
+            "content": {
+              "type": "string",
+              "description": "The agent response text"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "source": true,
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartInlineAgentJob",
+        "version": "v2",
+        "context": [
+          {
+            "name": "_label",
+            "type": "string",
+            "value": ""
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "value": ""
+          },
+          {
+            "name": "entryPoint",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "form": {
+        "id": "settings-form",
+        "title": "Agent settings",
+        "mode": "onChange",
+        "reValidateMode": "onChange",
+        "sections": [
+          {
+            "id": "section-1",
+            "title": "Agent settings",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.systemPrompt",
+                "type": "custom",
+                "component": "prompt-editor",
+                "label": "System prompt",
+                "componentProps": {
+                  "multiline": true,
+                  "minRows": 4,
+                  "maxRows": 20,
+                  "placeholder": "Enter the system prompt"
+                }
+              },
+              {
+                "name": "inputs.userPrompt",
+                "type": "custom",
+                "component": "prompt-editor",
+                "label": "User prompt",
+                "componentProps": {
+                  "multiline": true,
+                  "minRows": 3,
+                  "maxRows": 15,
+                  "placeholder": "Enter the user prompt"
+                }
+              },
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "agent-model-picker",
+                "label": "Model",
+                "componentProps": {
+                  "placeholder": "gpt-4o-2024-11-20"
+                }
+              },
+              {
+                "name": "inputs.temperature",
+                "type": "slider",
+                "label": "Temperature",
+                "defaultValue": 0,
+                "min": 0,
+                "max": 1,
+                "step": 0.01
+              },
+              {
+                "name": "inputs.maxTokenPerResponse",
+                "type": "slider",
+                "label": "Max. tokens per response",
+                "defaultValue": 16384,
+                "min": 0,
+                "max": 16384,
+                "step": 1
+              },
+              {
+                "name": "inputs.maxIterations",
+                "type": "slider",
+                "label": "Max. iterations",
+                "defaultValue": 25,
+                "min": 1,
+                "max": 100,
+                "step": 1
+              }
+            ]
+          },
+          {
+            "id": "guardrails",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.guardrails",
+                "type": "custom",
+                "component": "guardrails-editor",
+                "label": "",
+                "componentProps": {
+                  "toolName": "Agent",
+                  "scope": "Agent"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "description": "Mark the end of a workflow path",
+      "category": "control-flow",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.agent.autonomous",
+      "version": "1.1",
+      "description": "AI agent that completes tasks autonomously",
+      "category": "agent",
+      "tags": [
+        "agentic",
+        "ai",
+        "autonomous",
+        "agent"
+      ],
+      "sortOrder": 5,
+      "display": {
+        "label": "Autonomous Agent",
+        "icon": "autonomous-agent",
+        "shape": "rectangle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "escalation",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Escalations",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.escalation"
+                  }
+                ],
+                "validationMessage": "Only Agent Escalation nodes can connect here"
+              }
+            }
+          ]
+        },
+        {
+          "position": "bottom",
+          "handles": [
+            {
+              "id": "context",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Context",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.context.*"
+                  }
+                ],
+                "validationMessage": "Only Context resource nodes can connect here"
+              }
+            },
+            {
+              "id": "tool",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Tools",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.tool.*"
+                  }
+                ],
+                "validationMessage": "Only Tool resource nodes can connect here"
+              }
+            }
+          ]
+        },
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output",
+              "isDefaultForType": true
+            }
+          ]
+        }
+      ],
+      "inputDefaults": {
+        "systemPrompt": "You are an agentic assistant.",
+        "userPrompt": "What is the current date?",
+        "agentInputVariables": [],
+        "agentOutputVariables": [
+          {
+            "id": "content",
+            "type": "string"
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "systemPrompt": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": {
+              "minLength": "System prompt is required"
+            }
+          },
+          "userPrompt": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": {
+              "minLength": "User prompt is required"
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "maxTokenPerResponse": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 16384
+          },
+          "maxIterations": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "guardrails": {
+            "type": "array"
+          },
+          "agentInputVariables": {
+            "type": "array"
+          },
+          "agentOutputVariables": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "systemPrompt",
+          "userPrompt"
+        ]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Agent response",
+          "var": "output",
+          "properties": {
+            "content": {
+              "type": "string",
+              "description": "The agent response text"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "source": true,
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartInlineAgentJob",
+        "version": "v2",
+        "context": [
+          {
+            "name": "_label",
+            "type": "string",
+            "value": ""
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "value": ""
+          },
+          {
+            "name": "entryPoint",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "form": {
+        "id": "settings-form",
+        "title": "Agent settings",
+        "mode": "onChange",
+        "reValidateMode": "onChange",
+        "sections": [
+          {
+            "id": "section-1",
+            "title": "Agent settings",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.systemPrompt",
+                "type": "custom",
+                "component": "prompt-editor",
+                "label": "System prompt",
+                "componentProps": {
+                  "multiline": true,
+                  "minRows": 4,
+                  "maxRows": 20,
+                  "placeholder": "Enter the system prompt"
+                }
+              },
+              {
+                "name": "inputs.userPrompt",
+                "type": "custom",
+                "component": "prompt-editor",
+                "label": "User prompt",
+                "componentProps": {
+                  "multiline": true,
+                  "minRows": 3,
+                  "maxRows": 15,
+                  "placeholder": "Enter the user prompt"
+                }
+              },
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "agent-model-picker",
+                "label": "Model",
+                "componentProps": {
+                  "placeholder": "gpt-4o-2024-11-20"
+                }
+              },
+              {
+                "name": "inputs.temperature",
+                "type": "slider",
+                "label": "Temperature",
+                "defaultValue": 0,
+                "min": 0,
+                "max": 1,
+                "step": 0.01
+              },
+              {
+                "name": "inputs.maxTokenPerResponse",
+                "type": "slider",
+                "label": "Max. tokens per response",
+                "defaultValue": 16384,
+                "min": 0,
+                "max": 16384,
+                "step": 1
+              },
+              {
+                "name": "inputs.maxIterations",
+                "type": "slider",
+                "label": "Max. iterations",
+                "defaultValue": 25,
+                "min": 1,
+                "max": 100,
+                "step": 1
+              }
+            ]
+          },
+          {
+            "id": "guardrails",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.guardrails",
+                "type": "custom",
+                "component": "guardrails-editor",
+                "label": "",
+                "componentProps": {
+                  "toolName": "Agent",
+                  "scope": "Agent"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "version": "1.0.0",
+      "category": "agent",
+      "tags": [
+        "agent-context",
+        "index"
+      ],
+      "description": "SOP grounding for the Billing Dispute Analyst agent.",
+      "sortOrder": 505,
+      "display": {
+        "label": "Billing Dispute SOP Index",
+        "description": "SOP grounding for the Billing Dispute Analyst agent.",
+        "icon": "file-text",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "artifact",
+              "constraints": {
+                "allowedSources": [
+                  {
+                    "nodeType": "uipath.agent.autonomous",
+                    "handleId": "context"
+                  },
+                  {
+                    "nodeType": "uipath.agent.conversational",
+                    "handleId": "context"
+                  }
+                ],
+                "validationMessage": "Only Agent's context handle can connect here"
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "source": true
+      },
+      "form": {
+        "id": "context-index-form",
+        "title": "Context Index",
+        "sections": [
+          {
+            "id": "index-settings",
+            "title": "Index Settings",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.retrievalMode",
+                "type": "custom",
+                "component": "index-strategy-select",
+                "label": "Strategy",
+                "componentProps": {
+                  "options": [
+                    {
+                      "value": "semantic",
+                      "label": "Semantic"
+                    },
+                    {
+                      "value": "structured",
+                      "label": "Structured",
+                      "preview": true
+                    },
+                    {
+                      "value": "deeprag",
+                      "label": "DeepRAG"
+                    },
+                    {
+                      "value": "batchtransform",
+                      "label": "Batch Transform",
+                      "preview": true
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "inputs.query",
+                "type": "custom",
+                "component": "context-query-editor",
+                "label": "Query",
+                "componentProps": {
+                  "placeholder": "The query for the Semantic strategy."
+                },
+                "rules": [
+                  {
+                    "id": "show-query-semantic",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "semantic"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.query",
+                "type": "custom",
+                "component": "context-query-editor",
+                "label": "Query",
+                "componentProps": {
+                  "placeholder": "The query for the Structured strategy."
+                },
+                "rules": [
+                  {
+                    "id": "show-query-structured",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "structured"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.query",
+                "type": "custom",
+                "component": "context-query-editor",
+                "label": "DeepRAG Task",
+                "componentProps": {
+                  "placeholder": "Describe the task: what to research across documents, what to synthesize, and how to cite sources"
+                },
+                "rules": [
+                  {
+                    "id": "show-query-deeprag",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "deeprag"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.query",
+                "type": "custom",
+                "component": "context-query-editor",
+                "label": "Batch Transform Task",
+                "componentProps": {
+                  "placeholder": "Describe the task for each row: what to analyze, what to extract, and how to populate the output columns"
+                },
+                "rules": [
+                  {
+                    "id": "show-query-batchtransform",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "batchtransform"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.folderPathPrefix",
+                "type": "custom",
+                "component": "context-query-editor",
+                "label": "Folder path prefix",
+                "componentProps": {
+                  "placeholder": "e.g., /documents/project",
+                  "allowedModes": [
+                    "text-builder",
+                    "variable"
+                  ]
+                }
+              },
+              {
+                "name": "inputs.fileExtension",
+                "type": "select",
+                "label": "File Extension",
+                "options": [
+                  {
+                    "value": "All",
+                    "label": "All"
+                  },
+                  {
+                    "value": "pdf",
+                    "label": "pdf"
+                  },
+                  {
+                    "value": "csv",
+                    "label": "csv"
+                  },
+                  {
+                    "value": "json",
+                    "label": "json"
+                  },
+                  {
+                    "value": "docx",
+                    "label": "docx"
+                  },
+                  {
+                    "value": "xlsx",
+                    "label": "xlsx"
+                  },
+                  {
+                    "value": "txt",
+                    "label": "txt"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "show-file-extension-semantic",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "semantic"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.fileExtension",
+                "type": "select",
+                "label": "File Extension",
+                "options": [
+                  {
+                    "value": "pdf",
+                    "label": "pdf"
+                  },
+                  {
+                    "value": "txt",
+                    "label": "txt"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "show-file-extension-deeprag",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "deeprag"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.citations",
+                "type": "select",
+                "label": "Citations",
+                "options": [
+                  {
+                    "value": "enabled",
+                    "label": "Enabled"
+                  },
+                  {
+                    "value": "disabled",
+                    "label": "Disabled"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "show-citations",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "deeprag"
+                      },
+                      {
+                        "when": "inputs.fileExtension",
+                        "is": "pdf"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.threshold",
+                "type": "slider",
+                "label": "Relevance score threshold",
+                "min": 0,
+                "max": 1,
+                "step": 0.01,
+                "rules": [
+                  {
+                    "id": "show-threshold",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "semantic"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.resultCount",
+                "type": "slider",
+                "label": "Max results retrieved",
+                "min": 1,
+                "max": 10,
+                "step": 1,
+                "rules": [
+                  {
+                    "id": "show-result-count",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "semantic"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.outputColumns",
+                "type": "custom",
+                "component": "output-columns-editor",
+                "label": "Output columns",
+                "componentProps": {
+                  "maxColumns": 10,
+                  "namePlaceholder": "Column name",
+                  "descriptionPlaceholder": "Describe what this new column should contain"
+                },
+                "rules": [
+                  {
+                    "id": "show-output-columns",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "batchtransform"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.webSearchGrounding.value",
+                "type": "select",
+                "label": "Web search grounding",
+                "options": [
+                  {
+                    "label": "Enabled",
+                    "value": "enabled"
+                  },
+                  {
+                    "label": "Disabled",
+                    "value": "disabled"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "show-web-search-grounding",
+                    "conditions": [
+                      {
+                        "when": "inputs.retrievalMode",
+                        "is": "batchtransform"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "indexId": {
+            "type": "string"
+          },
+          "indexName": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderPath": {
+            "type": "string"
+          },
+          "retrievalMode": {
+            "type": "string"
+          },
+          "query": {
+            "type": "object"
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "resultCount": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "fileExtension": {
+            "type": "string"
+          },
+          "folderPathPrefix": {
+            "type": "object"
+          },
+          "citations": {
+            "type": "string"
+          },
+          "outputColumns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "webSearchGrounding": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "retrievalMode": {
+              "const": "batchtransform"
+            }
+          },
+          "required": [
+            "retrievalMode"
+          ]
+        },
+        "then": {
+          "properties": {
+            "outputColumns": {
+              "minItems": 1,
+              "errorMessage": "At least one output column is required"
+            }
+          }
+        }
+      },
+      "inputDefaults": {
+        "indexId": "cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+        "indexName": "Billing Dispute SOP Index",
+        "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+        "folderPath": "Shared/uipath-maestro-flow/BillingDispute",
+        "retrievalMode": "semantic",
+        "query": {
+          "mode": "text-builder",
+          "textValue": "",
+          "promptValue": "",
+          "argumentPath": ""
+        },
+        "threshold": 0,
+        "resultCount": 3,
+        "fileExtension": "All",
+        "folderPathPrefix": {
+          "mode": "text-builder",
+          "textValue": "",
+          "promptValue": "",
+          "argumentPath": ""
+        },
+        "citations": "disabled",
+        "outputColumns": [],
+        "webSearchGrounding": {
+          "value": "enabled"
+        }
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "disputeDescription",
+        "direction": "in",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Customer-submitted dispute description",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "invoiceNumber",
+        "direction": "in",
+        "type": "string",
+        "defaultValue": "",
+        "description": "Disputed invoice number",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "determination",
+        "direction": "out",
+        "type": "string"
+      },
+      {
+        "id": "rationale",
+        "direction": "out",
+        "type": "string"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "disputeAnalyst.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "disputeAnalyst",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "doneSuccess.determination",
+        "type": "string",
+        "binding": {
+          "nodeId": "doneSuccess",
+          "outputId": "determination"
+        }
+      },
+      {
+        "id": "doneSuccess.rationale",
+        "type": "string",
+        "binding": {
+          "nodeId": "doneSuccess",
+          "outputId": "rationale"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "disputeAnalyst": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "sopIndex": {
+        "position": {
+          "x": 448,
+          "y": 320
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "doneSuccess": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}
