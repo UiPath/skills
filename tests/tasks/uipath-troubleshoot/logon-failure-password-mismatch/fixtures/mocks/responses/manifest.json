@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for logon-failure-password-mismatch scenario (job-faulted-logon-failure playbook, branch 3 — stale Orchestrator credential after AD password rotation). Folder/job/user keys are stable; the agent derives them by chaining: folders list-current-user -> jobs list --state Faulted -> jobs get -> jobs logs -> robots list -> users get. The same-user-different-machine and same-machine-different-user evidence is surfaced via the broader jobs-list call (without --state filter).",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {
