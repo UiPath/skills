@@ -21,7 +21,7 @@ The user reviews structure first, then attaches real resources once they exist.
 | `type` | ✓ | ✓ | ✓ |
 | `displayName` | ✓ | ✓ | ✓ |
 | `isRequired`, `shouldRunOnlyOnce` | ✓ | ✓ | ✓ |
-| `data.context.taskTypeId` (non-connector) / `data.typeId` (connector) | real ID | **key omitted** | fake ID |
+| `data.typeId` (connector) / `data.name` + `data.folderPath` = `=bindings.<id>` (non-connector) | real ID | **key omitted** | fake ID |
 | `data.connectionId` (connector) | real UUID | **key omitted** | fake UUID |
 | `data.inputs[]` value JSON (connector) | real values | **omitted** | `{}` |
 | Input / output variable bindings | real JSON edits via `io-binding` plugin | **skipped entirely** (no `data.inputs[]` to edit) | edits targeting nonexistent input names |
@@ -139,8 +139,8 @@ Read `caseplan.json`, locate the placeholder task by `id`, and mutate its `data`
 
 | Task class | `data` mutation |
 |---|---|
-| `process`, `agent`, `rpa`, `api-workflow`, `case-management` | Set `data.name`, `data.folderPath`, `data.context.taskTypeId = <entityKey>`. Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
-| `action` | Set `data.context.taskTypeId = <actionAppId>`, `data.taskTitle`, `data.priority`, `data.recipient` (if known). Write `data.inputs[]` / `data.outputs[]` from the schema. |
+| `process`, `agent`, `rpa`, `api-workflow`, `case-management` | Set `data.name`, `data.folderPath` (both `=bindings.<id>` refs). Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
+| `action` | Set `data.name`, `data.folderPath` (`=bindings.<id>`), `data.taskTitle`, `data.priority`, `data.recipient` (if known). Write `data.inputs[]` / `data.outputs[]` from the schema. |
 | `execute-connector-activity`, `wait-for-connector` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `case spec` schema (per the connector plugin's `impl-json.md`). |
 
 Per-class JSON shape lives in `plugins/tasks/<type>/impl-json.md` — match those exactly.
