@@ -51,7 +51,7 @@ vault that holds the asset's value is the failing component.
 
 ### Credential Stores (Root Cause)
 - Credential store referenced by the asset: "Production CyberArk Store" (id `a3e7b2c5-4d8f-49a1-b6c2-8e7d1f3a5b9c`), `Type: "CyberArk"`
-- The Orchestrator side records the store as configured, but the vault endpoint is currently unreachable. The error code 2304 fires when Orchestrator successfully resolved the store binding but failed to fetch the value from the vault.
+- The Orchestrator side records the store as configured, but the read from the vault fails. The error code 2304 fires when Orchestrator successfully resolved the store binding but failed to fetch the value from the vault. Whether the vault endpoint is unreachable (network/firewall/DNS) or the store is misconfigured (wrong endpoint URL, web service name, FIPS/SDK mismatch) cannot be distinguished from Orchestrator-side evidence — both readings are acceptable, and the remediation checks below cover both.
 
 ---
 

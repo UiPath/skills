@@ -19,6 +19,18 @@
       "file": "or-jobs-list-folder-key-6b9d2c5e-state-faulted-output-json.json"
     },
     {
+      "match": "or jobs list --process-name AssetNetworkConnectivity",
+      "file": "or-jobs-list-folder-key-6b9d2c5e-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path Remote Debugging",
+      "file": "or-jobs-list-folder-key-6b9d2c5e-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Remote Debugging\"",
+      "file": "or-jobs-list-folder-key-6b9d2c5e-state-faulted-output-json.json"
+    },
+    {
       "match": "or jobs get \"8e3f4d5c-2b1a-4c9d-7e6f-1a2b3c4d5e6f\" --output json",
       "file": "or-jobs-get-8e3f4d5c-output-json.json"
     },
@@ -40,6 +52,14 @@
     },
     {
       "match": "resource assets list --folder-key \"6b9d2c5e-3a4f-4b8c-9d1e-2f3a4b5c6d7e\" --output json",
+      "file": "or-assets-list-folder-key-6b9d2c5e-output-json.json"
+    },
+    {
+      "match": "resource assets list --folder-path Remote Debugging",
+      "file": "or-assets-list-folder-key-6b9d2c5e-output-json.json"
+    },
+    {
+      "match": "resource assets list --folder-path \"Remote Debugging\"",
       "file": "or-assets-list-folder-key-6b9d2c5e-output-json.json"
     },
     {

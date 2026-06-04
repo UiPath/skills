@@ -17,9 +17,10 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 5400
-max_turns: 60
-turn_timeout: 3600
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
   template_sources:

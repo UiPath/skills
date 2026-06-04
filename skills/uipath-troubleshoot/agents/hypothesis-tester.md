@@ -92,9 +92,11 @@ Final reasoning step. Set status:
 
 | Status | Criteria |
 |---|---|
-| confirmed | Evidence supports AND every `to_eliminate` step ran AND none disproved AND Data Correlation rules hold for every cited evidence item AND (medium/low only) every **testable** Testing Prerequisite is satisfied — out-of-band prerequisites recorded in `open_gaps` do NOT block confirmation |
+| confirmed | Evidence supports AND every `to_eliminate` step ran AND none disproved AND Data Correlation rules hold for every cited evidence item AND the runtime-evidence gate below passes AND (medium/low only) every **testable** Testing Prerequisite is satisfied — out-of-band prerequisites recorded in `open_gaps` do NOT block confirmation |
 | eliminated | Evidence contradicts OR causal chain link missing |
 | inconclusive | Not enough data — describe what's missing in `open_gaps`, including any unmet investigation-guide prerequisites or undocumented-command gaps |
+
+**Runtime-evidence gate.** When the user-reported symptom is a runtime failure (a job/run/instance that faulted, hung, or misbehaved), `confirmed` additionally requires at least one cited evidence item drawn from runtime/platform data (logs, job records, instance state, incident data) that passes Data Correlation. Design-time evidence alone (source files, manifests, naming patterns) can show a defect EXISTS but cannot confirm it CAUSED the reported failure. If every runtime fetch relevant to the symptom returns empty while the user reports active failures, that is a CONTRADICTION, not neutral absence — the data view is likely pointed at the wrong scope (wrong folder, wrong key, wrong command form). Do NOT confirm. Set `inconclusive`, record the contradiction in `open_gaps`, and append an `ask user` step to verify the scope.
 
 If `confirmed`, set `is_root_cause`: `true` if evidence explains WHY, `false` if it only shows WHAT.
 
@@ -103,4 +105,4 @@ If `confirmed`, set `is_root_cause`: `true` if evidence explains WHY, `false` if
 - Test ONLY the assigned hypothesis — don't explore unrelated leads.
 - Do NOT generate sub-hypotheses — the generator does that.
 - You MUST run the `to_eliminate` steps before setting `confirmed`. Orchestrator will reject otherwise.
-- Tool-call steps in the plan run only commands documented in the matched playbook's `## Investigation` section or the product overview's CLI section. Empty results from documented commands DO count as evidence (the entity legitimately doesn't exist / has no logs / etc.). Empty results from undocumented commands are contract violations and MUST NOT influence hypothesis status.
+- Tool-call steps in the plan run only commands documented in the matched playbook's `## Investigation` section or the product overview's CLI section. Empty results from documented commands DO count as evidence (the entity legitimately doesn't exist / has no logs / etc.) — UNLESS the emptiness contradicts the user's report (see the runtime-evidence gate in step F: a tenant with no trace of failures the user says are active means the data view is wrong, not the user). Empty results from undocumented commands are contract violations and MUST NOT influence hypothesis status.

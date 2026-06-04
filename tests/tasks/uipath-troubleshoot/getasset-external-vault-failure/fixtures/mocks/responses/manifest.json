@@ -19,6 +19,18 @@
       "file": "or-jobs-list-folder-key-4f7a9b3d-state-faulted-output-json.json"
     },
     {
+      "match": "or jobs list --process-name AssetVaultFailure",
+      "file": "or-jobs-list-folder-key-4f7a9b3d-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path Remote Debugging",
+      "file": "or-jobs-list-folder-key-4f7a9b3d-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Remote Debugging\"",
+      "file": "or-jobs-list-folder-key-4f7a9b3d-state-faulted-output-json.json"
+    },
+    {
       "match": "or jobs get \"6c9e3a4b-1f5d-4e8c-9b6a-2d3e4f5a6b7c\" --output json",
       "file": "or-jobs-get-6c9e3a4b-output-json.json"
     },
@@ -40,6 +52,14 @@
     },
     {
       "match": "resource assets list --folder-key \"4f7a9b3d-2e8c-4f6b-9d5a-1c2b3d4e5f6a\" --output json",
+      "file": "or-assets-list-folder-key-4f7a9b3d-output-json.json"
+    },
+    {
+      "match": "resource assets list --folder-path Remote Debugging",
+      "file": "or-assets-list-folder-key-4f7a9b3d-output-json.json"
+    },
+    {
+      "match": "resource assets list --folder-path \"Remote Debugging\"",
       "file": "or-assets-list-folder-key-4f7a9b3d-output-json.json"
     },
     {

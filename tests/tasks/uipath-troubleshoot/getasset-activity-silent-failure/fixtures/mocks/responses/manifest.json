@@ -19,6 +19,18 @@
       "file": "or-jobs-list-folder-key-5a8c4d3e-state-faulted-output-json.json"
     },
     {
+      "match": "or jobs list --process-name AssetSilentFailure",
+      "file": "or-jobs-list-folder-key-5a8c4d3e-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path Remote Debugging",
+      "file": "or-jobs-list-folder-key-5a8c4d3e-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Remote Debugging\"",
+      "file": "or-jobs-list-folder-key-5a8c4d3e-state-faulted-output-json.json"
+    },
+    {
       "match": "or jobs get \"7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d\" --output json",
       "file": "or-jobs-get-7d2e5f3c-output-json.json"
     },
@@ -40,6 +52,14 @@
     },
     {
       "match": "resource assets list --folder-key \"5a8c4d3e-9f2b-4a6c-8e1f-2b3c4d5e6f7a\" --output json",
+      "file": "or-assets-list-folder-key-5a8c4d3e-output-json.json"
+    },
+    {
+      "match": "resource assets list --folder-path Remote Debugging",
+      "file": "or-assets-list-folder-key-5a8c4d3e-output-json.json"
+    },
+    {
+      "match": "resource assets list --folder-path \"Remote Debugging\"",
       "file": "or-assets-list-folder-key-5a8c4d3e-output-json.json"
     },
     {

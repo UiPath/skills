@@ -19,6 +19,18 @@
       "file": "or-jobs-list-folder-key-2c5e8f4a-state-faulted-output-json.json"
     },
     {
+      "match": "or jobs list --process-name AssetPerRobotNoValue",
+      "file": "or-jobs-list-folder-key-2c5e8f4a-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path Remote Debugging",
+      "file": "or-jobs-list-folder-key-2c5e8f4a-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Remote Debugging\"",
+      "file": "or-jobs-list-folder-key-2c5e8f4a-state-faulted-output-json.json"
+    },
+    {
       "match": "or jobs get \"4d7e9f3a-1b6c-5e8f-9d4c-3b2a1f0e9d8c\" --output json",
       "file": "or-jobs-get-4d7e9f3a-output-json.json"
     },
@@ -40,6 +52,14 @@
     },
     {
       "match": "resource assets list --folder-key \"2c5e8f4a-9b3d-4f6c-8e1d-7a2b3c4d5e6f\" --output json",
+      "file": "or-assets-list-folder-key-2c5e8f4a-output-json.json"
+    },
+    {
+      "match": "resource assets list --folder-path Remote Debugging",
+      "file": "or-assets-list-folder-key-2c5e8f4a-output-json.json"
+    },
+    {
+      "match": "resource assets list --folder-path \"Remote Debugging\"",
       "file": "or-assets-list-folder-key-2c5e8f4a-output-json.json"
     },
     {
