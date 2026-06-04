@@ -43,7 +43,7 @@ initial_prompt: |
        - If the list is empty, set `category_choice_set_id = null` and skip
          the category field on Expense.
      Capture the chosen ID as `category_choice_set_id` and call
-     `uip df choice-sets get <id>` to resolve each value's NumberId. Save the
+     `uip df choice-sets list-values <id>` to resolve each value's NumberId. Save the
      full Name → NumberId map under `category_value_map` in report.json.
 
   3. Optionally pick a second choice set for tags. Same strategy as step 2 —

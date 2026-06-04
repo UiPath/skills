@@ -40,7 +40,7 @@ initial_prompt: |
      `chosen_choice_set_id`.
 
   3. If a choice set was found in step 2, inspect its values:
-       uip df choice-sets get <chosen_choice_set_id> --output json
+       uip df choice-sets list-values <chosen_choice_set_id> --output json
      Capture the first value's NumberId and DisplayName. Save the NumberId as
      `chosen_choice_number_id`.
 
