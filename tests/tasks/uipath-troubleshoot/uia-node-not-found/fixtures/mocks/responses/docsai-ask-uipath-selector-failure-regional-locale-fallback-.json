@@ -1,0 +1,15 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "be879fc8-5dfa-4cc8-88fa-7b061e7256f2",
+    "text": "The provided documents do not cover selector failures related to:\n\n- Regional/locale differences  \n- Browser language causing different page content/DOM  \n- `NodeNotFoundException` specifically in that context  \n\nFrom a support perspective, when selectors fail due to locale or content differences, the usual approaches are:\n\n- Ensure the UI structure (DOM/window hierarchy) is the same across languages/regions. If not, use:\n  - More robust, partial, or wildcard selectors\n  - Anchor-based activities\n  - Image-based or text-based targeting as a fallback\n- Avoid language\u2011dependent attributes (e.g., inner text that changes with locale) in selectors.\n- If using web apps, confirm that the same URL and layout are loaded regardless of browser language, or build separate selectors per locale and branch logic.\n- Reproduce the issue with UiExplorer to compare working vs failing selectors and adjust attributes accordingly.\n\nSince this scenario is not documented in the supplied articles, if the problem persists, capture:\n- Exact error (`NodeNotFoundException` stack trace)\n- Screenshots of the UI in each locale\n- Selector dumps from UiExplorer  \nand open a UiPath support ticket.\n",
+    "sources": [],
+    "disclaimers": [],
+    "followups": [
+      "Can you share the exact selector and the full NodeNotFoundException message you are getting?",
+      "Is the application you are automating a web app or desktop app, and which browser or technology is it using?",
+      "Do you see visible layout or text changes between the different regional or language settings?"
+    ]
+  }
+}
