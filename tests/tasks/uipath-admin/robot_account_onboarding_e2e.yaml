@@ -14,6 +14,9 @@ initial_prompt: |
   Onboard an unattended invoice-processing robot ("smoke-e2e-bot" /
   "Smoke E2E Bot") and add it to the "Automation Users" group.
 
+  If a robot account with this name already exists, delete it first,
+  then create the new one.
+
   Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

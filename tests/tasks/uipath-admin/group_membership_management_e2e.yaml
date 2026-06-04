@@ -15,6 +15,9 @@ initial_prompt: |
   Set up a new "Invoice Processing Team" group containing the first
   two users in the org, verify membership, then remove the second user.
 
+  If a group with this name already exists, delete it first,
+  then create the new one.
+
   Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
