@@ -49,10 +49,15 @@ initial_prompt: |
      use whatever tenant is currently active.
   2. **Authorized upload.** I am explicitly authorizing you to upload this
      solution to Studio Web for the purpose of running this eval. After the
-     evaluator, eval set, and data point are on disk, run
-     `uip solution resource refresh EvalRunDemo --output json`, then
-     `uip solution upload EvalRunDemo --output json`. Surface the resulting
-     `SolutionId` and `DesignerUrl` to me before proceeding.
+     evaluator, eval set, and data point are on disk, compute the absolute
+     path to the solution root directory (the directory containing
+     `EvalRunDemo.uipx`) and reuse it for both commands. Run
+     `uip solution resource refresh --solution-folder "$SOLUTION_DIR" --output json`,
+     then `uip solution upload "$SOLUTION_DIR" --output json`. Do not pass
+     `EvalRunDemo` as a relative upload path while the shell is inside
+     `EvalRunDemo/EvalRunDemo`; that resolves to a nonexistent nested path.
+     Surface the resulting `SolutionId` and `DesignerUrl` to me before
+     proceeding.
   3. Start the eval run with `--wait --timeout 600 --output json`. After the
      start command returns (Completed, Failed, or local wait timeout), always
      call `eval run status <run_id> --output json` once and write the full JSON
