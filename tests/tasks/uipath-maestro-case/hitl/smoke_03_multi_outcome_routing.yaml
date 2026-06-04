@@ -85,10 +85,10 @@ initial_prompt: |
   | selected-tasks-completed("Review Leave Request") | approved == true | exit-only | Yes |
   | selected-tasks-completed("Review Leave Request") | approved == false | exit-only | No |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `review.reviewLeaveRequest` | Review Leave Request | action | Manager |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `review.reviewLeaveRequest` | Review Leave Request | action | Yes | No | Manager | — |
 
   ##### Task 1.1: Review Leave Request (`review.reviewLeaveRequest`)
 
@@ -126,7 +126,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
+  #### Tasks
   (none)
 
   ### Stage 3: Rejected (`rejected`)
@@ -144,7 +144,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
+  #### Tasks
   (none)
   ```
 

@@ -69,10 +69,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | Yes | No | system | — |
 
   ##### Task 1.1: Lookup age via NameToAgeFixed2 API workflow (`lookup.lookupAge`)
 
