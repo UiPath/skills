@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for the typo branch of the excel-activities/read-range-sheet-not-found playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs (reveals the enumerated sheet list ['Sheet1', 'Data', 'Summary'] from the prior Get Workbook Sheets activity) → workflow source. Compare configured 'Datab' against actual 'Data' to identify the typo.",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {

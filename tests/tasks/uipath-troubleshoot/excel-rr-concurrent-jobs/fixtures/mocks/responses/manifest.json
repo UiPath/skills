@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for the concurrent-jobs branch of the excel-activities/read-range-file-locked playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs → jobs list (broader, shows the sibling job) → jobs get <sibling-key> → triggers list. The sibling job's overlapping Running window + the two-trigger overlap pattern identify the concurrent-jobs branch.",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {

@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for the file-deleted-upstream branch of the excel-activities/read-range-file-not-found playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs → jobs list (broader; reveals multiple prior Successful runs against the same process/path) → workflow source. The recent-success pattern is decisive: stable absolute path + recent successes rule out config issues; the current FileNotFoundException points at upstream deletion between runs.",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {

@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for the case-mismatch branch of the excel-activities/read-range-sheet-not-found playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs (reveals actual sheets ['Sheet1', 'Data', 'Summary']) → workflow source. Compare configured 'data' (lowercase) vs actual 'Data' (capital), identify Use Excel File scope without COM-forcing properties → OpenXML provider → case-sensitive lookup.",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {

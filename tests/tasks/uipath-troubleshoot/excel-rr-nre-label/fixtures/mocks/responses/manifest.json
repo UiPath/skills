@@ -2,7 +2,7 @@
   "version": 2,
   "_doc": "Synthetic fixture set for the sensitivity-label branch of the excel-activities/read-range-null-reference playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get (bare NRE) → jobs logs (Trace entry surfaces 'sensitivity label: Confidential\\Limited Access; access principal: UIPATH\\AUTOMATION1; decision: AccessDenied') → workflow source. Together with the user's banner clue, this points at branch 1 (Purview / AIP).",
   "rules": [
-    {"match": "or folders list-current-user --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
     {"match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"},
     {"match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json", "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"},

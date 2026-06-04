@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for the unmapped-drive branch of the excel-activities/read-range-file-not-found playbook. Workflow source has Z:\\ prefix; error is DirectoryNotFoundException on the drive root. Agent must identify the per-session-drive-mapping pattern (workflow source + user clue 'works in my RDP session') and recommend either switching to UNC or persisting the mapping under the Robot user.",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {
