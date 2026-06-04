@@ -248,7 +248,7 @@ Run from inside the flow project directory. Returns the same manifest format as 
 
 > **Do not assume a top-level key order.** The CLI does not guarantee which keys are present or in what sequence — fixtures show `runtime` before `nodes` on one flow and absent on another, and `bindings` / `variables` / `solutionId` / `projectId` / `metadata` appear in varying positions. Any anchor of the form "closing `]` + the NEXT top-level key" is coupled to that ordering and will silently break across CLI versions or between flows. **Anchor on the target array's OWN key instead — you just `Read` the file at the top of T2, so anchor to text that read actually contains.**
 
-Anchor each Edit using its target array's own opening key, located in the text you just Read — not adjacency to a neighbor key. The catch: `"nodes": [` and `"edges": [` are NOT unique in the file. They recur **inside `definitions[]`** — an inline node definition (HTTP v2, agents, subprocess) embeds its own nested `nodes`/`edges` arrays. (Even a fresh flow with one `node add`-ed HTTP node shows `"nodes": [` four times.) The reliable discriminator is **indentation: the top-level array sits at 2-space indent; every nested one is deeper** (4, 10, 14 spaces). `"definitions": [` and the top-level `"layout": {` happen to appear once each, so they need no disambiguation.
+Anchor each Edit using its target array's own opening key, located in the text you just Read — not adjacency to a neighbor key. The catch: `"nodes": [` and `"edges": [` are NOT unique in the file. They recur **inside `definitions[]`** — an inline node definition (HTTP v2, agents, subprocess) embeds its own nested `nodes`/`edges` arrays, so even a small flow can carry several copies. The reliable, version-independent discriminator is **indentation: the top-level array sits at 2-space indent; every nested one is deeper.** `"definitions": [` and the top-level `"layout": {` appear once each, so they need no disambiguation.
 
 | Edit target | Anchor on (from the text you Read) | How to insert |
 |---|---|---|
@@ -263,7 +263,7 @@ Anchor each Edit using its target array's own opening key, located in the text y
 
 **Pre-flight uniqueness check.** Before submitting an Edit, confirm your `old_string` appears **exactly once** in the file you Read. `"definitions": [` and the top-level `"layout": {` are reliably unique. `"nodes": [` and `"edges": [` are NOT — they recur inside inline definitions, so anchor on the **2-space-indented** occurrence and extend through the first element's opening (e.g. `"id": "start"`) until the match count is one. Never anchor on a bare bracket shape, and never assume the first textual occurrence is the top-level one.
 
-**Safer fallback when in doubt:** serialize the Edits across two turns. Two turns ≈ +5–10s; a failed Edit recovery loop is usually +20–30s (recovery requires re-reading a file slice, re-deriving an anchor, and re-submitting).
+**Safer fallback when in doubt:** serialize the Edits across two turns. One extra turn is cheaper than a failed-Edit recovery loop (which forces a re-Read, a re-derived anchor, and a re-submit).
 
 See [shared/file-format.md — Top-level structure](../../shared/file-format.md#top-level-structure) for which top-level keys exist and the note that their order is not guaranteed.
 
@@ -288,14 +288,12 @@ For each node type, follow the relevant plugin's `impl.md` for node-specific inp
 ### Canonical T3 chain — issue this as ONE `Bash` call
 
 ```bash
-uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" \
-  --detail '{"authentication":"manual","method":"GET","url":"https://api.example.com/...","query":{"...":"..."}}' \
-  --output json \
+uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<DETAIL_JSON>' --output json \
   && uip maestro flow validate "<ProjectName>.flow" --output json \
   && uip maestro flow format "<ProjectName>.flow" --output json
 ```
 
-Tail-append one `node configure` per CLI-owned node added in T1, using the node IDs captured from T1's chained output. Drop the entire `node configure` segment if no CLI-owned nodes exist.
+`<DETAIL_JSON>` is node-type-specific — the schema is owned by each CLI-owned node's plugin, not duplicated here: HTTP → [http/impl.md](plugins/http/impl.md#critical-use-node-configure), connectors → [connector/impl.md](plugins/connector/impl.md), connector triggers → [connector-trigger/impl.md](plugins/connector-trigger/impl.md). Tail-append one `node configure` per CLI-owned node added in T1, using the node IDs captured from T1's chained output. Drop the entire `node configure` segment if no CLI-owned nodes exist.
 
 **On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
 
