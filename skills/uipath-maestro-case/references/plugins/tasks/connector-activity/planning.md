@@ -116,7 +116,7 @@ Values can be:
 - **Pre-wrapped operator expressions** — `=js:(vars.amount > 5000)` (already canonical — pass-through)
 - **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves to `=vars.<outputVar>` then wraps)
 
-> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../../bindings-and-expressions.md#canonical-form-per-sink).
+> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### 7. Optional — author a server-side filter
 

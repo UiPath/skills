@@ -59,6 +59,14 @@ After Step 12 (validate), group issues by `plugin` and write to `tasks/build-iss
 | Step | Task | Reason |
 |---|---|---|
 | 9 | Run Compliance Check | No inputs — placeholder task |
+
+## global-vars
+
+### Errors
+
+| Step | Issue |
+|---|---|
+| 6 | Variable `caseStatus` declared twice |
 ```
 
 - Omit severity subsections with zero entries

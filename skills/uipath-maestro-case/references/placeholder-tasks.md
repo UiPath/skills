@@ -65,7 +65,7 @@ A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 }
 ```
 
-Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. The shape is uniform across classes: connector placeholders use `type` `connector-activity` / `connector-trigger`; action placeholders too — no exception for `data.taskTitle` or other action-specific keys.
+Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. The shape is uniform across classes: connector placeholders use `type` `execute-connector-activity` / `wait-for-connector`; action placeholders too — no exception for `data.taskTitle` or other action-specific keys.
 
 ### In-stage timer
 
@@ -141,7 +141,7 @@ Read `caseplan.json`, locate the placeholder task by `id`, and mutate its `data`
 |---|---|
 | `process`, `agent`, `rpa`, `api-workflow`, `case-management` | Set `data.name`, `data.folderPath`, `data.context.taskTypeId = <entityKey>`. Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
 | `action` | Set `data.context.taskTypeId = <actionAppId>`, `data.taskTitle`, `data.priority`, `data.recipient` (if known). Write `data.inputs[]` / `data.outputs[]` from the schema. |
-| `connector-activity`, `connector-trigger` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `is describe` schema. |
+| `execute-connector-activity`, `wait-for-connector` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `case spec` schema (per the connector plugin's `impl-json.md`). |
 
 Per-class JSON shape lives in `plugins/tasks/<type>/impl-json.md` — match those exactly.
 

@@ -83,7 +83,7 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 | EXTERNAL_AGENT | *(not in cache)* |
 | TIMER | *(not in cache)* |
 
-For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache lookup — these have no registry representation. Use the JSON `type` value directly.
+For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache lookup — these have no registry representation. `TIMER` → emit the `wait-for-timer` plugin shape. **`EXTERNAL_AGENT` has no generation plugin here — never write `type: external-agent`; model as `api-workflow` / `execute-connector-activity` per Rule 16.**
 
 **Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search **all** cache files listed above for the task name. When a match is found in a different cache file than expected, use that cache file's identifier field and type mapping for the `taskTypeId`, but keep the sdd.md's component type for the JSON `type` field.
 
@@ -149,7 +149,7 @@ After finding a match, map the **cache file type** (not the sdd.md component typ
 | `typecache-activities-index.json` | `execute-connector-activity` | `uiPathActivityTypeId` |
 | `typecache-triggers-index.json` | `wait-for-connector` | `uiPathActivityTypeId` |
 
-Additional `type` values not discoverable through cache: `rpa`, `external-agent`, `wait-for-timer`.
+Additional `type` values not discoverable through cache: `rpa`, `wait-for-timer`. (`external-agent` is a real CLI type but has **no generation plugin here** — never emit it; model as `api-workflow` / `execute-connector-activity` per Rule 16.)
 
 **Important:** The sdd.md component type determines the JSON `type` to write, but the **cache file** determines the `taskTypeId`. For example, if the sdd.md says "RPA" and the cache match is in `process-index.json`, write `type: "rpa"` (from sdd.md) and `data.context.taskTypeId: "<entityKey>"` (from cache).
 
