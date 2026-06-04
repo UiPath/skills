@@ -6,14 +6,11 @@ description: >
   Python-coded-agent + PDF/TXT signal pair.
 tags: [uipath-agents, smoke, coded, lifecycle:discover, context-grounding]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   I have a Python coded-agent project (`pyproject.toml` with uipath +
   uipath-langchain, plus `langgraph.json`). I want it to receive a PDF
   attachment at runtime and produce a single grounded summary with
-  citations. Tell me which skill applies and outline the pipeline. Do NOT scaffold any files.
+  citations. Do NOT scaffold any files.
 
 success_criteria:
   - type: skill_triggered
