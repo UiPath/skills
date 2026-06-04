@@ -26,13 +26,20 @@ For agent.json configuration and resource file setup, see the `uipath-agents` sk
 
 ## Configure `agent.json`
 
-`uip agent init --inline-in-flow` scaffolds `agent.json` with empty `messages[].content` by design. Edit `<FlowProjectDir>/<projectId>/agent.json`:
+`uip agent init --inline-in-flow` scaffolds `agent.json` with `settings.model: "gpt-4o-2024-11-20"` (stale) and empty `messages[].content` by design. **Both are placeholders — override them.** A scaffolded inline agent left on the default model with toy prompts is the single biggest quality gap a customer ships. Edit `<FlowProjectDir>/<projectId>/agent.json`:
 
-1. Set `settings.model` (e.g., `"anthropic.claude-sonnet-4-6"`, `"gpt-4o-2024-11-20"`)
-2. Set `settings.temperature`, `settings.maxTokens`, `settings.maxIterations`
-3. Write system prompt in `messages[0].content` and rebuild `messages[0].contentTokens`
-4. Write user prompt in `messages[1].content` and rebuild `messages[1].contentTokens`
-5. Configure `inputSchema` and `outputSchema` if the agent needs structured I/O
+1. **Override the model.** Discover the tenant's models, then pick the newest GA one for the task — do not keep `gpt-4o-2024-11-20`:
+
+   ```bash
+   uip agent model list --output json \
+     --output-filter "[?IsByo==\`false\` && IsPreview==\`false\`].{Name:Name,Provider:Provider,MaxTokens:MaxTokens}"
+   ```
+
+   Reasoning/judgment → newest GA Anthropic Sonnet/Opus or flagship OpenAI (e.g. `anthropic.claude-sonnet-4-6`, `gpt-5.4` — verify against the list). Fast/high-volume classification → newest GA `*-mini`. Set `settings.maxTokens` ≤ the chosen model's `MaxTokens`.
+2. Set `settings.temperature` (0 for extraction/classification/judgment), `settings.maxIterations` (default 25; lower for single-shot).
+3. Write system prompt in `messages[0].content` and rebuild `messages[0].contentTokens` — structure it per the skeleton in § Robust inline-agent prompts & config below, not a placeholder.
+4. Write user prompt in `messages[1].content` and rebuild `messages[1].contentTokens`.
+5. Configure `outputSchema` with typed fields — not a bare `content` string (see § Robust… below).
 
 Use `type: "simpleText"` with `rawString` for `contentTokens`:
 
@@ -42,7 +49,54 @@ Use `type: "simpleText"` with `rawString` for `contentTokens`:
 ]
 ```
 
-For detailed agent configuration (contentTokens format, model settings, resource files, tool bindings), use the `uipath-agents` skill.
+The canonical, deeper references are the `uipath-agents` skill's `model-selection-guide.md` (discovery + selection) and `agent-prompting-guide.md` (prompt quality). The skeleton + checklist below are the self-contained build-time minimum.
+
+## Robust inline-agent prompts & config
+
+Self-contained build-time minimum so a robust agent can be built without leaving this skill. For depth, see the `uipath-agents` guides named above (source of truth).
+
+### System-prompt skeleton
+
+Copy, fill every slot. Put role/behavior here; data/task goes in the user prompt. Consistent structure → consistent runs.
+
+```text
+You are <ROLE> for <DOMAIN>. <ONE-LINE PURPOSE>.
+
+Scope:
+- In scope: <what the agent handles>
+- Out of scope: <what to refuse or escalate>
+
+Tools:
+- <toolName>: call when <explicit condition>. Stop calling tools once <stop condition>, then produce the final answer.
+
+Output:
+- Return a result conforming to the output schema. <field>: <how to fill it>.
+- Never invent fields or values not grounded in the input or a tool result.
+
+Uncertainty:
+- If <required input> is missing or ambiguous, <ask | set field to null | escalate> — do not guess.
+```
+
+Slot rules: name and **bound** the role (unbounded agents answer off-task); one trigger + one stop condition **per tool** (without it the agent over-calls or loops to `maxIterations`); state output MUST match `outputSchema` and map each field (without it the agent free-forms prose); forbid values not traceable to input or tool output (cuts hallucination).
+
+### Production checklist — adjacent `agent.json` fields
+
+A robust agent is more than its prompt. Each: default → change when.
+
+| Field | Default | Change when |
+| --- | --- | --- |
+| `settings.model` | `gpt-4o-2024-11-20` | **Always** — `uip agent model list` → newest GA per task (step 1 above). |
+| `outputSchema` | bare `content` string | **Almost always** — typed fields a downstream node can consume; bare `content` forces brittle string-parsing. |
+| `settings.temperature` | `0` | Keep `0` for extraction/classification/judgment. Raise only when output *variation* is wanted. |
+| `settings.maxIterations` | `25` | Lower (≤5) for single-shot classification; higher for multi-tool loops. |
+| `settings.maxTokens` | scaffold value | Set ≤ the model's `MaxTokens` cap from `uip agent model list`. |
+| `guardrails` | `[]` | Add input/output policy enforcement (PII, content). See the `uipath-agents` guardrails capability. |
+
+### Before / after
+
+Toy: `settings.model: "gpt-4o-2024-11-20"`, `outputSchema` = `{ "content": { "type": "string" } }`, system prompt `"You are an assistant."`
+
+Robust: discovered GA model (e.g. `anthropic.claude-sonnet-4-6`), `temperature: 0`, `maxIterations: 10`; `outputSchema` with typed fields (`category`, `priority`, `needsHuman`); system prompt filled from the skeleton above. Full worked example: `agent-prompting-guide.md` § Worked example.
 
 ## Wiring Flow Variables into Agent Prompts
 
@@ -79,15 +133,25 @@ Matching `agent.json` (excerpt):
 
 ```json
 {
+  "settings": { "model": "anthropic.claude-sonnet-4-6", "temperature": 0, "maxTokens": 4096, "maxIterations": 10 },
   "inputSchema": {
     "type": "object",
     "properties": {}
   },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category":  { "type": "string",  "description": "billing | technical | sales | other" },
+      "priority":  { "type": "string",  "description": "low | medium | high | urgent" },
+      "needsHuman":{ "type": "boolean", "description": "true if the email requires human review" }
+    },
+    "required": ["category", "priority", "needsHuman"]
+  },
   "messages": [
     {
       "role": "system",
-      "content": "Triage the inbound email.",
-      "contentTokens": [{ "type": "simpleText", "rawString": "Triage the inbound email." }]
+      "content": "You are a support-email triage classifier for a SaaS product. Classify each inbound email; do not reply to the customer. category MUST be one of billing, technical, sales, other. Set needsHuman=true for legal threats, churn risk, or anything outside those categories. Never invent customer details not present in the email. If the email is empty or unintelligible, set category=\"other\" and needsHuman=true.",
+      "contentTokens": [{ "type": "simpleText", "rawString": "You are a support-email triage classifier for a SaaS product. Classify each inbound email; do not reply to the customer. category MUST be one of billing, technical, sales, other. Set needsHuman=true for legal threats, churn risk, or anything outside those categories. Never invent customer details not present in the email. If the email is empty or unintelligible, set category=\"other\" and needsHuman=true." }]
     },
     {
       "role": "user",
@@ -105,7 +169,7 @@ Matching `agent.json` (excerpt):
 }
 ```
 
-The flow-node `inputs.systemPrompt` / `inputs.userPrompt` are short, generic validator placeholders — **do not copy the templated `agent.json` prompt with `{{ $vars.X }}` tokens here**. The contract: every `{{ $vars.<flowNodeId>.output[.<field>] }}` token in `agent.json content` has a matching `{ type: "variable", rawString: " $vars.<flowNodeId>.output[.<field>] " }` entry in the same message's `contentTokens[]` (leading and trailing spaces inside `rawString`).
+The system prompt is filled from the skeleton (bounded role, output contract, grounding, uncertainty rule) and `outputSchema` carries typed fields — not a bare `content` blob. The flow-node `inputs.systemPrompt` / `inputs.userPrompt` are short, generic validator placeholders — **do not copy the templated `agent.json` prompt with `{{ $vars.X }}` tokens here**. The contract: every `{{ $vars.<flowNodeId>.output[.<field>] }}` token in `agent.json content` has a matching `{ type: "variable", rawString: " $vars.<flowNodeId>.output[.<field>] " }` entry in the same message's `contentTokens[]` (leading and trailing spaces inside `rawString`).
 
 ### When the source field name is unknown at authoring time
 

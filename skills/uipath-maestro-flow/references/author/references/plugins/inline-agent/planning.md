@@ -63,6 +63,8 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 
 Record the returned `ProjectId` — the flow node's `inputs.source` must match it exactly.
 
+The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts — both are placeholders. During Phase 2 you MUST override the model (`uip agent model list` → newest GA per task) and author robust prompts from the skeleton + production checklist in [impl.md § Robust inline-agent prompts & config](impl.md#robust-inline-agent-prompts--config). Deeper references: the `uipath-agents` skill's `model-selection-guide.md` and `agent-prompting-guide.md`.
+
 For agent.json configuration (prompts, model, schemas) and resource file authoring (tools, contexts, escalations), see the `uipath-agents` skill (`lowcode/agent-definition.md` and `lowcode/capabilities/`).
 
 ## Tools — Flow Registry Discovery
