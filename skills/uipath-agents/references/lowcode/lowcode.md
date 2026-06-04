@@ -30,7 +30,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 Standard workflow for any low-code agent task:
 
 1. **Scaffold** — `uip solution init` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
-2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md).
+2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [agent-prompting-guide.md](agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
 3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.
 4. **Validate** — `uip agent validate --output json`. Confirm `MigrationPending`, `Validated`. Read-only — never writes.
 5. **Migrate** — `uip agent migrate --output json`. Applies pending writes and regenerates `.agent-builder/`. Confirm `MigrationApplied`, `StorageVersion`.
@@ -47,6 +47,8 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 |---|---|
 | Scaffolding, validating, or running solution lifecycle commands | [project-lifecycle.md](project-lifecycle.md) |
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
+| Choosing the LLM (`settings.model`) — discover tenant models, override the scaffold default | [model-selection-guide.md](model-selection-guide.md) |
+| Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [agent-prompting-guide.md](agent-prompting-guide.md) |
 | External tools / IS tools / index contexts / memory spaces / escalations behave unexpectedly after `uip solution resource refresh` | [solution-resources.md](solution-resources.md) |
 | Running evaluations, adding test cases, managing evaluators | [evaluations/evaluate.md](evaluations/evaluate.md) |
 
@@ -55,7 +57,8 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | I need to... | Read first | Then |
 |--------------|------------|------|
 | Understand agent.json schema | [agent-definition.md](agent-definition.md) | |
-| Edit system prompt or user message | [agent-definition.md](agent-definition.md) § Messages, § contentTokens | |
+| Edit system prompt or user message | [agent-prompting-guide.md](agent-prompting-guide.md) (quality) | [agent-definition.md](agent-definition.md) § Messages, § contentTokens (mechanics) |
+| Choose or change the model | [model-selection-guide.md](model-selection-guide.md) | [agent-definition.md](agent-definition.md) § Change Model Settings |
 | Add/remove input or output fields | [agent-definition.md](agent-definition.md) § entry-points.json | |
 | Scaffold a new agent project | [project-lifecycle.md](project-lifecycle.md) § End-to-End Example | [agent-definition.md](agent-definition.md) |
 | Validate, upload, pack, publish, or deploy | [project-lifecycle.md](project-lifecycle.md) | |

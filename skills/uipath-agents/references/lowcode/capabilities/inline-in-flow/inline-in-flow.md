@@ -57,6 +57,8 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 
 This generates a UUID for the `projectId`, creates the subdirectory `<FlowProjectDir>/<uuid>/`, and scaffolds `agent.json`, `flow-layout.json`, and empty directories.
 
+> The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts. **Override the model** (`uip agent model list` → [model-selection-guide.md](../../model-selection-guide.md)) and write robust prompts ([agent-prompting-guide.md](../../agent-prompting-guide.md)) before validating.
+
 ### Option B: Manual creation
 
 #### Step 1: Start with an existing flow project
@@ -81,7 +83,7 @@ Example:
 {
   "version": "1.1.0",
   "settings": {
-    "model": "gpt-4o-2024-11-20",
+    "model": "anthropic.claude-sonnet-4-6",
     "maxTokens": 16384,
     "temperature": 0,
     "engine": "basic-v2",

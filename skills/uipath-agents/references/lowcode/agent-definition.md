@@ -85,12 +85,14 @@ Primary configuration file. Edit directly.
 
 | Field | Description |
 |-------|-------------|
-| `model` | LLM identifier (e.g., `"anthropic.claude-sonnet-4-6"`, `"gpt-4.1-2025-04-14"`) |
-| `maxTokens` | Max output tokens. Common: 16384, 32768. |
+| `model` | LLM identifier. Discover valid values with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md) — **override the scaffold default `gpt-4o-2024-11-20`** (illustrative GA: `"anthropic.claude-sonnet-4-6"`, `"gpt-5.4"` — verify against the tenant). |
+| `maxTokens` | Max output tokens. Must not exceed the chosen model's `MaxTokens` cap (from `uip agent model list`). |
 | `temperature` | 0 = deterministic, higher = creative |
 | `engine` | Use `"basic-v2"` |
 | `maxIterations` | Max agent loop iterations. Default 25. |
 | `mode` | Use `"standard"` |
+
+> Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [agent-prompting-guide.md](agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
 
 ### Schema Types
 
@@ -167,6 +169,8 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 | `targetRuntime` | `"pythonAgent"` |
 
 ## Messages
+
+This section covers message **structure** and `contentTokens` mechanics. For prompt **quality** — system-prompt skeleton, tool-call criteria, output contract, worked examples — see [agent-prompting-guide.md](agent-prompting-guide.md).
 
 ### System Message
 
@@ -369,7 +373,7 @@ For each resource type's full schema, see the relevant capability file:
 ### Change Model Settings
 
 1. Edit `agent.json` → `settings.model`, `.temperature`, `.maxTokens`, or `.maxIterations`
-2. Current models: `anthropic.claude-sonnet-4-6`, `gpt-4.1-2025-04-14`, `gpt-5.2-2025-12-11`
+2. Discover valid model identifiers with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md) — the tenant is the source of truth (availability and GA/preview status vary per tenant). Keep `maxTokens` ≤ the model's `MaxTokens` cap.
 3. Validate, then migrate
 
 ### Capability-Adding Edits
