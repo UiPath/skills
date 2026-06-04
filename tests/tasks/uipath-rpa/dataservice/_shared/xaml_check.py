@@ -71,6 +71,28 @@ def _find_local(scope: ET.Element, local_name: str) -> list[ET.Element]:
     return [el for el in scope.iter() if _local(el) == local_name]
 
 
+def _type_arg_local_name(type_arg_value: str | None) -> str | None:
+    """Return the local type name from an x:TypeArguments value (`alias:Type` → `Type`).
+
+    XAML lets authors pick any xmlns alias for the project's entity namespace
+    (`local:`, `e:`, `a:`, etc.). The local type name is what carries semantic
+    meaning; matching on the alias prefix is brittle and rejects valid XAML.
+    """
+    if type_arg_value is None:
+        return None
+    return type_arg_value.split(":", 1)[1] if ":" in type_arg_value else type_arg_value
+
+
+def _type_args_match(actual: str | None, expected: str) -> bool:
+    """Compare x:TypeArguments values by local name only.
+
+    `expected` may be passed as a bare type name (`CodingAgentsEvalEntity`) or
+    with an arbitrary prefix (`local:CodingAgentsEvalEntity`). Either way only
+    the local part after the last `:` is compared against `actual`.
+    """
+    return _type_arg_local_name(actual) == _type_arg_local_name(expected)
+
+
 # ---------------------------------------------------------------------------
 # Smoke-tier helpers (kept for S1/S2/S3)
 # ---------------------------------------------------------------------------
@@ -79,10 +101,13 @@ def _find_local(scope: ET.Element, local_name: str) -> list[ET.Element]:
 def assert_activities_present(
     xaml_path: str, expected: list[str], entity_type: str
 ) -> None:
-    """Each `expected` activity must appear at least once with x:TypeArguments=local:<entity_type>."""
+    """Each `expected` activity must appear at least once with TypeArguments matching `entity_type` by local name.
+
+    The xmlns alias the agent picks for the entity namespace (`local:`, `e:`,
+    `a:`, etc.) is irrelevant — only the local type name is compared.
+    """
     root = _load(xaml_path)
     found = _uda_activities(root)
-    expected_type = f"local:{entity_type}"
 
     missing: list[str] = []
     wrong_type: list[tuple[str, str]] = []
@@ -93,7 +118,7 @@ def assert_activities_present(
             missing.append(name)
             continue
         type_args = [_local_attr(el, "x:TypeArguments") for el in matches]
-        if not any(t == expected_type for t in type_args):
+        if not any(_type_args_match(t, entity_type) for t in type_args):
             wrong_type.append((name, ", ".join(filter(None, type_args)) or "<none>"))
 
     if missing:
@@ -101,7 +126,7 @@ def assert_activities_present(
     if wrong_type:
         for name, observed in wrong_type:
             print(
-                f"FAIL: {name} expected x:TypeArguments={expected_type!r}, got {observed!r}",
+                f"FAIL: {name} expected TypeArguments local-name {entity_type!r}, got {observed!r}",
                 file=sys.stderr,
             )
     if missing or wrong_type:
@@ -132,16 +157,28 @@ def load(xaml_path: str) -> ET.Element:
 
 
 def get_activity(root: ET.Element, name: str, type_arg: str | None = None) -> ET.Element:
-    """Return the unique uda:<name> activity. Exits if 0 or >1 match."""
+    """Return the unique uda:<name> activity. Exits if 0 or >1 match.
+
+    `type_arg` may be passed bare (`CodingAgentsEvalEntity`) or with any prefix
+    (`local:CodingAgentsEvalEntity`, `e:CodingAgentsEvalEntity`, ...). Matching
+    is by local type name so callers don't depend on the xmlns alias the agent
+    picked.
+    """
     matches = [el for el in _uda_activities(root) if _local(el) == name]
     if type_arg is not None:
         matches = [
-            el for el in matches if _local_attr(el, "x:TypeArguments") == type_arg
+            el for el in matches
+            if _type_args_match(_local_attr(el, "x:TypeArguments"), type_arg)
         ]
     if not matches:
         print(
             f"FAIL: no uda:{name} activity"
-            + (f" with x:TypeArguments={type_arg!r}" if type_arg else ""),
+            + (
+                f" with x:TypeArguments local-name "
+                f"{_type_arg_local_name(type_arg)!r}"
+                if type_arg
+                else ""
+            ),
             file=sys.stderr,
         )
         sys.exit(1)
@@ -160,7 +197,8 @@ def get_activities(
     matches = [el for el in _uda_activities(root) if _local(el) == name]
     if type_arg is not None:
         matches = [
-            el for el in matches if _local_attr(el, "x:TypeArguments") == type_arg
+            el for el in matches
+            if _type_args_match(_local_attr(el, "x:TypeArguments"), type_arg)
         ]
     return matches
 
