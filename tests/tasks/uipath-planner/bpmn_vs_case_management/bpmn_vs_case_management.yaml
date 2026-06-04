@@ -1,0 +1,32 @@
+task_id: "bpmn-vs-case-management"
+description: "Binary classification: given an automation description, decide whether it should be implemented as a Maestro BPMN process or Maestro Agentic Case Management."
+# One off, do not use e2e, integration or smoke.
+tags: [uipath-planner, lifecycle:discover, mode:build, solution-classification]
+skip: true
+
+run_limits:
+  max_turns: 5
+
+dataset:
+  paths: ["bpmn_vs_case_management.jsonl"]
+
+initial_prompt: |
+  You are classifying an automation requirement for the UiPath platform.
+
+  Automation details:
+  ${row.automation_details}
+
+  Write exactly one line to a file named `prediction.txt` in the current working directory.
+  The line must be one of: `bpmn` or `case_management` (lowercase, no extra whitespace, no quotes, no explanation).
+  If you think answer is flow, write `bpmn` to the file.
+
+success_criteria:
+  - type: "classification_match"
+    path: "prediction.txt"
+    expected_label: "${row.expected_automation_type}"
+    allowed_labels: ["bpmn", "case_management"]
+    description: "Predicted automation type matches ground truth for row ${row.id}"
+    suite_thresholds:
+      accuracy: 0.80
+      recall.bpmn: 0.75
+      recall.case_management: 0.75

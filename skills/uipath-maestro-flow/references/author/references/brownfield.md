@@ -16,6 +16,8 @@ Recipe-driven journey for targeted changes to an existing `.flow` file. Author t
 
 For each edit, run `uip maestro flow validate` once after **all** edits are complete, then `uip maestro flow format`. Do not validate after each individual change — intermediate states are expected to be invalid.
 
+When a single edit touches more than one top-level array (e.g. insert-a-node hits `nodes`, `edges`, and `definitions`), follow the [parallel same-file Edit rules](editing-operations.md#parallel-same-file-edits) — anchor each Edit on its own array's opening key, never on top-level key order.
+
 | Edit | Description | Guide |
 |------|-------------|-------|
 | **Change a script body or node inputs** | Use `Edit` to modify the node's `inputs` in-place. Do not delete + re-add — that changes the node ID and breaks `$vars` expressions. Script nodes must return an object (`return { key: value }`). | [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs) |

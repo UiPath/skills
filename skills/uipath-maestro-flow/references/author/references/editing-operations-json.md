@@ -92,6 +92,8 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
 
 ## Primitive Operations
 
+> **Multiple `Edit`s in one turn?** Several recipes below touch more than one top-level array at once (Add a node hits `nodes[]`, `definitions[]`, `variables.nodes`, and `layout.nodes`). Same-file `Edit`s serialize and must not share an anchor — anchor each on its target array's OWN opening key (never on top-level key order, which is not guaranteed) and watch for `"nodes": [` / `"edges": [` recurring inside `definitions[]` and `subflows.<id>`. Full rules: [editing-operations.md — Parallel same-file Edits](editing-operations.md#parallel-same-file-edits).
+
 ### Add a node
 
 **Tool:** `Edit` (insert into `nodes[]` + `definitions[]` + `variables.nodes` + `layout.nodes`)

@@ -42,6 +42,17 @@ import sys
 from typing import Any, Iterable, Sequence
 
 
+# Raw stdout of the most recent ``uip maestro flow debug`` invocation, stashed by
+# :func:`run_debug` so the output-assertion helpers can dump the FULL runtime
+# response to stderr when they fail. This is the diagnostic channel for the
+# chronic "debug Completes but Variables/Globals come back empty" flake
+# (e.g. skill-flow-calculator 0.375): the captured stderr lands in
+# ``task.json.success_criteria_results[].details``, so a failing eval preserves
+# the exact payload (finalStatus, elementExecutions, globals, incidents) that the
+# checker saw — which is otherwise ephemeral and unrecoverable post-run.
+_LAST_DEBUG_RAW: str | None = None
+
+
 # ── Public helpers ──────────────────────────────────────────────────────────
 
 
@@ -66,6 +77,8 @@ def run_debug(
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    global _LAST_DEBUG_RAW
+    _LAST_DEBUG_RAW = r.stdout
     if r.returncode != 0:
         _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     data = _parse_json(r.stdout)
@@ -239,7 +252,7 @@ def assert_outputs_contain(
     ok = len(missing) == 0 if require_all else len(present) > 0
     if not ok:
         mode = "all of" if require_all else "any of"
-        _fail(
+        _fail_with_capture(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
             f"missing={missing}\nOutputs: {haystack[:1000]}"
         )
@@ -252,7 +265,7 @@ def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
     haystack = _stringify(collect_outputs(payload))
     hits = [int(m) for m in re.findall(r"-?\d+", haystack) if lo <= int(m) <= hi]
     if not hits:
-        _fail(
+        _fail_with_capture(
             f"No integer in [{lo}, {hi}] found in outputs\nOutputs: {haystack[:1000]}"
         )
     return hits[0]
@@ -272,7 +285,9 @@ def assert_output_value(payload: dict, expected: Any) -> None:
         if isinstance(expected, str) and isinstance(v, str):
             if expected.lower() in v.lower():
                 return
-    _fail(f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}")
+    _fail_with_capture(
+        f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}"
+    )
 
 
 def read_flow_input_vars(project_dir: str) -> list[str]:
@@ -412,6 +427,65 @@ def _is_flow_project(path: str) -> bool:
 
 def _stringify(values: Iterable[Any]) -> str:
     return json.dumps(list(values), default=str).lower()
+
+
+def _dump_debug_capture(context: str = "") -> None:
+    """Emit the most recent raw ``flow debug`` response to stderr for diagnosis.
+
+    Called on output-assertion failures so the captured criterion output preserves
+    the full runtime payload — the only way to inspect the chronic
+    "Completed-but-empty-Variables" flake after the (ephemeral) debug run is gone.
+    Best-effort and side-effect-free: never raises, so it cannot mask the real
+    assertion failure that follows.
+    """
+    raw = _LAST_DEBUG_RAW
+    if not raw:
+        return
+    tag = f" ({context})" if context else ""
+    lines = [f"=== FLOW_DEBUG_RAW_CAPTURE BEGIN{tag} ==="]
+    try:
+        # Parse via the tolerant helper, not bare json.loads: the CLI may emit a
+        # banner/warning before the JSON (the reason run_debug uses _parse_json),
+        # and a plain json.loads would drop the whole structured summary to
+        # "<unparsable>" even though the run produced a valid payload.
+        parsed = _parse_json(raw)
+        if parsed is None:
+            raise ValueError("no JSON object found in debug stdout")
+        data = _get_ci(parsed, "Data") or {}
+        variables = _get_ci(data, "variables", "Variables") or {}
+        summary = {
+            "finalStatus": _get_ci(data, "finalStatus", "FinalStatus"),
+            "globals": _get_ci(variables, "globals", "Globals"),
+            "globalVariables": _get_ci(variables, "globalVariables", "GlobalVariables"),
+            "elementOutputs": [
+                {
+                    "id": _get_ci(e, "elementId", "ElementId", "id", "Id"),
+                    "outputs": _get_ci(e, "outputs", "Outputs"),
+                }
+                for e in (_get_ci(variables, "elements", "Elements") or [])
+            ],
+            "elementExecutions": [
+                {
+                    "id": _get_ci(x, "elementId", "ElementId", "id", "Id"),
+                    "type": _get_ci(x, "elementType", "ElementType", "extensionType"),
+                    "status": _get_ci(x, "status", "Status"),
+                }
+                for x in (_get_ci(data, "elementExecutions", "ElementExecutions") or [])
+            ],
+            "incidents": _get_ci(data, "incidents", "Incidents"),
+        }
+        lines.append("SUMMARY: " + json.dumps(summary, default=str))
+    except Exception as exc:  # noqa: BLE001 — diagnostics must never mask the real failure
+        lines.append(f"SUMMARY: <unparsable: {exc!r}>")
+    lines.append("RAW: " + raw.strip())
+    lines.append("=== FLOW_DEBUG_RAW_CAPTURE END ===")
+    print("\n".join(lines), file=sys.stderr)
+
+
+def _fail_with_capture(msg: str):
+    """Dump the raw debug payload (diagnostics) then fail with ``msg``."""
+    _dump_debug_capture(msg.split("\n", 1)[0])
+    _fail(msg)
 
 
 def _fail(msg: str):

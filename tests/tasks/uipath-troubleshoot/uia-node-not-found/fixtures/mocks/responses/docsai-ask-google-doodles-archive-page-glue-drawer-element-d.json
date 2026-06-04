@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "01b78c23-37a7-4725-9ee2-9aac48234088",
+    "text": "The provided UiPath documentation does not mention the Google Doodles archive page, the `glue-drawer` element, or its interaction behavior.  \n\nBased only on these documents, there is no information about:\n- Whether `glue-drawer` exists on that page.\n- Whether it opens automatically or requires a user click (or other interaction) to open.\n\nSo, from the available docs, we cannot determine if the `glue-drawer` on the Google Doodles archive page requires a user click to open.\n",
+    "sources": [
+      "https://docs-staging.uipath.com/automation-cloud/automation-cloud/latest/admin-guide/exploring-the-user-interface",
+      "https://docs-staging.uipath.com/studio/standalone/latest/user-guide/the-user-interface"
+    ],
+    "disclaimers": [],
+    "followups": [
+      "Are you trying to automate interactions with the Google Doodles page using UiPath Studio?",
+      "Do you need guidance on how UiPath selectors or UI automation handle custom web components like drawers?",
+      "Would you like help inspecting the Google Doodles page structure using UiPath UI Explorer or browser dev tools?"
+    ]
+  }
+}
