@@ -67,14 +67,6 @@
       "file": "or-jobs-logs-aabb1122-output-json.json"
     },
     {
-      "match": "or robots list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --output json",
-      "file": "or-robots-list-folder-key-f1e2d3c4-output-json.json"
-    },
-    {
-      "match": "or robots list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --output json",
-      "file": "or-robots-list-folder-key-f1e2d3c4-output-json.json"
-    },
-    {
       "match": "or users get \"c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f\" --output json",
       "file": "or-users-get-c1d2e3f4-output-json.json"
     },
