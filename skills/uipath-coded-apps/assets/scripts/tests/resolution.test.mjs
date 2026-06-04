@@ -76,3 +76,30 @@ test('all T2 entries have required fields', () => {
     assert.ok(Array.isArray(entry.aliases) && entry.aliases.length > 0, `${key} missing aliases`)
   }
 })
+
+test('all hardRefuse entries have pattern, reason, alternative', () => {
+  for (const entry of registry.hardRefuse) {
+    assert.ok(entry.pattern, 'hardRefuse entry missing pattern')
+    assert.ok(entry.reason, 'hardRefuse entry missing reason')
+    assert.ok(entry.alternative, 'hardRefuse entry missing alternative')
+    // Verify pattern is a valid regex
+    assert.doesNotThrow(() => new RegExp(entry.pattern), `invalid regex: ${entry.pattern}`)
+  }
+})
+
+test('hardRefuse matches cost/dollar phrases', () => {
+  const dollarEntry = registry.hardRefuse.find(e => e.pattern.includes('dollar'))
+  assert.ok(dollarEntry)
+  assert.ok(new RegExp(dollarEntry.pattern).test('cost in dollars'))
+})
+
+test('hardRefuse does not collide with valid T1 aliases', () => {
+  for (const refuseEntry of registry.hardRefuse) {
+    const re = new RegExp(refuseEntry.pattern)
+    for (const [key, t1Entry] of Object.entries(registry.t1)) {
+      for (const alias of t1Entry.aliases) {
+        assert.ok(!re.test(alias), `hardRefuse pattern "${refuseEntry.pattern}" collides with T1 alias "${alias}" (${key})`)
+      }
+    }
+  }
+})

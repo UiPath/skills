@@ -119,7 +119,7 @@
       }
     },
     "governance-policy-summary": {
-      "aliases": ["governance", "policy violations", "policy compliance", "governance summary"],
+      "aliases": ["governance", "policy violations", "policy compliance", "governance summary", "compliance summary", "policy audit"],
       "source": "insights",
       "namespace": "governance",
       "method": "getPolicySummary",
@@ -149,13 +149,16 @@
         "title": "High-Failure Queues",
         "description": "Queues exceeding the failure threshold",
         "icon": "AlertOctagon",
-        "columns": "[{key:\"name\",label:\"Queue\"},{key:\"failureCount\",label:\"Failures\",align:\"right\" as const}]"
+        "columns": "[{key:\"name\",label:\"Queue\"},{key:\"failureCount\",label:\"Failures\",align:\"right\" as const}]",
+        "dataSelector": "(data as any)?.items ?? []",
+        "deltaDir": "neutral",
+        "deltaText": ""
       }
     },
     "jobs-duration-threshold": {
       "aliases": ["long running jobs", "jobs over duration", "slow jobs", "jobs running longer than"],
       "service": "jobs",
-      "sdkImport": "@uipath/uipath-typescript/processes",
+      "sdkImport": "@uipath/uipath-typescript/jobs",
       "sdkService": "Jobs",
       "method": "getAll",
       "filterField": "duration",
@@ -165,7 +168,10 @@
         "title": "Long-Running Jobs",
         "description": "Jobs exceeding duration threshold",
         "icon": "Clock",
-        "columns": "[{key:\"name\",label:\"Process\"},{key:\"state\",label:\"State\"},{key:\"duration\",label:\"Duration\",align:\"right\" as const}]"
+        "columns": "[{key:\"name\",label:\"Process\"},{key:\"state\",label:\"State\"},{key:\"duration\",label:\"Duration\",align:\"right\" as const}]",
+        "dataSelector": "(data as any)?.items ?? []",
+        "deltaDir": "neutral",
+        "deltaText": ""
       }
     }
   },
