@@ -5,7 +5,7 @@ Case-level data lives in the variables block (v19: `root.data.uipath.variables`;
 | Category | Arrays touched | When |
 |---|---|---|
 | **Variable** | `inputOutputs[]` (declaration) + `triggerNode.outputs[]` (when populated by trigger payload) | Case-internal state, including trigger-payload-sourced state |
-| **In** | `inputs[]` + companion `inputOutputs[]` + `triggerNode.outputs[]` bridge | Formal argument supplied by external caller. Manual / timer triggers only. |
+| **In** | `inputs[]` + companion `inputOutputs[]` + `triggerNode.outputs[]` bridge | Formal argument supplied by external caller. Any trigger type (manual, timer, or event). |
 | **Out** | `outputs[]` + companion `inputOutputs[]` (ALWAYS — see [`impl-json.md` § Out argument](impl-json.md)) | Formal argument returned to caller at case end |
 
 > **Canonical definition:** [`impl-json.md` § Pattern shapes by category](impl-json.md) is the source of truth for emission shapes (which arrays get written, exact JSON shape, runtime resolution semantics). This table is the Phase 1 routing summary.
@@ -101,7 +101,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 
 **`verify` text — use exact terms from [`impl-json.md` § Pattern shapes](impl-json.md):**
 
-- "Bridge" = In-arg formal-arg → companion forwarding (manual/timer only, 3-entry shape). NEVER use for Variable rows.
+- "Bridge" = In-arg formal-arg → companion forwarding (any trigger type; 3-entry shape). NEVER use for Variable rows.
 - Variable-row trigger.outputs[] entries are "Pattern C wires" (direct payload extraction, 2-entry shape).
 - `sourceField`'s right side IS the connector's spec path (e.g., `response.subject` is the literal field path in `caseShape.outputs[]`), not an alias. SDD-name on the LEFT becomes `var`/`id`; spec path on the RIGHT becomes `source`.
 - Spec-vs-SDD drift validation runs in the variables plugin's Phase 3 dispatcher, not in io-binding.
