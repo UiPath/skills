@@ -13,6 +13,7 @@ Implements `build` action from `CAPABILITY.md`. Reads an `intent.json`, runs `bu
 7. On `T3_RETRY`: update `fnBody` in `intent.json`, re-run build script (exit code 2 = retry needed).
 8. On `BUILD_RESULT`: extract `previewUrl`, open it in browser.
 9. Never commit generated dashboard files.
+10. Check for clientId BEFORE starting the build — a missing clientId means the dashboard cannot authenticate at runtime. Do NOT skip this phase.
 
 ## 5-Phase Build Flow
 
@@ -69,6 +70,45 @@ No API names. No tier labels. No technical jargon.
 
 HALT. Do not run build script until user confirms.
 If user edits: update intent.json, re-render plan, HALT again.
+
+### Phase 4.5 — External Client (0–1 Bash)
+
+**Every dashboard needs an external OAuth app client ID.** Without it the browser PKCE auth flow has no app to authenticate against and the dashboard shows a blank error screen.
+
+**Check intent.json first:**
+```bash
+node -e "const p=JSON.parse(require('fs').readFileSync('${INTENT_JSON_PATH}','utf8')); process.exit(p.clientId ? 0 : 1)" && echo HAS_CLIENT || echo NEEDS_CLIENT
+```
+
+**If HAS_CLIENT:** skip to Phase 5.
+
+**If NEEDS_CLIENT:** ask the user:
+> "Your dashboard needs an external OAuth app to handle authentication. Do you have an existing client ID, or should I create one for you?"
+
+**If user provides existing client ID:**
+- Update `clientId` in intent.json with their value
+- Skip to Phase 5
+
+**If user says create one (or doesn't know):**
+```bash
+uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
+  --non-confidential \
+  --redirect-uri "http://localhost:5173,http://localhost:5174,http://localhost:5175" \
+  --user-scope "OR.Assets,OR.Assets.Read,OR.Jobs,OR.Jobs.Write,OR.Folders,OR.Folders.Read,OR.Buckets,OR.Buckets.Read,OR.Execution,OR.Execution.Read,OR.Tasks,OR.Tasks.Write,OR.Queues,OR.Queues.Read,OR.Users,OR.Users.Read,Insights.RealTimeData" \
+  --output json
+```
+
+Extract `ClientId` from the response and update intent.json:
+```bash
+# The response JSON contains a "ClientId" field
+CLIENT_ID=$(echo '<RESPONSE>' | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).ClientId || '')")
+```
+
+Update intent.json: set `clientId` to the extracted value.
+
+Tell the user: "Created OAuth app — client ID saved. Building your dashboard now."
+
+**If the command fails** (permission error, network issue): tell the user to create an external app manually at `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalApps` and provide the client ID. Don't proceed without a client ID.
 
 ### Phase 5 — Build (1 Bash, stream events)
 

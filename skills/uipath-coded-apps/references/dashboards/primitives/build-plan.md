@@ -43,6 +43,26 @@ Agent writes this file. Build script reads it.
 | `metrics[].tier` | `"T1"`, `"T2"`, `"T3"` |
 | T2 `params.direction` | `"gt"`, `"lt"`, `"eq"`, `"gte"`, `"lte"`, `"neq"` |
 
+## External OAuth app (required for runtime auth)
+
+The dashboard uses PKCE OAuth in the browser. It needs an external app registration:
+
+- `clientId` in intent.json must be a non-empty string before calling the build script
+- If empty: the build succeeds but the browser shows an auth error at runtime
+- See Phase 4.5 in `plugins/build/impl.md` for the provisioning flow
+
+**Required OAuth scopes:**
+```
+OR.Assets,OR.Assets.Read,OR.Jobs,OR.Jobs.Write,OR.Folders,OR.Folders.Read,
+OR.Buckets,OR.Buckets.Read,OR.Execution,OR.Execution.Read,OR.Tasks,OR.Tasks.Write,
+OR.Queues,OR.Queues.Read,OR.Users,OR.Users.Read,Insights.RealTimeData
+```
+
+**Required redirect URIs (for local dev):**
+```
+http://localhost:5173,http://localhost:5174,http://localhost:5175
+```
+
 ## Routing name
 
 Derive at plan time: `<kebab-dashboard-name>-<4-char-random>`. Example: `agent-health-x7k2`.

@@ -431,6 +431,12 @@ async function runDashboardBuild(intent, intentPath) {
     }
     emit('ENV_WRITTEN')
 
+    // Warn if clientId is missing — dashboard auth will fail at runtime without it
+    if (!clientId) {
+      emit('AUTH_MISSING', { var: 'clientId', message: 'No external OAuth app client ID provided. Dashboard will fail to authenticate in the browser. Run Phase 4.5 to provision one.' })
+      log('⚠ Warning: clientId is empty — dashboard auth will not work. See Phase 4.5 in build plugin docs.')
+    }
+
     // Step 3 — Pre-warm guarantee
     const LOCK_SIGNAL = join(P, 'node_modules', '.package-lock.json')
     const PREWARM_LOCK_PATH = join(P, '.prewarm.lock')
@@ -798,6 +804,12 @@ if (plan.metrics) {
     const uj = JSON.parse(readFileSync(uipathJsonPath, 'utf8'));
     uj.clientId = clientId;
     writeAtomic(uipathJsonPath, JSON.stringify(uj, null, 2));
+  }
+
+  // Warn if clientId is missing — dashboard auth will fail at runtime without it
+  if (!clientId) {
+    emit('AUTH_MISSING', { var: 'clientId', message: 'No external OAuth app client ID provided. Dashboard will fail to authenticate in the browser. Run Phase 4.5 to provision one.' })
+    log('⚠ Warning: clientId is empty — dashboard auth will not work. See Phase 4.5 in build plugin docs.')
   }
 
   // Step 3 — Pre-warm guarantee: ensure dependencies installed before any code gen

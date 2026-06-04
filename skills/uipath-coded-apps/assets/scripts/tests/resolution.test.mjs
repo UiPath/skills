@@ -280,3 +280,9 @@ test('classifyEditIntent: identifies REMOVE', () => {
 test('classifyEditIntent: throws on invalid op', () => {
   assert.throws(() => classifyEditIntent({ op: 'DELETE', projectDir: '/tmp/x' }), /invalid op/)
 })
+
+test('parseEvent: recognizes AUTH_MISSING event', () => {
+  const result = parseEvent('AUTH_MISSING:{"var":"clientId","message":"No client ID"}')
+  assert.equal(result.type, 'AUTH_MISSING')
+  assert.equal(result.payload.var, 'clientId')
+})
