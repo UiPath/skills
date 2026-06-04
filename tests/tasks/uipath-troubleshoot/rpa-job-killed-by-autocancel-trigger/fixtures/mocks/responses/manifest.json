@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for the autocancel-trigger variant of the 0x40010004 playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs history → admin audit tenant events --search <job-key>. The audit event surfaces the actor as 'System' with eventDetails referencing the auto-cancel trigger name 'kill-after-10min' and the time-budget that was exceeded.",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {

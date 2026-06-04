@@ -3,7 +3,7 @@
   "_doc": "Synthetic fixture set for the operator-UI-kill variant of the 0x40010004 playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs history → admin audit tenant events --search <job-key>. The audit event surfaces the actor (jane.doe@acme.com) as the operator who killed the job from Orchestrator UI.",
   "rules": [
     {
-      "match": "or folders list-current-user --output json",
+      "match": "or folders list --output json",
       "file": "or-folders-list-current-user-output-json.json"
     },
     {
