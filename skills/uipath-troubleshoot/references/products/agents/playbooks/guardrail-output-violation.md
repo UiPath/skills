@@ -31,6 +31,7 @@ What to look for:
 - Presence of `completion` spans before the `agentRun` fault and a `toolPostGuardrails` span with error — confirms this is an output violation. For input blocks at LLM or tool scope, `completion` spans may also exist; use the blocking span type to distinguish.
 - The LLM output text in the preceding `completion` span — identifies exactly which content triggered the rule
 - The guardrail name in the error — identifies which rule fired and its scope (`Output`)
+
 ## Investigation
 
 1. Get the job trace ID:
