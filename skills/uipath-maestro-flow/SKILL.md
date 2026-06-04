@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "Always invoke for `.flow` files OR when the user asks what IxP / document-extraction models are available in Maestro. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow, ixp; list IxP / document-extraction models for a flow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For agents→uipath-agents."
+description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build or edit requests, adding IxP/document-extraction nodes to a flow, or asking what IxP / document-extraction models are available in Maestro. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow, ixp; list IxP / document-extraction models for a flow through `uip maestro flow registry search \"uipath.ixp\"`; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. DO NOT TRIGGER for raw IxP project labelling/prediction review/prompt tuning outside Flow→uipath-ixp; C#/XAML→uipath-rpa; standalone agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -18,6 +18,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, di
 - Validate or format a Flow file locally
 - Apply Node ownership — Edit/Write for user-owned nodes, CLI for CLI-owned nodes (see Author capability)
 - Configure connector, connector-trigger, or managed HTTP nodes; scaffold inline-agent projects
+- Add IxP / document-extraction nodes to a flow, or list IxP models available to Maestro Flow through the flow registry
 - Plan a complex flow before building
 
 **Operate** — publishing, running, or managing a deployed flow. Read [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).

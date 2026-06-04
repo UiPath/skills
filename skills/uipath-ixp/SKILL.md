@@ -1,6 +1,6 @@
 ---
 name: uipath-ixp
-description: "[PREVIEW] UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models."
+description: "[PREVIEW] UiPath IXP (Document Understanding) — TRIGGER for raw IXP project work: create/import taxonomy, upload documents, review IXP predictions with Claude, confirm valid fields, improve prompts, publish/manage models, and inspect a deployed model taxonomy. DO NOT TRIGGER for Maestro Flow / `.flow` questions, adding IxP/document-extraction nodes to a Flow, or asking what IxP models are available in Maestro; use `uipath-maestro-flow` for those because it lists Flow-callable models through the Maestro registry."
 ---
 
 # UiPath IXP Document Extraction Assistant
@@ -15,6 +15,8 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 - User asks to publish or manage IXP model versions
 - User provides a taxonomy file to import into a project
 - User asks for the schema of a deployed (runtime) IXP model (use `deployments get-taxonomy`)
+
+**Do not use this skill** when the user is working in Maestro Flow / `.flow`, wants to add an IxP or document-extraction node to a flow, or asks what IxP models are available in Maestro. Those requests belong to `uipath-maestro-flow`, which uses the flow registry (`uip maestro flow registry search "uipath.ixp"`) rather than IXP project commands.
 
 ## Critical Rules
 
