@@ -2,6 +2,8 @@
 
 ## Creating an Entity
 
+> **Preview-then-confirm gate (SKILL.md Rule 14).** Before invoking `entities create` — or any `entities update` that adds, updates, or removes fields — render the full proposed schema (entity name, displayName, description, every field with normalized type and all extras) as a table or formatted JSON block and wait for explicit user approval. Don't run the CLI until the user confirms.
+
 ```bash
 uip df entities create "MyEntity" \
   --body '{
@@ -189,6 +191,23 @@ uip df records query <customer-entity-id> \
 uip df records insert <child-entity-id> --body '{"customerId":"<resolved-uuid>","amount":250}' --output json
 ```
 
+### FILE Fields
+
+```json
+{ "fieldName": "EvidenceFile", "type": "FILE", "referenceEntityId": "<EntityAttachment-uuid>", "referenceFieldId": "<EntityAttachment-Name-field-uuid>" }
+```
+
+- Point `referenceEntityId` at the tenant's internal `EntityAttachment` entity and `referenceFieldId` at its `Name` field. This is the only target shape the platform accepts — any other binding produces a field that renders broken in the UiPath Data Fabric UI with no in-place fix.
+- The `EntityAttachment` UUIDs are tenant-specific. Discover them once and reuse across every FILE field in the tenant:
+  ```bash
+  # EntityAttachment entity Id
+  uip df entities list --output json | python3 -c "import json,sys;print([e['Id'] for e in json.load(sys.stdin)['Data'] if e['Name']=='EntityAttachment'][0])"
+  # Its Name-field Id (use this as referenceFieldId)
+  uip df entities get <EntityAttachment-id> --output json | python3 -c "import json,sys;print([f['Id'] for f in json.load(sys.stdin)['Data']['Fields'] if f['Name']=='Name'][0])"
+  ```
+  Alternative: inspect any existing entity that already has a FILE field — `entities get` echoes the target as `ReferenceEntity.Id` + `ReferenceField.Id`.
+- CLI `files upload` against the field is currently unusable — upload via the UiPath Data Fabric UI instead. Status and workaround: [`file-attachments.md`](file-attachments.md).
+
 ### Combined Example — mixing scalar, choice-set, and relationship fields
 
 Complex types accept the same standard field options as scalars — `isRequired`, `isUnique`, `displayName`, `description`, `defaultValue`, `isRbacEnabled`, `isEncrypted`, and the type-specific constraints (`lengthLimit`, `maxValue`/`minValue`, `decimalPrecision`). The only extras unique to complex types are `choiceSetId` (for `CHOICE_SET_*`) and `referenceEntityId` + `referenceFieldId` (for `RELATIONSHIP` and `FILE`).
@@ -330,7 +349,7 @@ uip df entities get <entity-id> --output json
 |-------|-------------|
 | `ID` | Entity UUID — required for all `uip df` record and entity commands |
 | `Name` | CamelCase system name (e.g. `BankDetails`) |
-| `DisplayName` | Human-readable label shown in Studio Web |
+| `DisplayName` | Human-readable label shown in the UiPath Data Fabric UI |
 | `Source` | `Native` (read/write) or `Federated (ConnectorName)` (read-only) |
 
 **Key fields in `entities get <id>` response:**

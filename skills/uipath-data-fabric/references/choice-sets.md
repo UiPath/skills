@@ -2,6 +2,8 @@
 
 Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entity fields. Full CRUD via CLI — sets and their values.
 
+> **Preview-then-confirm gate (SKILL.md Rule 14).** Before invoking `choice-sets create` or `choice-set-values create`, show the full proposed set — name, displayName, description, and every value (`Name` + `DisplayName`) in creation order — and wait for explicit user approval. Value order matters: `NumberId` is assigned 0-based by creation order and is immutable.
+
 ## Commands
 
 | Command | Use |
@@ -20,6 +22,21 @@ Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entit
 - `Id` from `list` → `choiceSetId` on the field definition.
 - `NumberId` from `list-values` → the record value (integer for `_SINGLE`, integer array for `_MULTIPLE`). **0-based, set by creation order.**
 - `Name` / `DisplayName` are human display — never write these on a record.
+
+## Value `Name` validation
+
+A choice-set value's `Name` must be alphanumeric, start with a letter, and avoid SQL / C# / VB reserved keywords — same rule as entity / field names (**SKILL.md Rule 4**). Domain words that commonly collide: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
+
+When a desired label is reserved, namespace the system `Name` and leave `DisplayName` unchanged: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`.
+
+## Sourcing `NumberId` after batch value creates
+
+`NumberId` is assigned 0-based by creation order and is immutable, but the server does not always reserve a slot for a rejected `choice-set-values create` — a subsequent successful create can take the `NumberId` the failed one was meant to occupy. Treat the announced creation order as a proposal, not the authoritative mapping.
+
+Two rules for any script that batch-creates values:
+
+1. Fail loud on each `choice-set-values create`. Never redirect stderr to `/dev/null` or strip non-zero exits inside the loop — a silenced rejection shifts every later `NumberId` without surfacing why.
+2. After the batch, re-read with `choice-sets list-values <id>` and persist the actual `{Name → NumberId}` map to a side file. Read record-write payloads from that file — never from the announced order.
 
 ## Add a choice-set field to an entity
 
