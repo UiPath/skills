@@ -68,11 +68,10 @@
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
-# Context grounding team — single-node flow plugins + tasks
+# Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
 /skills/uipath-maestro-flow/references/author/references/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 /skills/uipath-maestro-flow/references/author/references/plugins/batch-transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
-/tests/tasks/uipath-maestro-flow/single_node/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
-/tests/tasks/uipath-maestro-flow/single_node/batch_transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
+/tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 
 # Maestro BPMN skill
 /skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
