@@ -90,7 +90,9 @@ For any task whose business behavior is "open an app/browser, click, type, scrap
 
 If target configuration is unavailable, fall back to the documented UIA indication path — never to an external browser automation shortcut.
 
-[ui-automation-guide.md](references/ui-automation-guide.md) MUST be read IN FULL first — § Mandatory: Generate Targets Before Writing Any UI Code covers the full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope.
+The full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope are in [ui-automation-guide.md](references/ui-automation-guide.md) § Mandatory: Generate Targets Before Writing Any UI Code — read it in full per Rule 7 before any UIA work.
+
+**Running a UIA workflow.** Use `uip rpa debug start`, not `run` — a debug session pauses on error and leaves the UI state inspectable. During capture, advance app state with the UIA interact CLI, never `run` (a finishing `run` can close the target app). `run --skip-build` is only for the final smoke test, after `build` has passed. The full procedure — window baseline → `debug start` → cancel → window diff → selector-failure recovery — is in [ui-automation-guide.md](references/ui-automation-guide.md) § Running UI Automation Workflows.
 
 ### Placeholder-Selector Stub Pattern (when live app access is unavailable)
 
@@ -100,7 +102,7 @@ When generating a UI automation workflow **without** live app access (target cap
 
 **Required:** the **real** UIA activity (`NTypeInto`, `NClick`, `NGetText`, `NApplicationCard`, etc.) with the target descriptor's selector left as a placeholder string and a `TODO Indicate` marker embedded in the activity's `DisplayName` (XAML) or in a `// TODO[Indicate]` comment immediately adjacent to the coded call. A developer opens Studio, clicks **Indicate** on each marked activity, and the workflow runs.
 
-This applies to **both** XAML and coded modes. [ui-automation-guide.md](references/ui-automation-guide.md) MUST be read IN FULL first — § Placeholder-Selector Stub Pattern has the full pattern with XAML and coded examples.
+This applies to **both** XAML and coded modes. The full pattern with XAML and coded examples is in [ui-automation-guide.md](references/ui-automation-guide.md) § Placeholder-Selector Stub Pattern (read in full per Rule 7).
 
 **Hybrid pattern** — XAML orchestration + coded fallback for logic with no matching activity:
 
@@ -113,7 +115,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 When the request is "automate this dialog/form" or "build a UI test from these manual steps" — i.e. the bulk of the work is target capture, not coding — **defer authoring-phase prerequisites until target capture is complete**. The capture surface is interactive, app-state-sensitive, and time-bound; project-context discovery and analyzer rules add nothing during capture and steal time from it.
 
-**Fast-path order for capture-first tasks.** [ui-automation-guide.md](references/ui-automation-guide.md) MUST be read IN FULL first; [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) MUST also be read IN FULL first (used in step 3). Then:
+**Fast-path order for capture-first tasks.** Read [ui-automation-guide.md](references/ui-automation-guide.md) and [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) in full first (Rule 7; the second is used in step 3). Then:
 
 1. **Pre-flight Window Baseline** — list top-level windows once; decide whether to launch the app ([§ Pre-flight: Window Baseline](references/ui-automation-guide.md)).
 2. **Inventory targets from manual steps** (Test Manager test case, PDD, or written script). Each "Click X" / "Enter Y" / "Select Z" / "Verify W" step maps to one OR element. Group by screen state ([§ Capturing from Manual Test Steps](references/ui-automation-guide.md)).
@@ -161,8 +163,8 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
    - **Removing a dependency** — grep the project for usages before deleting an entry. A package may be the sole supplier of an activity used elsewhere (`MergePDFs` lives in the IntelligentOCR.StudioWeb family).
    - **Writing a new activity tag** — confirm via `uip rpa activities find --query "<verb>" --output json` and use the returned `ClassName`. Do not derive tag names from Studio display names. See [common-pitfalls.md § Common Activity Name Confusions](references/xaml/common-pitfalls.md).
-7. **[UIA] Before writing ANY UIA activity (XAML `<uix:N*>` or coded `uiAutomation.*` / `Descriptors.*`), MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) IN FULL** — including the mode-specific section (For Coded Workflows or For XAML Workflows) and Running UI Automation Workflows. No exceptions for "simple" UIs. Skipping this rule is the most common cause of hallucinated selectors, wrong target XML, and missing OR descriptors. NEVER hand-write selectors — use `uia-configure-target` exclusively (the guide explains how).
-7a. **[UIA] Verify UIA prerequisites before invoking `uia-configure-target`.** UIA minimum is `26.4.1-preview` (source-of-truth: [uia-prerequisites.md](references/uia-prerequisites.md) — kept in sync with that file). Run the prerequisite check in that file. If `UiPath.UIAutomation.Activities` is below the minimum or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent: ask the user to upgrade or fall back to indication authoring — never silently route to a non-existent skill path. If the plan header records `UI capture: indication-only`, skip `uia-configure-target` entirely and use indication authoring.
+7. **[UIA] Before writing ANY UIA activity (XAML `<uix:N*>` or coded `uiAutomation.*` / `Descriptors.*`), MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) IN FULL** — including the mode-specific section (For Coded Workflows or For XAML Workflows) and Running UI Automation Workflows. No exceptions for "simple" UIs. Skipping this rule is the most common cause of hallucinated selectors, wrong target XML, and missing OR descriptors. NEVER hand-write selectors — use `uia-configure-target` exclusively (the guide explains how). This guide is the single entry point for UIA work: it routes you to [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md), [uia-prerequisites.md](references/uia-prerequisites.md), and the package docs in order — the other UIA sections in this file point back here rather than restating the read mandate.
+7a. **[UIA] Verify UIA prerequisites before invoking `uia-configure-target`.** The minimum version and the prerequisite check live in [uia-prerequisites.md](references/uia-prerequisites.md) — read it and run that check first (do not hardcode the version from memory; that file is the only source of truth). If `UiPath.UIAutomation.Activities` is below the minimum or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent, the `uip rpa uia` CLI is unavailable — and **both** target capture and indication depend on it, so indication is *not* a fallback when the package itself is missing. Ask the user to install/upgrade per uia-prerequisites.md. If they decline or the package cannot be installed, fall back to the **Placeholder-Selector Stub Pattern** (§ above) — real activities with `TODO Indicate` markers need no CLI. Never silently route to a non-existent skill path. Use indication capture only when a compatible UIA package *is* installed but `uia-configure-target` cannot see the element; record `UI capture: indication-only` in the plan header to skip `uia-configure-target` in that case.
 8. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 8a. **`run` / `debug start` success/failure verdict comes from the outer `Result` (and equivalently the inner `HasErrors`), NEVER from any log entry's `Level`.** A successful workflow may emit `Log Message` activities at `Error` or `Warning` level as observability — those are workflow-emitted data, not CLI failures. Compile failures, validation failures, and unhandled runtime exceptions all flip `HasErrors` and propagate to the outer `Result`. Treating log-entry levels as a failure signal flips green runs to "failed" and burns retries on healthy workflows. See [cli-reference.md § run](references/cli-reference.md) and [debugging.md § Reading Debug Output Effectively](references/debugging.md).
 9. **For "leverage / reuse / find shared libraries" requests, search the tenant feed — not the local filesystem, NuGet.org, or keyword-permutation loops.** Run `uip resource libraries list --limit 500 --output-filter "<JMESPath>" --output json`. On zero results from the filtered call, take the fallback branch — do not re-keyword. Skip when an SDD already records §16 "Shared libraries referenced" or the user has said "no shared libraries" earlier in the session. See [tenant-library-search-guide.md](references/tenant-library-search-guide.md) for the full procedure.
@@ -236,7 +238,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 21. **[XAML] Reading `<Activity>.md` from `{PROJECT_DIR}/.local/docs/packages/...` is a precondition for `activities get-default-xaml` — for every activity not on the common-activity card.**
     - **Card-listed activities:** check [references/common-activity-card.md](references/common-activity-card.md) first; if the activity is on the card, author from the card entry alone — skip `activities find`, skip `activities get-default-xaml`, skip the per-activity MD read.
     - **All other activities:** (1) `activities find` → class name, (2) **read `<Activity>.md` first** and extract a property checklist (required + use-case-relevant), (3) `activities get-default-xaml` → starter element, (4) **diff your checklist against the starter and add what's missing** — an empty checklist means you skipped step 2, go back.
-    - **Doc lookup order:** primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older package versions where `.local/docs` is empty.
+    - **Doc lookup order:** primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older package versions where `.local/docs` is empty. **Exception — `UiPath.UIAutomation.Activities` has no bundled fallback:** `.local/docs` (present only after the package is installed) is its sole activity-doc source. If it is absent, do not hunt for a bundled copy — follow Rule 7a (install with consent per [uia-prerequisites.md](references/uia-prerequisites.md), or use the Placeholder-Selector Stub Pattern).
     - **Trigger activities are special — read BOTH docs.** When the class name ends in `Trigger`, the namespace contains `.Triggers`, or the description mentions "starts a job" / "Monitor Events" / "Trigger Scope", also read the bundled `references/activity-docs/<PackageId>/<closest-version>/activities/<Activity>.md` **and** the package's bundled `overview.md`. The auto-generated `.local/docs` version is sparse for triggers; the bundled hand-written docs carry placement guidance (entry-point vs. `ui:TriggerScope`), deployment context, and cross-cutting namespace/assembly gotchas that the extractor does not capture. See Common Rule 12 and [trigger-pattern-guide.md](references/trigger-pattern-guide.md).
     - **Skip-tax — concrete:** `activities get-default-xaml` omits any property whose value equals the type default. For `NGetText` the starter is literally `<uix:NGetText HealingAgentBehavior="SameAsCard" />` with **zero** output properties — authoring from this alone produces `NGetText.Value="..."` (does not exist; the property is `Text`), which `validate` accepts and `build` rejects. For `NTypeInto` that's 2 of 20 properties hidden.
     - **Self-extending the card — "this activity feels simple, I'll add it to the card mentally" — is the failure mode.** The card is the only allowlist; for non-card activities the MD read is the only check.
@@ -363,10 +365,7 @@ Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]` for expre
 
 | Activity | Package | Purpose |
 |----------|---------|---------|
-| Use Application/Browser | `UiPath.UIAutomation.Activities` | Scope for all UI automation actions |
-| Click | `UiPath.UIAutomation.Activities` | Click a UI element |
-| Type Into | `UiPath.UIAutomation.Activities` | Type text into a field |
-| Get Text | `UiPath.UIAutomation.Activities` | Extract text from a UI element |
+| **UI automation** (Use Application/Browser, Click, Type Into, Get Text, Select Item, …) | `UiPath.UIAutomation.Activities` | **Never author from memory or from this row.** Selectors and targets are captured, not hand-written — read [ui-automation-guide.md](references/ui-automation-guide.md) in full first (Rule 7). |
 | If | built-in | Conditional branching |
 | Assign | built-in | Set variable/argument values |
 | For Each | built-in | Iterate over a collection |
@@ -419,12 +418,12 @@ uip rpa packages install --packages '[{"id":"<PackageId>","version":"<LATEST_VER
 
 UIA references live in two locations. Always cite by location so the reader knows which tree to open:
 
-- **This skill** (`skills/uipath-rpa/references/`) — policy, decision logic, target-capture orchestration, debug/recovery flows.
+- **This skill** (`references/`, relative to this SKILL.md) — policy, decision logic, target-capture orchestration, debug/recovery flows.
 - **UIA activity pack** (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`, installed via `uip rpa packages install`) — concrete `uip rpa uia` CLI syntax, per-activity property surfaces, coded API surface, and the UIA skill internal procedures. Co-versioned with the package, so always source-of-truth over anything in this skill when they diverge.
 
-### In this skill (`skills/uipath-rpa/references/`)
+### In this skill (`references/`, relative to this SKILL.md)
 
-- [ui-automation-guide.md](references/ui-automation-guide.md) — Mode-specific UIA patterns (coded vs XAML), prohibited-tool list, exploration-tool boundaries, Running & debugging procedure. **MUST be read IN FULL before any UIA work.**
+- [ui-automation-guide.md](references/ui-automation-guide.md) — **the entry point for all UIA work** (Rule 7; read in full first). Mode-specific UIA patterns (coded vs XAML), prohibited-tool list, exploration-tool boundaries, Running & debugging procedure.
 - [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements, upgrade-consent rules
 - [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target-capture orchestration, multi-step UI flows, indication-fallback routing
 
