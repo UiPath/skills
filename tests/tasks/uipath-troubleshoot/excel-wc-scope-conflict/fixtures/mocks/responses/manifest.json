@@ -2,7 +2,7 @@
   "version": 2,
   "_doc": "Synthetic fixture set for the scope-conflict variant (branch 1) of the excel-activities/write-cell-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (IOException identical to read-range-file-locked) → jobs logs (Modern scope opened successfully; Classic Workbook Write Cell faulted) → workflow source (dual-scope pattern is the smoking gun). The user's explicit exclusion of external lockers + the workflow source dual-scope pattern distinguish this from the external-locker variant of read-range-file-locked.",
   "rules": [
-    {"match": "or folders list-current-user --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
     {"match": "or jobs list --folder-key \"f0022222-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f0022222-state-faulted-output-json.json"},
     {"match": "or jobs list --folder-key f0022222-2222-3333-4444-555566667777 --state Faulted --output json", "file": "or-jobs-list-folder-key-f0022222-state-faulted-output-json.json"},
