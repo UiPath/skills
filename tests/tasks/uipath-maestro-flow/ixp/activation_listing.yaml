@@ -1,16 +1,19 @@
 task_id: skill-flow-ixp-activation-listing
 description: >
-  IxP listing activation — user asks what IxP models / runtime projects are
-  available from a Maestro flow. Read-only Q&A, not a build task.
+  IxP listing activation — user asks which IxP node types are available to add
+  to a Maestro flow. Read-only Q&A, not a build task. The prompt is framed in
+  flow-node terms ("which IxP node types … flow node registry") rather than
+  "IxP models", which otherwise routes to the uipath-ixp (Document
+  Understanding) skill instead of uipath-maestro-flow.
 
   Asserts the agent invoked the uipath-maestro-flow Skill and ran the IxP
   registry-search listing command (per references/plugins/ixp/impl.md —
   Listing Published Models). Also asserts the agent did NOT take the build
   path: no .flow file should be created for a listing question.
 
-  Failure here is signal about the IxP plugin's Listing Published Models /
-  Listing Available Models sections — do NOT relax assertions, tighten the
-  copy.
+  Failure here is signal about routing (wrong skill) or the IxP plugin's
+  Listing Published Models / Listing Available Models sections — do NOT relax
+  assertions, tighten the copy.
 
 tags: [uipath-maestro-flow, smoke, activation, ixp, listing]
 
@@ -18,7 +21,9 @@ dataset:
   rows:
     - id: ixp-models
       prompt: >-
-        What IxP / document-extraction models are available in UiPath Maestro Flow?
+        I'm planning a UiPath Maestro Flow and want to add an IxP step to it.
+        Which IxP node types can I add — list what's available in the flow node
+        registry. Just list them, don't build anything yet.
 
 initial_prompt: |
   ${row.prompt}
