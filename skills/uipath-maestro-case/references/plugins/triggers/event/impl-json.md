@@ -174,3 +174,5 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 7. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. Trigger node wired as `--source` in an edge to the first stage.
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
+
+Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
