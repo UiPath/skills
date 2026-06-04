@@ -40,14 +40,54 @@ Two rules for any script that batch-creates values:
 
 ## Add a choice-set field to an entity
 
+### Step 1 — Get or create the choice set
+
+**Contract:**
+
+```
+uip df choice-sets create <name> [--display-name "<label>"] [--description "<…>"] --output json
+```
+
+| Arg | Required | Notes |
+|---|---|---|
+| `<name>` | yes | System name. Alphanumeric, starts with a letter, not a C#/VB/SQL reserved keyword. |
+| `--display-name "<label>"` | no | User-facing label in dropdowns. Defaults to `<name>` when omitted. |
+| `--description "<…>"` | no | Free text. |
+
+**Example:**
+
 ```bash
-# 1. Get or create the choice set, then add values
-uip df choice-sets list --output json
-# (or)  uip df choice-sets create "ExpenseTypes" --display-name "Expense Types" --output json
+uip df choice-sets list --output json                                                          # check for an existing match first
+uip df choice-sets create ExpenseTypes --display-name "Expense Types" --output json            # create when none matches
+```
+
+### Step 2 — Add each value to the set
+
+**Contract:**
+
+```
+uip df choice-set-values create <choice-set-id> <name> [--display-name "<label>"] --output json
+```
+
+| Arg | Required | Notes |
+|---|---|---|
+| `<choice-set-id>` | yes | UUID from `choice-sets list` / `create`. |
+| `<name>` | yes | System name. Same alphanumeric + no-reserved-keyword rule as `<name>` above (see [Value `Name` validation](#value-name-validation)). |
+| `--display-name "<label>"` | no | User-facing label. Defaults to `<name>` when omitted. |
+
+`NumberId` is assigned 0-based by creation order — order matters. See [Sourcing `NumberId` after batch value creates](#sourcing-numberid-after-batch-value-creates) for the per-value error handling rule.
+
+**Example — `travel` and `meals` on the ExpenseTypes set:**
+
+```bash
 uip df choice-set-values create <choice-set-id> travel --display-name "Travel" --output json
 uip df choice-set-values create <choice-set-id> meals  --display-name "Meals"  --output json
+```
 
-# 2a. New entity
+### Step 3 — Bind the choice set to an entity field
+
+```bash
+# New entity
 uip df entities create "Expense" --body '{
   "fields":[
     {"fieldName":"amount",   "type":"DECIMAL", "isRequired": true},
@@ -56,7 +96,7 @@ uip df entities create "Expense" --body '{
   ]
 }' --output json
 
-# 2b. Existing entity
+# Existing entity
 uip df entities update <entity-id> --body '{
   "addFields":[{"fieldName":"category","type":"CHOICE_SET_SINGLE","choiceSetId":"<choice-set-id>"}]
 }' --output json

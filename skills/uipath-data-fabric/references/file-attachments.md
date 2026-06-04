@@ -2,11 +2,11 @@
 
 Data Fabric supports file-type fields on entities. Files are stored per-record per-field.
 
-> **⚠ Current state (verified 2026-06-03 against `@uipath/data-fabric-tool@1.2.0-alpha.20260602.7377`):** the upload / download commands below are documented for the surface they're supposed to provide, but **`files upload` against a `FILE` field defined through this CLI currently fails with *"Update entity data failed. Relationship violation"***. The CLI requires `referenceEntityId` / `referenceFieldId` on FILE field create (validator at `dist/tool.js:42097`), passes them through unchanged to the server, and the server enforces them as a real FK — uploads fail when the file's UUID isn't a record of the configured target entity. Treat FILE upload via CLI as unusable; the field still works for **upload through the UiPath Data Fabric UI** if you bind the target correctly at create time.
+> **⚠ `files upload` is unsupported via the CLI.** The server returns `"Update entity data failed. Relationship violation"`. Upload via the UiPath Data Fabric UI instead. The `download` / `delete` commands below are documented for completeness, but require the file to have been uploaded through the UI.
 
 ## Creating a FILE field correctly
 
-Bind `referenceEntityId` / `referenceFieldId` to the tenant's `EntityAttachment` entity + its `Name` field — any other target produces a column that renders broken in the UiPath Data Fabric UI with no in-place fix. Discovery snippet and full shape: [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
+The FILE field itself must still be created via the CLI before the UI can upload to it. Bind `referenceEntityId` / `referenceFieldId` to the tenant's `EntityAttachment` entity + its `Name` field — any other target produces a column the UI cannot use, with no in-place fix. Discovery snippet and full shape: [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
 
 ## Prerequisites
 
