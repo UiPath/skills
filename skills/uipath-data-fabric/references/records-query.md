@@ -83,7 +83,7 @@ Compare the response's `TotalCount` against an unfiltered baseline. If they matc
 
 ### Filtering on Choice-Set Fields
 
-Filter on the integer `NumberId` (as a string in `value` / `valueList`), never the display label. Resolve via `choice-sets get <choice-set-id>` first.
+Filter on the integer `NumberId` (as a string in `value` / `valueList`), never the display label. Resolve via `choice-sets list-values <choice-set-id>` first.
 
 ```bash
 # CHOICE_SET_SINGLE — category == "travel" (NumberId 1)
@@ -110,7 +110,7 @@ Failure modes: `=` with a bare value (`"1"`) → HTTP 400. `contains` with brack
 
 ### Filtering on Relationship Fields
 
-Filter on the target record's UUID `Id`, regardless of `referenceFieldName`. If the user describes the parent by another field (email, name, etc.), resolve the UUID first on the parent entity, then filter the child.
+Filter on the target record's UUID `Id`, regardless of which field was bound as `referenceFieldId` (that controls the join, not the stored value). If the user describes the parent by another field (email, name, etc.), resolve the UUID first on the parent entity, then filter the child.
 
 ```bash
 # Direct
@@ -206,9 +206,9 @@ Batch insert response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, Fa
 
 | Field type | Value | Resolve via |
 |------------|-------|-------------|
-| `CHOICE_SET_SINGLE` | Integer `NumberId` | `choice-sets get <choice-set-id>` |
-| `CHOICE_SET_MULTIPLE` | Integer `NumberId` array | `choice-sets get <choice-set-id>` |
-| `RELATIONSHIP` | Target record's UUID `Id` (always, even if `referenceFieldName` ≠ `Id`) | `records query <target-entity-id>` on the unique field |
+| `CHOICE_SET_SINGLE` | Integer `NumberId` | `choice-sets list-values <choice-set-id>` |
+| `CHOICE_SET_MULTIPLE` | Integer `NumberId` array | `choice-sets list-values <choice-set-id>` |
+| `RELATIONSHIP` | Target record's UUID `Id` (always — the binding `referenceFieldId` controls the join, not the stored value) | `records query <target-entity-id>` on the unique field |
 
 ```bash
 uip df records insert <entity-id> \
