@@ -12,6 +12,8 @@ Studio Desktop is only required for two interactive UI tools:
 
 For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
 
+> **Coded UI automation caveat.** One non-interactive task also needs Studio Desktop: regenerating `ObjectRepository.cs` — the `Descriptors.*` class consumed by coded `uiAutomation.*` workflows. `uip rpa build` alone does NOT produce it; Studio Desktop reconciles the coded workflow against the Object Repository to generate it. A headless flow can author and validate coded UIA, but populating `Descriptors.*` requires a Studio Desktop pass. See [ui-automation-guide.md](ui-automation-guide.md) § Finding Descriptors.
+
 > **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it's still working. Bump the per-call timeout to ≥ 180s for the first invocation.
 
 ## Step 0.1: Establish Project Root

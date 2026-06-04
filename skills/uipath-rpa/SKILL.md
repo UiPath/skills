@@ -50,7 +50,7 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 
 Before creating or modifying anything, determine which project to work with. See [references/environment-setup.md](references/environment-setup.md) for the full procedure.
 
-**Quick check:** Find `project.json` to establish `{projectRoot}`. That's it — no Studio Desktop check needed. `uip rpa` auto-launches a headless Studio (UiPath.Studio.Helm NuGet) on first call. Studio Desktop is required only for `files diff` and `focus-activity`.
+**Quick check:** Find `project.json` to establish `{projectRoot}`. That's it — no Studio Desktop check needed for the standard loop. `uip rpa` auto-launches a headless Studio (UiPath.Studio.Helm NuGet) on first call. Studio Desktop is required only for `files diff`, `focus-activity`, and regenerating coded UI automation's `ObjectRepository.cs` (the `Descriptors.*` class — see Rule 7 and [environment-setup.md](references/environment-setup.md)).
 
 ## Project Type Detection
 
@@ -92,7 +92,7 @@ If target configuration is unavailable, fall back to the documented UIA indicati
 
 The full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope are in [ui-automation-guide.md](references/ui-automation-guide.md) § Mandatory: Generate Targets Before Writing Any UI Code — read it in full per Rule 7 before any UIA work.
 
-**Running a UIA workflow.** Use `uip rpa debug start`, not `run` — a debug session pauses on error and leaves the UI state inspectable. During capture, advance app state with the UIA interact CLI, never `run` (a finishing `run` can close the target app). `run --skip-build` is only for the final smoke test, after `build` has passed. The full procedure — window baseline → `debug start` → cancel → window diff → selector-failure recovery — is in [ui-automation-guide.md](references/ui-automation-guide.md) § Running UI Automation Workflows.
+**Running a UIA workflow.** Use `uip rpa debug start` throughout development, not `run` — a debug session pauses on error and leaves the UI state inspectable. During capture, advance app state with the UIA interact CLI, never `run` (a finishing `run` can close the target app). Switch to `run --skip-build` only as the final, non-interactive smoke test once the workflow is stable and `build` has passed. The full procedure — window baseline → `debug start` → cancel → window diff → selector-failure recovery — is in [ui-automation-guide.md](references/ui-automation-guide.md) § Running UI Automation Workflows.
 
 ### Placeholder-Selector Stub Pattern (when live app access is unavailable)
 
@@ -122,7 +122,7 @@ When the request is "automate this dialog/form" or "build a UI test from these m
 3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement ([§ Multi-Step UI Flows](references/uia-configure-target-workflows.md)).
 4. **Then enter authoring phase:** project-context discovery (the precondition above), analyzer rules (Critical Rule 3 — Authoring-phase start), write code, validate.
 
-Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation).
+Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead.
 
 ## Session Pre-warm
 
