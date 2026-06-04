@@ -378,7 +378,7 @@ After the HITL node, downstream nodes can reference:
 | `$vars.<nodeId>.status` | string | Selected outcome name (e.g. `"Approve"`, `"Reject"`) |
 | `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields — accessible without node prefix. The `globalId` equals `field.variable` directly (e.g. `variable: "notes"` → `$vars.notes`) |
 
-> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"vars.approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "vars.approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
+> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
 >
 > **Common mistake:** A field with `"id": "approved"` and `"variable": "legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
 
