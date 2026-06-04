@@ -7,7 +7,7 @@ description: >
   from uipath.platform.context_grounding, uses plain interrupt() from
   langgraph.types — passes is_ephemeral_index=True on CreateDeepRag,
   and does NOT instantiate UiPath() at module top level.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, context-grounding]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, context-grounding, mode:build]
 max_iterations: 1
 
 initial_prompt: |
