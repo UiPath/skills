@@ -1,0 +1,195 @@
+task_id: skill-troubleshoot-execute-query-clr-crash
+description: >
+  UiPath diagnostic agent must diagnose an Execute Query failure where the
+  process faults on every Orchestrator run and the job terminates with exit
+  code 0xE0434352 and NO clean activity-level exception in the workflow log
+  (a process-level managed-runtime fault, not a wrapped activity error). The
+  Execute Query runs an unbounded "SELECT * FROM Transactions" over a
+  multi-million-row table and materializes the entire result set into a
+  DataTable, exhausting the Robot process memory and crashing the CLR. The
+  agent must identify the oversized result set exhausting memory (an
+  OutOfMemory / CLR crash surfacing as 0xE0434352) as the root cause and
+  recommend bounding the result set in SQL (TOP / FETCH FIRST / LIMIT) and
+  paging through large data — NOT blame a null connection, a SQL syntax
+  error, a provider/driver mismatch, a timeout, the wrong activity, or "the
+  database is down". 0xE0434352 is the generic .NET unhandled-exception SEH
+  code; the DB context (huge SELECT) narrows it.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My TransactionExport process is faulting in Orchestrator on every run.
+  Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-query-failures playbook (Branch 6) AND identified the oversized result set exhausting memory (0xE0434352 CLR crash) as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My TransactionExport process is faulting in Orchestrator on
+         every run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/execute-query-failures.md
+        specifically BRANCH 6 (CLR-level crash 0xE0434352). The runtime
+        signature -- the job terminates with exit code 0xE0434352 and NO
+        clean activity-level exception in the workflow log (a
+        process-level managed-runtime fault, not a wrapped activity
+        error) -- is the verbatim Branch 6 signature.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             execute-query-failures playbook should appear (absolute or
+             relative path).
+          2. The agent's tool-call summary -- a Read on the file under
+             references/activity-packages/database-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             database-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        execute-query branches (null connection, provider mismatch, SQL
+        syntax, timeout, wrong activity) while ruling them out.
+        Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Execute Query activity in Main.xaml runs an unbounded
+            `SELECT * FROM Transactions` (no `TOP` / `FETCH FIRST` /
+            `LIMIT`, no WHERE) over a multi-million-row table.
+          - Materializing the entire result set into a single DataTable
+            exhausts the Robot process memory, crashing the managed
+            runtime. The job terminates at the PROCESS level with exit
+            code 0xE0434352 and no clean activity-level exception is
+            recorded -- the fault bypasses the normal activity exception
+            path.
+          - 0xE0434352 is the GENERIC .NET unhandled-exception SEH code;
+            it is not DB-specific on its own. The database context (the
+            huge unbounded SELECT) is what narrows it to an
+            out-of-memory crash.
+        The reference fix:
+          - Bound the result set in SQL so it cannot exhaust memory:
+            `SELECT TOP n ...` (SQL Server),
+            `... FETCH FIRST n ROWS ONLY` / `ROWNUM <= n` (Oracle),
+            `... LIMIT n` (MySQL/Postgres). Page through large data
+            instead of materializing it all into one DataTable.
+          - If a provider-path bug is implicated (e.g. Oracle REF CURSOR
+            handling), update `UiPath.Database.Activities` to the latest
+            stable version via Manage Packages.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements`/`triage_summary`/scope/domain:
+             the 0xE0434352 process-level termination with no clean
+             activity exception, and the unbounded SELECT materializing
+             a huge result set.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the oversized result
+             set exhausting Robot memory / CLR crash (NOT a null
+             connection, NOT a SQL syntax error, NOT a provider/driver
+             mismatch, NOT a timeout, NOT a wrong activity, NOT a
+             database outage).
+          3. The agent's last text response.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
+      concludes any of these as the root cause):
+        - "The connection was null / out of scope / expired."
+        - "SQL syntax error / unsafe string concatenation."
+        - "Driver / provider mismatch (wrong provider after migration)."
+        - "Query timeout / Timeout expired / the query is too slow."
+        - "Wrong activity type (should be Execute Non Query)."
+        - "The database is down / unreachable."
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched execute-query-failures Branch 6 AND
+             identified the oversized result set exhausting memory.
+             Conclusion must (a) recognize the unbounded `SELECT *` over
+             a huge table materializing into a DataTable, (b) attribute
+             the failure to memory exhaustion surfacing as the
+             0xE0434352 CLR / process-level crash with no clean activity
+             exception, and (c) recommend bounding the result set with
+             TOP / FETCH FIRST / LIMIT and paging (and, where a
+             provider-path bug is implicated, updating
+             UiPath.Database.Activities).
+        0.8  Partial: the agent recognizes the memory / oversized-data
+             cause and the bound-the-result-set fix but does NOT name
+             the 0xE0434352 / CLR-crash framing; OR it correctly frames
+             the 0xE0434352 CLR / process-level crash but does not tie
+             it to the oversized result set / memory exhaustion.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Execute Query failed / 0xE0434352)
+             but neither matched the branch nor identified the
+             memory-exhaustion cause; OR concluded one of the WRONG
+             ANSWERS above.
+        0.0  Misdiagnosed with no correct dimension, or got blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

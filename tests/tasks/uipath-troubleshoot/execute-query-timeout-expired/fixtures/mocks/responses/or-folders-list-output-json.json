@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "7d2e9f1c-3a8b-4c5d-9e6f-2a1b3c4d5e6f",
+      "Name": "Sales Automation",
+      "Path": "Sales Automation",
+      "Description": "Folder hosting the order search and reporting processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "e9f1c2d3-4a5b-46c7-8d9e-0f1a2b3c4d5e",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

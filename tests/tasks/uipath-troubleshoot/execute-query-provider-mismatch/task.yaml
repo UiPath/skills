@@ -1,0 +1,197 @@
+task_id: skill-troubleshoot-execute-query-provider-mismatch
+description: >
+  UiPath diagnostic agent must diagnose an Execute Query failure that
+  faults on every Orchestrator run, starting right after the project was
+  upgraded from Windows - Legacy (.NET Framework) to Windows (.NET 6+).
+  The Connect to Database activity still uses
+  ProviderName="System.Data.SqlClient" with a connection string carrying
+  a keyword the modern provider rejects ("Provider=SQLOLEDB;..."). The
+  connection-string parser throws
+  System.ArgumentException: Keyword not supported: 'Provider', wrapped by
+  UiPath as "Execute Query: A database error occurred". The agent must
+  identify the post-migration provider/keyword mismatch as the root cause
+  and recommend switching to Microsoft.Data.SqlClient, adjusting the
+  rejected connection-string keyword(s), and confirming the driver is
+  installed on the Robot host — NOT blame a null connection, SQL syntax,
+  a timeout, a CLR crash, a wrong activity, or a database outage.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InvoiceReconciliation process is faulting in Orchestrator on every
+  run. It started right after we migrated the project to the new
+  Windows compatibility. Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-query-failures playbook (Branch 2) AND identified the post-migration driver/provider keyword mismatch as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My InvoiceReconciliation process is faulting in Orchestrator on
+         every run. It started right after we migrated the project to the
+         new Windows compatibility."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/execute-query-failures.md
+        specifically BRANCH 2 (driver / provider mismatch after a
+        Windows-Legacy -> Windows migration). The runtime signature
+          "Execute Query: A database error occurred" wrapping
+          "System.ArgumentException: Keyword not supported: 'Provider'."
+          (from the Microsoft.Data.SqlClient connection-string parser),
+          appearing right after the migration
+        is the verbatim Branch 2 signature.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             execute-query-failures playbook should appear (absolute or
+             relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             database-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        execute-query branches (null connection, SQL syntax, timeout,
+        CLR crash, wrong activity) while ruling them out. Exploration is
+        normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The project was migrated from Windows - Legacy (.NET
+            Framework) to Windows (.NET 6+); `project.json` now sets
+            `targetFramework: "Windows"`.
+          - The Connect to Database activity in Main.xaml still sets
+            `ProviderName="System.Data.SqlClient"` and supplies a
+            connection string containing a keyword the modern provider
+            rejects: `Provider=SQLOLEDB;...`.
+          - Under the modern runtime, the connection-string parser
+            (Microsoft.Data.SqlClient) throws
+            `System.ArgumentException: Keyword not supported: 'Provider'`,
+            which UiPath wraps as "A database error occurred". The fault
+            is at the connection/provider configuration, not the SQL.
+        The reference fix:
+          - Switch the provider to `Microsoft.Data.SqlClient`.
+          - Remove/adjust the connection-string keyword(s) the new
+            provider rejects (drop `Provider=SQLOLEDB`; use the modern
+            SqlClient keyword form, e.g. `Integrated Security=true`).
+          - Confirm the Microsoft.Data.SqlClient driver is installed on
+            every Robot host that runs the process, not just the dev
+            machine.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.error_message`,
+             `triage_summary`, scope/domain: should reference the
+             "Keyword not supported" ArgumentException, the Windows
+             (migrated) project, and the legacy SqlClient provider.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the post-migration
+             provider/keyword mismatch (NOT a null connection, NOT a SQL
+             syntax error, NOT a timeout, NOT a CLR crash, NOT a wrong
+             activity, NOT a database/connectivity outage).
+          3. The agent's last text response.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
+      concludes any of these as the root cause):
+        - "The connection was null / out of scope / expired."
+        - "SQL syntax error / unsafe string concatenation."
+        - "Query timeout / the query is too slow."
+        - "CLR-level crash (0xE0434352)."
+        - "Wrong activity type (should be Execute Non Query)."
+        - "The database is down / unreachable / a network outage."
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched execute-query-failures Branch 2 AND
+             identified the post-migration provider/keyword mismatch.
+             Conclusion must (a) name the "Keyword not supported"
+             ArgumentException from the connection-string parser, (b)
+             attribute it to the project being migrated to Windows while
+             the activity still uses System.Data.SqlClient with a
+             connection-string keyword the modern provider rejects, and
+             (c) recommend switching to Microsoft.Data.SqlClient,
+             adjusting the rejected keyword(s), and confirming the driver
+             is installed on the Robot host.
+        0.8  Both partial: e.g., correct playbook and names the provider
+             mismatch but does not connect it to the migration / the
+             specific rejected keyword; or identifies the SqlClient
+             provider issue but recommends only editing the connection
+             string without switching the provider.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Execute Query / connection-string
+             error) but neither matched the branch nor identified the
+             provider/keyword mismatch -- OR concluded one of the WRONG
+             ANSWERS above.
+        0.0  Got blocked, or produced no usable conclusion.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You migrated the project to the new Windows compatibility just before
+    the failures began. You are waiting for the diagnostic agent to
+    finish its investigation and trust its expertise. You only have the
+    information you wrote in your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

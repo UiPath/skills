@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the execute-query-failures playbook (Branch 6: CLR-level crash 0xE0434352 from an oversized result set exhausting Robot memory). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"5c7e9a2d-4b8f-4e1c-9a3d-6f2b8c4e1a7d\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-5c7e9a2d-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key 5c7e9a2d-4b8f-4e1c-9a3d-6f2b8c4e1a7d --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-5c7e9a2d-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\" --output json",
+      "file": "or-jobs-get-2f6a8c4b-output-json.json"
+    },
+    {
+      "match": "or jobs get 2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b --output json",
+      "file": "or-jobs-get-2f6a8c4b-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\" --level Error --output json",
+      "file": "or-jobs-logs-2f6a8c4b-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs 2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b --level Error --output json",
+      "file": "or-jobs-logs-2f6a8c4b-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\" --output json",
+      "file": "or-jobs-logs-2f6a8c4b-output-json.json"
+    },
+    {
+      "match": "or jobs logs 2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b --output json",
+      "file": "or-jobs-logs-2f6a8c4b-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}
