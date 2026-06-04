@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the execute-query-failures playbook (Branch 3: SQL syntax error / unsafe string concatenation). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"3a1f6c8e-7b2d-4e9a-8c1f-5d6e7a8b9c0d\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-3a1f6c8e-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key 3a1f6c8e-7b2d-4e9a-8c1f-5d6e7a8b9c0d --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-3a1f6c8e-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"8b4d2f1a-6c3e-4a7b-9d8e-1f2a3b4c5d6e\" --output json",
+      "file": "or-jobs-get-8b4d2f1a-output-json.json"
+    },
+    {
+      "match": "or jobs get 8b4d2f1a-6c3e-4a7b-9d8e-1f2a3b4c5d6e --output json",
+      "file": "or-jobs-get-8b4d2f1a-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"8b4d2f1a-6c3e-4a7b-9d8e-1f2a3b4c5d6e\" --level Error --output json",
+      "file": "or-jobs-logs-8b4d2f1a-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs 8b4d2f1a-6c3e-4a7b-9d8e-1f2a3b4c5d6e --level Error --output json",
+      "file": "or-jobs-logs-8b4d2f1a-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"8b4d2f1a-6c3e-4a7b-9d8e-1f2a3b4c5d6e\" --output json",
+      "file": "or-jobs-logs-8b4d2f1a-output-json.json"
+    },
+    {
+      "match": "or jobs logs 8b4d2f1a-6c3e-4a7b-9d8e-1f2a3b4c5d6e --output json",
+      "file": "or-jobs-logs-8b4d2f1a-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}
