@@ -48,7 +48,7 @@ Common `uip tm` commands organized by resource type.
 | `uip tm project delete --project-key <PROJECT_KEY>` | Delete a Test Manager project. |
 | `uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | Set the default Orchestrator folder for a project. |
 | `uip tm project clear-default-folder --project-key <PROJECT_KEY>` | Clear the default Orchestrator folder from a project. |
-| `uip tm project owners list --project-key <PROJECT_KEY> [<PROJECT_KEY> ...]` | List the owners of one or more Test Manager projects. `--project-key` is variadic — pass multiple space-separated keys or repeat the flag. |
+| `uip tm project owners list --project-key <PROJECT_KEY> [<PROJECT_KEY> ...]` | List the owners of one or more Test Manager projects. |
 
 > Get folder keys with `uip or folders list -n <name> --all --output json` — returns all folders visible to the current user.
 
@@ -150,7 +150,7 @@ Common `uip tm` commands organized by resource type.
 
 ### Custom Field Commands
 
-Custom fields are project-scoped schema you attach to **Requirement**, **TestCase**, or **TestSet** objects. The top-level `customfield` verbs operate on the **definitions** (the schema). The nested `label` and `value` subgroups operate on the **per-object rows** that fill in those fields. The `--object-type` flag is case-sensitive and accepts only `Requirement`, `TestCase`, or `TestSet`. The `--data-type` flag accepts only `Text` or `Label` (also PascalCase).
+Custom fields are project-scoped field definitions you attach to **Requirement**, **TestCase**, or **TestSet** objects. The top-level customfield commands manage these definitions. The nested `label` and `value` subgroups operate on the **per-object rows** that fill in those fields. The `--object-type` flag is case-sensitive and accepts only `Requirement`, `TestCase`, or `TestSet`. The `--data-type` flag accepts only `Text` or `Label` (also PascalCase).
 
 | Command | Purpose |
 |---|---|
@@ -170,7 +170,7 @@ All `customfield label` verbs require `--object-type <Requirement\|TestCase\|Tes
 | `uip tm customfield label get --project-key <PROJECT_KEY> --object-type <TYPE> --label-id <UUID>` | Get a single label row by UUID. |
 | `uip tm customfield label create --project-key <PROJECT_KEY> --object-type <TYPE> --object-id <UUID> --values '{"Field":["v1","v2"]}'` | Upsert a label row on one object. `--values` is a JSON object mapping field names to string arrays. |
 | `uip tm customfield label add --project-key <PROJECT_KEY> --object-type <TYPE> --custom-field-name <NAME> --object-ids <UUID...> --values <value...>` | Append values to a label field across multiple objects. Optional `--replace-existing-values` for authoritative-set semantics. |
-| `uip tm customfield label remove --project-key <PROJECT_KEY> --object-type <TYPE> --custom-field-name <NAME> --object-ids <UUID...> (--values <value...> \| --remove-all-values)` | Remove values; `--values` and `--remove-all-values` are mutually exclusive. |
+| `uip tm customfield label remove --project-key <PROJECT_KEY> --object-type <TYPE> --custom-field-name <NAME> --object-ids <UUID...> (--values <value...> \| --remove-all-values)` | Remove values from a label field across multiple objects. |
 
 #### Custom Field — Text-type rows
 
@@ -186,11 +186,11 @@ All `customfield value` verbs require `--object-type <Requirement\|TestCase\|Tes
 
 ### Object Label Commands
 
-Object labels are tag-style metadata applied to TestCase, TestSet, TestExecution, TestCaseLog (and were available on Requirement). Use `--object-type` for the parent kind and `--object-ids` for the target objects.
+Object labels are tag-style metadata applied to Requirement, TestCase, TestSet, TestExecution, TestCaseLog. Use `--object-type` for the parent kind and `--object-ids` for the target objects.
 
 | Command | Purpose |
 |---|---|
-| `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type <TestCase\|TestSet\|TestExecution\|TestCaseLog>` | List distinct label names for one `--object-type` (paginated). Optional `--object-ids <UUID...>`, `--label-types <UserLabel\|SystemLabel\|InternalLabel ...>`, `--filter <text>`, `--sort-by`, `--limit`, `--offset`. |
+| `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type <Requirement\|TestCase\|TestSet\|TestExecution\|TestCaseLog>` | List distinct label names for one `--object-type` (paginated). Optional `--object-ids <UUID...>`, `--label-types <UserLabel\|SystemLabel\|InternalLabel ...>`, `--filter <text>`, `--sort-by`, `--limit`, `--offset`. |
 | `uip tm objectlabel get --project-key <PROJECT_KEY> --label-id <UUID>` | Get a single label-assignment row by UUID. |
 | `uip tm objectlabel add --project-key <PROJECT_KEY> --object-type <TYPE> --object-ids <UUID...> --labels <name...>` | Attach labels to objects (variadic; one-to-one, one-to-many, many-to-many). Optional `--remove-other-labels` for authoritative-set semantics. |
 | `uip tm objectlabel remove --project-key <PROJECT_KEY> --object-type <TYPE> --object-ids <UUID...> (--labels <name...> \| --remove-all-labels)` | Detach labels from objects. `--labels` and `--remove-all-labels` are mutually exclusive. |
