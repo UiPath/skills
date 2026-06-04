@@ -667,20 +667,25 @@ uip is connections list --output json
 # → search Data for entries with ConnectorKey == "uipath-microsoft-outlook365",
 #   take a different Id, and re-ping it. Only abort if no UUID pings.
 
-# 3a. Stub the activity (note: without --inputs the stub emits queryParameters: {})
+# 3a. Describe the operation FIRST — learn which inputs it needs (required
+#     flags, value semantics, lookup hints) before stubbing:
+uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
+  --operation List \
+  --connection-id a8e592a5-76bb-4062-b712-3c364e4a1128 \
+  --output json
+# → Parameters[]: parentFolderId (query, required: true, "The folder to get the email from")
+
+# 3b. Stub once, passing the required inputs learned in 3a (without --inputs
+#     the stub emits queryParameters: {} and a Data.Warnings entry naming the
+#     missing required fields)
 uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
   --connection-id a8e592a5-76bb-4062-b712-3c364e4a1128 \
   --inputs '{"parentFolderId":"Inbox"}' \
   --output json
 # → Kind: "IntSvc", SlotKey: "GetNewestEmail_1", ExportBucketKey: "getNewestEmail_1",
 #   Activity: { GetNewestEmail_1: { ... } }, ResponseFields: [...]
-
-# 3b. Check required fields in the stub output itself: Data.Parameters /
-# Data.RequestFields carry the IS schema's required flags, and a missing
-# required field raises a Data.Warnings entry ("Required field(s) not
-# provided via --inputs: parentFolderId"). If warned, re-stub with
-# --inputs '{"parentFolderId":"inbox"}' (or edit the activity by hand).
-# Use 'uip is resources describe' only for value semantics / lookup hints.
+# Safety net: confirm Data.Warnings is empty — a "Required field(s) not
+# provided via --inputs" entry means 3a was skipped or a value was missed.
 
 # 5. Write the Solution connection-resource file (required for Solutions-mode projects):
 #    Solution/resources/solution_folder/connection/uipath-microsoft-outlook365/<connection-name>.json

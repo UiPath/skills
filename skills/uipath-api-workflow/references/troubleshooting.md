@@ -477,7 +477,8 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 - **Symptom:** A vendor curated activity (Outlook `getNewestEmail`, Gmail `searchMessages`, …) runs locally — sometimes returning unexpected results (wrong folder, no filter applied) — and fails in cloud with a 4xx, OR the StudioWeb properties panel marks a field with a red border and an "invalid" badge but no clear error text. `registry stub`'s output shows `queryParameters: {}`, `pathParameters: {}`, or `bodyParameters: {}` for an endpoint that obviously needs inputs.
 - **Cause:** **`uip api-workflow registry stub` only populates `<location>Parameters` from `--inputs`** — a `required: true` field not passed there stays out of the activity. The stub does flag it: `Data.Parameters` / `Data.RequestFields` carry the IS schema's `required` flags, and a missing required field raises a `Data.Warnings` entry (`"Required field(s) not provided via --inputs: parentFolderId"`). The failure mode arises when that warning is ignored.
-- **Detection:** Read `Data.Warnings` and `Data.Parameters` / `Data.RequestFields` in the stub output. For value semantics or lookup hints on a flagged field, describe the operation: `uip is resources describe <connector-key> <object-name> --operation <Op> --connection-id <pinged-uuid>`.
+- **Prevention:** Follow the documented order — `uip is resources describe <connector-key> <object-name> --operation <Op> --connection-id <pinged-uuid>` BEFORE stubbing, then pass the required values via `--inputs` so the stub is complete on the first run.
+- **Detection:** Read `Data.Warnings` and `Data.Parameters` / `Data.RequestFields` in the stub output — a `"Required field(s) not provided"` entry means the describe step was skipped or a value was missed.
 - **Fix:** Either re-run the stub with the missing fields included via `--inputs`:
   ```bash
   uip api-workflow registry stub <activity-type-id> \

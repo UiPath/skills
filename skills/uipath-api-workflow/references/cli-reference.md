@@ -176,19 +176,21 @@ uip api-workflow registry resolve "outlook newest email" --output json
 uip is connections list uipath-microsoft-outlook365 --output json
 uip is connections ping <uuid> --output json
 
-# 3a. Stub
-uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
-  --connection-id <uuid> \
-  --inputs '{"parentFolderId":"Inbox"}' \
-  --output json
-
-# 3b. Check the stub's Data.Parameters / Data.RequestFields (required flags included);
-#     a missing required field also raises a Data.Warnings entry. Use describe only
-#     when you need value semantics / lookup hints for a field:
+# 3a. Describe the operation FIRST — learn its inputs (required flags, value
+#     semantics, lookup hints) so the stub can be run once, complete:
 uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
   --operation List \
   --connection-id <uuid> \
   --output json
+
+# 3b. Stub, passing the required inputs learned in 3a
+uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
+  --connection-id <uuid> \
+  --inputs '{"parentFolderId":"Inbox"}' \
+  --output json
+# Safety net: the stub echoes the schema (Data.Parameters / Data.RequestFields)
+# and raises a Data.Warnings entry if a required field is still missing —
+# an empty Warnings array confirms the activity is complete.
 
 # 4. Drop Data.Activity into the root sequence, fill missing required fields, replace placeholders.
 
@@ -270,7 +272,7 @@ Lives in `solution-tool`, not `api-workflow-tool`. Full details in the [solution
 
 ## `uip is resources describe`
 
-Read the IS Elements schema for one operation on one connector. `registry stub` already surfaces the operation's `Parameters` / `RequestFields` (with `required` flags) and warns when a required field is missing from `--inputs` — use `describe` when you need a field's value semantics, lookup hints, or parent-field actions.
+Read the IS Elements schema for one operation on one connector. **Run this before stubbing** (step 3a) — it tells you which `--inputs` the operation needs (required flags, value semantics, lookup hints, parent-field actions), so the stub runs once and complete. The stub then echoes the same schema (`Data.Parameters` / `Data.RequestFields`) and warns if a required field is still missing, as a final check.
 
 ```bash
 uip is resources describe <connector-key> <object-name> \
