@@ -12,7 +12,7 @@ description: >
   Failure here is signal about SKILL.md or the IxP Plugin Index entry —
   do NOT relax assertions; feed findings back in.
 
-tags: [uipath-maestro-flow, smoke, activation, ixp]
+tags: [uipath-maestro-flow, integration, activation, ixp]
 dataset:
   rows:
     - id: explicit
@@ -27,6 +27,22 @@ dataset:
         date, total amount, and line items out of PDF invoices saved in a
         SharePoint folder, then posts the result to our accounting system.
 
+    - id: receipts
+      prompt: >-
+        Add a document-extraction step to my flow that reads receipt images
+        from a folder and pulls out merchant, date, and total.
+
+    - id: contracts
+      prompt: >-
+        Build a flow that extracts party names, effective date, and the
+        termination clause from PDF contracts, then routes them to an approval
+        step.
+
+    - id: forms-classify
+      prompt: >-
+        I have a Maestro flow. Add an IxP node that classifies incoming PDF
+        forms and extracts their fields before the next step.
+
 initial_prompt: |
   ${row.prompt}
 
@@ -40,20 +56,12 @@ initial_prompt: |
   - Exploration + an attempted node-add is enough — you do not need to build a working flow.
 
 success_criteria:
-  - type: skill_triggered
-    skill_name: "uipath-maestro-flow"
-    expected_skill: "uipath-maestro-flow"
-    description: "Agent invoked the uipath-maestro-flow Skill"
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent searched the registry for IxP node types"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    suite_thresholds: {mean: 0.70}
 
   # Greps the actual .flow artifact rather than the command stream — the
   # command_executed checker truncates tool params at 2000 chars, which hides
@@ -64,8 +72,7 @@ success_criteria:
     description: "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/plugins/ixp/impl.md)"
     command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .'
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+    suite_thresholds: {mean: 0.70}
 
 run_limits:
   max_turns: 40

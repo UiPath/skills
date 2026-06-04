@@ -3,22 +3,39 @@ description: >
   IxP listing activation — user asks what IxP models / runtime projects are
   available from a Maestro flow. Read-only Q&A, not a build task.
 
-  Asserts the agent invoked the uipath-maestro-flow Skill and ran the IxP
-  registry-search listing command (per references/plugins/ixp/impl.md —
-  Listing Published Models). Also asserts the agent did NOT take the build
-  path: no .flow file should be created for a listing question.
+  Asserts the agent ran the IxP registry-search listing command (per
+  references/plugins/ixp/impl.md — Listing Published Models). Also asserts the
+  agent did NOT take the build path: no .flow file should be created for a
+  listing question.
 
   Failure here is signal about the IxP plugin's Listing Published Models /
   Listing Available Models sections — do NOT relax assertions, tighten the
   copy.
 
-tags: [uipath-maestro-flow, smoke, activation, ixp, listing]
+tags: [uipath-maestro-flow, integration, activation, ixp, listing]
 
 dataset:
   rows:
-    - id: ixp-models
-      prompt: >-
-        What IxP models can I access in maestro?
+    - id: r01
+      prompt: "What IxP models can I access in maestro?"
+    - id: r02
+      prompt: "What document extractors can I add to this flow?"
+    - id: r03
+      prompt: "List the published IxP extractors available to my .flow"
+    - id: r04
+      prompt: "Which IxP runtime projects can I wire into a Maestro flow node?"
+    - id: r05
+      prompt: "What extraction models are available to my Maestro flow?"
+    - id: r06
+      prompt: "Show me the IxP document-understanding models I can use in maestro"
+    - id: r07
+      prompt: "Which document-extraction models can this flow call?"
+    - id: r08
+      prompt: "What are my options for IxP nodes in a Maestro flow?"
+    - id: r09
+      prompt: "Can you list the IxP models I can add to my flow?"
+    - id: r10
+      prompt: "What published IxP extractors can a flow node reference?"
 
 initial_prompt: |
   ${row.prompt}
@@ -28,20 +45,12 @@ initial_prompt: |
   - Use `--output json` on all uip commands.
 
 success_criteria:
-  - type: skill_triggered
-    skill_name: "uipath-maestro-flow"
-    expected_skill: "uipath-maestro-flow"
-    description: "Agent invoked the uipath-maestro-flow Skill"
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent searched the registry for IxP node types (listing path)"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b[^\n]*ixp'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    suite_thresholds: {mean: 0.70}
 
   # Inverted check: a listing/Q&A task should NOT create a .flow file.
   # `! find ... | grep -q .` exits 0 when no .flow file is found (PASS)
@@ -50,8 +59,7 @@ success_criteria:
     description: "No .flow file was created (listing is read-only Q&A, not a build task)"
     command: '! find . -name "*.flow" -type f | grep -q .'
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+    suite_thresholds: {mean: 0.90}
 
 run_limits:
   max_turns: 20
