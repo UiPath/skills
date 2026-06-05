@@ -59,31 +59,8 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "List projects" | `uip ixp projects list --output json` |
 | "Configure the model" / "Change preprocessing" | `uip ixp projects configure-model <project-name> [options] --output json` |
 | "Upload a document" / "Add documents to an existing project" | `uip ixp documents upload <project-name> <file> --output json` — see [CLI Reference § Uploading documents](references/cli-reference.md#uploading-documents-to-an-existing-project). One file per call; loop for multiple. For brand-new projects use `projects create` instead. |
-
-## Answering project questions
-
-Conversational "how is it doing?" / "what's in it?" asks ARE answerable from cheap `uip ixp` calls. Use the fixed shapes below and answer from that output only — do NOT run ad-hoc commands, inspect labellings, or grep references (Critical Rule #1).
-
-### "How is this project performing?" / "What's the F1?"
-
-Source: `uip ixp projects get-metrics <project-name> --output json` (plus `list-models` for the live version). Report in this order:
-
-1. **Published version** — live/pinned version + `TrainedTime` from `uip ixp projects list-models <project-name> --output json` (`Tags[]` Name=`live`, `Models[]` Pinned).
-2. **Per-group scores** — each `FieldGroups[]` entry: F1, Precision, Recall.
-3. **Per-field scores** — each `Fields[]` entry: F1, Precision, Recall, sorted lowest F1 first so weak fields surface.
-
-State the numbers plainly and flag the lowest-F1 fields. Do NOT volunteer a "good enough / not good enough" judgement unless the user asks. To raise a low score, point to the [Improve Prompts Guide](references/improve-prompts-guide.md). Answer from `get-metrics` (+ `list-models`) only.
-
-### "Describe this project" / "What's in it?"
-
-Pull only these calls and report in this order:
-
-1. **Identity** — `Title` and `Name` from `uip ixp projects get <project-name> --output json`.
-2. **Current model** — live/pinned version + `TrainedTime` from `uip ixp projects list-models <project-name> --output json`.
-3. **Taxonomy** — count of label groups and fields from `uip ixp projects get-taxonomy <project-name> --output json`.
-4. **Performance** — only if asked, fold in the performance block above.
-
-Do NOT page through `documents list` to count documents, inspect per-document status, or read deployment bindings — these are not cheaply/reliably answerable (`documents list` is paginated with no total count) and are out of scope for a description. Answer from the three calls above only.
+| "How is this project performing?" / "What's the F1?" | `uip ixp projects get-metrics <project-name> --output json` (+ `list-models` for the live version). Report in order: (1) published version — live/pinned + `TrainedTime` (`Tags[]` Name=`live`, `Models[]` Pinned); (2) per-group scores from `FieldGroups[]` (F1/Precision/Recall); (3) per-field scores from `Fields[]`, sorted lowest-F1 first. State numbers plainly; no "good enough" judgement unless asked; route low scores to [Improve Prompts Guide](references/improve-prompts-guide.md). Answer from these two calls only — no ad-hoc discovery (Critical Rule #1). |
+| "Describe this project" / "What's in it?" | Three cheap calls, reported in order: (1) identity — `Title`/`Name` from `uip ixp projects get <project-name> --output json`; (2) current model — live/pinned + `TrainedTime` from `list-models`; (3) taxonomy — label-group/field counts from `uip ixp projects get-taxonomy <project-name> --output json`. Fold in performance (above) only if asked. Do NOT page `documents list` (paginated, no total) or read deployment bindings. Answer from these calls only (Critical Rule #1). |
 
 ## Common Pitfalls
 
