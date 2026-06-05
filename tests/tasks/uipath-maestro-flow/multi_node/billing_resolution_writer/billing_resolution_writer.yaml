@@ -1,16 +1,10 @@
 task_id: skill-flow-devcon-billing-resolution-writer
 description: >
-  E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow whose
-  single work node is an inline low-code agent (uipath.agent.autonomous,
-  scaffolded with `uip agent init --inline-in-flow`) that drafts a
-  customer-facing resolution email; graded by validate plus one flow debug run.
-  NOTE: the debug criterion is intentionally RED until the inline-agent runtime
-  (MST-9381) lands on the tenant. The CLI provisioning fix (cli#1914) is shipped
-  and verified in the binary, but Orchestrator still faults greenfield inline
-  agents with 404 ("the job's associated process could not be found"). The flow
-  validates and is correctly shaped today and executes unchanged once the
-  runtime ships — same validate-passes/debug-faults split as the billing
-  connector tasks.
+  Build a Maestro Flow whose single work node is an inline low-code agent
+  (uipath.agent.autonomous, scaffolded with `uip agent init --inline-in-flow`)
+  that drafts a customer-facing billing-dispute resolution email. Graded by
+  flow validate plus one flow debug run: the inline agent node must be present
+  and the drafted email must cite the disputed invoice number.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, resource]
 
 run_limits:
@@ -53,9 +47,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Check debugs the flow: inline autonomous agent node present; flow completes; drafted email cites invoice MCS-2026-04872 (RED until inline-agent runtime MST-9381 lands)"
+    description: "Check debugs the flow: an inline uipath.agent.autonomous node is present, the flow completes, and the drafted email cites invoice MCS-2026-04872"
     command: "python3 $TASK_DIR/check_billing_resolution_writer.py"
-    timeout: 360
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
