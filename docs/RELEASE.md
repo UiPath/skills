@@ -51,7 +51,8 @@ The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.196.x` → skills 
 
 ## Required secrets / setup (TODO before first publish)
 
-- [ ] **`NPM_TOKEN`** — npmjs automation token with publish rights to the `@uipath` scope (for stable releases).
-- [ ] **`GH_WRITE_TOKEN`** — token with `packages: write` for GitHub Packages alpha publishing (the CLI repo already uses a secret of this name).
+- [ ] **`NPM_TOKEN`** — npmjs **granular** automation token scoped to **`@uipath/skills` only** (least privilege — not the whole `@uipath` org). For stable releases.
 - [ ] Confirm the npm package name/scope: **`@uipath/skills`** (assumed).
-- [ ] Seed version: currently **`1.196.0`** to match the CLI's current line — adjust if a different starting point is wanted.
+- [ ] Seed version: currently **`1.196.0`** — see PILOT-5518 to confirm against the published CLI line before first publish.
+
+> The alpha track needs no secret — `publish-alpha` uses the built-in `GITHUB_TOKEN` with `packages: write`.
