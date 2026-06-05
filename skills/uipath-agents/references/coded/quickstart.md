@@ -195,7 +195,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
        ```bash
        uip solution init "<SOLUTION_NAME>"
        cd "<SOLUTION_NAME>"
-       uip solution project import --source "../<AGENT_PROJECT_DIR>" --output json
+       uip solution project import "../<AGENT_PROJECT_DIR>" --output json
        rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json

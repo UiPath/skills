@@ -78,7 +78,7 @@ uip solution
   ├── project
   │     ├── add <project-path> [solutionFile]   Register an existing subfolder in .uipx
   │     ├── remove <project-path> [solutionFile] Unregister a project from .uipx
-  │     ├── import --source <path>              Copy external project into solution and register
+  │     ├── import <path>                       Copy external project into solution and register
   │     └── list                                List projects registered in the local .uipx (no backend call)
   ├── resource
   │     ├── list                          List local, remote, or all resources (--solution-folder, default cwd)
