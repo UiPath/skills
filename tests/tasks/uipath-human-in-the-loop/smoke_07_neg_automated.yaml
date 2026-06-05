@@ -19,12 +19,16 @@ initial_prompt: |
 success_criteria:
   - type: llm_judge
     description: "Agent response does not recommend adding a human review or HITL step"
+    include_agent_output: true
     prompt: |
       The user described a fully automated invoice pipeline with no exceptions and
-      no human review steps. Did the agent's response avoid recommending a
-      Human-in-the-Loop node, human review step, or any manual approval checkpoint?
-      Answer YES if the agent correctly recognized HITL is not needed here.
-      Answer NO if the agent suggested adding human review or a HITL node.
-    expected: "YES"
+      no human review steps. The business has signed off on full automation.
+
+      Score 1.0 if the agent's response does NOT recommend adding a Human-in-the-Loop
+      node, human review step, or manual approval checkpoint — correctly recognising
+      that HITL is not appropriate here.
+      Score 0.5 if the agent mostly agrees with full automation but hedges with an
+      optional suggestion to add human review.
+      Score 0.0 if the agent recommends or builds a HITL node or human review step.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.8
