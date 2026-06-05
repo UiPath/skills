@@ -1397,7 +1397,7 @@
         "retrievalMode": "semantic",
         "query": {
           "mode": "text-builder",
-          "textValue": "",
+          "textValue": "billing dispute resolution policy for unit price overcharge and credit adjustments",
           "promptValue": "",
           "argumentPath": ""
         },
