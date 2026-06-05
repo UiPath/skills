@@ -45,6 +45,7 @@ initial_prompt: |
   - Use `--output json` on all uip commands.
 
 success_criteria:
+  # IxP registry-search check (omits `get`) — see routing.yaml for the pattern breakdown.
   - type: command_executed
     description: "Agent searched the registry for IxP node types (listing path)"
     tool_name: "Bash"

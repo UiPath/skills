@@ -56,6 +56,13 @@ initial_prompt: |
   - Exploration + an attempted node-add is enough — you do not need to build a working flow.
 
 success_criteria:
+  # What this checks: did the agent search the registry for IxP nodes?
+  # Passes (case-insensitive) when the agent ran either:
+  #   • `registry list`                   — list all nodes, or
+  #   • `registry search|list|get <term>` — <term> contains ixp / document / extract
+  #                                         (prefix match, so extract → extraction)
+  # routing_listing.yaml drops `get` (read-only). Keep in sync with
+  # scaffold_minimal.yaml, scaffold_multinode.yaml, routing_listing.yaml.
   - type: command_executed
     description: "Agent searched the registry for IxP node types"
     tool_name: "Bash"
