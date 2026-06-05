@@ -28,7 +28,7 @@ The user reviews structure first, then attaches real resources once they exist.
 | Task-entry conditions | ✓ | ✓ | ✓ |
 | Referenced by stage-exit `selected-tasks-completed` | ✓ | ✓ | ✓ |
 
-**Mocks are forbidden** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, explicit upgrade path.
+**Mocks are forbidden for tasks** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, explicit upgrade path.
 
 ## When a Placeholder Is Created
 
@@ -77,7 +77,7 @@ Case-level event triggers (`type: "case-management:Trigger"` with `serviceType: 
 
 ### Connector condition rules
 
-When a `wait-for-connector` rule's connector hasn't resolved at write-time, the rule is emitted without `uipath` — the rule itself is not a placeholder; only its connector configuration is deferred (same pattern as task `data:{}`). Full recipe + skip behavior + upgrade path: [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback).
+When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback).
 
 ## `tasks.md` Planning-Entry Shape
 
@@ -111,7 +111,7 @@ Rules:
 - `Stage "<name>" has a task with no configuration` — one per placeholder.
 - `Stage "<name>" has no tasks` — if every task in a stage is absent (not even a placeholder).
 
-These are **expected** and do not block the build. Errors only appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids mocks.
+These are **expected** and do not block the build. Errors only appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids fabricated task mocks (except the sanctioned connector-rule stub — see § Connector condition rules).
 
 ## Upgrade Procedure — Placeholder → Full Task
 

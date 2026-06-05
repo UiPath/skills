@@ -15,7 +15,11 @@ All three use the same TypeCache (`typecache-triggers-index.json`), same single-
 
 ### 1. Find the trigger in TypeCache
 
+If `~/.uip/case-resources/typecache-triggers-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 17 gate does not apply). If still absent after pull, the tenant has no connector triggers — mark `<UNRESOLVED>` and fall through to § Placeholder fallback.
+
 Read `~/.uip/case-resources/typecache-triggers-index.json` directly. Match on `displayName`, `connectorKey`, or `eventOperation` from sdd.md. Record `uiPathActivityTypeId`.
+
+**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Skip and use placeholders`) for the lookup batch before any fallback. Only after the user picks `Skip`: mark `type-id` **and** `connector-key` `<UNRESOLVED: no typecache trigger for <query>>` and skip § 2 entirely — with no `activity-type-id` there is nothing to pass to `get-connection`. Fall through to § Placeholder fallback (event trigger → placeholder node; connector-trigger task → `data: {}`; condition rule → stub `uipath`). Continue planning — do not halt ([planning.md § 3.4](planning.md)).
 
 ### 2. Resolve the connection
 
@@ -421,7 +425,7 @@ A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) b
 }
 ```
 
-5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when `uipath` is absent.
+5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when the rule has no `uipath.outputs[]` (stub placeholder — the stub always emits `uipath`, but with empty `outputs[]`).
 
 6. Append root bindings (ConnectionId + FolderKey) and run the deferred `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
 
@@ -452,13 +456,33 @@ Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxx
 ### Caveats
 
 - **Not a case-start trigger.** A connector rule compiles to an in-flight wait (ReceiveTask / event subprocess), so it gets **no entry-points.json entry** and **no rule-specific registration key** — FE `PackagingUtil` trigger registration is gated on `Intsvc.EventTrigger` start events only, which a rule is not. If the `case spec` caseShape carries a `metadata.body.bindings[Property]` registration entry (event-parameter connectors), substitute it exactly as the task does (Step 3 / Step 4); there is nothing rule-specific.
-- **CLI `validate` does NOT check `rule.uipath`.** The case-tool connector validator is task-only (reads `task.data`). A passing Phase-4 validate does **not** confirm a connector rule is valid — Studio Web (or an FE round-trip) is the real check. Emit the `uipath` block correctly; do not rely on validate to catch omissions.
+- **Full `validate` requires `rule.uipath` + `context`** — absent → `connector activity missing`. It does NOT check the `uipath` *internals* (a wrong `serviceType` passes), so a clean validate confirms the block is *present*, not that the connector *resolves* — confirm in Studio Web. Unresolved → stub placeholder (§ Placeholder fallback). `--skeleton` (Phase 2) skips condition rules.
 
 ### Placeholder fallback
 
-Reached only after the [§ 2 create offer](#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to the placeholder.
+Two entry paths reach this fallback: **Scenario A** — connector not found in TypeCache (§ 1 No-match, after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the [§ 2 create offer](#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to the placeholder.
 
-On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule **without** its `uipath` block — `{ id, rule: "wait-for-connector", conditionExpression? }`. The rule itself is not a placeholder; only the connector configuration (the `uipath` payload) is deferred until the registry resolves, exactly like task connector data deferred via `data:{}`. Absence of `uipath` naturally skips the dependent subsystems: io-binding has no `outputs[]` to wire, root bindings has no Connection/Folder pair to add, IS-cache has no entry to register, global var-id dedup has no outputs to consider, and the Step-10 `bindings_v2` sync has nothing to regenerate for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8 and log per [logging/impl-json.md](plugins/logging/impl-json.md). Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
+On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule with a **stub `uipath`**. A *bare* rule (no `uipath`) is NOT a valid placeholder — full `validate` errors `connector activity missing` and Studio Web rejects it. The stub is the **minimum that clears `validate`**: `serviceType` plus the two `context` entries the validator checks for — named `connectorKey` + `operation`, each the literal `"placeholder"` — with empty `inputs` / `outputs` / `bindings`. Do NOT pad it with the other resolved context fields (`connection`, `objectName`, …): Studio Web flags the unresolved connector regardless of how complete the stub is, so extra placeholders buy nothing until the connector is real. The full attach checklist lives in the `tasks.md` `<UNRESOLVED>` markers and the completion report, not in the stub.
+
+```json
+{
+  "id": "<ruleId>",
+  "rule": "wait-for-connector",
+  "uipath": {
+    "serviceType": "Intsvc.WaitForEvent",
+    "context": [
+      { "name": "connectorKey", "value": "placeholder", "type": "string" },
+      { "name": "operation",    "value": "placeholder", "type": "string" }
+    ],
+    "inputs": [],
+    "outputs": [],
+    "bindings": []
+  },
+  "conditionExpression": "<carry from the T-entry if present>"
+}
+```
+
+This stub is a **deliberate mock** — it clears `validate` only. Studio Web flags the unresolved connector, and the rule **fails at debug/run until resolved** (it cannot wait on a `"placeholder"` connector). It still skips the dependent subsystems: io-binding has no real `outputs[]` to wire, no Connection/Folder bindings, no IS-cache entry, no `bindings_v2` regen for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8, log per [logging/impl-json.md](plugins/logging/impl-json.md), and list it in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
 
 ---
 

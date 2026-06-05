@@ -388,7 +388,7 @@ Rules = Rule[][]
 
 | `rule` | Additional fields | Description |
 |--------|-------------------|-------------|
-| `wait-for-connector` | `id?`, `uipath?` (connector configuration — required for Studio Web validity; bare form is a valid deferred/placeholder state), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
+| `wait-for-connector` | `id?`, `uipath` (connector config — **required**; absent → `connector activity missing`. Unresolved → **stub** placeholder, not bare — see § Placeholder fallback), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
 | `case-entered` | `id?`, `conditionExpression?` | Fires when the case is first entered |
 | `selected-stage-completed` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has completed |
 | `selected-stage-exited` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has been exited |
@@ -419,7 +419,7 @@ A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** —
   "id": "<ruleId>",
   "uipath": {
     "serviceType": "Intsvc.WaitForEvent",
-    "context": [ { "name": "connectorKey", "value": "<key>", "type": "string" }, { "name": "connection", "value": "=bindings.<id>", "type": "string" }, { "name": "folderKey", "value": "=bindings.<id>", "type": "string" }, { "name": "resourceKey", "value": "<connection-id>", "type": "string" }, { "name": "objectName", "value": "<object>", "type": "string" }, { "name": "metadata", "type": "json", "body": { } } ],
+    "context": [ { "name": "connectorKey", "value": "<key>", "type": "string" }, { "name": "connection", "value": "=bindings.<id>", "type": "string" }, { "name": "resourceKey", "value": "<connection-id>", "type": "string" }, { "name": "folderKey", "value": "=bindings.<id>", "type": "string" }, { "name": "method", "value": "<httpMethod>", "type": "string" }, { "name": "path", "value": "<path>", "type": "string" }, { "name": "objectName", "value": "<object>", "type": "string" }, { "name": "operation", "value": "<eventOperation>", "type": "string" }, { "name": "metadata", "type": "json", "body": { } } ],
     "inputs": [ ],
     "outputs": [ ],
     "bindings": []
@@ -428,7 +428,7 @@ A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** —
 }
 ```
 
-> CLI `validate` does NOT check `rule.uipath` — the case-tool connector validator is task-only (reads `task.data`). Confirm connector rules via Studio Web.
+> Full `validate` requires `rule.uipath` + `context` (absent → `connector activity missing`); the check is satisfied by `context` entries named `connectorKey` + `operation`, and does not inspect internals (a wrong `serviceType` passes). Confirm the connector resolves via Studio Web. The exact `context` field set is CLI-emitted and varies by connector — splice it verbatim from `case spec`; the 9 fields above are illustrative of an HTTP-event connector, not a fixed schema.
 
 ---
 

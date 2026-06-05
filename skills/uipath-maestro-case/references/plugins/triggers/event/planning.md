@@ -42,7 +42,7 @@ T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in
 
 ## Unresolved Fallback
 
-Reached only after the create offer ([connector-trigger-common.md § Resolve the connection](../../../connector-trigger-common.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
+Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-common.md § 1 No-match](../../../connector-trigger-common.md#1-find-the-trigger-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-common.md § Resolve the connection](../../../connector-trigger-common.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
 
 > **Rule 17 exception.** Empty `Connections` from `get-connection` (the trigger activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
 
