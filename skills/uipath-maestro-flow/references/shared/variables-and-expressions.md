@@ -72,7 +72,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 {
   id: string              // Unique identifier, used in expressions as $vars.{id}
   direction: "in" | "out" | "inout"
-  type?: string           // "string" (default), "number", "boolean", "object", "array"
+  type?: string           // "string" (default), "number", "boolean", "object", "array", "file"
   subType?: string        // Item type for arrays (e.g., "object", "string")
   schema?: object         // JSON Schema (draft-07) for complex types
   defaultValue?: unknown  // Initial value (must match type)
@@ -158,6 +158,26 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 ```
 Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is nested under the trigger node's output — NOT `$vars.{id}`).
 
+<a id="file-input"></a>
+**File input (`type: "file"`):**
+```json
+{
+  "id": "inputDoc",
+  "direction": "in",
+  "type": "file",
+  "description": "Document uploaded at trigger / bound via --attachment",
+  "triggerNodeId": "start"
+}
+```
+
+> **Runtime shape of a `file` variable.** At runtime a `file` variable is an **object** (the *Flow Attachment* object), not a string. A Script node reading `$vars.start.output.inputDoc` receives:
+>
+> ```json
+> { "ID": "<uuid>", "FullName": "report.pdf", "MimeType": "application/pdf", "Metadata": { "size": "1024" } }
+> ```
+>
+> The uploaded file's name is **`.FullName`**. Property access is **case-sensitive** at runtime — these exact casings resolve, others return `undefined`/`null`: `.ID` (uppercase, not `.Id`), `.FullName`, `.MimeType`, and the **nested `.Metadata.size`** (lowercase `size`, NOT `.Size`). `.name` / `.fileName` do **not** exist. Two layers: the `.flow` *declaration* is camelCase (`type`, `direction`); the *runtime* object carries the casing above. Do NOT write `"FullName"` into the `.flow` source. Bind the file with `uip maestro flow debug --attachment <id>=<path>` — see [cli-commands.md — Pre-flight](cli-commands.md#attachment-preflight).
+
 ### Type Reference
 
 | Type | Default Value | Notes |
@@ -167,6 +187,7 @@ Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is 
 | `boolean` | `false` | |
 | `object` | `{}` | Use `schema` for structured objects |
 | `array` | `[]` | Use `subType` for typed arrays |
+| `file` | — | Bound at runtime via `--attachment`; hydrates as an object — read `.FullName` (see [File input](#file-input) above) |
 
 ---
 
@@ -389,6 +410,9 @@ $vars.counter
 
 // Trigger-associated flow input (triggerNodeId set)
 $vars.{triggerNodeId}.output.{id}
+
+// File input (type: "file") → object, read .FullName for the name
+$vars.start.output.inputDoc.FullName
 
 // Node output (script node)
 $vars.script1.output

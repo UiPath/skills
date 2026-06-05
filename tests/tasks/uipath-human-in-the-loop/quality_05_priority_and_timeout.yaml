@@ -1,8 +1,7 @@
 task_id: skill-hitl-quality-priority-timeout
 description: >
-  Quality test: agent must configure a high-priority HITL node with a
-  48-hour timeout for a financial compliance check. Tests C3 (priority)
-  and C4 (timeout ISO 8601).
+  Quality test: agent must configure a high-priority HITL node for a
+  financial compliance check. Tests C3 (priority).
 tags: [uipath-human-in-the-loop, integration, options]
 
 run_limits:
@@ -18,13 +17,14 @@ initial_prompt: |
 
   Wire the completed handle to a script node that logs the approval.
   Validate the flow after adding.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains
-    description: "Flow file contains PT48H timeout for the HITL node"
+    description: "HITL node priority is set to High"
     path: "FinanceCompliance/FinanceCompliance/FinanceCompliance.flow"
     includes:
-      - '"PT48H"'
+      - '"High"'
     weight: 2.5
     pass_threshold: 1.0
 

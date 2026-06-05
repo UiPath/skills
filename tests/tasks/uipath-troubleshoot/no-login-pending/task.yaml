@@ -1,0 +1,154 @@
+task_id: skill-troubleshoot-no-login-pending
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. A job is
+  stuck in Pending in the Shared folder with PendingReasons.ErrorCodes
+  ["RobotNoMatchingUsernames"] — the robot user's credential-store username
+  does not match any machine-user mapping on the eligible machine template.
+  The agent must match robot-credentials.md (NOT the host-family playbooks)
+  and recommend one of: update robot credentials, assign the correct account
+  to the folder, or run under a different account.
+tags: [uipath-troubleshoot, e2e, faithful-replay, orchestrator, pending-job, robot-credentials]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 3600
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why my last job from folder Shared doesn't start?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's presented resolution reaches the same root cause + fix as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The attached RESOLUTION.md is the authoritative
+      ground truth. Grade ONLY what the agent PRESENTED to the user (its
+      final response) plus the tool-call summary. Do NOT grade on internal
+      .local/investigations/ files.
+
+      What the user reported (cold, verbatim): "why my last job from folder
+      Shared doesn't start?" — no job key, no process name, no machine,
+      credential, or license details. The agent had to DISCOVER the job by
+      listing Pending jobs in the Shared folder and check the machine,
+      license, and history via the uip CLI.
+
+      The evidence the mocked tenant returns:
+        - Exactly one Pending job in Shared: 0fd7bea5-... (process ERN,
+          Unattended, EntryPointPath Ofsb.xaml).
+        - PendingReasons.ErrorCodes: ["RobotNoMatchingUsernames"] — ONE
+          code, no host-family codes, Errors array empty.
+        - JobHistory: a single original Pending entry, no re-evaluation.
+        - machines list: machine template DanLaptopNew (Scope=Default)
+          with UnattendedSlots: 1 — slot allocated.
+        - licenses info: Unattended Used=1 / Allowed=1, IsExpired=false,
+          ENTERPRISE plan — entitlement provisioned, not exhausted.
+
+      DIMENSION A — Correct root cause (in the presented answer)
+        The reference root cause is the robot-user / machine-user
+        credential mismatch signalled by RobotNoMatchingUsernames: the
+        robot user account assigned to the Shared folder exists, but its
+        credential-store username does not match any machine-user mapping
+        on DanLaptopNew, so Orchestrator's eligibility evaluator refused
+        to dispatch. The agent should identify the RobotNoMatchingUsernames
+        code, reach the credential-mismatch interpretation, and name the
+        relevant machine template (DanLaptopNew or equivalent).
+
+      DIMENSION B — Correct fix (in the presented answer)
+        Per robot-credentials.md, any ONE of these resolves the constraint
+        and counts as correct:
+          1. Update the robot user's credential-store username to match
+             the machine user configured on the template.
+          2. Assign the correct robot user account to the Shared folder
+             (Manage Accounts).
+          3. Run the job under a different account whose unattended-robot
+             credentials already match a machine user.
+
+      PENALIZE — these are wrong turns for THIS scenario:
+        - Concluding the codes are stale-dispatch or no-host (the host-
+          family codes are absent — this is NOT that family).
+        - Recommending "stop + re-trigger the job" as the primary fix
+          without first fixing credentials (re-trigger alone reproduces
+          the same Pending state).
+        - Concluding the Unattended license is exhausted / no free slot
+          (entitlement is provisioned; the consuming runtime is the
+          assigned template).
+        - Claiming the Assistant is signed out, the Robot Service is
+          stopped, or there is a network connectivity issue.
+        - Recommending re-installing the robot, re-licensing, or other
+          unrelated remediations.
+
+      Acceptable for partial credit: noting "no robot assigned to the
+      folder" as a sub-cause that cannot be fully ruled out via the
+      documented CLI (this is correctly recorded as an open gap in the
+      reference).
+
+      SCORING RUBRIC (single score):
+        1.0  Final answer names RobotNoMatchingUsernames / credential-
+             mismatch as the root cause AND leads with one of the 3
+             documented remediations, AND does not assert the stale-
+             dispatch, no-host, or license-exhaustion misreads as cause.
+        0.7  Identifies the credential family correctly and recommends a
+             credentials-side fix, but frames the cause loosely OR names
+             one of the wrong-family codes as a secondary concern.
+        0.4  Identifies the job is Pending and partially right, but leads
+             with a wrong primary cause OR omits a credentials-side fix.
+        0.0  Leads with no-host / stale-dispatch / license-exhaustion as
+             the root cause, claims robot-service / Assistant problems,
+             or fails to give an actionable cause + fix.
+
+      Reward substance over schema. Return JSON:
+      {"score": <float>, "rationale": "<one sentence on cause + fix + any trap hit>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the stuck Pending job in the
+    Shared folder. You know your own setup when asked: it's the ERN
+    process on an unattended robot on the DanLaptopNew machine, the robot
+    account has Windows credentials saved, and this process has worked in
+    the past. You are not a deep platform expert — you do not know off
+    the top of your head whether the credential's username exactly matches
+    the machine's configured user. You trust the agent's investigation.
+  goal: |
+    Let the agent complete its investigation and tell you the root cause
+    and the fix. Approve any scope expansion or clarification it requests.
+  constraints:
+    - "If the agent asks whether to expand investigation scope, always answer Yes."
+    - "If the agent asks for the job key, say you don't have it handy but it is the ONLY Pending job in the Shared folder — ask it to look the job up. Do NOT invent a key."
+    - "If the agent asks whether the robot account has Windows credentials saved, answer: Yes, credentials are saved."
+    - "If the agent asks whether the credential's username matches the machine's configured user, say you are not sure how it is set up — ask the agent to verify that for you. Do NOT claim it matches."
+    - "If the agent asks whether the Assistant is in Service Mode / Unattended, answer: Yes, Unattended / Service Mode."
+    - "If the agent asks about license counts, say you are not sure of the exact numbers and ask it to check in Orchestrator — do NOT guess a number."
+    - "If the agent asks how to proceed when some data is missing, tell it to proceed with best-effort findings from the evidence it already gathered."
+    - "Never volunteer new factual data beyond your initial report and the answers above. Keep replies short (one sentence)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 10

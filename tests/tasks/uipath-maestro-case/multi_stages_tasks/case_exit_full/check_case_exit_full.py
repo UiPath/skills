@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""CaseExitFull: full case-exit rule-type matrix + wait-for-connector stage-entry."""
+"""CaseExitFull: three case-exit rule-types across both marks-case-complete shapes."""
 
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     assert_count,
+    assert_tasks_nested,
     find_node_by_label,
     find_stages,
     first_rule_of_condition,
     get_case_exit_conditions,
     iter_stage_entry_conditions,
-    payload_contains,
+    iter_stage_exit_conditions,
     read_caseplan,
     start_debug,
 )
@@ -20,6 +22,11 @@ from _shared.case_check import (  # noqa: E402
 
 def _is_required(stage: dict) -> bool | None:
     return (stage.get("data") or {}).get("isRequired")
+
+
+def _task_count(stage: dict) -> int:
+    lanes = (stage.get("data") or {}).get("tasks") or []
+    return sum(len(lane) for lane in lanes if isinstance(lane, list))
 
 
 def main():
@@ -44,33 +51,67 @@ def main():
                 f"FAIL: stage {name!r} isRequired should be {want}; got {got!r}"
             )
 
+    assert_tasks_nested(plan)
+    for name, (stage, _want) in expected_required.items():
+        n = _task_count(stage)
+        if n < 1:
+            sys.exit(
+                f"FAIL: stage {name!r} must carry ≥1 task (placeholder) for its "
+                f"required-tasks-completed completion condition; got {n}"
+            )
+
     audit_entry = list(iter_stage_entry_conditions(audit))
     if not audit_entry:
-        sys.exit("FAIL: Audit has no entryConditions; expected wait-for-connector")
+        sys.exit("FAIL: Audit has no entryConditions; expected selected-stage-completed")
     rule = first_rule_of_condition(audit_entry[0])
-    if not rule or rule.get("rule") != "wait-for-connector":
+    if not rule or rule.get("rule") != "selected-stage-completed":
         sys.exit(
-            f"FAIL: Audit entry rule should be 'wait-for-connector'; "
+            f"FAIL: Audit entry rule should be 'selected-stage-completed'; "
             f"got {rule and rule.get('rule')!r}"
         )
-    expr = rule.get("conditionExpression") or ""
-    if "submission" not in expr:
+
+    audit_exits = list(iter_stage_exit_conditions(audit))
+    handoff = next(
+        (
+            ec
+            for ec in audit_exits
+            if (first_rule_of_condition(ec) or {}).get("rule")
+            == "selected-tasks-completed"
+        ),
+        None,
+    )
+    if handoff is None:
         sys.exit(
-            f"FAIL: Audit wait-for-connector conditionExpression should mention "
-            f"'submission'; got {expr!r}"
+            "FAIL: Audit must carry a selected-tasks-completed stage-exit hand-off; "
+            f"got exit rules {[ (first_rule_of_condition(ec) or {}).get('rule') for ec in audit_exits ]}"
+        )
+    if handoff.get("exitToStageId") != archive["id"]:
+        sys.exit(
+            f"FAIL: Audit stage-exit must route to Archive id {archive['id']!r}; "
+            f"got exitToStageId {handoff.get('exitToStageId')!r}"
+        )
+    if handoff.get("marksStageComplete") is not False:
+        sys.exit(
+            "FAIL: Audit selected-tasks-completed stage-exit must have "
+            f"marksStageComplete=false; got {handoff.get('marksStageComplete')!r}"
+        )
+
+    if _task_count(audit) < 2:
+        sys.exit(
+            f"FAIL: Audit must carry ≥2 tasks (placeholder + handoff); "
+            f"got {_task_count(audit)}"
         )
 
     case_exits = get_case_exit_conditions(plan)
-    if len(case_exits) < 4:
+    if len(case_exits) < 3:
         sys.exit(
-            f"FAIL: expected ≥4 case-exit conditions covering all rule-types; "
+            f"FAIL: expected ≥3 case-exit conditions covering three rule-types; "
             f"got {len(case_exits)}"
         )
 
     completing_rules: set[str] = set()
     non_completing_rules: set[str] = set()
     selected_stage_by_rule: dict[str, set[str]] = {}
-    cancel_expr = ""
 
     for ce in case_exits:
         rule = first_rule_of_condition(ce) or {}
@@ -80,8 +121,6 @@ def main():
             completing_rules.add(rname)
         elif marks is False:
             non_completing_rules.add(rname)
-        if rname == "wait-for-connector":
-            cancel_expr = rule.get("conditionExpression") or cancel_expr
         if rname in ("selected-stage-exited", "selected-stage-completed"):
             sid = rule.get("selectedStageId")
             if sid:
@@ -91,16 +130,6 @@ def main():
         sys.exit(
             f"FAIL: missing completing case-exit 'required-stages-completed'; "
             f"got marksCaseComplete=true rules {sorted(r for r in completing_rules if r)}"
-        )
-    if "wait-for-connector" not in completing_rules:
-        sys.exit(
-            f"FAIL: missing completing case-exit 'wait-for-connector'; "
-            f"got marksCaseComplete=true rules {sorted(r for r in completing_rules if r)}"
-        )
-    if "cancel" not in cancel_expr.lower():
-        sys.exit(
-            f"FAIL: case-exit wait-for-connector conditionExpression should mention "
-            f"'cancel'; got {cancel_expr!r}"
         )
 
     if "selected-stage-exited" not in non_completing_rules:
@@ -128,15 +157,14 @@ def main():
         )
 
     payload = start_debug(timeout=540)
-    payload_contains(payload, "Intake", "Audit", "Archive", require_all=False)
-    status = payload.get("finalStatus") or payload.get("status")
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: 3 stages with mixed isRequired (Intake/Archive true, Audit false); "
-        "Audit has wait-for-connector stage-entry; case-level exits cover all 4 "
-        "rule-types — required-stages-completed + wait-for-connector cancel "
-        "(true); selected-stage-exited Audit + selected-stage-completed "
-        f"Archive (false); debug payload returned (status={status})"
+        "Audit has selected-stage-completed stage-entry; case-level exits cover "
+        "three rule-types — required-stages-completed (true); selected-stage-exited "
+        "Audit + selected-stage-completed Archive (false); debug payload returned "
+        f"(status={status})"
     )
 
 

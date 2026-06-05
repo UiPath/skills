@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d3f1a2b8-4e6c-49d7-8f1a-2b3c4d5e6f70",
+      "State": "Faulted",
+      "ProcessName": "InvoiceMacroRunner",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T09:14:02.110Z",
+      "EndTime": "2026-05-12T09:14:05.310Z",
+      "CreationTime": "2026-05-12T09:14:01.880Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

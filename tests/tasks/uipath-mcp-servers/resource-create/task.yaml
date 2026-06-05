@@ -1,0 +1,59 @@
+task_id: skill-mcp-servers-resource-create
+description: |
+  Add a resource-kind tool (automation/process) to a uipath-type AgentHub MCP server via `uip agenthub mcp-tools create-resource`. Exercises the generic Tool Kinds path: candidates --category automation, template resource, --target-identifier + --category + --dry-run, post-create verify. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build', resource]
+agent:
+  type: claude-code
+  allowed_tools: [Bash, Read, Write]
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+initial_prompt: |
+  Load the uipath-mcp-servers skill and follow its documented workflow for this tool end to end. For an IS-activity tool, read references/is-activity-workflow.md and use the exact `uip agenthub mcp-tools create-is-activity` flags it specifies (`--mcp`, `--target-identifier`, `--description`, `--metadata`, `--input-schema`, `--output-schema`); for a resource tool, read the resource guidance and run `mcp-tools candidates`/`template` as it directs. Use the exact CLI commands and flags the skill documents — do not invent flag names.
+
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Add a "Run Mock Invoice Process" tool to the `test-mcp-skill`
+  AgentHub MCP server in the Shared folder. The tool should bind to the
+  Orchestrator process named "MockInvoiceProcess". Use `mcp-tools
+  create-resource` (NOT `create-is-activity`) because the target is an
+  Orchestrator resource, not an Integration Service activity. Use --dry-run
+  on the final create call.
+
+  Refs available:
+    - MCP server slug: test-mcp-skill, in Shared folder (key: folder-mock-shared)
+    - Process name: MockInvoiceProcess
+
+  Save to the sandbox cwd:
+    - metadata.json — the resource metadata you'll pass via --metadata
+    - create-command.sh — the exact `uip agenthub mcp-tools create-resource ... --dry-run` invocation
+    - trajectory.md — every uip call you ran, one line each
+    - summary.txt — one or two lines on what you produced
+success_criteria:
+- {type: file_exists, path: metadata.json, description: '`metadata.json` was produced'}
+- {type: file_exists, path: create-command.sh, description: '`create-command.sh` was produced'}
+- type: file_contains
+  description: create-command invokes create-resource (not create-is-activity)
+  path: create-command.sh
+  includes: [mcp-tools create-resource]
+- type: file_contains
+  description: create-command scopes the call to the test-mcp-skill server
+  path: create-command.sh
+  includes: [test-mcp-skill]
+- type: file_contains
+  description: create-command sets --category to a resource kind, not is-activity
+  path: create-command.sh
+  includes: [automation]
+- {type: command_executed, description: Agent discovered resource candidates via --category automation
+    (NOT is-activity), tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp-tools\s+candidates\s+--category\s+automation,
+  min_count: 1}
+- {type: command_executed, description: Agent read the resource metadata template before composing it,
+  tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp-tools\s+template\s+resource, min_count: 1}
+- {type: command_executed, description: Agent verified the new tool via mcp-tools list, tool_name: Bash,
+  command_pattern: uip\s+agenthub\s+mcp-tools\s+list\s+--mcp\s+test-mcp-skill, min_count: 1}
+run_limits: {max_turns: 40}

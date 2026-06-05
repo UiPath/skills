@@ -15,11 +15,9 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "ResolutionSol" containing a single low-code
-  agent "ResolutionDrafterAgent".
-
-  The agent composes a professional customer-facing resolution email
-  after a billing dispute has been adjusted.
+  Create a UiPath low-code agent "ResolutionDrafterAgent" that composes a
+  professional customer-facing resolution email after a billing dispute
+  has been adjusted. The solution should be named "ResolutionSol".
 
   Inputs (all required objects):
     - customer         — { name, email, tier }

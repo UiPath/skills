@@ -4,10 +4,11 @@ Verbs the CLI used to ship but has since renamed or removed. Drives the **Medium
 
 The catalog at `assets/uip-catalog-snapshot.json` is the source of truth for which verbs **currently exist**. This file is the source of truth for which verbs **used to exist** and where they moved.
 
-| Retired           | Canonical            | Retired at |
-|-------------------|----------------------|------------|
-| `flow`            | `maestro flow`       | uip 1.2.0  |
-| `solution new`    | `solution init`      | uip 1.2.0  |
+| Retired                | Canonical            | Retired at |
+|------------------------|----------------------|------------|
+| `flow`                 | `maestro flow`       | uip 1.2.0  |
+| `solution new`         | `solution init`      | uip 1.2.0  |
+| `is resources execute` | `is resources run`   | uip 1.1.0  |
 
 
 ## When to add an entry

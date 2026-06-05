@@ -69,10 +69,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `classify.runCountLetters` | Run CountLetters agent | agent | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `classify.runCountLetters` | Run CountLetters agent | agent | Yes | No | system | — |
 
   ##### Task 1.1: Run CountLetters agent (`classify.runCountLetters`)
 

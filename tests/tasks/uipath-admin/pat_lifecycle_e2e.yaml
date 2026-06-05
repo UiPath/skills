@@ -14,6 +14,9 @@ initial_prompt: |
   read access to Folders, expiring 90 days from now. Then list my tokens
   to confirm it was created.
 
+  If a token with this description already exists, revoke it first,
+  then create the new one.
+
   Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

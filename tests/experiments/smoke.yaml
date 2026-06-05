@@ -44,7 +44,7 @@ defaults:
   # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
   # sandboxes don't leak Node module resolution).
   post_run:
-    - command: "rm -rf node_modules .npm-prefix"
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
       timeout: 30
 
 variants:

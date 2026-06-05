@@ -1,0 +1,65 @@
+task_id: skill-flow-devcon-billing-discrepancy-detector
+description: >
+  E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow that
+  queries the BillingDisputeERP and BillingDisputeCRM entities as parallel
+  branches joined by a merge, then computes an invoice overcharge; graded by
+  validate plus one flow debug run against seeded tenant data.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector]
+
+run_limits:
+  max_turns: 120
+  turn_timeout: 1200
+  task_timeout: 2400
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 90
+
+initial_prompt: |
+  Build a Maestro Flow "BillingDiscrepancyDetector" (in a solution of the same
+  name) that checks a disputed invoice line against the contracted amount and
+  pulls the customer's account tier.
+
+  - Inputs: trigger variables `invoiceNumber` (string), `accountNumber`
+    (string), `disputedLineNumber` (number), `disputedUnitPrice` (number),
+    `disputedQuantity` (number).
+  - Look up two existing Data Service entities:
+      - `BillingDisputeERP` — rows for `invoiceNumber`; each has a `lineNumber`
+        and contracted `amount`.
+      - `BillingDisputeCRM` — the account row for `accountNumber`; it has an
+        `accountTier`.
+  - The two lookups are independent. Run them as parallel branches that fan out
+    from the trigger and rejoin at a merge before the End node computes the
+    result — do not chain them one after the other.
+  - Compute: invoiced = `disputedUnitPrice` x `disputedQuantity`; contracted =
+    the `amount` of the ERP row whose `lineNumber` equals `disputedLineNumber`;
+    `totalOvercharge` = invoiced minus contracted when positive, else 0;
+    `discrepancyCount` = 1 when overcharge is positive, else 0.
+  - Outputs: `totalOvercharge` (number), `discrepancyCount` (number),
+    `matchedInvoiceNumber` (string, first ERP row), `accountTier` (string, from
+    CRM).
+
+  Validate the final flow file — the task is not complete until `uip maestro
+  flow validate` passes. Grading then runs the flow under debug against live
+  tenant data, so build it to actually run, not merely validate. Do not run
+  debug yourself.
+
+  Use the `uipath-maestro-flow` skill workflow, and build the complete flow
+  without stopping to ask me.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Check requires a merge node (parallel branches) and debugs once; flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise"
+    command: "python3 $TASK_DIR/check_billing_discrepancy_detector.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

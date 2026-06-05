@@ -33,10 +33,8 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Decision → both branches → End
 
-  Read variables.nodes before writing input field bindings — use the exact
-  $vars path from the node's outputId entry.
-  Output fields must NOT have a binding property.
   Validate the flow after building.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: run_command
@@ -51,7 +49,7 @@ success_criteria:
     description: "Input fields have binding expressions pointing to upstream script output"
     path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
     includes:
-      - '"binding": "=js:$vars.'
+      - '"binding": "vars.'
       - "fetchSupplier"
       - ".output.supplierName"
     weight: 3.0

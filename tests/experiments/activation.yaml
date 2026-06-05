@@ -34,7 +34,7 @@ defaults:
   # and Node module resolution can't leak across concurrent sandboxes
   # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
   post_run:
-    - command: "rm -rf node_modules .npm-prefix"
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
       timeout: 30
 
 variants:

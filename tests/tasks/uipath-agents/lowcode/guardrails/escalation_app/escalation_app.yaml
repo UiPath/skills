@@ -18,11 +18,13 @@ agent:
   disallowed_tools: ["TaskCreate", "TaskUpdate", "TaskList", "TaskGet"]
 
 initial_prompt: |
-  Create a UiPath solution "EscalateSol" with an agent "ComplianceAgent" for
-  handling user requests about financial data. Add a guardrail that detects PII
-  — specifically email addresses and phone numbers — and instead of blocking,
-  escalates violations to a human reviewer via the
-  "Tool.Guardrail.Escalation.Action.App" app, notifying reviewer@example.com.
+  Create a UiPath low-code agent "ComplianceAgent" for handling user requests
+  about financial data. Add a guardrail that detects PII — specifically
+  email addresses and phone numbers — and instead of blocking, escalates
+  violations to a human reviewer via the
+  "Tool.Guardrail.Escalation.Action.App" app, notifying
+  reviewer@example.com. The solution should be named "EscalateSol".
+
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
@@ -118,6 +120,12 @@ success_criteria:
 
 run_limits:
   expected_turns: 41
-  max_turns: 40
+  # This is the heaviest guardrail task (scaffold solution + agent, discover
+  # validators, look up the escalation app, author the escalate guardrail, then
+  # validate). expected_turns is 41, so a 40-turn cap guaranteed
+  # MAX_TURNS_EXHAUSTED before validate could run. Give headroom above the
+  # expected length. task_timeout (1800s) is not the bottleneck — runs finish
+  # in ~500s; turns are the cap.
+  max_turns: 55
   turn_timeout: 1200
   task_timeout: 1800

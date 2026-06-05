@@ -42,9 +42,9 @@ initial_prompt: |
      yet exist on the reused entity, so the `addFields` call always
      applies a fresh field.
      # Operational note: each successful run leaves one Notes_<EPOCH> field
-     # on the shared LifecycleTest entity. Periodic cleanup via
-     # `entities update --body '{"removeFields":[...]}'` is required once
-     # the destructive-ops CLI support lands (separate PR).
+     # on the shared LifecycleTest entity. Periodic cleanup is done out of
+     # band via `entities update --body '{"removeFields":[...]}' --confirm
+     # --reason "<why>"` — kept out of this test to keep the run idempotent.
 
   5. Update the Score field: set displayName to "Test Score", isRequired to
      true, and tighten maxValue from 1000 to 500. Use the field ID from

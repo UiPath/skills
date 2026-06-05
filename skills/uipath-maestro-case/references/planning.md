@@ -71,7 +71,7 @@ Resolution order (first match wins):
 Read the `Data.BaseUrl` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
 
 ```
-> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
+> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 validate authoritative; CLI upload / debug may reject downstream.
 ```
 
 Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
@@ -94,7 +94,7 @@ Scan **only the user message that activated the skill** (the prompt that matched
 
 - **Match** → schema is `v20`. Print plain-text confirmation BEFORE Step 3 begins:
   ```
-  > Schema: v20 (skill-emit-only mode — Phase 4 informational; CLI validate / upload / debug may reject downstream)
+  > Schema: v20 (skill-emit-only mode — Phase 4 validate authoritative; CLI upload / debug may reject downstream)
   ```
 - **No match** → schema is `v19` (default). No confirmation line.
 

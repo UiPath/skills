@@ -135,12 +135,14 @@ Every new scenario's `task.yaml` MUST satisfy the following.
 
 ```yaml
 run_limits:
-  task_timeout: 2400
+  task_timeout: 5400
   max_turns: 60
-  turn_timeout: 1800
+  turn_timeout: 3600
 ```
 
-Troubleshooting investigations span many turns and produce large intermediate outputs. Lower limits cause spurious timeouts in CI and mask real regressions.
+Troubleshooting investigations span many turns and produce large intermediate outputs. Use `task_timeout: 5400` (90 min) and `turn_timeout: 3600` (60 min) so the full triage → hypothesis → tester → depth-check → presenter chain has headroom — proxy-mode runs cluster around 25–55 min wall, so a 30-min `task_timeout` clips right before the presenter spawn on the slow end of the distribution.
+
+`task_timeout`, `max_turns`, and `turn_timeout` belong inside the `run_limits:` block (the canonical location after the c/2026-05-12-unify-run-limits migration). Top-level placement still works via a grace shim but is deprecated; setting both top-level and `run_limits:` raises `ValueError` on the validator.
 
 ### `tags`
 

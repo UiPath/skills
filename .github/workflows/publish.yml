@@ -1,0 +1,98 @@
+name: Publish skills package
+
+# Two-track publishing:
+#   - workflow_dispatch (target: github-alpha) -> alpha prerelease to GitHub
+#     Packages (dist-tag `alpha`). Manual — no auto-publish on push to main.
+#   - GitHub Release published -> stable release to npmjs (dist-tag `latest`).
+#
+# `npm install @uipath/skills` (no tag) always resolves to the last stable
+# release, never an alpha. The version line tracks the CLI minor line so the
+# CLI can pin a compatible skills package (see docs/RELEASE.md).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish target"
+        required: true
+        default: npmjs
+        type: choice
+        options:
+          - npmjs
+          - github-alpha
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Validate version sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+      # Fails if version-manifest.json has drifted from package.json.
+      - run: node scripts/sync-version.mjs --check
+
+  publish-alpha:
+    name: Publish alpha to GitHub Packages
+    needs: [guard]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'github-alpha'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@uipath"
+
+      # Stamp a prerelease suffix: <base>-alpha.<YYYYMMDD>.<run_number>.
+      # Dot-separated so semver orders the run number numerically. Never
+      # committed — only the published tarball carries it.
+      - name: Stamp alpha version
+        run: |
+          BASE=$(node -p "require('./package.json').version")
+          DAY=$(date -u +%Y%m%d)
+          ALPHA="${BASE}-alpha.${DAY}.${{ github.run_number }}"
+          npm version "$ALPHA" --no-git-tag-version --allow-same-version
+          node scripts/sync-version.mjs
+          echo "Publishing $ALPHA"
+
+      # setup-node wrote `@uipath:registry=https://npm.pkg.github.com/` + auth;
+      # the scoped registry routes this scoped package to GitHub Packages.
+      # The built-in GITHUB_TOKEN suffices given the job's `packages: write`
+      # permission above — no dedicated secret needed.
+      - name: Publish
+        run: npm publish --tag alpha
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-release:
+    name: Publish stable to npmjs
+    needs: [guard]
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'npmjs')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          registry-url: "https://registry.npmjs.org"
+          scope: "@uipath"
+
+      # setup-node above wrote `@uipath:registry=https://registry.npmjs.org/`
+      # + auth into the runner .npmrc. `@uipath/skills` is scoped, so npm
+      # resolves the publish target from that scoped registry — a `--registry`
+      # flag would be ignored (it only sets the unscoped default).
+      - name: Publish to npmjs
+        run: npm publish --access public --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

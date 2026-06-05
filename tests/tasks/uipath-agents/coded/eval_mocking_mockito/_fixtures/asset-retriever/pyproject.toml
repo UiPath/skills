@@ -1,0 +1,15 @@
+[project]
+name = "asset-retriever"
+version = "0.0.1"
+description = "UiPath agent that returns a structured summary of an asset with masked value and remote label"
+authors = [{ name = "john doe", email = "john.doe@example.com" }]
+dependencies = [
+    "requests>=2.34.2",
+    "uipath>=2.10.0, <2.11.0",
+]
+requires-python = ">=3.11"
+
+[dependency-groups]
+dev = [
+    "uipath-dev>=0.0.79",
+]

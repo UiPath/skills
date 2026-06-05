@@ -7,10 +7,10 @@ description: >
   for the threshold parameter, and does not add it to PostExecution stage.
 tags: [uipath-agents, e2e, low-code, guardrail]
 initial_prompt: |
-  Create a UiPath solution "InjGuardSol" containing a low-code agent
-  "InjSafeAgent" that answers user questions. Then add a built-in
-  prompt injection detection guardrail with a threshold of 0.5. Use a
-  block action with reason "Prompt injection detected."
+  Create a UiPath low-code agent "InjSafeAgent" that answers user questions.
+  Add a built-in prompt injection detection guardrail with a threshold
+  of 0.5. Use a block action with reason "Prompt injection detected."
+  The solution should be named "InjGuardSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

@@ -9,6 +9,14 @@ tags: [uipath-agents, e2e, coded, mode:build, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  # Disallow the subagent-dispatch tool. It is NOT gated by allowed_tools, and in
+  # the failing run the agent (which had already reasoned its way to the correct
+  # `uipath_langchain.guardrails` import) dispatched a research subagent that came
+  # back recommending `uipath.platform.guardrails` — the no-op import path that
+  # bypasses the LangChain adapter. The subagent has no skill context, so it can't
+  # see the import-source rule; trusting it silently regressed the answer. Force
+  # inline research where the loaded skill's import rule still applies.
+  disallowed_tools: ["Task"]
 
 sandbox:
   template_sources:

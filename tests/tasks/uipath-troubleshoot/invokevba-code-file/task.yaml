@@ -1,0 +1,130 @@
+task_id: skill-troubleshoot-invokevba-code-file
+description: >
+  UiPath troubleshooting agent must diagnose an Invoke VBA failure caused by
+  the external code file referenced by CodeFilePath containing bare VBA
+  statements at the top level (no Sub or Function wrapper). Success = agent
+  matches the invoke-vba-code-file-path playbook AND identifies the missing
+  Sub block in macro.txt against the Main.xaml CodeFilePath.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 60
+turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ReportRefresher process is faulting in Orchestrator on every run.
+  The folder is "RPA Production". Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the invoke-vba-code-file-path playbook AND identified the missing Sub wrapper in macro.txt"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My ReportRefresher process is faulting in Orchestrator on every
+         run. The folder is 'RPA Production'."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/invoke-vba-code-file-path.md
+        because the runtime error
+          "Compile error: Expected: Sub, Function, Property, or Type"
+        is the verbatim signature of malformed code-file content in that
+        playbook.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The external code file `macro.txt` referenced by
+            `CodeFilePath` in `Main.xaml` contains bare executable
+            statements at the top level (no `Sub` or `Function` wrapper).
+          - Invoke VBA injects the file's contents as a module body, which
+            only accepts procedure declarations at the top level. The VBA
+            compiler rejects the bare statements before the macro runs.
+        The reference fix:
+          - Wrap the contents of `macro.txt` in a `Sub RefreshSheets()` /
+            `End Sub` block (matching `EntryMethodName="RefreshSheets"` on
+            the activity).
+        The agent must read both `Main.xaml` (to confirm `CodeFilePath`
+        and `EntryMethodName`) and `macro.txt` (to confirm the missing
+        wrapper) to reach this conclusion.
+
+      SCORING RUBRIC:
+        1.0  Agent matched invoke-vba-code-file-path AND named the missing
+             Sub/Function wrapper in macro.txt AND recommended wrapping
+             the contents in `Sub RefreshSheets() ... End Sub`.
+        0.8  Correct playbook and root cause, but conclusion is vague
+             (e.g., "macro source is malformed" without naming the
+             missing Sub block specifically).
+        0.5  Recognized the failure class (code-file content problem)
+             but matched a sibling cause (encoding issue, syntax error
+             inside an existing Sub) instead of the missing wrapper.
+        0.2  Surfaced the compile error back to the user without
+             diagnosing the code file content.
+        0.0  Wrong cause (e.g., concluded Trust Center, entry-method-name
+             typo, parameter mismatch, or COM interop), or never read
+             `macro.txt`.
+
+      Reward either path: agent (a) reads `macro.txt` directly via Read
+      and identifies the missing wrapper, or (b) escalates to the user
+      after reading `Main.xaml` and asking about the code file content.
+      Penalize confident guessing of a wrong cause, not the choice of
+      tool path.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its
+    investigation and trust its expertise. You only have the information
+    you wrote in your initial report.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

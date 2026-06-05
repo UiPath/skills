@@ -13,6 +13,22 @@ Runs ``uip maestro flow debug --output json`` and asserts:
    timestamps, GUIDs, and status strings whose digits/chars can falsely match
    tiny expected values (e.g. ``"3" in json.dumps(data)`` is almost always
    true whenever a debug run completes).
+
+Payload key casing
+------------------
+Two distinct sources with two casings:
+
+- The ``flow debug --output json`` RUNTIME payload uses **PascalCase** keys
+  (``Data``, ``FinalStatus``, ``Variables``, ``Globals``, ``Elements``,
+  ``Outputs``, and the file-attachment object's ``Id``/``FullName``/``MimeType``/
+  ``Metadata``). Every runtime-payload read goes through :func:`_get_ci`, a
+  case-insensitive accessor — so the conceptual camelCase key names used in this
+  docstring resolve regardless of the CLI's serialization casing or any future
+  normalization.
+- The ``.flow`` SOURCE file uses **camelCase** keys (``variables``, ``globals``,
+  ``direction``, ``type``, ``nodes``). Source readers (``read_flow_*_vars``,
+  ``_iter_flow_nodes``, the node-type asserts) keep their literal camelCase keys
+  — do NOT route them through :func:`_get_ci`.
 """
 
 from __future__ import annotations
@@ -24,6 +40,17 @@ import re
 import subprocess
 import sys
 from typing import Any, Iterable, Sequence
+
+
+# Raw stdout of the most recent ``uip maestro flow debug`` invocation, stashed by
+# :func:`run_debug` so the output-assertion helpers can dump the FULL runtime
+# response to stderr when they fail. This is the diagnostic channel for the
+# chronic "debug Completes but Variables/Globals come back empty" flake
+# (e.g. skill-flow-calculator 0.375): the captured stderr lands in
+# ``task.json.success_criteria_results[].details``, so a failing eval preserves
+# the exact payload (finalStatus, elementExecutions, globals, incidents) that the
+# checker saw — which is otherwise ephemeral and unrecoverable post-run.
+_LAST_DEBUG_RAW: str | None = None
 
 
 # ── Public helpers ──────────────────────────────────────────────────────────
@@ -50,13 +77,15 @@ def run_debug(
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    global _LAST_DEBUG_RAW
+    _LAST_DEBUG_RAW = r.stdout
     if r.returncode != 0:
         _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from flow debug\n{r.stdout}")
-    payload = data.get("Data") or {}
-    status = payload.get("finalStatus")
+    payload = _get_ci(data, "Data") or {}
+    status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
     return payload
@@ -184,14 +213,15 @@ def collect_outputs(payload: dict) -> list[Any]:
     Both are walked to be safe.
     """
     out: list[Any] = []
-    variables = payload.get("variables") or {}
-    for val in (variables.get("globals") or {}).values():
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    for val in (_get_ci(variables, "globals", "Globals") or {}).values():
         out.extend(_leaves(val))
-    for v in variables.get("globalVariables") or []:
-        if "value" in v:
-            out.extend(_leaves(v.get("value")))
-    for e in variables.get("elements") or []:
-        out.extend(_leaves(e.get("outputs") or {}))
+    for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+        value = _get_ci(v, "value", "Value")
+        if value is not None:
+            out.extend(_leaves(value))
+    for e in _get_ci(variables, "elements", "Elements") or []:
+        out.extend(_leaves(_get_ci(e, "outputs", "Outputs") or {}))
     return out
 
 
@@ -222,7 +252,7 @@ def assert_outputs_contain(
     ok = len(missing) == 0 if require_all else len(present) > 0
     if not ok:
         mode = "all of" if require_all else "any of"
-        _fail(
+        _fail_with_capture(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
             f"missing={missing}\nOutputs: {haystack[:1000]}"
         )
@@ -235,7 +265,7 @@ def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
     haystack = _stringify(collect_outputs(payload))
     hits = [int(m) for m in re.findall(r"-?\d+", haystack) if lo <= int(m) <= hi]
     if not hits:
-        _fail(
+        _fail_with_capture(
             f"No integer in [{lo}, {hi}] found in outputs\nOutputs: {haystack[:1000]}"
         )
     return hits[0]
@@ -255,7 +285,9 @@ def assert_output_value(payload: dict, expected: Any) -> None:
         if isinstance(expected, str) and isinstance(v, str):
             if expected.lower() in v.lower():
                 return
-    _fail(f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}")
+    _fail_with_capture(
+        f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}"
+    )
 
 
 def read_flow_input_vars(project_dir: str) -> list[str]:
@@ -311,6 +343,30 @@ def _parse_json(stdout: str) -> dict | None:
     return None
 
 
+def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
+    """Case-insensitively read the first present candidate key from ``mapping``.
+
+    The ``uip maestro flow debug --output json`` runtime payload uses PascalCase
+    keys (``FinalStatus``, ``Variables``, ``Globals``, ``Elements``, ``Outputs``)
+    while this module's docstring and the ``.flow`` source files use camelCase.
+    Reading the runtime payload through this accessor tolerates either casing and
+    any future CLI normalization. Use it ONLY for the debug RUNTIME payload — NOT
+    for ``.flow`` SOURCE readers, whose camelCase keys are stable and intentional.
+
+    Candidates are tried in order; the first whose lowercased form matches a key
+    in ``mapping`` (also lowercased) wins. Returns ``default`` if ``mapping`` is
+    not a dict or no candidate matches.
+    """
+    if not isinstance(mapping, dict):
+        return default
+    lowered = {k.lower(): k for k in mapping.keys() if isinstance(k, str)}
+    for candidate in candidate_keys:
+        actual = lowered.get(candidate.lower())
+        if actual is not None:
+            return mapping[actual]
+    return default
+
+
 def _iter_flow_nodes(project_glob: str):
     project_dir = _find_project(project_glob)
     for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
@@ -320,7 +376,9 @@ def _iter_flow_nodes(project_glob: str):
 
 
 def _non_empty_binding_value(value: Any) -> bool:
-    return isinstance(value, str) and bool(value.strip()) and value != "ImplicitConnection"
+    return (
+        isinstance(value, str) and bool(value.strip()) and value != "ImplicitConnection"
+    )
 
 
 def _find_project(pattern: str) -> str:
@@ -343,7 +401,7 @@ def _find_project(pattern: str) -> str:
         joined = "\n  - ".join(candidates)
         _fail(
             f"No Flow project.uiproj found matching {pattern} — "
-            f"candidates exist but none declare ProjectType=\"Flow\":\n  - {joined}"
+            f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
         joined = "\n  - ".join(flow_projects)
@@ -369,6 +427,65 @@ def _is_flow_project(path: str) -> bool:
 
 def _stringify(values: Iterable[Any]) -> str:
     return json.dumps(list(values), default=str).lower()
+
+
+def _dump_debug_capture(context: str = "") -> None:
+    """Emit the most recent raw ``flow debug`` response to stderr for diagnosis.
+
+    Called on output-assertion failures so the captured criterion output preserves
+    the full runtime payload — the only way to inspect the chronic
+    "Completed-but-empty-Variables" flake after the (ephemeral) debug run is gone.
+    Best-effort and side-effect-free: never raises, so it cannot mask the real
+    assertion failure that follows.
+    """
+    raw = _LAST_DEBUG_RAW
+    if not raw:
+        return
+    tag = f" ({context})" if context else ""
+    lines = [f"=== FLOW_DEBUG_RAW_CAPTURE BEGIN{tag} ==="]
+    try:
+        # Parse via the tolerant helper, not bare json.loads: the CLI may emit a
+        # banner/warning before the JSON (the reason run_debug uses _parse_json),
+        # and a plain json.loads would drop the whole structured summary to
+        # "<unparsable>" even though the run produced a valid payload.
+        parsed = _parse_json(raw)
+        if parsed is None:
+            raise ValueError("no JSON object found in debug stdout")
+        data = _get_ci(parsed, "Data") or {}
+        variables = _get_ci(data, "variables", "Variables") or {}
+        summary = {
+            "finalStatus": _get_ci(data, "finalStatus", "FinalStatus"),
+            "globals": _get_ci(variables, "globals", "Globals"),
+            "globalVariables": _get_ci(variables, "globalVariables", "GlobalVariables"),
+            "elementOutputs": [
+                {
+                    "id": _get_ci(e, "elementId", "ElementId", "id", "Id"),
+                    "outputs": _get_ci(e, "outputs", "Outputs"),
+                }
+                for e in (_get_ci(variables, "elements", "Elements") or [])
+            ],
+            "elementExecutions": [
+                {
+                    "id": _get_ci(x, "elementId", "ElementId", "id", "Id"),
+                    "type": _get_ci(x, "elementType", "ElementType", "extensionType"),
+                    "status": _get_ci(x, "status", "Status"),
+                }
+                for x in (_get_ci(data, "elementExecutions", "ElementExecutions") or [])
+            ],
+            "incidents": _get_ci(data, "incidents", "Incidents"),
+        }
+        lines.append("SUMMARY: " + json.dumps(summary, default=str))
+    except Exception as exc:  # noqa: BLE001 — diagnostics must never mask the real failure
+        lines.append(f"SUMMARY: <unparsable: {exc!r}>")
+    lines.append("RAW: " + raw.strip())
+    lines.append("=== FLOW_DEBUG_RAW_CAPTURE END ===")
+    print("\n".join(lines), file=sys.stderr)
+
+
+def _fail_with_capture(msg: str):
+    """Dump the raw debug payload (diagnostics) then fail with ``msg``."""
+    _dump_debug_capture(msg.split("\n", 1)[0])
+    _fail(msg)
 
 
 def _fail(msg: str):

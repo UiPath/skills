@@ -69,10 +69,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `runRpa.runProjectEuler` | Run ProjectEuler RPA workflow | rpa | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `runRpa.runProjectEuler` | Run ProjectEuler RPA workflow | rpa | Yes | No | system | — |
 
   ##### Task 1.1: Run ProjectEuler RPA workflow (`runRpa.runProjectEuler`)
 

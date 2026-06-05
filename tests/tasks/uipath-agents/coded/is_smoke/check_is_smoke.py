@@ -211,15 +211,17 @@ def _find_invoke_call(tree: ast.Module) -> ast.Call:
     return invokes[0]
 
 
-def _binding_key_resolves(invoke: ast.Call, tree: ast.Module) -> bool:
+def _binding_key_resolves(
+    invoke: ast.Call, tree: ast.Module, assigns: dict[str, ast.AST]
+) -> bool:
     """The connection must be resolved by the binding key — either the
     one-shot `connection_id="<key>"` or an explicit retrieve(<key>)."""
-    conn = _kw_or_pos(invoke, "connection_id", 1)
+    conn = _deref(_kw_or_pos(invoke, "connection_id", 1), assigns)
     if isinstance(conn, ast.Constant) and conn.value == BINDING_KEY:
         return True
     for c in ast.walk(tree):
         if isinstance(c, ast.Call) and _attr_name(c) in ("retrieve", "retrieve_async"):
-            first = _kw_or_pos(c, "key", 0)
+            first = _deref(_kw_or_pos(c, "key", 0), assigns)
             if isinstance(first, ast.Constant) and first.value == BINDING_KEY:
                 return True
     return False
@@ -283,7 +285,7 @@ def check_invocation_and_metadata(
 ) -> None:
     invoke = _find_invoke_call(tree)
 
-    if not _binding_key_resolves(invoke, tree):
+    if not _binding_key_resolves(invoke, tree, assigns):
         sys.exit(
             f"FAIL: the invoke_activity call does not resolve connection by the "
             f"binding key {BINDING_KEY!r} — pass `connection_id=\"{BINDING_KEY}\"` "

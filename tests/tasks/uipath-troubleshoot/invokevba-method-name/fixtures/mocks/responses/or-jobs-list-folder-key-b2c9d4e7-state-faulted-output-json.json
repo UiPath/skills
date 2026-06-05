@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "f7e6d5c4-3b2a-4019-8f7e-6d5c4b3a2019",
+      "State": "Faulted",
+      "ProcessName": "InvoiceImporter",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-14T08:05:11.110Z",
+      "EndTime": "2026-05-14T08:05:16.420Z",
+      "CreationTime": "2026-05-14T08:05:10.885Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -44,7 +44,8 @@ if deploy_name not in names:
     sys.exit(f"FAIL: deploy {deploy_name!r} not in deploy list; saw {names[:5]}")
 
 # Folder exists
-folder_path = f"Shared/{folder_name}"
+parent = seed.get("parent_folder_path") or "Shared"
+folder_path = f"{parent}/{folder_name}"
 fg = uip_json("or", "folders", "get", folder_path)
 if fg.get("Result") != "Success":
     sys.exit(f"FAIL: folder {folder_path!r} not present: {fg.get('Message')!r}")
