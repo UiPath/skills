@@ -5,16 +5,19 @@ description: >
   widest fan-out (1→3) covered in multi_stages_tasks. The Approved branch uses
   a wait-for-user exit; Approved Path declares a user-selected-stage
   entry condition. The Rejected branch uses exit-only with
-  wait-for-connector and marks-stage-complete:false AND custom edge
+  selected-tasks-completed and marks-stage-complete:false AND custom edge
   handle overrides (sourceHandle=bottom / targetHandle=top). The
-  Pending branch uses exit-only with wait-for-connector and
-  marks-stage-complete:TRUE — closing the only remaining cell in the
-  stage-exit type×rule×marks matrix. Exercises both stage-exit types
-  (wait-for-user + exit-only), the user-selected-stage entry rule,
-  branching edge labels, routing via exitToStageId, the edge handle
-  override path, wide fan-out, AND the exit-only + wait-for-connector
-  + marks-stage-complete:true cell.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:edges, feature:edge-handles, feature:wait-for-user, feature:wide-fanout]
+  Pending branch uses exit-only with required-tasks-completed and
+  marks-stage-complete:TRUE. The two marks-complete:false routing exits
+  (Approved/Rejected) gate on selected-tasks-completed referencing the
+  Triage placeholder task; the marks-complete:true exit (Pending) gates
+  on required-tasks-completed. Every stage carries a process placeholder
+  (skeleton) task. Exercises both stage-exit types (wait-for-user +
+  exit-only), the selected-tasks-completed and required-tasks-completed
+  exit rules, the user-selected-stage entry rule, branching edge labels,
+  routing via exitToStageId, the edge handle override path, wide fan-out,
+  and skeleton placeholder tasks.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:edges, feature:edge-handles, feature:wait-for-user, feature:wide-fanout, feature:tasks, feature:task-entry, feature:skeleton-task]
 max_iterations: 1
 
 run_limits:
@@ -32,7 +35,9 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — Wide Fan-Out Routing
 
-  A single Triage stage that wide fan-outs (1→3) to three downstream stages via three stage-exit conditions. Exercises both stage-exit types (wait-for-user + exit-only), the user-selected-stage entry rule, branching edge labels, exitToStageId routing, the edge handle override path, and the exit-only + wait-for-connector + marks-stage-complete:true matrix cell.
+  A single Triage stage that wide fan-outs (1→3) to three downstream stages via three stage-exit conditions. Exercises both stage-exit types (wait-for-user + exit-only), the user-selected-stage entry rule, branching edge labels, exitToStageId routing, the edge handle override path, the selected-tasks-completed (marks-complete:false) and required-tasks-completed (marks-complete:true) exit rules, and skeleton placeholder tasks on every stage.
+
+  > **Unresolved-fallback rule.** None of the per-stage process tasks are registered in the tenant. For each, the agent MUST leave `taskTypeId` as `<UNRESOLVED: ...>`, omit inputs/outputs, and emit a skeleton process task. DO NOT fabricate a taskTypeId. Each skeleton's TaskId is still captured so the stage-exit `selected-tasks-completed` / `required-tasks-completed` rules and the task-entry conditions still reference it.
 
   Prepared date: 2026-05-19
 
@@ -71,7 +76,7 @@ initial_prompt: |
   ### 1.5 Case Variables
   | Variable | Category | Type | Default | Description |
   |---|---|---|---|---|
-  | decision | Variable | string | approved | Routing decision evaluated by the Triage stage-exit connector expressions; selects which downstream branch (approved/rejected/pending) the case exits to. |
+  | decision | Variable | string | approved | Routing decision referenced by each Triage stage-exit rule's conditionExpression (=js:vars.decision == '<branch>'); gates which downstream branch (approved/rejected/pending) the case exits to. |
 
   ## Section 2: Stages & Tasks
 
@@ -90,13 +95,38 @@ initial_prompt: |
   #### Stage Exit Conditions
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
-  | wait-for-connector ("Approved") | =decision == 'approved' | wait-for-user | Approved Path | No |
-  | wait-for-connector ("Rejected") | =decision == 'rejected' | exit-only | Rejected Path | No |
-  | wait-for-connector ("Pending") | =decision == 'pending' | exit-only | Pending Path | **Yes** |
+  | selected-tasks-completed ("Approved") | selected-tasks: Triage Review; conditionExpression: =js:vars.decision == 'approved' | wait-for-user | Approved Path | No |
+  | selected-tasks-completed ("Rejected") | selected-tasks: Triage Review; conditionExpression: =js:vars.decision == 'rejected' | exit-only | Rejected Path | No |
+  | required-tasks-completed ("Pending") | conditionExpression: =js:vars.decision == 'pending' | exit-only | Pending Path | **Yes** |
 
   Exit notes:
-  - "Approved" exit — type `wait-for-user`. Reviewer manually confirms the routing decision before the case advances.
-  - "Pending" exit — `marks-stage-complete: TRUE`. Triage exits AS COMPLETE on this branch (the Pending event closes Triage), distinct from the other two branches which are non-completing routes. This is the exit-only + wait-for-connector + marks-stage-complete:true matrix cell.
+  - "Approved" exit — type `wait-for-user`, `marks-stage-complete: false`. Reviewer manually confirms before the case advances; gated on the Triage Review placeholder task completing (`selected-tasks-completed`) AND `=js:vars.decision == 'approved'`.
+  - "Rejected" exit — `exit-only`, `marks-stage-complete: false`, gated on Triage Review (`selected-tasks-completed`) AND `=js:vars.decision == 'rejected'`.
+  - "Pending" exit — `required-tasks-completed`, `marks-stage-complete: TRUE`, gated on `=js:vars.decision == 'pending'`. Triage exits AS COMPLETE on this branch once its required tasks finish, distinct from the other two branches which are non-completing routes. Per the rule matrix, `required-tasks-completed` is only valid with `marks-stage-complete: true`, which is why the two routing branches use `selected-tasks-completed`.
+  - Each exit rule carries an optional `conditionExpression` gate on `vars.decision` so the three branches remain discriminated by the routing decision (the rule-type change replaced the connector mechanism, not the branching intent).
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `triage.triageReview` | Triage Review | process | Yes | No | system | — |
+
+  ##### Task 1.1: Triage Review (`triage.triageReview`)
+
+  **Type:** process
+  **Description:** UiPath process reference; emitted as a skeleton process task per the unresolved-fallback rule. Referenced by the Approved and Rejected stage-exit `selected-tasks-completed` rules and satisfies the Pending `required-tasks-completed` exit.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | PROCESS (UiPath process reference) |
+  | Process Reference (Name) | Triage Review Process |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: not registered in tenant>` (do NOT fabricate) |
 
   Edge handles:
   - Triage → Approved Path: label "Approved", sourceHandle "right", targetHandle "left" (default horizontal routing).
@@ -119,6 +149,28 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
   | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `approvedPath.processApproval` | Process Approval | process | Yes | No | system | — |
+
+  ##### Task 2.1: Process Approval (`approvedPath.processApproval`)
+
+  **Type:** process
+  **Description:** UiPath process reference; emitted as a skeleton process task per the unresolved-fallback rule. Required task whose completion satisfies the stage's `required-tasks-completed` completion condition.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | PROCESS (UiPath process reference) |
+  | Process Reference (Name) | Process Approval Process |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: not registered in tenant>` (do NOT fabricate) |
 
   ### Stage 3: Rejected Path (`rejectedPath`)
   **Type:** Stage
@@ -136,6 +188,28 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
   | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `rejectedPath.recordRejection` | Record Rejection | process | Yes | No | system | — |
+
+  ##### Task 3.1: Record Rejection (`rejectedPath.recordRejection`)
+
+  **Type:** process
+  **Description:** UiPath process reference; emitted as a skeleton process task per the unresolved-fallback rule. Required task whose completion satisfies the stage's `required-tasks-completed` completion condition.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | PROCESS (UiPath process reference) |
+  | Process Reference (Name) | Record Rejection Process |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: not registered in tenant>` (do NOT fabricate) |
 
   ### Stage 4: Pending Path (`pendingPath`)
   **Type:** Stage
@@ -153,6 +227,28 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
   | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `pendingPath.awaitConfirmation` | Await Confirmation | process | Yes | No | system | — |
+
+  ##### Task 4.1: Await Confirmation (`pendingPath.awaitConfirmation`)
+
+  **Type:** process
+  **Description:** UiPath process reference; emitted as a skeleton process task per the unresolved-fallback rule. Required task whose completion satisfies the stage's `required-tasks-completed` completion condition.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | PROCESS (UiPath process reference) |
+  | Process Reference (Name) | Await Confirmation Process |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: not registered in tenant>` (do NOT fabricate) |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
@@ -173,7 +269,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Triage WIDE fan-outs to 3 branches; exits cover wait-for-user + exit-only(marks-complete:false) + exit-only(marks-complete:TRUE on Pending — wait-for-connector cell); Approved Path has user-selected-stage entry; Approved/Rejected/Pending labels present; Triage→Rejected edge carries non-default handles (sourceHandle=bottom, targetHandle=top)"
+    description: "Triage WIDE fan-outs to 3 branches; exits cover wait-for-user + exit-only(marks-complete:false) + exit-only(marks-complete:TRUE on Pending); Approved/Rejected exits use selected-tasks-completed referencing the Triage Review placeholder task, Pending exit uses required-tasks-completed; every stage carries a process-typed skeleton placeholder task; Approved Path has user-selected-stage entry; Approved/Rejected/Pending labels present; Triage→Rejected edge carries non-default handles (sourceHandle=bottom, targetHandle=top)"
     command: "python3 $TASK_DIR/check_branching_exit.py"
     timeout: 720
     expected_exit_code: 0

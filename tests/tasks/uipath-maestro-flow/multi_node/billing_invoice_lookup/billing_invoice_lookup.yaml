@@ -1,0 +1,53 @@
+task_id: skill-flow-devcon-billing-invoice-lookup
+description: >
+  E2E greenfield (DevCon BillingDisputeResolution scenario): build a ~4-node
+  Flow that normalizes a messy invoice number and queries the BillingDisputeERP
+  Data Service entity; graded by validate plus three flow debug runs over
+  malformed inputs.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector]
+
+run_limits:
+  max_turns: 120
+  turn_timeout: 1200
+  task_timeout: 2400
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 90
+
+initial_prompt: |
+  Build a Maestro Flow "BillingInvoiceLookup" (in a solution of the same name)
+  that looks up a disputed invoice's line items, tolerating messy input.
+
+  - Input: trigger variable `invoiceNumber` (string). Callers may omit the
+    "MCS-" prefix, use wrong casing, or add whitespace.
+  - Normalize the input (trim, uppercase, prepend `MCS-` if absent), then look
+    up the matching rows in the existing `BillingDisputeERP` Data Service
+    entity.
+  - Outputs: `matchedInvoiceNumber` (string, first matched row's invoiceNumber)
+    and `lineItemCount` (number of rows returned).
+
+  Validate the final flow file — the task is not complete until `uip maestro
+  flow validate` passes. Grading then runs the flow under debug against live
+  tenant data, so build it to actually run, not merely validate. Do not run
+  debug yourself.
+
+  Use the `uipath-maestro-flow` skill workflow, and build the complete flow
+  without stopping to ask me.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Check script debugs all three malformed inputs; each resolves to MCS-2026-04872 with 8 line items"
+    command: "python3 $TASK_DIR/check_billing_invoice_lookup.py"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

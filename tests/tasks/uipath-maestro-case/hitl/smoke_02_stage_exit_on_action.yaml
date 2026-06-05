@@ -76,11 +76,11 @@ initial_prompt: |
   | selected-tasks-completed("Review Purchase") | - | exit-only | No |
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `review.reviewPurchase` | Review Purchase | action | Manager |
-  | 2 | `review.captureNotes` | Capture Approval Notes | action | Reviewer |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `review.reviewPurchase` | Review Purchase | action | Yes | No | Manager | — |
+  | 2 | `review.captureNotes` | Capture Approval Notes | action | Yes | No | Reviewer | — |
 
   ##### Task 1.1: Review Purchase (`review.reviewPurchase`)
 
@@ -129,7 +129,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
+  #### Tasks
   (none)
   ```
 

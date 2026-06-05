@@ -31,16 +31,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow uses outcome-completed as the HITL output handle"
+    description: "Flow wires the HITL completed output port"
     path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
     includes:
-      - '"sourcePort": "outcome-completed"'
+      - 'completed'
     weight: 3.0
     pass_threshold: 1.0
 
-  # Check the edge source port, not just the definition manifest. The positive
-  # `sourcePort: outcome-completed` check above is the meaningful signal; the
-  # validate step below catches genuinely malformed edges.
+  # Bare 'completed', not '"completed"': the port handle serializes by node
+  # version — v1.0 wires `"sourcePort": "completed"`, v1.1 `"outcome-completed"`.
+  # Version pick is non-deterministic (#1088 removed hardcoded versions), and the
+  # unquoted substring matches both. The validate step below catches malformed edges.
 
   - type: run_command
     description: "uip maestro flow validate passes"

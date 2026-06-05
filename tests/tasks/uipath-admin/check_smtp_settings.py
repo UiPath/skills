@@ -14,12 +14,13 @@ logging.basicConfig(level=logging.INFO, format="check_smtp: %(message)s")
 def main():
     data = run_cli(["admin", "smtp", "get"])
     if not data or data.get("Result") != "Success":
-        fail("smtp get did not return Success")
+        fail(f"smtp get did not return Success — raw: {data}")
 
     smtp_data = data.get("Data", {})
-    host = smtp_data.get("host") or ""
+    # CLI returns PascalCase keys (Host, Port, EnableSsl, etc.)
+    host = smtp_data.get("Host") or smtp_data.get("host") or ""
     if not host:
-        fail("SMTP host is empty — settings not configured")
+        fail(f"SMTP host is empty — settings not configured. Data keys: {list(smtp_data.keys())}")
 
     ok(f"SMTP configured with host={host}")
 

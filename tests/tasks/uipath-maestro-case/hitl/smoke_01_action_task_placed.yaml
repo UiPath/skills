@@ -59,10 +59,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `review.reviewInvoice` | Review Invoice | action | Finance Manager |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `review.reviewInvoice` | Review Invoice | action | Yes | No | Finance Manager | — |
 
   ##### Task 1.1: Review Invoice (`review.reviewInvoice`)
 

@@ -57,6 +57,8 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 
 This generates a UUID for the `projectId`, creates the subdirectory `<FlowProjectDir>/<uuid>/`, and scaffolds `agent.json`, `flow-layout.json`, and empty directories.
 
+> The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts. **Override the model** (`uip agent model list` → [model-selection-guide.md](../../model-selection-guide.md)) and write robust prompts ([agent-prompting-guide.md](../../agent-prompting-guide.md)) before validating.
+
 ### Option B: Manual creation
 
 #### Step 1: Start with an existing flow project
@@ -81,7 +83,7 @@ Example:
 {
   "version": "1.1.0",
   "settings": {
-    "model": "gpt-4o-2024-11-20",
+    "model": "anthropic.claude-sonnet-4-6",
     "maxTokens": 16384,
     "temperature": 0,
     "engine": "basic-v2",
@@ -133,16 +135,16 @@ uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
 `--inline-in-flow` skips `entry-points.json` and `project.uiproj` checks. Validate is read-only; migrate writes the migrated files and regenerates `.agent-builder/`.
 
-For tool-bearing inline agents, pass `--bindings-target` to **`migrate`** after all flow graph edits:
+For inline agents with external capabilities (tools, contexts, memory spaces, or escalations), pass `--bindings-target` to **`migrate`** after all flow graph edits:
 
 ```bash
 uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow \
   --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
 ```
 
-`--bindings-target` propagates the inline agent's tool bindings (process, connection, index, etc.) into the flow project's `bindings_v2.json`. This is required for `uip solution resource refresh` to discover tool bindings and create solution-level resource files. Never hand-edit `bindings_v2.json`.
+`--bindings-target` propagates the inline agent's bindings (process, connection, index, memorySpace, app, etc.) into the flow project's `bindings_v2.json`. This is required for `uip solution resource refresh` to discover the bindings and create solution-level resource files. Never hand-edit `bindings_v2.json`.
 
-> **Ordering constraint:** run the final `uip agent migrate --inline-in-flow --bindings-target …` after all flow graph edits are complete. The `uipath-maestro-flow` skill owns direct `.flow` authoring for the inline-agent node, tool-resource nodes, and edges; migrate last so the generated tool bindings land in the flow project's `bindings_v2.json` before `uip solution resource refresh`. See the [Walkthrough](#walkthrough--end-to-end) for the correct sequence.
+> **Ordering constraint:** run the final `uip agent migrate --inline-in-flow --bindings-target …` after all flow graph edits are complete. The `uipath-maestro-flow` skill owns direct `.flow` authoring for the inline-agent node, capability-resource nodes, and edges; migrate last so the generated bindings land in the flow project's `bindings_v2.json` before `uip solution resource refresh`. See the [Walkthrough](#walkthrough--end-to-end) for the correct sequence.
 
 ## Flow Wiring
 
@@ -150,13 +152,13 @@ After creating the inline agent, the flow needs a `uipath.agent.autonomous` node
 
 **Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 16, this skill does not invoke flow operations directly. Tell the user:
 
-> The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `inputs.source = <uuid>` and connect the input/success edges via direct `.flow` authoring. **After all flow graph edits are complete**, run `uip agent validate --inline-in-flow`, then `uip agent migrate --inline-in-flow`; for tool-bearing inline agents, include `--bindings-target <FlowProjectDir>/bindings_v2.json` on the migrate call.
+> The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `inputs.source = <uuid>` and connect the input/success edges via direct `.flow` authoring. **After all flow graph edits are complete**, run `uip agent validate --inline-in-flow`, then `uip agent migrate --inline-in-flow`; for inline agents with external capabilities, include `--bindings-target <FlowProjectDir>/bindings_v2.json` on the migrate call.
 
 The node JSON shape that the flow skill must produce is documented in § Flow Node Structure below — keep it as a reference, not as a CLI walkthrough.
 
 ## Inline-in-Flow Resource Paths
 
-All inline-agent resources — `tool`, `context`, `escalation`, `memory` — share one path convention:
+Inline-agent resources — `tool`, `context`, `escalation` — share one path convention. Memory spaces are features, not `resources/` files; add them with `uip agent memory add ... --path <FlowProjectDir>/<projectId>` and see [../memory/memory.md](../memory/memory.md).
 
 **Path:** `<FlowProjectDir>/<projectId>/resources/<RES_UUID>/resource.json`
 
@@ -268,7 +270,7 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | IS connector | `uipath.agent.resource.tool.connector` |
 | Semantic index | `uipath.agent.resource.context.index` |
 | Escalation | `uipath.agent.resource.escalation` |
-| Memory space | `uipath.agent.resource.memory.*` |
+| Memory space | `uipath.agent.resource.memory.*` canvas node, backed by `features/<FeatureName>/feature.json` from `uip agent memory` |
 
 `<release-key>` is the resource's release-key GUID from `uip solution resource list` (the row's `Key` field). The four process-tool kinds share the same registry-discovery flow and the same `resource.json` shape — only the prefix in front of `<release-key>` and the `type` field in `resource.json` differ. See [../process/process.md](../process/process.md) § Subtypes.
 
@@ -301,7 +303,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
 # 7. Migrate — writes the migrated files, regenerates .agent-builder/,
-#    and (with --bindings-target) propagates tool bindings into the flow
+#    and (with --bindings-target) propagates capability bindings into the flow
 #    project's bindings_v2.json so resource refresh can discover them.
 uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow \
   --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
@@ -346,7 +348,7 @@ uipath.agent.resource.tool.connector                           ← Tool: IS conn
 uipath.agent.resource.tool.builtin                             ← Tool: built-in
 uipath.agent.resource.context.index                            ← Context: semantic index
 uipath.agent.resource.escalation                               ← Escalation: HITL
-uipath.agent.resource.memory.*                                 ← Memory space
+uipath.agent.resource.memory.*                                 ← Memory space canvas node; feature file lives under features/
 ```
 
 ## BPMN Execution Engine Notes
@@ -359,7 +361,7 @@ The execution is asynchronous. The flow pauses at the agent node and resumes whe
 
 See [../../critical-rules.md](../../critical-rules.md) Critical Rule 15. The skill explicitly defers flow authoring to `uipath-maestro-flow` — it does not invoke that skill automatically (Critical Rule 16).
 
-**Tool bindings must be propagated to the flow project's `bindings_v2.json`.** Only project-level bindings are scanned by `uip solution resource refresh`. Pass `--bindings-target <FlowProjectDir>/bindings_v2.json` to `uip agent migrate --inline-in-flow` — migrate is the command that writes the bindings. Without project-level propagation, Studio Web debug can fail with "Could not find process for tool" because no solution-level resource file is created for the tool process.
+**Capability bindings must be propagated to the flow project's `bindings_v2.json`.** Only project-level bindings are scanned by `uip solution resource refresh`. Pass `--bindings-target <FlowProjectDir>/bindings_v2.json` to `uip agent migrate --inline-in-flow` — migrate is the command that writes the bindings. Without project-level propagation, Studio Web debug can fail because no solution-level resource file is created for the external capability.
 
 Run the final `uip agent migrate --inline-in-flow --bindings-target …` as the **last step** before `uip solution resource refresh`, after all flow graph edits are complete. See the [Walkthrough](#walkthrough--end-to-end) for the correct sequence.
 

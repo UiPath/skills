@@ -17,9 +17,14 @@ initial_prompt: |
   this supplier.
 
 success_criteria:
-  - type: skill_triggered
-    description: "Agent did NOT invoke the uipath-human-in-the-loop skill (HITL not appropriate here)"
-    skill_name: "uipath-human-in-the-loop"
-    expected_skill: "none"
+  - type: llm_judge
+    description: "Agent response does not recommend adding a human review or HITL step"
+    prompt: |
+      The user described a fully automated invoice pipeline with no exceptions and
+      no human review steps. Did the agent's response avoid recommending a
+      Human-in-the-Loop node, human review step, or any manual approval checkpoint?
+      Answer YES if the agent correctly recognized HITL is not needed here.
+      Answer NO if the agent suggested adding human review or a HITL node.
+    expected: "YES"
     weight: 3.0
     pass_threshold: 1.0

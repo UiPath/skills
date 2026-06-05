@@ -69,10 +69,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `runProcess.runProcurementProcess` | Run ProcurementProcess process | process | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `runProcess.runProcurementProcess` | Run ProcurementProcess process | process | Yes | No | system | — |
 
   ##### Task 1.1: Run ProcurementProcess process (`runProcess.runProcurementProcess`)
 
