@@ -36,8 +36,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-      # Fails if plugin.json / marketplace.json / version-manifest.json have
-      # drifted from package.json. Keeps the published tarball self-consistent.
+      # Fails if version-manifest.json has drifted from package.json.
       - run: node scripts/sync-version.mjs --check
 
   publish-alpha:
@@ -68,6 +67,8 @@ jobs:
           node scripts/sync-version.mjs
           echo "Publishing $ALPHA"
 
+      # setup-node wrote `@uipath:registry=https://npm.pkg.github.com/` + auth;
+      # the scoped registry routes this scoped package to GitHub Packages.
       - name: Publish
         run: npm publish --tag alpha
         env:
@@ -86,9 +87,11 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           scope: "@uipath"
 
-      # publishConfig in package.json points at GitHub Packages for alpha;
-      # override it here so the stable release lands on npmjs.
+      # setup-node above wrote `@uipath:registry=https://registry.npmjs.org/`
+      # + auth into the runner .npmrc. `@uipath/skills` is scoped, so npm
+      # resolves the publish target from that scoped registry — a `--registry`
+      # flag would be ignored (it only sets the unscoped default).
       - name: Publish to npmjs
-        run: npm publish --registry https://registry.npmjs.org --access public --tag latest
+        run: npm publish --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

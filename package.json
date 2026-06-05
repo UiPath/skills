@@ -25,9 +25,6 @@
     "troubleshoot"
   ],
   "private": false,
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "files": [
     "skills",
     "agents",

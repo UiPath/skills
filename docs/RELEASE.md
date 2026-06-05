@@ -35,6 +35,15 @@ The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.196.x` → skills 
 
 `npm install @uipath/skills` (no tag) always resolves to the last stable npmjs release — alphas live only under the `alpha` tag on GitHub Packages. This mirrors `@uipath/cli`'s `ci.yml` (alpha on merge) + `publish-npm.yml` (stable on release).
 
+### Registry routing
+
+`@uipath/skills` is a **scoped** package, so each publish job sets the target registry through the **scoped registry** that `actions/setup-node` writes (`@uipath:registry=<url>` + auth) — not a `--registry` flag (which only sets the *unscoped* default and is ignored for scoped packages). For the same reason there is **no committed `.npmrc` and no `publishConfig.registry`**: a static scoped-registry line would override the per-job target (and would break `npm install` for anyone cloning this public repo).
+
+| Job | `registry-url` (setup-node) | Result |
+|-----|------------------------------|--------|
+| `publish-alpha` | `https://npm.pkg.github.com` | publishes to GitHub Packages |
+| `publish-release` | `https://registry.npmjs.org` | publishes to npmjs |
+
 ## Cutting a stable release
 
 1. Bump `package.json` to the target version (match the CLI minor line), run `npm run version:sync`, merge.
