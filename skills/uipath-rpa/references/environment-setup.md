@@ -12,6 +12,8 @@ Studio Desktop is only required for two interactive UI tools:
 
 For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
 
+> **Coded UI automation caveat.** One non-interactive task also needs Studio Desktop: regenerating `ObjectRepository.cs` — the `Descriptors.*` class consumed by coded `uiAutomation.*` workflows. `uip rpa build` alone does NOT produce it; Studio Desktop reconciles the coded workflow against the Object Repository to generate it. A headless flow can author and validate coded UIA, but populating `Descriptors.*` requires a Studio Desktop pass. See [ui-automation-guide.md](ui-automation-guide.md) § Finding Descriptors.
+
 > **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it's still working. Bump the per-call timeout to ≥ 180s for the first invocation.
 
 ## Step 0.1: Establish Project Root
@@ -170,6 +172,8 @@ Pass `--target-framework` and `--expression-language` here too (Rule 2a) — a t
 1. Open the project in Studio: `uip rpa project open --project-dir "/path/to/MyAutomation"`
 2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
 3. Proceed with the skill workflow using the new project root
+
+> **Batch the post-`init` prerequisites.** Step 2 here, the analyzer-rules list (SKILL.md Rule 3), `packages install` for known-needed packages, and the first `activities find` all depend only on the project existing — emit them as parallel tool calls in one message, not one per turn. They share the warmed Studio host. See SKILL.md § Call Batching.
 
 ## Edge case: requiring Studio Desktop
 

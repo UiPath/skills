@@ -128,7 +128,7 @@ Wrap the activities that target the helper process in their own `NApplicationCar
 
 1. **One `NApplicationCard` per process** — every direct or transitive child activity must target the same `app=` as its enclosing card's `TargetApp`. If activities target two processes, you need two cards.
 2. **Each card has its own `ScopeGuid`.** Child activities reference their card via `ScopeIdentifier="<that-card's-ScopeGuid>"`. When moving an activity from one card to another, update `ScopeIdentifier` — `validate` will not catch a mismatched value, but the activity will run against the wrong scope at runtime.
-3. **Card-level `HealingAgentBehavior`** uses `NHealingAgentBehavior` (`Job`/`Disabled`/`RecommendationOnly`) — not `SameAsCard`. Details: [ui-automation-guide.md § Common UIA Pitfalls](ui-automation-guide.md#common-uia-pitfalls).
+3. **Card-level `HealingAgentBehavior`** uses `NHealingAgentBehavior` (`Job`/`Disabled`/`RecommendationOnly`) — not `SameAsCard`. Details: [ui-automation-guide.md § Common UIA Pitfalls](ui-automation-guide.md).
 4. **Use `title='*'`** on the helper-process card only when multiple sub-dialogs share the same `app=` and you want a single scope to span them. If sub-dialogs have stable, distinct titles AND only the outer `app=` is shared with the host app (rare), prefer a separate card per dialog so failures localize cleanly.
 
 ### Capturing Targets for Helper Processes

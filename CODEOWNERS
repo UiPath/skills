@@ -37,8 +37,8 @@
 /tests/fixtures/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 
 # Agents skill (coded + low-code)
-/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
-/tests/tasks/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
+/skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
+/tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
 
 # Context grounding capabilities (DeepRAG + BatchTransform) — now part of uipath-agents
 /skills/uipath-agents/references/coded/capabilities/deeprag/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav

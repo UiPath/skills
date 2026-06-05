@@ -30,15 +30,16 @@ uip maestro case registry get-connection \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
 
-Returns `Entry`, `Config`, and `Connections`.
+Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, match it by `name` and use it directly. Otherwise **always present the choice via AskUserQuestion — do not auto-select**, even when one connection exists:
 
-- **Single connection** → use it.
-- **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:`. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
+- **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option**.
+- **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
+- **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection).
+- **Skip / create fails** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:` ([§ Unresolved Fallback](#unresolved-fallback)).
 
-Record `connection-id`, `connector-key`, `object-name` from the response.
+Record `connection-id`, `connector-key`, `object-name` from the response (or from the create output).
 
-Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
+Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
 
 ### 3. Discover the operation contract via `case spec`
 
@@ -116,7 +117,7 @@ Values can be:
 - **Pre-wrapped operator expressions** — `=js:(vars.amount > 5000)` (already canonical — pass-through)
 - **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves to `=vars.<outputVar>` then wraps)
 
-> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../../bindings-and-expressions.md#canonical-form-per-sink).
+> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### 7. Optional — author a server-side filter
 
@@ -193,6 +194,8 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 `filter:` is optional and present only when the operation supports CEQL (i.e. `spec.filter` was non-null in step 7).
 
 ## Unresolved Fallback
+
+Reached only after the Step 2 create offer is **declined** or fails (or the run is non-interactive). When `Connections` is empty, offer to create one first (Step 2) — do not jump straight here.
 
 > **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
 

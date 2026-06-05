@@ -1,18 +1,18 @@
-task_id: skill-flow-ixp-activation
+task_id: skill-flow-ixp-routing
 description: >
-  IxP activation — 2 positive activation tests (explicit, invoice-extraction)
-  fanned out via `dataset.rows`. Each row carries a distinct user prompt; success
-  criteria are identical across all rows.
+  IxP routing (positive) — document-extraction build prompts fanned out via
+  `dataset.rows`. Each row carries a distinct user prompt; success criteria are
+  identical across all rows.
 
-  Scope: did the skill get called, not did it work. Assertions verify the agent
-  invoked the uipath-maestro-flow Skill and ran the right CLI-command patterns
-  (registry search for uipath.ixp.*, node-add against uipath.ixp.* or
-  core.logic.mock) — NOT whether the resulting flow is correct or would execute.
+  Scope: did the agent route to the IxP plugin, not did the flow work.
+  Assertions verify the agent ran the right CLI-command patterns (registry
+  search for uipath.ixp.*) and landed a uipath.ixp.* or core.logic.mock node —
+  NOT whether the resulting flow is correct or would execute.
 
   Failure here is signal about SKILL.md or the IxP Plugin Index entry —
   do NOT relax assertions; feed findings back in.
 
-tags: [uipath-maestro-flow, smoke, activation, ixp]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, node:ixp]
 dataset:
   rows:
     - id: explicit
@@ -27,6 +27,22 @@ dataset:
         date, total amount, and line items out of PDF invoices saved in a
         SharePoint folder, then posts the result to our accounting system.
 
+    - id: receipts
+      prompt: >-
+        Add a document-extraction step to my flow that reads receipt images
+        from a folder and pulls out merchant, date, and total.
+
+    - id: contracts
+      prompt: >-
+        Build a flow that extracts party names, effective date, and the
+        termination clause from PDF contracts, then routes them to an approval
+        step.
+
+    - id: forms-classify
+      prompt: >-
+        I have a Maestro flow. Add an IxP node that classifies incoming PDF
+        forms and extracts their fields before the next step.
+
 initial_prompt: |
   ${row.prompt}
 
@@ -40,20 +56,19 @@ initial_prompt: |
   - Exploration + an attempted node-add is enough — you do not need to build a working flow.
 
 success_criteria:
-  - type: skill_triggered
-    skill_name: "uipath-maestro-flow"
-    expected_skill: "uipath-maestro-flow"
-    description: "Agent invoked the uipath-maestro-flow Skill"
-    weight: 2.0
-    pass_threshold: 1.0
-
+  # What this checks: did the agent search the registry for IxP nodes?
+  # Passes (case-insensitive) when the agent ran either:
+  #   • `registry list`                   — list all nodes, or
+  #   • `registry search|list|get <term>` — <term> contains ixp / document / extract
+  #                                         (prefix match, so extract → extraction)
+  # routing_listing.yaml drops `get` (read-only). Keep in sync with
+  # scaffold_minimal.yaml, scaffold_multinode.yaml, routing_listing.yaml.
   - type: command_executed
     description: "Agent searched the registry for IxP node types"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp'
+    command_pattern: '(?i)uip\s+maestro\s+flow\s+registry\s+(list\b|(search|list|get)\b[^\n]*\b(ixp|document|extract))'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    suite_thresholds: {mean: 0.85}
 
   # Greps the actual .flow artifact rather than the command stream — the
   # command_executed checker truncates tool params at 2000 chars, which hides
@@ -64,8 +79,7 @@ success_criteria:
     description: "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/plugins/ixp/impl.md)"
     command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .'
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+    suite_thresholds: {mean: 0.85}
 
 run_limits:
   max_turns: 80

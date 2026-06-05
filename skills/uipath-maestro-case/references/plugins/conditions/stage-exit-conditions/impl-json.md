@@ -107,4 +107,4 @@ Routes the case back to the originating stage.
 
 ## Post-Write Verification
 
-Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field.
+Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `<stageId>-<ruleId>`, and the ConnectionId + FolderKey root bindings exist.

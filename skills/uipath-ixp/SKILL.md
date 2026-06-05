@@ -14,7 +14,7 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 - User asks to improve extraction scores, prompts, or field instructions
 - User asks to publish or manage IXP model versions
 - User provides a taxonomy file to import into a project
-- User asks for the schema of a deployed (runtime) IXP model (use `deployments get-taxonomy`)
+- User asks for the project taxonomy at a specific trained model version — what the schema looked like when version N was published (use `deployments get-taxonomy <project-name> --version <N>`)
 
 **Do not use this skill** when the user is working in Maestro Flow / `.flow`, wants to add an IxP or document-extraction node to a flow, or asks what IxP models are available in Maestro. Those requests belong to `uipath-maestro-flow`, which uses the flow registry (`uip maestro flow registry search "uipath.ixp"`) rather than IXP project commands.
 

@@ -28,7 +28,7 @@ agent:
 run_limits:
   task_timeout: 2700
   max_turns: 150
-  turn_timeout: 900
+  turn_timeout: 1500
 
 initial_prompt: |
   We are building a case management solution for the candidate-interview
