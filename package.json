@@ -1,0 +1,47 @@
+{
+  "name": "@uipath/skills",
+  "version": "1.196.0",
+  "description": "UiPath agent skills for Claude Code, Codex, Cursor, Copilot, Gemini and OpenCode — RPA, UI automation, UI testing, coded agents/apps/workflows, and troubleshooting. Distributed as the UiPath Claude Code plugin.",
+  "author": {
+    "name": "UiPath"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/UiPath/skills",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UiPath/skills.git"
+  },
+  "keywords": [
+    "uipath",
+    "automation",
+    "rpa",
+    "workflows",
+    "skills",
+    "claude-code",
+    "agent",
+    "ui-automation",
+    "ui-testing",
+    "coded-agents",
+    "troubleshoot"
+  ],
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "skills",
+    "agents",
+    "commands",
+    "hooks",
+    "assets",
+    ".claude-plugin",
+    "version-manifest.json",
+    "README.md",
+    "LICENSE",
+    "CODEOWNERS"
+  ],
+  "scripts": {
+    "version:sync": "node scripts/sync-version.mjs",
+    "version:check": "node scripts/sync-version.mjs --check"
+  }
+}
