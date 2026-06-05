@@ -1460,6 +1460,7 @@
       {
         "id": "disputeAnalyst.error",
         "type": "object",
+        "description": "Error information if the node fails",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -1494,7 +1495,6 @@
           },
           "additionalProperties": false
         },
-        "description": "Error information if the node fails",
         "binding": {
           "nodeId": "disputeAnalyst",
           "outputId": "error"
@@ -1533,8 +1533,8 @@
       },
       "disputeAnalyst": {
         "position": {
-          "x": 448,
-          "y": 144
+          "x": 464,
+          "y": 48
         },
         "size": {
           "width": 96,
@@ -1544,7 +1544,7 @@
       "sopIndex": {
         "position": {
           "x": 448,
-          "y": 320
+          "y": 240
         },
         "size": {
           "width": 96,
@@ -1553,7 +1553,7 @@
       },
       "doneSuccess": {
         "position": {
-          "x": 640,
+          "x": 656,
           "y": 144
         },
         "size": {

@@ -938,6 +938,7 @@
       {
         "id": "resolutionWriter.error",
         "type": "object",
+        "description": "Error information if the node fails",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -972,7 +973,6 @@
           },
           "additionalProperties": false
         },
-        "description": "Error information if the node fails",
         "binding": {
           "nodeId": "resolutionWriter",
           "outputId": "error"
