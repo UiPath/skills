@@ -11,6 +11,7 @@ run_limits:
 
 initial_prompt: |
   Create a flow called "MultiCityWeather". Loop over Seattle, Phoenix, and New York — for each city, fetch the current temperature from open-meteo (fahrenheit) and classify it as 'warm' (> 60F) or 'cold'. Output an array with all 3 results, each having the city name, temperature, and verdict.
+  Use a raw HTTP Request node to call the open-meteo API — do not use an Integration Service connector.
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.

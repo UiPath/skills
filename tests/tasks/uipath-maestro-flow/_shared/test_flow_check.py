@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flow_check import (  # noqa: E402
+    assert_flow_has_any_node_type,
     assert_flow_has_exact_node_type,
     assert_flow_has_node_type,
     assert_flow_uses_connector_target,
@@ -127,6 +128,54 @@ def test_assert_flow_has_node_type_fails_when_absent(tmp_path, monkeypatch):
 def test_assert_flow_has_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
     assert_flow_has_node_type([])
+
+
+# ── assert_flow_has_any_node_type (weather connector collision, 2026-06-05) ─
+
+
+def test_assert_flow_has_any_node_type_accepts_connector_only(tmp_path, monkeypatch):
+    """Regression lock for the 2026-06-05 bellevue/multi-city failure: the agent
+    built the open-meteo call with the curated tenant connector instead of a raw
+    HTTP node, so the AND-matcher's `core.action.http` gate failed before
+    run_debug. The any-of gate accepts the connector shape."""
+    root = _write_flow(
+        tmp_path, ["uipath.connector.custom-codereval-openmeteoapis.getcurrentweather"]
+    )
+    monkeypatch.chdir(root)
+    assert_flow_has_any_node_type(
+        ["core.action.http", "custom-codereval-openmeteoapis"]
+    )
+
+
+def test_assert_flow_has_any_node_type_accepts_raw_http(tmp_path, monkeypatch):
+    """The raw-HTTP shape (e.g. a green run authored as `core.action.http.v2`)
+    still satisfies the same any-of gate — backward compatibility."""
+    root = _write_flow(tmp_path, ["core.action.http.v2"])
+    monkeypatch.chdir(root)
+    assert_flow_has_any_node_type(
+        ["core.action.http", "custom-codereval-openmeteoapis"]
+    )
+
+
+def test_assert_flow_has_any_node_type_fails_when_none_present(tmp_path, monkeypatch):
+    """Neither acceptable shape present → FAIL, and the message names the hints
+    and the node types seen."""
+    root = _write_flow(tmp_path, ["core.action.script"])
+    monkeypatch.chdir(root)
+    with pytest.raises(SystemExit) as exc:
+        assert_flow_has_any_node_type(
+            ["core.action.http", "custom-codereval-openmeteoapis"]
+        )
+    msg = str(exc.value)
+    assert msg.startswith("FAIL:")
+    assert "core.action.http" in msg  # hints named
+    assert "custom-codereval-openmeteoapis" in msg
+    assert "core.action.script" in msg  # types seen
+
+
+def test_assert_flow_has_any_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
+    assert_flow_has_any_node_type([])
 
 
 # ── assert_flow_has_exact_node_type (MST-10349) ─────────────────────────────

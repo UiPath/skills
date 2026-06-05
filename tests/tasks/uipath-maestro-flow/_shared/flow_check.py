@@ -122,6 +122,45 @@ def assert_flow_has_node_type(
             )
 
 
+def assert_flow_has_any_node_type(
+    hints: Sequence[str], *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require that AT LEAST ONE hint matches some ``.flow`` node ``type``
+    across the project (case-insensitive, substring — same semantics as
+    :func:`assert_flow_has_node_type`, but any-of instead of all-of).
+
+    Use this any-of matcher — rather than the AND-matcher
+    :func:`assert_flow_has_node_type` — when a task accepts more than one
+    legitimate node shape for the SAME step. The weather tasks are the
+    canonical case: the open-meteo API call may be built either as a raw
+    ``core.action.http`` node OR as the curated tenant connector
+    ``uipath.connector.custom-codereval-openmeteoapis.getcurrentweather``,
+    and the maestro-flow skill's node-selection ladder legitimately steers
+    the agent to the connector when one is present. Pinning the AND-matcher
+    to ``core.action.http`` rejects the connector shape even though it calls
+    the very API the test targets.
+
+    Pairs with a runtime output assertion: this file check confirms a node
+    of one acceptable *kind* was built; the output check confirms execution
+    produced the expected result.
+    """
+    if not hints:
+        return
+    types_seen: set[str] = set()
+    for node in _iter_flow_nodes(project_glob):
+        t = node.get("type")
+        if t:
+            types_seen.add(t)
+    for hint in hints:
+        needle = hint.lower()
+        if any(needle in t.lower() for t in types_seen):
+            return
+    _fail(
+        f"No node matches any type hint {list(hints)}. "
+        f"Node types seen: {sorted(types_seen)}"
+    )
+
+
 def assert_flow_has_exact_node_type(
     types: Sequence[str], *, project_glob: str = "**/project.uiproj"
 ) -> None:
