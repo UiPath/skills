@@ -1,0 +1,71 @@
+task_id: skill-platform-is-teams-bot-connection
+description: >
+  Smoke test: agent uses the uipath-platform skill to select a connection for a
+  Microsoft Teams send-bot-* activity. Tests the Teams connector override —
+  auto-select is disabled for bot activities, so the agent must list connections
+  with --all-folders, present them to the user (warning that the bot scope is
+  required), and ping the chosen connection rather than silently binding the
+  personal-workspace default.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:connections]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  I'm building an automation that sends a message into a Teams channel from a
+  bot identity (the `send-bot-channel-message` activity on the
+  "uipath-microsoft-teams" connector). Help me find and verify the right
+  connection to use.
+
+  1. List the available connections for the "uipath-microsoft-teams" connector
+  2. Present the options to me and explain what I need to check before picking
+     one for a send-bot-* activity
+  3. Ping the connection I should use to check its health
+  4. Explain the recovery path if no suitable connection exists (do NOT run it —
+     it requires a browser)
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected.
+    You MUST still run every command listed above (list and ping).
+    Do NOT skip a command just because a previous one failed.
+    Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - If connections list returns no connections, use a placeholder like
+    "placeholder-conn-id" to still run the ping command with correct syntax.
+  - Do NOT run connections create or connections edit — they open a browser.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed connections for the Microsoft Teams connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+list\s+.*uipath-microsoft-teams'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed connections with --all-folders (Teams override list behavior)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+list\s+.*uipath-microsoft-teams.*--all-folders'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pinged a connection to verify health"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+ping'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on connection commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
