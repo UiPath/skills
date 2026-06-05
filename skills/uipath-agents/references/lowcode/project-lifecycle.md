@@ -303,8 +303,8 @@ uip solution init "<SOLUTION_NAME>" --output json
 # `Data.SolutionRegistration.Status` in the response (`Registered` or
 # `AlreadyRegistered`).
 uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
-# (fallback only — run if Data.SolutionRegistration.Status is NotInSolution / Skipped / Failed;
-#  OptedOut means --no-solution-add was passed and registration was skipped on purpose)
+# (fallback only — run if Data.SolutionRegistration.Status is `NotInSolution` / `Skipped` / `Failed`;
+#  `OptedOut` means `--no-solution-add` was passed and registration was skipped on purpose)
 # uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 ```
 

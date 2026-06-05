@@ -181,7 +181,7 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ### Symptom
 
-`uip solution upload` rejects the project. `flow init` returned `Data.SolutionRegistration.Status: "NotInSolution"` (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution it finds none, so the project was created standalone). Studio Web upload fails with structural errors. Packaging fails.
+`uip solution upload` rejects the project. `flow init` returned `Data.SolutionRegistration.Status: "NotInSolution"` (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none, so the project was created standalone). Studio Web upload fails with structural errors. Packaging fails.
 
 The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested).
 
