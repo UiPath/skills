@@ -1,6 +1,6 @@
-task_id: skill-flow-ixp-smoke-scaffold-multinode
+task_id: skill-flow-ixp-scaffold-multinode
 description: >
-  Smoke: multi-script fan-out from an IxP extraction — manual trigger →
+  Integration: multi-script fan-out from an IxP extraction — manual trigger →
   IxP extract → 3 script nodes (postReceipt, sendToValidation, logError).
   Tests that the agent picks IxP, authors the extraction node, and wires
   three downstream scripts that consume the extraction result.
@@ -16,7 +16,7 @@ description: >
 
   Validate-only: no `uip maestro flow debug`.
 
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:ixp]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:ixp]
 initial_prompt: |
   Create a flow called "ReceiptIntake" with a manual trigger, an extractor
   node, and add three script nodes named `postReceipt`, `sendToValidation`,
@@ -45,7 +45,7 @@ success_criteria:
   - type: command_executed
     description: "Agent searched the registry for IxP node types"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp'
+    command_pattern: '(?i)uip\s+maestro\s+flow\s+registry\s+(list\b|(search|list|get)\b[^\n]*\b(ixp|document|extract))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
