@@ -4,13 +4,13 @@ The whole skills repo is published as an npm package, **`@uipath/skills`**, vers
 
 ## Version model
 
-`package.json` `version` is the **single source of truth**. Three manifests are derived from it by `scripts/sync-version.mjs` and must never be edited by hand:
+`package.json` `version` is the **single source of truth** for the npm package. `scripts/sync-version.mjs` derives this manifest from it (do not edit by hand):
 
 | File | Field | Purpose |
 |------|-------|---------|
-| `.claude-plugin/plugin.json` | `version` | Claude Code plugin version |
-| `.claude-plugin/marketplace.json` | `plugins[0].version` | Marketplace listing version |
 | `version-manifest.json` | `skillsVersion`, `targetCli` | CLI↔skills pairing record |
+
+> **Not yet unified:** `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` stay on their own version track (bumped daily by `daily-version-bump.yml`) until the alignment task lands. Unifying them under this scheme is tracked separately — see the linked Jira task in PR #1283.
 
 Run after any version change:
 

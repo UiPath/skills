@@ -44,21 +44,23 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Bump patch version
+      - name: Bump version in plugin.json and marketplace.json
         id: bump
         if: steps.check.outputs.exists != 'true'
         run: |
-          PKG="package.json"
+          PLUGIN=".claude-plugin/plugin.json"
+          MARKETPLACE=".claude-plugin/marketplace.json"
 
-          # package.json is the single source of truth for the version.
-          VERSION=$(jq -r '.version' "$PKG")
+          # Read current version from plugin.json
+          VERSION=$(jq -r '.version' "$PLUGIN")
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
 
-          # Bump package.json, then propagate to plugin.json, marketplace.json
-          # and version-manifest.json via the sync script.
-          jq --arg v "$NEW_VERSION" '.version = $v' "$PKG" > tmp.json && mv tmp.json "$PKG"
-          node scripts/sync-version.mjs
+          # Update plugin.json
+          jq --arg v "$NEW_VERSION" '.version = $v' "$PLUGIN" > tmp.json && mv tmp.json "$PLUGIN"
+
+          # Update marketplace.json (version is inside plugins[0])
+          jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' "$MARKETPLACE" > tmp.json && mv tmp.json "$MARKETPLACE"
 
           echo "old_version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
@@ -75,10 +77,8 @@ jobs:
             `${{ steps.bump.outputs.old_version }}` → `${{ steps.bump.outputs.new_version }}`
 
             Updated files:
-            - `package.json` (source of truth)
             - `.claude-plugin/plugin.json`
             - `.claude-plugin/marketplace.json`
-            - `version-manifest.json`
           branch: "auto/version-bump-${{ steps.bump.outputs.new_version }}"
           base: main
           assignees: ${{ github.event.inputs.assignees || 'gabrielavaduva,RaduAna-Maria'}}

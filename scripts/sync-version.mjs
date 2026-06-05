@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 
 /**
- * Single source of truth for the skills package version.
+ * Single source of truth for the skills npm package version.
  *
- * `package.json` `version` is authoritative. This script propagates it to the
- * three derived manifests so they can never drift:
+ * `package.json` `version` is authoritative. This script propagates it to:
  *
- *   - .claude-plugin/plugin.json        .version
- *   - .claude-plugin/marketplace.json   .plugins[0].version
- *   - version-manifest.json             .skillsVersion + .targetCli
+ *   - version-manifest.json   .skillsVersion + .targetCli
  *
  * `targetCli` is derived as the matching @uipath/cli minor line
  * (`^MAJOR.MINOR.0`). A skills release tracks the CLI minor line it ships
  * with, so a given CLI release resolves to a compatible skills package and
  * the two never mismatch.
+ *
+ * Note: `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+ * are deliberately NOT managed here yet — they stay on their own version
+ * track (bumped by daily-version-bump.yml) until the alignment task lands.
+ * See docs/RELEASE.md.
  *
  * Usage:
  *   node scripts/sync-version.mjs           # rewrite derived manifests
@@ -29,8 +31,6 @@ const CHECK = process.argv.includes("--check");
 
 const PATHS = {
   pkg: join(ROOT, "package.json"),
-  plugin: join(ROOT, ".claude-plugin", "plugin.json"),
-  marketplace: join(ROOT, ".claude-plugin", "marketplace.json"),
   manifest: join(ROOT, "version-manifest.json"),
 };
 
@@ -54,25 +54,6 @@ const targetCli = cliLine(version);
 
 const drift = [];
 const writes = [];
-
-// plugin.json
-const plugin = readJson(PATHS.plugin);
-if (plugin.version !== version) {
-  drift.push(`.claude-plugin/plugin.json: ${plugin.version} -> ${version}`);
-  plugin.version = version;
-  writes.push(() => writeJson(PATHS.plugin, plugin));
-}
-
-// marketplace.json
-const marketplace = readJson(PATHS.marketplace);
-const mpVersion = marketplace.plugins?.[0]?.version;
-if (mpVersion !== version) {
-  drift.push(
-    `.claude-plugin/marketplace.json: ${mpVersion} -> ${version}`,
-  );
-  marketplace.plugins[0].version = version;
-  writes.push(() => writeJson(PATHS.marketplace, marketplace));
-}
 
 // version-manifest.json
 const manifest = readJson(PATHS.manifest);
