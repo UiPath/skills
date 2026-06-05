@@ -125,7 +125,7 @@ The `cd` is required. Running `uip maestro flow init` from outside the solution 
 
 ### 2c. Verify the project is registered in the solution
 
-When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. The success envelope reports this in `Data.SolutionRegistration`:
+When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx` (pass `--no-solution-add` to skip this). The success envelope always reports the outcome in `Data.SolutionRegistration`:
 
 ```json
 {
@@ -144,9 +144,9 @@ When `uip maestro flow init` is run from inside a solution directory (Step 2b), 
 }
 ```
 
-If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check.
+If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check. If it is `OptedOut`, you passed `--no-solution-add` and the skip was intentional.
 
-**Fallback** — only if `Status` is `Skipped` or `Failed` (e.g., `init` was run outside the solution directory and produced a single-nested layout, or the `.uipx` write failed): wire the project manually.
+**Fallback** — when `Status` is `NotInSolution` (no parent `.uipx` found — `init` was run outside the solution directory and produced a single-nested layout), `Skipped` (ambiguous discovery), or `Failed` (the `.uipx` write failed): wire the project manually.
 
 ```bash
 uip solution project add \

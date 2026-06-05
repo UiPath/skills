@@ -20,8 +20,9 @@ uip solution init "<SolutionName>" --output json
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
 # 3. (Fallback only) Wire the project manually if auto-registration was
-#    `Skipped` or `Failed` — typically because init was run outside the
-#    solution dir and produced a single-nested layout.
+#    `NotInSolution` / `Skipped` / `Failed` — typically because init was run
+#    outside the solution dir and produced a single-nested layout. (`OptedOut`
+#    means --no-solution-add was passed and the skip was intentional.)
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
