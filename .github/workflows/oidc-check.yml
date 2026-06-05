@@ -1,0 +1,38 @@
+name: OIDC check (diagnostic)
+
+# Throwaway diagnostic: does GitHub issue an OIDC id-token for this repo?
+# Run via Actions → "OIDC check (diagnostic)" → Run workflow. Publishes nothing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Is id-token granted?
+        run: |
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "✅ id-token GRANTED — ACTIONS_ID_TOKEN_REQUEST_URL is present"
+          else
+            echo "❌ id-token NOT granted — env var is empty (org/enterprise OIDC policy)"
+            exit 1
+          fi
+
+      - name: Can we mint a token for the npm audience?
+        run: |
+          resp=$(curl -sS \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org")
+          if echo "$resp" | grep -q '"value"'; then
+            echo "✅ OIDC token minted for npm audience (token value not printed)"
+          else
+            echo "❌ could not mint OIDC token. Response: $resp"
+            exit 1
+          fi
