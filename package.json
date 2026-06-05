@@ -1,6 +1,6 @@
 {
   "name": "@uipath/skills",
-  "version": "1.196.0",
+  "version": "1.195.1",
   "description": "UiPath agent skills for Claude Code, Codex, Cursor, Copilot, Gemini and OpenCode — RPA, UI automation, UI testing, coded agents/apps/workflows, and troubleshooting. Distributed as the UiPath Claude Code plugin.",
   "author": {
     "name": "UiPath"

@@ -43,7 +43,7 @@ function writeJson(p, obj) {
   writeFileSync(p, `${JSON.stringify(obj, null, 2)}\n`);
 }
 
-/** `1.196.4` -> `^1.196.0` (the matching CLI minor line). */
+/** `1.195.4` -> `^1.195.0` (the matching CLI minor line). */
 function cliLine(version) {
   const [major, minor] = version.split(".");
   return `^${major}.${minor}.0`;
