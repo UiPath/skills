@@ -76,7 +76,7 @@ State the numbers plainly and flag the lowest-F1 fields. Do NOT volunteer a "goo
 
 ### "Describe this project" / "What's in it?"
 
-Pull only these cheap, non-racy calls and report in this order:
+Pull only these calls and report in this order:
 
 1. **Identity** — `Title` and `Name` from `uip ixp projects get <project-name> --output json`.
 2. **Current model** — live/pinned version + `TrainedTime` from `uip ixp projects list-models <project-name> --output json`.
