@@ -14,7 +14,8 @@
         "yKey": "value",
         "deltaDir": "down-good",
         "deltaText": "errors today",
-        "dataSelector": "(data as any)?.data ?? []"
+        "dataSelector": "(data as any)?.data ?? []",
+        "valueExpression": "String(((data as any)?.data ?? []).reduce((s: number, d: any) => s + (d.value ?? 0), 0))"
       }
     },
     "invocation-volume": {
@@ -31,7 +32,8 @@
         "yKey": "count",
         "deltaDir": "up-good",
         "deltaText": "runs today",
-        "dataSelector": "(data as any)?.data ?? []"
+        "dataSelector": "(data as any)?.data ?? []",
+        "valueExpression": "String(((data as any)?.data ?? []).reduce((s: number, d: any) => s + (d.count ?? d.value ?? 0), 0))"
       }
     },
     "top-failing-agents": {
@@ -60,7 +62,7 @@
         "title": "Active Agents",
         "description": "Agents with at least one run",
         "icon": "Bot",
-        "valueExpression": "String((data as any)?.data?.length ?? 0)",
+        "valueExpression": "String((data as any)?.data?.agents?.length ?? (data as any)?.data?.length ?? 0)",
         "dataSelector": "(data as any)?.data ?? []",
         "deltaDir": "up-good",
         "deltaText": "active agents"

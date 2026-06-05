@@ -1,9 +1,11 @@
-export function fmtNumber(n: number | null | undefined, decimals = 0): string {
+export function fmtNumber(n: number | null | undefined, decimals?: number): string {
   if (n == null) return '—'
-  return n.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })
+  if (decimals !== undefined) return n.toFixed(decimals)
+  // Auto precision: show 1 decimal for small values
+  if (Math.abs(n) < 10) return n.toFixed(1)
+  if (Math.abs(n) < 1000) return Math.round(n).toString()
+  if (Math.abs(n) < 1_000_000) return (Math.round(n / 100) / 10).toFixed(1) + 'k'
+  return (Math.round(n / 100_000) / 10).toFixed(1) + 'M'
 }
 
 export function fmtPercent(n: number | null | undefined, decimals = 1): string {

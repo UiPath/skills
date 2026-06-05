@@ -289,10 +289,47 @@ function hashContent(content) {
 
 // ── Dashboard file generation ─────────────────────────────────────────────────
 
-function generateDashboardFiles(projectPath, widgetNames, dashboardName) {
+function widgetLayoutGroup(template) {
+  if (['kpi-card', 'kpi-with-sparkline'].includes(template)) return 'kpi'
+  if (['data-table', 'ranked-table', 'progress-bar-list'].includes(template)) return 'table'
+  return 'chart'
+}
+
+function generateDashboardFiles(projectPath, widgetMeta, dashboardName) {
+  // widgetMeta: Array of { componentName, template }
+  const widgetNames = widgetMeta.map(w => w.componentName)
+
+  const kpis   = widgetMeta.filter(w => widgetLayoutGroup(w.template) === 'kpi')
+  const charts = widgetMeta.filter(w => widgetLayoutGroup(w.template) === 'chart')
+  const tables = widgetMeta.filter(w => widgetLayoutGroup(w.template) === 'table')
+
+  const kpiCols = Math.min(kpis.length, 4)
+  const kpiGrid = kpiCols === 1 ? 'grid-cols-1'
+    : kpiCols === 2 ? 'grid-cols-1 sm:grid-cols-2'
+    : kpiCols === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+
   const imports = widgetNames.map(n => `import { ${n} } from './widgets/${n}'`).join('\n')
   const indexTs = widgetNames.map(n => `export { ${n} } from './${n}'`).join('\n') + '\n'
-  const grid = widgetNames.length === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'
+
+  const kpiSection = kpis.length ? `
+        {/* KPI row */}
+        <div className="grid ${kpiGrid} gap-4">
+          ${kpis.map(w => `<${w.componentName} />`).join('\n          ')}
+        </div>` : ''
+
+  const chartSection = charts.length ? `
+        {/* Charts */}
+        <div className="grid grid-cols-1 ${charts.length > 1 ? 'lg:grid-cols-2' : ''} gap-4 mt-6">
+          ${charts.map(w => `<${w.componentName} />`).join('\n          ')}
+        </div>` : ''
+
+  const tableSection = tables.length ? `
+        {/* Tables */}
+        <div className="space-y-4 mt-6">
+          ${tables.map(w => `<${w.componentName} />`).join('\n          ')}
+        </div>` : ''
+
   const dashboardJsx = `import React from 'react'
 import { Header } from '@/dashboard/chrome/Header'
 ${imports}
@@ -301,10 +338,7 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <Header title="${dashboardName}" description="Operational metrics dashboard" />
-      <div className="p-4 md:p-8">
-        <div className="grid ${grid} gap-4">
-          ${widgetNames.map(n => `<${n} />`).join('\n          ')}
-        </div>
+      <div className="p-4 md:p-8">${kpiSection}${chartSection}${tableSection}
       </div>
     </div>
   )
@@ -452,6 +486,7 @@ async function runDashboardBuild(intent, intentPath) {
       `VITE_UIPATH_TENANT_NAME=${tenantName}`,
       `VITE_INSIGHTS_TENANT_ID=${tenantId}`,
       `VITE_UIPATH_CLIENT_ID=${clientId}`,
+      `VITE_UIPATH_SCOPE=OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights.RealTimeData`,
     ].join('\n'))
     const uipathJsonPath = join(P, 'uipath.json')
     if (existsSync(uipathJsonPath) && clientId) {
@@ -486,6 +521,7 @@ async function runDashboardBuild(intent, intentPath) {
     const t1t2Metrics = metrics.filter(m => m.tier !== 'T3')
     const t3Metrics = metrics.filter(m => m.tier === 'T3')
     const widgetHashes = {}
+    const widgetMeta = []  // { componentName, template }
     const widgetSpecs = {}  // componentName → { componentName, title, description, dataHook, dataSelector, columns }
     let widgetIndex = 0
     const total = metrics.length
@@ -554,9 +590,11 @@ async function runDashboardBuild(intent, intentPath) {
         }
       }
 
+      const resolvedTemplate = tier === 'T1' ? entry.template : (metric.displayAs ?? entry.defaultDisplayAs)
       const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
       writeAtomic(widgetPath, widgetContent)
-      widgetHashes[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name }
+      widgetHashes[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name, template: resolvedTemplate }
+      widgetMeta.push({ componentName, template: resolvedTemplate })
       widgetIndex++
       emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
     }))
@@ -582,7 +620,9 @@ async function runDashboardBuild(intent, intentPath) {
 
         try {
           execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
-          widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: 'T3', metric: metric.name }
+          const t3Template = metric.displayAs ?? 'ranked-table'
+          widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: 'T3', metric: metric.name, template: t3Template }
+          widgetMeta.push({ componentName, template: t3Template })
           widgetSpecs[componentName] = {
             componentName,
             title: metric.title ?? componentName,
@@ -608,7 +648,7 @@ async function runDashboardBuild(intent, intentPath) {
     }
 
     // Step 5 — Generate Dashboard.tsx + index.ts
-    generateDashboardFiles(P, Object.keys(widgetHashes), dashboardName)
+    generateDashboardFiles(P, widgetMeta, dashboardName)
 
     // Step 5a — Generate view files for all widgets
     for (const [componentName, spec] of Object.entries(widgetSpecs)) {
@@ -730,10 +770,11 @@ async function runIncrementalEdit(editIntent, intentPath) {
       })
     }
 
+    const addTemplate = tier === 'T1' ? entry.template : (tier === 'T3' ? (metric.displayAs ?? 'ranked-table') : (metric.displayAs ?? entry.defaultDisplayAs))
     const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
     writeAtomic(widgetPath, widgetContent)
     state.widgets = state.widgets ?? {}
-    state.widgets[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name }
+    state.widgets[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name, template: addTemplate }
 
   } else if (op === 'REMOVE') {
     const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${target}.tsx`)
@@ -771,13 +812,16 @@ async function runIncrementalEdit(editIntent, intentPath) {
         SDK_IMPORT: '', SDK_SERVICE: '', SDK_CALL: '', SDK_RESULT_TYPE: '',
       })
       writeAtomic(widgetPath, widgetContent)
-      if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name }
+      if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: entry.template }
     }
   }
 
   // Regenerate Dashboard.tsx + index.ts
-  const widgetNames = Object.keys(state.widgets ?? {})
-  generateDashboardFiles(P, widgetNames, state.app?.name ?? 'Dashboard')
+  const widgetMeta = Object.entries(state.widgets ?? {}).map(([name, info]) => ({
+    componentName: name,
+    template: info.template ?? 'ranked-table'
+  }))
+  generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard')
 
   // tsc validate
   try {
@@ -860,6 +904,7 @@ if (plan.metrics) {
     `VITE_UIPATH_TENANT_NAME=${tenantName}`,
     `VITE_INSIGHTS_TENANT_ID=${tenantId}`,
     `VITE_UIPATH_CLIENT_ID=${clientId}`,
+    `VITE_UIPATH_SCOPE=OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights.RealTimeData`,
   ].join('\n'));
 
   // Update uipath.json with clientId from plan
