@@ -49,8 +49,9 @@ uip maestro flow registry get core.action.script --output json  # script node in
 **In-solution discovery (no login required):**
 ```bash
 uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
+uip maestro flow registry search "<keyword>" --local --output json  # keyword search across in-solution nodes only
 ```
-Run from inside the flow project directory. If the resource (RPA, agent, flow, API workflow) exists as a sibling project in the same solution, it appears here without needing to be published. Prefer in-solution resources over mock placeholders.
+Run from inside the flow project directory. If the resource (RPA, agent, flow, API workflow) exists as a sibling project in the same solution, it appears here without needing to be published. Prefer in-solution resources over mock placeholders. `--local` results omit `AvailableOnTenant` (no tenant lookup). Empty `search --local` is not authoritative — confirm with `list --local` before treating a resource as absent.
 
 ### Check Connector Connections
 
@@ -71,7 +72,7 @@ uip is connections list "<connector-key>" --all-folders --output json
 
 **What to record from discovery:**
 - **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists. Field details require `registry get --connection-id` in Phase 2.
-- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
+- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`, or `registry search "<keyword>" --local` for keyword match), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
 - **Gaps:** Services with no connector -> fall back to `core.action.http.v2` (manual mode). Resources in the same solution but unpublished -> use `--local` discovery (no mock needed). Resources not in the solution and not yet published -> use `core.logic.mock` placeholder. Connectors with no connection -> flag in Open Questions for the user to create.
 
 Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http.v2` (manual mode) or note it as a gap in Open Questions.
