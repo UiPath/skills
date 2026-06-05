@@ -8,7 +8,12 @@ handle. Three layers:
      `uipath.agent.resource.context.index.*` node — the agent's context handle
      must be wired to a real index (anti-hardcode).
   2. Behavior: `flow debug` completes.
-  3. Output: the agent returns a non-empty determination.
+  3. Output: the agent returns a real SOP-grounded determination — one that
+     engaged the dispute facts, not a generic refusal. We assert the output
+     references at least one grounded fact / verdict token (contracted rate,
+     billed rate, or a recognized verdict) rather than pinning the exact
+     determination text: the agent under test authors its own determination
+     vocabulary, so a literal-string match would be brittle and unfair.
 """
 import os
 import sys
@@ -20,7 +25,7 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
 sys.path.insert(0, _d)
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
-    collect_outputs,
+    assert_outputs_contain,
     run_debug,
 )
 
@@ -36,10 +41,19 @@ def main():
     print("OK: flow wires an inline autonomous agent to a context.index node")
 
     payload = run_debug(inputs=INPUTS, timeout=540)
-    nonempty = [v for v in collect_outputs(payload) if isinstance(v, str) and v.strip()]
-    if not nonempty:
-        sys.exit("FAIL: agent produced no non-empty determination/rationale output")
-    print("OK: grounded inline agent returned a non-empty determination")
+    # Beat a bare non-empty check (a soft refusal like "please provide the invoice
+    # number to proceed" is itself a non-empty string and would pass): require the
+    # output to engage the grounded dispute facts. OR over the contracted/billed
+    # rates and a few verdict/domain tokens rather than pinning the exact
+    # determination — the agent under test authors its own determination
+    # vocabulary, so a literal match would be unfair. A generic refusal that never
+    # reasoned over the dispute contains none of these.
+    assert_outputs_contain(
+        payload,
+        ["290", "300", "credit", "valid", "contracted", "discrepancy", "overcharge"],
+        require_all=False,
+    )
+    print("OK: grounded inline agent returned a real SOP-grounded determination")
 
 
 if __name__ == "__main__":
