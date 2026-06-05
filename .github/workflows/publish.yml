@@ -1,16 +1,15 @@
 name: Publish skills package
 
-# Two-track publishing, mirroring the @uipath/cli model:
-#   - push to main          -> alpha prerelease to GitHub Packages (dist-tag `alpha`)
-#   - GitHub Release / manual -> stable release to npmjs (dist-tag `latest`)
+# Two-track publishing:
+#   - workflow_dispatch (target: github-alpha) -> alpha prerelease to GitHub
+#     Packages (dist-tag `alpha`). Manual — no auto-publish on push to main.
+#   - GitHub Release published -> stable release to npmjs (dist-tag `latest`).
 #
 # `npm install @uipath/skills` (no tag) always resolves to the last stable
 # release, never an alpha. The version line tracks the CLI minor line so the
 # CLI can pin a compatible skills package (see docs/RELEASE.md).
 
 on:
-  push:
-    branches: [main]
   release:
     types: [published]
   workflow_dispatch:
@@ -42,7 +41,7 @@ jobs:
   publish-alpha:
     name: Publish alpha to GitHub Packages
     needs: [guard]
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'github-alpha')
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'github-alpha'
     runs-on: ubuntu-latest
     permissions:
       contents: read

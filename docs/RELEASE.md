@@ -29,11 +29,11 @@ The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.196.x` → skills 
 
 | Trigger | Registry | dist-tag | Version |
 |---------|----------|----------|---------|
-| Push to `main` | GitHub Packages | `alpha` | `<base>-alpha.<YYYYMMDD>.<run_number>` |
+| `workflow_dispatch` (target: `github-alpha`) | GitHub Packages | `alpha` | `<base>-alpha.<YYYYMMDD>.<run_number>` |
 | GitHub Release published | npmjs | `latest` | `package.json` version |
-| `workflow_dispatch` | either (input) | matching | as above |
+| `workflow_dispatch` (target: `npmjs`) | npmjs | `latest` | `package.json` version |
 
-`npm install @uipath/skills` (no tag) always resolves to the last stable npmjs release — alphas live only under the `alpha` tag on GitHub Packages. This mirrors `@uipath/cli`'s `ci.yml` (alpha on merge) + `publish-npm.yml` (stable on release).
+Both tracks are **manually triggered** — there is no auto-publish on push to `main`. Alpha is dispatched on demand; stable runs when a GitHub Release is published. `npm install @uipath/skills` (no tag) always resolves to the last stable npmjs release — alphas live only under the `alpha` tag on GitHub Packages.
 
 ### Registry routing
 
