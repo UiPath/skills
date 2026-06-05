@@ -42,10 +42,14 @@ Do NOT re-read the taxonomy or sample documents between iterations — use what 
 
 ### 1a. Get baseline metrics
 
+If documents were just labelled (or uploaded, or the taxonomy was edited), wait ~2 minutes for the resulting retrain to complete before reading metrics. Reading mid-retrain captures *pre*-change scores and corrupts every downstream comparison.
+
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 uip ixp projects get-metrics <project-name> --output json
 ```
+
+Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; wait another 60 seconds and re-fetch.
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against.
 

@@ -25,7 +25,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 {
   "id": "hitlReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "quick",
@@ -34,7 +34,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
       "fields": [
         { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "vars.fetchInvoice.output.invoiceId" },
         { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "vars.fetchInvoice.output.amount" },
-        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "vars.decision" }
+        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "decision" }
       ],
       "outcomes": [
         { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -69,10 +69,10 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 
 **Field format rules:**
 - **Input fields**: `binding: "vars.<nodeId>.output.<field>"` (raw path, no `=js:$` prefix). No `variable` property on input fields.
-- **Output fields**: `variable: "vars.<globalName>"` (with `vars.` prefix). No `binding`.
+- **Output fields**: `variable: "<globalName>"` (plain name, **no** `vars.` prefix). No `binding`.
 - **InOut fields**: both `binding` and `variable`, same formats as above.
 - `schemaId` (not `id`) at the schema level — generate a fresh UUID.
-- `typeVersion` — set to the published `uipath.human-in-the-loop` node-definition version (no registry pull needed for this OOTB inline form; if unsure, confirm with `uip maestro flow registry get uipath.human-in-the-loop`). Use the exact single-dot `x.y` form (e.g. `"1.0"`, not `"1.0.0"`).
+- `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
 - No `model` block on node instances — only the definition carries it.
 
 **outputs block**: only `output` (with `properties` for output/inOut fields + `Action` outcome) and `status` (with `enum`/`default` from outcomes). No per-field `custom: true` entries.

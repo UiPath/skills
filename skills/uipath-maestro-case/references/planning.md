@@ -177,7 +177,11 @@ For every task, trigger, and condition in the sdd.md:
 
 ### 3.4 Unresolved resources
 
-When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:
+When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**.
+
+> **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-common.md § Resolve the connection](connector-trigger-common.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
+
+Otherwise:
 
 1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `typeId` / `connectionId` slot.
 2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](placeholder-tasks.md).
