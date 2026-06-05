@@ -41,8 +41,14 @@ pre_run:
   # Errors are tolerated (fail_on_error: false) because a tool that fails
   # to install will surface as a BAD entry in the validator below, which
   # has a clearer message.
+  #
+  # orchestrator-tool is PINNED to the same build as the CI's @uipath/cli
+  # (tests/docker/Dockerfile ARG CLI_VERSION): the tool re-versioned
+  # 1.2.0 -> 1.196.0 on 2026-06-04 and the 1.196 alphas broke `or` alias
+  # registration. Unpinned install here pulled the broken alpha even when
+  # the image pre-baked the pinned one. Keep in sync with the Dockerfile.
   - command: >-
-      uip tools install @uipath/orchestrator-tool;
+      uip tools install @uipath/orchestrator-tool@1.2.0-alpha.20260603.7393;
       uip tools install @uipath/integrationservice-tool;
       uip tools install @uipath/maestro-tool;
       uip tools install @uipath/resource-tool;

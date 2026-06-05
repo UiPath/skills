@@ -4,7 +4,10 @@ ARG CODER_EVAL_IMAGE=coder-eval-agent:latest
 FROM ${CODER_EVAL_IMAGE}
 
 ARG NPM_AUTH_TOKEN=
-ARG CLI_VERSION=alpha
+# Pinned: the orchestrator-tool re-versioned 1.2.0 -> 1.196.0 on 2026-06-04 and
+# the 1.196 alphas broke the `or` alias registration + changed `jobs get` flags.
+# Stay on the last known-good 1.2.0 build until the 1.196 line stabilizes.
+ARG CLI_VERSION=1.2.0-alpha.20260603.7393
 # Install the UiPath CLI shell AND pre-bake the tool plugins the eval CHECKERS
 # invoke (`uip or` → orchestrator-tool, `uip is` → integrationservice-tool,
 # `uip maestro` → maestro-tool).
@@ -35,7 +38,7 @@ RUN set -euo pipefail && \
       > "$npmrc" && \
     npm install -g "@uipath/cli@${CLI_VERSION}" && \
     uip --version && \
-    uip tools install @uipath/orchestrator-tool && \
+    uip tools install "@uipath/orchestrator-tool@${CLI_VERSION}" && \
     uip tools install @uipath/integrationservice-tool && \
     uip tools install @uipath/maestro-tool && \
     uip tools list
