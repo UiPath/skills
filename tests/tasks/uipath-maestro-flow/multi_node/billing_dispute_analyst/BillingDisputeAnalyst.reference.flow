@@ -14,6 +14,14 @@
       "inputs": {
         "entryPointId": "cd3aa493-b55d-4226-b548-156213beb7c3",
         "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
       }
     },
     {
