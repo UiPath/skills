@@ -25,15 +25,16 @@ uip maestro case registry get-connection \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
 
-Returns `Entry`, `Config`, and `Connections`.
+Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, match it by `name` and use it directly. Otherwise **always present the choice via AskUserQuestion — do not auto-select**, even when one connection exists:
 
-- **Single connection** → use it.
-- **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED>`. Both plugins emit placeholders at execution time (different shapes per plugin) — see [placeholder-tasks.md](placeholder-tasks.md) for connector-task placeholders and [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) for event-trigger placeholders.
+- **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option**.
+- **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
+- **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](connector-integration.md#creating-a-connection).
+- **Skip / create fails** → mark `<UNRESOLVED>`. Both plugins emit placeholders at execution time (different shapes per plugin) — see [placeholder-tasks.md](placeholder-tasks.md) for connector-task placeholders and [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) for event-trigger placeholders.
 
-Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response.
+Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output).
 
-Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
+Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.
 
@@ -454,6 +455,8 @@ Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxx
 - **CLI `validate` does NOT check `rule.uipath`.** The case-tool connector validator is task-only (reads `task.data`). A passing Phase-4 validate does **not** confirm a connector rule is valid — Studio Web (or an FE round-trip) is the real check. Emit the `uipath` block correctly; do not rely on validate to catch omissions.
 
 ### Placeholder fallback
+
+Reached only after the [§ 2 create offer](#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to the placeholder.
 
 On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule **without** its `uipath` block — `{ id, rule: "wait-for-connector", conditionExpression? }`. The rule itself is not a placeholder; only the connector configuration (the `uipath` payload) is deferred until the registry resolves, exactly like task connector data deferred via `data:{}`. Absence of `uipath` naturally skips the dependent subsystems: io-binding has no `outputs[]` to wire, root bindings has no Connection/Folder pair to add, IS-cache has no entry to register, global var-id dedup has no outputs to consider, and the Step-10 `bindings_v2` sync has nothing to regenerate for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8 and log per [logging/impl-json.md](plugins/logging/impl-json.md). Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
 
