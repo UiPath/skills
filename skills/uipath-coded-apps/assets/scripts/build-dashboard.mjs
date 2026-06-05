@@ -382,6 +382,36 @@ export function ${componentName}View() {
 `;
 }
 
+// ── App.tsx route injection ───────────────────────────────────────────────────
+
+function injectAppRoutes(projectPath, widgetNames, viewNames) {
+  const appPath = join(projectPath, 'src', 'App.tsx')
+  let content = readFileSync(appPath, 'utf8')
+
+  // Build imports block
+  const imports = [
+    `import { Dashboard } from '@/dashboard/Dashboard'`,
+    ...viewNames.map(n => `import { ${n}View } from '@/dashboard/views/${n}View'`),
+  ].join('\n')
+
+  // Build routes block (2-space indent to match JSX inside Routes)
+  const routes = [
+    `        <Route path="/" element={<Dashboard />} />`,
+    ...viewNames.map(n => `        <Route path="/${n.toLowerCase()}" element={<${n}View />} />`),
+  ].join('\n')
+
+  content = content.replace(
+    /\/\/ GENERATED_IMPORTS_START[\s\S]*?\/\/ GENERATED_IMPORTS_END/,
+    `// GENERATED_IMPORTS_START\n${imports}\n// GENERATED_IMPORTS_END`
+  )
+  content = content.replace(
+    /\{\/\* GENERATED_ROUTES_START \*\/\}[\s\S]*?\{\/\* GENERATED_ROUTES_END \*\/\}/,
+    `{/* GENERATED_ROUTES_START */}\n${routes}\n        {/* GENERATED_ROUTES_END */}`
+  )
+
+  writeAtomic(appPath, content)
+}
+
 // ── runDashboardBuild pipeline ────────────────────────────────────────────────
 
 async function runDashboardBuild(intent, intentPath) {
@@ -456,6 +486,7 @@ async function runDashboardBuild(intent, intentPath) {
     const t1t2Metrics = metrics.filter(m => m.tier !== 'T3')
     const t3Metrics = metrics.filter(m => m.tier === 'T3')
     const widgetHashes = {}
+    const widgetSpecs = {}  // componentName → { componentName, title, description, dataHook, dataSelector, columns }
     let widgetIndex = 0
     const total = metrics.length
 
@@ -485,6 +516,14 @@ async function runDashboardBuild(intent, intentPath) {
           PIVOT_EXPRESSION: spec.pivotExpression,
           SDK_IMPORT: '', SDK_SERVICE: '', SDK_CALL: '', SDK_RESULT_TYPE: '',
         })
+        widgetSpecs[componentName] = {
+          componentName,
+          title: spec.title,
+          description: spec.description,
+          dataHook: spec.dataHook,
+          dataSelector: spec.dataSelector,
+          columns: spec.columns,
+        }
       } else {
         // T2
         const spec = buildT2WidgetSpec(metric, entry)
@@ -505,6 +544,14 @@ async function runDashboardBuild(intent, intentPath) {
           DATA_HOOK: '', DATA_SELECTOR: spec.dataSelector.replace(/\bdata\b/g, 'result'), X_KEY: '', Y_KEY: '',
           VALUE_EXPRESSION: '', SERIES: '', PIVOT_EXPRESSION: '',
         })
+        widgetSpecs[componentName] = {
+          componentName,
+          title: spec.title,
+          description: spec.description,
+          dataHook: `useInsights('${entry.service}.getAll', {})`,
+          dataSelector: spec.dataSelector ?? '[]',
+          columns: spec.columns,
+        }
       }
 
       const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
@@ -536,6 +583,14 @@ async function runDashboardBuild(intent, intentPath) {
         try {
           execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
           widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: 'T3', metric: metric.name }
+          widgetSpecs[componentName] = {
+            componentName,
+            title: metric.title ?? componentName,
+            description: metric.description ?? '',
+            dataHook: `useInsights('custom.${metric.name}', {})`,
+            dataSelector: '[]',
+            columns: undefined,
+          }
           widgetIndex++
           emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
           success = true
@@ -554,6 +609,15 @@ async function runDashboardBuild(intent, intentPath) {
 
     // Step 5 — Generate Dashboard.tsx + index.ts
     generateDashboardFiles(P, Object.keys(widgetHashes), dashboardName)
+
+    // Step 5a — Generate view files for all widgets
+    for (const [componentName, spec] of Object.entries(widgetSpecs)) {
+      const viewContent = generateViewFile(spec)
+      writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
+    }
+
+    // Step 5b — Inject imports and routes into App.tsx
+    injectAppRoutes(P, Object.keys(widgetHashes), Object.keys(widgetHashes))
 
     // Step 6 — Full tsc
     try {
