@@ -53,6 +53,6 @@ The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.196.x` → skills 
 
 - [ ] **`NPM_TOKEN`** — npmjs **granular** automation token scoped to **`@uipath/skills` only** (least privilege — not the whole `@uipath` org). For stable releases.
 - [ ] Confirm the npm package name/scope: **`@uipath/skills`** (assumed).
-- [ ] Seed version: currently **`1.196.0`** — see PILOT-5518 to confirm against the published CLI line before first publish.
+- [x] Seed version confirmed: **`1.196.0`** (current CLI minor line). Automating the ongoing CLI↔skills lockstep is tracked in PILOT-5518.
 
 > The alpha track needs no secret — `publish-alpha` uses the built-in `GITHUB_TOKEN` with `packages: write`.
