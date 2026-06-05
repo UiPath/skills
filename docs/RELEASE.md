@@ -37,22 +37,22 @@ Both tracks are **manually triggered** — there is no auto-publish on push to `
 
 ### Registry routing
 
-`@uipath/skills` is a **scoped** package, so each publish job sets the target registry through the **scoped registry** that `actions/setup-node` writes (`@uipath:registry=<url>` + auth) — not a `--registry` flag (which only sets the *unscoped* default and is ignored for scoped packages). For the same reason there is **no committed `.npmrc` and no `publishConfig.registry`**: a static scoped-registry line would override the per-job target (and would break `npm install` for anyone cloning this public repo).
+`@uipath/skills` is a **scoped** package, so the publish target is set via the **scoped registry** (`@uipath:registry=<url>`) — not a `--registry` flag (which only sets the *unscoped* default and is ignored for scoped packages). There is **no committed `.npmrc` and no `publishConfig.registry`**: a static scoped-registry line would override the per-job target (and break `npm install` for anyone cloning this public repo).
 
-| Job | `registry-url` (setup-node) | Result |
-|-----|------------------------------|--------|
-| `publish-alpha` | `https://npm.pkg.github.com` | publishes to GitHub Packages |
-| `publish-release` | `https://registry.npmjs.org` | publishes to npmjs |
+| Job | registry | Auth |
+|-----|----------|------|
+| `publish-alpha` | GitHub Packages (`npm.pkg.github.com`) | built-in `GITHUB_TOKEN` |
+| `publish-release` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) |
 
 ## Cutting a stable release
 
 1. Bump `package.json` to the target version (match the CLI minor line), run `npm run version:sync`, merge.
 2. Create a GitHub Release tagged `v<version>` → `publish.yml` publishes to npmjs.
 
-## Required secrets / setup (TODO before first publish)
+## Required setup
 
-- [ ] **`NPM_TOKEN`** — npmjs **granular** automation token scoped to **`@uipath/skills` only** (least privilege — not the whole `@uipath` org). For stable releases.
-- [ ] Confirm the npm package name/scope: **`@uipath/skills`** (assumed).
+- [x] **npmjs Trusted Publishing** — configure a GitHub Actions trusted publisher on the `@uipath/skills` package (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-release` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
+- [x] Package name/scope confirmed: **`@uipath/skills`** (published).
 - [x] Seed version confirmed: **`1.195.0`** (current CLI minor line). Automating the ongoing CLI↔skills lockstep is tracked in PILOT-5518.
 
-> The alpha track needs no secret — `publish-alpha` uses the built-in `GITHUB_TOKEN` with `packages: write`.
+> The alpha track also needs no secret — `publish-alpha` uses the built-in `GITHUB_TOKEN` with `packages: write`.
