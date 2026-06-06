@@ -30,7 +30,7 @@ def main():
     assert_outputs_contain(
         payload, ["warm", "cold"], require_all=False
     )
-    print("OK: loop + HTTP + script all executed, all 3 cities with verdicts present")
+    print("OK: loop + weather-API node + script all executed, all 3 cities with verdicts present")
 
 
 if __name__ == "__main__":

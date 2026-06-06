@@ -22,7 +22,7 @@ def main():
     assert_outputs_contain(
         payload, ["nice day", "bring a jacket"], require_all=False
     )
-    print("OK: HTTP node present; output contains a weather branch message")
+    print("OK: weather-API node present; output contains a weather branch message")
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flow_check import (  # noqa: E402
     assert_flow_has_any_node_type,
+    assert_flow_has_api_node_targeting,
     assert_flow_has_exact_node_type,
     assert_flow_has_node_type,
     assert_flow_uses_connector_target,
@@ -176,6 +177,75 @@ def test_assert_flow_has_any_node_type_fails_when_none_present(tmp_path, monkeyp
 def test_assert_flow_has_any_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
     assert_flow_has_any_node_type([])
+
+
+# ── assert_flow_has_api_node_targeting (slack-weather gate, PR #1301) ───────
+
+
+_SLACK_PROXY_NODE = {
+    "id": "readSlack",
+    "type": "core.action.http.v2",
+    "inputs": {
+        "detail": {
+            "bodyParameters": {
+                "authentication": "connector",
+                "targetConnector": "uipath-salesforce-slack",
+            },
+            "connectionId": "abc-123",
+            "connectionFolderKey": "def-456",
+        }
+    },
+}
+
+
+def test_api_node_targeting_accepts_openmeteo_connector(tmp_path, monkeypatch):
+    """The curated connector node targets the service via its own type string."""
+    root = _write_flow(
+        tmp_path,
+        [_SLACK_PROXY_NODE, "uipath.connector.custom-codereval-openmeteoapis.getcurrentweather"],
+    )
+    monkeypatch.chdir(root)
+    assert_flow_has_api_node_targeting(["open-meteo", "openmeteoapis"])
+
+
+def test_api_node_targeting_accepts_manual_http_url(tmp_path, monkeypatch):
+    """A manual HTTP node targets the service via its URL."""
+    http_node = {
+        "id": "getWeather",
+        "type": "core.action.http.v2",
+        "inputs": {"detail": {"url": "https://api.open-meteo.com/v1/forecast"}},
+    }
+    root = _write_flow(tmp_path, [_SLACK_PROXY_NODE, http_node])
+    monkeypatch.chdir(root)
+    assert_flow_has_api_node_targeting(["open-meteo", "openmeteoapis"])
+
+
+def test_api_node_targeting_rejects_unrelated_proxy_only(tmp_path, monkeypatch):
+    """Regression lock for the #1301 review finding: a Slack connector-proxy
+    HTTP node satisfies a bare core.action.http type hint, so a flow with no
+    weather node at all could pass the structural gate. The service-targeting
+    gate must reject it."""
+    root = _write_flow(tmp_path, [_SLACK_PROXY_NODE, "core.action.script"])
+    monkeypatch.chdir(root)
+    with pytest.raises(SystemExit) as exc:
+        assert_flow_has_api_node_targeting(["open-meteo", "openmeteoapis"])
+    msg = str(exc.value)
+    assert msg.startswith("FAIL:")
+    assert "open-meteo" in msg
+    assert "core.action.http.v2" in msg  # API-capable types seen
+
+
+def test_api_node_targeting_ignores_script_mentions(tmp_path, monkeypatch):
+    """A Script node that merely mentions the service is not an API call."""
+    script_node = {
+        "id": "fake",
+        "type": "core.action.script",
+        "inputs": {"script": "// pretend to call open-meteo here\nreturn 72;"},
+    }
+    root = _write_flow(tmp_path, [script_node])
+    monkeypatch.chdir(root)
+    with pytest.raises(SystemExit):
+        assert_flow_has_api_node_targeting(["open-meteo", "openmeteoapis"])
 
 
 # ── assert_flow_has_exact_node_type (MST-10349) ─────────────────────────────
