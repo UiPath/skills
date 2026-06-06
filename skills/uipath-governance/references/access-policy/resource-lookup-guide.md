@@ -24,7 +24,7 @@ All commands assume the user is already logged in (`uip login status --output js
 |------|---------|
 | `--output-filter <expr>` | JMESPath filter on the JSON response (e.g. `"Data[?contains(Name, 'Invoice')].Key"`). |
 | `--all-fields` | Returns the full DTO instead of the curated summary — use when you need a field not shown by default (e.g. confirming the exact `ProcessType` string). |
-| `--tenant <name>` | Override the tenant selected during `uip login`. Rarely needed. |
+| Active tenant | Resource Catalog lookup uses the tenant selected by `uip login` or `uip login tenant set <tenant>`. |
 
 > Default `--limit` for `uip or ... list` is 50 (max typically 1000); `uip gov access-policy list` defaults to 20.
 
@@ -220,15 +220,15 @@ Resource Catalog tags are tenant-scoped labels that feed `selectors[].tags.value
 uip admin rcs tag list --output json
 ```
 
-With no `--tenant`, the command targets the tenant in the current `uip login` context — and that is **also** the tenant the access policy will be authored in (the policy's `tenantId` is read from `~/.uipath/.auth`). This default is the only mode that proves a tag will resolve at evaluation time. Run it before approving any Spec or update that introduces a tag the user named; if the tag is missing from `Data.value[].displayName`, prompt the user to pick a returned tag, or to add the missing one to the Resource Catalog of the policy's tenant before retrying. Never invent a tag, and never silently substitute a near-match.
+The command targets the active tenant in the current `uip login` context — and that is **also** the tenant the access policy will be authored in (the policy's `tenantId` is read from `~/.uipath/.auth`). This is the only mode that proves a tag will resolve at evaluation time. Run it before approving any Spec or update that introduces a tag the user named; if the tag is missing from `Data.value[].displayName`, prompt the user to pick a returned tag, or to add the missing one to the Resource Catalog of the policy's tenant before retrying. Never invent a tag, and never silently substitute a near-match.
 
 | Flag | Required? | Purpose |
 |------|-----------|---------|
 | `--type Label\|KeyValue` | Optional | Defaults to `Label` (the type used by `tags.values[]` in `ToolUsePolicy` access policies). Pass `KeyValue` only when the user is asking about key/value tags, which the access-policy schema does **not** consume. |
 | `--starts-with <PREFIX>` | Optional | Server-side prefix filter (case-insensitive on `normalizedName`). Use whenever the user named a tag substring ("anything starting with prod"). |
 | `--limit <N>` | Optional | Page size (default `100`). |
-| `--offset <N>` | Optional | Row offset (default `0`). |
-| `--tenant <NAME>` | Optional | **Targets a different tenant in the same organization.** Do NOT pass this when verifying tags for the policy under construction — see [Tenant alignment](#tenant-alignment) below. |
+| `--skip <N>` | Optional | Row offset (default `0`). |
+| Active tenant | Required context | The command targets the tenant selected by `uip login` / `uip login tenant set <tenant>`. Do not use hidden per-command `--tenant` overrides when verifying tags for the policy under construction — see [Tenant alignment](#tenant-alignment) below. |
 
 ### Response shape
 
@@ -252,8 +252,8 @@ With no `--tenant`, the command targets the tenant in the current `uip login` co
 
 The access-policy `tenantId` is read from `~/.uipath/.auth` (`UIPATH_TENANT_ID`) and pinned at `create` time — the policy can only ever resolve tags from **that** tenant at evaluation.
 
-- **Default (no `--tenant`)** — verify tags for the in-flight policy. Use this for every Phase 1 / Phase 2 confirmation prompt.
-- **`--tenant <OTHER_NAME>`** — comparison only (e.g. "do these tag names also exist in our staging tenant?"). Never use a result from another tenant as evidence that a tag will work in the policy's tenant. If the user explicitly asks to check a different tenant, run the call but surface a one-line warning: `Tags from <OTHER_NAME> do not affect a policy authored in <POLICY_TENANT>; copy the tag in the Resource Catalog of <POLICY_TENANT> if it is missing there.`
+- **Active policy tenant** — verify tags for the in-flight policy. Use this for every Phase 1 / Phase 2 confirmation prompt.
+- **Other tenant comparison** — if the user explicitly asks to compare another tenant (e.g. "do these tag names also exist in staging?"), switch with `uip login tenant set <OTHER_NAME>`, run the lookup, then switch back to the policy tenant before continuing. Surface a one-line warning: `Tags from <OTHER_NAME> do not affect a policy authored in <POLICY_TENANT>; copy the tag in the Resource Catalog of <POLICY_TENANT> if it is missing there.`
 
 To recover the policy's tenant name (for the warning above) without echoing the bearer token:
 
@@ -283,7 +283,7 @@ grep "^UIPATH_TENANT_NAME=" ~/.uipath/.auth | cut -d= -f2
 | Details on a specific process UUID | `uip or processes get "<UUID>" --output json` |
 | A user UUID by username / email | `uip admin users list --search "<TERM>" --output json` — paste the matched row's `id` into `actorRule.values[]`. |
 | The currently authenticated user's UUID | Ask the user to confirm their email / display name (no `current` subcommand on `uip admin`), then `uip admin users list --search "<TERM>" --output json`. |
-| A Resource Catalog tag name (for `tags.values[]`) | `uip admin rcs tag list --output json` — paste each row's `displayName` into `tags.values[]`. Do NOT pass `--tenant` when verifying tags for the policy under construction (see [§ 4 Tenant alignment](#tenant-alignment)). |
+| A Resource Catalog tag name (for `tags.values[]`) | `uip admin rcs tag list --output json` — paste each row's `displayName` into `tags.values[]`. Do not use hidden per-command tenant overrides when verifying tags for the policy under construction (see [§ 4 Tenant alignment](#tenant-alignment)). |
 | A robot's identity UUID (for `actorRule`, `type: "User"`) | `uip admin robot-accounts list --search "<NAME>" --output json` — paste the matched row's `id` into `actorRule.values[]`. Same UUID space as `uip admin users`; emit as `type: "User"`. |
 | A group UUID | `uip admin groups list --output json` — filter client-side on `displayName`; paste `id` into `actorRule.values[]` (see [§ 3 Groups](#groups-uip-admin-fallback)). Falls back to an Open question only if the lookup returns nothing. |
 | An external application UUID | **Not supported** by access policies today (Critical Rule #16) — route to a `User` or `Group` workaround |

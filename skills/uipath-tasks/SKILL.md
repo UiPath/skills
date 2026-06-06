@@ -45,7 +45,7 @@ uip login tenant list --output json
 uip login tenant set MyTenant
 ```
 
-> **Critical:** The `--tenant` flag on `tasks` commands does NOT switch the active session tenant.
+> **Critical:** Do not pass `--tenant` on `tasks` commands. Tenant-scoped commands use the active tenant selected by `uip login` or `uip login tenant set <tenant>`. Legacy hidden `--tenant` overrides only exist for backwards compatibility and emit a deprecation warning.
 > The environment is determined by `UIPATH_URL` in the auth file — always confirm with `login status` before running `tasks` commands.
 
 ---
