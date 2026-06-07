@@ -2,13 +2,12 @@
 /**
  * build-dashboard.mjs — Dashboard build pipeline
  *
- * Accepts an intent.json, edit-intent.json, or legacy plan.json as a file
- * path argument and generates a complete React dashboard project.
+ * Accepts an intent.json or edit-intent.json as a file path argument and
+ * generates a complete React dashboard project.
  *
  * Input routing:
- *   intent.json     (has "metrics" field)  → runDashboardBuild()
+ *   intent.json      (has "metrics" field) → runDashboardBuild()
  *   edit-intent.json (has "op" field)      → runIncrementalEdit()
- *   legacy plan.json (has "widgets" field) → runLegacyPlanBuild()
  *
  * Usage:
  *   node build-dashboard.mjs <path-to-json>
@@ -406,13 +405,20 @@ function widgetLayoutGroup(template) {
 
 /**
  * Inject generated import and route blocks into App.tsx markers.
+ * Only injects routes for widgets that have a view file (T1 and T3 — not T2).
  * @param {string} projectPath
  * @param {string[]} widgetNames
- * @param {string[]} viewNames
+ * @param {Record<string, { tier: string }>} allWidgetHashes
  */
-function injectAppRoutes(projectPath, widgetNames, viewNames) {
+function injectAppRoutes(projectPath, widgetNames, allWidgetHashes) {
   const appPath = join(projectPath, 'src', 'App.tsx')
   let content = readFileSync(appPath, 'utf8')
+
+  // Only inject routes for widgets that have a view file (not T2)
+  const viewNames = widgetNames.filter(n => {
+    const info = allWidgetHashes[n]
+    return info?.tier !== 'T2'
+  })
 
   const imports = [
     `import { Dashboard } from '@/dashboard/Dashboard'`,
@@ -659,6 +665,35 @@ export function buildT3WidgetFile(metric, timeRange = '30d') {
   return content
 }
 
+/**
+ * Convert a WidgetSpec to the substitution map used by applyTemplate.
+ * @param {WidgetSpec} spec
+ * @returns {Record<string, string>}
+ */
+function specToSubs(spec) {
+  return {
+    COMPONENT_NAME: spec.componentName,
+    TITLE: spec.title,
+    DESCRIPTION: spec.description,
+    DETAIL_ROUTE: spec.detailRoute,
+    ICON: spec.icon,
+    DATA_HOOK: spec.dataHook,
+    DATA_SELECTOR: spec.dataSelector,
+    X_KEY: spec.xKey,
+    Y_KEY: spec.yKey,
+    VALUE_EXPRESSION: spec.valueExpression,
+    COLUMNS: spec.columns,
+    DELTA_DIR: spec.deltaDir,
+    DELTA_TEXT: spec.deltaText,
+    SERIES: spec.series,
+    PIVOT_EXPRESSION: spec.pivotExpression,
+    SDK_IMPORT: '',
+    SDK_SERVICE: '',
+    SDK_CALL: '',
+    SDK_RESULT_TYPE: '',
+  }
+}
+
 // ── Build pipelines ────────────────────────────────────────────────────────────
 
 /**
@@ -774,24 +809,7 @@ async function runDashboardBuild(intent, intentPath) {
       if (tier === 'T1') {
         const spec = buildT1WidgetSpec(metric, entry, timeRange)
         componentName = spec.componentName
-        widgetContent = applyTemplate(spec.template, {
-          COMPONENT_NAME: spec.componentName,
-          TITLE: spec.title,
-          DESCRIPTION: spec.description,
-          DETAIL_ROUTE: spec.detailRoute,
-          ICON: spec.icon,
-          DATA_HOOK: spec.dataHook,
-          DATA_SELECTOR: spec.dataSelector,
-          X_KEY: spec.xKey,
-          Y_KEY: spec.yKey,
-          VALUE_EXPRESSION: spec.valueExpression,
-          COLUMNS: spec.columns,
-          DELTA_DIR: spec.deltaDir,
-          DELTA_TEXT: spec.deltaText,
-          SERIES: spec.series,
-          PIVOT_EXPRESSION: spec.pivotExpression,
-          SDK_IMPORT: '', SDK_SERVICE: '', SDK_CALL: '', SDK_RESULT_TYPE: '',
-        })
+        widgetContent = applyTemplate(spec.template, specToSubs(spec))
         widgetSpecs[componentName] = {
           componentName,
           title: spec.title,
@@ -801,7 +819,7 @@ async function runDashboardBuild(intent, intentPath) {
           columns: spec.columns,
         }
       } else {
-        // T2
+        // T2 — use SDK directly; no detail view needed (widget already shows tabular data)
         const spec = buildT2WidgetSpec(metric, entry)
         componentName = spec.componentName
         widgetContent = applyTemplate('sdk-data-table', {
@@ -820,14 +838,7 @@ async function runDashboardBuild(intent, intentPath) {
           DATA_HOOK: '', DATA_SELECTOR: spec.dataSelector.replace(/\bdata\b/g, 'result'), X_KEY: '', Y_KEY: '',
           VALUE_EXPRESSION: '', SERIES: '', PIVOT_EXPRESSION: '',
         })
-        widgetSpecs[componentName] = {
-          componentName,
-          title: spec.title,
-          description: spec.description,
-          dataHook: `useInsights('${entry.service}.getAll', {})`,
-          dataSelector: spec.dataSelector ?? '[]',
-          columns: spec.columns,
-        }
+        // T2 widgets are already tables — no separate detail view (skip widgetSpecs)
       }
 
       const resolvedTemplate = tier === 'T1' ? entry.template : (metric.displayAs ?? entry.defaultDisplayAs)
@@ -839,65 +850,61 @@ async function runDashboardBuild(intent, intentPath) {
       emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
     }))
 
-    // T3 widgets — sequential (may require agent retry)
+    // T3 widgets — sequential with exit-2 retry signal
     for (const metric of t3Metrics) {
-      let attempts = 0
-      let success = false
-      while (attempts < 3 && !success) {
-        attempts++
-        const currentIntent = JSON.parse(readFileSync(intentPath, 'utf8'))
-        const currentMetric = currentIntent.metrics.find(m => m.name === metric.name) ?? metric
-        let widgetContent
-        try {
-          widgetContent = buildT3WidgetFile(currentMetric, timeRange)
-        } catch (e) {
-          emit('T3_FAILED', { widget: metric.name, reason: e.message })
-          fail(`T3 widget "${metric.name}" failed: ${e.message}`)
-        }
-        const componentName = toPascalCase(metric.name)
-        const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
-        writeAtomic(widgetPath, widgetContent)
+      const currentIntent = JSON.parse(readFileSync(intentPath, 'utf8'))
+      const currentMetric = currentIntent.metrics.find(m => m.name === metric.name) ?? metric
 
-        try {
-          execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
-          const t3Template = metric.displayAs ?? 'ranked-table'
-          widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: 'T3', metric: metric.name, template: t3Template }
-          widgetMeta.push({ componentName, template: t3Template })
-          widgetSpecs[componentName] = {
-            componentName,
-            title: metric.title ?? componentName,
-            description: metric.description ?? '',
-            dataHook: `useInsights('custom.${metric.name}', {})`,
-            dataSelector: '[]',
-            columns: undefined,
-          }
-          widgetIndex++
-          emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
-          success = true
-        } catch (e) {
-          const errors = (e.stdout?.toString() ?? '').split('\n').filter(l => l.includes('error TS')).slice(0, 5)
-          if (attempts >= 3) {
-            emit('T3_FAILED', { widget: metric.name, errors, attempts })
-            fail(`T3 widget "${metric.name}" failed after 3 attempts`)
-          }
-          emit('T3_RETRY', { widget: metric.name, errors, intentPath, retryCount: attempts })
-          log(`⚠ T3 "${metric.name}" has TypeScript errors (attempt ${attempts}/3). Update fnBody in ${intentPath} and re-run.`)
-          process.exit(2)
-        }
+      let widgetContent
+      try {
+        widgetContent = buildT3WidgetFile(currentMetric, timeRange)
+      } catch (e) {
+        emit('T3_FAILED', { widget: metric.name, reason: e.message })
+        fail(`T3 widget "${metric.name}" could not be generated: ${e.message}`)
       }
+
+      const componentName = toPascalCase(metric.name)
+      const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
+      writeAtomic(widgetPath, widgetContent)
+
+      try {
+        execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
+      } catch (e) {
+        const errors = (e.stdout?.toString() ?? '').split('\n').filter(l => l.includes('error TS')).slice(0, 5)
+        // Exit code 2 signals the agent to fix fnBody in intent.json and re-run
+        emit('T3_RETRY', { widget: metric.name, errors, intentPath })
+        log(`⚠ T3 "${metric.name}" has TypeScript errors. Fix fnBody in ${intentPath} and re-run.`)
+        process.exit(2)
+      }
+
+      const t3Template = metric.template ?? metric.displayAs ?? 'ranked-table'
+      widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: 'T3', metric: metric.name, template: t3Template }
+      widgetMeta.push({ componentName, template: t3Template })
+      widgetSpecs[componentName] = {
+        componentName,
+        title: metric.title ?? componentName,
+        description: metric.description ?? '',
+        dataHook: `useInsights('custom.${metric.name}', {})`,
+        dataSelector: '[]',
+        columns: undefined,
+      }
+      widgetIndex++
+      emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
     }
 
     // Step 5 — Generate Dashboard.tsx + index.ts
     generateDashboardFiles(P, widgetMeta, dashboardName)
 
-    // Step 5a — Generate view files for all widgets
+    // Step 5a — Generate view files (T1 and T3 only — T2 widgets already show tabular data)
     for (const [componentName, spec] of Object.entries(widgetSpecs)) {
+      const info = widgetHashes[componentName]
+      if (info?.tier === 'T2') continue
       const viewContent = generateViewFile(spec)
       writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
     }
 
     // Step 5b — Inject imports and routes into App.tsx
-    injectAppRoutes(P, Object.keys(widgetHashes), Object.keys(widgetHashes))
+    injectAppRoutes(P, Object.keys(widgetHashes), widgetHashes)
 
     // Step 6 — Full tsc
     try {
@@ -915,7 +922,7 @@ async function runDashboardBuild(intent, intentPath) {
     const statePath = join(stateDir, 'state.json')
     const existingState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {}
     const newState = {
-      schemaVersion: 2,
+      schemaVersion: 1,
       app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0' },
       env: cloudUrl.includes('alpha') ? 'alpha' : cloudUrl.includes('staging') ? 'staging' : 'prod',
       org: orgName, tenant: tenantName, cloudUrl,
@@ -983,15 +990,7 @@ async function runIncrementalEdit(editIntent, intentPath) {
     if (tier === 'T1') {
       const spec = buildT1WidgetSpec(metric, entry, timeRange)
       componentName = spec.componentName
-      widgetContent = applyTemplate(spec.template, {
-        COMPONENT_NAME: spec.componentName, TITLE: spec.title, DESCRIPTION: spec.description,
-        DETAIL_ROUTE: spec.detailRoute, ICON: spec.icon, DATA_HOOK: spec.dataHook,
-        DATA_SELECTOR: spec.dataSelector, X_KEY: spec.xKey, Y_KEY: spec.yKey,
-        VALUE_EXPRESSION: spec.valueExpression, COLUMNS: spec.columns,
-        DELTA_DIR: spec.deltaDir, DELTA_TEXT: spec.deltaText,
-        SERIES: spec.series, PIVOT_EXPRESSION: spec.pivotExpression,
-        SDK_IMPORT: '', SDK_SERVICE: '', SDK_CALL: '', SDK_RESULT_TYPE: '',
-      })
+      widgetContent = applyTemplate(spec.template, specToSubs(spec))
     } else if (tier === 'T3') {
       componentName = toPascalCase(metric.name)
       widgetContent = buildT3WidgetFile(metric)
@@ -1040,17 +1039,42 @@ async function runIncrementalEdit(editIntent, intentPath) {
     if (tier === 'T1') {
       const { entry } = resolveMetric(metricRef)
       const spec = buildT1WidgetSpec(metricRef, entry, delta?.timeRange ?? timeRange)
-      const widgetContent = applyTemplate(spec.template, {
-        COMPONENT_NAME: spec.componentName, TITLE: spec.title, DESCRIPTION: spec.description,
-        DETAIL_ROUTE: spec.detailRoute, ICON: spec.icon, DATA_HOOK: spec.dataHook,
-        DATA_SELECTOR: spec.dataSelector, X_KEY: spec.xKey, Y_KEY: spec.yKey,
-        VALUE_EXPRESSION: spec.valueExpression, COLUMNS: spec.columns,
-        DELTA_DIR: spec.deltaDir, DELTA_TEXT: spec.deltaText,
-        SERIES: spec.series, PIVOT_EXPRESSION: spec.pivotExpression,
-        SDK_IMPORT: '', SDK_SERVICE: '', SDK_CALL: '', SDK_RESULT_TYPE: '',
-      })
+      const widgetContent = applyTemplate(spec.template, specToSubs(spec))
       writeAtomic(widgetPath, widgetContent)
       if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: entry.template }
+    } else if (tier === 'T2') {
+      const { entry } = resolveMetric(metricRef)
+      const spec = buildT2WidgetSpec(metricRef, entry)
+      const widgetContent = applyTemplate('sdk-data-table', {
+        COMPONENT_NAME: spec.componentName, TITLE: spec.title, DESCRIPTION: spec.description,
+        DETAIL_ROUTE: spec.detailRoute, ICON: spec.icon, SDK_IMPORT: spec.sdkImport,
+        SDK_SERVICE: spec.sdkService, SDK_CALL: 'getAll({})',
+        SDK_RESULT_TYPE: 'any',
+        COLUMNS: spec.columns, DELTA_DIR: spec.deltaDir ?? 'neutral', DELTA_TEXT: spec.deltaText ?? '',
+        DATA_HOOK: '', DATA_SELECTOR: spec.dataSelector.replace(/\bdata\b/g, 'result'), X_KEY: '', Y_KEY: '', VALUE_EXPRESSION: '', SERIES: '', PIVOT_EXPRESSION: '',
+      })
+      writeAtomic(widgetPath, widgetContent)
+      if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: spec.template ?? entry.defaultDisplayAs }
+    } else if (tier === 'T3') {
+      const widgetContent = buildT3WidgetFile(metricRef, timeRange)
+      writeAtomic(widgetPath, widgetContent)
+      const t3Template = metricRef.template ?? metricRef.displayAs ?? 'ranked-table'
+      if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: t3Template }
+    }
+  } else if (op === 'REBUILD') {
+    // Rebuild all widgets from existing state entries
+    for (const [componentName, info] of Object.entries(state.widgets ?? {})) {
+      if (info.tier === 'T1') {
+        const rebuildMetric = { name: info.metric, tier: info.tier }
+        const { entry } = resolveMetric(rebuildMetric)
+        const spec = buildT1WidgetSpec(rebuildMetric, entry, timeRange)
+        const widgetContent = applyTemplate(spec.template, specToSubs(spec))
+        writeAtomic(join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`), widgetContent)
+        state.widgets[componentName] = { hash: hashContent(widgetContent), tier: 'T1', metric: info.metric, template: info.template }
+      } else {
+        // T2 and T3 rebuilds require params/fnBody not stored in state — skip with warning
+        log(`⚠ Cannot rebuild ${info.tier} widget "${componentName}" from state alone — params/fnBody not persisted. Re-run full build with intent.json.`)
+      }
     }
   }
 
@@ -1075,224 +1099,12 @@ async function runIncrementalEdit(editIntent, intentPath) {
   emit('INCREMENTAL_READY', { op, widget: target ?? toPascalCase(metric?.name ?? '') })
 }
 
-/**
- * Handle the legacy plan.json format for backward compatibility.
- * Accepts the full plan object as-is — no schema changes.
- * @param {object} plan - Legacy plan.json object
- * @returns {Promise<void>}
- */
-async function runLegacyPlanBuild(plan) {
-  const {
-    projectDir,
-    dashboardName,
-    routingName,
-    orgName,
-    tenantName,
-    cloudUrl,
-    apiUrl,
-    tenantId,
-    clientId = '',               // external OAuth app client ID
-    files = {},                  // { 'relative/path': 'file content' } — agent-authored files
-    widgets: planWidgets = [],   // widget config array — script generates TypeScript via templates
-    appTsxImports,
-    appTsxRoutes,
-  } = plan
-
-  if (!projectDir) fail('plan.projectDir is required')
-  if (!routingName) fail('plan.routingName is required')
-
-  const P = resolve(projectDir)
-
-  // Step 1 — Copy scaffold (cross-platform Node.js, no cp -r)
-  log('⚙ Copying scaffold…')
-  if (!existsSync(SCAFFOLD_DIR)) fail(`Scaffold not found at ${SCAFFOLD_DIR}`)
-  copyDir(SCAFFOLD_DIR, P)
-
-  // Remove stale node_modules if present in scaffold (prevents npm ci ENOTEMPTY)
-  try { rmSync(join(P, 'node_modules'), { recursive: true, force: true }) } catch { /* ignore */ }
-
-  // Step 2 — Write .env.local
-  log('⚙ Writing environment config…')
-  writeAtomic(join(P, '.env.local'), [
-    `VITE_UIPATH_CLOUD_URL=${cloudUrl}`,
-    `VITE_UIPATH_BASE_URL=${apiUrl}`,
-    `VITE_UIPATH_ORG_NAME=${orgName}`,
-    `VITE_UIPATH_TENANT_NAME=${tenantName}`,
-    `VITE_INSIGHTS_TENANT_ID=${tenantId}`,
-    `VITE_UIPATH_CLIENT_ID=${clientId}`,
-    `VITE_UIPATH_SCOPE=OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights Insights.RealTimeData`,
-  ].join('\n'))
-
-  // Update uipath.json with clientId from plan
-  const uipathJsonPath = join(P, 'uipath.json')
-  if (existsSync(uipathJsonPath) && clientId) {
-    const uj = JSON.parse(readFileSync(uipathJsonPath, 'utf8'))
-    uj.clientId = clientId
-    writeAtomic(uipathJsonPath, JSON.stringify(uj, null, 2))
-  }
-
-  // Warn if clientId is missing — dashboard auth will fail at runtime without it
-  if (!clientId) {
-    emit('AUTH_MISSING', { var: 'clientId', message: 'No external OAuth app client ID provided. Dashboard will fail to authenticate in the browser. Run Phase 4.5 to provision one.' })
-    log('⚠ Warning: clientId is empty — dashboard auth will not work. See Phase 4.5 in build plugin docs.')
-  }
-
-  // Step 3 — Pre-warm guarantee: ensure dependencies installed before any code gen
-  const LOCK_SIGNAL = join(P, 'node_modules', '.package-lock.json')
-  const PREWARM_LOCK = join(P, '.prewarm.lock')
-  if (!existsSync(LOCK_SIGNAL)) {
-    if (existsSync(PREWARM_LOCK)) {
-      log('⏳ Waiting for pre-warm to complete…')
-      waitForPrewarm(P)
-    } else {
-      log('⚙ Installing dependencies…')
-      await runPrewarm(P)
-    }
-  } else {
-    emit('PREWARM_DONE')
-    log('✓ Dependencies ready (pre-warm)')
-  }
-
-  // Step 4 — Write agent-authored files (files map — Dashboard.tsx, index.ts, etc.)
-  log('⚙ Writing dashboard files…')
-  for (const [relativePath, content] of Object.entries(files)) {
-    writeAtomic(join(P, relativePath), content)
-  }
-
-  // Step 4b — Process widgets array via template substitution
-  const generatedWidgetNames = []
-
-  if (planWidgets.length > 0) {
-    log(`⚙ Generating ${planWidgets.length} widget(s) from templates…`)
-  }
-
-  for (const widget of planWidgets) {
-    const { componentName, template } = widget
-    if (!componentName) fail(`Widget entry missing required field: componentName`)
-    if (!template) fail(`Widget "${componentName}" missing required field: template`)
-
-    const subs = {
-      COMPONENT_NAME: componentName,
-      TITLE: widget.title ?? componentName,
-      DESCRIPTION: widget.description ?? '',
-      DETAIL_ROUTE: widget.detailRoute ?? `/${componentName.toLowerCase()}`,
-      ICON: widget.icon ?? 'Activity',
-      DATA_HOOK: widget.dataHook ?? `useInsights('agents.getAgents', { startTime: THIRTY_DAYS_AGO, endTime: NOW })`,
-      DATA_SELECTOR: widget.dataSelector ?? '[]',
-      X_KEY: widget.xKey ?? 'date',
-      Y_KEY: widget.yKey ?? 'value',
-      VALUE_EXPRESSION: widget.valueExpression ?? "'—'",
-      COLUMNS: widget.columns ?? '[{key:"name",label:"Name"},{key:"value",label:"Value",align:"right" as const}]',
-      DATA_KEY: widget.dataKey ?? 'value',
-      NAME_KEY: widget.nameKey ?? 'name',
-      DELTA_DIR: widget.deltaDir ?? 'neutral',
-      DELTA_TEXT: widget.deltaText ?? '',
-      SERIES: widget.series ?? '[{key:"value",color:"hsl(var(--chart-1))"}]',
-      PIVOT_EXPRESSION: widget.pivotExpression ?? 'rawData',
-      SDK_IMPORT: widget.sdkImport ?? '',
-      SDK_SERVICE: widget.sdkService ?? '',
-      SDK_CALL: widget.sdkCall ?? '',
-      SDK_RESULT_TYPE: widget.sdkResultType ?? '{ items?: Array<Record<string, unknown>> }',
-    }
-
-    const widgetContent = applyTemplate(template, subs)
-    writeAtomic(join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`), widgetContent)
-
-    const viewContent = generateViewFile(widget)
-    writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
-
-    generatedWidgetNames.push(componentName)
-  }
-
-  // Step 5 — Update App.tsx route markers
-  if (appTsxImports || appTsxRoutes) {
-    const appPath = join(P, 'src', 'app', 'App.tsx')
-    // Fall back to src/App.tsx if src/app/App.tsx doesn't exist
-    const appFile = existsSync(appPath) ? appPath : join(P, 'src', 'App.tsx')
-    let appContent = readFileSync(appFile, 'utf8')
-
-    if (appTsxImports) {
-      appContent = appContent.replace(
-        /\/\/ GENERATED_IMPORTS_START[\s\S]*?\/\/ GENERATED_IMPORTS_END/,
-        `// GENERATED_IMPORTS_START\n${appTsxImports}// GENERATED_IMPORTS_END`
-      )
-    }
-    if (appTsxRoutes) {
-      appContent = appContent.replace(
-        /\{\/\* GENERATED_ROUTES_START \*\/\}[\s\S]*?\{\/\* GENERATED_ROUTES_END \*\/\}/,
-        `{/* GENERATED_ROUTES_START */}\n${appTsxRoutes}{/* GENERATED_ROUTES_END */}`
-      )
-    }
-    writeAtomic(appFile, appContent)
-  }
-
-  // Step 6 — tsc --noEmit
-  log('⚙ Validating TypeScript…')
-  try {
-    execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
-    log('✓ TypeScript clean')
-  } catch (e) {
-    const err = e.stdout?.toString() || e.stderr?.toString() || String(e)
-    fail(`TypeScript errors:\n${err}`)
-  }
-
-  // Step 7 — Write state.json
-  const stateDir = join(P, '.dashboard')
-  mkdirSync(stateDir, { recursive: true })
-  const statePath = join(stateDir, 'state.json')
-  const existingState = existsSync(statePath)
-    ? JSON.parse(readFileSync(statePath, 'utf8'))
-    : {}
-
-  const filesWidgetNames = Object.keys(files)
-    .filter(p => p.startsWith('src/dashboard/widgets/') && p.endsWith('.tsx'))
-    .map(p => p.replace('src/dashboard/widgets/', '').replace('.tsx', ''))
-  const allWidgetNames = [...new Set([...filesWidgetNames, ...generatedWidgetNames])]
-
-  const newState = {
-    ...existingState,
-    app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0' },
-    env: cloudUrl.includes('alpha') ? 'alpha' : cloudUrl.includes('staging') ? 'staging' : 'prod',
-    org: orgName,
-    tenant: tenantName,
-    cloudUrl,
-    widgets: allWidgetNames,
-    deployment: existingState.deployment ?? { systemName: null, folderKey: null, appUrl: null, lastDeployedAt: null },
-  }
-  writeAtomic(statePath, JSON.stringify(newState, null, 2))
-
-  // Step 8 — Start dev server
-  log('⚙ Starting preview server…')
-  const isWindows = process.platform === 'win32'
-  const server = spawn('npm', ['run', 'dev'], {
-    cwd: P,
-    detached: true,
-    stdio: 'pipe',
-    shell: isWindows,   // required on Windows — npm is npm.cmd
-  })
-  server.on('error', () => {})  // suppress unhandled error if server fails to start
-  server.unref()
-
-  const port = await detectDevServerPort(5173, 5000)
-
-  const result = {
-    success: true,
-    projectDir: P,
-    port,
-    previewUrl: `http://localhost:${port}`,
-    widgets: allWidgetNames,
-    dashboardName,
-  }
-  log('\nBUILD_RESULT:' + JSON.stringify(result))
-  process.exit(0)  // exit before server's detached process can throw
-}
-
 // ── Entry point ────────────────────────────────────────────────────────────────
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 
   const planArg = process.argv[2]
-  if (!planArg) fail('Usage: node build-dashboard.mjs <plan.json>')
+  if (!planArg) fail('Usage: node build-dashboard.mjs <intent.json|edit-intent.json>')
 
   let plan
   try {
@@ -1302,17 +1114,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
 
   if (plan.metrics) {
-    // intent.json path
     const intentErrors = validateIntent(plan)
     if (intentErrors.length > 0) fail(`Invalid intent.json:\n${intentErrors.map(e => '  • ' + e).join('\n')}`)
     await runDashboardBuild(plan, planArg)
   } else if (plan.op) {
-    // edit-intent.json path
-    classifyEditIntent(plan)  // validates op before passing to runIncrementalEdit
+    classifyEditIntent(plan)
     await runIncrementalEdit(plan, planArg)
   } else {
-    // Legacy plan.json path
-    await runLegacyPlanBuild(plan)
+    fail('Unrecognised input format. Expected intent.json (has "metrics") or edit-intent.json (has "op").')
   }
 
 } // end entry-point guard

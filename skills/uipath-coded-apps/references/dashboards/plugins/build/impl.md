@@ -149,6 +149,9 @@ Parse each output line as it arrives:
 
 | Event line | What to do |
 |-----------|-----------|
+| `PREWARM_START` | npm ci is starting (background) — no action needed |
+| `PREWARM_DONE` | Dependencies ready — build will proceed |
+| `PREWARM_FAILED:{"exitCode":N,"stderr":"..."}` | npm install failed — surface error to user, stop |
 | `WIDGET_READY:{"name":"X","index":N,"total":M}` | Print `✓ X ready (N/M)` |
 | `T3_RETRY:{"widget":"X","errors":[...],"intentPath":"..."}` | Update `fnBody` in `intent.json`, re-run script (exit code 2 = retry needed) |
 | `TSC_PASS` | Print `✓ TypeScript clean` |

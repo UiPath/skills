@@ -28,7 +28,7 @@ Agent writes this file. Build script reads it.
       "tier": "T3",
       "title": "Faulted Items by Queue",
       "displayAs": "ranked-table",
-      "columns": ["name", "pending"],
+      "columns": "[{key:\"name\",label:\"Name\"},{key:\"pending\",label:\"Pending\",align:\"right\" as const}]",
       "fnBody": "const r = await sdk.queues.getAll({ state: 'Faulted' })\nreturn r.items?.map(q => ({ name: q.name, pending: q.pendingCount })) ?? []"
     }
   ]
@@ -42,6 +42,8 @@ Agent writes this file. Build script reads it.
 | `timeRange` | `"1d"`, `"7d"`, `"30d"`, `"90d"` |
 | `metrics[].tier` | `"T1"`, `"T2"`, `"T3"` |
 | T2 `params.direction` | `"gt"`, `"lt"`, `"eq"`, `"gte"`, `"lte"`, `"neq"` |
+
+> **Note:** The `columns` field is a TypeScript ColumnDef array literal string, not a JSON array. Use the form `"[{key:\"name\",label:\"Name\"},{key:\"value\",label:\"Value\",align:\"right\" as const}]"`.
 
 ## External OAuth app (required for runtime auth)
 
