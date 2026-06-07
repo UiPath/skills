@@ -15,7 +15,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const DEFAULT_SCOPES = 'OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights.RealTimeData'
+const DEFAULT_SCOPES = 'OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights Insights.RealTimeData'
 const SCOPES = (import.meta.env.VITE_UIPATH_SCOPE as string) || DEFAULT_SCOPES
 
 function resolveConfig(): UiPathSDKConfig {

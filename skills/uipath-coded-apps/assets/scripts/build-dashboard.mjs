@@ -547,7 +547,7 @@ async function runDashboardBuild(intent, intentPath) {
       `VITE_UIPATH_TENANT_NAME=${tenantName}`,
       `VITE_INSIGHTS_TENANT_ID=${tenantId}`,
       `VITE_UIPATH_CLIENT_ID=${clientId}`,
-      `VITE_UIPATH_SCOPE=OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights.RealTimeData`,
+      `VITE_UIPATH_SCOPE=OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights Insights.RealTimeData`,
     ].join('\n'))
     const uipathJsonPath = join(P, 'uipath.json')
     if (existsSync(uipathJsonPath) && clientId) {
@@ -965,7 +965,7 @@ if (plan.metrics) {
     `VITE_UIPATH_TENANT_NAME=${tenantName}`,
     `VITE_INSIGHTS_TENANT_ID=${tenantId}`,
     `VITE_UIPATH_CLIENT_ID=${clientId}`,
-    `VITE_UIPATH_SCOPE=OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights.RealTimeData`,
+    `VITE_UIPATH_SCOPE=OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights Insights.RealTimeData`,
   ].join('\n'));
 
   // Update uipath.json with clientId from plan

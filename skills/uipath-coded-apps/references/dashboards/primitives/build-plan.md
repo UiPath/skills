@@ -53,9 +53,9 @@ The dashboard uses PKCE OAuth in the browser. It needs an external app registrat
 
 **Required OAuth scopes:**
 ```
-OR.Assets,OR.Assets.Read,OR.Jobs,OR.Jobs.Write,OR.Folders,OR.Folders.Read,
-OR.Buckets,OR.Buckets.Read,OR.Execution,OR.Execution.Read,OR.Tasks,OR.Tasks.Write,
-OR.Queues,OR.Queues.Read,OR.Users,OR.Users.Read,Insights.RealTimeData
+OR.Assets.Read,OR.Jobs,OR.Folders.Read,OR.Buckets.Read,
+OR.Execution.Read,OR.Tasks,OR.Queues.Read,OR.Users.Read,
+Insights,Insights.RealTimeData
 ```
 
 **Required redirect URIs (for local dev):**
