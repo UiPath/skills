@@ -1,0 +1,184 @@
+<mxGraphModel dx="1600" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="1">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- Background -->
+    <mxCell id="bg" value="" style="rounded=2;fillColor=#0f172a;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="0" y="0" width="1400" height="1000" as="geometry" />
+    </mxCell>
+
+    <!-- Title -->
+    <mxCell id="title" value="&lt;b&gt;Dashboard Skill — Sequence Flow&lt;/b&gt;&lt;br&gt;&lt;span style=&apos;font-size:12px;color:#94a3b8;&apos;&gt;From natural language to live dashboard&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=20;fontColor=#f1f5f9;" vertex="1" parent="1">
+      <mxGeometry x="0" y="16" width="1400" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- ══ PARTICIPANT HEADERS ══ -->
+    <mxCell id="p_user" value="👤&lt;br&gt;&lt;b&gt;User&lt;/b&gt;" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=2;fontColor=#c4b5fd;fontSize=13;" vertex="1" parent="1">
+      <mxGeometry x="60" y="80" width="100" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="p_agent" value="🧠&lt;br&gt;&lt;b&gt;Agent&lt;/b&gt;" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=13;" vertex="1" parent="1">
+      <mxGeometry x="260" y="80" width="100" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="p_docs" value="📄&lt;br&gt;&lt;b&gt;Docs + APIs&lt;/b&gt;" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#1c0a05;strokeColor=#d97706;strokeWidth=2;fontColor=#fbbf24;fontSize=13;" vertex="1" parent="1">
+      <mxGeometry x="480" y="80" width="120" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="p_build" value="⚙&lt;br&gt;&lt;b&gt;build-dashboard&lt;/b&gt;" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#0c1a2e;strokeColor=#38bdf8;strokeWidth=2;fontColor=#7dd3fc;fontSize=13;" vertex="1" parent="1">
+      <mxGeometry x="760" y="80" width="140" height="60" as="geometry" />
+    </mxCell>
+
+    <mxCell id="p_browser" value="🌐&lt;br&gt;&lt;b&gt;Browser&lt;/b&gt;" style="rounded=2;whiteSpace=wrap;html=1;fillColor=#052e16;strokeColor=#10b981;strokeWidth=2;fontColor=#34d399;fontSize=13;" vertex="1" parent="1">
+      <mxGeometry x="1120" y="80" width="100" height="60" as="geometry" />
+    </mxCell>
+
+    <!-- ══ LIFELINES ══ -->
+    <mxCell id="ll_user"    value="" style="dashed=1;strokeColor=#818cf8;strokeWidth=1;fillColor=none;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="110" y="140" /><mxPoint x="110" y="960" /></Array></mxGeometry></mxCell>
+    <mxCell id="ll_agent"   value="" style="dashed=1;strokeColor=#10b981;strokeWidth=1;fillColor=none;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="140" /><mxPoint x="310" y="960" /></Array></mxGeometry></mxCell>
+    <mxCell id="ll_docs"    value="" style="dashed=1;strokeColor=#d97706;strokeWidth=1;fillColor=none;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="540" y="140" /><mxPoint x="540" y="960" /></Array></mxGeometry></mxCell>
+    <mxCell id="ll_build"   value="" style="dashed=1;strokeColor=#38bdf8;strokeWidth=1;fillColor=none;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="830" y="140" /><mxPoint x="830" y="960" /></Array></mxGeometry></mxCell>
+    <mxCell id="ll_browser" value="" style="dashed=1;strokeColor=#10b981;strokeWidth=1;fillColor=none;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1170" y="140" /><mxPoint x="1170" y="960" /></Array></mxGeometry></mxCell>
+
+    <!-- ══ STEP 1: User sends request ══ -->
+    <mxCell id="s1_box" value="&lt;b style=&apos;color:#818cf8;&apos;&gt;1&lt;/b&gt;  User sends natural language request" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#64748b;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="20" y="176" width="360" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_arr" value="&quot;build me an agent health dashboard&quot;" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#818cf8;strokeWidth=2;fontColor=#818cf8;fontSize=11;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="110" y="200" /><mxPoint x="310" y="200" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- ══ STEP 2: Parallel blast ══ -->
+    <mxCell id="s2_bg" value="" style="rounded=2;fillColor=#1c0a05;strokeColor=#d97706;strokeWidth=1;opacity=60;" vertex="1" parent="1">
+      <mxGeometry x="280" y="218" width="320" height="112" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_lbl" value="&lt;b style=&apos;color:#fbbf24;&apos;&gt;2  Parallel blast (Turn 2 — single message)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#fbbf24;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="288" y="224" width="308" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s2a" value="7 reference docs" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#d97706;strokeWidth=1;fontColor=#d97706;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="252" /><mxPoint x="540" y="252" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s2b" value="uip login status" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#d97706;strokeWidth=1;fontColor=#d97706;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="272" /><mxPoint x="540" y="272" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s2c" value="npm ci --prewarm (background 🔄)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#d97706;strokeWidth=1;strokeDasharray=4;fontColor=#d97706;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="292" /><mxPoint x="830" y="292" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s2_ret" value="docs + auth context" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#d97706;strokeWidth=1;fontColor=#d97706;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="540" y="316" /><mxPoint x="310" y="316" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- ══ STEP 3: Plan ══ -->
+    <mxCell id="s3_lbl" value="&lt;b style=&apos;color:#10b981;&apos;&gt;3  Agent outputs plan (pure text, zero tool calls)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#10b981;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="120" y="354" width="460" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_arr" value="📋  Here's your Agent Health Dashboard — 4 widgets…" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#10b981;strokeWidth=2;fontColor=#10b981;fontSize=11;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="378" /><mxPoint x="110" y="378" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- ══ STEP 4: User confirms ══ -->
+    <mxCell id="s4_lbl" value="&lt;b style=&apos;color:#94a3b8;&apos;&gt;4  User reads plan (~15–30s) · npm ci completes in background&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#94a3b8;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="20" y="414" width="600" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_arr" value="&quot;build it&quot;" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#818cf8;strokeWidth=2;fontColor=#818cf8;fontSize=11;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="110" y="440" /><mxPoint x="310" y="440" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- ══ STEP 5: OAuth ══ -->
+    <mxCell id="s5_lbl" value="&lt;b style=&apos;color:#94a3b8;&apos;&gt;5  OAuth client check (0–1 tool call)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;fontColor:#94a3b8;fontSize:11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="120" y="458" width="400" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s5a" value="uip admin scopes list · create OAuth app" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=1;strokeDasharray=4;fontColor=#64748b;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="480" /><mxPoint x="540" y="480" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s5b" value="ClientId" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748b;strokeWidth=1;strokeDasharray=4;fontColor=#64748b;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="540" y="500" /><mxPoint x="310" y="500" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- ══ STEP 6: Build script ══ -->
+    <mxCell id="s6_lbl" value="&lt;b style=&apos;color:#38bdf8;&apos;&gt;6  Build script runs (one bash call)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#38bdf8;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="320" y="524" width="400" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="s6_arr" value="node build-dashboard.mjs intent.json" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#38bdf8;strokeWidth=2;fontColor=#38bdf8;fontSize=11;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="548" /><mxPoint x="830" y="548" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- ══ STEP 7: Build internals ══ -->
+    <mxCell id="s7_bg" value="" style="rounded=2;fillColor=#0c1117;strokeColor=#1e293b;strokeWidth=1;" vertex="1" parent="1">
+      <mxGeometry x="740" y="564" width="280" height="240" as="geometry" />
+    </mxCell>
+    <mxCell id="s7_lbl" value="&lt;b style=&apos;color:#38bdf8;&apos;&gt;7  Pipeline&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#38bdf8;fontSize=12;align=left;" vertex="1" parent="1">
+      <mxGeometry x="752" y="572" width="240" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s7a" value="Scaffold copy + deps ready (pre-warmed)" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#94a3b8;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="760" y="598" width="252" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s7b" value="T1/T2 widgets  →  parallel codegen" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#34d399;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="760" y="624" width="252" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s7c" value="T3 widgets  →  fnBody + tsc retry" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#fbbf24;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="760" y="650" width="252" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s7d" value="Dashboard.tsx + Routes + Views" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#94a3b8;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="760" y="676" width="252" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s7e" value="tsc --noEmit  ✓" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#6ee7b7;fontSize=11;fontStyle=1;align=left;" vertex="1" parent="1">
+      <mxGeometry x="760" y="702" width="252" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s7f" value="Vite dev server  :57173  (PID tracked)" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#7dd3fc;fontSize=11;fontStyle=1;align=left;" vertex="1" parent="1">
+      <mxGeometry x="760" y="728" width="252" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="s7g" value="state.json  ·  .dashboard/server.pid" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#64748b;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="760" y="754" width="252" height="22" as="geometry" />
+    </mxCell>
+
+    <!-- Progress events to agent -->
+    <mxCell id="s7_evt1" value="WIDGET_READY (×N)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#10b981;strokeWidth=1;fontColor=#10b981;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="830" y="640" /><mxPoint x="310" y="640" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s7_evt2" value="TSC_PASS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#10b981;strokeWidth=1;fontColor=#10b981;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="830" y="720" /><mxPoint x="310" y="720" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s7_evt3" value="BUILD_RESULT {success: true}" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#38bdf8;strokeWidth=2;fontColor=#38bdf8;fontSize=11;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="830" y="796" /><mxPoint x="310" y="796" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- ══ STEP 8: Open browser ══ -->
+    <mxCell id="s8_arr" value="open http://localhost:57173" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#10b981;strokeWidth=2;fontColor=#10b981;fontSize=11;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="820" /><mxPoint x="1170" y="820" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s8_lbl" value="Dashboard live ✓" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#10b981;strokeWidth=2;strokeDasharray=4;fontColor=#10b981;fontSize=11;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1170" y="844" /><mxPoint x="110" y="844" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- ══ STEP 9: Edit loop ══ -->
+    <mxCell id="s9_bg" value="&lt;b style=&apos;color:#818cf8;&apos;&gt;Incremental Edit Loop&lt;/b&gt;" style="rounded=2;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=1;fontColor=#c4b5fd;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="60" y="872" width="260" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s9_arr1" value="&quot;change error chart to 7 days&quot;" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#818cf8;strokeWidth=1;fontColor=#818cf8;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="110" y="900" /><mxPoint x="310" y="900" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s9_arr2" value="edit-intent.json → hot-reload ~2-5s" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#818cf8;strokeWidth=1;fontColor=#818cf8;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="310" y="920" /><mxPoint x="830" y="920" /></Array></mxGeometry>
+    </mxCell>
+    <mxCell id="s9_arr3" value="INCREMENTAL_READY" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#818cf8;strokeWidth=1;fontColor=#818cf8;fontSize=10;fillColor=none;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="830" y="940" /><mxPoint x="110" y="940" /></Array></mxGeometry>
+    </mxCell>
+
+    <!-- Step labels on left margin -->
+    <mxCell id="lbl_t" value="TURN&lt;br&gt;2" style="rounded=2;fillColor=#1c0a05;strokeColor=#d97706;fontColor=#fbbf24;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="620" y="222" width="40" height="100" as="geometry" />
+    </mxCell>
+    <mxCell id="lbl_t3" value="TURN&lt;br&gt;3" style="rounded=2;fillColor=#064e3b;strokeColor=#10b981;fontColor=#34d399;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="620" y="368" width="40" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="lbl_t4" value="TURN&lt;br&gt;4" style="rounded=2;fillColor=#1e1b4b;strokeColor=#818cf8;fontColor=#818cf8;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="620" y="430" width="40" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="lbl_t5" value="TURN&lt;br&gt;5" style="rounded=2;fillColor=#064e3b;strokeColor=#10b981;fontColor=#34d399;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="620" y="540" width="40" height="260" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>

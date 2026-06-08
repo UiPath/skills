@@ -1,0 +1,178 @@
+<mxGraphModel dx="1422" dy="762" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="1">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- Background -->
+    <mxCell id="bg" value="" style="rounded=2;fillColor=#0f172a;strokeColor=none;" vertex="1" parent="1">
+      <mxGeometry x="0" y="0" width="1200" height="900" as="geometry" />
+    </mxCell>
+
+    <!-- Title -->
+    <mxCell id="title" value="&lt;b&gt;Skill File Structure&lt;/b&gt;&lt;br&gt;&lt;span style=&apos;font-size:12px;color:#94a3b8;&apos;&gt;skills/uipath-coded-apps/&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=20;fontColor=#f1f5f9;" vertex="1" parent="1">
+      <mxGeometry x="40" y="24" width="500" height="52" as="geometry" />
+    </mxCell>
+
+    <!-- Legend -->
+    <mxCell id="leg_new" value="" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="820" y="32" width="20" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="leg_new_lbl" value="New file / directory" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#94a3b8;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="848" y="30" width="160" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="leg_upd" value="" style="rounded=1;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="820" y="60" width="20" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="leg_upd_lbl" value="Updated file" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#94a3b8;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="848" y="58" width="160" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="leg_exist" value="" style="rounded=1;fillColor=#1e293b;strokeColor=#334155;" vertex="1" parent="1">
+      <mxGeometry x="820" y="88" width="20" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="leg_exist_lbl" value="Existing file (unchanged)" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#94a3b8;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="848" y="86" width="200" height="24" as="geometry" />
+    </mxCell>
+
+    <!-- ── LEFT COLUMN: assets/ ── -->
+
+    <!-- Skill Root -->
+    <mxCell id="root" value="📁 uipath-coded-apps/" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#f1f5f9;fontSize=14;fontStyle=1;align=left;" vertex="1" parent="1">
+      <mxGeometry x="40" y="96" width="320" height="28" as="geometry" />
+    </mxCell>
+    <mxCell id="skill_md" value="📄 SKILL.md" style="rounded=1;fillColor=#1e293b;strokeColor=#334155;fontColor=#94a3b8;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="60" y="132" width="280" height="32" as="geometry" />
+    </mxCell>
+
+    <!-- assets/ -->
+    <mxCell id="assets_dir" value="📁 assets/" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#e2e8f0;fontSize=13;fontStyle=1;align=left;" vertex="1" parent="1">
+      <mxGeometry x="60" y="180" width="280" height="24" as="geometry" />
+    </mxCell>
+
+    <!-- assets/scripts/ -->
+    <mxCell id="scripts_dir" value="📁 scripts/" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#cbd5e1;fontSize=12;align=left;" vertex="1" parent="1">
+      <mxGeometry x="88" y="212" width="240" height="22" as="geometry" />
+    </mxCell>
+
+    <mxCell id="build_mjs" value="⚙  build-dashboard.mjs  ★ CORE" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=12;align=left;spacingLeft=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="116" y="240" width="304" height="32" as="geometry" />
+    </mxCell>
+    <mxCell id="registry_json" value="⚙  capability-registry.json  ★" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=12;align=left;spacingLeft=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="116" y="280" width="304" height="32" as="geometry" />
+    </mxCell>
+
+    <mxCell id="tests_dir" value="📁 tests/" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#cbd5e1;fontSize=12;align=left;" vertex="1" parent="1">
+      <mxGeometry x="116" y="320" width="240" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="test_mjs" value="🧪 resolution.test.mjs  ★" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="144" y="348" width="276" height="32" as="geometry" />
+    </mxCell>
+
+    <!-- assets/templates/ -->
+    <mxCell id="templates_dir" value="📁 templates/dashboard/" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#cbd5e1;fontSize=12;align=left;" vertex="1" parent="1">
+      <mxGeometry x="88" y="400" width="240" height="22" as="geometry" />
+    </mxCell>
+
+    <mxCell id="scaffold_dir" value="📁 scaffold/  ★  (Vite + React + Tailwind project)" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="116" y="428" width="380" height="32" as="geometry" />
+    </mxCell>
+
+    <mxCell id="scaffold_sub" value="  src/ · hooks/useAuth.ts · useInsights.ts · lib/insights-client.ts" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#475569;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="144" y="462" width="380" height="22" as="geometry" />
+    </mxCell>
+
+    <mxCell id="widgets_dir" value="📁 widgets/  ★  (14 pre-tested .tsx templates)" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="116" y="492" width="380" height="32" as="geometry" />
+    </mxCell>
+    <mxCell id="t3_shell" value="   t3-shell.tsx.template  ★  (T3-SDK injection shell)" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#6ee7b7;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="144" y="526" width="360" height="22" as="geometry" />
+    </mxCell>
+
+    <!-- Divider -->
+    <mxCell id="div1" value="" style="line;strokeColor=#1e293b;strokeWidth=1;" vertex="1" parent="1">
+      <mxGeometry x="560" y="96" width="1" height="760" as="geometry" />
+    </mxCell>
+
+    <!-- ── RIGHT COLUMN: references/ ── -->
+    <mxCell id="refs_dir" value="📁 references/dashboards/" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#e2e8f0;fontSize=13;fontStyle=1;align=left;" vertex="1" parent="1">
+      <mxGeometry x="580" y="96" width="320" height="24" as="geometry" />
+    </mxCell>
+
+    <!-- CAPABILITY.md -->
+    <mxCell id="cap_md" value="📄 CAPABILITY.md  ↑" style="rounded=1;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=2;fontColor=#c4b5fd;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="600" y="132" width="340" height="32" as="geometry" />
+    </mxCell>
+    <mxCell id="cap_sub" value="  3-turn contract · path notes · pre-warm launch" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#475569;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="620" y="166" width="340" height="22" as="geometry" />
+    </mxCell>
+
+    <!-- plugins/ -->
+    <mxCell id="plugins_dir" value="📁 plugins/build/" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#cbd5e1;fontSize=12;align=left;" vertex="1" parent="1">
+      <mxGeometry x="600" y="200" width="240" height="22" as="geometry" />
+    </mxCell>
+    <mxCell id="impl_md" value="📄 impl.md  ↑" style="rounded=1;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=2;fontColor=#c4b5fd;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="628" y="228" width="312" height="32" as="geometry" />
+    </mxCell>
+    <mxCell id="impl_sub" value="  5-phase flow · plan format · event table" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#475569;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="648" y="262" width="320" height="22" as="geometry" />
+    </mxCell>
+
+    <!-- primitives/ -->
+    <mxCell id="prim_dir" value="📁 primitives/" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#cbd5e1;fontSize=12;align=left;" vertex="1" parent="1">
+      <mxGeometry x="600" y="300" width="240" height="22" as="geometry" />
+    </mxCell>
+
+    <mxCell id="tier_res" value="📄 tier-resolution.md  ★" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="628" y="328" width="312" height="32" as="geometry" />
+    </mxCell>
+    <mxCell id="tier_sub" value="  T1/T2/T3 decision tree · 28 InsightsKey values · fetch() pattern" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#475569;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="648" y="362" width="360" height="22" as="geometry" />
+    </mxCell>
+
+    <mxCell id="sdk_ref" value="📄 sdk-field-reference.md  ★" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="628" y="392" width="312" height="32" as="geometry" />
+    </mxCell>
+    <mxCell id="sdk_sub" value="  Import subpaths · response field names · SDK patterns" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#475569;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="648" y="426" width="360" height="22" as="geometry" />
+    </mxCell>
+
+    <mxCell id="detail_views" value="📄 detail-views.md  ★" style="rounded=1;fillColor=#064e3b;strokeColor=#10b981;strokeWidth=2;fontColor=#6ee7b7;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="628" y="456" width="312" height="32" as="geometry" />
+    </mxCell>
+
+    <mxCell id="build_plan" value="📄 build-plan.md  ↑" style="rounded=1;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=2;fontColor=#c4b5fd;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="628" y="496" width="312" height="32" as="geometry" />
+    </mxCell>
+    <mxCell id="build_plan_sub" value="  intent.json schema · columns as TS literal string" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#475569;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="648" y="530" width="360" height="22" as="geometry" />
+    </mxCell>
+
+    <mxCell id="state_file" value="📄 state-file.md  ↑" style="rounded=1;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=2;fontColor=#c4b5fd;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="628" y="560" width="312" height="32" as="geometry" />
+    </mxCell>
+
+    <mxCell id="auth_ctx" value="📄 auth-context.md  ↑" style="rounded=1;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=2;fontColor=#c4b5fd;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="628" y="600" width="312" height="32" as="geometry" />
+    </mxCell>
+
+    <mxCell id="incr_edit" value="📄 incremental-editor.md  ↑" style="rounded=1;fillColor=#1e1b4b;strokeColor=#818cf8;strokeWidth=2;fontColor=#c4b5fd;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="1">
+      <mxGeometry x="628" y="640" width="312" height="32" as="geometry" />
+    </mxCell>
+
+    <!-- aesthetic/ -->
+    <mxCell id="aes_dir" value="📁 aesthetic/  (layout-patterns.md · charting.md)" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#64748b;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="600" y="688" width="400" height="22" as="geometry" />
+    </mxCell>
+
+    <!-- Stats footer -->
+    <mxCell id="stats_bg" value="" style="rounded=2;fillColor=#1e293b;strokeColor=#334155;" vertex="1" parent="1">
+      <mxGeometry x="40" y="820" width="1120" height="52" as="geometry" />
+    </mxCell>
+    <mxCell id="s1" value="★  NEW FILES" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#10b981;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="60" y="828" width="140" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="s1v" value="build-dashboard.mjs · capability-registry.json · resolution.test.mjs&lt;br&gt;scaffold/ (35 files) · t3-shell.tsx.template · tier-resolution.md · sdk-field-reference.md · detail-views.md" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#6b7280;fontSize=11;align=left;" vertex="1" parent="1">
+      <mxGeometry x="200" y="828" width="940" height="36" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
