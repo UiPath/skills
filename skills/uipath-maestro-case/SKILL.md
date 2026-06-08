@@ -20,7 +20,7 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively (list
 - User asks to create new case management project but has no `sdd.md` (Phase 0 interview generates one)
 - User asks to create new case management project or definition
 - User asks to generate implementation tasks from `sdd.md` or convert spec to plan
-- User asks about case management JSON schema — nodes, edges, tasks, rules, SLA
+- User asks about case management JSON schema — nodes, transitions, tasks, rules, SLA
 - User wants to manage runtime case instances (list, pause, resume, cancel) — see [references/case-commands.md](references/case-commands.md)
 
 **Do not use for:** `.xaml` → `uipath-rpa`. `.flow` → `uipath-maestro-flow`. Standalone agents/APIs/processes outside case context → corresponding UiPath skill.

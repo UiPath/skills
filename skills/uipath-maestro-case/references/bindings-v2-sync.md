@@ -74,7 +74,7 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 ## § Populate IS connection cache
 
-`uip solution resource refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 8), and connector **condition rules** in any of the 4 scopes (Step 10).
+`uip solution resource refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 6.1), and connector **condition rules** in any of the 4 scopes (Step 10).
 
 **Path:** `~/.uipath/cache/integrationservice/<connectorKey>/connections.json`
 
