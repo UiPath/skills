@@ -449,8 +449,9 @@ ${imports}
 export function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
-      <Header title="${dashboardName}" description="Operational metrics dashboard" />
-      <div className="mx-auto max-w-screen-2xl px-4 py-8 md:px-8 md:py-10">${kpiSection}${chartSection}${tableSection}
+      <div className="mx-auto max-w-screen-2xl px-4 py-8 md:px-8 md:py-10">
+        <Header title="${dashboardName}" description="Operational metrics dashboard" />
+${kpiSection}${chartSection}${tableSection}
       </div>
     </div>
   )
