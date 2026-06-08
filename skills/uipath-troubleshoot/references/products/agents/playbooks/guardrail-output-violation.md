@@ -13,8 +13,7 @@ What this looks like:
   AGENT_RUNTIME.TERMINATION_GUARDRAIL_VIOLATION
   ```
 - At least one `completion` span precedes the faulting `agentRun` span — the LLM ran and returned output
-- The guardrail was configured with action **Block** — this error code does not fire for Log-only or HITL guardrail actions
-- Agent execution also terminates if a guardrail with `escalate` action fires and the assigned Action Center reviewer rejects the task — produces the same `AGENT_RUNTIME.TERMINATION_GUARDRAIL_VIOLATION` error; check the `escalationTool` span in the trace
+- The guardrail was configured with action **Block**, or a guardrail with `escalate` action fired and the assigned Action Center reviewer rejected the task — both produce `AGENT_RUNTIME.TERMINATION_GUARDRAIL_VIOLATION`; check the `escalationTool` span in the trace for the latter
 
 > **Distinct error shape:** If the trace shows `PROVIDER_ERROR: "Error during <provider> API call."`, the guardrail provider was unreachable — that is NOT a `TERMINATION_GUARDRAIL_VIOLATION`. The violation code means the provider successfully evaluated the output and returned a block verdict.
 
@@ -41,7 +40,7 @@ What to look for:
      --output-filter "traceId"
    ```
 
-2. Confirm `completion` spans precede the fault:
+2. Confirm this is an output violation (both input blocks and output violations produce `TERMINATION_GUARDRAIL_VIOLATION` — span type distinguishes them):
 
    ```bash
    uip traces spans get <trace-id> --output json \
@@ -81,7 +80,7 @@ What to look for:
    uip agent guardrails catalog --validator <validator-id> --output json
    ```
 
-   The catalog response includes scope (`Output`), security category, and rule description. To confirm the action type (`Block` vs `HITL`) and last-modified date, open the portal: Automation Ops → Guardrails → find rule by name from step 3. If the action was recently changed from `HITL` to `Block`, that is the root cause — the rule previously created a human review task; it now faults the job.
+   The catalog response includes scope (`Output`), security category, and rule description. To confirm the action type (`Block` vs `HITL`) and last-modified date, open the agent in AgentBuilder or Flow → Guardrails → find rule by name from step 3. If the action was recently changed from `HITL` to `Block`, that is the root cause — the rule previously created a human review task; it now faults the job.
 
 ## Resolution
 
@@ -101,10 +100,10 @@ What to look for:
 - Re-test by re-invoking the agent with the same input that previously caused the violation
 
 **If a guardrail action was changed from HITL to Block:**
-- Revert the action to HITL in the portal (Automation Ops → Guardrails) if the HITL review workflow is still required
+- Revert the action to HITL in AgentBuilder or Flow → Guardrails if the HITL review workflow is still required
 - Or keep Block and fix the underlying output pattern (system prompt or rule narrowing above)
 
 **If a recent rule change caused regressions — roll back:**
-- Identify the rule change date from the last-modified timestamp in the portal (Automation Ops → Guardrails)
+- Identify the rule change date from the last-modified timestamp in AgentBuilder or Flow → Guardrails
 - Restore the prior rule definition or disable the rule temporarily
 - Document the rollback and review the rule scope with the guardrail policy team
