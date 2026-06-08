@@ -14,7 +14,7 @@ Run at these three points only:
 2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
 3. **End of Phase 3 Step 10** (after all connector condition RULES written across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for rules. Required because connector rules are written in Step 10 (conditions), not Step 9.7 (tasks); without this third sync point, rule-introduced Connection/Folder bindings + IS-cache entries wouldn't land until the post-Phase-3 catch-all, and `resource refresh` would miss them.
 
-Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (path per § Schema-dependent source path above). The batch regeneration reads the full bindings array once from the schema-appropriate path and converts everything in one pass.
+Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
 
 ---
 

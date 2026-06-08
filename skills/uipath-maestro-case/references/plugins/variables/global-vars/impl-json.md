@@ -77,11 +77,11 @@ Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. 
 
 | Source | JSON path | Notes |
 |---|---|---|
-| Root variables | `root.data.uipath.variables.{inputs,outputs,inputOutputs}[]` (v19) / `variables.{inputs,outputs,inputOutputs}[]` (v20) | The canonical case-variable namespace |
+| Root variables | top-level `variables.{inputs,outputs,inputOutputs}[]` | The canonical case-variable namespace |
 | Task outputs | `nodes[<stage>].data.tasks[<lane>][].data.outputs[]` (for every task) | Self-declared task outputs |
 | Trigger outputs | `nodes[<trigger>].data.uipath.outputs[]` (for every trigger node) | Plain-name auto-emit + Pattern C wires |
 | **Stage entry / exit rule outputs** | `nodes[<stage>].data.entryConditions[].rules[][].uipath.outputs[]` AND `nodes[<stage>].data.exitConditions[].rules[][].uipath.outputs[]` | Connector-bound condition rules — outputs minted under `elementId = <stageId>-<ruleId>` |
-| **Case-exit rule outputs** | `root.caseExitConditions[].rules[][].uipath.outputs[]` (v19) / `metadata.caseExitRules[].rules[][].uipath.outputs[]` (v20) | Connector-bound case-exit rules — outputs minted under `elementId = root-<ruleId>` |
+| **Case-exit rule outputs** | `metadata.caseExitRules[].rules[][].uipath.outputs[]` | Connector-bound case-exit rules — outputs minted under `elementId = root-<ruleId>` |
 | **Task-entry rule outputs** | `nodes[<stage>].data.tasks[<lane>][].entryConditions[].rules[][].uipath.outputs[]` (for every task) | Connector-bound task-entry rules — outputs minted under `elementId = <stageId>-<ruleId>` |
 
 **Both directions.** When a connector rule mints outputs, dedupe against the union {tasks ∪ triggers ∪ rules ∪ root}. When a task or trigger mints outputs, dedupe against existing rule outputs too — NOT just tasks + triggers. The shared FE form (`FPSFormServiceTypeFields`) registers rule outputs in the same global pool (`getAllVariables()`), so any duplicate `var` / `id` across the {task, trigger, rule} space collapses in `allInputOutputsByElementMap` and cross-wires ownership at round-trip.

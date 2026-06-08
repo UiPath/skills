@@ -60,62 +60,6 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
 
-### Step 2.1 — Detect schema version (Rule 18)
-
-Resolution order (first match wins):
-
-#### 2.1.a — Tenant override (alpha environment)
-
-Read the `Data.BaseUrl` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
-
-```
-> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 validate authoritative; CLI upload / debug may reject downstream.
-```
-
-Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
-
-If `Data.BaseUrl` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
-
-#### 2.1.b — User-prompt phrase
-
-Scan **only the user message that activated the skill** (the prompt that matched the skill description). Match case-insensitive substrings:
-
-| Phrase (any one matches) |
-|---|
-| `v20 schema` |
-| `schema v20` |
-| `use v20` |
-| `emit v20` |
-| `generate v20` |
-| `unified schema` |
-| `schema 20.0.0` |
-
-- **Match** → schema is `v20`. Print plain-text confirmation BEFORE Step 3 begins:
-  ```
-  > Schema: v20 (skill-emit-only mode — Phase 4 validate authoritative; CLI upload / debug may reject downstream)
-  ```
-- **No match** → schema is `v19` (default). No confirmation line.
-
-**Never** scan sdd.md content, file paths, registry-resolved.json, Phase 0 transcripts, or any subsequent user message. Detection happens once, at Phase 1 entry. If the user wants to switch schema mid-build, they must re-run the skill from Phase 1 (Rule 6). The tenant override (2.1.a) is also fixed at Phase 1 entry — switching tenants mid-build does not change `tasks.md`'s `Schema:` header.
-
-### Step 2.2 — Persist schema choice in tasks.md header
-
-When `tasks.md` is written at Step 4, the **first non-comment line** is the schema header:
-
-```markdown
-Schema: v19
-```
-
-or
-
-```markdown
-Schema: v20
-```
-
-Place this line above all `T<n>` headings. Re-entry protocol (Phase 3 Step 9.6, Phase 4) re-reads tasks.md per Rule 7 and recovers the schema choice from this header. caseplan.json self-identifies via its top-level `version` literal as a secondary check.
-
-If the schema header in tasks.md conflicts with an already-written caseplan.json's `version` field at re-entry, **halt with explicit error** — never silently re-flip.
-
 ## Step 3 — Resolve resources
 
 Before resource resolution, seed TodoWrite with the items below to track Phase 1 progress through registry lookups and §4 T-entry emit. Mark each `in_progress` on entry, `completed` on exit. One item per emit class — never per T-entry.

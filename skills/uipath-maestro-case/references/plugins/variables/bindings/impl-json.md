@@ -4,16 +4,9 @@ Top-level binding creation. Referenced by **all** task plugins — non-connector
 
 > **No `planning.md`** — bindings are created during implementation (driven by each task plugin's §Root-level bindings), not planned as standalone T-entries. Intentional, not a gap.
 
-## Schema-dependent destination
+## Destination
 
-Read `Schema:` header from `tasks.md` per Rule 18.
-
-| Schema | Bindings array path |
-|---|---|
-| **v19** | `root.data.uipath.bindings[]` |
-| **v20** | `bindings[]` *(top level — no `root` wrapper, no `data.uipath`)* |
-
-Field shape inside the array is **identical** across schemas. Only the destination path differs.
+Bindings live at top-level `bindings[]` in `caseplan.json` (no `root` wrapper, no `data.uipath`).
 
 ## What Bindings Are
 

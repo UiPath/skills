@@ -219,7 +219,7 @@ Adds top-level `description` field (NOT inside `metadata`):
 
 ## caseIdentifier — constant vs external
 
-Set `caseIdentifierType` from the T01 `identifier-type` (default `constant`); same field in v19 (`root.*`) and v20 (`metadata.*`).
+Set `caseIdentifierType` from the T01 `identifier-type` (default `constant`); lives under `metadata.*`.
 
 - **`constant`** — write the literal prefix from sdd.md (`"caseIdentifier": "LOAN"`).
 - **`external`** — copy the T01 `case-identifier` expression **verbatim** into `caseIdentifier` (e.g. `"=vars.poNumber"` or `` "=js:`${metadata.InstanceId}-${vars.region}`" ``). Do NOT transform or `=js:`-wrap it — unlike task-input sinks ([bindings-and-expressions.md](../../bindings-and-expressions.md)), this value is written as authored. Valid forms + variable eligibility: [planning.md § External identifier value](planning.md).

@@ -95,19 +95,9 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
 | `version` | string | Schema version — `"20.0.0"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
-| `type` | `"case-management:root"` | Literal — do not change |
-| `caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
-| `caseIdentifierType` | `"constant"` \| `"external"` | Selects how `caseIdentifier` is read. Default `constant`. |
-| `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
-| `version` | string | Schema version — `"v19"` for current schema. Emitted by the `case` plugin at T01. |
-| `publishVersion` | number? | Publish version — `2` for current schema |
-| `data.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
-| `data.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
-| `data.uipath` | object? | Variable and binding declarations |
-| `caseExitConditions` | CaseExitCondition[]? | Conditions that mark the case as complete |
 | `description` | string? | Case description |
-| `metadata.caseIdentifier` | string | Identifier used at runtime |
-| `metadata.caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
+| `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
+| `metadata.caseIdentifierType` | `"constant"` \| `"external"` | Selects how `caseIdentifier` is read. Default `constant`. |
 | `metadata.caseAppEnabled` | boolean | Whether the Case App UI is enabled |
 | `metadata.publishVersion` | number? | Publish version — `2` for current schema |
 | `metadata.caseUnifiedSchemaEnabled` | boolean? | Unified-schema flag (`true`) |
@@ -120,7 +110,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 `caseIdentifierType` picks how `caseIdentifier` resolves at runtime:
 
 - **`constant`** (default) — `caseIdentifier` is a literal 2-4 char prefix (`"LOAN"`). Runtime emits the case external id as `<prefix>-<generated>`.
-- **`external`** — `caseIdentifier` is a `=`-prefixed expression (bare `=vars.<id>` or `=js:<expr>`). Runtime evaluates it; the result becomes the case external id verbatim (no prefix). Same `=vars.<id>` / `=js:` convention as [bindings-and-expressions.md](bindings-and-expressions.md) — no other engine. v20: field lives under `metadata` (see field-mapping table). Authoring forms + variable eligibility: [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
+- **`external`** — `caseIdentifier` is a `=`-prefixed expression (bare `=vars.<id>` or `=js:<expr>`). Runtime evaluates it; the result becomes the case external id verbatim (no prefix). Same `=vars.<id>` / `=js:` convention as [bindings-and-expressions.md](bindings-and-expressions.md) — no other engine. Field lives under `metadata`. Authoring forms + variable eligibility: [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
 
 ### CaseExitCondition
 

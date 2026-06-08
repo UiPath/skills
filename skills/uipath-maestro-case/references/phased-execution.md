@@ -4,18 +4,18 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
-## v20 mode (Rule 18)
+## Downstream CLI compatibility
 
-When `Schema: v20` is set in `tasks.md`, the following phase modifications apply. v19 mode is unchanged.
+The skill emits the `20.0.0` top-level shape (`{ id, version, name, metadata, bindings, variables, nodes, edges, layout }`). Phase-specific downstream caveats:
 
-| Phase | v19 behavior | v20 behavior |
-|---|---|---|
-| 2 — Prototyping | Informational validate, no halt on errors | Identical (already informational) |
-| 4 — Validate | Authoritative validate, 3-retry cap, hard stop on 3rd failure | **Identical** — CLI now accepts the v20 top-level shape. Authoritative validate, retry-and-fix, same 3-retry cap and hard stop on 3rd failure. |
-| 5 — Debug | `Run debug session` runs `uip maestro case debug` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip maestro case debug may reject. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` in build-issues.md. |
-| 6 — Publish | `Publish to Studio Web` runs `uip solution upload` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
+| Phase | Behavior |
+|---|---|
+| 2 — Prototyping | Informational validate, no halt on errors. |
+| 4 — Validate | Authoritative — `uip maestro case validate` accepts the top-level shape. Retry-and-fix on failure, 3-retry cap, hard stop on 3rd failure. |
+| 5 — Debug | Before the AskUserQuestion, print plain-text warning: `> uip maestro case debug may reject the top-level shape. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject schema — failure may be schema-related not case-bug-related` in build-issues.md. |
+| 6 — Publish | Before the AskUserQuestion, print plain-text warning: `> uip solution upload may reject the top-level shape until the CLI catches up. Failure non-fatal — caseplan.json still valid.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
 
-Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope (Rule 18).
+Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope.
 
 ## Why phased
 
@@ -164,9 +164,7 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-> **v20 mode.** When `tasks.md` carries `Schema: v20`, Phase 4 follows the same retry policy as v19 below — the CLI now accepts the v20 top-level shape, so validate authoritatively, retry-and-fix on failure, and hard-stop on the 3rd failure.
-
-**Retry policy (both schemas).** Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
+Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.
