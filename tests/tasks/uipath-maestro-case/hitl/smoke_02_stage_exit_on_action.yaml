@@ -5,12 +5,6 @@ description: >
   to a downstream stage. Verifies the exit-condition rule type and that the
   TaskId is referenced from the rule.
 tags: [uipath-maestro-case, smoke, lifecycle:generate, shape:multi-node, node:hitl]
-
-run_limits:
-  task_timeout: 900
-  max_turns: 120
-  turn_timeout: 900
-
 initial_prompt: |
   Create a UiPath Case Management project named "PurchaseApprovalCase" with
   this shape:
@@ -201,5 +195,6 @@ post_run:
 
 run_limits:
   expected_turns: 57
-  max_turns: 105
-  turn_timeout: 600
+  task_timeout: 900
+  max_turns: 120
+  turn_timeout: 900

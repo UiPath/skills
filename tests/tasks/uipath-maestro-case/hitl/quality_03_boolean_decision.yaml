@@ -6,12 +6,6 @@ description: >
   and that both true and false branches are wired to distinct downstream
   stages with consistent entry conditions.
 tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
-
-run_limits:
-  task_timeout: 900
-  max_turns: 120
-  turn_timeout: 900
-
 initial_prompt: |
   Create a UiPath Case Management project named "VendorApprovalCase" for
   vendor onboarding with this shape:
@@ -312,4 +306,6 @@ post_run:
 
 run_limits:
   expected_turns: 56
+  task_timeout: 900
   max_turns: 130
+  turn_timeout: 900
