@@ -1,0 +1,123 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "Concise validity verdict and reasoning category."
+      },
+      "recommendedAction": {
+        "type": "string",
+        "enum": [
+          "escalate_to_manager",
+          "auto_resolve",
+          "reject"
+        ],
+        "description": "Resolution routing decision."
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "True only if confidence>=0.80 and SOP permits auto-resolution."
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Credit to issue in invoice currency; 0 if none."
+      },
+      "confidence": {
+        "type": "number",
+        "description": "0.0-1.0 confidence in the determination."
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Evidence-based explanation citing discrepancies, contract, and SOP rule."
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing-dispute analyst. Apply the Billing Dispute SOP (provided to you as grounded context) to decide whether a disputed invoice is valid and how it should be resolved.\n\nYou are given: the normalized invoice fields extracted from the disputed invoice, the matched ERP contract record, the matched CRM customer record, a computed discrepancy summary (per-line pricing mismatches, total overcharge, total undercharge), and the customer's original dispute submission.\n\nDecision policy:\n- Compare the dispute allegations against the computed discrepancies first, then verify against the ERP contract and the invoice; use the CRM record only as supporting customer context.\n- Ground every conclusion in the Billing Dispute SOP. Do not invent policy.\n\nOutput contract — return exactly these fields:\n- determination (string): a concise verdict on validity and the reasoning category (e.g. \"Valid — contractual overcharge confirmed\").\n- recommendedAction (string): exactly one of escalate_to_manager | auto_resolve | reject.\n- autoResolutionEligible (boolean): true only when confidence >= 0.80 and the SOP permits auto-resolution at the computed credit amount.\n- creditAmount (number): the credit to issue, in invoice currency; 0 if none is warranted.\n- confidence (number): 0.0–1.0 confidence in the determination.\n- rationale (string): evidence-based explanation citing the specific discrepancies, contract terms, and SOP rule applied.\n\nRouting guidance:\n- reject when evidence does not support the claim (no material discrepancy, or contradicted by the contract).\n- auto_resolve when the claim is clearly supported, the credit is within the SOP auto-resolution threshold, and confidence >= 0.80.\n- escalate_to_manager when the claim is supported but the credit exceeds the auto-resolution threshold or confidence is below 0.80.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing-dispute analyst. Apply the Billing Dispute SOP (provided to you as grounded context) to decide whether a disputed invoice is valid and how it should be resolved.\n\nYou are given: the normalized invoice fields extracted from the disputed invoice, the matched ERP contract record, the matched CRM customer record, a computed discrepancy summary (per-line pricing mismatches, total overcharge, total undercharge), and the customer's original dispute submission.\n\nDecision policy:\n- Compare the dispute allegations against the computed discrepancies first, then verify against the ERP contract and the invoice; use the CRM record only as supporting customer context.\n- Ground every conclusion in the Billing Dispute SOP. Do not invent policy.\n\nOutput contract — return exactly these fields:\n- determination (string): a concise verdict on validity and the reasoning category (e.g. \"Valid — contractual overcharge confirmed\").\n- recommendedAction (string): exactly one of escalate_to_manager | auto_resolve | reject.\n- autoResolutionEligible (boolean): true only when confidence >= 0.80 and the SOP permits auto-resolution at the computed credit amount.\n- creditAmount (number): the credit to issue, in invoice currency; 0 if none is warranted.\n- confidence (number): 0.0–1.0 confidence in the determination.\n- rationale (string): evidence-based explanation citing the specific discrepancies, contract terms, and SOP rule applied.\n\nRouting guidance:\n- reject when evidence does not support the claim (no material discrepancy, or contradicted by the contract).\n- auto_resolve when the claim is clearly supported, the credit is within the SOP auto-resolution threshold, and confidence >= 0.80.\n- escalate_to_manager when the claim is supported but the credit exceeds the auto-resolution threshold or confidence is below 0.80."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze this billing dispute and return the structured determination.\n\nNormalized invoice: {{ $vars.dataTransform.output }}\nERP contract record: {{ $vars.queryEntityRecords2.output }}\nCRM customer record: {{ $vars.queryEntityRecords1.output }}\nComputed discrepancies: {{ $vars.discrepancyScript.output }}\nCustomer dispute: {{ $vars.start.output.webhookPayload.dispute }}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze this billing dispute and return the structured determination.\n\nNormalized invoice: "
+        },
+        {
+          "type": "variable",
+          "rawString": " $vars.dataTransform.output "
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nERP contract record: "
+        },
+        {
+          "type": "variable",
+          "rawString": " $vars.queryEntityRecords2.output "
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCRM customer record: "
+        },
+        {
+          "type": "variable",
+          "rawString": " $vars.queryEntityRecords1.output "
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nComputed discrepancies: "
+        },
+        {
+          "type": "variable",
+          "rawString": " $vars.discrepancyScript.output "
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCustomer dispute: "
+        },
+        {
+          "type": "variable",
+          "rawString": " $vars.start.output.webhookPayload.dispute "
+        }
+      ]
+    }
+  ],
+  "projectId": "e9096737-371c-44c7-a242-6d5b6f61e347"
+}
