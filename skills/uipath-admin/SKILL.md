@@ -1,6 +1,6 @@
 ---
 name: uipath-admin
-description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit (event sources, paginated queries, ZIP exports — login history, compliance dumps, who-did-what-when-where on a resource). For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
+description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit (event sources, paginated queries, ZIP exports — login history, compliance dumps, who-did-what-when-where on a resource). For policies that block/restrict/enforce product features or gate tool-use access→uipath-governance. For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 

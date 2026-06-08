@@ -71,7 +71,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | Skill | Description |
 |-------|-------------|
 | **uipath-platform** | Platform ops via `uip` CLI — auth, Orchestrator (folders, assets, queues, buckets, jobs, triggers), Integration Service, Data Fabric (entities and records), LLM Gateway, traces, licensing. |
-| **uipath-admin** | UiPath Admin — Identity Server, Authorization (custom roles, role assignments, PDP), OMS (org, tenants, services, regions), IP restriction, audit; governance policies (AOps product policies and Access ToolUsePolicy). |
+| **uipath-admin** | UiPath Admin — Identity Server, Authorization (custom roles, role assignments, PDP), OMS (org, tenants, services, regions), IP restriction, audit. |
+| **uipath-governance** | Governance via `uip gov` — author and deploy policies: AOps product policies (block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder) and Access ToolUsePolicy (allow/deny workflow-to-workflow tool calls). |
 | **uipath-test** | Test Manager — manage projects, cases, sets, executions; generate persona-tailored test reports. |
 
 ### Diagnostics & Feedback
