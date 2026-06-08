@@ -86,6 +86,8 @@ uip maestro flow pack <project-path> <OutputDir> --output json
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
+**Package metadata (optional, recorded in the `.nupkg` for source traceability):** `--repository-url <url>`, `--repository-commit <sha>`, `--repository-branch <branch>`, `--repository-type <type>` (defaults to `git` when `--repository-url` is set), `--release-notes <text>`, and `--project-url <url>` (Automation Hub idea URL → nuspec `<projectUrl>`).
+
 > **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.
 
 ## uip solution resource refresh

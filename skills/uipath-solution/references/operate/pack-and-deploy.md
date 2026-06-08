@@ -41,6 +41,13 @@ uip solution pack ./MySolution ./output --output json
 
 # With explicit name and version
 uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --output json
+
+# Stamp source-traceability metadata into the package
+uip solution pack ./MySolution ./output \
+  --repository-url https://github.com/acme/repo \
+  --repository-commit "$(git rev-parse HEAD)" \
+  --repository-branch main \
+  --release-notes "v2.0.0 release" --output json
 ```
 
 | Option | Description | Default |
@@ -49,6 +56,12 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | `<output-path>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'output-path'`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
+| `--repository-url <url>` | Source repository URL, recorded in the package for traceability | -- |
+| `--repository-commit <sha>` | Source repository commit hash | -- |
+| `--repository-branch <branch>` | Source repository branch | -- |
+| `--repository-type <type>` | Source repository type | `git` when `--repository-url` is set |
+| `--release-notes <text>` | Release notes recorded in the package | -- |
+| `--project-url <url>` | Automation Hub idea URL (nuspec `<projectUrl>`) | -- |
 
 The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resource refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 

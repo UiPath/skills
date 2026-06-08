@@ -324,6 +324,12 @@ uip solution pack <solutionPath> <outputPath> \
   [--name <name>] \
   [--version <version>] \
   [--login-validity <minutes>] \
+  [--repository-url <url>] \
+  [--repository-commit <sha>] \
+  [--repository-branch <branch>] \
+  [--repository-type <type>] \
+  [--release-notes <text>] \
+  [--project-url <url>] \
   [--output json]
 ```
 
@@ -334,6 +340,12 @@ uip solution pack <solutionPath> <outputPath> \
 | `-n, --name <name>` | no | Package name. Defaults to solution folder name. |
 | `-v, --version <version>` | no | Package version. Default `1.0.0`. |
 | `--login-validity <minutes>` | no | Min minutes before token refresh. Default `10`. |
+| `--repository-url <url>` | no | Source repository URL, recorded in each project's `.nuspec` for traceability. |
+| `--repository-commit <sha>` | no | Source repository commit hash. |
+| `--repository-branch <branch>` | no | Source repository branch. |
+| `--repository-type <type>` | no | Source repository type. Defaults to `git` when `--repository-url` is set. |
+| `--release-notes <text>` | no | Release notes recorded in the package. |
+| `--project-url <url>` | no | Automation Hub idea URL (nuspec `<projectUrl>`). |
 
 ### What the API workflow packager does
 

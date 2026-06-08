@@ -45,6 +45,7 @@ uip maestro bpmn pack <project-path> <OutputDir> --output json
 ```
 
 Use `--name` and `--version` only when the user provides a public-safe package identity.
+Optional source-traceability flags recorded in the `.nupkg`: `--repository-url`, `--repository-commit`, `--repository-branch`, `--repository-type` (defaults to `git` when `--repository-url` is set), `--release-notes`, and `--project-url` (Automation Hub idea URL). Only set these from public-safe values.
 Report the package path and package identity returned by the CLI.
 If packing changes generated files, explain whether the change came from BPMN source, CLI enrichment,
 or package generation.

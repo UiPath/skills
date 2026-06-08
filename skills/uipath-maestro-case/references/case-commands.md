@@ -116,6 +116,12 @@ uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 | `<output-path>` | **(required)** Output directory for the `.nupkg` |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
+| `--repository-url <url>` | Source repository URL, recorded in the `.nupkg` for traceability |
+| `--repository-commit <sha>` | Source repository commit hash |
+| `--repository-branch <branch>` | Source repository branch |
+| `--repository-type <type>` | Source repository type (defaults to `git` when `--repository-url` is set) |
+| `--release-notes <text>` | Release notes recorded in the package |
+| `--project-url <url>` | Automation Hub idea URL (nuspec `<projectUrl>`) |
 
 > `pack` + `uip solution publish` deploys directly to Orchestrator — bypasses Studio Web. Default publish path is `uip solution upload`.
 

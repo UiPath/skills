@@ -114,6 +114,12 @@ uip codedapp pack <dist> [options]
 | `--description <desc>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
+| `--repository-url <url>` | Source repository URL, recorded for traceability | -- |
+| `--repository-commit <sha>` | Source repository commit hash | -- |
+| `--repository-branch <branch>` | Source repository branch | -- |
+| `--repository-type <type>` | Source repository type | `git` when `--repository-url` set |
+| `--release-notes <text>` | Release notes recorded in the package | -- |
+| `--project-url <url>` | Automation Hub idea URL (nuspec `<projectUrl>`) | -- |
 | `--dry-run` | Preview packaging without creating the file | `false` |
 | `--reuse-client` | Reuse existing clientId from uipath.json | `false` |
 | `--base-url <url>` | UiPath base URL | From `.env` |

@@ -44,6 +44,12 @@ uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "
 | `--description <desc>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | `webapp`, `library`, or `process` | `webapp` |
+| `--repository-url <url>` | Source repository URL, recorded for traceability | -- |
+| `--repository-commit <sha>` | Source repository commit hash | -- |
+| `--repository-branch <branch>` | Source repository branch | -- |
+| `--repository-type <type>` | Source repository type | `git` when `--repository-url` set |
+| `--release-notes <text>` | Release notes recorded in the package | -- |
+| `--project-url <url>` | Automation Hub idea URL (nuspec `<projectUrl>`) | -- |
 | `--dry-run` | Preview without creating | `false` |
 | `--reuse-client` | Reuse clientId from `uipath.json` | `false` |
 
