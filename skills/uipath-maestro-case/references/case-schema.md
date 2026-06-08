@@ -10,9 +10,11 @@ Structural reference for the case definition JSON. Shared across all node types.
 {
   "root": { ... },
   "nodes": [ ... ],
-  "edges": [ ... ]
+  "edges": []
 }
 ```
+
+`edges` is always `[]` — the skill does not author edges (§4). Transitions derive from stage entry/exit conditions.
 
 ## Top-level shape (v20 — opt-in)
 
@@ -35,10 +37,12 @@ Structural reference for the case definition JSON. Shared across all node types.
   "bindings": [ ... ],
   "variables": { "inputs": [], "outputs": [], "inputOutputs": [] },
   "nodes": [ ... ],
-  "edges": [ ... ],
+  "edges": [],
   "layout": {}
 }
 ```
+
+(`edges` is always `[]` in v20 too — see §4.)
 
 ### v19 → v20 field mapping
 
@@ -95,7 +99,6 @@ In v20, node-level layout fields move to a top-level `layout` block. The fronten
 |---|---|---|---|
 | Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` |
 | Trigger (added after initial) | `trigger_` | 6 | `trigger_xY2mNp` |
-| Edge | `edge_` | 6 | `edge_Qz7hVr` |
 | Task | `t` | 8 | `t8GQTYo8O` |
 | Task entry condition | `c` | 8 | `c4fGhJ2Mn` |
 | Task entry rule | `r` | 8 | `rK9xQw3Lp` |
@@ -254,7 +257,7 @@ Standard workflow stage. Contains tasks.
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
 
-> **Regular `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a regular stage. They are added later by the condition plugins when entry/exit conditions are written. See §3 for the condition shapes and §2b for how edge transitions reference the source stage's `exitConditions`.
+> **Regular `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a regular stage. They are added later by the condition plugins when entry/exit conditions are written. See §3 for the condition shapes. Transitions are driven entirely by these conditions — edges are retired and `edges` stays `[]` (§4).
 
 ### c) Exception Stage Node — `"case-management:ExceptionStage"`
 
@@ -333,6 +336,8 @@ See `root.caseExitConditions` (v19) / `metadata.caseExitRules` (v20) in §1.
 ---
 
 ## 4. edges (two types, discriminated on `type`)
+
+> **The skill does not author edges — `edges` stays `[]`.** Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The structures below are **reference-only** — the empty `edges[]` array remains in the schema for frontend compatibility, and the FE auto-derives canvas connectors from the conditions. The two edge shapes are documented here only so a canvas-round-tripped file (where the FE may have materialized edges) is still readable.
 
 ### a) TriggerEdge — `"case-management:TriggerEdge"`
 
@@ -576,16 +581,8 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
       }
     }
   ],
-  "edges": [
-    {
-      "id": "edge_Qz7hVr",
-      "type": "case-management:TriggerEdge",
-      "source": "trigger_xY2mNp",
-      "target": "Stage_aB3kL9",
-      "sourceHandle": "trigger_xY2mNp____source____right",
-      "targetHandle": "Stage_aB3kL9____target____left",
-      "data": {}
-    }
-  ]
+  "edges": []
 }
 ```
+
+`edges` is empty: the skill authors no edges. The case starts because `Stage_aB3kL9` carries a `case-entered` entry condition (added by the stage-entry-conditions plugin), not because a `TriggerEdge` connects the trigger to it.

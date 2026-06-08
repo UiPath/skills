@@ -41,7 +41,7 @@ Position is not a user input. It is computed statefully (see below).
   node -e "console.log(crypto.randomUUID())"
   ```
 
-Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference (edges that target this trigger's id).
+Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference (e.g., In-argument companions whose `elementId` is this trigger's id).
 
 ## Position (stateful)
 

@@ -10,7 +10,7 @@ Registry pulls are often incomplete during early authoring:
 - Custom Integration Service connectors have not been registered.
 - IS connections for registered connectors are not yet provisioned.
 
-If the skill halted on every unresolved resource, the generated `caseplan.json` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, edges, conditions, SLA, ordering, task names + types) lands in `caseplan.json`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
+If the skill halted on every unresolved resource, the generated `caseplan.json` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, conditions, SLA, ordering, task names + types) lands in `caseplan.json`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
 
 The user reviews structure first, then attaches real resources once they exist.
 

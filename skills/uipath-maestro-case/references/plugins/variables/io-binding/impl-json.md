@@ -103,8 +103,8 @@ Variables array path is schema-dependent — `root.data.uipath.variables.{inputO
 > **Scan key:** match by `.id`, NOT `.var`. The runtime resolver matches on `Variable.id` (`VariablesService.findVariableByVariableId`). Under the skill convention `id === var` on self-declaring outputs, scanning by `.var` is harmless in practice, but `.id` is symmetric with the resolver.
 
 Also scan `=vars.X` references in:
-- Edge guard expressions (`edges[].data.conditionExpression`)
 - Entry / exit condition expressions (stage and task)
+- Case-exit and trigger rule expressions
 - SLA expressions
 - `=js:` expressions anywhere they appear
 

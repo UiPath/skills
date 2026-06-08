@@ -12,10 +12,9 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 |---|---|
 | ID generation | Generate IDs per the ID Generation section below using the `prefixedId(prefix, count)` algorithm |
 | `elementId` on tasks | Compute and write `${stageId}-${taskId}` on every task |
-| Edge handles | Construct handle strings as `${nodeId}____<source\|target>____<direction>` (exactly 4 underscores on each side) |
 | Stage position | Count existing stages first; compute `{ x: 100 + existingStageCount * 500, y: 200 }`; then write |
 | Stage render fields | Emit `style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every new Stage node |
-| Edge cleanup on stage removal | Find and remove every edge where `source` or `target` equals the removed stage's ID |
+| Edges | Not authored — `schema.edges` stays `[]`. No edge handles, no edge objects, no cleanup needed on stage removal |
 | Root-level bindings cleanup | Prune entries from the bindings array (v19: `root.data.uipath.bindings`; v20: top-level `bindings`) no longer referenced by any task |
 | Lane array expansion | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
 | `id-map.json` sidecar | Initialize on T01 (case plugin); append per plugin as IDs are generated; flush to disk at end of run (or after each plugin for durability) |
@@ -29,7 +28,7 @@ In v20 mode, the following Pre-flight Checklist items become **NOOPs** because l
 
 - **Item 3 (Stage render fields)** — do NOT emit `style`, `measured`, `width`, `zIndex` on Stage nodes. v20 nodes carry `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` only.
 - **Item 4 (Position computation)** — do NOT compute or emit `position.x`, `position.y` on Stage nodes (or Trigger nodes). FE auto-layouts on canvas load.
-- **Edges** — do NOT emit `data.waypoints` (lifted to `layout.edges[<edgeId>].waypoints` when present; skill emits empty `layout: {}`).
+- **Edges** — none are authored (`schema.edges` stays `[]`), so there are no edge `data.waypoints` to emit; skill emits empty `layout: {}` regardless.
 
 Skill emits empty `layout: {}` at top level in v20 — never populates `layout.nodes` or `layout.edges`. Layout authoring is a canvas-time concern, not a skill concern.
 
@@ -58,11 +57,11 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 5. **Regular Stage vs Exception Stage at creation time.** Regular `case-management:Stage` nodes are written without `entryConditions` / `exitConditions` keys. `case-management:ExceptionStage` nodes initialize both as empty arrays at creation time. Regular stages acquire those keys later when the condition plugins write them. Do not emit empty arrays on regular Stage.
 
-6. **Edge handles use exactly 4 underscores each side.** `${sourceId}____source____${direction}`, `${targetId}____target____${direction}`. Directions: `right` | `left` | `top` | `bottom`. Defaults: source=`right`, target=`left`.
+6. **Edges are not authored (RETIRED).** `schema.edges` stays `[]` — do not construct edge handles or append edge objects. Stage transitions derive from entry/exit conditions.
 
-7. **Edge type inferred from source.** Look up the source node's `type` in `schema.nodes`. If it's `case-management:Trigger`, the edge type is `case-management:TriggerEdge`. Otherwise `case-management:Edge`.
+7. **Edge type inference (RETIRED).** No edges are written, so there is no edge type to infer. (Was: Trigger source → `TriggerEdge`, else `Edge`.)
 
-8. **Every stage has at least one inbound edge.** Orphan stages don't execute. When adding a stage, also plan its inbound edge.
+8. **Every regular stage has at least one entry condition.** With edges retired, stage entry conditions are the sole reachability contract — orphan stages don't execute. The first stage carries `case-entered`; every other regular stage carries `selected-stage-completed` / `selected-stage-exited` naming a reachable predecessor. When adding a stage, also plan its entry condition (Step 10).
 
 9. **One task per lane (default).** Increment `laneIndex` per task within a stage starting at 0. Expand `stageNode.data.tasks` to cover the lane index before pushing. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `laneIndex` (shared lane = parallel siblings inside the sequential group, semantic). Solo runs-sequentially tasks still get own lane.
 
@@ -73,8 +72,8 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 12. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
 13. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each `tasks.md` section batch completes (per § Per-section batch write contract below). One validate per section, not one per T-entry. Fixing errors at the section boundary is cheaper than chasing a cascade.
-    - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes + trigger has no outgoing edges). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
-    - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no incoming edges yet). The plugin's validation parity is captured in the fixture instead.
+    - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes, so the case cannot be entered). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
+    - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no entry conditions yet). The plugin's validation parity is captured in the fixture instead.
 
 ---
 
@@ -88,7 +87,6 @@ All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `c
 | Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` | |
 | Trigger (secondary — any subtype: manual / timer / event) | `trigger_` | 6 | `trigger_xY2mNp` | |
 | Initial trigger (first trigger in the case) | fixed literal `trigger_1` | — | `trigger_1` | |
-| Edge | `edge_` | 6 | `edge_Qz7hVr` | |
 | Task | `t` | 8 | `t8GQTYo8O` | |
 | Task entry condition | `c` | 8 | `c4fGhJ2Mn` | |
 | Task entry rule | `r` | 8 | `rK9xQw3Lp` | |
@@ -123,7 +121,7 @@ Every skill run generates fresh IDs — no determinism.
 `id-map.json` is built up incrementally during the run, flushed adjacent to `caseplan.json`. Lifecycle:
 
 1. **T01 (case plugin)** creates the file with the literal root entry: `{ "T01": { "kind": "case", "id": "root" } }`. No trigger is emitted at T01 — the triggers plugin records its entry at T02.
-2. **Downstream plugins** read the file, append entries for generated IDs (stage, edge, task, condition, etc.), write back. Each plugin writes the map before handing off to the next so cross-plugin references can resolve via the on-disk file.
+2. **Downstream plugins** read the file, append entries for generated IDs (stage, task, condition, etc.), write back. Each plugin writes the map before handing off to the next so cross-plugin references can resolve via the on-disk file.
 3. **End of run:** the file is complete and lives alongside `caseplan.json`.
 
 Mapping T-entries from `tasks.md` to generated IDs:
@@ -133,7 +131,6 @@ Mapping T-entries from `tasks.md` to generated IDs:
   "T02": { "kind": "trigger", "id": "trigger_xY2mNp" },
   "T04": { "kind": "stage",   "id": "Stage_aB3kL9" },
   "T05": { "kind": "stage",   "id": "Stage_cD4mNt" },
-  "T06": { "kind": "edge",    "id": "edge_Qz7hVr" },
   "T10": { "kind": "task",    "id": "t8GQTYo8O", "stageId": "Stage_aB3kL9" }
 }
 ```
@@ -168,18 +165,18 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 
 **Bash is still used for**: UUID v4 generation only (`node -e "console.log(crypto.randomUUID())"` for `operate.json.projectId` and `entry-points.json` `uniqueId`; subprocess MUST NOT `require('fs')`, `require('child_process')`, or use any redirection operator), `uip solution init` / `uip solution project add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
 
-**Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `edge_`, `c`, `r`, `b`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
+**Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `c`, `r`, `b`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
 
 ### Per-section batch write contract — canonical
 
-`caseplan.json` mutations follow a **per-section batched Edit** contract. The unit is one `tasks.md` section (e.g., §4.4 stages, §4.5 edges, §4.6 task-shapes, §4.7 conditions, §4.8 SLA), not one T-entry.
+`caseplan.json` mutations follow a **per-section batched Edit** contract. The unit is one `tasks.md` section (e.g., §4.4 stages, §4.6 task-shapes, §4.7 conditions, §4.8 SLA), not one T-entry.
 
 Procedure per section:
 
 1. **One Read** of `caseplan.json` at section entry — authoritative state.
 2. **Section-sized writes** — pick by T-entry count:
    - **Small sections (<10 T-entries)** — N Edits in sequence, one per T-entry. Edit targets the smallest unambiguous slice of JSON the T-entry mutates (one node, one array field, one task's `data.inputs`).
-   - **Large sections (≥10 T-entries)** — single whole-section write replacing the section's container (e.g., entire `schema.nodes` array for stages, entire `schema.edges` array for edges, a stage's full `data.tasks` array for tasks within that stage). Compose the complete post-section state in reasoning from the Read snapshot, then emit via one Edit (replacing the container slice) or one Write (whole-file rewrite) — Write only when the per-section Edit slice is too large to express as a single unambiguous `old_string`/`new_string` pair.
+   - **Large sections (≥10 T-entries)** — single whole-section write replacing the section's container (e.g., entire `schema.nodes` array for stages, a stage's full `data.tasks` array for tasks within that stage). Compose the complete post-section state in reasoning from the Read snapshot, then emit via one Edit (replacing the container slice) or one Write (whole-file rewrite) — Write only when the per-section Edit slice is too large to express as a single unambiguous `old_string`/`new_string` pair.
 3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness.
 4. **One `validate`** at section boundary (Pre-flight Item 13 below).
 
@@ -203,7 +200,7 @@ Procedure per section:
 
 **Whole-file Write outside T01.** Permitted only at section boundaries for sections with ≥10 T-entries, per the procedure above. Forbidden mid-section (between T-entries within the same section) — that bypasses the Read snapshot and risks field drops.
 
-**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — split by phase: Phase 2 emits the skeleton (root + nodes + edges + variables, empty `data` on tasks); Phase 3 then fills `data.context` / `data.inputs` / `data.outputs` / conditions / SLA via per-section Edits onto the already-populated nodes. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk; the Phase 2 → Phase 3 split spreads the same work across smaller turns with intermediate validate gates. Concretely, for a case with ≥40 tasks or ≥8 stages: never emit the full populated caseplan.json in one Write — always Phase 2 skeleton (small Write) → Phase 3 fill (per-section Edits on populated nodes).
+**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — split by phase: Phase 2 emits the skeleton (root + nodes + variables, `edges` stays `[]`, empty `data` on tasks); Phase 3 then fills `data.context` / `data.inputs` / `data.outputs` / conditions / SLA via per-section Edits onto the already-populated nodes. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk; the Phase 2 → Phase 3 split spreads the same work across smaller turns with intermediate validate gates. Concretely, for a case with ≥40 tasks or ≥8 stages: never emit the full populated caseplan.json in one Write — always Phase 2 skeleton (small Write) → Phase 3 fill (per-section Edits on populated nodes).
 
 **Forbidden: build-assembler helper scripts.** Writing `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any script that assembles a skill artifact and pipes/writes it to disk is a Rule 13 violation — regardless of `/tmp` placement, "mechanical copy" framing, or "avoid Read+Write churn" rationale. The script-write + script-run + script-output-to-file pattern bypasses the tool-call audit trail Rule 13 protects. If the artifact is too large for a single Write turn, apply the ~15K-token Write cap and Phase 2 → Phase 3 split above. There is no helper-script escape hatch.
 
@@ -217,7 +214,6 @@ Examples — agent picks these directly when writing JSON:
 Stage_  + "kQ7mNt"  → "Stage_kQ7mNt"
 t       + "8GQTYo8O" → "t8GQTYo8O"
 Rule_   + "jdBFrJ"  → "Rule_jdBFrJ"
-edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 ```
 
 > **UUID v4 only** (`operate.json.projectId`, `entry-points.json` `uniqueId`) uses `node -e "console.log(crypto.randomUUID())"` — see § Tool usage. Prefixed-IDs above never call Bash.
@@ -231,15 +227,9 @@ edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 5. Append the node to `schema.nodes` (stages use `.unshift()` in the CLI — prepend — but either position works for the frontend; prepend to match CLI output exactly).
 6. Edit `caseplan.json` — narrow slice targeting `schema.nodes`. Never whole-file Write.
 
-### Add an edge
+### Add an edge — RETIRED
 
-1. Read `caseplan.json`.
-2. Verify `source` and `target` IDs both exist in `schema.nodes`.
-3. Look up the source node's `type` to infer edge type (Trigger → `TriggerEdge`, else `Edge`).
-4. Generate a fresh edge ID.
-5. Construct the edge object with `sourceHandle` and `targetHandle` (4 underscores each side).
-6. Append to `schema.edges`.
-7. Edit — narrow slice targeting `schema.edges`. Never whole-file Write.
+The skill does not author edges. `schema.edges` stays `[]`. To make a stage reachable, add a `stage-entry-conditions` rule on the target stage (Step 10), not an edge.
 
 ### Add a task to a stage
 
@@ -262,11 +252,11 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 
 1. Read `caseplan.json`.
 2. Remove the node from `schema.nodes` by ID.
-3. Remove every edge where `source` or `target` equals the removed node's ID.
+3. Edges are not authored — `schema.edges` is `[]`, nothing to remove. (Defensive: if an imported file has a stray edge referencing the removed node's ID, drop it.)
 4. If the node was a stage containing a connector task **or a connector condition rule** (in `entryConditions[]` / `exitConditions[]` / task `entryConditions[]`), prune entries from the bindings array (v19: `root.data.uipath.bindings`; v20: top-level `bindings`) referenced only by that task/rule. A connector rule contributes the same Connection/Folder binding pair as a task — `rule.uipath.context[name="connection"|"folderKey"]` references `=bindings.<bindingId>`. Walk every remaining task/trigger/rule; an entry whose `resourceKey` is no longer referenced anywhere is the one to prune. Case-exit rules are NOT in scope here — they live on root, not inside a node; use § Delete a connector condition rule for those.
 5. If the removed node held connector rule outputs that were bound to case variables (B/C feature), prune their `root.inputOutputs[]` companions. The companion's `elementId` is `"root"` — `<removedStageId>-<ruleId>` is the rule output entry's `elementId`, not the companion's. For each removed rule output at `elementId = <removedStageId>-<ruleId>`, read its `var`, then prune the companion whose `id == <var>` and `elementId == "root"` that no longer has a producer.
 6. Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
-7. Edit — separate slices for `schema.nodes`, `schema.edges`, the bindings array, and (if applicable) `inputOutputs[]`. Never whole-file Write.
+7. Edit — separate slices for `schema.nodes`, the bindings array, and (if applicable) `inputOutputs[]`. Never whole-file Write.
 
 ### Delete a connector condition rule
 
@@ -280,11 +270,9 @@ When removing a single rule from a condition (without deleting the parent stage/
 6. Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
 7. Edit — separate slices for the conditions array, the bindings array, and (if applicable) `inputOutputs[]`. Never whole-file Write.
 
-### Delete an edge
+### Delete an edge — defensive only
 
-1. Read.
-2. Filter `schema.edges` by the edge ID.
-3. Edit — narrow slice targeting `schema.edges`. Never whole-file Write.
+The skill never creates edges, so `schema.edges` should already be `[]`. If a stray edge is found (e.g., in an imported file): Read, filter `schema.edges` by the edge ID, Edit the narrow slice. Never whole-file Write.
 
 ---
 
@@ -292,25 +280,27 @@ When removing a single rule from a condition (without deleting the parent stage/
 
 ### Insert a stage between two existing stages
 
-1. Find and remove the edge connecting the two existing stages.
-2. Add the new stage node (with render fields).
-3. Add two edges: upstream → new stage, new stage → downstream.
+1. Add the new stage node (with render fields).
+2. Add a `stage-entry-conditions` rule on the new stage referencing the upstream stage (`selected-stage-completed`).
+3. Re-point the downstream stage's entry condition to reference the new stage instead of the upstream stage.
+
+No edges are involved — reachability is entirely condition-driven.
 
 ### Replace a placeholder task with an enriched task
 
 See [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md). The upgrade edits the task's `data` field in place to add `taskTypeId`, schema-driven `inputs`/`outputs`, and any required context — keeping the task's `id` and `elementId` unchanged so any conditions referencing it remain valid.
 
-### Re-wire a stage's outgoing edge
+### Re-wire a stage transition — RETIRED (no edges)
 
-To re-wire an edge's source/target: delete the edge entry from `schema.edges[]` and Edit in a fresh one. Label/handle changes can be applied in place via Edit.
+Transitions are not edges. To change where a stage flows, edit the relevant stage's entry/exit conditions (the target stage's `stage-entry-conditions` rule, and the source's `stage-exit-conditions` when it diverges). See the conditions plugins.
 
 ---
 
 ## Validation Cadence
 
-Run `uip maestro case validate <file> --output json` after each `tasks.md` section's batch completes — not after every Edit. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); validate is authoritative at the section boundary.
+Run `uip maestro case validate <file> --output json` after each `tasks.md` section's batch completes — not after every Edit. Intermediate states can be invalid (e.g., a stage whose entry condition references a stage that will be added next); validate is authoritative at the section boundary.
 
-On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per section; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
+On failure: fix the reported issue (usually a missing field, malformed ID, or orphan reference) and re-validate. Up to 3 retries per section; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
 
 ---
 

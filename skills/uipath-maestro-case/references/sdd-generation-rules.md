@@ -8,11 +8,11 @@ Phase 1 trusts `sdd.md` as written (SKILL.md Rule 2). These rules make that trus
 
 Reason the case shape from the process the user describes — **do not reach for the template first.** The template renders a shape you already decided; it does not decide it for you. Build the model in this order: stages → tasks → types → pull exceptions out. Each concept below is a question to ask of the user's process, not a slot to fill.
 
-**Stage** — a phase the case works through: a bounded milestone with an *entry* (when it starts), *tasks* (the work done inside it), and a *completion/exit* (when it's done and where the case goes next). Stages are the backbone; they run in sequence (or parallel) wired by **edges**. Derive one stage per milestone the user names ("intake", "underwriting", "funding"). Ask: *what is the case working toward right now, and what makes that done?* A stage that "marks the case complete" is on the main flow (`isRequired: true`).
+**Stage** — a phase the case works through: a bounded milestone with an *entry* (when it starts), *tasks* (the work done inside it), and a *completion/exit* (when it's done and where the case goes next). Stages are the backbone; they run in sequence (or parallel), wired by **entry/exit conditions** (the case has no edges — transitions are condition-driven). Derive one stage per milestone the user names ("intake", "underwriting", "funding"). Ask: *what is the case working toward right now, and what makes that done?* A stage that "marks the case complete" is on the main flow (`isRequired: true`).
 
 **Secondary stage** (a.k.a. exception stage — `case-management:ExceptionStage`) — work that is **not a fixed step on the line**: it can fire at many points and only under a condition. Errors, escalations, rejections, rework loops, cancellations. Three rules define it, all CLI-enforced:
 
-- **No edges** — never wired in or out by an edge (validator: `CASE_MGMT_SECONDARY_STAGE_EDGES`). It is detached from the flow graph.
+- **No edges** — reached and exited purely by conditions, never wired by an edge. (True of every stage now that edges are retired; the legacy `CASE_MGMT_SECONDARY_STAGE_EDGES` validator that flagged secondary-stage edges is moot.) It is detached from any flow graph.
 - **Entered by its own condition**, evaluated continuously against case state — often *interrupting* (pauses active stages when it fires). It is reached because a condition became true, not because the case traversed an edge.
 - **Exits via `return-to-origin`** — routes the case back to the stage it interrupted, through the exit rule, not a new edge.
 
@@ -40,7 +40,7 @@ The case, each stage, and each task move through a lifecycle gated by **rules** 
 How to reason with these:
 
 - **`required-*` vs `selected-*`.** `required-tasks-completed` / `required-stages-completed` = "all items flagged required are done" (the `isRequired` flow). `selected-tasks-completed` / `selected-stage-completed` / `selected-stage-exited` = "these *specific named* items." Pairing rule (Key Rule 4): `Marks Complete: Yes` pairs only with `required-*`; `selected-*` is for `No` (routing / early exit / alternate disposition). A `Yes` + `selected-*` pair is a schema error.
-- **Secondary (exception) stage** uses **stage-entry + stage-exit rules only, never edges.** Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left.
+- **Secondary (exception) stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage now — edges are retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left.
 - **First task in a stage** must carry `current-stage-entered` (emit it explicitly). `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule); `runs-sequentially` chains tasks in a lane.
 - **`user-selected-stage`** (stage entry) starts a stage on demand by a user rather than by flow. The CLI validator requires it to pair with a `wait-for-user` stage exit elsewhere: a `wait-for-user` exit with no `user-selected-stage` entry — or a `user-selected-stage` entry with no `wait-for-user` exit — fails `validate`.
 
@@ -72,7 +72,7 @@ A task Output *produces* a variable (`-> =vars.<id>`); a task Input *consumes* o
 Reason the shape; do not template it:
 
 - **Milestones → stages:** Intake → Screening → Compliance → Finance Setup → Activation — regular stages on the main flow.
-- **"goes back for remediation" → secondary stage.** Remediation fires only on a condition (compliance failed) and routes back — model it as an exception stage (condition-entered, `return-to-origin`), **not** a sixth inline stage with edges.
+- **"goes back for remediation" → secondary stage.** Remediation fires only on a condition (compliance failed) and routes back — model it as an exception stage (condition-entered, `return-to-origin`), **not** a sixth inline primary stage.
 - **"sign up through portal" → trigger.** A portal signup is an inbound event, not Manual — Always-Ask the trigger type.
 - **Tasks + types** (read verb + actor, ask the [§ Choosing](#choosing-the-task-type) question):
   - *screen them* → AI judges unstructured docs → `agent`
@@ -689,9 +689,9 @@ Phase 0's narrative cells (Description, persona names, stage names, task names, 
 
 ## Logical integrity — stage graph
 
-Beyond schema-pairing checks (§Finalization step 1), the case must be a connected graph:
+Beyond schema-pairing checks (§Finalization step 1), the case must be a connected graph. **Edges are retired — these condition-based checks are the SOLE reachability guard; there is no edge graph to fall back on.** A malformed or missing entry condition is the only thing that can orphan a stage, so this walk is load-bearing.
 
-1. **Every stage reachable from a trigger.** Walk forward from each trigger row through Stage Entry Conditions (`case-entered` from root, `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`). Every primary stage's id must be reached. Unreachable stage → blocking error (orphan stage).
+1. **Every stage reachable from a trigger.** Walk forward from each trigger row through Stage Entry Conditions (`case-entered` from root, `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`) — condition-only, no edges. Every primary stage's id must be reached. Unreachable stage → blocking error (orphan stage).
 2. **Every stage exits.** Every primary stage must have either (a) a completion row (`Marks Stage Complete: Yes`) whose completion is consumed by a downstream stage's Entry Condition or a case-exit, OR (b) another primary stage whose Entry Condition references it (`selected-stage-completed`/`selected-stage-exited`), OR (c) feed an ExceptionStage. A stage no other stage (or case-exit) keys off → blocking error (terminal-loop stage).
 3. **Every case-exit row references a stage that exists.** No dangling `Required Stages` references.
 4. **Every `Required Stages` cell in §1.4 names ≥ 1 primary stage with `Required for case completion: Yes`.** Otherwise the case can never complete.

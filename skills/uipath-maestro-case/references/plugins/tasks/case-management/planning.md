@@ -9,7 +9,7 @@ Pick this plugin when the sdd.md describes a task that spawns or delegates to an
 - Parent case orchestrates multiple sub-cases
 - Long-running sub-workflow packaged as its own case
 
-If sdd.md describes a simple stage-to-stage flow within the same case, do not use this — use regular stages and edges.
+If sdd.md describes a simple stage-to-stage flow within the same case, do not use this — use regular stages wired by entry/exit conditions.
 
 ## Required Fields from sdd.md
 
