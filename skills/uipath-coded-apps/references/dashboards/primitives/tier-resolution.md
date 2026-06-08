@@ -20,13 +20,12 @@ User asks for metric
 | Metric name | What it shows |
 |-------------|--------------|
 | `agent-errors` | Daily error counts as trend line |
-| `invocation-volume` | Agent runs per day as area chart |
+| `invocation-volume` | AGU consumption over time as area chart (uses getConsumptionTimeline — xKey: timeSlice, yKey: aguConsumption) |
 | `top-failing-agents` | Agents ranked by error count |
 | `active-agents-kpi` | Count of agents with at least one run |
 | `agent-latency` | P50/P95 latency over time |
 | `job-failures` | Processes ranked by failure count |
 | `job-completion-trend` | Completed jobs per day |
-| `governance-policy-summary` | Total governance violations KPI |
 
 ## Tier 2 — Parametric metrics
 
@@ -74,13 +73,14 @@ For data not available via Insights RTM. Provide an async function body using `s
   "title": "Faulted Queue Items",
   "displayAs": "ranked-table",
   "columns": "[{key:\"name\",label:\"Queue\"},{key:\"count\",label:\"Faulted\",align:\"right\" as const}]",
-  "fnBody": "const r = await sdk.queues.getAll({ state: 'Faulted' })\nreturn (r?.items ?? []).map((q: any) => ({ name: q.name ?? '', count: q.transactionsCount ?? 0 }))"
+  "fnBody": "const svc = new Queues(sdk as never)\nconst r = await svc.getAll({ state: 'Faulted' })\nreturn (r?.items ?? []).map((q: any) => ({ name: q.name ?? '', count: q.transactionsCount ?? 0 }))"
 }
 ```
 
 T3-SDK rules for fnBody:
 - Must return `Promise<Array<Record<string, unknown>>>`
-- Use `sdk.*` for SDK calls
+- Use constructor injection: `new ServiceClass(sdk as never)` — never `sdk.serviceName.method()`
+- ServiceClass names: Queues, Jobs, Assets, Tasks, Processes, Entities (import from @uipath/uipath-typescript/* as needed — shell provides the sdk object, not imports)
 - Use `await` for all async operations
 - No `import` statements (shell provides all imports)
 - No JSX
@@ -97,3 +97,4 @@ Refuse ONLY the specific metric. Offer the dashboard with remaining metrics.
 | Cross-tenant data | Single-tenant scope only | Multi-widget view within one tenant |
 | SLA breach % | No SLA metadata in platform | Success rate from `job-completion-trend` |
 | Error message text | No aggregation endpoint | `agent-errors` for counts |
+| Governance policy summary | Requires a policy UUID the build script cannot infer | Ask user for the UUID, then use T3-Insights: `{ namespace: "governance", method: "getPolicySummary", ... }` with the UUID in the request |

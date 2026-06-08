@@ -19,21 +19,21 @@
       }
     },
     "invocation-volume": {
-      "aliases": ["invocation volume", "total runs", "agent runs", "invocations", "run volume", "execution volume"],
+      "aliases": ["invocation volume", "total runs", "agent runs", "invocations", "run volume", "execution volume", "agu consumption", "consumption timeline"],
       "source": "insights",
       "namespace": "agents",
-      "method": "getSummaryV2",
+      "method": "getConsumptionTimeline",
       "template": "area-chart",
       "defaults": {
         "title": "Invocation Volume",
-        "description": "Total agent runs per day",
+        "description": "Agent AGU consumption over time",
         "icon": "Activity",
-        "xKey": "date",
-        "yKey": "count",
+        "xKey": "timeSlice",
+        "yKey": "aguConsumption",
         "deltaDir": "up-good",
-        "deltaText": "runs today",
+        "deltaText": "AGU today",
         "dataSelector": "(data as any)?.data ?? []",
-        "valueExpression": "String(((data as any)?.data ?? []).reduce((s: number, d: any) => s + (d.count ?? d.value ?? 0), 0))"
+        "valueExpression": "String(((data as any)?.data ?? []).reduce((s: number, d: any) => s + (d.aguConsumption ?? 0), 0).toFixed(1))"
       }
     },
     "top-failing-agents": {
@@ -47,7 +47,7 @@
         "description": "Agents with the most errors",
         "icon": "AlertOctagon",
         "dataSelector": "(data as any)?.data ?? []",
-        "columns": "[{key:\"name\",label:\"Agent\"},{key:\"value\",label:\"Errors\",align:\"right\" as const}]",
+        "columns": "[{key:\"name\",label:\"Agent\"},{key:\"count\",label:\"Errors\",align:\"right\" as const}]",
         "deltaDir": "neutral",
         "deltaText": ""
       }
@@ -79,12 +79,12 @@
         "description": "P50 and P95 execution time",
         "icon": "Timer",
         "xKey": "date",
-        "yKey": "value",
+        "yKey": "P95",
         "deltaDir": "down-good",
-        "deltaText": "ms p95 today",
+        "deltaText": "ms P95",
         "dataSelector": "(data as any)?.data ?? []",
-        "series": "[{key:\"p50\",color:\"hsl(var(--chart-1))\"},{key:\"p95\",color:\"hsl(var(--chart-2))\"}]",
-        "pivotExpression": "rawData"
+        "series": "[{key:\"P50\",color:\"hsl(var(--chart-1))\",label:\"P50 ms\"},{key:\"P95\",color:\"hsl(var(--chart-2))\",label:\"P95 ms\"}]",
+        "pivotExpression": "rawData.reduce((acc: Record<string, unknown>[], row: any) => { const existing = acc.find((r: any) => r.date === row.date); if (existing) { existing[row.name] = row.value; } else { acc.push({ date: row.date, [row.name]: row.value }); } return acc; }, [])"
       }
     },
     "job-failures": {
@@ -98,7 +98,7 @@
         "description": "Processes with the most failures",
         "icon": "XCircle",
         "dataSelector": "(data as any)?.data ?? []",
-        "columns": "[{key:\"name\",label:\"Process\"},{key:\"value\",label:\"Failures\",align:\"right\" as const}]",
+        "columns": "[{key:\"name\",label:\"Process\"},{key:\"count\",label:\"Failures\",align:\"right\" as const}]",
         "deltaDir": "down-good",
         "deltaText": "failures today"
       }
@@ -118,22 +118,6 @@
         "deltaDir": "up-good",
         "deltaText": "completions today",
         "dataSelector": "(data as any)?.data ?? []"
-      }
-    },
-    "governance-policy-summary": {
-      "aliases": ["governance", "policy violations", "policy compliance", "governance summary", "compliance summary", "policy audit"],
-      "source": "insights",
-      "namespace": "governance",
-      "method": "getPolicySummary",
-      "template": "kpi-card",
-      "defaults": {
-        "title": "Policy Violations",
-        "description": "Total governance policy violations",
-        "icon": "ShieldAlert",
-        "valueExpression": "String((data as any)?.total ?? 0)",
-        "dataSelector": "(data as any)?.data ?? []",
-        "deltaDir": "down-good",
-        "deltaText": "violations"
       }
     }
   },
@@ -183,6 +167,7 @@
     { "pattern": "who triggered|triggered by|user.*job|job.*user", "reason": "Job records carry no end-user identity.", "alternative": "Job counts by process name (metric: job-completion-trend)" },
     { "pattern": "cross.tenant|multi.tenant|compare.*tenant", "reason": "Dashboards are scoped to one tenant.", "alternative": "Multi-widget single-tenant view" },
     { "pattern": "sla.*breach|breach.*sla", "reason": "Raw counts only — no SLA metadata in any API.", "alternative": "Success rate % (computable from job-completion-trend)" },
-    { "pattern": "error.*message|stack.*trace|exception.*text", "reason": "No aggregation endpoint for error text or stack traces.", "alternative": "Error count by type (metric: agent-errors)" }
+    { "pattern": "error.*message|stack.*trace|exception.*text", "reason": "No aggregation endpoint for error text or stack traces.", "alternative": "Error count by type (metric: agent-errors)" },
+    { "pattern": "governance.*policy.*summary|policy.*summary.*governance|getPolicySummary", "reason": "governance.getPolicySummary requires a specific policy UUID that must be supplied by the user.", "alternative": "Ask the user which policy UUID to report on, then classify as T3-Insights with method: getPolicySummary and the UUID injected into the request body." }
   ]
 }
