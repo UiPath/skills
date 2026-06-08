@@ -17,7 +17,7 @@ initial_prompt: |
   Create a UiPath low-code agent "FraudTriageAgent" that accepts a required
   `transaction` (object) and returns a `verdict` (string). When the
   agent is uncertain, it must escalate to a human reviewer via an
-  EXISTING EXTERNAL ActionCenter app named "FraudEscalationQueue" that
+  EXISTING EXTERNAL ActionCenter app named "FraudEscalation" that
   is already deployed to the Orchestrator "Shared" folder (not inside
   this solution). Model this as an escalation resource on the agent.
   The solution should be named "FraudSol".
@@ -25,7 +25,7 @@ initial_prompt: |
   When writing the escalation resource.json, set `isEnabled` to true so
   the escalation is active for the agent. Set `properties.folderPath`
   to the literal string "Shared" (the live Orchestrator folder where
-  FraudEscalationQueue is deployed) — never use placeholder values
+  FraudEscalation is deployed) — never use placeholder values
   like "solution_folder".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
@@ -84,8 +84,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "FraudEscalationQueue external escalation resource.json was created"
-    path: "FraudSol/FraudTriageAgent/resources/FraudEscalationQueue/resource.json"
+    description: "FraudEscalation external escalation resource.json was created"
+    path: "FraudSol/FraudTriageAgent/resources/FraudEscalation/resource.json"
     weight: 2.5
     pass_threshold: 1.0
 
