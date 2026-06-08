@@ -1,74 +1,107 @@
 # Dashboard Build Plugin
 
-Translates a natural language request into a running dashboard. By the time you read this, you have already loaded all reference docs and run the login + state check in parallel (per CAPABILITY.md). Do not re-read anything.
+By the time you read this you have already loaded all docs, run login, checked state, and fired pre-warm in the background (per CAPABILITY.md). The user is waiting for the plan.
 
 ## Rules
 
-1. Never read `build-dashboard.mjs` — the event protocol below is complete.
-2. Never run `ls`, `find`, or directory exploration — paths are given explicitly.
-3. Fire pre-warm silently the moment you know the project directory — user reads the plan while npm installs.
-4. Show the plan in plain English — no API names, no tier labels, no metric IDs.
-5. HALT after the plan — do not build until the user explicitly confirms.
-6. Resolve `clientId` before building — without it the dashboard cannot log in.
-7. Parse build script stdout line-by-line — missing a `T3_RETRY` exits with code 2.
-8. On `BUILD_RESULT`: open `previewUrl` in the browser.
+1. **Zero tool calls between user request and plan.** Everything internal runs in the parallel blast. The first thing the user sees is the plan.
+2. **Zero tool calls between plan and build confirmation.** Pure text HALT.
+3. **One tool call for the build.** A single bash command runs the build script and streams progress.
+4. Never read `build-dashboard.mjs` — this file documents everything.
+5. Never run `ls`, `find`, or directory exploration.
 
 ---
 
-## Phase 1 — Preflight
+## Phase 1 — Preflight (already done in background)
 
-You already have the `uip login status` response from the parallel blast. Extract from it:
+You have the `uip login status` response. Extract:
 
 - `orgName` ← `Data.Organization`
 - `tenantName` ← `Data.Tenant`
 - `cloudUrl` ← `Data.BaseUrl`
 
-Derive `apiUrl` and read `tenantId` following `auth-context.md`.
+Derive `apiUrl` and read `tenantId` per `auth-context.md`.
 
-Choose a project directory (e.g. `~/dashboards/<routing-name>`) and start pre-warm **now**:
+Pre-warm is already running at `~/dashboards/<ROUTING_NAME>`. Do not re-fire it.
 
-```bash
-mkdir -p <PROJECT_DIR> && cd <PROJECT_DIR> && npm ci --prefer-offline &
+---
+
+## Phase 2 — Plan (output this now, zero tool calls)
+
+Classify each metric using `tier-resolution.md` and `capability-registry.json`. Write `intent.json` in memory (do not save it yet). Then output the plan.
+
+### Plan format
+
+The plan must feel like a thoughtful product recommendation, not a technical specification. Rules:
+
+- Lead with a name and widget count on one line
+- One bullet per widget — widget name in bold, time range in parentheses, then one sentence on what it shows and why it matters
+- Close with 3–4 concrete things the user can ask for, phrased as natural language
+- If a metric was hard-refused: one sentence inline, strikethrough style, with the alternative offered
+- No API names, no tier labels, no metric IDs, no JSON, no code
+
+**Template:**
+
+```
+Here's your **[Dashboard Name]** — [N] widgets ready to build.
+
+📊 **[Widget Name]** ([time range]) — [one sentence: what it shows and why it's useful to them specifically]
+📈 **[Widget Name]** ([time range]) — ...
+🔢 **[Widget Name]** — ...
+📋 **[Widget Name]** ([time range]) — ...
+
+Confirm to build, or tell me what to change:
+→ "make the error chart 7 days"
+→ "add a KPI showing total runs today"
+→ "swap the table for a bar chart"
+→ "remove the latency widget"
+```
+
+**Widget type icons:**
+- 🔢 KPI card or sparkline
+- 📈 Line or area chart
+- 📊 Bar or donut chart
+- 📋 Table or ranked list
+- 🔷 Multi-line chart (e.g. P50/P95)
+
+**Example plan:**
+
+```
+Here's your **Agent Health Dashboard** — 4 widgets ready to build.
+
+🔢 **Active Agents** — count of agents that ran at least once in the last 30 days, so you can see fleet utilisation at a glance
+📈 **Error Rate Trend** (7 days) — daily error counts as a trend line so you can spot spikes before they become incidents
+🔷 **Latency P50 / P95** (30 days) — both percentiles on one chart to distinguish typical vs tail latency
+📋 **Top Failing Agents** (30 days) — agents ranked by error count so you know where to investigate first
+
+Confirm to build, or tell me what to change:
+→ "make all charts 7 days"
+→ "add invocation volume"
+→ "remove the latency chart"
+→ "show as a table instead"
 ```
 
 ---
 
-## Phase 2 — Plan
+## Phase 3 — Approval gate (zero tool calls)
 
-For each metric the user mentioned:
+**HALT.** Output only text. No tool calls.
 
-1. Check the hard-refuse list in `tier-resolution.md`. If matched: refuse that metric only and offer an alternative.
-2. Classify the tier (T1 / T2 / T3) using the decision tree in `tier-resolution.md` and the catalog in `capability-registry.json`.
-3. Build the complete `intent.json` (schema in `build-plan.md`).
-
-Present the plan:
-
-```
-Here's your **[Dashboard Name]** — N widgets. Confirm to build, or tell me what to change.
-
-• **[Widget name] ([time range])** — one sentence on what it shows and why it's useful
-• ...
-
-What you can do: "make it 7 days", "add a KPI for total errors", "remove the queue widget"
-```
+- User confirms → write intent.json, continue to Phase 4
+- User requests a change → update the plan in your response, HALT again
+- User cancels → discard
 
 ---
 
-## Phase 3 — Approval gate
+## Phase 4 — External OAuth client (0–1 tool call)
 
-**HALT.** Do not proceed until the user confirms.
+Every dashboard needs a `clientId` for PKCE auth. Without it the browser shows an auth error.
 
-- User confirms → continue to Phase 4
-- User requests a change → update `intent.json`, re-render the plan, HALT again
-- User cancels → discard `intent.json`
+### Check intent.json for existing clientId
 
----
+If the user has given a client ID previously (stored in your context) → write it directly into intent.json. Skip the bash check.
 
-## Phase 4 — External OAuth client
-
-Every dashboard needs a UiPath external app for browser authentication (PKCE). Without a `clientId` the dashboard loads but shows an auth error immediately.
-
-### Check if clientId is already set
+If unknown, run once:
 
 ```bash
 node -e "
@@ -79,13 +112,13 @@ process.exit(intent.clientId ? 0 : 1)
 
 **HAS_CLIENT** → skip to Phase 5.
 
-**NEEDS_CLIENT** → ask the user:
+**NEEDS_CLIENT** → ask concisely:
 
-> "Your dashboard needs a UiPath OAuth app for authentication. Do you have an existing client ID, or should I create one?"
+> "One quick thing — your dashboard needs a UiPath OAuth app for authentication. Do you have an existing client ID, or should I create one for you?"
 
-**If the user provides their own client ID:** write it into `intent.json`, continue to Phase 5.
+**If user provides their client ID:** write it into intent.json, go to Phase 5.
 
-**If the user wants one created:**
+**If user says create one:**
 
 ```bash
 uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
@@ -95,35 +128,62 @@ uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
   --output json
 ```
 
-Read `ClientId` from the JSON response and write it into `intent.json`. Tell the user: "OAuth app created — building now."
+Read `ClientId` from the JSON response. Write it into intent.json. Respond: "Done — building now."
 
-**If the command fails:** direct the user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalApps` to create one manually. Do not proceed without a `clientId`.
+**If command fails:** direct user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalApps`. Do not proceed without `clientId`.
 
 ---
 
-## Phase 5 — Build
+## Phase 5 — Build (one tool call)
+
+Write intent.json to disk, then run:
 
 ```bash
 node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" "<INTENT_JSON_PATH>"
 ```
 
-Parse each line as it arrives:
+### What to show the user
 
-| Event | Action |
-|-------|--------|
-| `PREWARM_START` | npm ci starting — no action |
-| `PREWARM_DONE` | Dependencies ready |
-| `PREWARM_FAILED:{"exitCode":N,"stderr":"..."}` | Surface error to user, stop |
-| `SCAFFOLD_READY` | Scaffold copied |
-| `ENV_WRITTEN` | Environment config written |
-| `AUTH_MISSING:{"var":"clientId",...}` | Warn user — go back to Phase 4 |
-| `WIDGET_READY:{"name":"X","index":N,"total":M}` | Print `✓ X ready (N/M)` |
-| `T3_RETRY:{"widget":"X","errors":[...],"intentPath":"..."}` | Fix `fnBody` in `intent.json`, re-run (exit code 2) |
-| `TSC_PASS` | Print `✓ TypeScript clean` |
-| `PARTIAL_BUILD_DETECTED` | Prior build was interrupted — continuing |
-| `SERVER_READY:{"port":N,"url":"..."}` | Save the URL |
-| `BUILD_RESULT:{"success":true,...}` | Open `previewUrl` in browser |
+Show a clean, minimal build experience. Translate events into one line of progress — no raw JSON, no event names.
 
-On success:
+**Progress template:**
 
-> "Your dashboard is live at [url]. Tell me what to change — I can add widgets, adjust time ranges, or deploy it."
+```
+Building **[Dashboard Name]**…
+
+  ✓ [Widget Name]
+  ✓ [Widget Name]
+  ✓ [Widget Name]
+  ✓ TypeScript clean
+
+Opening your dashboard at http://localhost:57173
+```
+
+**Event → display mapping:**
+
+| Event | Show to user |
+|-------|-------------|
+| `PREWARM_DONE` | (silent — already running) |
+| `SCAFFOLD_READY` | (silent) |
+| `ENV_WRITTEN` | (silent) |
+| `WIDGET_READY:{"name":"X",...}` | `  ✓ X` (one line per widget) |
+| `T3_RETRY:{...}` | `  ↻ [Name] — refining query…` then retry |
+| `TSC_PASS` | `  ✓ TypeScript clean` |
+| `AUTH_MISSING:{...}` | Pause, tell user to complete Phase 4 |
+| `PARTIAL_BUILD_DETECTED` | `  ↻ Resuming previous build…` |
+| `SERVER_READY:{...}` | `Opening your dashboard at [url]` |
+| `BUILD_RESULT:{...}` | Open previewUrl in browser |
+| `PREWARM_FAILED:{...}` | "Dependency install failed — [stderr excerpt]. Try running `npm ci` manually in [dir]." |
+
+### Success message
+
+After `BUILD_RESULT`, open the URL and respond:
+
+```
+Your **[Dashboard Name]** is live at http://localhost:57173 🎉
+
+The dashboard has [N] widgets: [comma-separated names].
+Tell me what to change — I can add widgets, adjust time ranges, swap chart types, or deploy it to your team.
+```
+
+Keep it warm and action-oriented. The user just got something real — meet that moment.
