@@ -102,25 +102,26 @@ uip solution resource refresh --output json
 
 After `uip solution resource refresh`, confirm the solution-level reference was created:
 
-```
+```text
 resources/solution_folder/<McpServerKind>/<Type>/<slug>.json   # e.g. .../McpServer/Command/github-mcp.json
 ```
 
 It is a **reference** (`key` = the cloud server UUID, full `spec` incl. command/URL + tools pulled from AgentHub), placed under `solution_folder` with a `debug_overwrites.json` entry mapping it to its real cloud folder — so the binding is overridable per environment.
 
-### Step 6 — Bundle and upload (with user consent)
+### Step 6 — Upload (with user consent)
 
 ```bash
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+uip solution upload . --output json
 ```
+
+`uip solution upload` bundles the solution and uploads it in one pass — there is no separate `uip solution bundle` step.
 
 ## Gotchas
 
 - **`availableTools` is a curated subset** — include the tools the task needs; ask the user when the relevant set is unclear.
 - **`inputSchema` must be a JSON object**, not the escaped string `resource get` returns — parse `Tool.InputSchema` first.
 - **`id` ≠ `resourceKey`.** `id` is a fresh agent-local UUID; `solutionProperties.resourceKey` is the cloud server's `Key` from `resource list`.
-- **`folderPath` is the server's real folder** (the literal `Folder` from `resource list`, e.g. `"Shared"`) — the MCP server is an external/remote resource, so it follows the same convention as external process tools (see [../../agent-definition.md](../../agent-definition.md) § folderPath semantics). The binding is keyed by `slug` + `folderPath`, which resolves uniquely even when a slug repeats across folders (slugs are unique *within* a folder). `uip solution resource refresh` then places the reference under `solution_folder` and records the real folder in `debug_overwrites`, so the binding stays overridable. (An existing reference solution may show `"solution_folder"` here — that comes from a `resourceKey`-based resolution path; CLI `refresh` resolves by `slug`+`folderPath`, so author the real folder.)
+- **`folderPath` is the server's real folder** (the literal `Folder` from `resource list`, e.g. `"Shared"`) — like an external process tool; see [../../agent-definition.md](../../agent-definition.md) § folderPath semantics for the binding mechanism. MCP-specific: the binding resolves by `slug` + `folderPath` (slugs are unique only *within* a folder), so author the real folder, **not** `"solution_folder"`. An existing reference solution may show `"solution_folder"` because it was resolved by `resourceKey` instead — CLI `refresh` resolves by `slug`+`folderPath`.
 - **`uip agent validate` is strict read-only** — it does not write; run `uip agent refresh` first to generate derived files.
 
 ## References

@@ -35,7 +35,7 @@ Standard workflow for any low-code agent task:
 4. **Refresh** — `uip agent refresh --output json`. Applies pending migrations and regenerates `entry-points.json` and `bindings_v2.json`. Confirm `MigrationApplied`, `StorageVersion`.
 5. **Validate** — `uip agent validate --output json`. Strict read-only. Confirm `Status: "Valid"`, `Validated` counts.
 6. **Refresh solution resources** — `uip solution resource refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, memory spaces, escalations).
-7. **Bundle and upload** — `uip solution bundle` then `uip solution upload --output json` (with user consent per Rule 6).
+7. **Upload** — `uip solution upload . --output json` (bundles and uploads in one pass; with user consent per Rule 6).
 
 Capabilities are **orthogonal**: there is no ordering requirement among them. Adding a tool and an escalation in parallel is safe — they do not interact at the file level. Validate and refresh once after all capability edits are complete, not after each one.
 
