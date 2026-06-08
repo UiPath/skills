@@ -36,6 +36,6 @@ Synced 1 resources (0 already in solution)
 uip solution resource list --source local --kind Queue --output json | jq '.Data[] | select(.Name == "OrdersQueue")'
 ```
 
-Exactly one entry, with a key that matches the cloud GUID returned by `uip or queues get OrdersQueue --folder-path "Shared/Production"`.
+Exactly one entry, with a key that matches the cloud GUID (the `Key` field) returned by `uip or queues list --folder-path "Shared/Production" --name OrdersQueue`.
 
 > See: [develop-solution.md — Step 7: Refresh Resources](../develop-solution.md#step-7-refresh-resources).

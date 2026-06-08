@@ -53,9 +53,9 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 
 ---
 
-## Resource (`uip or`)
+## Orchestrator resources (`uip or assets` / `queues` / `triggers` / …)
 
-Manage assets, queues, triggers, buckets, libraries, and webhooks. See [`uipath-resources`](resources/resources.md).
+Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset of `uip or`. See [`uipath-resources`](resources/resources.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
