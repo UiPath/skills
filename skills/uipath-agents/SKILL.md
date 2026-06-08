@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "Always invoke for low-code agents (Agent Builder / `agent.json`) or Python framework-based coded agents (LangGraph/LlamaIndex/OpenAI Agents — projects with `uipath-langchain`/`uipath-llamaindex`/`uipath-openai-agents` deps and LLM reasoning). UiPath agent lifecycle: setup, auth, build, run, evaluate, deploy, sync, bindings. For Python Coded Functions (deterministic logic, no LLM, `[tool.uipath] type=\"function\"`)→uipath-functions. For C# or XAML workflows→uipath-rpa."
+description: "Always invoke for low-code agents (Agent Builder / `agent.json`) or Python projects with `uipath-*` deps. UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
 ---
@@ -20,7 +20,7 @@ Determine the agent mode before proceeding:
 
 1. **First — confirm this is an agent, not a Coded Function.** If `pyproject.toml` contains `[tool.uipath] type = "function"`, the project is a **Python Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip functions new/init/pack/publish/run`).
 2. **Check for existing agent project files** in the working directory:
-   - `pyproject.toml` with `uipath` dependency + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**
+   - `pyproject.toml` + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**. The framework package already declares `uipath` as a dependency, so an explicit `uipath` entry is not required.
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
 3. **No existing project found** → ask the user:
    > Should I build this as a **low-code agent** (no Python — configure through prompts and pre-built UiPath tools) or a **coded agent** (Python — full programmatic control with LangGraph, LlamaIndex, or OpenAI Agents)?

@@ -228,11 +228,11 @@ See [embedding-in-flows.md](embedding-in-flows.md) for the agent-side steps: sca
 
 ## Framework Selection
 
-> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Python Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill instead of this one. Coded Functions use `@dataclass` I/O and `[tool.uipath] type = "function"` in `pyproject.toml`; agents use Pydantic `BaseModel` and a framework graph.
+> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Python Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill instead of this one. Coded Functions use typed I/O (`@dataclass`, Pydantic `BaseModel`, or a thin Python class with typed annotations — [example](https://github.com/UiPath/uipath-python/blob/main/packages/uipath/samples/csv-processor/main.py#L16)) and `[tool.uipath] type = "function"` in `pyproject.toml`; what distinguishes an agent is LLM reasoning and a framework graph.
 
 If the task needs LLM reasoning, infer the framework from the user's prompt when possible. If ambiguous, ask them to choose:
 
-1. **LangGraph** — StateGraph with conditional routing, tool use, interrupts. Best for complex LLM agents.
+1. **LangGraph** (recommended — best integrated with the UiPath ecosystem) — StateGraph with conditional routing, tool use, interrupts. Best for complex LLM agents.
 2. **LlamaIndex** — Workflow with events and RAG support. Best for knowledge retrieval.
 3. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence.
 
