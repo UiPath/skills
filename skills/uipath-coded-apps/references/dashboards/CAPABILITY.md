@@ -1,39 +1,49 @@
-# Dashboard Capability — Entry Point
+# Dashboard Capability
 
-Build or edit a Coded Web App dashboard powered by Insights RTM and the UiPath TypeScript SDK.
+Build or edit a React dashboard powered by Insights RTM and the UiPath TypeScript SDK.
 
-## When to use this capability
+---
 
-- User asks for a dashboard, chart, report, or metric visualization
-- User asks to "add/remove/change" widgets on an existing dashboard
+## Step 1 — Read everything in ONE parallel message block
 
-## Critical Rules
+Fire all of these simultaneously before any other work:
 
-1. Read `primitives/tier-resolution.md` BEFORE classifying any metric — do not guess tiers from memory.
-2. Fire pre-warm before showing the plan — hidden from user.
-3. Always use plain English in the plan — no API names, no tier labels.
-4. HALT after plan — do not build until user confirms.
-5. Parse EVERY build script output line — miss a T3_RETRY and the build exits with code 2.
-6. Never auto-deploy — deploy requires explicit user confirmation.
+| File | Purpose |
+|------|---------|
+| `plugins/build/impl.md` | Full build instructions |
+| `primitives/tier-resolution.md` | Metric classification + hard-refuse list |
+| `primitives/auth-context.md` | Login + credential extraction |
+| `primitives/build-plan.md` | intent.json schema |
+| `aesthetic/layout-patterns.md` | Layout rules |
+| `assets/scripts/capability-registry.json` | Metric catalog (machine-readable T1/T2 entries) |
 
-## Plugin Router
+In the same message, also run:
 
-| User intent | Plugin |
-|-------------|--------|
-| Build new dashboard | `plugins/build/impl.md` |
-| Edit existing dashboard | `primitives/incremental-editor.md` |
-| Deploy dashboard | `plugins/deploy/impl.md` |
+```bash
+uip login status --output json
+```
 
-## Reference Navigation
+```bash
+node -e "
+const fs = require('fs')
+fs.existsSync('.dashboard/state.json') ? process.exit(0) : process.exit(1)
+" && echo INCREMENTAL || echo FRESH
+```
 
-| Doc | Purpose |
-|-----|---------|
-| `primitives/tier-resolution.md` | T1/T2/T3 classification rules + hard-refuse list |
-| `primitives/build-plan.md` | intent.json schema + routing name rules |
-| `primitives/auth-context.md` | How to extract org/tenant/tenantId from uip login |
-| `primitives/state-file.md` | .dashboard/state.json schema |
-| `primitives/incremental-editor.md` | edit-intent.json schema + ADD/REMOVE/CHANGE flow |
-| `primitives/insights-client.md` | Temporary Insights HTTP client (until SDK ships) |
-| `aesthetic/layout-patterns.md` | 10 immutable layout rules |
-| `aesthetic/charting.md` | Chart type selection guide |
-| `sdk-capabilities.md` | Full capability registry with aliases |
+---
+
+## Step 2 — Route based on result
+
+- `INCREMENTAL` → read `primitives/incremental-editor.md`, then follow it
+- `FRESH` → follow `plugins/build/impl.md` (already loaded above)
+
+---
+
+## Hard stops — never do these
+
+- **Do not** read `build-dashboard.mjs` — the build protocol is fully documented in impl.md
+- **Do not** run `ls`, `find`, or directory exploration — all paths are given explicitly
+- **Do not** read `sdk-capabilities.md` — `primitives/tier-resolution.md` and `capability-registry.json` are sufficient
+- **Do not** read one file at a time — always batch all reads in a single message
+- **Do not** auto-deploy — deploy requires explicit user confirmation
+- **Do not** commit generated dashboard files
