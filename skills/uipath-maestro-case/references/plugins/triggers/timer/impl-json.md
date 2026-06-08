@@ -18,6 +18,7 @@ Add a scheduled trigger to a case. Adapts shape to whether any Trigger node alre
 |---|---|---|
 | `timeCycle` | yes | ISO 8601 repeating interval. Consumed verbatim — no parsing, no decomposition. |
 | `displayName` | no | Defaults to `Trigger <N>` where `N = existingTriggerCount + 1`. |
+| `description` | no | Free-text; from sdd.md or LLM-inferred. Mirrors the manual-trigger `data.description` field. |
 
 ## Adaptive recipe
 
@@ -38,6 +39,7 @@ Emit the canonical first-trigger shape with the timer `uipath` block:
   "position": { "x": 0, "y": 0 },
   "data": {
     "label": "<displayName or \"Trigger 1\">",
+    "description": "<description from sdd.md or LLM-inferred>",
     "uipath": {
       "serviceType": "Intsvc.TimerTrigger",
       "timerType": "timeCycle",
@@ -63,6 +65,7 @@ Emit a secondary trigger with full render fields:
   "data": {
     "parentElement": { "id": "root", "type": "case-management:root" },
     "label": "<displayName or \"Trigger <N>\">",
+    "description": "<description from sdd.md or LLM-inferred>",
     "uipath": {
       "serviceType": "Intsvc.TimerTrigger",
       "timerType": "timeCycle",

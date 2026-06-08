@@ -441,7 +441,7 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
   {
     "expression": "=js:vars.priority === 'Urgent'",
     "count": 30,
-    "unit": "m",
+    "unit": "min",
     "escalationRule": [
       {
         "id": "esc_aB3kL9",

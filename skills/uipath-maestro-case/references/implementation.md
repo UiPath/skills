@@ -115,7 +115,7 @@ For multi-trigger cases, add the additional triggers first via the appropriate t
 
 ## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
 
-**Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey>` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1.
+**Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1.
 
 **Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` lane per the matching plugin's `impl-json.md`. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
 
@@ -197,7 +197,7 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 **Phase A — gather.** For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
 
 1. Run `get-connection` (each task runs its own — never reuse).
-2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>'` per the plugin's `impl-json.md`.
+2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` per the plugin's `impl-json.md`.
 3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
 
 Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).

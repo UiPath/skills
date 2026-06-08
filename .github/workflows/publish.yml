@@ -80,19 +80,30 @@ jobs:
     needs: [guard]
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'npmjs')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # OIDC trusted publishing — no NPM_TOKEN. The npmjs trusted publisher
+      # for @uipath/skills must name this repo (UiPath/skills) and workflow
+      # (publish.yml). npm exchanges this OIDC token for publish credentials.
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-          registry-url: "https://registry.npmjs.org"
-          scope: "@uipath"
 
-      # setup-node above wrote `@uipath:registry=https://registry.npmjs.org/`
-      # + auth into the runner .npmrc. `@uipath/skills` is scoped, so npm
-      # resolves the publish target from that scoped registry — a `--registry`
-      # flag would be ignored (it only sets the unscoped default).
-      - name: Publish to npmjs
-        run: npm publish --access public --tag latest
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
+      - name: Upgrade npm for trusted publishing
+        run: |
+          npm install -g npm@latest
+          echo "npm $(npm --version) / node $(node --version)"
+
+      # No auth token and no setup-node registry-url — a token would make npm
+      # use token auth and bypass OIDC. We only pin the scoped package to
+      # npmjs; credentials come from the OIDC exchange. `--provenance` attaches
+      # a signed build attestation (allowed because the repo is public and the
+      # job has id-token: write); package.json `repository.url` must match.
+      - name: Publish to npmjs (OIDC trusted publishing)
+        run: |
+          npm config set @uipath:registry https://registry.npmjs.org/
+          npm publish --access public --provenance --tag latest

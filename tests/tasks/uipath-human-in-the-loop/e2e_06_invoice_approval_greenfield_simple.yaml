@@ -53,7 +53,7 @@ success_criteria:
     description: "Completed handle is wired in the flow file"
     path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 1.5
     pass_threshold: 1.0
 
