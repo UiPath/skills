@@ -64,12 +64,12 @@ The `.uipx` is auto-discovered by walking up from the project path if not specif
 Copy a project from outside the solution tree into the solution directory and register it.
 
 ```bash
-uip solution project import --source /path/to/ExternalProject --output json
+uip solution project import /path/to/ExternalProject --output json
 ```
 
 Unlike `add`, `import` copies source files into the solution directory first, then registers the copy.
 
-> **Three names can diverge after `import`.** The destination folder name is the basename of `--source`. The `ProjectRelativePath` in `.uipx` matches the folder. The auto-generated package resource name is taken from the project metadata (e.g., `pyproject.toml [project].name` for Python coded agents) — which may differ from the folder. Rename the source directory to the intended project name **before** importing, or trace the relationship via the `projectKey` UUID inside the resource files.
+> **Three names can diverge after `import`.** The destination folder name is the basename of the source path. The `ProjectRelativePath` in `.uipx` matches the folder. The auto-generated package resource name is taken from the project metadata (e.g., `pyproject.toml [project].name` for Python coded agents) — which may differ from the folder. Rename the source directory to the intended project name **before** importing, or trace the relationship via the `projectKey` UUID inside the resource files.
 
 ## Step 4: Remove a Project
 
@@ -554,7 +554,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 |---|---|---|
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
 | Add a project already in the solution dir | `uip solution project add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
-| Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
+| Pull in an external project | `uip solution project import <path>` | Rename source folder first to avoid 3-name divergence |
 | Remove a project | `uip solution project remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
 | Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
 | Add a virtual queue / asset / bucket | `uip solution resource add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |

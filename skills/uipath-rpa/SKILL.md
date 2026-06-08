@@ -187,7 +187,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 ### Destination Preflight (Both Modes)
 
-**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution new <NAME>` → `uip solution project import --source <PROJECT_DIR> --solutionFile <SOLUTION>.uipx` → `uip solution upload <SOLUTION_DIR>`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and Orchestrator publish (`uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
+**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution new <NAME>` → `uip solution project import <PROJECT_DIR> --solutionFile <SOLUTION>.uipx` → `uip solution upload <SOLUTION_DIR>`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and Orchestrator publish (`uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
 
 ### Execution Discipline (Both Modes)
 
