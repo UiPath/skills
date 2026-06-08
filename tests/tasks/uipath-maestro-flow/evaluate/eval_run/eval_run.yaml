@@ -13,6 +13,10 @@ tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute, feature:eval]
 
 run_limits:
   max_turns: 90
+  # Agent issues `uip ... eval run start --wait --timeout 600` which can block
+  # the entire turn for up to 600s; default 900s turn_timeout left no headroom
+  # for the surrounding ops in the same turn and timed out at iteration 1.
+  turn_timeout: 1500
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
