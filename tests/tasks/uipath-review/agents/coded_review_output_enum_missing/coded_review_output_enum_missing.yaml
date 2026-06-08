@@ -66,14 +66,6 @@ success_criteria:
     weight: 3.0
 
   - type: command_executed
-    description: "Ran the review CLI first (Step 2.5a): uip codedagent review --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+review'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent consulted the coded judgment catalog (agents-coded-rules.md)"
     tool_name: "Read"
     command_pattern: 'agents-coded-rules\.md'

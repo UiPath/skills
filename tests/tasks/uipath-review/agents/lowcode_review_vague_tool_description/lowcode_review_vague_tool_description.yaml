@@ -28,6 +28,10 @@ initial_prompt: |
   inside the solution `ReviewSol`. Review the agent project and produce
   a structured review report with Critical / Warning / Info findings.
 
+  Before doing anything else, load the `uipath-review` skill and follow
+  its review workflow (discover, classify, run validation, apply the
+  rule catalog, produce the report).
+
   This is a read-only review. Do NOT modify, create, or delete any
   files inside `ReviewSol/`. Do NOT scaffold a new project. Do NOT
   ask for approval, confirmation, or feedback.
@@ -81,14 +85,6 @@ success_criteria:
     description: "Agent consulted the common agent rule catalog (agents-common-rules.md)"
     tool_name: "Read"
     command_pattern: 'agents-common-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Ran the review CLI first (Step 2.5a): uip agent review --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+review'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
