@@ -13,6 +13,9 @@
 # Plugin-namespaced slash commands (e.g., /uipath:install-permissions)
 /commands/ @DragosUnguru @tmatup
 
+# CLI versions config (per-environment CLI versions)
+/assets/cli-versions.json @vlad-uipath
+
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
@@ -34,8 +37,8 @@
 /tests/fixtures/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 
 # Agents skill (coded + low-code)
-/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
-/tests/tasks/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
+/skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
+/tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
 
 # Context grounding capabilities (DeepRAG + BatchTransform) — now part of uipath-agents
 /skills/uipath-agents/references/coded/capabilities/deeprag/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
@@ -64,6 +67,11 @@
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+
+# Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
+/skills/uipath-maestro-flow/references/author/references/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
+/skills/uipath-maestro-flow/references/author/references/plugins/batch-transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
+/tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 
 # Maestro BPMN skill
 /skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
@@ -102,6 +110,7 @@
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+/skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
 
 # Governance skill
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
@@ -127,3 +136,6 @@
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+# MCP skill (UiPath AgentHub MCP server registration + tool authoring)
+/skills/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
+/tests/tasks/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents

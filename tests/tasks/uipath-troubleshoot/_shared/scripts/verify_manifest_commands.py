@@ -205,6 +205,13 @@ def validate_match(
             return False, f"parent 'uip {' '.join(parent)}' returned {result}"
         subs = subcommand_names(help_payload)
         if token not in subs:
+            # Some plugins install correctly but aren't listed in the parent's
+            # Subcommands (e.g. `is`, `resource`, `docsai` in uip 1.2.x-alpha).
+            # Probe the token directly: if `uip <prefix> <token> --help` returns
+            # Success the subcommand is real — the parent just doesn't advertise it.
+            probe = fetch_help(uip_bin, tuple(path[: depth + 1]))
+            if probe is not None and probe.get("Result") == "Success":
+                continue
             return False, f"'{token}' is not a subcommand of 'uip {' '.join(parent) or '(root)'}'"
 
     # 2. Leaf-level flag validation (per-command flags + inherited global flags)

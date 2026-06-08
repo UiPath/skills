@@ -26,23 +26,17 @@ For agent.json configuration and resource file setup, see the `uipath-agents` sk
 
 ## Configure `agent.json`
 
-`uip agent init --inline-in-flow` scaffolds `agent.json` with empty `messages[].content` by design. Edit `<FlowProjectDir>/<projectId>/agent.json`:
+`uip agent init --inline-in-flow` scaffolds `agent.json` with `settings.model: "gpt-4o-2024-11-20"` (stale) and empty `messages[].content` by design. **Both are placeholders — override them.** A scaffolded inline agent left on the default model with toy prompts is the single biggest quality gap a customer ships. Edit `<FlowProjectDir>/<projectId>/agent.json`:
 
-1. Set `settings.model` (e.g., `"anthropic.claude-sonnet-4-6"`, `"gpt-4o-2024-11-20"`)
-2. Set `settings.temperature`, `settings.maxTokens`, `settings.maxIterations`
-3. Write system prompt in `messages[0].content` and rebuild `messages[0].contentTokens`
-4. Write user prompt in `messages[1].content` and rebuild `messages[1].contentTokens`
-5. Configure `inputSchema` and `outputSchema` if the agent needs structured I/O
+1. **Override the model** — never ship `gpt-4o-2024-11-20`. Discover the tenant's models with `uip agent model list` and pick the newest GA model for the task; set `settings.maxTokens` ≤ its cap. Discovery command, GA filter, and task→model mapping: the `uipath-agents` skill's [`model-selection-guide.md`](../../../../../../uipath-agents/references/lowcode/model-selection-guide.md).
+2. Set `settings.temperature` (0 for extraction/classification/judgment) and `settings.maxIterations` (default 25; lower for single-shot).
+3. **Write a real system prompt** in `messages[0].content` — bounded role, per-tool call/stop criteria, output contract, grounding. Skeleton + worked example: [`agent-prompting-guide.md`](../../../../../../uipath-agents/references/lowcode/agent-prompting-guide.md).
+4. Write the user prompt in `messages[1].content`.
+5. **Declare a typed `outputSchema`** — not a bare `content` string — so downstream nodes can consume the result.
 
-Use `type: "simpleText"` with `rawString` for `contentTokens`:
+After editing `content`, rebuild the matching `messages[].contentTokens` (`type: "simpleText"` / `type: "variable"`). Token mechanics are flow-specific — see § Wiring Flow Variables into Agent Prompts below; for prompt-quality structure see `agent-prompting-guide.md`.
 
-```json
-"contentTokens": [
-  { "type": "simpleText", "rawString": "Your prompt text here" }
-]
-```
-
-For detailed agent configuration (contentTokens format, model settings, resource files, tool bindings), use the `uipath-agents` skill.
+> **Source of truth.** The prompt skeleton, the production-field checklist (`outputSchema` / `temperature` / `maxIterations` / `guardrails`), the model-discovery command, and the worked example all live in the `uipath-agents` guides linked above — this skill points at them rather than copying, to avoid cross-skill drift. The obligations in steps 1–5 are the build-time minimum; the *how* is one click away.
 
 ## Wiring Flow Variables into Agent Prompts
 
@@ -79,15 +73,25 @@ Matching `agent.json` (excerpt):
 
 ```json
 {
+  "settings": { "model": "anthropic.claude-sonnet-4-6", "temperature": 0, "maxTokens": 4096, "maxIterations": 10 },
   "inputSchema": {
     "type": "object",
     "properties": {}
   },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category":  { "type": "string",  "description": "billing | technical | sales | other" },
+      "priority":  { "type": "string",  "description": "low | medium | high | urgent" },
+      "needsHuman":{ "type": "boolean", "description": "true if the email requires human review" }
+    },
+    "required": ["category", "priority", "needsHuman"]
+  },
   "messages": [
     {
       "role": "system",
-      "content": "Triage the inbound email.",
-      "contentTokens": [{ "type": "simpleText", "rawString": "Triage the inbound email." }]
+      "content": "You are a support-email triage classifier for a SaaS product. Classify each inbound email; do not reply to the customer. category MUST be one of billing, technical, sales, other. Set needsHuman=true for legal threats, churn risk, or anything outside those categories. Never invent customer details not present in the email. If the email is empty or unintelligible, set category=\"other\" and needsHuman=true.",
+      "contentTokens": [{ "type": "simpleText", "rawString": "You are a support-email triage classifier for a SaaS product. Classify each inbound email; do not reply to the customer. category MUST be one of billing, technical, sales, other. Set needsHuman=true for legal threats, churn risk, or anything outside those categories. Never invent customer details not present in the email. If the email is empty or unintelligible, set category=\"other\" and needsHuman=true." }]
     },
     {
       "role": "user",
@@ -105,7 +109,7 @@ Matching `agent.json` (excerpt):
 }
 ```
 
-The flow-node `inputs.systemPrompt` / `inputs.userPrompt` are short, generic validator placeholders — **do not copy the templated `agent.json` prompt with `{{ $vars.X }}` tokens here**. The contract: every `{{ $vars.<flowNodeId>.output[.<field>] }}` token in `agent.json content` has a matching `{ type: "variable", rawString: " $vars.<flowNodeId>.output[.<field>] " }` entry in the same message's `contentTokens[]` (leading and trailing spaces inside `rawString`).
+The system prompt here is a real one (bounded role, output contract, grounding, uncertainty rule — structured per `agent-prompting-guide.md`) and `outputSchema` carries typed fields — not a bare `content` blob. The flow-node `inputs.systemPrompt` / `inputs.userPrompt` are short, generic validator placeholders — **do not copy the templated `agent.json` prompt with `{{ $vars.X }}` tokens here**. The contract: every `{{ $vars.<flowNodeId>.output[.<field>] }}` token in `agent.json content` has a matching `{ type: "variable", rawString: " $vars.<flowNodeId>.output[.<field>] " }` entry in the same message's `contentTokens[]` (leading and trailing spaces inside `rawString`).
 
 ### When the source field name is unknown at authoring time
 

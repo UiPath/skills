@@ -1,0 +1,62 @@
+task_id: skill-flow-openmeteo-weather
+description: >
+  End-to-end: build a Flow whose process fetches the CURRENT weather in Bellevue
+  via the Open-Meteo Integration Service connector
+  (`uipath.connector.custom-codereval-openmeteoapis.getcurrentweather`, the
+  curated `V1Forecast` retrieve), bind it to the tenant's Open-Meteo connection,
+  and surface the current temperature as a flow output variable. Then run
+  `flow debug` and assert a live temperature value comes back. Exercises connector
+  discovery, curated-activity query-parameter configuration (latitude / longitude /
+  current_weather), connection binding, output wiring of a nested response field
+  (`current_weather.temperature`), and live execution. Distinct from the
+  managed-HTTP `bellevue_weather` task — this one must use the native connector,
+  not `core.action.http`.
+tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, custom-codereval-openmeteoapis]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "OpenMeteoWeather".
+  The process must fetch the CURRENT weather in Bellevue using the Open-Meteo
+  connector, then surface the current temperature as a flow output variable.
+
+  Use the Open-Meteo Integration Service connector. Validate the flow.
+
+  The task is not complete until `uip maestro flow validate` passes.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build and validate the complete flow end-to-end
+  in a single pass. Before starting, load the uipath-maestro-flow skill and follow its
+  connector node configuration workflow. Do NOT substitute a mock or a manual
+  HTTP request for the connector.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate OpenMeteoWeather/OpenMeteoWeather/OpenMeteoWeather.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Execution: connector calls Open-Meteo and returns a temperature ─────
+  - type: run_command
+    description: "Open-Meteo connector node executes and returns the current temperature"
+    command: "python3 $TASK_DIR/check_openmeteo_weather.py"
+    timeout: 320
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

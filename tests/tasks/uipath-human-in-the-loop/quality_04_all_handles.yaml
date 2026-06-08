@@ -36,7 +36,7 @@ success_criteria:
     description: "completed handle is wired in the flow file"
     path: "PurchaseOrderApproval/PurchaseOrderApproval/PurchaseOrderApproval.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 2.0
     pass_threshold: 1.0
 

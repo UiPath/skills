@@ -7,83 +7,21 @@ description: >
   looks up a remote label via a helper (mocked in-code via
   `@mockable` so eval-time substitutes example outputs). Output is
   structured JSON, eval'd with `JsonSimilarityEvaluator`. The full
-  pipeline runs offline.
+  pipeline runs offline. Project files are pre-seeded via `pre_run`
+  (fixtures in `_fixtures/`) so the eval grades mocking + evaluator
+  wiring, not file transcription.
 tags: [uipath-agents, e2e, coded, mode:build, feature:eval, feature:eval-mocking, feature:framework-simple]
 max_iterations: 1
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_mocking_mockito/_fixtures/asset-retriever ."
+    timeout: 10
+
 initial_prompt: |
-  Recreate the coded agent project under `asset-retriever/`
-  exactly as below.
-
-  **asset-retriever/pyproject.toml**:
-  [project]
-  name = "asset-retriever"
-  version = "0.0.1"
-  description = "UiPath agent that returns a structured summary of an asset with masked value and remote label"
-  authors = [{ name = "john doe", email = "john.doe@example.com" }]
-  dependencies = [
-      "requests>=2.34.2",
-      "uipath>=2.10.0, <2.11.0",
-  ]
-  requires-python = ">=3.11"
-
-  [dependency-groups]
-  dev = [
-      "uipath-dev>=0.0.79",
-  ]
-
-  **asset-retriever/main.py**:
-  from dataclasses import dataclass
-  import requests
-  from uipath.platform import UiPath
-
-  @dataclass
-  class SecretPeekInput:
-      asset_name: str
-
-  @dataclass
-  class SecretPeekOutput:
-      masked_key: str
-      label: str
-
-  def fetch_label(key_id: str) -> str:
-      """Fetch human-readable label from remote registry."""
-      url = f"https://registry.example.com/labels/{key_id}"
-      try:
-          response = requests.get(url, timeout=5)
-          response.raise_for_status()
-          data = response.json()
-          return data.get("label", "unknown")
-      except Exception:
-          return "unknown"
-
-  def mask_secret(secret: str) -> str:
-      """Mask secret: first 4 chars + stars padded to original length."""
-      if len(secret) < 4:
-          return "*" * len(secret)
-      return secret[:4] + "*" * (len(secret) - 4)
-
-  def main(input: SecretPeekInput) -> SecretPeekOutput:
-      sdk = UiPath()
-
-      # Read asset from Shared folder
-      asset = sdk.assets.retrieve(input.asset_name, folder_name="Shared")
-      secret_value = asset.value
-
-      # Mask the secret
-      masked = mask_secret(secret_value)
-
-      # Fetch label from registry
-      label = fetch_label(input.asset_name)
-
-      return SecretPeekOutput(masked_key=masked, label=label)
-
-    **asset-retriever/uipath.json**:
-      {
-    "functions": {
-      "main": "main.py:main"
-      }
-    }
+  I have an existing coded agent project at `asset-retriever/`
+  (`main.py`, `pyproject.toml`, `uipath.json`). It reads an
+  Orchestrator asset from the Shared folder, masks its value, and
+  fetches a human-readable label from a remote registry over HTTP.
 
   Add a smoke evaluation suite with 2–3 cases covering different
   asset values and run it locally. The evals must pass without
@@ -92,7 +30,7 @@ initial_prompt: |
   `eval-results.json` in the project root.
 
   For scoring, use a **structured-output evaluator** — we care
-  about the shape of `{"masked_key": ..., "label": ...}. Those
+  about the shape of `{"masked_key": ..., "label": ...}`. Those
   should be as similar as possible to what we expect.
 
   I also want to be able (in the future) to have an llm deciding
@@ -127,7 +65,7 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 76
-  max_turns: 80
+  expected_turns: 45
+  max_turns: 55
   turn_timeout: 1800
   task_timeout: 1800

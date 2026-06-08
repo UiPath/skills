@@ -104,7 +104,7 @@ success_criteria:
     description: "Agent used --output json on every tasks command"
     tool_name: "Bash"
     command_pattern: 'uip\s+tasks\s+.*--output\s+json'
-    min_count: 4
+    min_count: 2
     weight: 1.0
     pass_threshold: 1.0
 

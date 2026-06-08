@@ -1,0 +1,20 @@
+{
+  "Result": "Success", "Code": "IsResourcesDescribe",
+  "Data": {
+    "name": "ListCalendarEvents", "displayName": "List Calendar Events", "elementKey": "uipath-microsoft-outlook365",
+    "operation": { "name": "List", "path": "/ListCalendarEvents", "method": "GET" },
+    "parameters": [
+      { "name": "from",            "type": "query", "displayName": "From",  "required": true,  "dataType": "string" },
+      { "name": "until",           "type": "query", "displayName": "Until", "required": true,  "dataType": "string" },
+      { "name": "size",            "type": "query", "displayName": "Size",  "required": false, "dataType": "number" },
+      { "name": "outputTimezone",  "type": "query", "displayName": "Output timezone", "required": false, "dataType": "string",
+        "reference": { "objectName": "timezones", "lookupNames": ["displayName","alias"], "lookupValue": "alias" } }
+    ],
+    "requestFields": [],
+    "responseFields": [
+      { "name": "id",      "type": "string", "displayName": "Event ID" },
+      { "name": "subject", "type": "string", "displayName": "Subject" },
+      { "name": "start",   "type": "string", "displayName": "Start time" }
+    ]
+  }
+}

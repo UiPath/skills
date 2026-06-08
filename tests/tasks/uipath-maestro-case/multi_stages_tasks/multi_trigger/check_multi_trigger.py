@@ -10,7 +10,6 @@ from _shared.case_check import (  # noqa: E402
     assert_count,
     find_node_by_label,
     find_triggers,
-    payload_contains,
     read_caseplan,
     start_debug,
 )
@@ -87,13 +86,23 @@ def main():
             f"FAIL: TriggerEdge sources {sources} != trigger ids {expected_sources}"
         )
 
+    run_lanes = (run_stage.get("data") or {}).get("tasks") or []
+    run_tasks = [t for lane in run_lanes for t in (lane or [])]
+    rpa_tasks = [t for t in run_tasks if t.get("type") == "rpa"]
+    if len(rpa_tasks) != 1:
+        types_seen = [t.get("type") for t in run_tasks]
+        sys.exit(
+            f"FAIL: expected exactly 1 rpa task in 'Run'; got {len(rpa_tasks)} "
+            f"(task types in Run: {types_seen})"
+        )
+
     payload = start_debug(timeout=540)
-    payload_contains(payload, "Run", require_all=False)
     status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: 3 triggers (manual + infinite hourly R/PT1H + bounded daily "
         "R5/2026-04-26T09:00:00.000Z/P1D) each with its own TriggerEdge to Run; "
+        "Run carries 1 rpa task; "
         f"debug payload returned (status={status})"
     )
 

@@ -14,7 +14,7 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 - User asks to improve extraction scores, prompts, or field instructions
 - User asks to publish or manage IXP model versions
 - User provides a taxonomy file to import into a project
-- User asks for the schema of a deployed (runtime) IXP model (use `deployments get-taxonomy`)
+- User asks for the project taxonomy at a specific trained model version — what the schema looked like when version N was published (use `deployments get-taxonomy <project-name> --version <N>`)
 
 ## Critical Rules
 

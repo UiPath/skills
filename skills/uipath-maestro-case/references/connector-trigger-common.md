@@ -25,15 +25,16 @@ uip maestro case registry get-connection \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
 
-Returns `Entry`, `Config`, and `Connections`.
+Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, match it by `name` and use it directly. Otherwise **always present the choice via AskUserQuestion — do not auto-select**, even when one connection exists:
 
-- **Single connection** → use it.
-- **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED>`. Both plugins emit placeholders at execution time (different shapes per plugin) — see [placeholder-tasks.md](placeholder-tasks.md) for connector-task placeholders and [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) for event-trigger placeholders.
+- **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option**.
+- **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
+- **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](connector-integration.md#creating-a-connection).
+- **Skip / create fails** → mark `<UNRESOLVED>`. Both plugins emit placeholders at execution time (different shapes per plugin) — see [placeholder-tasks.md](placeholder-tasks.md) for connector-task placeholders and [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) for event-trigger placeholders.
 
-Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response.
+Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output).
 
-Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
+Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.
 
@@ -270,15 +271,17 @@ The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details`)
 
 Save the response. The interesting parts:
 
+> **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree is re-cased to camelCase on the way to disk — see [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase).
+
 | Variable | Source |
 |---|---|
-| `spec.identity` | `.Data.identity` — connectorKey, connectorName, objectName, full TypeCache entry |
-| `spec.connection.id` | `.Data.connection.id` — connection UUID (matches `--connection-id`) |
-| `spec.connection.folderKey` | `.Data.connection.folderKey` — needed for the FolderKey binding (may be `null`) |
-| `spec.caseShape.inputs[]` | `.Data.caseShape.inputs` — single `body` entry. Body holds `parameters` (from eventParameters) and/or `filters.expression` (compiled JMESPath) when authored |
-| `spec.caseShape.outputs[]` | `.Data.caseShape.outputs` — `response` (with displayName like "Email Received") + `Error` |
-| `spec.caseShape.context[]` | `.Data.caseShape.context` — FE-canonical context array. Carries `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders, plus a `metadata.body.bindings[Property]` entry with `{{TRIGGER_REGISTRATION_KEY}}` placeholder when the trigger has event parameters |
-| `spec.diagnostics.fallbacks[]` | `.Data.diagnostics.fallbacks` — surface to `build-issues.md` when non-empty |
+| `spec.identity` | `.Data.Identity` — connectorKey, connectorName, objectName, full TypeCache entry |
+| `spec.connection.id` | `.Data.Connection.Id` — connection UUID (matches `--connection-id`) |
+| `spec.connection.folderKey` | `.Data.Connection.FolderKey` — needed for the FolderKey binding (may be `null`) |
+| `spec.caseShape.inputs[]` | `.Data.CaseShape.Inputs` — single `body` entry. Body holds `parameters` (from eventParameters) and/or `filters.expression` (compiled JMESPath) when authored |
+| `spec.caseShape.outputs[]` | `.Data.CaseShape.Outputs` — `response` (with displayName like "Email Received") + `Error` |
+| `spec.caseShape.context[]` | `.Data.CaseShape.Context` — FE-canonical context array. Carries `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders, plus a `metadata.body.bindings[Property]` entry with `{{TRIGGER_REGISTRATION_KEY}}` placeholder when the trigger has event parameters |
+| `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty |
 
 ### Step 3 — Mint binding IDs and (when applicable) trigger registration key
 
@@ -311,9 +314,19 @@ The CLI emits placeholders the skill resolves at write-time:
 | `{{FOLDER_BINDING_ID}}` | `caseShape.context[name="folderKey"].value` (string `=bindings.{{FOLDER_BINDING_ID}}`); entry only present when `spec.connection.folderKey !== null` | `<folderBindingId>` |
 | `{{TRIGGER_REGISTRATION_KEY}}` | `caseShape.context[name="metadata"].body.bindings[*].metadata.ParentResourceKey` (string `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`); entry only present when `caseShape.context[name="metadata"].body.bindings` exists (i.e. trigger has event parameters) | `<eventTriggerKey>` |
 
-The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above. **Every other key — current or future, top-level or nested — must be copied byte-for-byte from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
+The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key-casing normalization in [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase). **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
 
-> **Mechanical contract.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into the target shape. The skill is a substituter, not a composer — the only edit between Read and Write is the placeholder substitutions above. **Never retype `context` content from agent reasoning.**
+> **Mechanical contract.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into the target shape, then re-case keys per [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase). The skill is a substituter, not a composer — the only edits between Read and Write are the placeholder substitutions above and that keys-only re-casing. **Never retype `context` content from agent reasoning.**
+
+#### Normalize key casing (PascalCase → camelCase)
+
+`case spec --output json` serializes its whole payload in **PascalCase** — `Data.CaseShape.Context`; context / input / output entries `{ "Name", "Type", "Value", "Target", "Body", "DisplayName", "Source" }`; nested config (`"ActivityPropertyConfiguration"`, `"ActivityMetadata"`, `"UiPathActivityTypeId"`, …); response-schema body (`"Type"`, `"Properties"`, `"Definitions"`, `"Title"`, `"Items"`). The caseplan.json disk schema requires **camelCase** (`name`, `type`, `value`, `body`, `displayName`, `source`, `context`, `properties`, …). This holds regardless of how this doc's examples are cased — the live CLI emits PascalCase; the disk schema reads camelCase.
+
+After splicing the spec subtree (`context` / `inputs` / `outputs` and their nested `body`), lower-case the **first character of every object KEY**, preserving the rest: `Name`→`name`, `DisplayName`→`displayName`, `UiPathActivityTypeId`→`uiPathActivityTypeId`, `Properties`→`properties`.
+
+- **Keys only — never values.** Values are case-sensitive identifiers (`"name": "Subject"`, `"source": "=response.Subject"`, the `=jsonString:` / `=js:` blobs). Re-casing a value breaks runtime variable matching — `findVariableByVariableId` compares byte-for-byte ([global-vars/impl-json.md § Name matching](plugins/variables/global-vars/impl-json.md)). The `=jsonString:` config blob is a string value; its internal JSON is already camelCase — leave it untouched.
+- **Scope: the spliced spec subtree only.** The skill-authored caseplan envelope (nodes, edges, variables, bindings, task scaffolding) is already camelCase — do not re-case it.
+- **Compatible with splice-verbatim (above).** Splice the full subtree first (never drop or retype content), then re-case keys. A keys-only transform is structural, not a memory reconstruction.
 
 ### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
 
@@ -443,6 +456,8 @@ Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxx
 
 ### Placeholder fallback
 
+Reached only after the [§ 2 create offer](#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to the placeholder.
+
 On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule **without** its `uipath` block — `{ id, rule: "wait-for-connector", conditionExpression? }`. The rule itself is not a placeholder; only the connector configuration (the `uipath` payload) is deferred until the registry resolves, exactly like task connector data deferred via `data:{}`. Absence of `uipath` naturally skips the dependent subsystems: io-binding has no `outputs[]` to wire, root bindings has no Connection/Folder pair to add, IS-cache has no entry to register, global var-id dedup has no outputs to consider, and the Step-10 `bindings_v2` sync has nothing to regenerate for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8 and log per [logging/impl-json.md](plugins/logging/impl-json.md). Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
 
 ---
@@ -451,6 +466,7 @@ On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connecto
 
 - **Do NOT call legacy `uip maestro case tasks describe --type connector-trigger` or `uip is triggers describe`.** `case spec --type trigger` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` or placeholders.
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 4.
+- **Do NOT write the spec's PascalCase keys to disk verbatim.** `case spec` emits PascalCase (`Name`/`Type`/`Value`/`Body`/`DisplayName`/`Source`/`Properties`/…); the caseplan disk schema is camelCase. After splicing, lower-case the first character of every object key in the spec subtree — keys only, never values. See [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT use `CuratedTrigger` or `Intsvc.Trigger` activityType.** The CLI overrides to `CuratedWaitFor` (in-stage task) or emits the trigger shape directly. Trust the CLI's `essentialConfiguration` value.
 - **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree and pass it under `--input-details.filter`; the CLI compiles all three sinks.
 - **Do NOT use `filterExpression` as a `--input-details` input.** The CLI rejects raw `filterExpression` strings (MST-8802). Pass the structured tree only.
@@ -461,4 +477,4 @@ On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connecto
 
 ## Known Limitation (shared)
 
-The CLI-produced `essentialConfiguration` uses `essentialConfiguration` only (not `optionalConfiguration`). Triggers work at **runtime** but the FE editor may not render certain fields until the user re-configures the trigger in the UI. DAP repopulates these on form open. Documented in `~/Documents/knowledge/Skill_CLI/connector/case-spec-fe-discrepancies.md` (CLI-side).
+The CLI-produced `essentialConfiguration` uses `essentialConfiguration` only (not `optionalConfiguration`). Triggers work at **runtime** but the FE editor may not render certain fields until the user re-configures the trigger in the UI. DAP repopulates these on form open.

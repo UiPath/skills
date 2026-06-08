@@ -1,0 +1,14 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpCreate",
+  "Data": {
+    "id": "mcp-mock-remote-01",
+    "slug": "mock-remote-api",
+    "name": "Mock Remote API",
+    "type": "remote",
+    "description": "Mock remote MCP server for skill regression tests.",
+    "uri": "https://mock.api.example.com",
+    "folderKey": "folder-mock-shared",
+    "createdAt": "2026-05-17T00:00:00Z"
+  }
+}

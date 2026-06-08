@@ -160,5 +160,5 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 - **v20:** confirm `metadata.slaRules` (top-level) or `node.data.slaRules` (stage) exists. Verify v20's root-target uses `metadata` — not `root.data` (which doesn't exist in v20).
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
 - Confirm every generated `esc_` ID appears in `id-map.json`.
-- Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target). In v20 mode, validate may reject due to CLI lag — capture output to build-issues.md, do not retry-loop (Rule 18).
+- Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).
 

@@ -71,7 +71,7 @@ Resolution order (first match wins):
 Read the `Data.BaseUrl` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
 
 ```
-> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
+> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 validate authoritative; CLI upload / debug may reject downstream.
 ```
 
 Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
@@ -94,7 +94,7 @@ Scan **only the user message that activated the skill** (the prompt that matched
 
 - **Match** → schema is `v20`. Print plain-text confirmation BEFORE Step 3 begins:
   ```
-  > Schema: v20 (skill-emit-only mode — Phase 4 informational; CLI validate / upload / debug may reject downstream)
+  > Schema: v20 (skill-emit-only mode — Phase 4 validate authoritative; CLI upload / debug may reject downstream)
   ```
 - **No match** → schema is `v19` (default). No confirmation line.
 
@@ -177,7 +177,11 @@ For every task, trigger, and condition in the sdd.md:
 
 ### 3.4 Unresolved resources
 
-When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:
+When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**.
+
+> **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-common.md § Resolve the connection](connector-trigger-common.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
+
+Otherwise:
 
 1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `typeId` / `connectionId` slot.
 2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](placeholder-tasks.md).

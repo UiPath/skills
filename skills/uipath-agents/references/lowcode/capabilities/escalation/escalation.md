@@ -39,8 +39,9 @@ Filter the result for entries whose `Type` is `"Workflow Action"` (Coded / Coded
 `Key` gives you everything you need to identify the backing app, but `resource list` does not return `systemName` or `deployVersion` — both are required to fetch the action schema in Step 3. Query the Apps API once, filtered client-side by `id == <KEY>`, to extract them:
 
 ```bash
-# SECURITY: Never read ~/.uipath/.auth directly. Keep the token inside the shell.
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s \
+# SECURITY: Never read the auth file directly. Keep the token inside the shell.
+# Auth lives at $HOME/.uipath/.auth normally; fall back to /.uipath/.auth (root) for some sandboxes.
+bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; curl -s \
   "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-apps?state=deployed&pageNumber=0&limit=100" \
   -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
   -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
@@ -59,7 +60,7 @@ From the matching entry in `.deployed[]`, extract:
 Use `systemName` and `deployVersion` from Step 2.
 
 ```bash
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s \
+bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; curl -s \
   "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-schema?appSystemName=<SYSTEM_NAME>&version=<DEPLOY_VERSION>" \
   -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
   -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
@@ -101,7 +102,7 @@ From the action-schema response, construct the channel fields:
 Ask the user who should receive the task. If they say "me" or don't specify, fall back to the current user's email from the JWT `email` claim:
 
 ```bash
-bash -c 'source <(grep = ~/.uipath/.auth) && echo "$UIPATH_ACCESS_TOKEN" | python3 -c "
+bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; echo "$UIPATH_ACCESS_TOKEN" | python3 -c "
 import sys, base64, json
 tok = sys.stdin.read().strip()
 payload = tok.split(\".\")[1]
