@@ -1,7 +1,7 @@
 task_id: skill-platform-resources-buckets-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list storage buckets in
-  an Orchestrator folder via `uip resource buckets list --folder-(key|path)
+  an Orchestrator folder via `uip or buckets list --folder-(key|path)
   ...`. Prompt passes a placeholder folder key — CLI returning Auth/404 is
   acceptable; the goal is correct command shape, not tenant state.
 
@@ -19,7 +19,7 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed buckets via uip resource buckets list"
+    description: "Agent listed buckets via uip or buckets list"
     tool_name: "Bash"
     command_pattern: 'uip\s+resource\s+buckets\s+list'
     min_count: 1

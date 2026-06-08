@@ -107,7 +107,7 @@ Authorization: Bearer <UIPATH_ACCESS_TOKEN>
 X-UIPATH-OrganizationUnitId: <FOLDER_ID>
 ```
 
-Always check `uip or --help` and `uip or --help` first -- most operations are covered by the CLI. Only fall back to REST when there is no CLI command for the operation you need.
+Always check `uip or --help` first -- most operations are covered by the CLI. Only fall back to REST when there is no CLI command for the operation you need.
 
 **Example -- list triggers (no CLI command yet):**
 

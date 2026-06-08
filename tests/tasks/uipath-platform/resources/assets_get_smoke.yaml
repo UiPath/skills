@@ -1,7 +1,7 @@
 task_id: skill-platform-resources-assets-get
 description: >
   Smoke test: real user asks for an asset by name. The agent's job is to
-  realize `uip resource assets get` takes a GUID, so it must first run
+  realize `uip or assets get` takes a GUID, so it must first run
   `assets list` to find the key. Verifies the agent does the resolve step
   with `assets list --name` in the provided folder.
   If the named asset doesn't exist, the agent reporting "not found" after

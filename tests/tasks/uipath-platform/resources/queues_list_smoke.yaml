@@ -1,7 +1,7 @@
 task_id: skill-platform-resources-queues-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list Orchestrator queues
-  in a folder via `uip resource queues list --folder-(key|path) ...`. Prompt
+  in a folder via `uip or queues list --folder-(key|path) ...`. Prompt
   passes a placeholder folder key — CLI returning Auth/404 is acceptable; the
   goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
@@ -15,7 +15,7 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed queues via uip resource queues list"
+    description: "Agent listed queues via uip or queues list"
     tool_name: "Bash"
     command_pattern: 'uip\s+resource\s+queues\s+list'
     min_count: 1
