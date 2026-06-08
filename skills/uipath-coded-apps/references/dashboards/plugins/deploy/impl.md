@@ -121,7 +121,7 @@ try {
   const hit  = apps.find(p => p.Name === process.argv[2] && p.Version === process.argv[3])
   process.stdout.write(hit ? 'EXISTS' : 'OK')
 } catch { process.stdout.write('SKIP') }
-" "${TEMP_DIR}/uip-apps.json" "${ROUTING_NAME}" "${NEXT_SEMVER}")
+" "${TEMP_DIR}/uip-apps.json" "${APP_NAME}" "${NEXT_SEMVER}")
 rm -f "${TEMP_DIR}/uip-apps.json"
 if [ "${EXISTING}" = "EXISTS" ]; then
   NEXT_SEMVER=$(node -e "
@@ -175,12 +175,12 @@ BUILD_EXIT=$?
 
 ## Step 6 — Pack
 
-Uses the routing slug as the package identifier:
+`-n` is the package display name. Must be the same value used in publish and deploy:
 
 ```bash
 uip codedapp pack dist \
-  -n "${ROUTING_NAME}" \
-  -v "${NEXT_SEMVER}" \
+  -n "${APP_NAME}" \
+  --version "${NEXT_SEMVER}" \
   --output json
 ```
 
@@ -188,13 +188,15 @@ uip codedapp pack dist \
 
 ## Step 7 — Publish (with transient-error retry)
 
+`-n` and `--version` select the exact package to upload — must match what was packed:
+
 ```bash
 TEMP_DIR=$(node -e "process.stdout.write(require('os').tmpdir())")
 
 for ATTEMPT in 1 2 3 4; do
   uip codedapp publish \
-    -n "${ROUTING_NAME}" \
-    -v "${NEXT_SEMVER}" \
+    -n "${APP_NAME}" \
+    --version "${NEXT_SEMVER}" \
     --output json > "${TEMP_DIR}/uip-publish.json" 2>&1
   PUBLISH_EXIT=$?
   PUBLISH_OUT=$(cat "${TEMP_DIR}/uip-publish.json")
@@ -202,13 +204,13 @@ for ATTEMPT in 1 2 3 4; do
   # Success
   [ $PUBLISH_EXIT -eq 0 ] && break
 
-  # 409 version conflict — bump and retry
+  # 409 version conflict — bump version, re-pack, and retry publish
   if echo "${PUBLISH_OUT}" | grep -q "409\|already exists"; then
     NEXT_SEMVER=$(node -e "
     const [a,b,c] = process.argv[1].split('.').map(Number)
     process.stdout.write([a, b, c + 1].join('.'))
     " "${NEXT_SEMVER}")
-    uip codedapp pack dist -n "${ROUTING_NAME}" -v "${NEXT_SEMVER}" --output json
+    uip codedapp pack dist -n "${APP_NAME}" --version "${NEXT_SEMVER}" --output json
     continue
   fi
 
@@ -235,13 +237,16 @@ rm -f "${TEMP_DIR}/uip-publish.json"
 
 ## Step 8 — Deploy
 
-`--path-name` sets the URL routing slug. `--tags` controls Governance UI visibility.
+`-n`, `--version` identify the published package. `--path-name` sets the URL slug. `--tags` controls Governance UI visibility.
+
+**All three of `-n`, `--version`, `-n` must match the values used in pack and publish.**
 
 **If the user opted to pin to Governance UI** (`PIN_TO_GOVERNANCE=true`):
 
 ```bash
 uip codedapp deploy \
   -n "${APP_NAME}" \
+  --version "${NEXT_SEMVER}" \
   --path-name "${ROUTING_NAME}" \
   --folder-key "${FOLDER_KEY}" \
   --tags "governance,dashboard" \
@@ -253,15 +258,18 @@ uip codedapp deploy \
 ```bash
 uip codedapp deploy \
   -n "${APP_NAME}" \
+  --version "${NEXT_SEMVER}" \
   --path-name "${ROUTING_NAME}" \
   --folder-key "${FOLDER_KEY}" \
   --tags "governance" \
   --output json > "${TEMP_DIR}/uip-deploy.json" 2>&1
 ```
 
-`APP_NAME` is the human-readable dashboard name from state.json (e.g. `"Agent Health Dashboard"`). Use it as-is — no sanitization.
+> **`-n` and `--version` must be the same across pack, publish, and deploy.** Pack creates the package. Publish uploads it by name+version. Deploy resolves the published app by name+version and sets the URL path via `--path-name`.
+>
+> Note: `--version` in deploy means "deploy this already-published version" — it does not create a new version.
 
-Handle path-name collision — if the routing slug is already taken in that folder, regenerate the suffix and retry:
+Handle `--path-name` collision — the package is already published, only the deploy needs to retry with a new slug:
 
 ```bash
 DEPLOY_EXIT=$?
@@ -272,11 +280,11 @@ while echo "${DEPLOY_OUT}" | grep -qiE "conflict|already.*exist|path.*name" && [
   COLLISION_ATTEMPTS=$((COLLISION_ATTEMPTS + 1))
   NEW_SUFFIX=$(node -e "process.stdout.write(Math.random().toString(36).slice(2,6))")
   NEW_ROUTING=$(echo "${ROUTING_NAME}" | sed "s/-[a-z0-9]*$/-${NEW_SUFFIX}/")
-  uip codedapp pack    dist -n "${NEW_ROUTING}" -v "${NEXT_SEMVER}" --output json
-  uip codedapp publish      -n "${NEW_ROUTING}" -v "${NEXT_SEMVER}" --output json
   TAGS_ARG=$([ "${PIN_TO_GOVERNANCE}" = "true" ] && echo "governance,dashboard" || echo "governance")
+  # No re-pack or re-publish needed — package is already uploaded, only path-name changes
   uip codedapp deploy \
     -n "${APP_NAME}" \
+    --version "${NEXT_SEMVER}" \
     --path-name "${NEW_ROUTING}" \
     --folder-key "${FOLDER_KEY}" \
     --tags "${TAGS_ARG}" \
@@ -365,8 +373,8 @@ Add in both cases:
 
 - Pack order is always: **build → pack → publish → deploy**
 - `--path-name` in the deploy command takes the routing slug (e.g. `agent-health-x7k2`)
-- `-n` in the deploy command takes the **human-readable dashboard name** from state.json (e.g. `"Agent Health Dashboard"`) — use it as-is, no sanitization
-- `--path-name` takes the **routing slug** (e.g. `"agent-health-x7k2"`) — this becomes the URL path
+- `-n` must be the **same value** in pack, publish, and deploy — it is the package identity that threads the pipeline together. Use the human-readable dashboard name from state.json (e.g. `"Agent Health Dashboard"`) — no sanitization, no modification
+- `--path-name` takes the **routing slug** (e.g. `"agent-health-x7k2"`) — only in the deploy command, sets the URL path
 - Always include `--tags` — minimum is `governance`, add `dashboard` if user opted to pin
 - Routing name is permanent after first successful deploy — never change it
 - PAT must not be in the production bundle — the Vite plugin enforces this
