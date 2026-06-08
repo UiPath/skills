@@ -55,7 +55,7 @@ Pick one of the three branches below (in order of preference). All three address
    - Who: RPA developer.
    - Source: `references/activity-packages/ui-automation/playbooks/selector-failure-healing-disabled.md` § Resolution → "If wrong-page scope (authoring defect)".
 
-After applying any of the three options, validate the workflow: `uip rpa get-errors --file-path "" --output json --use-studio`.
+After applying any of the three options, validate the workflow: `uip rpa get-errors --file-path "" --output json`.
 
 ### Orchestrator (Propagation)
 1. Restart the job from Orchestrator after the TO.xaml fix is published.
@@ -128,7 +128,7 @@ Three available remediation branches (apply ONE):
   C) Change AttachMode from 'ByInstance' to a mode that opens/navigates (e.g., 'OpenIfNotRunning') AND set TargetApp.Url to the Doodles archive URL.
 
 After the change, validate with:
-  uip rpa get-errors --file-path "" --output json --use-studio
+  uip rpa get-errors --file-path "" --output json
 ```
 
 **Warning:** Healing Agent was enabled on this run but could not produce a recovered selector — the live page never contained the target element, so there is no HA suggestion to apply. The fix must be made at the parent scope (NApplicationCard "Edge Google") in TO.xaml, not on the Click's selector. Enabling Healing Agent does not fix wrong-page-scope defects.
